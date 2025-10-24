@@ -214,9 +214,34 @@ internal class DatadogFlagsClient(
     }
 
     /**
+     * Checks if the provider is ready by verifying an evaluation context exists.
+     *
+     * @param T The type of the flag value
+     * @param flagKey The flag key being resolved
+     * @param defaultValue The default value to return in the error
+     * @return [InternalResolution.Error] if provider not ready, null otherwise
+     */
+    private fun <T : Any> checkProviderReady(
+        flagKey: String,
+        defaultValue: T
+    ): InternalResolution.Error<T>? {
+        return if (flagsRepository.getEvaluationContext() == null) {
+            InternalResolution.Error(
+                flagKey = flagKey,
+                defaultValue = defaultValue,
+                errorCode = ErrorCode.PROVIDER_NOT_READY,
+                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
+            )
+        } else {
+            null
+        }
+    }
+
+    /**
      * Fetches a flag from the repository and parses its value to the expected type.
      *
      * This side-effect free function is the single source of truth for:
+     * - Checking if the provider is ready (evaluation context has been set)
      * - Fetching flags from the repository
      * - Validating type compatibility via [FlagValueConverter]
      * - Parsing flag values using the [FlagValueConverter]
@@ -232,6 +257,7 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
+        checkProviderReady(flagKey, defaultValue)?.let { return it }
         val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
         if (flagAndContext == null) {
             return InternalResolution.Error(

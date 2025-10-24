@@ -80,6 +80,14 @@ internal class DatadogFlagsClientTest {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockFeatureSdkCore.getFeature(RUM_FEATURE_NAME)) doReturn mock()
 
+        // Mock evaluation context as ready by default
+        // Tests that need to test "not ready" state should override this
+        val defaultContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn defaultContext
+
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
@@ -152,6 +160,22 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default value W resolveBooleanValue() { provider not ready }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
     }
 
     @Test
@@ -297,6 +321,22 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
+    @Test
+    fun `M return default value W resolveStringValue() { provider not ready }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
+    }
+
     // endregion
 
     // region resolveIntValue()
@@ -360,6 +400,22 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
+    @Test
+    fun `M return default value W resolveIntValue() { provider not ready }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
+    }
+
     // endregion
 
     // region resolveDoubleValue()
@@ -399,6 +455,22 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default value W resolveDoubleValue() { provider not ready }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aDouble()
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
     }
 
     // endregion
@@ -520,6 +592,24 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default value W resolveStructureValue() { provider not ready }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = JSONObject().apply {
+            put(fakeJsonKey, forge.anAlphabeticalString())
+        }
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
     }
 
     // endregion
@@ -655,6 +745,30 @@ internal class DatadogFlagsClientTest {
 
         // Verify no exposure tracked when flag not found
         verifyNoInteractions(mockProcessor)
+    }
+
+    @Test
+    fun `M return ResolutionDetails with error W resolve() { provider not ready }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.variant).isNull()
+        assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
+        assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
+        assertThat(result.errorMessage).contains("Provider not ready")
+        assertThat(result.flagMetadata).isNull()
+
+        // Verify no exposure tracked when provider not ready
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
     }
 
     @Test
