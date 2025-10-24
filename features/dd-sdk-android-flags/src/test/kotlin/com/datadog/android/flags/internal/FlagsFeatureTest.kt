@@ -3,9 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-
 package com.datadog.android.flags.internal
-
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -26,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -56,6 +55,12 @@ internal class FlagsFeatureTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
+
+        // Setup mockContext with default release build (flags = 0)
+        val applicationInfo = android.content.pm.ApplicationInfo().apply {
+            flags = 0
+        }
+        whenever(mockContext.applicationInfo) doReturn applicationInfo
 
         testedFeature = FlagsFeature(
             sdkCore = mockSdkCore,
@@ -137,6 +142,132 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpRecordWriter::class.java)
+    }
+
+    // endregion
+
+    // region Graceful Mode Policy
+
+    @Test
+    fun `M log through internalLogger W logErrorWithPolicy() { release build }`() {
+        // Given - release build (not debuggable)
+        val releaseAppInfo = android.content.pm.ApplicationInfo().apply { flags = 0 }
+        val releaseContext = org.mockito.kotlin.mock<Context>()
+        whenever(releaseContext.applicationInfo).thenReturn(releaseAppInfo)
+        val config = FlagsConfiguration.Builder().build()
+        testedFeature = FlagsFeature(mockSdkCore, config)
+        testedFeature.onInitialize(releaseContext)
+
+        // When
+        testedFeature.logErrorWithPolicy("test message", InternalLogger.Level.ERROR)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
+    @Test
+    fun `M log through internalLogger W logErrorWithPolicy() { release build, gracefulModeEnabled false }`() {
+        // Given - release build should ignore gracefulModeEnabled setting
+        val releaseAppInfo = android.content.pm.ApplicationInfo().apply { flags = 0 }
+        val releaseContext = org.mockito.kotlin.mock<Context>()
+        whenever(releaseContext.applicationInfo).thenReturn(releaseAppInfo)
+        val config = FlagsConfiguration.Builder()
+            .gracefulModeEnabled(false)
+            .build()
+        testedFeature = FlagsFeature(mockSdkCore, config)
+        testedFeature.onInitialize(releaseContext)
+
+        // When
+        testedFeature.logErrorWithPolicy("test message", InternalLogger.Level.ERROR)
+
+        // Then - should still use graceful policy, not crash
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
+    @Test
+    fun `M log to Android Logcat W logErrorWithPolicy() { debug build, graceful enabled }`() {
+        // Given - debug build with gracefulModeEnabled=true
+        val debugAppInfo = android.content.pm.ApplicationInfo().apply {
+            flags = android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
+        }
+        val debugContext = org.mockito.kotlin.mock<Context>()
+        whenever(debugContext.applicationInfo).thenReturn(debugAppInfo)
+        val config = FlagsConfiguration.Builder()
+            .gracefulModeEnabled(true)
+            .build()
+        testedFeature = FlagsFeature(mockSdkCore, config)
+        testedFeature.onInitialize(debugContext)
+
+        // When
+        testedFeature.logErrorWithPolicy("test message", InternalLogger.Level.ERROR)
+
+        // Then - uses android.util.Log.e which can't be easily verified in unit tests
+        // Just verify it doesn't crash and doesn't use internalLogger
+        org.mockito.kotlin.verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M crash W logErrorWithPolicy() { debug build, graceful disabled, shouldCrash true }`() {
+        // Given - debug build with strict mode
+        val debugAppInfo = android.content.pm.ApplicationInfo().apply {
+            flags = android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
+        }
+        val debugContext = org.mockito.kotlin.mock<Context>()
+        whenever(debugContext.applicationInfo).thenReturn(debugAppInfo)
+        val config = FlagsConfiguration.Builder()
+            .gracefulModeEnabled(false)
+            .build()
+        testedFeature = FlagsFeature(mockSdkCore, config)
+        testedFeature.onInitialize(debugContext)
+
+        // When/Then
+        org.junit.jupiter.api.assertThrows<IllegalStateException> {
+            testedFeature.logErrorWithPolicy(
+                "test message",
+                InternalLogger.Level.ERROR,
+                shouldCrashInStrict = true
+            )
+        }
+    }
+
+    @Test
+    fun `M log to Android Logcat W logErrorWithPolicy() { debug build, graceful disabled, shouldCrash false }`() {
+        // Given - debug build with strict mode but shouldCrashInStrict=false
+        val debugAppInfo = android.content.pm.ApplicationInfo().apply {
+            flags = android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
+        }
+        val debugContext = org.mockito.kotlin.mock<Context>()
+        whenever(debugContext.applicationInfo).thenReturn(debugAppInfo)
+        val config = FlagsConfiguration.Builder()
+            .gracefulModeEnabled(false)
+            .build()
+        testedFeature = FlagsFeature(mockSdkCore, config)
+        testedFeature.onInitialize(debugContext)
+
+        // When
+        testedFeature.logErrorWithPolicy(
+            "test message",
+            InternalLogger.Level.ERROR,
+            shouldCrashInStrict = false
+        )
+
+        // Then - uses android.util.Log.e which can't be easily verified in unit tests
+        // Just verify it doesn't crash and doesn't use internalLogger
+        org.mockito.kotlin.verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion

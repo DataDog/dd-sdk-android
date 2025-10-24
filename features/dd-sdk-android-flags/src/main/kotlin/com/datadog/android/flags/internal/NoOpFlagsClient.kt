@@ -20,23 +20,24 @@ import org.json.JSONObject
  * All flag resolution methods return their provided default values without performing
  * any operations. The [setEvaluationContext] method silently ignores context updates.
  * This implementation is thread-safe and designed for graceful degradation scenarios.
+ * Logging behavior is determined by the graceful mode policy passed via [logWithPolicy].
  *
  * @param name The client name this NoOpClient represents.
  * @param reason The reason why this client is a NoOp (e.g., "Flags feature not enabled").
- * @param logger Optional logger for critical error messages.
+ * @param logWithPolicy Function to log messages according to the graceful mode policy.
  */
 internal class NoOpFlagsClient(
     private val name: String,
     private val reason: String,
-    private val logger: InternalLogger? = null
+    private val logWithPolicy: (String, InternalLogger.Level) -> Unit
 ) : FlagsClient {
 
     /**
-     * No-op implementation that ignores context updates and logs a critical error.
+     * No-op implementation that ignores context updates and logs a warning.
      * @param context Ignored evaluation context.
      */
     override fun setEvaluationContext(context: EvaluationContext) {
-        logCriticalError("setEvaluationContext")
+        logOperation("setEvaluationContext", InternalLogger.Level.WARN)
     }
 
     /**
@@ -46,7 +47,7 @@ internal class NoOpFlagsClient(
      * @return The provided default value.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        logCriticalError("resolveBooleanValue for flag '$flagKey'")
+        logOperation("resolveBooleanValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }
 
@@ -57,7 +58,7 @@ internal class NoOpFlagsClient(
      * @return The provided default value.
      */
     override fun resolveStringValue(flagKey: String, defaultValue: String): String {
-        logCriticalError("resolveStringValue for flag '$flagKey'")
+        logOperation("resolveStringValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }
 
@@ -68,7 +69,7 @@ internal class NoOpFlagsClient(
      * @return The provided default value.
      */
     override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double {
-        logCriticalError("resolveDoubleValue for flag '$flagKey'")
+        logOperation("resolveDoubleValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }
 
@@ -79,7 +80,7 @@ internal class NoOpFlagsClient(
      * @return The provided default value.
      */
     override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
-        logCriticalError("resolveIntValue for flag '$flagKey'")
+        logOperation("resolveIntValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }
 
@@ -94,7 +95,7 @@ internal class NoOpFlagsClient(
      * @return [ResolutionDetails] containing the default value with PROVIDER_NOT_READY error.
      */
     override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
-        logCriticalError("resolve for flag '$flagKey'")
+        logOperation("resolve for flag '$flagKey'", InternalLogger.Level.WARN)
         return ResolutionDetails(
             value = defaultValue,
             errorCode = ErrorCode.PROVIDER_NOT_READY,
@@ -109,25 +110,23 @@ internal class NoOpFlagsClient(
      * @return The provided default value.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
-        logCriticalError("resolveStructureValue for flag '$flagKey'")
+        logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }
 
     /**
-     * Logs a critical error with both USER and MAINTAINER targets.
+     * Logs an operation call on this NoOpFlagsClient using the policy-aware logging function.
      * This ensures visibility in both debug builds (MAINTAINER) and production (USER, if verbosity allows).
      *
      * @param operation The operation being called (e.g., "resolveBooleanValue for flag 'my-flag'")
+     * @param level The log level for the message
      */
-    private fun logCriticalError(operation: String) {
-        logger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            {
-                "$operation called on NoOpFlagsClient for client '$name' " +
-                    "(reason: $reason). NoOpFlagsClient always returns default values. " +
-                    "Ensure FlagsClient.Builder(...).build() was called successfully."
-            }
+    private fun logOperation(operation: String, level: InternalLogger.Level) {
+        logWithPolicy(
+            "$operation called on NoOpFlagsClient for client '$name' " +
+                "(reason: $reason). Ensure that a FlagsClient named '$name' is created " +
+                "with FlagsClient.Builder(\"$name\").build() before using it.",
+            level
         )
     }
 }

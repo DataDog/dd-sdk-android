@@ -7,6 +7,8 @@
 package com.datadog.android.flags.internal
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
@@ -36,6 +38,16 @@ internal class FlagsFeature(
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
 ) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
+
+    @Volatile
+    private var initialized = false
+
+    /**
+     * Indicates whether the app is running in debug mode.
+     * Set once during onInitialize() and never changes for the process lifetime.
+     */
+    @Volatile
+    private var isDebugBuild: Boolean = false
 
     // region Domain Objects
 
@@ -71,6 +83,16 @@ internal class FlagsFeature(
     }
 
     override fun onInitialize(appContext: Context) {
+        if (initialized) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "onInitialize called multiple times - ignoring duplicate call" }
+            )
+            return
+        }
+        isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        initialized = true
         sdkCore.setContextUpdateReceiver(this)
         dataWriter = createDataWriter()
         processor = ExposureEventsProcessor(dataWriter)
@@ -79,6 +101,7 @@ internal class FlagsFeature(
     override fun onStop() {
         sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpRecordWriter()
+        initialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
             registeredClients.clear()
         }
@@ -105,27 +128,27 @@ internal class FlagsFeature(
     internal fun getClient(name: String): FlagsClient? = synchronized(registeredClients) { registeredClients[name] }
 
     internal fun getOrRegisterNewClient(name: String, newClientFactory: () -> FlagsClient): FlagsClient {
-        synchronized(registeredClients) {
-            // Check for existing client
-            val existingClient = registeredClients[name]
-            if (existingClient != null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    {
-                        "Attempted to create a FlagsClient named '$name', but one already exists. " +
-                            "Existing client will be used, and new configuration will be ignored."
-                    }
-                )
-                return existingClient
-            }
+        val existingClient = synchronized(registeredClients) {
+            registeredClients[name]
+        }
+        if (existingClient != null) {
+            logErrorWithPolicy(
+                message = "Attempted to create a FlagsClient named '$name', but one already " +
+                    "exists. The existing client will be used, and new configuration " +
+                    "will be ignored.",
+                level = InternalLogger.Level.WARN,
+                shouldCrashInStrict = true
+            )
+            return existingClient
+        }
 
-            // Create and register client
-            val newClient = newClientFactory()
-            if (newClient !is NoOpFlagsClient) {
+        // Need to check again since we dropped the lock to log above.
+        return synchronized(registeredClients) {
+            registeredClients[name] ?: run {
+                val newClient = newClientFactory()
                 registeredClients[name] = newClient
+                newClient
             }
-            return newClient
         }
     }
 
@@ -135,7 +158,55 @@ internal class FlagsFeature(
 
     // endregion
 
+    // region Logging
+
+    /**
+     * Logs an error message according to the graceful mode policy.
+     *
+     * Policy Selection:
+     * - Release builds: Graceful (log through SDK logger - conditional)
+     * - Debug + gracefulMode enabled: Error (log to Android Logcat)
+     * - Debug + gracefulMode disabled: Strict (crash immediately)
+     *
+     * @param message The error message
+     * @param level The log level for conditional logging (graceful policy)
+     * @param shouldCrashInStrict If true, crashes in strict policy
+     */
+    internal fun logErrorWithPolicy(
+        message: String,
+        level: InternalLogger.Level = InternalLogger.Level.ERROR,
+        shouldCrashInStrict: Boolean = false
+    ) {
+        val formattedMessage = "$LOG_TAG $message"
+
+        when {
+            // Release build: Always graceful (conditional log through SDK)
+            !isDebugBuild -> {
+                sdkCore.internalLogger.log(
+                    level,
+                    InternalLogger.Target.USER,
+                    { formattedMessage }
+                )
+            }
+
+            // Debug + gracefulMode enabled: Error policy (log to Android Logcat)
+            flagsConfiguration.gracefulModeEnabled -> {
+                Log.e(LOG_TAG, message)
+            }
+
+            // Debug + gracefulMode disabled: Strict policy (crash if requested)
+            else -> {
+                if (shouldCrashInStrict) {
+                    error(formattedMessage)
+                } else {
+                    // For NoOpFlagsClient method calls (already past creation/retrieval)
+                    Log.e(LOG_TAG, message)
+                }
+            }
+        }
+    }
     internal companion object {
         const val MAX_ITEMS_PER_BATCH = 50
+        private const val LOG_TAG = "[Datadog Flags]"
     }
 }

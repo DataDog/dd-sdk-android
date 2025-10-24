@@ -13,7 +13,8 @@ data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean = true,
     internal val customExposureEndpoint: String? = null,
     internal val customFlagEndpoint: String? = null,
-    internal val rumIntegrationEnabled: Boolean = true
+    internal val rumIntegrationEnabled: Boolean = true,
+    internal val gracefulModeEnabled: Boolean = true
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -23,11 +24,13 @@ data class FlagsConfiguration internal constructor(
         private var customExposureEndpoint: String? = null
         private var customFlagEndpoint: String? = null
         private var rumIntegrationEnabled: Boolean = true
+        private var gracefulModeEnabled: Boolean = true
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
          * This is enabled by default.
          * @param enabled Whether to enable exposure logging.
+         * @return this [Builder] instance for method chaining.
          */
         fun trackExposures(enabled: Boolean): Builder {
             trackExposures = enabled
@@ -41,7 +44,7 @@ data class FlagsConfiguration internal constructor(
          * Use this method to override the endpoint URL for testing or proxy purposes.
          *
          * @param endpoint The custom endpoint URL to use for exposure event uploads.
-         * @return this Builder instance for method chaining.
+         * @return this [Builder] instance for method chaining.
          */
         fun useCustomExposureEndpoint(endpoint: String): Builder {
             customExposureEndpoint = endpoint
@@ -54,6 +57,7 @@ data class FlagsConfiguration internal constructor(
          *
          * @param endpoint The full endpoint URL, e.g., https://dd-flags-proxy.example.com/flags.
          *                 If null, the default endpoint will be used.
+         * @return this [Builder] instance for method chaining.
          */
         fun useCustomFlagEndpoint(endpoint: String): Builder {
             customFlagEndpoint = endpoint
@@ -72,6 +76,26 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Configures error handling behavior in debug builds.
+         *
+         * Controls how the SDK responds to misuse errors like duplicate client creation or
+         * accessing non-existent clients.
+         *
+         * This setting has no impact on release builds. Release builds will always fail "gracefully".
+         *
+         * - **Debug (gracefulModeEnabled == false):** Crashes immediately to catch errors early
+         * - **Debug (gracefulModeEnabled == true):** Logs to Android Logcat at ERROR level
+         * - **Release:** Always uses graceful mode regardless of this setting
+         *
+         * @param enabled Whether to enable graceful mode in debug builds (default: true)
+         * @return this [Builder] instance for method chaining
+         */
+        fun gracefulModeEnabled(enabled: Boolean): Builder {
+            gracefulModeEnabled = enabled
+            return this
+        }
+
+        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
@@ -79,7 +103,8 @@ data class FlagsConfiguration internal constructor(
             trackExposures = trackExposures,
             customExposureEndpoint = customExposureEndpoint,
             customFlagEndpoint = customFlagEndpoint,
-            rumIntegrationEnabled = rumIntegrationEnabled
+            rumIntegrationEnabled = rumIntegrationEnabled,
+            gracefulModeEnabled = gracefulModeEnabled
         )
     }
 
