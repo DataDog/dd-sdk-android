@@ -9,7 +9,8 @@ package com.datadog.android.flags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
@@ -142,7 +143,7 @@ interface FlagsClient {
      * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject). Must be non-null.
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed. Cannot be null.
-     * @return [com.datadog.android.flags.model.ResolutionDetails] containing the value, variant, reason, error info, and metadata.
+     * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
      */
     fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
 
@@ -150,7 +151,7 @@ interface FlagsClient {
      * Builder for creating [FlagsClient] instances with custom configuration.
      *
      * The builder uses a selective override pattern: configuration fields set explicitly
-     * on the builder override the defaults from [com.datadog.android.flags.internal.FlagsFeature]. Fields not set on the
+     * on the builder override the defaults from [FlagsFeature]. Fields not set on the
      * builder use the feature-level defaults.
      *
      * ## Usage Examples
@@ -179,7 +180,7 @@ interface FlagsClient {
          * Creates a builder for a named [FlagsClient].
          *
          * The name is used to identify and retrieve this [FlagsClient] later via [get].
-         * Multiple [FlagsClient] instances with different names can coexist within the same [com.datadog.android.api.SdkCore].
+         * Multiple [FlagsClient] instances with different names can coexist within the same [SdkCore].
          *
          * @param name the client name. Must be non-empty.
          * @param sdkCore the SDK instance to associate with this client. Defaults to main instance.
@@ -193,7 +194,7 @@ interface FlagsClient {
          * Builds and registers a [FlagsClient] instance.
          *
          * This method:
-         * 1. Validates the [com.datadog.android.flags.internal.FlagsFeature] is enabled
+         * 1. Validates the [FlagsFeature] is enabled
          * 2. Creates and registers the client
          * 3. Returns the created client or [NoOpFlagsClient] on failure
          *
@@ -206,7 +207,7 @@ interface FlagsClient {
         fun build(): FlagsClient {
             // Validate that the Flags feature is enabled
             val flagsFeature = sdkCore
-                .getFeature(Feature.Companion.FLAGS_FEATURE_NAME)
+                .getFeature(FLAGS_FEATURE_NAME)
                 ?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
@@ -252,7 +253,7 @@ interface FlagsClient {
             val featureCore = sdkCore as FeatureSdkCore
             val logger = featureCore.internalLogger
 
-            val flagsFeature = featureCore.getFeature(Feature.Companion.FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
+            val flagsFeature = featureCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
                 logger.log(
@@ -349,7 +350,7 @@ interface FlagsClient {
                     env = env
                 )
 
-                val datastore = (featureSdkCore as FeatureSdkCore).getFeature(Feature.Companion.FLAGS_FEATURE_NAME)
+                val datastore = (featureSdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)
                     ?.dataStore
                 val flagsRepository = if (datastore != null) {
                     DefaultFlagsRepository(
@@ -393,7 +394,7 @@ interface FlagsClient {
         }
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {
-            val rumFeatureScope = featureSdkCore.getFeature(Feature.Companion.RUM_FEATURE_NAME)
+            val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)
 
             return rumFeatureScope?.let {
                 DefaultRumEvaluationLogger(it)
