@@ -36,6 +36,7 @@ import org.json.JSONObject
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
  */
+@Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
