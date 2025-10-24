@@ -7,9 +7,9 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
-import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -22,6 +22,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
@@ -359,7 +360,14 @@ internal class NoOpFlagsClientTest {
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
-            any(),
+            argThat { lambda ->
+                val message = lambda()
+                message.contains("resolve for flag '$fakeFlagKey'") &&
+                    message.contains("called on NoOpFlagsClient for client '$fakeClientName'") &&
+                    message.contains("(reason: $fakeReason)") &&
+                    message.contains("NoOpFlagsClient always returns default values") &&
+                    message.contains("Ensure FlagsClient.Builder(...).build() was called successfully.")
+            },
             eq(null),
             eq(false),
             eq(null)

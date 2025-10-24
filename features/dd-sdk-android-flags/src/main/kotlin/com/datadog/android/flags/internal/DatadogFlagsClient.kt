@@ -214,11 +214,8 @@ internal class DatadogFlagsClient(
         ) : InternalResolution<T>()
     }
 
-    private fun <T : Any> checkProviderReady(
-        flagKey: String,
-        defaultValue: T
-    ): InternalResolution.Error<T>? {
-        return if (flagsRepository.getEvaluationContext() == null) {
+    private fun <T : Any> checkProviderReady(flagKey: String, defaultValue: T): InternalResolution.Error<T>? =
+        if (flagsRepository.getEvaluationContext() == null) {
             InternalResolution.Error(
                 flagKey = flagKey,
                 defaultValue = defaultValue,
@@ -228,7 +225,6 @@ internal class DatadogFlagsClient(
         } else {
             null
         }
-    }
 
     /**
      * Fetches a flag from the repository and parses its value to the expected type.

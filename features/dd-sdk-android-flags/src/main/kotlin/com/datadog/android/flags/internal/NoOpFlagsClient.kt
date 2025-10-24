@@ -7,9 +7,9 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
