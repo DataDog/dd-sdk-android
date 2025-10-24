@@ -8,6 +8,7 @@ package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.NoOpFlagsClient
+import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -21,6 +22,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
@@ -308,6 +310,64 @@ internal class NoOpFlagsClientTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
             any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
+    // endregion
+
+    // region resolve()
+
+    @Test
+    fun `M return default value W resolve()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return PROVIDER_NOT_READY error code W resolve()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
+        assertThat(result.errorMessage).isEqualTo("Provider not ready - using fallback client")
+    }
+
+    @Test
+    fun `M log critical error W resolve()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+
+        // When
+        testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            argThat { lambda ->
+                val message = lambda()
+                message.contains("resolve for flag '$fakeFlagKey'") &&
+                    message.contains("called on NoOpFlagsClient for client '$fakeClientName'") &&
+                    message.contains("(reason: $fakeReason)") &&
+                    message.contains("NoOpFlagsClient always returns default values") &&
+                    message.contains("Ensure FlagsClient.Builder(...).build() was called successfully.")
+            },
             eq(null),
             eq(false),
             eq(null)

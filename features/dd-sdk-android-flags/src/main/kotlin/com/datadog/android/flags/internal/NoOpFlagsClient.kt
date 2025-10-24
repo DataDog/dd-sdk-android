@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
@@ -84,14 +85,21 @@ internal class NoOpFlagsClient(
 
     /**
      * Returns resolution details with the provided default value without any flag evaluation.
+     *
+     * Always returns [ErrorCode.PROVIDER_NOT_READY] to indicate the provider is not available.
+     *
      * @param T The type of the flag value. Must be non-null.
      * @param flagKey Ignored flag key.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
+     * @return [ResolutionDetails] containing the default value with PROVIDER_NOT_READY error.
      */
     override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
         logCriticalError("resolve for flag '$flagKey'")
-        return ResolutionDetails(defaultValue)
+        return ResolutionDetails(
+            value = defaultValue,
+            errorCode = ErrorCode.PROVIDER_NOT_READY,
+            errorMessage = "Provider not ready - using fallback client"
+        )
     }
 
     /**

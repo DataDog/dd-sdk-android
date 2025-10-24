@@ -36,6 +36,7 @@ import org.json.JSONObject
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
  */
+@Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
@@ -213,10 +214,23 @@ internal class DatadogFlagsClient(
         ) : InternalResolution<T>()
     }
 
+    private fun <T : Any> checkProviderReady(flagKey: String, defaultValue: T): InternalResolution.Error<T>? =
+        if (flagsRepository.getEvaluationContext() == null) {
+            InternalResolution.Error(
+                flagKey = flagKey,
+                defaultValue = defaultValue,
+                errorCode = ErrorCode.PROVIDER_NOT_READY,
+                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
+            )
+        } else {
+            null
+        }
+
     /**
      * Fetches a flag from the repository and parses its value to the expected type.
      *
      * This side-effect free function is the single source of truth for:
+     * - Checking if the provider is ready (evaluation context has been set)
      * - Fetching flags from the repository
      * - Validating type compatibility via [FlagValueConverter]
      * - Parsing flag values using the [FlagValueConverter]
@@ -232,6 +246,7 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
+        checkProviderReady(flagKey, defaultValue)?.let { return it }
         val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
         if (flagAndContext == null) {
             return InternalResolution.Error(

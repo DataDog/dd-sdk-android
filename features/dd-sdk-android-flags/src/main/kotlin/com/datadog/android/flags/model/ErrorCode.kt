@@ -11,6 +11,11 @@ package com.datadog.android.flags.model
  */
 enum class ErrorCode {
     /**
+     * The provider is not ready to resolve flags.
+     */
+    PROVIDER_NOT_READY,
+
+    /**
      * The flag could not be found.
      */
     FLAG_NOT_FOUND,
