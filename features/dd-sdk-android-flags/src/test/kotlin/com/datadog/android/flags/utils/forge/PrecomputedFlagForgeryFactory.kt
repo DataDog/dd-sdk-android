@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.utils.forge
 
-import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.featureflags.internal.model.VariationType
+import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.model.ResolutionReason
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

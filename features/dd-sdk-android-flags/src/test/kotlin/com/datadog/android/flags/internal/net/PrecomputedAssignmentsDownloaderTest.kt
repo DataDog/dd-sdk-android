@@ -8,8 +8,8 @@ package com.datadog.android.flags.internal.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.featureflags.internal.model.FlagsContext
-import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
