@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository

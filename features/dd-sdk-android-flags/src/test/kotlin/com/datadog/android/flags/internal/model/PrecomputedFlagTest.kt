@@ -6,7 +6,6 @@
 
 package com.datadog.android.flags.internal.model
 
-import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery

@@ -9,7 +9,6 @@ package com.datadog.android.flags.internal.model
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.FlagsConfiguration
-import com.datadog.android.flags.internal.model.FlagsContext
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
