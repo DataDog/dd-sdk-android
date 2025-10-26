@@ -3,7 +3,7 @@ class com.datadog.android.insights.DefaultInsightsCollector : com.datadog.androi
   override var maxSize: Int
   override var updateIntervalMs: Long
   override fun onAction()
-  override fun onNewView(String, String)
+  override fun onNewView(String)
   override fun onSlowFrame(Long, Long)
   override fun onLongTask(Long, Long)
   override fun onNetworkRequest(Long, Long)

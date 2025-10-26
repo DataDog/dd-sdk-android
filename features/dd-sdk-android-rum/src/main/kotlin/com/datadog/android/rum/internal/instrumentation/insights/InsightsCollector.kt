@@ -46,11 +46,10 @@ interface InsightsCollector {
     /**
      * Notifies the collector that a new view has been created.
      *
-     * @param viewId the unique identifier of the new view.
      * @param name the name of the new view.
      */
 
-    fun onNewView(viewId: String, name: String)
+    fun onNewView(name: String)
 
     /**
      * Notifies the collector that a user action has been detected.

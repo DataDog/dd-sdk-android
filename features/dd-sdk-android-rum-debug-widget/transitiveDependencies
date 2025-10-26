@@ -1,41 +1,25 @@
 Dependencies List
 
-androidx.activity:activity-ktx:1.7.2                            :   25 Kb
 androidx.activity:activity:1.7.2                                :  139 Kb
 androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
 androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
 androidx.arch.core:core-common:2.2.0                            :   11 Kb
 androidx.arch.core:core-runtime:2.2.0                           :    7 Kb
 androidx.collection:collection-jvm:1.4.5                        :  770 Kb
-androidx.collection:collection-ktx:1.4.5                        :  261 b 
 androidx.core:core-ktx:1.5.0                                    :  160 Kb
 androidx.core:core:1.8.0                                        : 1052 Kb
 androidx.customview:customview:1.1.0                            :   32 Kb
-androidx.fragment:fragment-ktx:1.6.2                            :   29 Kb
 androidx.fragment:fragment:1.6.2                                :  345 Kb
 androidx.lifecycle:lifecycle-common:2.6.2                       :   51 Kb
-androidx.lifecycle:lifecycle-livedata-core-ktx:2.6.2            :   20 Kb
 androidx.lifecycle:lifecycle-livedata-core:2.6.2                :   11 Kb
 androidx.lifecycle:lifecycle-livedata:2.6.2                     :   18 Kb
-androidx.lifecycle:lifecycle-runtime-ktx:2.6.2                  :   60 Kb
 androidx.lifecycle:lifecycle-runtime:2.6.2                      :   21 Kb
-androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2                :    4 Kb
 androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2         :   38 Kb
 androidx.lifecycle:lifecycle-viewmodel:2.6.2                    :   38 Kb
 androidx.loader:loader:1.0.0                                    :   32 Kb
-androidx.metrics:metrics-performance:1.0.0-beta03               :   49 Kb
-androidx.navigation:navigation-common:2.7.7                     :  180 Kb
-androidx.navigation:navigation-fragment:2.7.7                   :   92 Kb
-androidx.navigation:navigation-runtime:2.7.7                    :  126 Kb
-androidx.recyclerview:recyclerview:1.3.2                        :  399 Kb
-androidx.savedstate:savedstate-ktx:1.2.1                        :    3 Kb
 androidx.savedstate:savedstate:1.2.1                            :   19 Kb
-androidx.slidingpanelayout:slidingpanelayout:1.2.0              :   37 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb
-com.google.code.gson:gson:2.10.1                                :  276 Kb
-com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
-com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
@@ -43,5 +27,5 @@ org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :    8 Mb
+Total transitive dependencies size                              :    5 Mb
 
