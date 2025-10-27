@@ -19,6 +19,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
@@ -62,9 +63,7 @@ internal class FlagsFeatureTest {
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
 
         // Setup mockContext with default release build (flags = 0)
-        val applicationInfo = ApplicationInfo().apply {
-            flags = 0
-        }
+        val applicationInfo = ApplicationInfo()
         whenever(mockContext.applicationInfo) doReturn applicationInfo
 
         testedFeature = FlagsFeature(
@@ -264,14 +263,14 @@ internal class FlagsFeatureTest {
         testedFeature.onInitialize(debugContext)
 
         // When
-        testedFeature.logErrorWithPolicy(
-            "test message",
-            InternalLogger.Level.ERROR,
-            shouldCrashInStrict = false
-        )
+        assertDoesNotThrow {
+            testedFeature.logErrorWithPolicy(
+                "test message",
+                InternalLogger.Level.ERROR,
+                shouldCrashInStrict = false
+            )
+        }
 
-        // Then - uses android.util.Log.e which can't be easily verified in unit tests
-        // Just verify it doesn't crash and doesn't use internalLogger
         verifyNoInteractions(mockInternalLogger)
     }
 

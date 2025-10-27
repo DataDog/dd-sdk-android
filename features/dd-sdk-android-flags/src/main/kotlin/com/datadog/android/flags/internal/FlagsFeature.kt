@@ -42,7 +42,7 @@ internal class FlagsFeature(
     FeatureContextUpdateReceiver {
 
     @Volatile
-    private var initialized = false
+    private var isInitialized = false
 
     /**
      * Indicates whether the app is running in debug mode.
@@ -85,7 +85,7 @@ internal class FlagsFeature(
     }
 
     override fun onInitialize(appContext: Context) {
-        if (initialized) {
+        if (isInitialized) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -94,7 +94,7 @@ internal class FlagsFeature(
             return
         }
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        initialized = true
+        isInitialized = true
         sdkCore.setContextUpdateReceiver(this)
         dataWriter = createDataWriter()
         processor = ExposureEventsProcessor(dataWriter)
@@ -103,7 +103,7 @@ internal class FlagsFeature(
     override fun onStop() {
         sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpRecordWriter()
-        initialized = false // Allow re-initialization if feature is restarted
+        isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
             registeredClients.clear()
         }
@@ -159,8 +159,6 @@ internal class FlagsFeature(
     internal fun clearClients() = registeredClients.clear()
 
     // endregion
-
-    // region Logging
 
     /**
      * Logs an error message according to the graceful mode policy.
