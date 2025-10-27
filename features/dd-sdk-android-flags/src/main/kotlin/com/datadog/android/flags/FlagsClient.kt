@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
@@ -228,7 +229,7 @@ interface FlagsClient {
                 // Feature not enabled - use fallback logging (no feature to determine policy)
                 // Default to graceful behavior when feature not available
                 val logger = sdkCore.internalLogger
-                val logWithPolicy: (String, InternalLogger.Level) -> Unit = { message, level ->
+                val logWithPolicy: LogWithPolicy = { message, level ->
                     logger.log(level, InternalLogger.Target.USER, { message })
                 }
 
@@ -293,45 +294,41 @@ interface FlagsClient {
                 )
 
                 // No feature available to log through, so we use the logger directly.
-                val logWithPolicy: (String, InternalLogger.Level) -> Unit = { message, level ->
-                    logger.log(level, InternalLogger.Target.USER, { message })
-                }
-
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
-                    logWithPolicy = logWithPolicy
-                )
-            }
-
-            var client = flagsFeature.getClient(name)
-
-            if (client == null) {
-                val buildHint = if (name == DEFAULT_CLIENT_NAME) {
-                    "FlagsClient.Builder().build()"
-                } else {
-                    "FlagsClient.Builder(\"$name\").build()"
-                }
-
-                // Client not found, in strict mode this call will crash the app.
-                flagsFeature.logErrorWithPolicy(
-                    message = "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
-                        "Create a client first using: $buildHint. " +
-                        "Operating in no-op mode.",
-                    level = InternalLogger.Level.ERROR,
-                    shouldCrashInStrict = true
-                )
-
-                client = NoOpFlagsClient(
-                    name = name,
-                    reason = "Client '$name' not found - get() called before build()",
                     logWithPolicy = { message, level ->
-                        flagsFeature.logErrorWithPolicy(message, level, shouldCrashInStrict = false)
+                        logger.log(level, InternalLogger.Target.USER, { message })
                     }
                 )
             }
+            return flagsFeature.getClient(name) ?: handleClientNotFound(name, flagsFeature, sdkCore)
+        }
 
-            return client
+        private fun handleClientNotFound(name: String, flagsFeature: FlagsFeature, sdkCore: FeatureSdkCore): FlagsClient {
+            val buildHint = if (name == DEFAULT_CLIENT_NAME) {
+                "FlagsClient.Builder().build()"
+            } else {
+                "FlagsClient.Builder(\"$name\").build()"
+            }
+
+            // Client not found, in strict mode this call will crash the app.
+            flagsFeature.logErrorWithPolicy(
+                message = "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
+                    "Create a client first using: $buildHint. " +
+                    "Operating in no-op mode.",
+                level = InternalLogger.Level.ERROR,
+                shouldCrashInStrict = true
+            )
+
+            // Did not crash, not in strict mode, so return a NoOpFlagsClient that logs through the Feature's policy-driven logger.
+            return NoOpFlagsClient(
+                name = name,
+                reason = "Client '$name' not found - get() called before build()",
+                logWithPolicy = { message, level ->
+                    flagsFeature.logErrorWithPolicy(message, level, shouldCrashInStrict = false)
+                }
+            )
         }
 
         // region Internal
@@ -342,7 +339,8 @@ interface FlagsClient {
         internal fun createInternal(
             configuration: FlagsConfiguration,
             featureSdkCore: FeatureSdkCore,
-            flagsFeature: FlagsFeature
+            flagsFeature: FlagsFeature,
+            name: String = DEFAULT_CLIENT_NAME
         ): FlagsClient {
             val executorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
@@ -376,14 +374,14 @@ interface FlagsClient {
                     InternalLogger.Target.USER,
                     { "Missing required context parameters: $missingParams" }
                 )
-
                 return NoOpFlagsClient(
-                    name = "unknown",
+                    name = name,
                     reason = "Failed to create client - missing SDK context parameters: $missingParams",
                     logWithPolicy = logWithPolicy
                 )
             } else {
-                // Create FlagsContext combining core SDK context with feature configuration
+                // Build a [DatadogFlagsClient] instance from its dependencies.
+
                 val flagsContext = FlagsContext(
                     applicationId = applicationId,
                     clientToken = clientToken,
@@ -397,7 +395,7 @@ interface FlagsClient {
                     DefaultFlagsRepository(
                         featureSdkCore = featureSdkCore,
                         dataStore = datastore,
-                        instanceName = "default"
+                        instanceName = name
                     )
                 } else {
                     NoOpFlagsRepository()

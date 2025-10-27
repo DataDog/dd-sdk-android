@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -32,7 +33,7 @@ import org.mockito.quality.Strictness
 internal class NoOpFlagsClientTest {
 
     @Mock
-    lateinit var mockLogWithPolicy: (String, InternalLogger.Level) -> Unit
+    lateinit var mockLogWithPolicy: LogWithPolicy
 
     private lateinit var testedClient: NoOpFlagsClient
 
@@ -415,8 +416,8 @@ internal class NoOpFlagsClientTest {
         verify(mockLogWithPolicy).invoke(
             argThat {
                 startsWith(
-                    "resolveStructureValue for flag '$fakeFlagKey' "
-                    +"called on NoOpFlagsClient for client '$fakeClientName'"
+                    "resolveStructureValue for flag '$fakeFlagKey' " +
+                        "called on NoOpFlagsClient for client '$fakeClientName'"
                 )
             },
             eq(InternalLogger.Level.WARN)

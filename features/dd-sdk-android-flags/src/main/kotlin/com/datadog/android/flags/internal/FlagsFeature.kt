@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
@@ -27,9 +26,12 @@ import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
 
 /**
- * An implementation of [Feature] for getting and reporting
- * feature flags to the RUM dashboard.
+ * Type alias for a function that logs a message with a given level.
+ *
+ * Used to bridge between module components and a graceful policy-enabled logger.
  */
+internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
+
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
     internal val flagsConfiguration: FlagsConfiguration,
@@ -205,6 +207,7 @@ internal class FlagsFeature(
             }
         }
     }
+
     internal companion object {
         const val MAX_ITEMS_PER_BATCH = 50
         private const val LOG_TAG = "[Datadog Flags]"

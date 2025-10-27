@@ -69,6 +69,7 @@ data class FlagsConfiguration internal constructor(
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
          * @param enabled whether flag evaluations are added to views in RUM.
+         * @return this [Builder] instance for method chaining.
          */
         fun rumIntegrationEnabled(enabled: Boolean): Builder {
             rumIntegrationEnabled = enabled
@@ -88,7 +89,7 @@ data class FlagsConfiguration internal constructor(
          * - **Release:** Always uses graceful mode regardless of this setting
          *
          * @param enabled Whether to enable graceful mode in debug builds (default: true)
-         * @return this [Builder] instance for method chaining
+         * @return this [Builder] instance for method chaining.
          */
         fun gracefulModeEnabled(enabled: Boolean): Builder {
             gracefulModeEnabled = enabled
