@@ -13,9 +13,9 @@ data class com.datadog.android.profiling.ProfilingConfiguration
     fun build(): ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration
-data class com.datadog.android.profiling.model.ProfilingEvent
+data class com.datadog.android.profiling.model.ProfileEvent
   constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String)
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): ProfilingEvent
-    fun fromJsonObject(com.google.gson.JsonObject): ProfilingEvent
+    fun fromJson(kotlin.String): ProfileEvent
+    fun fromJsonObject(com.google.gson.JsonObject): ProfileEvent

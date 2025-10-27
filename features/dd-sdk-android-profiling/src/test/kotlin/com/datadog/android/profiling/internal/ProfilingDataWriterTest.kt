@@ -18,7 +18,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
-import com.datadog.android.profiling.model.ProfilingEvent
+import com.datadog.android.profiling.model.ProfileEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -108,7 +108,7 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
-        val expectedProfilingEvent = ProfilingEvent(
+        val expectedProfileEvent = ProfileEvent(
             start = formatIsoUtc(fakeResult.start),
             end = formatIsoUtc(fakeResult.end),
             attachments = listOf("perfetto.proto"),
@@ -123,7 +123,7 @@ internal class ProfilingDataWriterTest {
             eventType = eq(EventType.DEFAULT)
         )
         assertThat(argumentCaptor.firstValue.data).isEqualTo(
-            expectedProfilingEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+            expectedProfileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
         )
         assertThat(argumentCaptor.firstValue.metadata).isEqualTo(
             fakeByteArray

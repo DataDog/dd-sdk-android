@@ -14,7 +14,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
-import com.datadog.android.profiling.model.ProfilingEvent
+import com.datadog.android.profiling.model.ProfileEvent
 import java.io.File
 
 internal class ProfilingDataWriter(
@@ -51,17 +51,17 @@ internal class ProfilingDataWriter(
         if (byteData == null || byteData.isEmpty()) {
             return null
         }
-        val profilingEvent = createProfilingEvent(context, profilingResult)
+        val profileEvent = createProfileEvent(context, profilingResult)
         val serializedEvent =
-            profilingEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+            profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
         return RawBatchEvent(data = serializedEvent, metadata = byteData)
     }
 
-    private fun createProfilingEvent(
+    private fun createProfileEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult
-    ): ProfilingEvent {
-        return ProfilingEvent(
+    ): ProfileEvent {
+        return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
             attachments = listOf(PERFETTO_ATTACHMENT_NAME),
