@@ -305,7 +305,11 @@ interface FlagsClient {
             return flagsFeature.getClient(name) ?: handleClientNotFound(name, flagsFeature, sdkCore)
         }
 
-        private fun handleClientNotFound(name: String, flagsFeature: FlagsFeature, sdkCore: FeatureSdkCore): FlagsClient {
+        private fun handleClientNotFound(
+            name: String,
+            flagsFeature: FlagsFeature,
+            sdkCore: FeatureSdkCore
+        ): FlagsClient {
             val buildHint = if (name == DEFAULT_CLIENT_NAME) {
                 "FlagsClient.Builder().build()"
             } else {
@@ -347,7 +351,6 @@ interface FlagsClient {
             )
 
             val datadogContext = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
-            val internalLogger = featureSdkCore.internalLogger
 
             // Get required context parameters
             val clientToken = datadogContext?.clientToken
@@ -363,21 +366,18 @@ interface FlagsClient {
                     "env".takeIf { env == null }
                 ).joinToString(", ")
 
-                // Why not log through the feature policy logger?
-                val logWithPolicy: (String, InternalLogger.Level) -> Unit = { message, level ->
-                    internalLogger.log(level, InternalLogger.Target.USER, { message })
-                }
-
-                // This error here should maybe crash the app in strict mode?
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { "Missing required context parameters: $missingParams" }
+                flagsFeature.logErrorWithPolicy(
+                    message = "Missing required context parameters: $missingParams",
+                    level = InternalLogger.Level.ERROR,
+                    shouldCrashInStrict = true
                 )
+
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Failed to create client - missing SDK context parameters: $missingParams",
-                    logWithPolicy = logWithPolicy
+                    logWithPolicy = { message, level ->
+                        flagsFeature.logErrorWithPolicy(message, level, shouldCrashInStrict = false)
+                    }
                 )
             } else {
                 // Build a [DatadogFlagsClient] instance from its dependencies.
