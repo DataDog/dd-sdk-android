@@ -63,8 +63,8 @@ internal class RumSessionScopeStartupManagerImpl(
 
     private var lastScenario: RumStartupScenario? = null
 
-    private var ttfdEventForScenario: RumRawEvent.AppStartTTFDEvent? = null
-    private var ttidEventForScenario: RumRawEvent.AppStartTTIDEvent? = null
+    private var ttfdReportedForScenario: Boolean = false
+    private var ttidReportedForScenario: Boolean = false
 
     private var ttfdReportedForSession = false
     private var ttidSentForSession = false
@@ -74,8 +74,8 @@ internal class RumSessionScopeStartupManagerImpl(
     override fun onAppStartEvent(event: RumRawEvent.AppStartEvent) {
         lastScenario = event.scenario
 
-        ttfdEventForScenario = null
-        ttidEventForScenario = null
+        ttfdReportedForScenario = false
+        ttidReportedForScenario = false
 
         appStartCount++
     }
@@ -88,7 +88,7 @@ internal class RumSessionScopeStartupManagerImpl(
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
-        ttidEventForScenario = event
+        ttidReportedForScenario = true
 
         rumAppStartupTelemetryReporter.reportTTID(
             info = event.info,
@@ -123,7 +123,7 @@ internal class RumSessionScopeStartupManagerImpl(
             )
         }.submit()
 
-        if (ttfdEventForScenario != null) {
+        if (ttfdReportedForScenario) {
             /**
              * [com.datadog.android.rum.RumMonitor.reportAppFullyDisplayed] was called earlier than TTID
              * was computed, reporting TTID value also as TTFD.
@@ -171,9 +171,9 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
-        ttfdEventForScenario = event
+        ttfdReportedForScenario = true
 
-        if (ttidEventForScenario == null) {
+        if (!ttidReportedForScenario) {
             sdkCore.internalLogger.log(
                 level = InternalLogger.Level.WARN,
                 target = InternalLogger.Target.USER,
