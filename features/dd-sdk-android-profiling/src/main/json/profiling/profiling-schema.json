@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
   "$id": "profiling-schema.json",
-  "title": "ProfilingEvent",
+  "title": "ProfileEvent",
   "type": "object",
-  "description": "Structure holding information about a Profiling event",
+  "description": "Structure holding information about a ProfileEvent",
   "properties": {
     "attachments": {
       "type": "array",
@@ -17,12 +17,12 @@
     },
     "start": {
       "type": "string",
-      "description": "The profile start time in ISO 8601 UTC format (yyyy-MM-dd'T'HH:mm:ss'Z')",
+      "description": "The profile start time in ISO 8601 UTC format (yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
       "readOnly": true
     },
     "end": {
       "type": "string",
-      "description": " The profile end time in ISO 8601 UTC format (yyyy-MM-dd'T'HH:mm:ss'Z')",
+      "description": " The profile end time in ISO 8601 UTC format (yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
       "readOnly": true
     },
     "family": {
