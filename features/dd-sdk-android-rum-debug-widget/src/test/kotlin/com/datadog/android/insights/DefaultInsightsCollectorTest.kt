@@ -99,15 +99,15 @@ internal class DefaultInsightsCollectorTest {
     }
 
     @Test
-    fun `M append SlowFrame event W onSlowFrame()`() {
+    fun `M append SlowFrame event W onSlowFrame()`(@LongForgery(min = 0) fakeDurationNs: Long) {
         // When
-        testedInsightsCollector.onSlowFrame(startedTimestamp = 0L, durationNs = 16_700_000L)
+        testedInsightsCollector.onSlowFrame(startedTimestamp = 0L, durationNs = fakeDurationNs)
 
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
         val e = testedInsightsCollector.eventsState.single()
         assertThat(e is TimelineEvent.SlowFrame).isTrue
-        assertThat(e.durationNs).isEqualTo(16_700_000L)
+        assertThat(e.durationNs).isEqualTo(fakeDurationNs)
     }
 
     @Test
@@ -136,10 +136,10 @@ internal class DefaultInsightsCollectorTest {
 
     @Test
     fun `M set vmRssMb from memory vital W onMemoryVital() {non-null}`(
-        @DoubleForgery(min = 0.0) fakememoryValue: Double
+        @DoubleForgery(min = 0.0) fakeMemoryValue: Double
     ) {
         // When
-        testedInsightsCollector.onMemoryVital(memoryValue = fakememoryValue)
+        testedInsightsCollector.onMemoryVital(memoryValue = fakeMemoryValue)
 
         // Then
         verify(mockHandler).post(any())

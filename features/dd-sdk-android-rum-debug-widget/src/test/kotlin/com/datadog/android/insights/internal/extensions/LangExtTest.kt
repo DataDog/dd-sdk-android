@@ -6,9 +6,6 @@
 
 package com.datadog.android.insights.internal.extensions
 
-import android.text.SpannableStringBuilder
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -30,7 +27,7 @@ import kotlin.math.roundToInt
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class LangExtTest {
+internal class LangExtTest {
 
     @Test
     fun `M convert nanos to millis W ms`(@LongForgery fakeNanos: Long) {
@@ -115,43 +112,5 @@ class LangExtTest {
         called = false
         multiLet(fakeA, null as Int?) { _, _ -> called = true }
         assertThat(called).isFalse()
-    }
-
-    // endregion
-
-    // region SpannableStringBuilder.appendColored
-
-    @Test
-    fun `M append text and set ForegroundColorSpan W appendColored {non-empty}`(
-        @StringForgery fakeText: String,
-        @IntForgery fakeColor: Int
-    ) {
-        val testedBuilder = SpannableStringBuilder()
-
-        testedBuilder.appendColored(fakeText, fakeColor)
-
-        assertThat(testedBuilder.toString()).isEqualTo(fakeText)
-
-        val spans = testedBuilder.getSpans(0, testedBuilder.length, ForegroundColorSpan::class.java)
-        assertThat(spans).hasSize(1)
-        val span = spans.single()
-        assertThat(testedBuilder.getSpanStart(span)).isEqualTo(0)
-        assertThat(testedBuilder.getSpanEnd(span)).isEqualTo(fakeText.length)
-        assertThat(span.foregroundColor).isEqualTo(fakeColor)
-        assertThat(testedBuilder.getSpanFlags(span)).isEqualTo(Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-    }
-
-    @Test
-    fun `M no-op W appendColored {empty}`() {
-        // Given
-        val testedBuilder = SpannableStringBuilder("Xeifba")
-
-        // When
-        testedBuilder.appendColored("", 123)
-
-        // Then
-        assertThat(testedBuilder.toString()).isEqualTo("X")
-        val spans = testedBuilder.getSpans(0, testedBuilder.length, ForegroundColorSpan::class.java)
-        assertThat(spans).isEmpty()
     }
 }
