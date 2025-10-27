@@ -63,13 +63,20 @@ internal class RumSessionScopeStartupManagerImpl(
 
     private var lastScenario: RumStartupScenario? = null
 
-    private var ttfdSentForSession = false
+    private var ttfdReportedForScenario: Boolean = false
+    private var ttidReportedForScenario: Boolean = false
+
+    private var ttfdReportedForSession = false
     private var ttidSentForSession = false
 
     private var appStartCount = 0
 
     override fun onAppStartEvent(event: RumRawEvent.AppStartEvent) {
         lastScenario = event.scenario
+
+        ttfdReportedForScenario = false
+        ttidReportedForScenario = false
+
         appStartCount++
     }
 
@@ -81,6 +88,8 @@ internal class RumSessionScopeStartupManagerImpl(
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
+        ttidReportedForScenario = true
+
         rumAppStartupTelemetryReporter.reportTTID(
             info = event.info,
             indexInSession = appStartCount - 1
@@ -113,8 +122,25 @@ internal class RumSessionScopeStartupManagerImpl(
                 )
             )
         }.submit()
+
+        if (ttfdReportedForScenario) {
+            /**
+             * [com.datadog.android.rum.RumMonitor.reportAppFullyDisplayed] was called earlier than TTID
+             * was computed, reporting TTID value also as TTFD.
+             */
+            sendTTFDEvent(
+                datadogContext = datadogContext,
+                writeScope = writeScope,
+                writer = writer,
+                rumContext = rumContext,
+                customAttributes = customAttributes,
+                durationNs = event.info.durationNs,
+                scenario = event.info.scenario
+            )
+        }
     }
 
+    @Suppress("ReturnCount")
     override fun onTTFDEvent(
         event: RumRawEvent.AppStartTTFDEvent,
         datadogContext: DatadogContext,
@@ -123,11 +149,11 @@ internal class RumSessionScopeStartupManagerImpl(
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
-        if (ttfdSentForSession) {
+        if (ttfdReportedForSession) {
             return
         }
 
-        ttfdSentForSession = true
+        ttfdReportedForSession = true
 
         val scenario = lastScenario
 
@@ -145,6 +171,42 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
+        ttfdReportedForScenario = true
+
+        if (!ttidReportedForScenario) {
+            sdkCore.internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.USER,
+                messageBuilder = {
+                    REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE
+                },
+                throwable = null,
+                onlyOnce = false,
+                additionalProperties = null
+            )
+            return
+        }
+
+        sendTTFDEvent(
+            datadogContext = datadogContext,
+            writeScope = writeScope,
+            writer = writer,
+            rumContext = rumContext,
+            customAttributes = customAttributes,
+            durationNs = event.eventTime.nanoTime - scenario.initialTime.nanoTime,
+            scenario = scenario
+        )
+    }
+
+    private fun sendTTFDEvent(
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>,
+        rumContext: RumContext,
+        customAttributes: Map<String, Any?>,
+        durationNs: Long,
+        scenario: RumStartupScenario
+    ) {
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             rumVitalEventHelper.newVitalEvent(
                 timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
@@ -159,7 +221,7 @@ internal class RumSessionScopeStartupManagerImpl(
                     name = null,
                     description = null,
                     appLaunchMetric = VitalEvent.AppLaunchMetric.TTFD,
-                    duration = event.eventTime.nanoTime - scenario.initialTime.nanoTime,
+                    duration = durationNs,
                     startupType = scenario.toVitalStartupType(),
                     isPrewarmed = null,
                     hasSavedInstanceStateBundle = scenario.hasSavedInstanceStateBundle
@@ -170,6 +232,9 @@ internal class RumSessionScopeStartupManagerImpl(
 
     companion object {
         internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
-            "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected"
+            "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
+
+        internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE =
+            "RumMonitor.reportAppFullyDisplayed was called before TTID was computed, will report TTID as TTFD."
     }
 }
