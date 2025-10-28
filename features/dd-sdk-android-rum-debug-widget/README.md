@@ -5,4 +5,4 @@ It is intended for debugging and development purposes only and should not be inc
 
 As shown in the screenshot below, the widget provides a floating overlay that displays key metrics such as memory usage, CPU load and RUM events.
 
-![screenshot_rumdebugwidget.png](../../docs/images/screenshot_rumdebugwidget.png)
+<img src="../../docs/images/screenshot_rumdebugwidget.png" width="400" alt="Datadog RUM Debug Widget"/>
