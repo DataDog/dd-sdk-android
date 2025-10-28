@@ -33,7 +33,7 @@ import com.datadog.android.rumdebugwidget.R
  * implementation registered in the SDK.
  * This overlay is only displayed when the app is running in debug mode and when an instance of
  * [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered.
- * It can be attached to any [android.app.Activity] by calling [attach].
+ * It can be attached to any [Activity] by calling [attach].
  */
 @ExperimentalRumApi
 class LocalInsightOverlay : Overlay, InsightsUpdatesListener {

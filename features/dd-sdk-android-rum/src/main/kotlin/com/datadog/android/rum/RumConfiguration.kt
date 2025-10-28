@@ -15,6 +15,7 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -346,7 +347,7 @@ data class RumConfiguration internal constructor(
         fun setInsightsCollector(
             insightsCollector: InsightsCollector?
         ): Builder {
-            rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
+            rumConfig = rumConfig.copy(insightsCollector = insightsCollector ?: NoOpInsightsCollector())
             return this
         }
 
