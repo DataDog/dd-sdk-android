@@ -194,7 +194,7 @@ internal class RumFeature(
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
-        insightsCollector = configuration.insightsCollector ?: NoOpInsightsCollector()
+        insightsCollector = configuration.insightsCollector
 
         dataWriter = createDataWriter(
             configuration,
@@ -740,7 +740,7 @@ internal class RumFeature(
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
-        val insightsCollector: InsightsCollector?
+        val insightsCollector: InsightsCollector
     )
 
     internal companion object {
