@@ -2,6 +2,7 @@ datadog:
   UnsafeThirdPartyFunctionCall:
     knownSafeCalls:
       # region Android APIs
+      - "android.app.Activity.findViewById(kotlin.Int)"
       - "android.app.Activity.getSystemService(kotlin.String)"
       - "android.app.Activity.hashCode()"
       - "android.app.Application.registerActivityLifecycleCallbacks(android.app.Application.ActivityLifecycleCallbacks?)"
@@ -97,6 +98,7 @@ datadog:
       - "android.view.resolveSize(kotlin.Int, kotlin.Int)"
       - "android.view.View.addOnAttachStateChangeListener(android.view.View.OnAttachStateChangeListener?)"
       - "android.view.View.animate()"
+      - "android.view.View.bringToFront()"
       - "android.view.View.findViewById(kotlin.Int)"
       - "android.view.View.getChildAt(kotlin.Int)"
       - "android.view.View.getTag(kotlin.Int)"
@@ -109,8 +111,11 @@ datadog:
       - "android.view.View.setOnTouchListener(android.view.View.OnTouchListener?)"
       - "android.view.View.setTag(kotlin.Int, kotlin.Any?)"
       - "android.view.View.takeIf(kotlin.Function1)"
+      - "android.view.ViewGroup.addView(android.view.View?, android.view.ViewGroup.LayoutParams?)"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
       - "android.view.ViewGroup.getChildAt(kotlin.Int)"
+      - "android.view.ViewGroup.LayoutParams.constructor(kotlin.Int, kotlin.Int)"
+      - "android.view.ViewGroup.removeView(android.view.View?)"
       - "android.view.ViewPropertyAnimator.alpha(kotlin.Float)"
       - "android.view.ViewPropertyAnimator.cancel()"
       - "android.view.ViewPropertyAnimator.scaleX(kotlin.Float)"

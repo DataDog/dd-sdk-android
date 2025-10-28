@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights
+package com.datadog.android.insights.overlay
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.view.isVisible
+import com.datadog.android.insights.DefaultInsightsCollector
 import com.datadog.android.insights.internal.InsightStateStorage
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
@@ -35,8 +36,9 @@ import com.datadog.android.rumdebugwidget.R
  * It can be attached to any [android.app.Activity] by calling [attach].
  */
 @ExperimentalRumApi
-class LocalInsightOverlay : InsightsUpdatesListener {
+class LocalInsightOverlay : Overlay, InsightsUpdatesListener {
 
+    private var root: View? = null
     private var viewName: TextView? = null
     private var timelineView: TimelineView? = null
     private var fab: View? = null
@@ -65,76 +67,117 @@ class LocalInsightOverlay : InsightsUpdatesListener {
      */
     @SuppressLint("SetTextI18n")
     @Suppress("LongMethod")
-    fun attach(activity: Activity) {
+    override fun attach(activity: Activity) {
         if (insightsCollector == null) return
+
+        val parent = activity.findViewById<ViewGroup>(android.R.id.content)
+
+        if (root == null) {
+            val overlayView = activity.layoutInflater.inflate(
+                R.layout.layout_dd_insights_overlay,
+                parent,
+                false
+            )
+
+            root = overlayView
+
+            viewName = overlayView.findViewById(R.id.view_name)
+            timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline)?.apply {
+                setOnClickListener {
+                    isPaused = !isPaused
+                    setPaused(isPaused)
+                }
+            }
+
+            timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend)?.apply {
+                text = SpannableStringBuilder()
+                    .append(SEP)
+                    .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
+                    .appendColored(RESOURCE, color(R.color.timeline_resource)).append(SEP)
+                    .appendColored(SLOW_FRAME, color(R.color.timeline_slow_frame)).append(SEP)
+                    .appendColored(FROZEN_FRAME, color(R.color.timeline_freeze_frame)).append(SEP)
+            }
+
+            fab = overlayView.findViewById(R.id.fab)
+            cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (tics/s)")
+            vmMemoryValue = overlayView.setupChartView(R.id.vital_mem, "MEM (mb)")
+            nativeMemoryValue = overlayView.setupChartView(R.id.vital_native, "Native (mb)")
+            threadsValue = overlayView.setupChartView(
+                id = R.id.vital_threads,
+                labelText = "Threads",
+                enableChart = false
+            )
+            gcValue = overlayView.setupChartView(
+                id = R.id.vital_gc,
+                labelText = "GC (calls/s)",
+                enableChart = false
+            )
+            slowFrameRate = overlayView.setupChartView(
+                id = R.id.vital_slow_frame_rate,
+                labelText = "SFR (ms/s)",
+                enableChart = false
+            )
+
+            insightsCollector?.addUpdateListener(this)
+        }
+
         val storage = InsightStateStorage(activity)
 
-        val overlayView = activity.layoutInflater.inflate(
-            R.layout.layout_dd_insights_overlay,
-            activity.window.decorView as ViewGroup,
-            true
-        )
-        val widgetView = overlayView.findViewById<View>(R.id.insights_widget).apply {
-            setOnClickListener {
-                storage.widgetDisplayed = false
-                it.animateVisibility(false)
-                fab?.animateVisibility(true)
+        root?.let { overlayView ->
+            val widgetView = overlayView.findViewById<View>(
+                R.id.insights_widget
+            ).apply {
+                setOnClickListener {
+                    storage.widgetDisplayed = false
+                    it.animateVisibility(false)
+                    fab?.animateVisibility(true)
+                }
+                setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
+                restoreVisibility(storage.widgetDisplayed)
             }
-            setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
-            restoreVisibility(storage.widgetDisplayed)
+
+            fab?.apply {
+                setOnClickListener {
+                    storage.widgetDisplayed = true
+                    it.animateVisibility(false)
+                    widgetView?.animateVisibility(true)
+                }
+                setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
+                restoreVisibility(!storage.widgetDisplayed)
+            }
         }
 
-        viewName = overlayView.findViewById(R.id.view_name)
-        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline)?.apply {
-            setOnClickListener {
-                isPaused = !isPaused
-                timelineView?.setPaused(isPaused)
+        root?.let { v ->
+            (v.parent as? ViewGroup)?.removeView(v)
+            if (v.parent != parent) {
+                parent.addView(
+                    v,
+                    ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                )
             }
+            v.bringToFront()
         }
-        timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend)?.apply {
-            text = SpannableStringBuilder()
-                .append(SEP)
-                .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
-                .appendColored(RESOURCE, color(R.color.timeline_resource)).append(SEP)
-                .appendColored(SLOW_FRAME, color(R.color.timeline_slow_frame)).append(SEP)
-                .appendColored(FROZEN_FRAME, color(R.color.timeline_freeze_frame)).append(SEP)
-        }
-        fab = overlayView.findViewById<View>(R.id.fab).apply {
-            setOnClickListener {
-                storage.widgetDisplayed = true
-                it.animateVisibility(false)
-                widgetView?.animateVisibility(true)
-            }
-            setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
-            restoreVisibility(!storage.widgetDisplayed)
-        }
-        cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (tics/s)")
-        vmMemoryValue = overlayView.setupChartView(R.id.vital_mem, "MEM (mb)")
-        nativeMemoryValue = overlayView.setupChartView(R.id.vital_native, "Native (mb)")
-        threadsValue = overlayView.setupChartView(
-            id = R.id.vital_threads,
-            labelText = "Threads",
-            enableChart = false
-        )
-        gcValue = overlayView.setupChartView(
-            id = R.id.vital_gc,
-            labelText = "GC (calls/s)",
-            enableChart = false
-        )
-        slowFrameRate = overlayView.setupChartView(
-            id = R.id.vital_slow_frame_rate,
-            labelText = "SFR (ms/s)",
-            enableChart = false
-        )
-
-        insightsCollector?.addUpdateListener(this)
     }
 
-    /**
-     * Detaches the overlay from the current [Activity].
-     */
-    fun detach() {
+    override fun destroy() {
+        (root?.parent as? ViewGroup)?.removeView(root) // detach
         insightsCollector?.removeUpdateListener(this)
+
+        root = null
+
+        viewName = null
+        timelineView = null
+        fab = null
+        cpuValue = null
+        vmMemoryValue = null
+        nativeMemoryValue = null
+        threadsValue = null
+        gcValue = null
+        slowFrameRate = null
+        timelineLegend = null
     }
 
     private fun View.restoreVisibility(shouldBeVisible: Boolean) {
