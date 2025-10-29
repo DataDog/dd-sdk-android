@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -18,10 +19,10 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentMatchers.argThat
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -32,7 +33,7 @@ import org.mockito.quality.Strictness
 internal class NoOpFlagsClientTest {
 
     @Mock
-    lateinit var mockInternalLogger: InternalLogger
+    lateinit var mockLogWithPolicy: LogWithPolicy
 
     private lateinit var testedClient: NoOpFlagsClient
 
@@ -47,7 +48,7 @@ internal class NoOpFlagsClientTest {
         testedClient = NoOpFlagsClient(
             name = fakeClientName,
             reason = fakeReason,
-            logger = mockInternalLogger
+            logWithPolicy = mockLogWithPolicy
         )
     }
 
@@ -72,7 +73,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W setEvaluationContext()`(forge: Forge) {
+    fun `M log warning W setEvaluationContext()`(forge: Forge) {
         // Given
         val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
 
@@ -80,13 +81,14 @@ internal class NoOpFlagsClientTest {
         testedClient.setEvaluationContext(fakeContext)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
+
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "setEvaluationContext called on NoOpFlagsClient for client '$fakeClientName'"
+                )
+            },
+            eq(InternalLogger.Level.WARN)
         )
     }
 
@@ -121,7 +123,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W resolveBooleanValue()`(forge: Forge) {
+    fun `M log warning W resolveBooleanValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
@@ -130,13 +132,13 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "resolveBooleanValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+                )
+            },
+            eq(InternalLogger.Level.WARN)
         )
     }
 
@@ -171,7 +173,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W resolveStringValue()`(forge: Forge) {
+    fun `M log warning W resolveStringValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
@@ -180,13 +182,13 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "resolveStringValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+                )
+            },
+            eq(InternalLogger.Level.WARN)
         )
     }
 
@@ -234,7 +236,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W resolveDoubleValue()`(forge: Forge) {
+    fun `M log warning W resolveDoubleValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
@@ -243,13 +245,13 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "resolveDoubleValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+                )
+            },
+            eq(InternalLogger.Level.WARN)
         )
     }
 
@@ -297,7 +299,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W resolveIntValue()`(forge: Forge) {
+    fun `M log warning W resolveIntValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anInt()
@@ -306,13 +308,13 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "resolveIntValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+                )
+            },
+            eq(InternalLogger.Level.WARN)
         )
     }
 
@@ -348,7 +350,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W resolve()`(forge: Forge) {
+    fun `M log warning W resolve()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
@@ -357,20 +359,13 @@ internal class NoOpFlagsClientTest {
         testedClient.resolve(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            argThat { lambda ->
-                val message = lambda()
-                message.contains("resolve for flag '$fakeFlagKey'") &&
-                    message.contains("called on NoOpFlagsClient for client '$fakeClientName'") &&
-                    message.contains("(reason: $fakeReason)") &&
-                    message.contains("NoOpFlagsClient always returns default values") &&
-                    message.contains("Ensure FlagsClient.Builder(...).build() was called successfully.")
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "resolve for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+                )
             },
-            eq(null),
-            eq(false),
-            eq(null)
+            eq(InternalLogger.Level.WARN)
         )
     }
 
@@ -410,7 +405,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W resolveStructureValue()`(forge: Forge) {
+    fun `M log warning W resolveStructureValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
 
@@ -418,13 +413,14 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveStructureValue(fakeFlagKey, JSONObject())
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
+        verify(mockLogWithPolicy).invoke(
+            argThat {
+                startsWith(
+                    "resolveStructureValue for flag '$fakeFlagKey' " +
+                        "called on NoOpFlagsClient for client '$fakeClientName'"
+                )
+            },
+            eq(InternalLogger.Level.WARN)
         )
     }
 

@@ -19,6 +19,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun useCustomExposureEndpoint(String): Builder
     fun useCustomFlagEndpoint(String): Builder
     fun rumIntegrationEnabled(Boolean): Builder
+    fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
   companion object 
 enum com.datadog.android.flags.model.ErrorCode

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -312,7 +312,11 @@ internal class FlagsClientTest {
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
-            any(),
+            argThat {
+                invoke().startsWith(
+                    "[Datadog Flags] Attempted to create a FlagsClient named 'default', but one already exists."
+                )
+            },
             eq(null),
             eq(false),
             eq(null)
@@ -338,16 +342,61 @@ internal class FlagsClientTest {
 
     @Test
     fun `M return NoOpClient W Builder#build() {flags feature not enabled}`() {
+        // Given - create a mock SDK core with no feature enabled
+        val mockUninitializedCore = mock<FeatureSdkCore>()
+        val mockLogger = mock<InternalLogger>()
+        whenever(mockUninitializedCore.internalLogger).thenReturn(mockLogger)
+        whenever(mockUninitializedCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(null)
+
         // When - build when feature is not enabled
-        val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
+        val client = FlagsClient.Builder(sdkCore = mockUninitializedCore).build()
 
         // Then - should return NoOpClient
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+        // Verify error was logged
+        verify(mockLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            argThat {
+                invoke() == "Failed to create FlagsClient named 'default': Flags feature must be " +
+                    "enabled first. Call Flags.enable() before creating clients. " +
+                    "Operating in no-op mode."
+            },
+            eq(null),
+            eq(false),
+            eq(null)
+        )
     }
 
     // endregion
 
     // region get() API Tests
+
+    @Test
+    fun `M return NoOpClient W get() {flags feature not enabled}`() {
+        // Given - create a mock SDK core with no feature enabled
+        val mockUninitializedCore = mock<FeatureSdkCore>()
+        val mockLogger = mock<InternalLogger>()
+        whenever(mockUninitializedCore.internalLogger).thenReturn(mockLogger)
+        whenever(mockUninitializedCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(null)
+        whenever(mockUninitializedCore.name).thenReturn("test-sdk")
+
+        // When
+        val client = FlagsClient.get(sdkCore = mockUninitializedCore)
+
+        // Then - should return NoOpClient
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+
+        // Verify error was logged
+        verify(mockLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            argThat { invoke() == "Flags feature is not enabled. Returning NoOpFlagsClient." },
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
 
     @Test
     fun `M return NoOpClient W get() {default client doesn't exist}`() {
@@ -368,7 +417,11 @@ internal class FlagsClientTest {
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
-            any(),
+            argThat {
+                invoke().startsWith(
+                    "[Datadog Flags] No FlagsClient with name 'default' exists for SDK instance 'test-sdk'."
+                )
+            },
             eq(null),
             eq(false),
             eq(null)

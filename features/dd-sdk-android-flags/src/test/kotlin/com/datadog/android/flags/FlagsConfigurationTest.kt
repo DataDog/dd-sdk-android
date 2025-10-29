@@ -28,6 +28,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.trackExposures).isTrue()
         assertThat(configuration.customExposureEndpoint).isNull()
         assertThat(configuration.customFlagEndpoint).isNull()
+        assertThat(configuration.gracefulModeEnabled).isTrue()
     }
 
     @Test
@@ -101,6 +102,44 @@ internal class FlagsConfigurationTest {
         assertThat(thirdConfiguration.trackExposures).isTrue()
         assertThat(thirdConfiguration.customExposureEndpoint).isEqualTo(fakeCustomExposureEndpoint)
         assertThat(thirdConfiguration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
+    }
+
+    @Test
+    fun `M set gracefulModeEnabled to true W Builder { gracefulModeEnabled(true) }`() {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+
+        // When
+        builder.gracefulModeEnabled(true)
+        val configuration = builder.build()
+
+        // Then
+        assertThat(configuration.gracefulModeEnabled).isTrue()
+    }
+
+    @Test
+    fun `M set gracefulModeEnabled to false W Builder { gracefulModeEnabled(false) }`() {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+
+        // When
+        builder.gracefulModeEnabled(false)
+        val configuration = builder.build()
+
+        // Then
+        assertThat(configuration.gracefulModeEnabled).isFalse()
+    }
+
+    @Test
+    fun `M chain gracefulModeEnabled W Builder { returns builder }`() {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+
+        // When
+        val returnedBuilder = builder.gracefulModeEnabled(false)
+
+        // Then
+        assertThat(returnedBuilder).isSameAs(builder)
     }
 
     // endregion
