@@ -3,7 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+
 package com.datadog.android.flags.internal
+
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import com.datadog.android.api.InternalLogger
@@ -155,7 +157,7 @@ internal class FlagsFeatureTest {
     @Test
     fun `M log through internalLogger W logErrorWithPolicy() { release build }`() {
         // Given - release build (not debuggable)
-        val releaseAppInfo = ApplicationInfo().apply { flags = 0 }
+        val releaseAppInfo = ApplicationInfo()
         val releaseContext = mock<Context>()
         whenever(releaseContext.applicationInfo).thenReturn(releaseAppInfo)
         val config = FlagsConfiguration.Builder().build()
@@ -179,7 +181,7 @@ internal class FlagsFeatureTest {
     @Test
     fun `M log through internalLogger W logErrorWithPolicy() { release build, gracefulModeEnabled false }`() {
         // Given - release build should ignore gracefulModeEnabled setting
-        val releaseAppInfo = ApplicationInfo().apply { flags = 0 }
+        val releaseAppInfo = ApplicationInfo()
         val releaseContext = mock<Context>()
         whenever(releaseContext.applicationInfo).thenReturn(releaseAppInfo)
         val config = FlagsConfiguration.Builder()
@@ -205,9 +207,7 @@ internal class FlagsFeatureTest {
     @Test
     fun `M log to Android Logcat W logErrorWithPolicy() { debug build, graceful enabled }`() {
         // Given - debug build with gracefulModeEnabled=true
-        val debugAppInfo = ApplicationInfo().apply {
-            flags = ApplicationInfo.FLAG_DEBUGGABLE
-        }
+        val debugAppInfo = ApplicationInfo().apply { flags = ApplicationInfo.FLAG_DEBUGGABLE }
         val debugContext = mock<Context>()
         whenever(debugContext.applicationInfo).thenReturn(debugAppInfo)
         val config = FlagsConfiguration.Builder()
@@ -227,9 +227,7 @@ internal class FlagsFeatureTest {
     @Test
     fun `M crash W logErrorWithPolicy() { debug build, graceful disabled, shouldCrash true }`() {
         // Given - debug build with strict mode
-        val debugAppInfo = ApplicationInfo().apply {
-            flags = ApplicationInfo.FLAG_DEBUGGABLE
-        }
+        val debugAppInfo = ApplicationInfo().apply { flags = ApplicationInfo.FLAG_DEBUGGABLE }
         val debugContext = mock<Context>()
         whenever(debugContext.applicationInfo).thenReturn(debugAppInfo)
         val config = FlagsConfiguration.Builder()
@@ -251,9 +249,7 @@ internal class FlagsFeatureTest {
     @Test
     fun `M log to Android Logcat W logErrorWithPolicy() { debug build, graceful disabled, shouldCrash false }`() {
         // Given - debug build with strict mode but shouldCrashInStrict=false
-        val debugAppInfo = ApplicationInfo().apply {
-            flags = ApplicationInfo.FLAG_DEBUGGABLE
-        }
+        val debugAppInfo = ApplicationInfo().apply { flags = ApplicationInfo.FLAG_DEBUGGABLE }
         val debugContext = mock<Context>()
         whenever(debugContext.applicationInfo).thenReturn(debugAppInfo)
         val config = FlagsConfiguration.Builder()

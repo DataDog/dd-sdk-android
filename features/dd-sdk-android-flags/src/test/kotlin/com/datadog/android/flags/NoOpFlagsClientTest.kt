@@ -73,7 +73,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W setEvaluationContext()`(forge: Forge) {
+    fun `M log warning W setEvaluationContext()`(forge: Forge) {
         // Given
         val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
 
@@ -123,7 +123,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W resolveBooleanValue()`(forge: Forge) {
+    fun `M log warning W resolveBooleanValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
@@ -173,7 +173,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W resolveStringValue()`(forge: Forge) {
+    fun `M log warning W resolveStringValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
@@ -236,7 +236,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W resolveDoubleValue()`(forge: Forge) {
+    fun `M log warning W resolveDoubleValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
@@ -299,7 +299,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W resolveIntValue()`(forge: Forge) {
+    fun `M log warning W resolveIntValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anInt()
@@ -350,7 +350,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W resolve()`(forge: Forge) {
+    fun `M log warning W resolve()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
@@ -405,7 +405,7 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M log error W resolveStructureValue()`(forge: Forge) {
+    fun `M log warning W resolveStructureValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
 

@@ -251,7 +251,8 @@ interface FlagsClient {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
-                    flagsFeature = flagsFeature
+                    flagsFeature = flagsFeature,
+                    name = name
                 )
             }
         }
@@ -344,7 +345,7 @@ interface FlagsClient {
             configuration: FlagsConfiguration,
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
-            name: String = DEFAULT_CLIENT_NAME
+            name: String
         ): FlagsClient {
             val executorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
@@ -380,7 +381,7 @@ interface FlagsClient {
                     }
                 )
             } else {
-                // Build a [DatadogFlagsClient] instance from its dependencies.
+                // Build the various dependencies for the [DatadogFlagsClient]
 
                 val flagsContext = FlagsContext(
                     applicationId = applicationId,
