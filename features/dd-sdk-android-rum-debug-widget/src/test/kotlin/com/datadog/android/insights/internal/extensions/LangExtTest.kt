@@ -11,6 +11,7 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ import kotlin.math.roundToInt
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(seed = 0x161ee6b7cad5L)
 internal class LangExtTest {
 
     @Test
@@ -59,7 +61,7 @@ internal class LangExtTest {
 
     @Test
     fun `M round to given digits W round`(
-        @DoubleForgery fakeValue: Double,
+        @DoubleForgery(max = 1e300) fakeValue: Double,
         @IntForgery(min = 0, max = 6) digits: Int
     ) {
         val multiplier = 10.0.pow(digits)

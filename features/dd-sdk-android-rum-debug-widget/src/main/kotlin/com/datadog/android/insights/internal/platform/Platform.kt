@@ -15,6 +15,5 @@ internal class Platform {
     fun getNativeHeapAllocatedSize(): Long =
         Debug.getNativeHeapAllocatedSize()
 
-    fun nanoTime(): Long =
-        System.nanoTime()
+    fun nanoTime(): Long = System.nanoTime()
 }

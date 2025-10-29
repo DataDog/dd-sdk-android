@@ -175,7 +175,7 @@ class DefaultInsightsCollector internal constructor(
 
     companion object {
         internal const val PRECISION = 2
-        private const val GC_COUNT = "art.gc.gc-count"
+        internal const val GC_COUNT = "art.gc.gc-count"
         internal const val ONE_SECOND_NS = 1_000_000_000L
     }
 }
