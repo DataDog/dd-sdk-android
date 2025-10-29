@@ -9077,19 +9077,18 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M call onCpuVital W onVitalUpdate`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
+    fun `M call onLongTask W onAddLongTask`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
         // Given
-        val listenerCaptor = argumentCaptor<VitalListener> {
-            verify(mockCpuVitalMonitor).register(capture())
-        }
-        val listener = listenerCaptor.firstValue
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
 
         // When
-        listener.onVitalUpdate(VitalInfo(1, 0.0, 0.0, 0.0))
-        listener.onVitalUpdate(VitalInfo(1, 0.0, fakeCpuTicks, fakeCpuTicks / 2))
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockInsightsCollector).onCpuVital(fakeCpuTicks)
+        verify(mockInsightsCollector).onLongTask(fakeEvent.eventTime.nanoTime, durationNs)
     }
 
     @Test
@@ -9109,18 +9108,31 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M call onLongTask W onAddLongTask`(
-        @LongForgery(0L, 700_000_000L) durationNs: Long,
-        @StringForgery target: String
-    ) {
+    fun `M call onCpuVital W onVitalUpdate`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
         // Given
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockCpuVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
 
         // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        listener.onVitalUpdate(VitalInfo(1, 0.0, 0.0, 0.0))
+        listener.onVitalUpdate(VitalInfo(1, 0.0, fakeCpuTicks, fakeCpuTicks / 2))
 
         // Then
-        verify(mockInsightsCollector).onLongTask(fakeEvent.eventTime.nanoTime, durationNs)
+        verify(mockInsightsCollector).onCpuVital(fakeCpuTicks)
+    }
+
+    @Test
+    fun `M call onSlowFrameRate W handleEvent(KeepAlive)`() {
+        // Given
+        val testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockInsightsCollector).onSlowFrameRate(any())
     }
 
     // endregion

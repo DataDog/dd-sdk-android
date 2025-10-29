@@ -18,7 +18,6 @@ import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.TimeUnit
 
 /**
  * Default implementation of [InsightsCollector] that collects performance related events and notifies
@@ -169,12 +168,14 @@ class DefaultInsightsCollector internal constructor(
             return Double.NaN
         }
 
-        return times(ONE_SECOND_NS) / viewDurationNs
+        val seconds = viewDurationNs / ONE_SECOND_NS.toDouble()
+
+        return this / seconds
     }
 
     companion object {
-        private const val PRECISION = 2
+        internal const val PRECISION = 2
         private const val GC_COUNT = "art.gc.gc-count"
-        private val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
+        internal const val ONE_SECOND_NS = 1_000_000_000L
     }
 }

@@ -3496,6 +3496,27 @@ internal class RumResourceScopeTest {
 
     // endregion
 
+    @Test
+    fun `M call onNetworkRequest W handleEvent {}`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+
+        // Wait to ensure duration > 0
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockInsightsCollector).onNetworkRequest(any(), any())
+    }
+
     // region Internal
 
     private fun mockEvent(): RumRawEvent {
