@@ -7,11 +7,14 @@
 package com.datadog.android.insights
 
 import android.os.Handler
+import com.datadog.android.insights.DefaultInsightsCollector.Companion.GC_COUNT
 import com.datadog.android.insights.DefaultInsightsCollector.Companion.ONE_SECOND_NS
 import com.datadog.android.insights.internal.domain.TimelineEvent
+import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.platform.Platform
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -212,5 +215,48 @@ internal class DefaultInsightsCollectorTest {
 
         // Then
         assertThat(testedInsightsCollector.eventsState).isEmpty()
+    }
+
+    @Test
+    fun `M gcCallsPerSecond and nativeHeapMb are updated W onAction()`(
+        @LongForgery(min = ONE_SECOND_NS, max = 10 * ONE_SECOND_NS) fakeStartTimeNs: Long,
+        @IntForgery(min = 0, max = 1_000) fakeGcCount: Int,
+        @LongForgery(min = 0L, max = 100 * 1024 * 1024L) fakeNativeHeapSize: Long
+    ) {
+        // Given
+        whenever(mockPlatform.nanoTime()).thenAnswer { fakeStartTimeNs }
+        whenever(mockPlatform.getRuntimeStat(GC_COUNT)).thenReturn(fakeGcCount.toString())
+        whenever(mockPlatform.getNativeHeapAllocatedSize()).thenReturn(fakeNativeHeapSize)
+
+        // When
+        testedInsightsCollector.onAction()
+
+        // Then
+        assertThat(testedInsightsCollector.gcCallsPerSecond).isNotNaN
+        assertThat(testedInsightsCollector.gcCallsPerSecond).isCloseTo(
+            fakeGcCount / (fakeStartTimeNs / ONE_SECOND_NS.toDouble()),
+            Offset.offset(0.01)
+        )
+
+        assertThat(testedInsightsCollector.nativeHeapMb).isNotNaN
+        assertThat(testedInsightsCollector.nativeHeapMb).isCloseTo(
+            fakeNativeHeapSize.toDouble().Mb,
+            Offset.offset(1.0)
+        )
+    }
+
+    @Test
+    fun `M gcCallsPerSecond is NaN W onAction() {invalid statName}`(
+        @LongForgery(min = ONE_SECOND_NS, max = 10 * ONE_SECOND_NS) fakeStartTimeNs: Long
+    ) {
+        // Given
+        whenever(mockPlatform.nanoTime()).thenAnswer { fakeStartTimeNs }
+        whenever(mockPlatform.getRuntimeStat(any())).thenReturn(null)
+
+        // When
+        testedInsightsCollector.onAction()
+
+        // Then
+        assertThat(testedInsightsCollector.gcCallsPerSecond).isNaN
     }
 }
