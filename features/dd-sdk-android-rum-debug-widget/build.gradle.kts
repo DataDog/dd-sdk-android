@@ -19,7 +19,6 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -51,10 +50,6 @@ android {
 
     namespace = "com.datadog.android.rumdebugwidget"
 
-    testFixtures {
-        enable = true
-    }
-
     testOptions {
         unitTests.all {
             it.systemProperty("RUM_MIN_SDK", "${AndroidConfig.MIN_SDK}")
@@ -69,9 +64,6 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXFragment)
-
-    // Generate NoOp implementations
-    ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit")) {
         attributes {
