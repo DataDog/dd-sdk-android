@@ -7,6 +7,7 @@
 package com.datadog.android.insights
 
 import android.os.Handler
+import com.datadog.android.insights.DefaultInsightsCollector.Companion.ONE_SECOND_NS
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.platform.Platform
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
@@ -135,7 +136,7 @@ internal class DefaultInsightsCollectorTest {
     }
 
     @Test
-    fun `M set vmRssMb from memory vital W onMemoryVital() {non-null}`(
+    fun `M set vmRssMb W onMemoryVital() {non-null}`(
         @DoubleForgery(min = 0.0) fakeMemoryValue: Double
     ) {
         // When
@@ -158,12 +159,42 @@ internal class DefaultInsightsCollectorTest {
     }
 
     @Test
-    fun `M set slowFramesRate rounded W onSlowFrameRate()`(@DoubleForgery(min = 0.0) fakeRate: Double) {
+    fun `M set cpuTicksPerSecond to NaN W viewDuration less than 1s`(@DoubleForgery(min = 0.0) fakeCpuTicks: Double) {
+        // When
+        testedInsightsCollector.onCpuVital(cpuTicks = fakeCpuTicks)
+
+        // Then
+        verify(mockInsightsUpdatesListener).onDataUpdated()
+        assertThat(testedInsightsCollector.cpuTicksPerSecond).isNaN
+    }
+
+    @Test
+    fun `M set cpuTicksPerSecond rounded W onCpuVital()`(
+        @DoubleForgery(min = 0.0, max = 1e6) fakeCpuTicks: Double,
+        @LongForgery(min = ONE_SECOND_NS, max = 10 * ONE_SECOND_NS) fakeStartTimeNs: Long
+    ) {
+        // Given
+        whenever(mockPlatform.nanoTime()).thenAnswer { fakeStartTimeNs }
+
+        // When
+        testedInsightsCollector.onCpuVital(cpuTicks = fakeCpuTicks)
+
+        // Then
+        assertThat(testedInsightsCollector.cpuTicksPerSecond).isNotNaN
+        assertThat(testedInsightsCollector.cpuTicksPerSecond).isCloseTo(
+            fakeCpuTicks / (fakeStartTimeNs / ONE_SECOND_NS.toDouble()),
+            Offset.offset(0.01)
+        )
+    }
+
+    @Test
+    fun `M set slowFramesRate rounded W onSlowFrameRate()`(@DoubleForgery(min = 0.0, max = 500.0) fakeRate: Double) {
         // When
         testedInsightsCollector.onSlowFrameRate(rate = fakeRate)
 
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
+        assertThat(testedInsightsCollector.slowFramesRate).isNotNaN
         assertThat(testedInsightsCollector.slowFramesRate).isCloseTo(
             fakeRate,
             Offset.offset(0.01)

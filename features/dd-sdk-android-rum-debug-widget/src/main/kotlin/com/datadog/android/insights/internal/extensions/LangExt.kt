@@ -28,8 +28,9 @@ internal val Double.Mb: Double
     get() = this / BYTES_PER_MB
 
 internal fun Double?.round(digits: Int): Double {
-    if (this == null || isNaN()) return Double.NaN
     val multiplier = 10.0.pow(digits)
+    if (this == null || isNaN() || this > Double.MAX_VALUE / multiplier) return Double.NaN
+
     return (this * multiplier).roundToInt() / multiplier
 }
 
