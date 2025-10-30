@@ -21,24 +21,27 @@ public final class com/datadog/android/insights/DefaultInsightsCollector : com/d
 public final class com/datadog/android/insights/DefaultInsightsCollector$Companion {
 }
 
-public final class com/datadog/android/insights/overlay/LocalInsightOverlay : com/datadog/android/insights/overlay/Overlay, com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
-	public static final field Companion Lcom/datadog/android/insights/overlay/LocalInsightOverlay$Companion;
+public final class com/datadog/android/insights/overlay/DefaultInsightsOverlay : com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
+	public static final field Companion Lcom/datadog/android/insights/overlay/DefaultInsightsOverlay$Companion;
 	public fun <init> ()V
-	public fun attach (Landroid/app/Activity;)V
-	public fun destroy ()V
+	public final fun attach (Landroid/app/Activity;)V
+	public final fun destroy ()V
+	public final fun detach ()V
 	public fun onDataUpdated ()V
 }
 
-public final class com/datadog/android/insights/overlay/LocalInsightOverlay$Companion {
+public final class com/datadog/android/insights/overlay/DefaultInsightsOverlay$Companion {
 }
 
-public abstract interface class com/datadog/android/insights/overlay/Overlay {
-	public abstract fun attach (Landroid/app/Activity;)V
-	public abstract fun destroy ()V
+public final class com/datadog/android/insights/overlay/Initializer : androidx/startup/Initializer {
+	public fun <init> ()V
+	public synthetic fun create (Landroid/content/Context;)Ljava/lang/Object;
+	public fun create (Landroid/content/Context;)V
+	public fun dependencies ()Ljava/util/List;
 }
 
 public final class com/datadog/android/insights/overlay/OverlayManager : android/app/Application$ActivityLifecycleCallbacks {
-	public fun <init> (Landroid/app/Application;Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Landroid/app/Application;)V
 	public fun onActivityCreated (Landroid/app/Activity;Landroid/os/Bundle;)V
 	public fun onActivityDestroyed (Landroid/app/Activity;)V
 	public fun onActivityPaused (Landroid/app/Activity;)V

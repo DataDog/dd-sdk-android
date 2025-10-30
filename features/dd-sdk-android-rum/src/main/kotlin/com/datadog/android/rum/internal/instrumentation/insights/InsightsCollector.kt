@@ -122,8 +122,9 @@ object InsightsCollectorProvider {
     /**
      * The nullable singleton [InsightsCollector] instance.
      */
-    val insightsCollector: InsightsCollector? = (Datadog.getInstance() as? InternalSdkCore)
-        ?.getFeature(Feature.RUM_FEATURE_NAME)
-        ?.unwrap<RumFeature>()
-        ?.insightsCollector
+    val insightsCollector: InsightsCollector?
+        get() = (Datadog.getInstance() as? InternalSdkCore)
+            ?.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.insightsCollector
 }

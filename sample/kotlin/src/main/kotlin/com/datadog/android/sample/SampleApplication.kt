@@ -20,8 +20,6 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.insights.DefaultInsightsCollector
-import com.datadog.android.insights.overlay.LocalInsightOverlay
-import com.datadog.android.insights.overlay.OverlayManager
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -103,8 +101,6 @@ class SampleApplication : Application() {
 
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
-    private lateinit var overlayManager: OverlayManager
-
     private val localServer = LocalServer()
 
     override fun onCreate() {
@@ -115,13 +111,6 @@ class SampleApplication : Application() {
         initializeTimber()
 
         initializeImageLoaders()
-
-        overlayManager = OverlayManager(this) { LocalInsightOverlay() }.also { it.start() }
-    }
-
-    override fun onTerminate() {
-        super.onTerminate()
-        overlayManager.stop()
     }
 
     override fun onLowMemory() {

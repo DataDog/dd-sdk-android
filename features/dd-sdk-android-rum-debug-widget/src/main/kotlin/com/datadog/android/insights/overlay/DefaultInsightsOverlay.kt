@@ -36,7 +36,7 @@ import com.datadog.android.rumdebugwidget.R
  * It can be attached to any [Activity] by calling [attach].
  */
 @ExperimentalRumApi
-class LocalInsightOverlay : Overlay, InsightsUpdatesListener {
+class DefaultInsightsOverlay : InsightsUpdatesListener {
 
     private var root: View? = null
     private var viewName: TextView? = null
@@ -51,6 +51,7 @@ class LocalInsightOverlay : Overlay, InsightsUpdatesListener {
     private var timelineLegend: TextView? = null
 
     private var isPaused: Boolean = false
+    private var isTransitioning: Boolean = false
 
     private val insightsCollector: DefaultInsightsCollector?
         get() = InsightsCollectorProvider.insightsCollector as? DefaultInsightsCollector
@@ -67,7 +68,7 @@ class LocalInsightOverlay : Overlay, InsightsUpdatesListener {
      */
     @SuppressLint("SetTextI18n")
     @Suppress("LongMethod")
-    override fun attach(activity: Activity) {
+    fun attach(activity: Activity) {
         if (insightsCollector == null) return
 
         val parent = activity.findViewById<ViewGroup>(android.R.id.content)
@@ -124,9 +125,7 @@ class LocalInsightOverlay : Overlay, InsightsUpdatesListener {
         val storage = InsightStateStorage(activity)
 
         root?.let { overlayView ->
-            val widgetView = overlayView.findViewById<View>(
-                R.id.insights_widget
-            ).apply {
+            val widgetView = overlayView.findViewById<View>(R.id.insights_widget).apply {
                 setOnClickListener {
                     storage.widgetDisplayed = false
                     it.animateVisibility(false)
@@ -162,8 +161,33 @@ class LocalInsightOverlay : Overlay, InsightsUpdatesListener {
         }
     }
 
-    override fun destroy() {
-        (root?.parent as? ViewGroup)?.removeView(root) // detach
+    private fun toggleOverlay(
+        storage: InsightStateStorage,
+        showWidget: Boolean,
+        widget: View?,
+        fab: View?
+    ) {
+        if (isTransitioning) return
+        isTransitioning = true
+
+        widget?.isClickable = false
+        fab?.isClickable = false
+
+        storage.widgetDisplayed = showWidget
+
+        if (showWidget) {
+            // TODO
+        } else {
+            // TODO
+        }
+    }
+
+    fun detach() {
+        (root?.parent as? ViewGroup)?.removeView(root)
+    }
+
+    fun destroy() {
+        detach()
         insightsCollector?.removeUpdateListener(this)
 
         root = null
