@@ -634,6 +634,34 @@ data class com.datadog.android.rum.model.ActionEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type
+data class com.datadog.android.rum.model.AppLaunchProperties
+  constructor(kotlin.String, kotlin.String? = null, kotlin.String? = null, AppLaunchMetric, kotlin.Number, StartupType? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): AppLaunchProperties
+    fun fromJsonObject(com.google.gson.JsonObject): AppLaunchProperties
+  enum AppLaunchMetric
+    constructor(kotlin.String)
+    - TTID
+    - TTFD
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): AppLaunchMetric
+  enum StartupType
+    constructor(kotlin.String)
+    - COLD_START
+    - WARM_START
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): StartupType
+data class com.datadog.android.rum.model.DurationProperties
+  constructor(kotlin.String, kotlin.String? = null, kotlin.String? = null, kotlin.Number)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): DurationProperties
+    fun fromJsonObject(com.google.gson.JsonObject): DurationProperties
 data class com.datadog.android.rum.model.ErrorEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, ErrorEventView, Usr? = null, Account? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Container? = null, Error, Freeze? = null, Context? = null)
   val type: kotlin.String
@@ -984,6 +1012,30 @@ data class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ProviderType
+data class com.datadog.android.rum.model.FeatureOperationProperties
+  constructor(kotlin.String, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, StepType? = null, FailureReason? = null)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): FeatureOperationProperties
+    fun fromJsonObject(com.google.gson.JsonObject): FeatureOperationProperties
+  enum StepType
+    constructor(kotlin.String)
+    - START
+    - UPDATE
+    - RETRY
+    - END
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): StepType
+  enum FailureReason
+    constructor(kotlin.String)
+    - ERROR
+    - ABANDONED
+    - OTHER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): FailureReason
 data class com.datadog.android.rum.model.LongTaskEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, LongTaskEventSession, LongTaskEventSource? = null, LongTaskEventView, Usr? = null, Account? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Container? = null, LongTask)
   val type: kotlin.String

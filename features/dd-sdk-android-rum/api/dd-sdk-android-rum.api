@@ -1451,6 +1451,98 @@ public final class com/datadog/android/rum/model/ActionEvent$Viewport$Companion 
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$Viewport;
 }
 
+public final class com/datadog/android/rum/model/AppLaunchProperties {
+	public static final field Companion Lcom/datadog/android/rum/model/AppLaunchProperties$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;Ljava/lang/Number;Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;Ljava/lang/Number;Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+	public final fun component5 ()Ljava/lang/Number;
+	public final fun component6 ()Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun component8 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;Ljava/lang/Number;Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/AppLaunchProperties;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/AppLaunchProperties;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;Ljava/lang/Number;Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/AppLaunchProperties;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/AppLaunchProperties;
+	public final fun getAppLaunchMetric ()Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDuration ()Ljava/lang/Number;
+	public final fun getHasSavedInstanceStateBundle ()Ljava/lang/Boolean;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getStartupType ()Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isPrewarmed ()Ljava/lang/Boolean;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric$Companion;
+	public static final field TTFD Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+	public static final field TTID Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+	public static fun values ()[Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+}
+
+public final class com/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties$AppLaunchMetric;
+}
+
+public final class com/datadog/android/rum/model/AppLaunchProperties$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/AppLaunchProperties;
+}
+
+public final class com/datadog/android/rum/model/AppLaunchProperties$StartupType : java/lang/Enum {
+	public static final field COLD_START Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+	public static final field Companion Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType$Companion;
+	public static final field WARM_START Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+	public static fun values ()[Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+}
+
+public final class com/datadog/android/rum/model/AppLaunchProperties$StartupType$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/AppLaunchProperties$StartupType;
+}
+
+public final class com/datadog/android/rum/model/DurationProperties {
+	public static final field Companion Lcom/datadog/android/rum/model/DurationProperties$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;)Lcom/datadog/android/rum/model/DurationProperties;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/DurationProperties;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/DurationProperties;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/DurationProperties;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/DurationProperties;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDuration ()Ljava/lang/Number;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/DurationProperties$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/DurationProperties;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/DurationProperties;
+}
+
 public final class com/datadog/android/rum/model/ErrorEvent {
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$Companion;
 	public fun <init> (JLcom/datadog/android/rum/model/ErrorEvent$Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventView;Lcom/datadog/android/rum/model/ErrorEvent$Usr;Lcom/datadog/android/rum/model/ErrorEvent$Account;Lcom/datadog/android/rum/model/ErrorEvent$Connectivity;Lcom/datadog/android/rum/model/ErrorEvent$Display;Lcom/datadog/android/rum/model/ErrorEvent$Synthetics;Lcom/datadog/android/rum/model/ErrorEvent$CiTest;Lcom/datadog/android/rum/model/ErrorEvent$Os;Lcom/datadog/android/rum/model/ErrorEvent$Device;Lcom/datadog/android/rum/model/ErrorEvent$Dd;Lcom/datadog/android/rum/model/ErrorEvent$Context;Lcom/datadog/android/rum/model/ErrorEvent$Action;Lcom/datadog/android/rum/model/ErrorEvent$Container;Lcom/datadog/android/rum/model/ErrorEvent$Error;Lcom/datadog/android/rum/model/ErrorEvent$Freeze;Lcom/datadog/android/rum/model/ErrorEvent$Context;)V
@@ -2576,6 +2668,69 @@ public final class com/datadog/android/rum/model/ErrorEvent$Viewport {
 public final class com/datadog/android/rum/model/ErrorEvent$Viewport$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Viewport;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent$Viewport;
+}
+
+public final class com/datadog/android/rum/model/FeatureOperationProperties {
+	public static final field Companion Lcom/datadog/android/rum/model/FeatureOperationProperties$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public final fun component6 ()Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;)Lcom/datadog/android/rum/model/FeatureOperationProperties;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/FeatureOperationProperties;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;ILjava/lang/Object;)Lcom/datadog/android/rum/model/FeatureOperationProperties;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/FeatureOperationProperties;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getFailureReason ()Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getOperationKey ()Ljava/lang/String;
+	public final fun getStepType ()Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/FeatureOperationProperties$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/FeatureOperationProperties;
+}
+
+public final class com/datadog/android/rum/model/FeatureOperationProperties$FailureReason : java/lang/Enum {
+	public static final field ABANDONED Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public static final field Companion Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason$Companion;
+	public static final field ERROR Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public static final field OTHER Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+	public static fun values ()[Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+}
+
+public final class com/datadog/android/rum/model/FeatureOperationProperties$FailureReason$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties$FailureReason;
+}
+
+public final class com/datadog/android/rum/model/FeatureOperationProperties$StepType : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType$Companion;
+	public static final field END Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public static final field RETRY Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public static final field START Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public static final field UPDATE Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+	public static fun values ()[Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
+}
+
+public final class com/datadog/android/rum/model/FeatureOperationProperties$StepType$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/FeatureOperationProperties$StepType;
 }
 
 public final class com/datadog/android/rum/model/LongTaskEvent {
