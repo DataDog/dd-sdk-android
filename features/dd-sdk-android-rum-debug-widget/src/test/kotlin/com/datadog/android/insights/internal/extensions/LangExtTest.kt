@@ -130,7 +130,7 @@ internal class LangExtTest {
         called = false
 
         // When first is null
-        multiLet(null, fakeB) {_, _ -> called = true }
+        multiLet(null, fakeB) { _, _ -> called = true }
 
         // Then
         assertThat(called).isFalse()
@@ -139,7 +139,7 @@ internal class LangExtTest {
         called = false
 
         // When second is null
-        multiLet(fakeA, null) {_, _ -> called = true }
+        multiLet(fakeA, null) { _, _ -> called = true }
 
         // Then
         assertThat(called).isFalse()
