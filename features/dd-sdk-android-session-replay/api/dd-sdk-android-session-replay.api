@@ -366,13 +366,13 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Horizon
 public abstract class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$Companion;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
 	public abstract fun toJson ()Lcom/google/gson/JsonElement;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
+	public final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$MobileMutationData : com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData {
@@ -480,13 +480,13 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileI
 public abstract class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$Companion;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord;
 	public abstract fun toJson ()Lcom/google/gson/JsonElement;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord;
+	public final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$FocusRecord : com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord {
@@ -912,13 +912,13 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$View$Co
 public abstract class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$Companion;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 	public abstract fun toJson ()Lcom/google/gson/JsonElement;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+	public final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe : com/datadog/android/sessionreplay/model/MobileSegment$Wireframe {
@@ -1154,13 +1154,13 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Wirefra
 public abstract class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$Companion;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
 	public abstract fun toJson ()Lcom/google/gson/JsonElement;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
+	public final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$ImageWireframeUpdate : com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation {

@@ -56,7 +56,7 @@ public data class Household(
                 val pets = jsonObject.get("pets")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Animal>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Animal.fromJsonObject(it.asJsonObject))
+                        collection.add(Animal.fromJsonObject(it))
                     }
                     collection
                 }
@@ -214,16 +214,26 @@ public data class Household(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Animal {
+            public fun fromJsonObject(jsonElement: JsonElement): Animal {
                 val errors = mutableListOf<Throwable>()
                 val asFish = try {
-                    Fish.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Fish.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Fish")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asBird = try {
-                    Bird.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Bird.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Bird")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
@@ -378,16 +388,26 @@ public data class Household(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Situation {
+            public fun fromJsonObject(jsonElement: JsonElement): Situation {
                 val errors = mutableListOf<Throwable>()
                 val asMarriage = try {
-                    Marriage.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Marriage.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Marriage")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asCotenancy = try {
-                    Cotenancy.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Cotenancy.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Cotenancy")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null

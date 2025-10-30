@@ -145,16 +145,26 @@ public sealed class Animal {
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonObject(jsonObject: JsonObject): Animal {
+        public fun fromJsonObject(jsonElement: JsonElement): Animal {
             val errors = mutableListOf<Throwable>()
             val asFish = try {
-                Fish.fromJsonObject(jsonObject)
+                if (jsonElement is JsonObject) {
+                    Fish.fromJsonObject(jsonElement)
+                } else {
+                    throw JsonParseException("Unable to parse json into type "
+                             + "Fish")
+                }
             } catch (e: JsonParseException) {
                 errors.add(e)
                 null
             }
             val asBird = try {
-                Bird.fromJsonObject(jsonObject)
+                if (jsonElement is JsonObject) {
+                    Bird.fromJsonObject(jsonElement)
+                } else {
+                    throw JsonParseException("Unable to parse json into type "
+                             + "Bird")
+                }
             } catch (e: JsonParseException) {
                 errors.add(e)
                 null

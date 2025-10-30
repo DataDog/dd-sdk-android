@@ -216,7 +216,12 @@ class ClassJsonElementDeserializerGenerator(
                 Identifier.PARAM_COLLECTION
             )
 
-            is TypeDefinition.OneOfClass,
+            is TypeDefinition.OneOfClass -> addStatement(
+                "%L.add(%T.%L(it))",
+                Identifier.PARAM_COLLECTION,
+                arrayType.items.asKotlinTypeName(rootTypeName),
+                Identifier.FUN_FROM_JSON_OBJ
+            )
             is TypeDefinition.Class -> addStatement(
                 "%L.add(%T.%L(it.asJsonObject))",
                 Identifier.PARAM_COLLECTION,

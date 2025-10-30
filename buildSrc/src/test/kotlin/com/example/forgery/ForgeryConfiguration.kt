@@ -38,5 +38,7 @@ internal class ForgeryConfiguration : ForgeConfigurator {
         forge.addFactory(VersionForgeryFactory())
         forge.addFactory(VideoForgeryFactory())
         forge.addFactory(WeirdComboForgeryFactory())
+        forge.addFactory(PathArrayForgeryFactory())
+        forge.addFactory(PathArray2ForgeryFactory())
     }
 }

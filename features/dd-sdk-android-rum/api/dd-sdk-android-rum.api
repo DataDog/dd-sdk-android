@@ -6938,7 +6938,7 @@ public final class com/datadog/android/rum/model/VitalEvent$Viewport$Companion {
 public abstract class com/datadog/android/rum/model/VitalEvent$Vital {
 	public static final field Companion Lcom/datadog/android/rum/model/VitalEvent$Vital$Companion;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalEvent$Vital;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/VitalEvent$Vital;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/rum/model/VitalEvent$Vital;
 	public abstract fun toJson ()Lcom/google/gson/JsonElement;
 }
 
@@ -6980,7 +6980,7 @@ public final class com/datadog/android/rum/model/VitalEvent$Vital$AppLaunchPrope
 
 public final class com/datadog/android/rum/model/VitalEvent$Vital$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalEvent$Vital;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/VitalEvent$Vital;
+	public final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/rum/model/VitalEvent$Vital;
 }
 
 public final class com/datadog/android/rum/model/VitalEvent$Vital$DurationProperties : com/datadog/android/rum/model/VitalEvent$Vital {
@@ -8694,7 +8694,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Track
 public abstract class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$Companion;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
 	public abstract fun toJson ()Lcom/google/gson/JsonElement;
 }
 
@@ -8844,7 +8844,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage
 
 public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
+	public final fun fromJsonObject (Lcom/google/gson/JsonElement;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage;
 }
 
 public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$GetAccount : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {

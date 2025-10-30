@@ -9,3 +9,13 @@ package com.datadog.gradle.plugin.jsonschema
 enum class JsonPrimitiveType {
     STRING, BOOLEAN, INTEGER, DOUBLE, NUMBER
 }
+
+fun JsonPrimitiveType.nameString(): String {
+    return when (this) {
+        JsonPrimitiveType.STRING -> "String"
+        JsonPrimitiveType.BOOLEAN -> "Boolean"
+        JsonPrimitiveType.INTEGER -> "Long"
+        JsonPrimitiveType.DOUBLE -> "Double"
+        JsonPrimitiveType.NUMBER -> "Number"
+    }
+}

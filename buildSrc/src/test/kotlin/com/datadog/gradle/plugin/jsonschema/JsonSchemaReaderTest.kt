@@ -87,7 +87,9 @@ class JsonSchemaReaderTest(
                 arrayOf("constant_number", Version),
                 arrayOf("sets", Video),
                 arrayOf("one_of_nested", WeirdCombo),
-                arrayOf("required_for_other_all_of", RequiredForOtherAllOf)
+                arrayOf("required_for_other_all_of", RequiredForOtherAllOf),
+                arrayOf("path_array", PathArray),
+                arrayOf("path_array_2", PathArray2)
             )
         }
     }

@@ -18,6 +18,7 @@ import com.squareup.kotlinpoet.jvm.throws
 
 class MultiClassGenerator(
     val classGenerator: KotlinSpecGenerator<TypeDefinition.Class, TypeSpec.Builder>,
+    val oneOfPrimitiveOptionGenerator: KotlinSpecGenerator<TypeDefinition.Primitive, TypeSpec.Builder>,
     packageName: String,
     knownTypes: MutableSet<KotlinTypeWrapper>
 ) : TypeSpecGenerator<TypeDefinition.OneOfClass>(
@@ -43,17 +44,20 @@ class MultiClassGenerator(
 
         definition.options.forEach {
             when (it) {
-                is TypeDefinition.Class -> {
-                    val childType = it.copy(parentType = definition)
+                is TypeDefinition.OneOfClass.Option.Class -> {
+                    val childType = it.cls.copy(parentType = definition)
                     val wrapper = childType.withUniqueTypeName(rootTypeName)
                     typeBuilder.addType(
                         classGenerator.generate(childType, rootTypeName).build()
                     )
                     wrapper.written = true
                 }
-                else -> error(
-                    "Can't have type $it as child of a `one_of` block"
-                )
+                is TypeDefinition.OneOfClass.Option.Primitive -> {
+                    val childType = it.primitive.copy(parentType = definition)
+                    typeBuilder.addType(
+                        oneOfPrimitiveOptionGenerator.generate(childType, rootTypeName).build()
+                    )
+                }
             }
         }
 
@@ -116,7 +120,7 @@ class MultiClassGenerator(
             ClassNameRef.IllegalStateException
         )
         funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
-        funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+        funBuilder.addStatement("    \"$PARSE_ERROR_MSG_ONE_OF_TYPE %T\",", returnType)
         funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
         funBuilder.addStatement(")")
         funBuilder.endControlFlow()
@@ -132,7 +136,7 @@ class MultiClassGenerator(
         val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .throws(ClassNameRef.JsonParseException)
-            .addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
+            .addParameter(Identifier.PARAM_JSON_ELEMENT, ClassNameRef.JsonElement)
             .returns(returnType)
 
         // create error variable
@@ -141,15 +145,51 @@ class MultiClassGenerator(
         // try to parse against all possible types
         val options = mutableListOf<String>()
         definition.options.forEach {
-            val typeName = it.asKotlinTypeName(rootTypeName)
+            val typeName = it.asKotlinTypeName(rootTypeName, definition)
             val variableName = "as${it.name()}"
             funBuilder.beginControlFlow("val %L = try", variableName)
-            funBuilder.addStatement(
-                "%T.%L(%L)",
-                typeName,
-                Identifier.FUN_FROM_JSON_OBJ,
-                Identifier.PARAM_JSON_OBJ
-            )
+            when (it) {
+                is TypeDefinition.OneOfClass.Option.Class -> {
+                    funBuilder.beginControlFlow(
+                        "if (%L is %T)",
+                        Identifier.PARAM_JSON_ELEMENT,
+                        ClassNameRef.JsonObject
+                    )
+                    funBuilder.addStatement(
+                        "%T.%L(%L)",
+                        typeName,
+                        Identifier.FUN_FROM_JSON_OBJ,
+                        Identifier.PARAM_JSON_ELEMENT
+                    )
+                    funBuilder.nextControlFlow("else")
+                    funBuilder.addStatement(
+                        "throw %T(\"$PARSE_ERROR_MSG_TYPE \"\n + \"%T\")",
+                        ClassNameRef.JsonParseException,
+                        it.cls.asKotlinTypeName(rootTypeName)
+                    )
+                }
+                is TypeDefinition.OneOfClass.Option.Primitive -> {
+                    funBuilder.beginControlFlow(
+                        "if (%L is %T)",
+                        Identifier.PARAM_JSON_ELEMENT,
+                        ClassNameRef.JsonPrimitive
+                    )
+                    funBuilder.addStatement(
+                        "%T.%L(%L)",
+                        typeName,
+                        Identifier.FUN_FROM_JSON_OBJ,
+                        Identifier.PARAM_JSON_ELEMENT
+                    )
+                    funBuilder.nextControlFlow("else")
+                    funBuilder.addStatement(
+                        "throw %T(\"$PARSE_ERROR_MSG_TYPE \"\n + \"%T\")",
+                        ClassNameRef.JsonParseException,
+                        it.primitive.asKotlinTypeName(rootTypeName)
+                    )
+                }
+            }
+            funBuilder.endControlFlow()
+
             funBuilder.nextControlFlow(
                 "catch (%L: %T)",
                 Identifier.CAUGHT_EXCEPTION,
@@ -169,7 +209,7 @@ class MultiClassGenerator(
         funBuilder.addStatement(").firstOrNull { it != null }")
 
         funBuilder.beginControlFlow("if (result == null)")
-        funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG \\n\" + \"%T\\n\" +", returnType)
+        funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG_ONE_OF_TYPE \\n\" + \"%T\\n\" +", returnType)
         funBuilder.addStatement("    errors.joinToString(\"\\n\") { it.message.toString() }")
         funBuilder.addStatement("throw %T(message)", ClassNameRef.JsonParseException)
         funBuilder.endControlFlow()
@@ -181,6 +221,7 @@ class MultiClassGenerator(
     // endregion
 
     companion object {
-        private const val PARSE_ERROR_MSG = "Unable to parse json into one of type"
+        private const val PARSE_ERROR_MSG_ONE_OF_TYPE = "Unable to parse json into one of type"
+        private const val PARSE_ERROR_MSG_TYPE = "Unable to parse json into type"
     }
 }

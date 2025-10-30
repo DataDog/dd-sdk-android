@@ -17,6 +17,7 @@ object Identifier {
     const val PARAM_JSON_STR = "jsonString"
     const val PARAM_JSON_ARRAY = "jsonArray"
     const val PARAM_JSON_OBJ = "jsonObject"
+    const val PARAM_JSON_ELEMENT = "jsonElement"
     const val PARAM_JSON_VALUE = "jsonValue"
     const val PARAM_ADDITIONAL_PROPS = "additionalProperties"
     const val PARAM_COLLECTION = "collection"
