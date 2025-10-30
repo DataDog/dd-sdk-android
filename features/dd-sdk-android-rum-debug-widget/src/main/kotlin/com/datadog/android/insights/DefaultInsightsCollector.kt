@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArraySet
  * its listeners at a regular interval.
  *
  * @param maxSize Maximum number of events stored in memory.
- * @param updateIntervalMs Time interval in milliseconds at which the listeners will be notified of data updates.,
+ * @param updateIntervalMs Time interval in milliseconds at which the listeners will be notified of data updates.
  * @param handler Handler to post updates on. Injected for test purposes.
  * @param platform Platform abstraction to access system information. Injected for test purposes.
  */

@@ -54,7 +54,6 @@ internal class DefaultInsightsCollectorTest {
 
     @BeforeEach
     fun `set up`() {
-        // Construct with no periodic ticks to avoid relying on delayed scheduling
         testedInsightsCollector = DefaultInsightsCollector(
             maxSize = 5,
             updateIntervalMs = 0L,
@@ -218,10 +217,10 @@ internal class DefaultInsightsCollectorTest {
     }
 
     @Test
-    fun `M gcCallsPerSecond and nativeHeapMb are updated W onAction()`(
+    fun `M update gcCallsPerSecond and nativeHeapMb W onAction()`(
         @LongForgery(min = ONE_SECOND_NS, max = 10 * ONE_SECOND_NS) fakeStartTimeNs: Long,
         @IntForgery(min = 0, max = 1_000) fakeGcCount: Int,
-        @LongForgery(min = 0L, max = 100 * 1024 * 1024L) fakeNativeHeapSize: Long
+        @LongForgery(min = 0L, max = 100 * 1024 * 1024) fakeNativeHeapSize: Long
     ) {
         // Given
         whenever(mockPlatform.nanoTime()).thenAnswer { fakeStartTimeNs }
@@ -246,7 +245,7 @@ internal class DefaultInsightsCollectorTest {
     }
 
     @Test
-    fun `M gcCallsPerSecond is NaN W onAction() {invalid statName}`(
+    fun `M set gcCallsPerSecond to NaN W onAction() {invalid statName}`(
         @LongForgery(min = ONE_SECOND_NS, max = 10 * ONE_SECOND_NS) fakeStartTimeNs: Long
     ) {
         // Given

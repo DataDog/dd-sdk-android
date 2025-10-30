@@ -3496,8 +3496,10 @@ internal class RumResourceScopeTest {
 
     // endregion
 
+    // region InsightsCollector
+
     @Test
-    fun `M call onNetworkRequest W handleEvent {}`(
+    fun `M call onNetworkRequest() W handleEvent()`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
@@ -3516,6 +3518,8 @@ internal class RumResourceScopeTest {
         // Then
         verify(mockInsightsCollector).onNetworkRequest(any(), any())
     }
+
+    // endregion
 
     // region Internal
 
