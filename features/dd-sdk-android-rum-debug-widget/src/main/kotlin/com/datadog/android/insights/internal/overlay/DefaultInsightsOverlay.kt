@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights.overlay
+package com.datadog.android.insights.internal.overlay
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -13,7 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.view.isVisible
-import com.datadog.android.insights.DefaultInsightsCollector
+import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.insights.internal.InsightStateStorage
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
@@ -24,7 +24,6 @@ import com.datadog.android.insights.internal.widgets.ChartView
 import com.datadog.android.insights.internal.widgets.DragTouchListener
 import com.datadog.android.insights.internal.widgets.TimelineView
 import com.datadog.android.rum.ExperimentalRumApi
-import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollectorProvider
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import com.datadog.android.rumdebugwidget.R
 
@@ -36,7 +35,9 @@ import com.datadog.android.rumdebugwidget.R
  * It can be attached to any [Activity] by calling [attach].
  */
 @ExperimentalRumApi
-class DefaultInsightsOverlay : InsightsUpdatesListener {
+internal class DefaultInsightsOverlay(
+    private val insightsCollector: DefaultInsightsCollector
+) : InsightsUpdatesListener {
 
     private var root: View? = null
     private var viewName: TextView? = null
@@ -53,9 +54,6 @@ class DefaultInsightsOverlay : InsightsUpdatesListener {
     private var isPaused: Boolean = false
     private var isTransitioning: Boolean = false
 
-    private val insightsCollector: DefaultInsightsCollector?
-        get() = InsightsCollectorProvider.insightsCollector as? DefaultInsightsCollector
-
     /**
      * Attaches the overlay to the given [activity].
      * It will add a floating button to show/hide the overlay and will display various performance
@@ -69,8 +67,6 @@ class DefaultInsightsOverlay : InsightsUpdatesListener {
     @SuppressLint("SetTextI18n")
     @Suppress("LongMethod")
     fun attach(activity: Activity) {
-        if (insightsCollector == null) return
-
         val parent = activity.findViewById<ViewGroup>(android.R.id.content)
 
         if (root == null) {
@@ -119,7 +115,7 @@ class DefaultInsightsOverlay : InsightsUpdatesListener {
                 enableChart = false
             )
 
-            insightsCollector?.addUpdateListener(this)
+            insightsCollector.addUpdateListener(this)
         }
 
         val storage = InsightStateStorage(activity)
@@ -188,7 +184,7 @@ class DefaultInsightsOverlay : InsightsUpdatesListener {
 
     fun destroy() {
         detach()
-        insightsCollector?.removeUpdateListener(this)
+        insightsCollector.removeUpdateListener(this)
 
         root = null
 

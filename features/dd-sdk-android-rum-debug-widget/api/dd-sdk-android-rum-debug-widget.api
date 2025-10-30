@@ -1,55 +1,5 @@
-public final class com/datadog/android/insights/DefaultInsightsCollector : com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
-	public static final field Companion Lcom/datadog/android/insights/DefaultInsightsCollector$Companion;
-	public fun <init> (IJ)V
-	public synthetic fun <init> (IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun addUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
-	public fun getMaxSize ()I
-	public fun getUpdateIntervalMs ()J
-	public fun onAction ()V
-	public fun onCpuVital (Ljava/lang/Double;)V
-	public fun onLongTask (JJ)V
-	public fun onMemoryVital (Ljava/lang/Double;)V
-	public fun onNetworkRequest (JJ)V
-	public fun onNewView (Ljava/lang/String;)V
-	public fun onSlowFrame (JJ)V
-	public fun onSlowFrameRate (Ljava/lang/Double;)V
-	public fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
-	public fun setMaxSize (I)V
-	public fun setUpdateIntervalMs (J)V
-}
-
-public final class com/datadog/android/insights/DefaultInsightsCollector$Companion {
-}
-
-public final class com/datadog/android/insights/overlay/DefaultInsightsOverlay : com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
-	public static final field Companion Lcom/datadog/android/insights/overlay/DefaultInsightsOverlay$Companion;
-	public fun <init> ()V
-	public final fun attach (Landroid/app/Activity;)V
-	public final fun destroy ()V
-	public final fun detach ()V
-	public fun onDataUpdated ()V
-}
-
-public final class com/datadog/android/insights/overlay/DefaultInsightsOverlay$Companion {
-}
-
-public final class com/datadog/android/insights/overlay/Initializer : androidx/startup/Initializer {
-	public fun <init> ()V
-	public synthetic fun create (Landroid/content/Context;)Ljava/lang/Object;
-	public fun create (Landroid/content/Context;)V
-	public fun dependencies ()Ljava/util/List;
-}
-
-public final class com/datadog/android/insights/overlay/OverlayManager : android/app/Application$ActivityLifecycleCallbacks {
-	public fun <init> (Landroid/app/Application;)V
-	public fun onActivityCreated (Landroid/app/Activity;Landroid/os/Bundle;)V
-	public fun onActivityDestroyed (Landroid/app/Activity;)V
-	public fun onActivityPaused (Landroid/app/Activity;)V
-	public fun onActivityResumed (Landroid/app/Activity;)V
-	public fun onActivitySaveInstanceState (Landroid/app/Activity;Landroid/os/Bundle;)V
-	public fun onActivityStarted (Landroid/app/Activity;)V
-	public fun onActivityStopped (Landroid/app/Activity;)V
-	public final fun start ()V
-	public final fun stop ()V
+public final class com/datadog/android/insights/RumConfigurationExtKt {
+	public static final fun enableDebugWidget (Lcom/datadog/android/rum/RumConfiguration$Builder;Landroid/app/Application;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public static synthetic fun enableDebugWidget$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Landroid/app/Application;ZILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }
 

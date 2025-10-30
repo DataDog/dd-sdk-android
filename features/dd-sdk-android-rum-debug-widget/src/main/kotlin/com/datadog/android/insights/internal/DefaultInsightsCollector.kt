@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights
+package com.datadog.android.insights.internal
 
 import android.os.Handler
 import android.os.Looper
@@ -20,7 +20,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- * Default implementation of [InsightsCollector] that collects performance related events and notifies
+ * Default implementation of [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] that collects performance related events and notifies
  * its listeners at a regular interval.
  *
  * @param maxSize Maximum number of events stored in memory.
@@ -30,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArraySet
  */
 @InternalApi
 @ExperimentalRumApi
-class DefaultInsightsCollector internal constructor(
+internal class DefaultInsightsCollector internal constructor(
     maxSize: Int,
     updateIntervalMs: Long,
     private val handler: Handler,

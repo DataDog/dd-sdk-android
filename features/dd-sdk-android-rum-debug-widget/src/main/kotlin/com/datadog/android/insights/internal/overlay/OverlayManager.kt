@@ -4,32 +4,34 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights.overlay
+package com.datadog.android.insights.internal.overlay
 
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import com.datadog.android.insights.internal.DefaultInsightsCollector
+import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Manages the lifecycle of the insights overlay by attaching and detaching it
- * to activities based on their lifecycle events.
- *
- * @param application The application instance to register lifecycle callbacks.
- */
 @Suppress("OPT_IN_USAGE")
-class OverlayManager(private val application: Application) : Application.ActivityLifecycleCallbacks {
+internal object OverlayManager : Application.ActivityLifecycleCallbacks {
 
+    private var app: Application? = null
     private var overlay: DefaultInsightsOverlay? = null
+    private val started = AtomicBoolean(false)
 
-    fun start() {
-        application.registerActivityLifecycleCallbacks(this)
-        overlay = DefaultInsightsOverlay()
+    fun start(application: Application, insightsCollector: DefaultInsightsCollector) {
+        if (!started.compareAndSet(false, true)) return
+        app = application
+        overlay = DefaultInsightsOverlay(insightsCollector)
+        app?.registerActivityLifecycleCallbacks(this)
     }
 
     fun stop() {
-        application.unregisterActivityLifecycleCallbacks(this)
+        if (!started.compareAndSet(true, false)) return
+        app?.unregisterActivityLifecycleCallbacks(this)
         overlay?.destroy()
         overlay = null
+        app = null
     }
 
     override fun onActivityResumed(activity: Activity) {
