@@ -13,7 +13,6 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.nio.file.Paths
 
 plugins {
     // Build
@@ -41,13 +40,6 @@ plugins {
 }
 
 android {
-    defaultConfig {
-        consumerProguardFiles(
-            Paths.get(rootDir.path, "consumer-rules.pro").toString(),
-            "consumer-rules.pro"
-        )
-    }
-
     namespace = "com.datadog.android.rumdebugwidget"
 
     testOptions {
