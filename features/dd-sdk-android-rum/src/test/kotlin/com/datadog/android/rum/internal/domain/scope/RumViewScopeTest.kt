@@ -9070,14 +9070,14 @@ internal class RumViewScopeTest {
     // region InsightsCollector
 
     @Test
-    fun `M call onNewView W init`() {
+    fun `M call onNewView() W init()`() {
         // Then
         verify(mockInsightsCollector).onNewView(fakeKey.url)
         verifyNoMoreInteractions(mockInsightsCollector)
     }
 
     @Test
-    fun `M call onLongTask W onAddLongTask`(
+    fun `M call onLongTask() W AddLongTask()`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
@@ -9092,7 +9092,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M call onMemoryVital W onVitalUpdate`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
+    fun `M call onMemoryVital() W onVitalUpdate()`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
         // Given
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockMemoryVitalMonitor).register(capture())
@@ -9108,7 +9108,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M call onCpuVital W onVitalUpdate`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
+    fun `M call onCpuVital() W onVitalUpdate()`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
         // Given
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockCpuVitalMonitor).register(capture())
@@ -9124,7 +9124,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M call onSlowFrameRate W handleEvent(KeepAlive)`() {
+    fun `M call onSlowFrameRate() W handleEvent(KeepAlive)`() {
         // Given
         val testedScope = newRumViewScope()
 

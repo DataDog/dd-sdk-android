@@ -11,7 +11,6 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -28,7 +27,6 @@ import kotlin.math.roundToInt
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(seed = 0x161ee6b7cad5L)
 internal class LangExtTest {
 
     @Test
@@ -42,16 +40,16 @@ internal class LangExtTest {
     }
 
     @Test
-    fun `M return NaN W round {null}`() {
+    fun `M return NaN W round() {null}`() {
         // When
-        val tested = (null as Double?).round(2)
+        val tested = null.round(2)
 
         // Then
         assertThat(tested).isNaN
     }
 
     @Test
-    fun `M return NaN W round {NaN}`() {
+    fun `M return NaN W round() {NaN}`() {
         // When
         val tested = Double.NaN.round(3)
 
@@ -60,7 +58,7 @@ internal class LangExtTest {
     }
 
     @Test
-    fun `M round to given digits W round`(
+    fun `M round to given digits W round()`(
         @DoubleForgery(max = 1e300) fakeValue: Double,
         @IntForgery(min = 0, max = 6) digits: Int
     ) {
@@ -73,26 +71,37 @@ internal class LangExtTest {
     }
 
     @Test
-    fun `M clip value inside {min, max - size} W clip`(
+    fun `M clip value inside {min, max - size} W clip()`(
         @IntForgery(min = 0, max = 200) size: Int,
         @IntForgery(min = 0, max = 500) minBoundSeed: Int,
         @IntForgery(min = 1, max = 500) spanSeed: Int,
         @FloatForgery(min = -500f, max = 1000f) insideXSeed: Float
     ) {
-        // Ensure invariant min < max and room for 'size'
+        // Given
         val minBound = minBoundSeed
         val maxBound = (minBound + spanSeed + size).coerceAtLeast(minBound + size + 1)
-
-        // Below-min case
-        assertThat((-10f).clip(size, minBound, maxBound)).isEqualTo(minBound.toFloat())
-
-        // Inside case: clamp an arbitrary inside value into range [min, max - size]
         val upper = (maxBound - size).toFloat()
+        val belowMin = (minBound - 100).toFloat()
         val insideX = insideXSeed.coerceIn(minBound.toFloat(), upper)
-        assertThat(insideX.clip(size, minBound, maxBound)).isEqualTo(insideX)
+        val aboveMax = upper + 100f
 
-        // Above-max case (beyond usable right edge)
-        assertThat((upper + 100f).clip(size, minBound, maxBound)).isEqualTo(upper)
+        // When
+        val clippedBelow = belowMin.clip(size, minBound, maxBound)
+        val clippedInside = insideX.clip(size, minBound, maxBound)
+        val clippedAbove = aboveMax.clip(size, minBound, maxBound)
+        val clippedAtMin = minBound.toFloat().clip(size, minBound, maxBound)
+        val clippedAtUpper = upper.clip(size, minBound, maxBound)
+
+        // Then
+        assertThat(clippedBelow).isEqualTo(minBound.toFloat())
+        assertThat(clippedInside).isEqualTo(insideX)
+        assertThat(clippedAtMin).isEqualTo(minBound.toFloat())
+        assertThat(clippedAtUpper).isEqualTo(upper)
+        assertThat(clippedAbove).isEqualTo(upper)
+
+        val result = insideXSeed.clip(size, minBound, maxBound)
+        assertThat(result).isBetween(minBound.toFloat(), upper)
+        assertThat(result.clip(size, minBound, maxBound)).isEqualTo(result)
     }
 
     @Test
@@ -100,19 +109,39 @@ internal class LangExtTest {
         @StringForgery fakeA: String,
         @IntForgery(min = -1000, max = 1000) fakeB: Int
     ) {
+        // Given
         var called = false
+        var receivedA: String? = null
+        var receivedB: Int? = null
 
-        // both non-null -> called
-        multiLet(fakeA, fakeB) { _, _ -> called = true }
+        // When both non-null
+        multiLet(fakeA, fakeB) { a, b ->
+            called = true
+            receivedA = a
+            receivedB = b
+        }
+
+        // Then
         assertThat(called).isTrue()
+        assertThat(receivedA).isEqualTo(fakeA)
+        assertThat(receivedB).isEqualTo(fakeB)
 
-        // one null -> not called
+        // Given - reset
         called = false
-        multiLet(null as String?, fakeB) { _, _ -> called = true }
+
+        // When first is null
+        multiLet(null, fakeB) {_, _ -> called = true }
+
+        // Then
         assertThat(called).isFalse()
 
+        // Given - reset
         called = false
-        multiLet(fakeA, null as Int?) { _, _ -> called = true }
+
+        // When second is null
+        multiLet(fakeA, null) {_, _ -> called = true }
+
+        // Then
         assertThat(called).isFalse()
     }
 }
