@@ -208,8 +208,8 @@ class ModelValidationTest(
                 arrayOf("constant_number", OutputInfo("Version")),
                 arrayOf("sets", OutputInfo("Video")),
                 arrayOf("one_of_nested", OutputInfo("WeirdCombo")),
-                arrayOf("path_array", OutputInfo("PathArray")),
-                arrayOf("path_array_2", OutputInfo("PathArray2"))
+                arrayOf("path_array_with_integer", OutputInfo("PathArrayWithInteger")),
+                arrayOf("path_array_with_number", OutputInfo("PathArrayWithNumber"))
             )
         }
     }

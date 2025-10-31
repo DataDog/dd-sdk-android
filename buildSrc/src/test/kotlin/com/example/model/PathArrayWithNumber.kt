@@ -17,7 +17,7 @@ import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-public data class PathArray2(
+public data class PathArrayWithNumber(
     public val path: List<Path>,
 ) {
     public fun toJson(): JsonElement {
@@ -31,13 +31,13 @@ public data class PathArray2(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(jsonString: String): PathArray2 {
+        public fun fromJson(jsonString: String): PathArrayWithNumber {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 return fromJsonObject(jsonObject)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(
-                    "Unable to parse json into type PathArray2",
+                    "Unable to parse json into type PathArrayWithNumber",
                     e
                 )
             }
@@ -45,7 +45,7 @@ public data class PathArray2(
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonObject(jsonObject: JsonObject): PathArray2 {
+        public fun fromJsonObject(jsonObject: JsonObject): PathArrayWithNumber {
             try {
                 val path = jsonObject.get("path").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<Path>(jsonArray.size())
@@ -54,20 +54,20 @@ public data class PathArray2(
                     }
                     collection
                 }
-                return PathArray2(path)
+                return PathArrayWithNumber(path)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(
-                    "Unable to parse json into type PathArray2",
+                    "Unable to parse json into type PathArrayWithNumber",
                     e
                 )
             } catch (e: NumberFormatException) {
                 throw JsonParseException(
-                    "Unable to parse json into type PathArray2",
+                    "Unable to parse json into type PathArrayWithNumber",
                     e
                 )
             } catch (e: NullPointerException) {
                 throw JsonParseException(
-                    "Unable to parse json into type PathArray2",
+                    "Unable to parse json into type PathArrayWithNumber",
                     e
                 )
             }

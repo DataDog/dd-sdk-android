@@ -992,8 +992,8 @@ val RequiredForOtherAllOf = TypeDefinition.Class(
     )
 )
 
-val PathArray = TypeDefinition.Class(
-    name = "PathArray",
+val PathArrayWithInteger = TypeDefinition.Class(
+    name = "PathArrayWithInteger",
     properties = listOf(
         TypeProperty(
             name = "path",
@@ -1049,8 +1049,8 @@ val PathArray = TypeDefinition.Class(
     required = setOf("path")
 )
 
-val PathArray2 = TypeDefinition.Class(
-    name = "PathArray2",
+val PathArrayWithNumber = TypeDefinition.Class(
+    name = "PathArrayWithNumber",
     properties = listOf(
         TypeProperty(
             name = "path",

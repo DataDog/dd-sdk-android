@@ -26,8 +26,8 @@ import com.datadog.gradle.plugin.jsonschema.NoOpLogger
 import com.datadog.gradle.plugin.jsonschema.Opus
 import com.datadog.gradle.plugin.jsonschema.Order
 import com.datadog.gradle.plugin.jsonschema.Paper
-import com.datadog.gradle.plugin.jsonschema.PathArray
-import com.datadog.gradle.plugin.jsonschema.PathArray2
+import com.datadog.gradle.plugin.jsonschema.PathArrayWithInteger
+import com.datadog.gradle.plugin.jsonschema.PathArrayWithNumber
 import com.datadog.gradle.plugin.jsonschema.Person
 import com.datadog.gradle.plugin.jsonschema.Product
 import com.datadog.gradle.plugin.jsonschema.Shipping
@@ -131,8 +131,8 @@ class FileGeneratorTest(
                 arrayOf(Version, "Version"),
                 arrayOf(Video, "Video"),
                 arrayOf(WeirdCombo, "WeirdCombo"),
-                arrayOf(PathArray, "PathArray"),
-                arrayOf(PathArray2, "PathArray2")
+                arrayOf(PathArrayWithInteger, "PathArrayWithInteger"),
+                arrayOf(PathArrayWithNumber, "PathArrayWithNumber")
             )
         }
     }
