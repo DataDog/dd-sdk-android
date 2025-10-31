@@ -111,6 +111,8 @@ class SampleApplication : Application() {
         initializeTimber()
 
         initializeImageLoaders()
+
+        localServer.init(this)
     }
 
     override fun onLowMemory() {
