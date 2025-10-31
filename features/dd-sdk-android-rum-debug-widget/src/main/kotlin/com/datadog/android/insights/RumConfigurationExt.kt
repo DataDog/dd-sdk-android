@@ -14,6 +14,15 @@ import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.insights.internal.overlay.OverlayManager
 import com.datadog.android.rum.RumConfiguration
 
+/**
+ * Enables the RUM Debug Widget which displays real-time RUM insights on top of your application UI.
+ * This is meant to be used only in debug builds.
+ *
+ * @param application The application instance.
+ * @param enabled  Set to `true` to enable the debug widget, `false` otherwise. By default, it's enabled
+ * in debug builds only.
+ * @return The modified [RumConfiguration.Builder].
+ */
 fun RumConfiguration.Builder.enableDebugWidget(application: Application, enabled: Boolean = BuildConfig.DEBUG) = apply {
     if (!enabled) return@apply
 
