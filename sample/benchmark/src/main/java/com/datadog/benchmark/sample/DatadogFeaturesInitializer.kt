@@ -133,7 +133,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            setVitalEventMapper { event ->
+            setVitalOperationStepEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }

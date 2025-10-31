@@ -14,8 +14,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -557,7 +557,7 @@ internal class RumEventSerializerTest {
 
     @RepeatedTest(8)
     fun `M serialize RUM event W serialize() with VitalEvent`(
-        @Forgery event: VitalEvent
+        @Forgery event: RumVitalOperationStepEvent
     ) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -566,18 +566,13 @@ internal class RumEventSerializerTest {
             .hasField("type", "vital")
             .hasField("date", event.date)
             .hasField("vital") {
-                when (val vital = event.vital) {
-                    is VitalEvent.Vital.FeatureOperationProperties -> {
-                        hasField("type", vital.type)
-                        vital.name?.let { hasField("name", it) }
-                        vital.operationKey?.let { hasField("operation_key", it) }
-                        vital.description?.let { hasField("description", it) }
-                        vital.stepType?.let { hasField("step_type", it.toJson()) }
-                        vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
-                    }
-                    is VitalEvent.Vital.DurationProperties,
-                    is VitalEvent.Vital.AppLaunchProperties -> TODO("SDK doesn't support this vital type yet")
-                }
+                val vital = event.vital
+                hasField("type", vital.type)
+                vital.name?.let { hasField("name", it) }
+                vital.operationKey?.let { hasField("operation_key", it) }
+                vital.description?.let { hasField("description", it) }
+                hasField("step_type", vital.stepType.toJson())
+                vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
             }
             .hasField("application") {
                 hasField("id", event.application.id)
@@ -1345,7 +1340,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M use the attributes group verbose name W validateAttributes { VitalEvent }`(
-        @Forgery fakeEvent: VitalEvent
+        @Forgery fakeEvent: RumVitalOperationStepEvent
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
@@ -2027,7 +2022,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M drop non-serializable attributes W serialize() with VitalEvent { bad usr#additionalProperties }`(
-        @Forgery event: VitalEvent,
+        @Forgery event: RumVitalOperationStepEvent,
         forge: Forge
     ) {
         // Given
@@ -2064,7 +2059,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M drop non-serializable attributes W serialize() with VitalEvent { bad context#additionalProperties }`(
-        @Forgery event: VitalEvent,
+        @Forgery event: RumVitalOperationStepEvent,
         forge: Forge
     ) {
         // Given
@@ -2132,10 +2127,10 @@ internal class RumEventSerializerTest {
                 )
             }
 
-            5 -> this.getForgery(VitalEvent::class.java).let {
+            5 -> this.getForgery(RumVitalOperationStepEvent::class.java).let {
                 it.copy(
-                    context = VitalEvent.Context(additionalProperties = attributes),
-                    usr = (it.usr ?: VitalEvent.Usr())
+                    context = RumVitalOperationStepEvent.Context(additionalProperties = attributes),
+                    usr = (it.usr ?: RumVitalOperationStepEvent.Usr())
                         .copy(additionalProperties = userAttributes)
                 )
             }

@@ -8,12 +8,12 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.domain.scope.toSchemaFailureReason
-import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class VitalFeatureOperationPropertiesAssert(actual: VitalEvent.Vital.FeatureOperationProperties) :
-    AbstractObjectAssert<VitalFeatureOperationPropertiesAssert, VitalEvent.Vital.FeatureOperationProperties>(
+internal class VitalFeatureOperationPropertiesAssert(actual: RumVitalOperationStepEvent.Vital) :
+    AbstractObjectAssert<VitalFeatureOperationPropertiesAssert, RumVitalOperationStepEvent.Vital>(
         actual,
         VitalFeatureOperationPropertiesAssert::class.java
     ) {
@@ -34,7 +34,7 @@ internal class VitalFeatureOperationPropertiesAssert(actual: VitalEvent.Vital.Fe
             .isEqualTo(expected)
     }
 
-    fun hasVitalStepType(expected: VitalEvent.StepType) = apply {
+    fun hasVitalStepType(expected: RumVitalOperationStepEvent.StepType) = apply {
         assertThat(actual.stepType)
             .overridingErrorMessage(
                 "Expected event data to have vital.operationKey $expected but was ${actual.stepType}"
@@ -60,7 +60,7 @@ internal class VitalFeatureOperationPropertiesAssert(actual: VitalEvent.Vital.Fe
 
     companion object {
         internal fun assertThat(
-            actual: VitalEvent.Vital.FeatureOperationProperties
+            actual: RumVitalOperationStepEvent.Vital
         ): VitalFeatureOperationPropertiesAssert =
             VitalFeatureOperationPropertiesAssert(actual)
     }
