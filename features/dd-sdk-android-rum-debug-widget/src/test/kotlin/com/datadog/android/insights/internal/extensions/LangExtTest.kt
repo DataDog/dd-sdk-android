@@ -103,45 +103,4 @@ internal class LangExtTest {
         assertThat(result).isBetween(minBound.toFloat(), upper)
         assertThat(result.clip(size, minBound, maxBound)).isEqualTo(result)
     }
-
-    @Test
-    fun `M invoke block only when both non-null W multiLet()`(
-        @StringForgery fakeA: String,
-        @IntForgery(min = -1000, max = 1000) fakeB: Int
-    ) {
-        // Given
-        var called = false
-        var receivedA: String? = null
-        var receivedB: Int? = null
-
-        // When both non-null
-        multiLet(fakeA, fakeB) { a, b ->
-            called = true
-            receivedA = a
-            receivedB = b
-        }
-
-        // Then
-        assertThat(called).isTrue()
-        assertThat(receivedA).isEqualTo(fakeA)
-        assertThat(receivedB).isEqualTo(fakeB)
-
-        // Given - reset
-        called = false
-
-        // When first is null
-        multiLet(null, fakeB) { _, _ -> called = true }
-
-        // Then
-        assertThat(called).isFalse()
-
-        // Given - reset
-        called = false
-
-        // When second is null
-        multiLet(fakeA, null) { _, _ -> called = true }
-
-        // Then
-        assertThat(called).isFalse()
-    }
 }

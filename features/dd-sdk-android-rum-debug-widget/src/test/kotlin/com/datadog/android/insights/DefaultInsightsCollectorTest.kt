@@ -109,7 +109,7 @@ internal class DefaultInsightsCollectorTest {
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
         val e = testedInsightsCollector.eventsState.single()
-        assertThat(e is TimelineEvent.SlowFrame).isTrue
+        assertThat(e).isInstanceOf(TimelineEvent.SlowFrame::class.java)
         assertThat(e.durationNs).isEqualTo(fakeDurationNs)
     }
 
