@@ -3,10 +3,10 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.core.collections
 
-import com.datadog.android.internal.collections.EvictingQueue
-import org.assertj.core.api.Assertions.assertThat
+package com.datadog.android.internal.collections
+
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 
@@ -21,7 +21,7 @@ internal class EvictingQueueTest {
         repeat(5) { queue.add(it) }
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
     }
 
     @Test
@@ -33,7 +33,7 @@ internal class EvictingQueueTest {
         repeat(5) { queue.offer(it) }
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
     }
 
     @Test
@@ -45,7 +45,7 @@ internal class EvictingQueueTest {
         repeat(2) { queue.add(it) }
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(0, 1))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(0, 1))
     }
 
     @Test
@@ -57,7 +57,7 @@ internal class EvictingQueueTest {
         repeat(2) { queue.offer(it) }
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(0, 1))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(0, 1))
     }
 
     @Test
@@ -69,7 +69,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(1, 2))
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(1, 2))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(1, 2))
     }
 
     @Test
@@ -81,7 +81,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(1, 2))
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(1, 2))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(1, 2))
     }
 
     @Test
@@ -93,7 +93,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(1, 2, 3, 4))
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
     }
 
     @Test
@@ -106,7 +106,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(5, 6))
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(4, 5, 6))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(4, 5, 6))
     }
 
     @Test
@@ -119,7 +119,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(5, 6, 7, 8))
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(6, 7, 8))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(6, 7, 8))
     }
 
     @Test
@@ -132,7 +132,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(4, 5, 6))
 
         // Then
-        assertThat(queue.toList()).isEqualTo(listOf(4, 5, 6))
+        Assertions.assertThat(queue.toList()).isEqualTo(listOf(4, 5, 6))
     }
 
     @Test
@@ -141,7 +141,7 @@ internal class EvictingQueueTest {
         val queue = EvictingQueue<Int>(-1)
 
         // Then
-        assertThat(queue.size).isEqualTo(0)
+        Assertions.assertThat(queue.size).isEqualTo(0)
     }
 
     @Test
@@ -153,7 +153,7 @@ internal class EvictingQueueTest {
         assertDoesNotThrow { queue.add(1) }
 
         // Then
-        assertThat(queue.size).isEqualTo(0)
+        Assertions.assertThat(queue.size).isEqualTo(0)
     }
 
     @Test
@@ -165,6 +165,6 @@ internal class EvictingQueueTest {
         assertDoesNotThrow { queue.offer(1) }
 
         // Then
-        assertThat(queue.size).isEqualTo(0)
+        Assertions.assertThat(queue.size).isEqualTo(0)
     }
 }
