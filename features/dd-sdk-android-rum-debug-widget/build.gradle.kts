@@ -51,6 +51,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
 

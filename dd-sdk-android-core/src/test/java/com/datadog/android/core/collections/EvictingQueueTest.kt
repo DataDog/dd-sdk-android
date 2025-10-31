@@ -5,6 +5,7 @@
  */
 package com.datadog.android.core.collections
 
+import com.datadog.android.internal.collections.EvictingQueue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
