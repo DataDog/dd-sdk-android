@@ -331,22 +331,23 @@ class JsonSchemaReader(
             // because we can't make a type matching both, we simplify it to be always an array
             logger.warn("Simplifying a 'oneOf' constraint to $asArray")
             asArray
-        } else if (options.all { it is TypeDefinition.Class || it is TypeDefinition.OneOfClass }) {
+        } else {
             TypeDefinition.OneOfClass(
                 typeName,
                 options.flatMap {
                     when (it) {
                         is TypeDefinition.OneOfClass -> it.options
-                        is TypeDefinition.Class -> listOf(it)
-                        else -> emptyList()
+                        is TypeDefinition.Class -> listOf(TypeDefinition.OneOfClass.Option.Class(it))
+                        is TypeDefinition.Primitive -> listOf(TypeDefinition.OneOfClass.Option.Primitive(it))
+                        else -> {
+                            throw UnsupportedOperationException(
+                                "Unable to implement `oneOf` constraint with types:\n  " +
+                                    options.joinToString("\n  ")
+                            )
+                        }
                     }
                 },
                 description.orEmpty()
-            )
-        } else {
-            throw UnsupportedOperationException(
-                "Unable to implement `oneOf` constraint with types:\n  " +
-                    options.joinToString("\n  ")
             )
         }
     }

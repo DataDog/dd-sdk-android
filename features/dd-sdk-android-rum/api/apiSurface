@@ -2154,7 +2154,7 @@ data class com.datadog.android.rum.model.VitalEvent
         fun fromJsonObject(com.google.gson.JsonObject): FeatureOperationProperties
     companion object 
       fun fromJson(kotlin.String): Vital
-      fun fromJsonObject(com.google.gson.JsonObject): Vital
+      fun fromJsonElement(com.google.gson.JsonElement): Vital
   data class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -2852,7 +2852,7 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
         fun fromJsonObject(com.google.gson.JsonObject): AddViewLoadingTime
     companion object 
       fun fromJson(kotlin.String): Usage
-      fun fromJsonObject(com.google.gson.JsonObject): Usage
+      fun fromJsonElement(com.google.gson.JsonElement): Usage
   enum Source
     constructor(kotlin.String)
     - ANDROID
