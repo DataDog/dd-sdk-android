@@ -14,20 +14,47 @@ import androidx.core.view.marginTop
 
 private const val ANIMATION_DURATION = 300L
 
-internal fun View.animateVisibility(newVisibilityState: Boolean) {
-    scaleX = if (!isVisible) 0f else 1f
-    scaleY = if (!isVisible) 0f else 1f
-    alpha = if (!isVisible) 0f else 1f
-    isVisible = true
+internal fun View.animateVisibility(
+    newVisibilityState: Boolean,
+    end: (() -> Unit)? = null
+) {
+    animate().cancel()
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0
-    newOnlyAnimation()
-        .scaleX(1f - scaleX)
-        .scaleY(1f - scaleY)
-        .alpha(1f - alpha)
-        .setDuration(ANIMATION_DURATION)
-        .withEndAction { isVisible = newVisibilityState }
-        .start()
+    if (newVisibilityState) {
+        if (!isVisible) {
+            scaleX = 0.95f
+            scaleY = 0.95f
+            alpha = 0f
+            isVisible = true
+        }
+        isClickable = false
+        animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(ANIMATION_DURATION)
+            .withEndAction {
+                isClickable = true
+                end?.invoke()
+            }
+            .start()
+    } else {
+        if (!isVisible) {
+            end?.invoke()
+            return
+        }
+        isClickable = false
+        animate()
+            .scaleX(0.95f)
+            .scaleY(0.95f)
+            .alpha(0f)
+            .setDuration(ANIMATION_DURATION)
+            .withEndAction {
+                isVisible = false
+                end?.invoke()
+            }
+            .start()
+    }
 }
 
 @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0

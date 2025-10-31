@@ -383,11 +383,6 @@ public abstract interface class com/datadog/android/rum/internal/instrumentation
 	public abstract fun setUpdateIntervalMs (J)V
 }
 
-public final class com/datadog/android/rum/internal/instrumentation/insights/InsightsCollectorProvider {
-	public static final field INSTANCE Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollectorProvider;
-	public final fun getInsightsCollector ()Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;
-}
-
 public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
 	public abstract fun onDataUpdated ()V
 }

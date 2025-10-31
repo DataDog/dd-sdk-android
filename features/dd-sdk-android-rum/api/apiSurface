@@ -83,7 +83,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setInitialResourceIdentifier(com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier): Builder
     fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier?): Builder
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
-    fun setInsightsCollector(com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector?): Builder
+    fun setInsightsCollector(com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
@@ -206,8 +206,6 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   fun onSlowFrameRate(Double?)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun onDataUpdated()
-object com.datadog.android.rum.internal.instrumentation.insights.InsightsCollectorProvider
-  val insightsCollector: InsightsCollector?
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor
   fun waitForResourceTiming(Any)
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)

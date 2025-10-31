@@ -10,41 +10,37 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import com.datadog.android.insights.internal.DefaultInsightsCollector
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("OPT_IN_USAGE")
 internal object OverlayManager : Application.ActivityLifecycleCallbacks {
 
     private var app: Application? = null
     private var overlay: DefaultInsightsOverlay? = null
-    private val started = AtomicBoolean(false)
+    private lateinit var collector: DefaultInsightsCollector
 
     fun start(application: Application, insightsCollector: DefaultInsightsCollector) {
-        if (!started.compareAndSet(false, true)) return
         app = application
-        overlay = DefaultInsightsOverlay(insightsCollector)
-        app?.registerActivityLifecycleCallbacks(this)
+        collector = insightsCollector
+        application.registerActivityLifecycleCallbacks(this)
     }
 
     fun stop() {
-        if (!started.compareAndSet(true, false)) return
-        app?.unregisterActivityLifecycleCallbacks(this)
+        val a = app ?: return
+        a.unregisterActivityLifecycleCallbacks(this)
         overlay?.destroy()
         overlay = null
         app = null
     }
 
     override fun onActivityResumed(activity: Activity) {
-        overlay?.attach(activity)
+        overlay?.destroy()
+        overlay = DefaultInsightsOverlay(collector).also { it.attach(activity) }
     }
 
-    override fun onActivityPaused(activity: Activity) {
-        overlay?.detach()
-    }
-
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivityPaused(activity: Activity) {}
     override fun onActivityDestroyed(activity: Activity) {}
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
     override fun onActivityStarted(activity: Activity) {}
-    override fun onActivityStopped(activity: Activity) {}
 }

@@ -18,7 +18,6 @@ import com.datadog.android.insights.internal.InsightStateStorage
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
 import com.datadog.android.insights.internal.extensions.color
-import com.datadog.android.insights.internal.extensions.multiLet
 import com.datadog.android.insights.internal.extensions.setupChartView
 import com.datadog.android.insights.internal.widgets.ChartView
 import com.datadog.android.insights.internal.widgets.DragTouchListener
@@ -123,9 +122,7 @@ internal class DefaultInsightsOverlay(
         root?.let { overlayView ->
             val widgetView = overlayView.findViewById<View>(R.id.insights_widget).apply {
                 setOnClickListener {
-                    storage.widgetDisplayed = false
-                    it.animateVisibility(false)
-                    fab?.animateVisibility(true)
+                    toggleOverlay(storage = storage, showWidget = false, widget = this, fab = fab)
                 }
                 setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
                 restoreVisibility(storage.widgetDisplayed)
@@ -133,9 +130,7 @@ internal class DefaultInsightsOverlay(
 
             fab?.apply {
                 setOnClickListener {
-                    storage.widgetDisplayed = true
-                    it.animateVisibility(false)
-                    widgetView?.animateVisibility(true)
+                    toggleOverlay(storage = storage, showWidget = true, widget = widgetView, fab = this)
                 }
                 setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
                 restoreVisibility(!storage.widgetDisplayed)
@@ -171,23 +166,39 @@ internal class DefaultInsightsOverlay(
 
         storage.widgetDisplayed = showWidget
 
+        val done = {
+            isTransitioning = false
+            widget?.isClickable = true
+            fab?.isClickable = true
+        }
+
         if (showWidget) {
-            // TODO
+            fab?.animateVisibility(false) {
+                widget?.animateVisibility(true) {
+                    done()
+                }
+            }
         } else {
-            // TODO
+            widget?.animateVisibility(false) {
+                fab?.animateVisibility(true) {
+                    done()
+                }
+            }
         }
     }
 
-    fun detach() {
-        (root?.parent as? ViewGroup)?.removeView(root)
-    }
-
     fun destroy() {
-        detach()
         insightsCollector.removeUpdateListener(this)
+        root?.let { v ->
+            (v.parent as? ViewGroup)?.removeView(v)
+            timelineView?.setOnClickListener(null)
+            fab?.setOnClickListener(null)
+            fab?.setOnTouchListener(null)
+            v.setOnClickListener(null)
+            v.setOnTouchListener(null)
+        }
 
         root = null
-
         viewName = null
         timelineView = null
         fab = null
@@ -205,20 +216,20 @@ internal class DefaultInsightsOverlay(
         scaleX = 1f
         scaleY = 1f
         alpha = 1f
+        isClickable = shouldBeVisible
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onDataUpdated() {
         if (isPaused) return
-        multiLet(insightsCollector, timelineView) { collector, timeline ->
-            timeline.update(collector.eventsState, collector.maxSize)
-            viewName?.text = collector.viewName
-            cpuValue?.update(collector.cpuTicksPerSecond)
-            gcValue?.update(collector.gcCallsPerSecond)
-            vmMemoryValue?.update(collector.vmRssMb)
-            nativeMemoryValue?.update(collector.nativeHeapMb)
-            threadsValue?.update(collector.threadsCount.toDouble())
-            slowFrameRate?.update(collector.slowFramesRate)
+        timelineView?.let { timeline ->
+            timeline.update(insightsCollector.eventsState, insightsCollector.maxSize)
+            viewName?.text = insightsCollector.viewName
+            cpuValue?.update(insightsCollector.cpuTicksPerSecond)
+            gcValue?.update(insightsCollector.gcCallsPerSecond)
+            vmMemoryValue?.update(insightsCollector.vmRssMb)
+            nativeMemoryValue?.update(insightsCollector.nativeHeapMb)
+            threadsValue?.update(insightsCollector.threadsCount.toDouble())
+            slowFrameRate?.update(insightsCollector.slowFramesRate)
         }
     }
 
