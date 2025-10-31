@@ -686,31 +686,38 @@ val Household = TypeDefinition.Class(
             type = TypeDefinition.OneOfClass(
                 name = "Situation",
                 options = listOf(
-                    TypeDefinition.Class(
-                        name = "Marriage",
-                        required = setOf("spouses"),
-                        properties = listOf(
-                            TypeProperty(
-                                name = "spouses",
-                                type = TypeDefinition.Array(
-                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                    TypeDefinition.OneOfClass.Option.Class(
+                        TypeDefinition.Class(
+                            name = "Marriage",
+                            required = setOf("spouses"),
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "spouses",
+                                    type = TypeDefinition.Array(
+                                        items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                    )
                                 )
                             )
                         )
                     ),
-                    TypeDefinition.Class(
-                        name = "Cotenancy",
-                        required = setOf("roommates"),
-                        properties = listOf(
-                            TypeProperty(
-                                name = "roommates",
-                                type = TypeDefinition.Array(
-                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                    TypeDefinition.OneOfClass.Option.Class(
+                        TypeDefinition.Class(
+                            name = "Cotenancy",
+                            required = setOf("roommates"),
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "roommates",
+                                    type = TypeDefinition.Array(
+                                        items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                    )
                                 )
                             )
                         )
+                    ),
+                    TypeDefinition.OneOfClass.Option.Primitive(
+                        primitive = TypeDefinition.Primitive(type = JsonPrimitiveType.INTEGER)
                     )
-                ).map { TypeDefinition.OneOfClass.Option.Class(it) }
+                )
             )
         )
     )

@@ -103,15 +103,15 @@ class MultiClassGenerator(
         funBuilder.beginControlFlow("try")
 
         funBuilder.addStatement(
-            "val %L = %T.parseString(%L).asJsonObject",
-            Identifier.PARAM_JSON_OBJ,
+            "val %L = %T.parseString(%L)",
+            Identifier.PARAM_JSON_ELEMENT,
             ClassNameRef.JsonParser,
             Identifier.PARAM_JSON_STR
         )
         funBuilder.addStatement(
             "return %L(%L)",
-            Identifier.FUN_FROM_JSON_OBJ,
-            Identifier.PARAM_JSON_OBJ
+            Identifier.FUN_FROM_JSON_ELEMENT,
+            Identifier.PARAM_JSON_ELEMENT
         )
 
         funBuilder.nextControlFlow(
@@ -133,7 +133,7 @@ class MultiClassGenerator(
         rootTypeName: String
     ): FunSpec {
         val returnType = definition.asKotlinTypeName(rootTypeName)
-        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
+        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_ELEMENT)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .throws(ClassNameRef.JsonParseException)
             .addParameter(Identifier.PARAM_JSON_ELEMENT, ClassNameRef.JsonElement)
@@ -177,7 +177,7 @@ class MultiClassGenerator(
                     funBuilder.addStatement(
                         "%T.%L(%L)",
                         typeName,
-                        Identifier.FUN_FROM_JSON_OBJ,
+                        Identifier.FUN_FROM_JSON_PRIMITIVE,
                         Identifier.PARAM_JSON_ELEMENT
                     )
                     funBuilder.nextControlFlow("else")

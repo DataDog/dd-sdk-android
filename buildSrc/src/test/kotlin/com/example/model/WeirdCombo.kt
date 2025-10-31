@@ -47,8 +47,8 @@ public data class WeirdCombo(
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): WeirdCombo {
             try {
-                val anything = jsonObject.get("anything")?.asJsonObject?.let {
-                    Anything.fromJsonObject(it)
+                val anything = jsonObject.get("anything")?.let {
+                    Anything.fromJsonElement(it)
                 }
                 return WeirdCombo(anything)
             } catch (e: IllegalStateException) {
@@ -247,8 +247,8 @@ public data class WeirdCombo(
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Anything {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                    return fromJsonObject(jsonObject)
+                    val jsonElement = JsonParser.parseString(jsonString)
+                    return fromJsonElement(jsonElement)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(
                         "Unable to parse json into one of type Anything",
@@ -259,7 +259,7 @@ public data class WeirdCombo(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonElement: JsonElement): Anything {
+            public fun fromJsonElement(jsonElement: JsonElement): Anything {
                 val errors = mutableListOf<Throwable>()
                 val asFish = try {
                     if (jsonElement is JsonObject) {

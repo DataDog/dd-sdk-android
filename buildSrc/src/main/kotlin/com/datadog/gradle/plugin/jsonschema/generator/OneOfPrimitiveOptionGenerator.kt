@@ -87,15 +87,15 @@ class OneOfPrimitiveOptionGenerator(
 
         funBuilder.addStatement(
             "val %L = %T.parseString(%L)",
-            Identifier.PARAM_JSON_OBJ,
+            Identifier.PARAM_JSON_ELEMENT,
             ClassNameRef.JsonParser,
             Identifier.PARAM_JSON_STR
         )
         funBuilder.beginControlFlow("try")
         funBuilder.addStatement(
             "return %L(%L.asJsonPrimitive)",
-            Identifier.FUN_FROM_JSON_OBJ,
-            Identifier.PARAM_JSON_OBJ
+            Identifier.FUN_FROM_JSON_PRIMITIVE,
+            Identifier.PARAM_JSON_ELEMENT
         )
         funBuilder.nextControlFlow("catch (%L: %T)", Identifier.CAUGHT_EXCEPTION, ClassNameRef.IllegalStateException)
         funBuilder.addStatement(
@@ -111,10 +111,10 @@ class OneOfPrimitiveOptionGenerator(
 
     private fun generateElementDeserializer(className: String, definition: TypeDefinition.Primitive): FunSpec {
         val returnType = ClassName.bestGuess(className)
-        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ).apply {
+        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_PRIMITIVE).apply {
             addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             throws(ClassNameRef.JsonParseException)
-            addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonPrimitive)
+            addParameter(Identifier.PARAM_JSON_PRIMITIVE, ClassNameRef.JsonPrimitive)
             returns(returnType)
         }
 
@@ -124,18 +124,18 @@ class OneOfPrimitiveOptionGenerator(
 
         funBuilder.beginControlFlow(
             "if (%L.${typeInfo.isFuncName})",
-            Identifier.PARAM_JSON_OBJ
+            Identifier.PARAM_JSON_PRIMITIVE
         )
         funBuilder.addStatement(
             "return %T(%L.${typeInfo.asFuncName})",
             returnType,
-            Identifier.PARAM_JSON_OBJ
+            Identifier.PARAM_JSON_PRIMITIVE
         )
         funBuilder.nextControlFlow("else")
         funBuilder.addStatement(
             "throw %T(\"Can't convert %L to ${typeInfo.typeName}\")",
             ClassNameRef.JsonParseException,
-            Identifier.PARAM_JSON_OBJ
+            Identifier.PARAM_JSON_PRIMITIVE
         )
         funBuilder.endControlFlow()
 

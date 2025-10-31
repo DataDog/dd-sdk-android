@@ -49,7 +49,7 @@ public data class PathArrayWithInteger(
                 val path = jsonObject.get("path").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<Path>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Path.fromJsonObject(it))
+                        collection.add(Path.fromJsonElement(it))
                     }
                     collection
                 }
@@ -91,9 +91,9 @@ public data class PathArrayWithInteger(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: kotlin.String): Boolean {
-                    val jsonObject = JsonParser.parseString(jsonString)
+                    val jsonElement = JsonParser.parseString(jsonString)
                     try {
-                        return fromJsonObject(jsonObject.asJsonPrimitive)
+                        return fromJsonPrimitive(jsonElement.asJsonPrimitive)
                     } catch (e: IllegalStateException) {
                         throw JsonParseException("Unable to parse json into type Boolean", e)
                     }
@@ -101,12 +101,12 @@ public data class PathArrayWithInteger(
 
                 @JvmStatic
                 @Throws(JsonParseException::class)
-                public fun fromJsonObject(jsonObject: JsonPrimitive): Boolean {
+                public fun fromJsonPrimitive(jsonPrimitive: JsonPrimitive): Boolean {
                     try {
-                        if (jsonObject.isBoolean) {
-                            return Boolean(jsonObject.asBoolean)
+                        if (jsonPrimitive.isBoolean) {
+                            return Boolean(jsonPrimitive.asBoolean)
                         } else {
-                            throw JsonParseException("Can't convert jsonObject to Boolean")
+                            throw JsonParseException("Can't convert jsonPrimitive to Boolean")
                         }
                     } catch (e: IllegalStateException) {
                         throw JsonParseException("Unable to parse json into type Boolean", e)
@@ -129,9 +129,9 @@ public data class PathArrayWithInteger(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: kotlin.String): String {
-                    val jsonObject = JsonParser.parseString(jsonString)
+                    val jsonElement = JsonParser.parseString(jsonString)
                     try {
-                        return fromJsonObject(jsonObject.asJsonPrimitive)
+                        return fromJsonPrimitive(jsonElement.asJsonPrimitive)
                     } catch (e: IllegalStateException) {
                         throw JsonParseException("Unable to parse json into type String", e)
                     }
@@ -139,12 +139,12 @@ public data class PathArrayWithInteger(
 
                 @JvmStatic
                 @Throws(JsonParseException::class)
-                public fun fromJsonObject(jsonObject: JsonPrimitive): String {
+                public fun fromJsonPrimitive(jsonPrimitive: JsonPrimitive): String {
                     try {
-                        if (jsonObject.isString) {
-                            return String(jsonObject.asString)
+                        if (jsonPrimitive.isString) {
+                            return String(jsonPrimitive.asString)
                         } else {
-                            throw JsonParseException("Can't convert jsonObject to String")
+                            throw JsonParseException("Can't convert jsonPrimitive to String")
                         }
                     } catch (e: IllegalStateException) {
                         throw JsonParseException("Unable to parse json into type String", e)
@@ -167,9 +167,9 @@ public data class PathArrayWithInteger(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: kotlin.String): Long {
-                    val jsonObject = JsonParser.parseString(jsonString)
+                    val jsonElement = JsonParser.parseString(jsonString)
                     try {
-                        return fromJsonObject(jsonObject.asJsonPrimitive)
+                        return fromJsonPrimitive(jsonElement.asJsonPrimitive)
                     } catch (e: IllegalStateException) {
                         throw JsonParseException("Unable to parse json into type Long", e)
                     }
@@ -177,12 +177,12 @@ public data class PathArrayWithInteger(
 
                 @JvmStatic
                 @Throws(JsonParseException::class)
-                public fun fromJsonObject(jsonObject: JsonPrimitive): Long {
+                public fun fromJsonPrimitive(jsonPrimitive: JsonPrimitive): Long {
                     try {
-                        if (jsonObject.isNumber) {
-                            return Long(jsonObject.asLong)
+                        if (jsonPrimitive.isNumber) {
+                            return Long(jsonPrimitive.asLong)
                         } else {
-                            throw JsonParseException("Can't convert jsonObject to Long")
+                            throw JsonParseException("Can't convert jsonPrimitive to Long")
                         }
                     } catch (e: IllegalStateException) {
                         throw JsonParseException("Unable to parse json into type Long", e)
@@ -256,8 +256,8 @@ public data class PathArrayWithInteger(
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: kotlin.String): Path {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                    return fromJsonObject(jsonObject)
+                    val jsonElement = JsonParser.parseString(jsonString)
+                    return fromJsonElement(jsonElement)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(
                         "Unable to parse json into one of type Path",
@@ -268,11 +268,11 @@ public data class PathArrayWithInteger(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonElement: JsonElement): Path {
+            public fun fromJsonElement(jsonElement: JsonElement): Path {
                 val errors = mutableListOf<Throwable>()
                 val asBoolean = try {
                     if (jsonElement is JsonPrimitive) {
-                        Boolean.fromJsonObject(jsonElement)
+                        Boolean.fromJsonPrimitive(jsonElement)
                     } else {
                         throw JsonParseException("Unable to parse json into type "
                                  + "kotlin.Boolean")
@@ -283,7 +283,7 @@ public data class PathArrayWithInteger(
                 }
                 val asString = try {
                     if (jsonElement is JsonPrimitive) {
-                        String.fromJsonObject(jsonElement)
+                        String.fromJsonPrimitive(jsonElement)
                     } else {
                         throw JsonParseException("Unable to parse json into type "
                                  + "kotlin.String")
@@ -294,7 +294,7 @@ public data class PathArrayWithInteger(
                 }
                 val asLong = try {
                     if (jsonElement is JsonPrimitive) {
-                        Long.fromJsonObject(jsonElement)
+                        Long.fromJsonPrimitive(jsonElement)
                     } else {
                         throw JsonParseException("Unable to parse json into type "
                                  + "kotlin.Long")
