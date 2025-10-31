@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.psi.psiUtil.children
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.bindingContextUtil.getReferenceTargets
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.util.getType
 import org.jetbrains.kotlin.resolve.scopes.receivers.ClassQualifier
@@ -153,18 +152,18 @@ class InvalidStringFormat : Rule() {
     private fun extractFormatArgs(
         resolvedCall: ResolvedCall<out CallableDescriptor>
     ): List<String?> {
-        val receiver = resolvedCall.call.explicitReceiver
-        val formatParams = resolvedCall.valueArgumentsByIndex?.last() as? VarargValueArgument
+        val allArgs = resolvedCall.valueArgumentsByIndex
+            ?.flatMap { it.arguments }
+            .orEmpty()
 
-        val rawTypes = formatParams?.arguments.orEmpty()
-            .map {
-                it.getArgumentExpression()?.getType(bindingContext)?.lowerIfFlexible()?.fqTypeName()
-            }
-        return if (receiver is ClassQualifier && rawTypes.firstOrNull() == LOCALE_CLASS) {
-            rawTypes.drop(1)
-        } else {
-            rawTypes
+        val rawTypes = allArgs.map {
+            it.getArgumentExpression()
+                ?.getType(bindingContext)
+                ?.lowerIfFlexible()
+                ?.fqTypeName()
         }
+
+        return if (rawTypes.firstOrNull() == LOCALE_CLASS) rawTypes.drop(1) else rawTypes
     }
 
     private fun checkFormat(
