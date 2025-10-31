@@ -77,7 +77,6 @@ sealed class TypeDefinition {
         fun asPrimitiveTypeFun(): String {
             return when (type) {
                 JsonPrimitiveType.BOOLEAN -> "asBoolean"
-                JsonPrimitiveType.DOUBLE -> "asDouble"
                 JsonPrimitiveType.STRING -> "asString"
                 JsonPrimitiveType.INTEGER -> "asLong"
                 JsonPrimitiveType.NUMBER -> "asNumber"

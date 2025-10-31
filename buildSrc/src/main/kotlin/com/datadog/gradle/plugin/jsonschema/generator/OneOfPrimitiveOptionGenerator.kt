@@ -165,7 +165,6 @@ class OneOfPrimitiveOptionGenerator(
                     ClassNameRef.IllegalStateException,
                     ClassNameRef.UnsupportedOperationException
                 )
-                JsonPrimitiveType.DOUBLE -> error("Double is not supported")
                 JsonPrimitiveType.INTEGER,
                 JsonPrimitiveType.NUMBER -> listOf(
                     ClassNameRef.IllegalStateException,
@@ -198,7 +197,6 @@ class OneOfPrimitiveOptionGenerator(
                     isFuncName = "isNumber",
                     typeName = "Long"
                 )
-                JsonPrimitiveType.DOUBLE -> error("Double is not supported")
                 JsonPrimitiveType.NUMBER -> TypeInfo(
                     asFuncName = "asNumber",
                     isFuncName = "isNumber",
