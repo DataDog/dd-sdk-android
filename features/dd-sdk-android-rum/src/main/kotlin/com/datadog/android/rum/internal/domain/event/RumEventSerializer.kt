@@ -16,8 +16,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -48,7 +48,7 @@ internal class RumEventSerializer(
             is LongTaskEvent -> {
                 serializeLongTaskEvent(model)
             }
-            is VitalEvent -> {
+            is RumVitalOperationStepEvent -> {
                 serializeVitalEvent(model)
             }
             is TelemetryDebugEvent -> {
@@ -205,7 +205,7 @@ internal class RumEventSerializer(
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
     }
 
-    private fun serializeVitalEvent(model: VitalEvent): String {
+    private fun serializeVitalEvent(model: RumVitalOperationStepEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
