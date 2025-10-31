@@ -212,12 +212,6 @@ class com.datadog.android.core.UploadWorker : androidx.work.Worker
   constructor(android.content.Context, androidx.work.WorkerParameters)
   override fun doWork(): Result
   companion object 
-class com.datadog.android.core.collections.EvictingQueue<T> : java.util.Queue<T>
-  constructor(Int = Int.MAX_VALUE)
-  override val size: Int
-  override fun add(T): Boolean
-  override fun offer(T): Boolean
-  override fun addAll(Collection<T>): Boolean
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST

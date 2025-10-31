@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights.internal
+package com.datadog.android.insights
 
 import android.os.Handler
-import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.GC_COUNT
-import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.ONE_SECOND_NS
+import com.datadog.android.insights.DefaultInsightsCollector.Companion.GC_COUNT
+import com.datadog.android.insights.DefaultInsightsCollector.Companion.ONE_SECOND_NS
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.platform.Platform
@@ -109,7 +109,7 @@ internal class DefaultInsightsCollectorTest {
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
         val e = testedInsightsCollector.eventsState.single()
-        assertThat(e is TimelineEvent.SlowFrame).isTrue
+        assertThat(e).isInstanceOf(TimelineEvent.SlowFrame::class.java)
         assertThat(e.durationNs).isEqualTo(fakeDurationNs)
     }
 

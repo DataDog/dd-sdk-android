@@ -8,12 +8,11 @@ package com.datadog.android.insights.internal
 
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.core.collections.EvictingQueue
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.insights.internal.platform.Platform
-import com.datadog.android.lint.InternalApi
+import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
@@ -28,7 +27,6 @@ import java.util.concurrent.CopyOnWriteArraySet
  * @param handler Handler to post updates on. Injected for test purposes.
  * @param platform Platform abstraction to access system information. Injected for test purposes.
  */
-@InternalApi
 @ExperimentalRumApi
 internal class DefaultInsightsCollector internal constructor(
     maxSize: Int,

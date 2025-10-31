@@ -5,7 +5,7 @@
  */
 package com.datadog.android.rum.internal.domain.state
 
-import com.datadog.android.core.collections.EvictingQueue
+import com.datadog.android.internal.collections.EvictingQueue
 import java.util.Queue
 import kotlin.math.max
 

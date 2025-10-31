@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.core.collections
+package com.datadog.android.internal.collections
 
 import java.util.LinkedList
 import java.util.Queue
@@ -43,7 +43,7 @@ class EvictingQueue<T> private constructor(
      * before the new element is added.
      *
      * This queue should never throw [IllegalStateException] due to capacity restriction of the [delegate] because it
-     * uses [Queue.offer] to insert elements.
+     * uses [java.util.Queue.offer] to insert elements.
      *
      * @param element the element to be added.
      *

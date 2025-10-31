@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.collections
 
-import com.datadog.android.core.collections.EvictingQueue
+import com.datadog.android.internal.collections.EvictingQueue
 import java.util.Queue
 
 fun <E> List<E>.toEvictingQueue(maxSize: Int = size * 2): Queue<E> {
