@@ -12,7 +12,6 @@ import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.insights.internal.platform.Platform
-import com.datadog.android.lint.InternalApi
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
