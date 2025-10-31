@@ -10,8 +10,9 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import com.datadog.android.insights.internal.DefaultInsightsCollector
+import com.datadog.android.rum.ExperimentalRumApi
 
-@Suppress("OPT_IN_USAGE")
+@ExperimentalRumApi
 internal object OverlayManager : Application.ActivityLifecycleCallbacks {
 
     private var app: Application? = null
