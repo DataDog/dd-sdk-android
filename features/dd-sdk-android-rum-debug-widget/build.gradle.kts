@@ -65,7 +65,6 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXFragment)
-    implementation(libs.androidx.lifecycle.process)
 
     testImplementation(project(":tools:unit")) {
         attributes {

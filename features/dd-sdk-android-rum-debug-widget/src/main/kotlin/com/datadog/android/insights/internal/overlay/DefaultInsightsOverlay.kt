@@ -138,8 +138,8 @@ internal class DefaultInsightsOverlay(
         }
 
         root?.let { v ->
-            (v.parent as? ViewGroup)?.removeView(v)
             if (v.parent != parent) {
+                (v.parent as? ViewGroup)?.removeView(v)
                 parent.addView(
                     v,
                     ViewGroup.LayoutParams(
