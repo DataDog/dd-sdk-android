@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+
 package com.datadog.android.insights
 
 import android.annotation.SuppressLint
@@ -12,10 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.view.isVisible
-import com.datadog.android.Datadog
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.insights.internal.InsightStateStorage
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
@@ -26,9 +23,9 @@ import com.datadog.android.insights.internal.widgets.ChartView
 import com.datadog.android.insights.internal.widgets.DragTouchListener
 import com.datadog.android.insights.internal.widgets.TimelineView
 import com.datadog.android.rum.ExperimentalRumApi
-import com.datadog.android.rum.R
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollectorProvider
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
+import com.datadog.android.rumdebugwidget.R
 
 /**
  * A local overlay displaying performance metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
@@ -51,13 +48,10 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var slowFrameRate: ChartView? = null
     private var timelineLegend: TextView? = null
 
-    private val insightsCollector: DefaultInsightsCollector?
-        get() = (Datadog.getInstance() as? InternalSdkCore)
-            ?.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.unwrap<RumFeature>()
-            ?.insightsCollector as? DefaultInsightsCollector
-
     private var isPaused: Boolean = false
+
+    private val insightsCollector: DefaultInsightsCollector?
+        get() = InsightsCollectorProvider.insightsCollector as? DefaultInsightsCollector
 
     /**
      * Attaches the overlay to the given [activity].

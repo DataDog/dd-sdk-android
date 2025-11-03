@@ -14,6 +14,8 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -336,16 +338,16 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Enables/Disables collection of RUM Insights used in the RUM Debug Widget.
+         * Sets the [InsightsCollector] to collect RUM Insights events, used inside the RUM Debug Widget.
          *
-         * @param enabled `true` to collect insights, `false` otherwise.
+         * @param insightsCollector the [InsightsCollector] implementation. Pass `null` to disable RUM Insights collection.
          * @return the [Builder] instance.
          */
         @ExperimentalRumApi
-        fun setInsightsCollectionEnabled(
-            enabled: Boolean
+        fun setInsightsCollector(
+            insightsCollector: InsightsCollector?
         ): Builder {
-            rumConfig = rumConfig.copy(insightsCollectionEnabled = enabled)
+            rumConfig = rumConfig.copy(insightsCollector = insightsCollector ?: NoOpInsightsCollector())
             return this
         }
 

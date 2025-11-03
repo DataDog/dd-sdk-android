@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights.internal
+package com.datadog.android.insights
 
 import android.os.Debug
 import android.os.Handler
@@ -13,15 +13,20 @@ import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.internal.collections.EvictingQueue
-import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import java.util.concurrent.TimeUnit
 
-@InternalApi
+/**
+ * Default implementation of [InsightsCollector] that collects performance related events and notifies
+ * its listeners at a regular interval.
+ *
+ * @param maxSize Maximum number of events stored in memory.
+ * @param updateIntervalMs Time interval in milliseconds at which the listeners will be notified of data updates.
+ */
 @ExperimentalRumApi
-internal class DefaultInsightsCollector(
+class DefaultInsightsCollector(
     maxSize: Int = 50,
     updateIntervalMs: Long = 100L
 ) : InsightsCollector {

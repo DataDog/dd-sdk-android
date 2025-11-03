@@ -15,7 +15,7 @@ import com.datadog.android.insights.internal.extensions.color
 import com.datadog.android.insights.internal.extensions.px
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.internal.collections.EvictingQueue
-import com.datadog.android.rum.R
+import com.datadog.android.rumdebugwidget.R
 import java.util.Collections.max
 import java.util.Collections.min
 

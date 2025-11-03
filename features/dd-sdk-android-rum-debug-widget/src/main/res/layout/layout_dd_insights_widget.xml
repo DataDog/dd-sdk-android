@@ -123,8 +123,8 @@
         offset
         row
         offset
-        row˚
-        offsetk
+        row
+        offset
     -->
     <com.datadog.android.insights.internal.widgets.TimelineView
         android:id="@+id/timeline"
