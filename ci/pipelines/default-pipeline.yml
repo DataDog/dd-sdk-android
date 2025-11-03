@@ -4,6 +4,7 @@ include:
 # SETUP
 
 stages:
+  - fetch-secrets
   - ci-image
   - security
   - analysis
@@ -13,6 +14,10 @@ stages:
   - notify
 
 .snippets:
+  fetch-secrets:
+    - mkdir -p ./ci/pipelines/secrets
+    - ./ci/scripts/fetch-secrets.sh
+
   # macOS AMI will already have cmdline-tools installed
   install-android-api-components:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
@@ -39,14 +44,26 @@ stages:
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
-    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
-    - export CENTRAL_PUBLISHER_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.publishing.central_username --with-decryption --query "Parameter.Value" --out text)
-    - export CENTRAL_PUBLISHER_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.publishing.central_password --with-decryption --query "Parameter.Value" --out text)
-    - export GPG_PUBLIC_FINGERPRINT=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_public_key --with-decryption --query "Parameter.Value" --out text | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
+    - cp ./ci/pipelines/secrets/gradle.properties ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(cat ./ci/pipelines/secrets/gpg_private_key)
+    - export GPG_PASSWORD=$(cat ./ci/pipelines/secrets/gpg_passphrase)
+    - export CENTRAL_PUBLISHER_USERNAME=$(cat ./ci/pipelines/secrets/central_username)
+    - export CENTRAL_PUBLISHER_PASSWORD=$(cat ./ci/pipelines/secrets/central_password)
+    - export GPG_PUBLIC_FINGERPRINT=$(cat ./ci/pipelines/secrets/gpg_public_key | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
 
 # CI IMAGE
+
+fetch-secrets:
+  stage: fetch-secrets
+  tags: ["macos:sonoma","specific:true"]
+  image: $CI_IMAGE_DOCKER
+  script:
+    - !reference [.snippets, fetch-secrets]
+  artifacts:
+    paths:
+      - ./ci/pipelines/secrets/
+    expire_in: 1 hour
+    when: always
 
 ci-image:
   stage: ci-image
@@ -185,9 +202,9 @@ test:kover:
     - pip3 install datadog
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
-    - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
-    - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
+    - export DD_API_KEY=$(cat ./ci/pipelines/secrets/api_key)
+    - export DD_APP_KEY=$(cat ./ci/pipelines/secrets/app_key)
+    - CODECOV_TOKEN=$(cat ./ci/pipelines/secrets/codecov_token)
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-core:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-internal:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportFeatures  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
@@ -373,7 +390,7 @@ test-pyramid:detekt-api-coverage:
   timeout: 1h
   script:
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - cp ./ci/pipelines/secrets/gradle.properties ./gradle.properties
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesDebug --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
@@ -391,13 +408,13 @@ test-pyramid:publish-e2e-synthetics:
     - develop
   script:
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
-    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - cp ./ci/pipelines/secrets/gradle.properties ./gradle.properties
+    - cp ./ci/pipelines/secrets/keystore ./sample-android.keystore
+    - cp ./ci/pipelines/secrets/e2e_config.json ./config/us1.json
+    - export E2E_STORE_PASSWD=$(cat ./ci/pipelines/secrets/keystore_password)
+    - export E2E_DD_API_KEY=$(cat ./ci/pipelines/secrets/e2e_api_key)
+    - export E2E_DD_APP_KEY=$(cat ./ci/pipelines/secrets/e2e_app_key)
+    - export E2E_MOBILE_APP_ID=$(cat ./ci/pipelines/secrets/e2e_mobile_app_id)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -418,13 +435,13 @@ test-pyramid:publish-webview-synthetics:
     - develop
   script:
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
-    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - cp ./ci/pipelines/secrets/gradle.properties ./gradle.properties
+    - cp ./ci/pipelines/secrets/keystore ./sample-android.keystore
+    - cp ./ci/pipelines/secrets/webview_config.json ./config/us1.json
+    - export E2E_STORE_PASSWD=$(cat ./ci/pipelines/secrets/keystore_password)
+    - export E2E_DD_API_KEY=$(cat ./ci/pipelines/secrets/webview_api_key)
+    - export E2E_DD_APP_KEY=$(cat ./ci/pipelines/secrets/webview_app_key)
+    - export E2E_MOBILE_APP_ID=$(cat ./ci/pipelines/secrets/webview_mobile_app_id)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -445,13 +462,13 @@ test-pyramid:publish-staging-synthetics:
     - develop
   script:
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_config_json --with-decryption --query "Parameter.Value" --out text > ./config/staging.json
-    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - cp ./ci/pipelines/secrets/gradle.properties ./gradle.properties
+    - cp ./ci/pipelines/secrets/keystore ./sample-android.keystore
+    - cp ./ci/pipelines/secrets/e2e_staging_config.json ./config/staging.json
+    - export E2E_STORE_PASSWD=$(cat ./ci/pipelines/secrets/keystore_password)
+    - export E2E_DD_API_KEY=$(cat ./ci/pipelines/secrets/e2e_staging_api_key)
+    - export E2E_DD_APP_KEY=$(cat ./ci/pipelines/secrets/e2e_staging_app_key)
+    - export E2E_MOBILE_APP_ID=$(cat ./ci/pipelines/secrets/e2e_staging_app_id)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageStagingRelease --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -472,13 +489,13 @@ test-pyramid:publish-benchmark-synthetics:
     - develop
   script:
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-benchmark.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_config_json --with-decryption --query "Parameter.Value" --out text > ./config/benchmark.json
-    - export BM_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export BM_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export BM_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export BM_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - cp ./ci/pipelines/secrets/gradle.properties ./gradle.properties
+    - cp ./ci/pipelines/secrets/keystore ./sample-benchmark.keystore
+    - cp ./ci/pipelines/secrets/benchmark_config.json ./config/benchmark.json
+    - export BM_STORE_PASSWD=$(cat ./ci/pipelines/secrets/keystore_password)
+    - export BM_DD_API_KEY=$(cat ./ci/pipelines/secrets/benchmark_api_key)
+    - export BM_DD_APP_KEY=$(cat ./ci/pipelines/secrets/benchmark_app_key)
+    - export BM_MOBILE_APP_ID=$(cat ./ci/pipelines/secrets/benchmark_mobile_app_id)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:benchmark:packageRelease --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
