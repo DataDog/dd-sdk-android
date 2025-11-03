@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -49,13 +48,6 @@ android {
     }
 
     namespace = "com.datadog.android.rumdebugwidget"
-
-    testOptions {
-        unitTests.all {
-            it.systemProperty("RUM_MIN_SDK", "${AndroidConfig.MIN_SDK}")
-            it.systemProperty("RUM_TARGET_SDK", "${AndroidConfig.TARGET_SDK}")
-        }
-    }
 }
 
 dependencies {
