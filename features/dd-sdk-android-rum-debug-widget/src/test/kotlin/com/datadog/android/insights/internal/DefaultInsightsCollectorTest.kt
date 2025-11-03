@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.insights
+package com.datadog.android.insights.internal
 
 import android.os.Handler
-import com.datadog.android.insights.DefaultInsightsCollector.Companion.GC_COUNT
-import com.datadog.android.insights.DefaultInsightsCollector.Companion.ONE_SECOND_NS
+import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.GC_COUNT
+import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.ONE_SECOND_NS
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.platform.Platform
