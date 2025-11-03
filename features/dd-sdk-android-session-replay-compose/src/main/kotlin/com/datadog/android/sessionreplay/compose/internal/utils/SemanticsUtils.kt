@@ -41,6 +41,7 @@ import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.isLeafNode
 import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
@@ -245,7 +246,8 @@ internal class SemanticsUtils(
                 null
             }
             val modifierColor = resolveModifierColor(semanticsNode)
-            convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor)
+            val textOverflow = resolveTextStringSimpleElementOverflow(semanticsNode)
+            convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow)
         }
     }
 
@@ -339,17 +341,37 @@ internal class SemanticsUtils(
         }
     }
 
+    private fun resolveTextStringSimpleElementOverflow(semanticsNode: SemanticsNode): MobileSegment.TruncationMode? {
+        val modifier = semanticsNode.layoutInfo.getModifierInfo()
+            .firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }
+            ?.modifier ?: return null
+
+        return reflectionUtils.getTextStringSimpleElementOverflow(modifier)?.let { overflow ->
+            resolveTextOverflow(overflow)
+        }
+    }
+
+    private fun resolveTextOverflow(overflowMode: Any): MobileSegment.TruncationMode? {
+        return when (overflowMode) {
+            TEXT_OVERFLOW_CLIP -> MobileSegment.TruncationMode.CLIP
+            TEXT_OVERFLOW_ELLIPSE -> MobileSegment.TruncationMode.TAIL
+            else -> null
+        }
+    }
+
     private fun convertTextLayoutInfo(
         layoutInput: TextLayoutInput,
         multiParagraphCapturedText: String?,
-        modifierColor: Color?
+        modifierColor: Color?,
+        textOverflow: MobileSegment.TruncationMode?
     ): TextLayoutInfo {
         return TextLayoutInfo(
             text = multiParagraphCapturedText ?: resolveAnnotatedString(layoutInput.text),
             color = modifierColor?.value ?: layoutInput.style.color.value,
             textAlign = layoutInput.style.textAlign,
             fontSize = layoutInput.style.fontSize.value.toLong(),
-            fontFamily = layoutInput.style.fontFamily
+            fontFamily = layoutInput.style.fontFamily,
+            textOverflow = textOverflow
         )
     }
 
@@ -413,6 +435,10 @@ internal class SemanticsUtils(
         return result?.toLong()
     }
 
+    internal fun getProgressBarRangeInfo(semanticsNode: SemanticsNode): ProgressBarRangeInfo? {
+        return semanticsNode.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo)
+    }
+
     internal companion object {
         internal enum class OnDrawFieldType {
             FILL_COLOR,
@@ -423,9 +449,8 @@ internal class SemanticsUtils(
         internal const val DEFAULT_COLOR_BLACK = "#000000FF"
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
         private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
-    }
 
-    internal fun getProgressBarRangeInfo(semanticsNode: SemanticsNode): ProgressBarRangeInfo? {
-        return semanticsNode.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo)
+        private const val TEXT_OVERFLOW_CLIP = 1
+        private const val TEXT_OVERFLOW_ELLIPSE = 2
     }
 }

@@ -82,7 +82,8 @@ internal abstract class AbstractSemanticsNodeMapper(
             },
             size = textLayoutInfo.fontSize,
             color = convertColor(textLayoutInfo.color.toLong()) ?: parentContext.parentContentColor
-                ?: DEFAULT_TEXT_COLOR
+                ?: DEFAULT_TEXT_COLOR,
+            truncationMode = textLayoutInfo.textOverflow
         )
     }
 
