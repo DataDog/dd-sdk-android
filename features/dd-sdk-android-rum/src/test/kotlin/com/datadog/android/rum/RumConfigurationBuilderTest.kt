@@ -16,6 +16,8 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
@@ -56,6 +58,7 @@ import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.util.UUID
 
+@Suppress("OPT_IN_USAGE")
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
@@ -666,5 +669,32 @@ internal class RumConfigurationBuilderTest {
                 collectAccessibility = true
             )
         )
+    }
+
+    @Test
+    fun `M set DefaultInsightsCollector W setInsightsCollector()`() {
+        // Given
+        val mockInsightsCollector: InsightsCollector = mock()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setInsightsCollector(mockInsightsCollector)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.insightsCollector)
+            .isSameAs(mockInsightsCollector)
+    }
+
+    @Test
+    fun `M use NoOpInsightsCollector W setInsightsCollector(null)`() {
+        // When
+        val rumConfiguration = testedBuilder
+            .setInsightsCollector(null)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.insightsCollector)
+            .isInstanceOf(NoOpInsightsCollector::class.java)
     }
 }

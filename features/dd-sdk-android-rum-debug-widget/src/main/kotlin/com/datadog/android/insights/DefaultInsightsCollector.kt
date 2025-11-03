@@ -6,17 +6,17 @@
 
 package com.datadog.android.insights
 
-import android.os.Debug
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
+import com.datadog.android.insights.internal.platform.Platform
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * Default implementation of [InsightsCollector] that collects performance related events and notifies
@@ -24,33 +24,51 @@ import java.util.concurrent.TimeUnit
  *
  * @param maxSize Maximum number of events stored in memory.
  * @param updateIntervalMs Time interval in milliseconds at which the listeners will be notified of data updates.
+ * @param handler Handler to post updates on. Injected for test purposes.
+ * @param platform Platform abstraction to access system information. Injected for test purposes.
  */
 @ExperimentalRumApi
-class DefaultInsightsCollector(
-    maxSize: Int = 50,
-    updateIntervalMs: Long = 100L
+class DefaultInsightsCollector internal constructor(
+    maxSize: Int,
+    updateIntervalMs: Long,
+    private val handler: Handler,
+    private val platform: Platform
 ) : InsightsCollector {
 
-    private val handler = Handler(Looper.getMainLooper())
+    constructor(
+        maxSize: Int = 50,
+        updateIntervalMs: Long = 100L
+    ) : this(
+        maxSize = maxSize,
+        updateIntervalMs = updateIntervalMs,
+        handler = Handler(Looper.getMainLooper()),
+        platform = Platform()
+    )
+
     private var events = EvictingQueue<TimelineEvent>(maxSize)
-    private val updatesListeners = mutableSetOf<InsightsUpdatesListener>()
+    internal val eventsState: List<TimelineEvent> get() = events.toList()
+    private val updatesListeners = CopyOnWriteArraySet<InsightsUpdatesListener>()
     private val ticksProducer = Runnable {
         registerEvent(TimelineEvent.Tick)
         postTickProducer()
     }
 
     private var viewStartedNs = 0L
-    private val viewDurationNs: Long get() = System.nanoTime() - viewStartedNs
+    private val viewDurationNs: Long get() = platform.nanoTime() - viewStartedNs
     internal var viewName: String = ""
         private set
-
     internal var threadsCount: Int = 0
+        private set
     internal var gcCallsPerSecond: Double = 0.0
+        private set
     internal var vmRssMb: Double = Double.NaN
+        private set
     internal var nativeHeapMb: Double = Double.NaN
+        private set
     internal var slowFramesRate: Double = Double.NaN
+        private set
     internal var cpuTicksPerSecond: Double = Double.NaN
-    internal val eventsState: List<TimelineEvent> get() = events.toList()
+        private set
 
     override var maxSize: Int = maxSize
         set(value) {
@@ -73,9 +91,9 @@ class DefaultInsightsCollector(
         TimelineEvent.Action
     )
 
-    override fun onNewView(viewId: String, name: String) {
+    override fun onNewView(name: String) {
         viewName = name
-        viewStartedNs = System.nanoTime()
+        viewStartedNs = platform.nanoTime()
 
         clear()
     }
@@ -121,19 +139,19 @@ class DefaultInsightsCollector(
     }
 
     private fun withListenersUpdate(block: () -> Unit) {
-        updateCommonInfo()
         handler.post {
+            updateCommonInfo()
             block()
             updatesListeners.forEach(InsightsUpdatesListener::onDataUpdated)
         }
     }
 
     private fun updateCommonInfo() {
-        gcCallsPerSecond = Debug.getRuntimeStat(GC_COUNT)
-            .toDoubleOrNull()
+        gcCallsPerSecond = platform.getRuntimeStat(GC_COUNT)
+            ?.toDoubleOrNull()
             .perSecond()
             .round(PRECISION)
-        nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(0)
+        nativeHeapMb = platform.getNativeHeapAllocatedSize().toDouble().Mb.round(0)
         threadsCount = Thread.activeCount()
     }
 
@@ -148,12 +166,14 @@ class DefaultInsightsCollector(
             return Double.NaN
         }
 
-        return times(ONE_SECOND_NS) / viewDurationNs
+        val seconds = viewDurationNs / ONE_SECOND_NS.toDouble()
+
+        return this / seconds
     }
 
     companion object {
-        private const val PRECISION = 2
-        private const val GC_COUNT = "art.gc.gc-count"
-        private val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
+        internal const val PRECISION = 2
+        internal const val GC_COUNT = "art.gc.gc-count"
+        internal const val ONE_SECOND_NS = 1_000_000_000L
     }
 }

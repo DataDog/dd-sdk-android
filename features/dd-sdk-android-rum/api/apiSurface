@@ -196,7 +196,7 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   var updateIntervalMs: Long
   fun addUpdateListener(InsightsUpdatesListener)
   fun removeUpdateListener(InsightsUpdatesListener)
-  fun onNewView(String, String)
+  fun onNewView(String)
   fun onAction()
   fun onLongTask(Long, Long)
   fun onSlowFrame(Long, Long)

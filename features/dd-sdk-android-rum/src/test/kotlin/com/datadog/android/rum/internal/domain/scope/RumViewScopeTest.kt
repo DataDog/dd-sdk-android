@@ -9067,6 +9067,76 @@ internal class RumViewScopeTest {
     }
     // endregion
 
+    // region InsightsCollector
+
+    @Test
+    fun `M call onNewView() W init()`() {
+        // Then
+        verify(mockInsightsCollector).onNewView(fakeKey.url)
+        verifyNoMoreInteractions(mockInsightsCollector)
+    }
+
+    @Test
+    fun `M call onLongTask() W AddLongTask()`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockInsightsCollector).onLongTask(fakeEvent.eventTime.nanoTime, durationNs)
+    }
+
+    @Test
+    fun `M call onMemoryVital() W onVitalUpdate()`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
+        // Given
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockMemoryVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        val meanValue = fakeCpuTicks / 2
+        listener.onVitalUpdate(VitalInfo(1, 0.0, fakeCpuTicks, meanValue))
+
+        // Then
+        verify(mockInsightsCollector).onMemoryVital(meanValue)
+    }
+
+    @Test
+    fun `M call onCpuVital() W onVitalUpdate()`(@DoubleForgery(1024.0, 65536.0) fakeCpuTicks: Double) {
+        // Given
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockCpuVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        listener.onVitalUpdate(VitalInfo(1, 0.0, 0.0, 0.0))
+        listener.onVitalUpdate(VitalInfo(1, 0.0, fakeCpuTicks, fakeCpuTicks / 2))
+
+        // Then
+        verify(mockInsightsCollector).onCpuVital(fakeCpuTicks)
+    }
+
+    @Test
+    fun `M call onSlowFrameRate() W handleEvent(KeepAlive)`() {
+        // Given
+        val testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockInsightsCollector).onSlowFrameRate(any())
+    }
+
+    // endregion
+
     // region Internal
     private fun withAttributesCheckingMergeWithViewAttributes(
         forge: Forge
