@@ -8610,6 +8610,54 @@ internal class RumViewScopeTest {
     // region Feature Operations
 
     @Test
+    fun `M do nothing if view is stopped W handleEvent { StartFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StartFeatureOperation(
+            name,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            operationKey = forge.aNullable { key },
+            eventTime = fakeEventTime + duration
+        )
+
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M do nothing if view is stopped W handleEvent { StopFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StopFeatureOperation(
+            name,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            operationKey = forge.aNullable { key },
+            failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) },
+            eventTime = fakeEventTime + duration
+        )
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
     fun `M send view update W handleEvent { StartFeatureOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
