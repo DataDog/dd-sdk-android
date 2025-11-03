@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.compose.test.elmyr
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
+import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -27,7 +28,14 @@ internal class TextLayoutInfoForgeryFactory : ForgeryFactory<TextLayoutInfo> {
                     FontFamily.Default
                 )
             ),
-            textAlign = forge.anElementFrom(TextAlign.values())
+            textAlign = forge.anElementFrom(TextAlign.values()),
+            textOverflow = forge.anElementFrom(
+                listOf(
+                    MobileSegment.TruncationMode.CLIP,
+                    MobileSegment.TruncationMode.TAIL,
+                    null
+                )
+            )
         )
     }
 }
