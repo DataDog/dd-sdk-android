@@ -28,5 +28,5 @@ fun RumConfiguration.Builder.enableDebugWidget(application: Application, enabled
 
     val insightsCollector = DefaultInsightsCollector()
     setInsightsCollector(insightsCollector)
-    OverlayManager.start(application, insightsCollector)
+    OverlayManager(insightsCollector).start(application)
 }

@@ -11,36 +11,47 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.rum.ExperimentalRumApi
+import java.util.IdentityHashMap
 
 @ExperimentalRumApi
-internal object OverlayManager : Application.ActivityLifecycleCallbacks {
+internal class OverlayManager(
+    private val collector: DefaultInsightsCollector
+) : Application.ActivityLifecycleCallbacks {
 
-    private var app: Application? = null
-    private var overlay: DefaultInsightsOverlay? = null
-    private lateinit var collector: DefaultInsightsCollector
+    private val overlays = IdentityHashMap<Activity, DefaultInsightsOverlay>()
+    private var registered = false
 
-    fun start(application: Application, insightsCollector: DefaultInsightsCollector) {
-        app = application
-        collector = insightsCollector
+    fun start(application: Application) {
+        if (registered) return
         application.registerActivityLifecycleCallbacks(this)
+        registered = true
     }
 
-    fun stop() {
-        val a = app ?: return
-        a.unregisterActivityLifecycleCallbacks(this)
-        overlay?.destroy()
-        overlay = null
-        app = null
+    fun stop(application: Application) {
+        if (!registered) return
+        application.unregisterActivityLifecycleCallbacks(this)
+        registered = false
+
+        overlays.values.forEach { it.destroy() }
+        overlays.clear()
     }
 
     override fun onActivityResumed(activity: Activity) {
-        overlay?.destroy()
-        overlay = DefaultInsightsOverlay(collector).also { it.attach(activity) }
+        overlays.remove(activity)?.destroy()
+
+        val overlay = DefaultInsightsOverlay(collector).also { it.attach(activity) }
+        overlays[activity] = overlay
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        overlays.remove(activity)?.destroy()
+    }
+
+    override fun onActivityDestroyed(activity: Activity) {
+        overlays.remove(activity)?.destroy()
     }
 
     override fun onActivityStopped(activity: Activity) {}
-    override fun onActivityPaused(activity: Activity) {}
-    override fun onActivityDestroyed(activity: Activity) {}
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
     override fun onActivityStarted(activity: Activity) {}

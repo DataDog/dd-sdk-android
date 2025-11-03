@@ -14,7 +14,9 @@ internal class InsightStateStorage private constructor(
     private val sharedPreferences: SharedPreferences
 ) {
 
-    constructor(context: Context) : this(context.getSharedPreferences(INSIGHT_PREFERENCES, Context.MODE_PRIVATE))
+    constructor(context: Context) : this(
+        context.applicationContext.getSharedPreferences(INSIGHT_PREFERENCES, Context.MODE_PRIVATE)
+    )
 
     @Suppress("UnsafeThirdPartyFunctionCall") // safe because there is a putFloat call for each getFloat
     var widgetPosition: Pair<Float, Float>
