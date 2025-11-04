@@ -58,7 +58,8 @@ sealed class TypeDefinition {
 
     data class Primitive(
         val type: JsonPrimitiveType,
-        override val description: String = ""
+        override val description: String = "",
+        val parentType: OneOfClass? = null
     ) : TypeDefinition() {
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
@@ -76,7 +77,6 @@ sealed class TypeDefinition {
         fun asPrimitiveTypeFun(): String {
             return when (type) {
                 JsonPrimitiveType.BOOLEAN -> "asBoolean"
-                JsonPrimitiveType.DOUBLE -> "asDouble"
                 JsonPrimitiveType.STRING -> "asString"
                 JsonPrimitiveType.INTEGER -> "asLong"
                 JsonPrimitiveType.NUMBER -> "asNumber"
@@ -101,6 +101,7 @@ sealed class TypeDefinition {
     data class Class(
         val name: String,
         val properties: List<TypeProperty>,
+        val required: Set<String>,
         override val description: String = "",
         val additionalProperties: TypeProperty? = null,
         val parentType: OneOfClass? = null
@@ -135,18 +136,22 @@ sealed class TypeDefinition {
                     additionalProperties.mergedWith(other.additionalProperties)
                 }
 
+            val mergedRequired = this.required + other.required
+
             return Class(
-                name,
-                mergedFields,
-                "$description\n${other.description}".trim(),
-                mergedAdditionalProperties
+                name = name,
+                properties = mergedFields,
+                required = mergedRequired,
+                description = "$description\n${other.description}".trim(),
+                additionalProperties = mergedAdditionalProperties
             )
         }
 
         override fun matches(other: TypeDefinition): Boolean {
             return (other is Class) &&
                 (other.properties == properties) &&
-                (other.additionalProperties == additionalProperties)
+                (other.additionalProperties == additionalProperties) &&
+                (other.required == required)
         }
 
         fun isConstantClass(): Boolean {
@@ -246,9 +251,14 @@ sealed class TypeDefinition {
 
     data class OneOfClass(
         val name: String,
-        val options: List<Class>,
+        val options: List<Option>,
         override val description: String = ""
     ) : TypeDefinition() {
+
+        sealed interface Option {
+            data class Class(val cls: TypeDefinition.Class) : Option
+            data class Primitive(val primitive: TypeDefinition.Primitive) : Option
+        }
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             error("Can't merge Multiclass with type $other")

@@ -47,8 +47,8 @@ public data class WeirdCombo(
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): WeirdCombo {
             try {
-                val anything = jsonObject.get("anything")?.asJsonObject?.let {
-                    Anything.fromJsonObject(it)
+                val anything = jsonObject.get("anything")?.let {
+                    Anything.fromJsonElement(it)
                 }
                 return WeirdCombo(anything)
             } catch (e: IllegalStateException) {
@@ -247,8 +247,8 @@ public data class WeirdCombo(
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Anything {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                    return fromJsonObject(jsonObject)
+                    val jsonElement = JsonParser.parseString(jsonString)
+                    return fromJsonElement(jsonElement)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(
                         "Unable to parse json into one of type Anything",
@@ -259,22 +259,37 @@ public data class WeirdCombo(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Anything {
+            public fun fromJsonElement(jsonElement: JsonElement): Anything {
                 val errors = mutableListOf<Throwable>()
                 val asFish = try {
-                    Fish.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Fish.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Fish")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asBird = try {
-                    Bird.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Bird.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Bird")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asPaper = try {
-                    Paper.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Paper.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Paper")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null

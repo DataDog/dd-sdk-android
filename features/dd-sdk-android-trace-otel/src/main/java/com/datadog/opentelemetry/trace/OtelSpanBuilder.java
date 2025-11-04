@@ -18,14 +18,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.datadog.android.api.InternalLogger;
-import com.datadog.android.api.context.DatadogContext;
-import com.datadog.android.internal.concurrent.CompletableFuture;
 import com.datadog.android.trace.api.DatadogTracingConstants;
 import com.datadog.android.trace.api.span.DatadogSpan;
 import com.datadog.android.trace.api.span.DatadogSpanBuilder;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
 import com.datadog.android.trace.api.tracer.DatadogTracer;
-import com.datadog.android.trace.internal.SpanAttributes;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -104,14 +101,8 @@ public class OtelSpanBuilder implements SpanBuilder {
 
     @Override
     public SpanBuilder setAttribute(@NonNull String key, @Nullable String value) {
-        // Check reserved attributes
-        if (OPERATION_NAME_SPECIFIC_ATTRIBUTE.equals(key) && value != null) {
-            this.overriddenOperationName = value.toLowerCase(ROOT);
-            return this;
-        } else if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(key) && value != null) {
-            this.overriddenAnalyticsSampleRate = parseBoolean(value) ? 1 : 0;
-            return this;
-        }
+        if (handleReservedAttribute(key, value)) return this;
+
         // Store as object to prevent delegate to remove tag when value is empty
         this.delegate.withTag(key, value);
         return this;
@@ -159,6 +150,8 @@ public class OtelSpanBuilder implements SpanBuilder {
                     }
                 }
                 break;
+            case STRING:
+                return setAttribute(key.getKey(), (String) value);
             default:
                 this.delegate.withTag(key.getKey(), value);
                 break;
@@ -196,5 +189,17 @@ public class OtelSpanBuilder implements SpanBuilder {
             delegate.setMetric(DatadogTracingConstants.Tags.KEY_ANALYTICS_SAMPLE_RATE, this.overriddenAnalyticsSampleRate);
         }
         return new OtelSpan(delegate, agentTracer);
+    }
+
+    private boolean handleReservedAttribute(String key, String value) {
+        if (OPERATION_NAME_SPECIFIC_ATTRIBUTE.equals(key) && value != null) {
+            this.overriddenOperationName = value.toLowerCase(ROOT);
+            return true;
+        } else if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(key) && value != null) {
+            this.overriddenAnalyticsSampleRate = parseBoolean(value) ? 1 : 0;
+            return true;
+        }
+
+        return false;
     }
 }

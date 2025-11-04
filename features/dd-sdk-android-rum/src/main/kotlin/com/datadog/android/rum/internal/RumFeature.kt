@@ -73,6 +73,10 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
+import com.datadog.android.rum.internal.startup.RumAppStartupDetector
+import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
+import com.datadog.android.rum.internal.startup.RumStartupScenario
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -168,6 +172,7 @@ internal class RumFeature(
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
+    private var rumAppStartupDetector: RumAppStartupDetector? = null
 
     // region Feature
 
@@ -250,6 +255,8 @@ internal class RumFeature(
         registerTrackingStrategies(appContext)
 
         sessionListener = configuration.sessionListener
+
+        initRumAppStartupDetector()
 
         sdkCore.setEventReceiver(name, this)
 
@@ -334,7 +341,11 @@ internal class RumFeature(
 
         cleanupInfoProviders()
 
+        rumAppStartupDetector?.destroy()
+        rumAppStartupDetector = null
+
         GlobalRumMonitor.unregister(sdkCore)
+        initialized.set(false)
     }
 
     // endregion
@@ -668,6 +679,36 @@ internal class RumFeature(
 
     private fun addSessionReplaySkippedFrame() {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addSessionReplaySkippedFrame()
+    }
+
+    private fun initRumAppStartupDetector() {
+        rumAppStartupDetector = RumAppStartupDetector.create(
+            application = appContext.applicationContext as Application,
+            sdkCore = sdkCore as InternalSdkCore,
+            listener = object : RumAppStartupDetector.Listener {
+                private val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(sdkCore = sdkCore)
+
+                override fun onAppStartupDetected(scenario: RumStartupScenario) {
+                    val activity = scenario.activity.get() ?: return
+
+                    val callback = object : RumFirstDrawTimeReporter.Callback {
+                        override fun onFirstFrameDrawn(timestampNs: Long) {
+                            val info = RumTTIDInfo(
+                                scenario = scenario,
+                                durationNs = timestampNs - scenario.initialTimeNs
+                            )
+                            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
+                                ?.sendTTIDEvent(info)
+                        }
+                    }
+
+                    rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
+                        activity = activity,
+                        callback = callback
+                    )
+                }
+            }
+        )
     }
 
     // endregion

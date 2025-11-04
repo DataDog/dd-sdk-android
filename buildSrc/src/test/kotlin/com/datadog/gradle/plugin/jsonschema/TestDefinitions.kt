@@ -8,21 +8,19 @@ package com.datadog.gradle.plugin.jsonschema
 
 val Address = TypeDefinition.Class(
     name = "Address",
+    required = setOf("street_address", "city", "state"),
     properties = listOf(
         TypeProperty(
             name = "street_address",
-            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            optional = false
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
         ),
         TypeProperty(
             name = "city",
-            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            optional = false
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
         ),
         TypeProperty(
             name = "state",
-            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            optional = false
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
         )
     )
 )
@@ -32,21 +30,21 @@ val Animal = TypeDefinition.OneOfClass(
     options = listOf(
         TypeDefinition.Class(
             name = "Fish",
+            required = setOf("water"),
             properties = listOf(
                 TypeProperty(
                     name = "water",
-                    type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
-                    optional = false
+                    type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh"))
                 ),
                 TypeProperty(
                     name = "size",
-                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                    optional = true
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                 )
             )
         ),
         TypeDefinition.Class(
             name = "Bird",
+            required = setOf("food", "can_fly"),
             properties = listOf(
                 TypeProperty(
                     name = "food",
@@ -62,246 +60,239 @@ val Animal = TypeDefinition.OneOfClass(
                             "seeds",
                             "pollen"
                         )
-                    ),
-                    optional = false
+                    )
                 ),
-                TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+                TypeProperty(
+                    name = "can_fly",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN)
+                )
             )
         )
-    ),
+    ).map { TypeDefinition.OneOfClass.Option.Class(it) },
     description = "A representation of the animal kingdom"
 )
 
 val Article = TypeDefinition.Class(
     name = "Article",
+    required = setOf("title", "authors"),
     properties = listOf(
-        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty(name = "title", type = TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
-            "tags",
-            TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
-            true
+            name = "tags",
+            type = TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING))
         ),
         TypeProperty(
-            "authors",
-            TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
-            false
+            name = "authors",
+            type = TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING))
         )
     )
 )
 
 val Book = TypeDefinition.Class(
     name = "Book",
+    required = setOf("bookId", "title", "price", "author"),
     properties = listOf(
-        TypeProperty("bookId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
-        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false),
+        TypeProperty("bookId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)),
+        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER)),
         TypeProperty(
             "author",
             TypeDefinition.Class(
                 name = "Author",
+                required = setOf("firstName", "lastName", "contact"),
                 properties = listOf(
                     TypeProperty(
                         "firstName",
-                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-                        false
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING)
                     ),
                     TypeProperty(
                         "lastName",
-                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-                        false
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING)
                     ),
                     TypeProperty(
                         "contact",
                         TypeDefinition.Class(
                             name = "Contact",
+                            required = emptySet(),
                             properties = listOf(
                                 TypeProperty(
                                     "phone",
-                                    TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-                                    true
+                                    TypeDefinition.Primitive(JsonPrimitiveType.STRING)
                                 ),
                                 TypeProperty(
                                     "email",
-                                    TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-                                    true
+                                    TypeDefinition.Primitive(JsonPrimitiveType.STRING)
                                 )
                             )
-                        ),
-                        false
+                        )
                     )
                 )
-            ),
-            false
+            )
         )
     )
 )
 
 val Customer = TypeDefinition.Class(
     name = "Customer",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("billing_address", Address, true),
-        TypeProperty("shipping_address", Address, true)
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("billing_address", Address),
+        TypeProperty("shipping_address", Address)
     )
 )
 
 val Comment = TypeDefinition.Class(
     name = "Comment",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("message", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("message", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "ratings",
             TypeDefinition.Class(
                 name = "Ratings",
+                required = setOf("global"),
                 properties = listOf(
                     TypeProperty(
                         "global",
-                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                        false
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                     )
                 ),
                 additionalProperties = TypeProperty(
                     name = "",
                     type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                    optional = true,
                     readOnly = true
                 )
-            ),
-            true
+            )
         ),
         TypeProperty(
             "flags",
             TypeDefinition.Class(
                 name = "Flags",
+                required = emptySet(),
                 properties = listOf(),
                 additionalProperties = TypeProperty(
                     name = "",
                     type = TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
-                    optional = true,
                     readOnly = false
                 )
-            ),
-            true
+            )
         ),
         TypeProperty(
             "tags",
             TypeDefinition.Class(
                 name = "Tags",
+                required = emptySet(),
                 properties = listOf(),
                 additionalProperties = TypeProperty(
                     name = "",
                     type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-                    optional = true,
                     readOnly = false
                 )
-            ),
-            true
+            )
         )
     )
 )
 
 val Company = TypeDefinition.Class(
     name = "Company",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "ratings",
             TypeDefinition.Class(
                 name = "Ratings",
+                required = setOf("global"),
                 properties = listOf(
                     TypeProperty(
                         "global",
-                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                        false
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                     )
                 ),
                 additionalProperties = TypeProperty(
                     name = "",
                     type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                    optional = true,
                     readOnly = false
                 )
-            ),
-            true
+            )
         ),
         TypeProperty(
             "information",
             TypeDefinition.Class(
                 name = "Information",
+                required = emptySet(),
                 properties = listOf(
                     TypeProperty(
                         "date",
-                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                        true
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                     ),
                     TypeProperty(
                         "priority",
-                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                        true
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                     )
                 ),
                 additionalProperties = TypeProperty(
                     name = "",
-                    type = TypeDefinition.Class("?", emptyList()),
-                    optional = true,
+                    type = TypeDefinition.Class("?", emptyList(), emptySet()),
                     readOnly = false
                 )
-            ),
-            true
+            )
         )
     ),
     additionalProperties = TypeProperty(
         name = "",
-        type = TypeDefinition.Class("?", emptyList()),
-        optional = true,
+        type = TypeDefinition.Class("?", emptyList(), emptySet()),
         readOnly = false
     )
 )
 
 val Conflict = TypeDefinition.Class(
     name = "Conflict",
+    required = emptySet(),
     properties = listOf(
         TypeProperty(
             "type",
             TypeDefinition.Class(
                 name = "ConflictType",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("id", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
+                    TypeProperty("id", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
                 )
-            ),
-            true
+            )
         ),
         TypeProperty(
             "user",
             TypeDefinition.Class(
                 name = "User",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+                    TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
                     TypeProperty(
                         "type",
                         TypeDefinition.Enum(
                             name = "UserType",
                             type = JsonType.STRING,
                             values = listOf("unknown", "customer", "partner")
-                        ),
-                        true
+                        )
                     )
                 )
-            ),
-            true
+            )
         )
     )
 )
 
 val DateTime = TypeDefinition.Class(
     name = "DateTime",
+    required = emptySet(),
     properties = listOf(
         TypeProperty(
             "date",
             TypeDefinition.Class(
                 name = "Date",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("year", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
+                    TypeProperty("year", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)),
                     TypeProperty(
                         "month",
                         TypeDefinition.Enum(
@@ -311,153 +302,147 @@ val DateTime = TypeDefinition.Class(
                                 "jan", "feb", "mar", "apr", "may", "jun",
                                 "jul", "aug", "sep", "oct", "nov", "dec"
                             )
-                        ),
-                        true
+                        )
                     ),
-                    TypeProperty("day", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+                    TypeProperty("day", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER))
                 )
-            ),
-            true
+            )
         ),
         TypeProperty(
             "time",
             TypeDefinition.Class(
                 name = "Time",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("hour", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
+                    TypeProperty("hour", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)),
                     TypeProperty(
                         "minute",
-                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                        true
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                     ),
                     TypeProperty(
                         "seconds",
-                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                        true
+                        TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                     )
                 )
-            ),
-            true
+            )
         )
     )
 )
 val Demo = TypeDefinition.Class(
     name = "Demo",
+    required = setOf("s", "i", "n", "b", "l"),
     properties = listOf(
-        TypeProperty("s", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("i", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
-        TypeProperty("n", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false),
-        TypeProperty("b", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false),
-        TypeProperty("l", TypeDefinition.Null(), false),
-        TypeProperty("ns", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("ni", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
-        TypeProperty("nn", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), true),
-        TypeProperty("nb", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), true),
-        TypeProperty("nl", TypeDefinition.Null(), true)
+        TypeProperty("s", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("i", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)),
+        TypeProperty("n", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER)),
+        TypeProperty("b", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN)),
+        TypeProperty("l", TypeDefinition.Null()),
+        TypeProperty("ns", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("ni", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)),
+        TypeProperty("nn", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER)),
+        TypeProperty("nb", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN)),
+        TypeProperty("nl", TypeDefinition.Null())
 
     )
 )
 
 val Delivery = TypeDefinition.Class(
     name = "Delivery",
+    required = setOf("item", "customer"),
     properties = listOf(
-        TypeProperty("item", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty("item", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "customer",
             TypeDefinition.Class(
                 name = "Customer",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-                    TypeProperty("billing_address", Address, true),
-                    TypeProperty("shipping_address", Address, true)
+                    TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+                    TypeProperty("billing_address", Address),
+                    TypeProperty("shipping_address", Address)
                 )
-            ),
-            false
+            )
         )
     )
 )
 
 val Employee = TypeDefinition.Class(
     name = "Employee",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             name = "contact",
             type = TypeDefinition.Class(
                 name = "Contact",
+                required = setOf("phone", "address"),
                 properties = listOf(
                     TypeProperty(
                         "phone",
-                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-                        false
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING)
                     ),
-                    TypeProperty("address", Address, false)
+                    TypeProperty("address", Address)
                 )
-            ),
-            optional = true
+            )
         )
     )
 )
 
 val Foo = TypeDefinition.Class(
     name = "Foo",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("bar", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("baz", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+        TypeProperty("bar", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("baz", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER))
     )
 )
 
 val Location = TypeDefinition.Class(
     name = "Location",
+    required = setOf("planet", "solar_system"),
     properties = listOf(
-        TypeProperty("planet", TypeDefinition.Constant(JsonType.STRING, "earth"), false),
-        TypeProperty("solar_system", TypeDefinition.Constant(JsonType.STRING, "sol"), false)
+        TypeProperty("planet", TypeDefinition.Constant(JsonType.STRING, "earth")),
+        TypeProperty("solar_system", TypeDefinition.Constant(JsonType.STRING, "sol"))
     )
 )
 
 val Message = TypeDefinition.Class(
     name = "Message",
+    required = setOf("destination", "origin"),
     properties = listOf(
         TypeProperty(
             "destination",
             TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
-            optional = false,
             readOnly = true
         ),
         TypeProperty(
             "origin",
             TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            optional = false,
             readOnly = true
         ),
         TypeProperty(
             "subject",
             TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            optional = true,
             readOnly = true
         ),
         TypeProperty(
             "message",
             TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            optional = true,
             readOnly = true
         ),
         TypeProperty(
             "labels",
             TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
-            optional = true,
             readOnly = false
         ),
         TypeProperty(
             "read",
             TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
-            optional = true,
             readOnly = false
         ),
         TypeProperty(
             "important",
             TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
-            optional = true,
             readOnly = false
         )
     )
@@ -466,16 +451,15 @@ val Message = TypeDefinition.Class(
 val Opus = TypeDefinition.Class(
     name = "Opus",
     description = "A musical opus.",
+    required = emptySet(),
     properties = listOf(
         TypeProperty(
             "title",
-            TypeDefinition.Primitive(JsonPrimitiveType.STRING, "The opus's title."),
-            true
+            TypeDefinition.Primitive(JsonPrimitiveType.STRING, "The opus's title.")
         ),
         TypeProperty(
             "composer",
-            TypeDefinition.Primitive(JsonPrimitiveType.STRING, "The opus's composer."),
-            true
+            TypeDefinition.Primitive(JsonPrimitiveType.STRING, "The opus's composer.")
         ),
         TypeProperty(
             "artists",
@@ -483,14 +467,14 @@ val Opus = TypeDefinition.Class(
                 TypeDefinition.Class(
                     name = "Artist",
                     description = "An artist and their role in an opus.",
+                    required = emptySet(),
                     properties = listOf(
                         TypeProperty(
                             "name",
                             TypeDefinition.Primitive(
                                 JsonPrimitiveType.STRING,
                                 "The artist's name."
-                            ),
-                            true
+                            )
                         ),
                         TypeProperty(
                             "role",
@@ -502,77 +486,74 @@ val Opus = TypeDefinition.Class(
                                     "violinist", "dj", "vocals", "other"
                                 ),
                                 "The artist's role."
-                            ),
-                            true
+                            )
                         )
                     )
                 ),
                 description = "The opus's artists."
-            ),
-            true
+            )
         ),
         TypeProperty(
             "duration",
-            TypeDefinition.Primitive(JsonPrimitiveType.INTEGER, "The opus's duration in seconds"),
-            true
+            TypeDefinition.Primitive(JsonPrimitiveType.INTEGER, "The opus's duration in seconds")
         )
     )
 )
 
 val Person = TypeDefinition.Class(
     name = "Person",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("firstName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("lastName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("age", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+        TypeProperty("firstName", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("lastName", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("age", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER))
     )
 )
 
 val Product = TypeDefinition.Class(
     name = "Product",
+    required = setOf("productId", "productName", "price"),
     properties = listOf(
-        TypeProperty("productId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), false),
-        TypeProperty("productName", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false)
+        TypeProperty("productId", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)),
+        TypeProperty("productName", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER))
     )
 )
 
 val Paper = TypeDefinition.Class(
     name = "Paper",
+    required = setOf("title", "author"),
     properties = listOf(
-        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "author",
             TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
-            false
+            readOnly = true
         )
     )
 )
 
 val Bike = TypeDefinition.Class(
     name = "Bike",
+    required = setOf("productId", "productName", "price", "inStock", "color"),
     properties = listOf(
         TypeProperty(
             "productId",
             TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-            false,
             defaultValue = 1.0
         ),
         TypeProperty(
             "productName",
-            TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            false
+            TypeDefinition.Primitive(JsonPrimitiveType.STRING)
         ),
         TypeProperty(
             "type",
             TypeDefinition.Primitive(JsonPrimitiveType.STRING),
-            true,
             defaultValue = "road"
         ),
         TypeProperty(
             "price",
             TypeDefinition.Primitive(JsonPrimitiveType.NUMBER),
-            false,
             defaultValue = 55.5
         ),
         TypeProperty(
@@ -586,13 +567,11 @@ val Bike = TypeDefinition.Class(
                     "iron"
                 )
             ),
-            true,
             defaultValue = "light_aluminium"
         ),
         TypeProperty(
             "inStock",
             TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
-            false,
             defaultValue = true
         ),
         TypeProperty(
@@ -609,7 +588,6 @@ val Bike = TypeDefinition.Class(
                     "sunburst-yellow"
                 )
             ),
-            false,
             defaultValue = "lime green"
         )
     )
@@ -617,14 +595,16 @@ val Bike = TypeDefinition.Class(
 
 val Shipping = TypeDefinition.Class(
     name = "Shipping",
+    required = setOf("item", "destination"),
     properties = listOf(
-        TypeProperty("item", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("destination", Address, false)
+        TypeProperty("item", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("destination", Address)
     )
 )
 
 val Style = TypeDefinition.Class(
     name = "Style",
+    required = setOf("color"),
     properties = listOf(
         TypeProperty(
             name = "color",
@@ -640,14 +620,14 @@ val Style = TypeDefinition.Class(
                     "sunburst-yellow",
                     null
                 )
-            ),
-            optional = false
+            )
         )
     )
 )
 
 val Household = TypeDefinition.Class(
     name = "Household",
+    required = emptySet(),
     properties = listOf(
         TypeProperty(
             name = "pets",
@@ -657,6 +637,7 @@ val Household = TypeDefinition.Class(
                     options = listOf(
                         TypeDefinition.Class(
                             name = "Fish",
+                            required = setOf("water"),
                             properties = listOf(
                                 TypeProperty(
                                     name = "water",
@@ -664,18 +645,17 @@ val Household = TypeDefinition.Class(
                                         "Water",
                                         JsonType.STRING,
                                         listOf("salt", "fresh")
-                                    ),
-                                    optional = false
+                                    )
                                 ),
                                 TypeProperty(
                                     name = "size",
-                                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                                    optional = true
+                                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                                 )
                             )
                         ),
                         TypeDefinition.Class(
                             name = "Bird",
+                            required = setOf("food", "can_fly"),
                             properties = listOf(
                                 TypeProperty(
                                     name = "food",
@@ -691,60 +671,61 @@ val Household = TypeDefinition.Class(
                                             "seeds",
                                             "pollen"
                                         )
-                                    ),
-                                    optional = false
+                                    )
                                 ),
-                                TypeProperty(
-                                    "can_fly",
-                                    TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
-                                    false
-                                )
+                                TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN))
                             )
                         )
-                    ),
+                    ).map { TypeDefinition.OneOfClass.Option.Class(it) },
                     description = "A representation of the animal kingdom"
                 )
-            ),
-            optional = true
+            )
         ),
         TypeProperty(
             name = "situation",
             type = TypeDefinition.OneOfClass(
                 name = "Situation",
                 options = listOf(
-                    TypeDefinition.Class(
-                        name = "Marriage",
-                        properties = listOf(
-                            TypeProperty(
-                                name = "spouses",
-                                type = TypeDefinition.Array(
-                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
-                                ),
-                                optional = false
+                    TypeDefinition.OneOfClass.Option.Class(
+                        TypeDefinition.Class(
+                            name = "Marriage",
+                            required = setOf("spouses"),
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "spouses",
+                                    type = TypeDefinition.Array(
+                                        items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                    )
+                                )
                             )
                         )
                     ),
-                    TypeDefinition.Class(
-                        name = "Cotenancy",
-                        properties = listOf(
-                            TypeProperty(
-                                name = "roommates",
-                                type = TypeDefinition.Array(
-                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
-                                ),
-                                optional = false
+                    TypeDefinition.OneOfClass.Option.Class(
+                        TypeDefinition.Class(
+                            name = "Cotenancy",
+                            required = setOf("roommates"),
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "roommates",
+                                    type = TypeDefinition.Array(
+                                        items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                    )
+                                )
                             )
                         )
+                    ),
+                    TypeDefinition.OneOfClass.Option.Primitive(
+                        primitive = TypeDefinition.Primitive(type = JsonPrimitiveType.INTEGER)
                     )
                 )
-            ),
-            optional = true
+            )
         )
     )
 )
 
 val Jacket = TypeDefinition.Class(
     name = "Jacket",
+    required = setOf("size"),
     properties = listOf(
         TypeProperty(
             "size",
@@ -754,13 +735,14 @@ val Jacket = TypeDefinition.Class(
                 listOf("1", "2", "3", "4")
             ),
             defaultValue = 1.0,
-            optional = false
+            readOnly = true
         )
     )
 )
 
 val Order = TypeDefinition.Class(
     name = "Order",
+    required = setOf("sizes"),
     properties = listOf(
         TypeProperty(
             "sizes",
@@ -771,183 +753,182 @@ val Order = TypeDefinition.Class(
                     listOf("x small", "small", "medium", "large", "x large")
                 ),
                 uniqueItems = true
-            ),
-            false
+            )
         )
     )
 )
 
 val User = TypeDefinition.Class(
     name = "User",
+    required = setOf("username", "host", "lastname", "contact_type"),
     properties = listOf(
-        TypeProperty("username", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("host", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty("username", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("host", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "contact_type",
             TypeDefinition.Enum(
                 name = "ContactType",
                 type = null,
                 values = listOf("personal", "professional")
-            ),
-            false
+            )
         )
     )
 )
 
 val Country = TypeDefinition.Class(
     name = "Country",
+    required = emptySet(),
     properties = listOf(
-        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("continent", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("population", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("continent", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("population", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER))
     )
 )
 
 // both items have additionalProperties explicitly defined
 val AdditionalPropsMerged = TypeDefinition.Class(
     name = "AdditionalPropsMerged",
+    required = setOf("lastname"),
     properties = listOf(
-        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "info",
             TypeDefinition.Class(
                 name = "Info",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
+                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
                 ),
                 additionalProperties = TypeProperty(
                     name = "",
-                    type = TypeDefinition.Class("?", emptyList()),
-                    optional = true,
+                    type = TypeDefinition.Class("?", emptyList(), emptySet()),
                     readOnly = false
                 )
-            ),
-            true
+            )
         ),
-        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
     )
 )
 
 // only one item has additionalProperties explicitly defined
 val AdditionalPropsSingleMerge = TypeDefinition.Class(
     name = "AdditionalPropsSingleMerge",
+    required = setOf("lastname"),
     properties = listOf(
-        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "info",
             TypeDefinition.Class(
                 name = "Info",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
+                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
                 ),
                 additionalProperties = TypeProperty(
                     name = "",
-                    type = TypeDefinition.Class("?", emptyList()),
-                    optional = true,
+                    type = TypeDefinition.Class("?", emptyList(), emptySet()),
                     readOnly = false
                 )
-            ),
-            true
+            )
         ),
-        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
     )
 )
 
 val UserMerged = TypeDefinition.Class(
     name = "UserMerged",
+    required = setOf("lastname"),
     properties = listOf(
-        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty("email", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "info",
             TypeDefinition.Class(
                 name = "Info",
+                required = emptySet(),
                 properties = listOf(
-                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true)
+                    TypeProperty("notes", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+                    TypeProperty("source", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
                 )
-            ),
-            true
+            )
         ),
-        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
-        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+        TypeProperty("firstname", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("lastname", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
     )
 )
 
 val Version = TypeDefinition.Class(
     name = "Version",
+    required = setOf("major", "id"),
     properties = listOf(
-        TypeProperty("major", TypeDefinition.Constant(JsonType.INTEGER, 42.0), false),
-        TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415), true),
+        TypeProperty("major", TypeDefinition.Constant(JsonType.INTEGER, 42.0)),
+        TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415)),
         TypeProperty(
             "id",
             TypeDefinition.Class(
                 name = "Id",
+                required = emptySet(),
                 properties = listOf(
                     TypeProperty(
                         "serialNumber",
-                        TypeDefinition.Constant(JsonType.NUMBER, 12112.0),
-                        true
+                        TypeDefinition.Constant(JsonType.NUMBER, 12112.0)
                     )
                 )
-            ),
-            false
+            )
         ),
         TypeProperty(
             "date",
             TypeDefinition.Class(
                 name = "Date",
+                required = emptySet(),
                 properties = listOf(
                     TypeProperty(
                         "year",
-                        TypeDefinition.Constant(JsonType.INTEGER, 2021.0),
-                        true
+                        TypeDefinition.Constant(JsonType.INTEGER, 2021.0)
                     ),
                     TypeProperty(
                         "month",
-                        TypeDefinition.Constant(JsonType.INTEGER, 3.0),
-                        true
+                        TypeDefinition.Constant(JsonType.INTEGER, 3.0)
                     )
                 )
-            ),
-            true
+            )
         )
     )
 )
 
 val Video = TypeDefinition.Class(
     name = "Video",
+    required = setOf("title"),
     properties = listOf(
-        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(
             "tags",
             TypeDefinition.Array(
                 TypeDefinition.Primitive(JsonPrimitiveType.STRING),
                 uniqueItems = true
-            ),
-            true
+            )
         ),
         TypeProperty(
             "links",
             TypeDefinition.Array(
                 TypeDefinition.Primitive(JsonPrimitiveType.STRING),
                 uniqueItems = true
-            ),
-            true
+            )
         )
     )
 )
 
 val WeirdCombo = TypeDefinition.Class(
     name = "WeirdCombo",
+    required = emptySet(),
     properties = listOf(
         TypeProperty(
             name = "anything",
@@ -956,21 +937,22 @@ val WeirdCombo = TypeDefinition.Class(
                 options = listOf(
                     TypeDefinition.Class(
                         name = "Fish",
+                        required = setOf("water"),
                         properties = listOf(
                             TypeProperty(
                                 name = "water",
                                 type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
-                                optional = false
+                                readOnly = true
                             ),
                             TypeProperty(
                                 name = "size",
-                                type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
-                                optional = true
+                                type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER)
                             )
                         )
                     ),
                     TypeDefinition.Class(
                         name = "Bird",
+                        required = setOf("food", "can_fly"),
                         properties = listOf(
                             TypeProperty(
                                 name = "food",
@@ -986,26 +968,147 @@ val WeirdCombo = TypeDefinition.Class(
                                         "seeds",
                                         "pollen"
                                     )
-                                ),
-                                optional = false
+                                )
                             ),
-                            TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+                            TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN))
                         )
                     ),
                     TypeDefinition.Class(
                         name = "Paper",
+                        required = setOf("title", "author"),
                         properties = listOf(
-                            TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+                            TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
                             TypeProperty(
                                 "author",
-                                TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
-                                false
+                                TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING))
                             )
                         )
                     )
-                )
-            ),
-            optional = true
+                ).map { TypeDefinition.OneOfClass.Option.Class(it) }
+            )
         )
     )
+)
+
+val RequiredForOtherAllOf = TypeDefinition.Class(
+    name = "RequiredForOtherAllOf",
+    required = setOf("key_1", "key_2"),
+    properties = listOf(
+        TypeProperty(name = "key_1", type = TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty(name = "key_2", type = TypeDefinition.Primitive(JsonPrimitiveType.STRING))
+    )
+)
+
+val PathArrayWithInteger = TypeDefinition.Class(
+    name = "PathArrayWithInteger",
+    properties = listOf(
+        TypeProperty(
+            name = "path",
+            type = TypeDefinition.Array(
+                items = TypeDefinition.OneOfClass(
+                    name = "Path",
+                    options = listOf(
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.BOOLEAN,
+                                description = "boolean element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.STRING,
+                                description = "string element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.INTEGER,
+                                description = "integer element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Class(
+                            cls = TypeDefinition.Class(
+                                name = "Point",
+                                properties = listOf(
+                                    TypeProperty(
+                                        name = "x",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    ),
+                                    TypeProperty(
+                                        name = "y",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    )
+                                ),
+                                required = setOf("x", "y"),
+                                description = "object element"
+                            )
+                        )
+                    ),
+                    description = "This is a definition of a path"
+                ),
+                uniqueItems = false
+            ),
+            readOnly = true
+        )
+    ),
+    required = setOf("path")
+)
+
+val PathArrayWithNumber = TypeDefinition.Class(
+    name = "PathArrayWithNumber",
+    properties = listOf(
+        TypeProperty(
+            name = "path",
+            type = TypeDefinition.Array(
+                items = TypeDefinition.OneOfClass(
+                    name = "Path",
+                    options = listOf(
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.BOOLEAN,
+                                description = "boolean element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.STRING,
+                                description = "string element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.NUMBER,
+                                description = "number element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Class(
+                            cls = TypeDefinition.Class(
+                                name = "Point",
+                                properties = listOf(
+                                    TypeProperty(
+                                        name = "x",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    ),
+                                    TypeProperty(
+                                        name = "y",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    )
+                                ),
+                                required = setOf("x", "y"),
+                                description = "object element"
+                            )
+                        )
+                    ),
+                    description = "This is a definition of a path"
+                ),
+                uniqueItems = false
+            ),
+            readOnly = true
+        )
+    ),
+    required = setOf("path")
 )

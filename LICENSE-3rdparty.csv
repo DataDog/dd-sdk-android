@@ -45,6 +45,8 @@ import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open S
 import,androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.android.tools,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.apollographql.apollo,MIT,"Copyright (c) 2016-2024 Apollo Graph, Inc. (Formerly Meteor Development Group, Inc.)"
+import,com.benasher44,MIT,"Copyright (c) 2019 Ben Asher"
 import,com.github.bumptech.glide,"BSD 3-Clause","Copyright 2014 Google, Inc. All rights reserved, Copyright (c) 2013. Bump Technologies Inc. All Rights Reserved."
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."

@@ -33,7 +33,10 @@ internal object ComposeReflection {
     val SemanticsNodeClass = getClassSafe("androidx.compose.ui.semantics.SemanticsNode")
     val LayoutNodeField = SemanticsNodeClass?.getDeclaredFieldSafe("layoutNode")
 
-    val GetInnerLayerCoordinatorMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInnerLayerCoordinator")
+    val GetInnerLayerCoordinatorMethod = LayoutNodeClass?.getDeclaredMethodSafe(
+        "getInnerLayerCoordinator",
+        isCritical = false
+    )
 
     val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
     val SemanticsOwner = AndroidComposeViewClass?.getDeclaredFieldSafe("semanticsOwner")
@@ -92,14 +95,20 @@ internal object ComposeReflection {
         isCritical = false
     )
     val PainterFieldOfContentPainterModifier =
-        ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+        ContentPainterModifierClass?.getDeclaredFieldSafe(
+            "painter",
+            isCritical = false
+        )
 
     val ContentPainterElementClass = getClassSafe(
         "coil.compose.ContentPainterElement",
         isCritical = false
     )
     val PainterFieldOfContentPainterElement =
-        ContentPainterElementClass?.getDeclaredFieldSafe("painter")
+        ContentPainterElementClass?.getDeclaredFieldSafe(
+            "painter",
+            isCritical = false
+        )
 
     val AsyncImagePainterClass = getClassSafe(
         "coil.compose.AsyncImagePainter",
@@ -116,14 +125,20 @@ internal object ComposeReflection {
         isCritical = false
     )
 
-    val PainterFieldOfPainterNode = PainterNodeClass?.getDeclaredFieldSafe("painter")
+    val PainterFieldOfPainterNode = PainterNodeClass?.getDeclaredFieldSafe(
+        "painter",
+        isCritical = false
+    )
 
     val AsyncImagePainter3Class = getClassSafe(
         "coil3.compose.AsyncImagePainter",
         isCritical = false
     )
     val PainterMethodOfAsync3ImagePainter =
-        AsyncImagePainter3Class?.getDeclaredMethodSafe("getPainter")
+        AsyncImagePainter3Class?.getDeclaredMethodSafe(
+            "getPainter",
+            isCritical = false
+        )
 
     // End region of Coil3
 

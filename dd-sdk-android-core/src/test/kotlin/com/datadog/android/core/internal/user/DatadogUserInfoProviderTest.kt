@@ -55,6 +55,7 @@ internal class DatadogUserInfoProviderTest {
         val validUserInfo = userInfo.copy(id = nonNullUserId)
 
         // When
+        testedProvider.setAnonymousId(userInfo.anonymousId)
         testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, userInfo.additionalProperties)
         val result = testedProvider.getUserInfo()
 

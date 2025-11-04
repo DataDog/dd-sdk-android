@@ -47,10 +47,29 @@ interface InternalLogger {
      * The severity level of a logged message.
      */
     enum class Level {
+        /**
+         * Verbose level.
+         */
         VERBOSE,
+
+        /**
+         * Debug level.
+         */
         DEBUG,
+
+        /**
+         * Info level.
+         */
         INFO,
+
+        /**
+         * Warning level.
+         */
         WARN,
+
+        /**
+         * Error level.
+         */
         ERROR
     }
 
@@ -58,8 +77,19 @@ interface InternalLogger {
      * The target handler for a log message.
      */
     enum class Target {
+        /**
+         * Log message will be sent to Logcat.
+         */
         USER,
+
+        /**
+         * Log message will be sent to Logcat, but only in debug SDK builds.
+         */
         MAINTAINER,
+
+        /**
+         * Log message will be sent to telemetry.
+         */
         TELEMETRY
     }
 

@@ -750,8 +750,5 @@ internal class DatadogCore(
             "SDK core already has \"%s\" listener registered."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
-
-        // fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
-        internal val startupTimeNs: Long = System.nanoTime()
     }
 }

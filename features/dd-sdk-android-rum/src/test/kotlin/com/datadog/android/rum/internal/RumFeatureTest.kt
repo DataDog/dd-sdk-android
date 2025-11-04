@@ -1559,6 +1559,33 @@ internal class RumFeatureTest {
         assertThat(testedFeature.displayInfoProvider).isInstanceOf(InfoProvider::class.java)
     }
 
+    @Test
+    fun `M set initialized to true W onInitialize`() {
+        // Before
+        assertThat(testedFeature.initialized).isFalse()
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.initialized).isTrue()
+    }
+
+    @Test
+    fun `M set initialized to false W onStop`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.initialized).isTrue()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.initialized).isFalse()
+    }
+
     // endregion
 
     private fun verifyFrameStateAggregatorInitialized(

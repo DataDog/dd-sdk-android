@@ -13,6 +13,7 @@
     "situation": {
       "oneOf": [
         {
+          "type" : "object",
           "title": "Marriage",
           "properties": {
             "spouses": {
@@ -27,6 +28,7 @@
           ]
         },
         {
+          "type" : "object",
           "title": "Cotenancy",
           "properties": {
             "roommates": {
@@ -39,6 +41,9 @@
           "required": [
             "roommates"
           ]
+        },
+        {
+          "type": "integer"
         }
       ]
     }

@@ -67,7 +67,7 @@ internal class DefaultAccessibilityReader(
     @Volatile
     private var currentState = AccessibilityInfo()
 
-    private var lastPollTime: AtomicLong = AtomicLong(0)
+    private val lastPollTime: AtomicLong = AtomicLong(0)
 
     init {
         registerListeners()
@@ -82,6 +82,7 @@ internal class DefaultAccessibilityReader(
         applicationContext.unregisterComponentCallbacks(this)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onLowMemory() {
         // do nothing - there's nothing we're holding onto that takes up any significant memory
     }

@@ -53,7 +53,12 @@ constructor(
         componentPredicate.runIfValid(activity, internalLogger) {
             val viewName = componentPredicate.resolveViewName(activity)
             val attributes = if (trackExtras) {
-                convertToRumAttributes(it.intent)
+                val intent = it.intent
+                if (intent != null) {
+                    convertToRumAttributes(intent)
+                } else {
+                    emptyMap()
+                }
             } else {
                 emptyMap()
             }
