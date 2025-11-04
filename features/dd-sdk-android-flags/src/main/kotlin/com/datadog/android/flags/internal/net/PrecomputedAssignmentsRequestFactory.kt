@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.internal.model.FlagsContext
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
@@ -38,7 +39,9 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
      */
     @Suppress("ReturnCount")
     fun create(context: EvaluationContext, flagsContext: FlagsContext): Request? {
-        val url = flagsContext.flagEndpoint ?: return null
+        val url = flagsContext.customFlagEndpoint
+            ?: flagsContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
+            ?: return null
 
         val headers = buildHeaders(flagsContext) ?: return null
 
@@ -124,5 +127,6 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
+        private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
     }
 }

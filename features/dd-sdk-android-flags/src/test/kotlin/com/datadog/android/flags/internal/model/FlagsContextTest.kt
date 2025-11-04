@@ -72,7 +72,7 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
-        assertThat(flagsContext.flagEndpoint).isEqualTo(fakeFlagEndpoint)
+        assertThat(flagsContext.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
     }
 
     @Test
@@ -94,6 +94,7 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.customExposureEndpoint).isNull()
+        assertThat(flagsContext.customFlagEndpoint).isNull()
     }
 
     @Test
@@ -101,7 +102,7 @@ internal class FlagsContextTest {
         // Given
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
         whenever(mockDatadogContext.site) doReturn mockDatadogSite
-        whenever(mockDatadogSite.name) doReturn fakeSiteName
+        whenever(mockDatadogContext.site.name) doReturn fakeSiteName
         whenever(mockDatadogContext.env) doReturn fakeEnv
 
         val flagsConfiguration = FlagsConfiguration.Builder().build()

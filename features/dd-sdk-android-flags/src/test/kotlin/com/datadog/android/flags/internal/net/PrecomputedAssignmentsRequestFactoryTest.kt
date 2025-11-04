@@ -117,7 +117,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
             env = fakeEnv,
-            flagEndpoint = fakeCustomEndpoint
+            customFlagEndpoint = fakeCustomEndpoint
         )
 
         // When
