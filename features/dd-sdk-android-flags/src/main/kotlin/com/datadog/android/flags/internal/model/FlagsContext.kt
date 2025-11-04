@@ -53,8 +53,7 @@ internal data class FlagsContext(
             site = datadogContext.site,
             env = datadogContext.env,
             customExposureEndpoint = flagsConfiguration.customExposureEndpoint,
-            flagEndpoint =
-            flagsConfiguration.customFlagEndpoint
+            flagEndpoint = flagsConfiguration.customFlagEndpoint
         )
     }
 }

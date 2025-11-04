@@ -351,43 +351,31 @@ interface FlagsClient {
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
             )
 
-            val datadogContext = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
+            val datadogContext = (featureSdkCore as InternalSdkCore).getDatadogContext()
 
-            // Get required context parameters
-            val clientToken = datadogContext?.clientToken
-            val site = datadogContext?.site
-            val env = datadogContext?.env
-            val applicationId = flagsFeature.applicationId
-
-            // Validate required parameters
-            if (clientToken == null || site == null || env == null) {
-                val missingParams = listOfNotNull(
-                    "clientToken".takeIf { clientToken == null },
-                    "site".takeIf { site == null },
-                    "env".takeIf { env == null }
-                ).joinToString(", ")
-
+            // Validate required context
+            if (datadogContext == null) {
                 flagsFeature.logErrorWithPolicy(
-                    message = "Missing required context parameters: $missingParams",
+                    message = "Missing DatadogContext from SDK core",
                     level = InternalLogger.Level.ERROR,
                     shouldCrashInStrict = true
                 )
 
                 return NoOpFlagsClient(
                     name = name,
-                    reason = "Failed to create client - missing SDK context parameters: $missingParams",
+                    reason = "Failed to create client - missing DatadogContext",
                     logWithPolicy = { message, level ->
                         flagsFeature.logErrorWithPolicy(message, level, shouldCrashInStrict = false)
                     }
                 )
             } else {
                 // Build the various dependencies for the [DatadogFlagsClient]
+                val applicationId = flagsFeature.applicationId
 
-                val flagsContext = FlagsContext(
+                val flagsContext = FlagsContext.create(
+                    datadogContext = datadogContext,
                     applicationId = applicationId,
-                    clientToken = clientToken,
-                    site = site,
-                    env = env
+                    flagsConfiguration = configuration
                 )
 
                 val datastore = (featureSdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)

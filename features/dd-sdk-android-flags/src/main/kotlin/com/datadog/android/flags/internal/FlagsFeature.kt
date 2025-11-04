@@ -34,12 +34,18 @@ internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
-    internal val flagsConfiguration: FlagsConfiguration,
-    @Volatile internal var applicationId: String? = null,
-    internal var processor: EventsProcessor = NoOpEventsProcessor(),
-    internal var dataWriter: RecordWriter = NoOpRecordWriter()
+    internal val flagsConfiguration: FlagsConfiguration
 ) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
+
+    @Volatile
+    internal var applicationId: String? = null
+
+    @Volatile
+    internal var processor: EventsProcessor = NoOpEventsProcessor()
+
+    @Volatile
+    internal var dataWriter: RecordWriter = NoOpRecordWriter()
 
     @Volatile
     private var isInitialized = false
