@@ -36,7 +36,3 @@ would like to change. For more information, read the
 ## License
 
 [Apache License, v2.0](../../LICENSE)
-
-[1]: https://github.com/ReactiveX/RxJava
-[2]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin
-[3]: https://github.com/ReactiveX/RxJava/wiki
