@@ -866,41 +866,23 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M not call evaluations manager W setEvaluationContext() { blank targeting key }`() {
+    fun `M call evaluations manager W setEvaluationContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
+        val contextWithBlankKey = EvaluationContext(blankTargetingKey, fakeAttributes)
 
         // When
-        testedClient.setEvaluationContext(EvaluationContext(blankTargetingKey, fakeAttributes))
+        testedClient.setEvaluationContext(contextWithBlankKey)
 
         // Then
-        verifyNoInteractions(mockEvaluationsManager)
-    }
+        // Verify that blank targeting keys are allowed and processed
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture())
 
-    @Test
-    fun `M log error and not crash W setEvaluationContext() { blank targeting key }`() {
-        // Given
-        val blankTargetingKey = ""
-        val fakeAttributes = mapOf("test" to "value")
-
-        // When
-        testedClient.setEvaluationContext(EvaluationContext(blankTargetingKey, fakeAttributes))
-
-        // Then
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-            val message = lastValue()
-            assertThat(message).contains("Invalid evaluation context")
-            assertThat(message).contains("targeting key cannot be blank")
-        }
+        val capturedContext = contextCaptor.firstValue
+        assertThat(capturedContext.targetingKey).isEmpty()
+        assertThat(capturedContext.attributes).isEqualTo(fakeAttributes)
     }
 
     @Test

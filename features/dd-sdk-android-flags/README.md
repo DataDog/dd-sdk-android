@@ -125,7 +125,6 @@ client.setEvaluationContext(context)
 
 **Important Notes:**
 - The `targetingKey` must be consistent for the same user/entity to ensure consistent flag evaluation across requests
-- The `targetingKey` cannot be blank or whitespace-only
 - All attribute values must be strings - convert numbers, booleans, and other types to strings before passing them
 - Common targeting keys include user ID, device ID, or session ID
 

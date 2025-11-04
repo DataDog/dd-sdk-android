@@ -63,15 +63,6 @@ internal class DatadogFlagsClient(
      * Must contain a valid targeting key; invalid contexts are logged and ignored.
      */
     override fun setEvaluationContext(context: EvaluationContext) {
-        if (context.targetingKey.isBlank()) {
-            featureSdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "Invalid evaluation context: targeting key cannot be blank or whitespace-only" }
-            )
-            return
-        }
-
         evaluationsManager.updateEvaluationsForContext(context)
     }
 

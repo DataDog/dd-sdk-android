@@ -18,7 +18,6 @@ package com.datadog.android.flags.model
  *   bucketing for that user. Common examples include user ID (consistent treatment per user),
  *   company ID (consistent treatment for entire company), or device ID (consistent treatment
  *   per device). The targeting key may also be used in targeting rules for flag evaluation.
- *   Must not be blank or whitespace-only.
  * @param attributes Additional attributes used for targeting flag evaluation. All values must be
  *   strings - you are responsible for converting numbers, booleans, and other types to their
  *   string representation before passing them to the context. Examples:
@@ -31,7 +30,6 @@ data class EvaluationContext(
      * The unique identifier used for targeting and bucketing flag evaluation.
      *
      * Must be consistent for the same entity to ensure consistent flag behavior across requests.
-     * Must not be blank or whitespace-only.
      * Examples: user ID, company ID, device ID.
      */
     val targetingKey: String,
