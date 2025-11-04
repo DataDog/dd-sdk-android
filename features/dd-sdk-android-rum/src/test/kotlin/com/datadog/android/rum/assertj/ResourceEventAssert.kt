@@ -673,6 +673,15 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasNoGraphql(): ResourceEventAssert {
+        assertThat(actual.resource.graphql)
+            .overridingErrorMessage(
+                "Expected event data to have no resource.graphql but was ${actual.resource.graphql}"
+            )
+            .isNull()
+        return this
+    }
+
     companion object {
 
         internal const val TIMESTAMP_THRESHOLD_MS = 50L

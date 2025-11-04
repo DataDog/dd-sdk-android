@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

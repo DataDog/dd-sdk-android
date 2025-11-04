@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Com
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.ID_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.MIME_TYPE
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -99,12 +100,18 @@ internal class ResourceRequestBodyFactory(
                     resourceMetadata,
                     FILENAME_KEY
                 )
+                val mimeType = MiscUtils.safeGetStringFromJsonObject(
+                    internalLogger,
+                    resourceMetadata,
+                    MIME_TYPE
+                )
 
                 if (applicationId != null && filename != null) {
                     ResourceEvent(
                         applicationId = applicationId,
                         identifier = filename,
-                        it.data
+                        it.data,
+                        mimeType = mimeType
                     )
                 } else {
                     null
@@ -119,7 +126,8 @@ internal class ResourceRequestBodyFactory(
         resources.forEach {
             val filename = it.identifier
             val resourceData = it.resourceData
-            addResourceRequestBody(builder, filename, resourceData)
+            val mimeType = it.mimeType
+            addResourceRequestBody(builder, filename, resourceData, mimeType)
         }
     }
 
@@ -162,9 +170,14 @@ internal class ResourceRequestBodyFactory(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun addResourceRequestBody(builder: MultipartBody.Builder, filename: String, resourceData: ByteArray) {
+    private fun addResourceRequestBody(
+        builder: MultipartBody.Builder,
+        filename: String,
+        resourceData: ByteArray,
+        mimeType: String? = null
+    ) {
         val body = try {
-            resourceData.toRequestBody(CONTENT_TYPE_IMAGE)
+            resourceData.toRequestBody(mimeType?.toMediaTypeOrNull() ?: CONTENT_TYPE_IMAGE)
         } catch (e: ArrayIndexOutOfBoundsException) {
             // this should never happen because we aren't specifying an offset
             internalLogger.log(

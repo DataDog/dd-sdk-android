@@ -368,6 +368,7 @@ public final class com/datadog/trace/api/Functions$LowerCase : com/datadog/andro
 
 public abstract class com/datadog/trace/api/IdGenerationStrategy {
 	protected final field traceId128BitGenerationEnabled Z
+	public fun <init> (Z)V
 	public static fun fromName (Ljava/lang/String;)Lcom/datadog/trace/api/IdGenerationStrategy;
 	public static fun fromName (Ljava/lang/String;Z)Lcom/datadog/trace/api/IdGenerationStrategy;
 	protected fun generateHighOrderBits ()J
@@ -3070,6 +3071,16 @@ public class com/datadog/trace/core/propagation/B3TraceId : com/datadog/trace/ap
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/trace/core/propagation/Baggage {
+	public fun <init> ()V
+	public fun asMap ()Ljava/util/Map;
+	public static fun from (Ljava/lang/String;)Lcom/datadog/trace/core/propagation/Baggage;
+	public fun isEmpty ()Z
+	public fun mergeWith (Lcom/datadog/trace/core/propagation/Baggage;)Lcom/datadog/trace/core/propagation/Baggage;
+	public fun put (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/trace/core/propagation/Baggage;
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/datadog/trace/core/propagation/ContextInterpreter : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier {
 	protected static final field LOG_EXTRACT_HEADER_NAMES Z
 	protected field baggage Ljava/util/Map;
@@ -3124,7 +3135,8 @@ public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/t
 }
 
 public class com/datadog/trace/core/propagation/HttpCodec {
-	public static final field RUM_SESSION_ID_KEY Ljava/lang/String;
+	public static final field RUM_KEY_ACCOUNT_ID Ljava/lang/String;
+	public static final field RUM_KEY_USER_ID Ljava/lang/String;
 	public fun <init> ()V
 	public static fun allInjectorsFor (Lcom/datadog/trace/api/Config;Ljava/util/Map;)Ljava/util/Map;
 	public static fun createExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
@@ -3537,6 +3549,22 @@ public final class com/datadog/trace/util/CollectionUtils {
 	public static fun tryMakeImmutableList (Ljava/util/Collection;)Ljava/util/List;
 	public static fun tryMakeImmutableMap (Ljava/util/Map;)Ljava/util/Map;
 	public static fun tryMakeImmutableSet (Ljava/util/Collection;)Ljava/util/Set;
+}
+
+public final class com/datadog/trace/util/PercentEscaper {
+	public fun <init> ()V
+	public static fun create ()Lcom/datadog/trace/util/PercentEscaper;
+	public fun escape (Ljava/lang/String;[Z)Lcom/datadog/trace/util/PercentEscaper$Escaped;
+	public fun escapeKey (Ljava/lang/String;)Lcom/datadog/trace/util/PercentEscaper$Escaped;
+	public fun escapeValue (Ljava/lang/String;)Lcom/datadog/trace/util/PercentEscaper$Escaped;
+	public fun keyNeedsEncoding (Ljava/lang/String;)Z
+	public fun valNeedsEncoding (Ljava/lang/String;)Z
+}
+
+public class com/datadog/trace/util/PercentEscaper$Escaped {
+	public field data Ljava/lang/String;
+	public field size I
+	public fun <init> (Ljava/lang/String;I)V
 }
 
 public final class com/datadog/trace/util/PidHelper {

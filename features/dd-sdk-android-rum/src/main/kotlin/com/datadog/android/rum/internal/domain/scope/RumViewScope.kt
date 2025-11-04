@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -260,6 +261,8 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 event,
@@ -280,6 +283,8 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 event,
@@ -326,6 +331,9 @@ internal open class RumViewScope(
             syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
             else -> VitalEvent.VitalEventSessionType.SYNTHETICS
         }
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
+        val user = datadogContext.userInfo
 
         return VitalEvent(
             date = event.eventTime.timestamp + serverTimeOffsetInMs,
@@ -344,6 +352,7 @@ internal open class RumViewScope(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
+            synthetics = syntheticsAttribute,
             session = VitalEvent.VitalEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
@@ -354,13 +363,55 @@ internal open class RumViewScope(
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            vital = VitalEvent.VitalEventVital(
+            source = VitalEvent.VitalEventSource.tryFromSource(
+                source = datadogContext.source,
+                internalLogger = sdkCore.internalLogger
+            ),
+            account = datadogContext.accountInfo?.let {
+                VitalEvent.Account(
+                    id = it.id,
+                    name = it.name,
+                    additionalProperties = it.extraInfo.toMutableMap()
+                )
+            },
+            usr = if (user.hasUserData()) {
+                VitalEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    anonymousId = user.anonymousId,
+                    additionalProperties = user.additionalProperties.toMutableMap()
+                )
+            } else {
+                null
+            },
+            device = VitalEvent.Device(
+                type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                name = datadogContext.deviceInfo.deviceName,
+                model = datadogContext.deviceInfo.deviceModel,
+                brand = datadogContext.deviceInfo.deviceBrand,
+                architecture = datadogContext.deviceInfo.architecture,
+                locales = datadogContext.deviceInfo.localeInfo.locales,
+                timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                batteryLevel = batteryInfo.batteryLevel,
+                powerSavingMode = batteryInfo.lowPowerMode,
+                brightnessLevel = displayInfo.screenBrightness
+            ),
+            os = VitalEvent.Os(
+                name = datadogContext.deviceInfo.osName,
+                version = datadogContext.deviceInfo.osVersion,
+                versionMajor = datadogContext.deviceInfo.osMajorVersion
+            ),
+            connectivity = datadogContext.networkInfo.toVitalConnectivity(),
+            version = datadogContext.version,
+            service = datadogContext.service,
+            ddtags = buildDDTagsString(datadogContext),
+            vital = VitalEvent.Vital.FeatureOperationProperties(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
-                failureReason = failureReason,
-                type = VitalEvent.VitalEventVitalType.OPERATION_STEP
+                failureReason = failureReason
             )
         )
     }
@@ -1656,11 +1707,11 @@ internal open class RumViewScope(
     }
 
     private fun logSynthetics(key: String, value: String) {
-        sdkCore.internalLogger.log(
-            level = InternalLogger.Level.INFO,
-            target = InternalLogger.Target.USER,
-            messageBuilder = { "$key=$value" }
-        )
+        /**
+         * We use [android.util.Log] here instead of [InternalLogger] because we want to log regardless of the
+         * verbosity level set using [com.datadog.android.Datadog.setVerbosity].
+         */
+        Log.i("DatadogSynthetics", "$key=$value")
     }
 
     // endregion

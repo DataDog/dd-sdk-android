@@ -20,7 +20,7 @@ interface LocalAttribute {
     enum class Key(
         private val string: String
     ) {
-        /*
+        /**
          * Some of the metrics such as [PerformanceMetric] are sampled at the point of
          * metric creation and then reported with 100% probability.
          * In such cases we need to use *creationSampleRate* to correctly calculate effectiveSampleRate.
@@ -29,14 +29,14 @@ interface LocalAttribute {
          */
         CREATION_SAMPLING_RATE("_dd.local.head_sampling_rate_key"),
 
-        /*
+        /**
          * Sampling rate that is used to decide to send or not to send the metric.
          * Each metric should have reporting(tail) sampling rate.
          * It's possible that metric has only reporting(tail) sampling rate.
          */
         REPORTING_SAMPLING_RATE("_dd.local.tail_sampling_rate_key"),
 
-        /*
+        /**
          * Indicates which instrumentation was used to track the view scope.
          * See [ViewScopeInstrumentationType] for possible values.
          */

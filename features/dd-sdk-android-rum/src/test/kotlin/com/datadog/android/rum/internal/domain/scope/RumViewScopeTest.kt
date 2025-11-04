@@ -31,6 +31,7 @@ import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
+import com.datadog.android.rum.assertj.VitalFeatureOperationPropertiesAssert
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -62,6 +63,7 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -210,11 +212,11 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeViewType: RumViewType
-
     var fakeSourceViewEvent: ViewEvent.ViewEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
     var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
     var fakeSourceLongTaskEvent: LongTaskEvent.LongTaskEventSource? = null
+    var fakeVitalSourceEvent: VitalEvent.VitalEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
@@ -312,6 +314,11 @@ internal class RumViewScopeTest {
         }
         fakeSourceLongTaskEvent = if (isValidSource) {
             LongTaskEvent.LongTaskEventSource.fromJson(fakeSource)
+        } else {
+            null
+        }
+        fakeVitalSourceEvent = if (isValidSource) {
+            VitalEvent.VitalEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -8603,6 +8610,54 @@ internal class RumViewScopeTest {
     // region Feature Operations
 
     @Test
+    fun `M do nothing if view is stopped W handleEvent { StartFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StartFeatureOperation(
+            name,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            operationKey = forge.aNullable { key },
+            eventTime = fakeEventTime + duration
+        )
+
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M do nothing if view is stopped W handleEvent { StopFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StopFeatureOperation(
+            name,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            operationKey = forge.aNullable { key },
+            failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) },
+            eventTime = fakeEventTime + duration
+        )
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
     fun `M send view update W handleEvent { StartFeatureOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
@@ -8669,11 +8724,11 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val operationKey = forge.aNullable { key }
+        val fakeOperationKey = forge.aNullable { key }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val event = RumRawEvent.StartFeatureOperation(
             fakeName,
-            operationKey = operationKey,
+            operationKey = fakeOperationKey,
             attributes = attributes,
             eventTime = fakeEventTime + fakeDuration
         )
@@ -8696,11 +8751,108 @@ internal class RumViewScopeTest {
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
+                .hasNoSyntheticsTest()
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
                 .hasVitalName(fakeName)
-                .hasVitalOperationalKey(operationKey)
+                .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalEvent.StepType.START)
                 .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StartFeatureOperation }`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeName = forge.anAlphabeticalString()
+        val fakeDuration: Long = forge.aLong(min = 0)
+        val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
+        val event = RumRawEvent.StartFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, syntheticsResultId = fakeResultId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasSyntheticsTest(fakeTestId, fakeResultId)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.START)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8737,14 +8889,111 @@ internal class RumViewScopeTest {
                 .hasSessionId(fakeParentContext.sessionId)
                 .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
                 .hasSessionReplay(fakeHasReplay)
+                .hasNoSyntheticsTest()
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalEvent.StepType.END)
                 .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopFeatureOperation, succeed }`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeName = forge.anAlphabeticalString()
+        val fakeDuration: Long = forge.aLong(min = 0)
+        val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
+        val event = RumRawEvent.StopFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            failureReason = null,
+            eventTime = fakeEventTime + fakeDuration
+        )
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, syntheticsResultId = fakeResultId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasSyntheticsTest(fakeTestId, fakeResultId)
+                .hasUrl(fakeUrl)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8783,16 +9032,115 @@ internal class RumViewScopeTest {
                 .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
+                .hasNoSyntheticsTest()
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalEvent.StepType.END)
                 .hasVitalFailureReason(failureReason)
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
         }
     }
-    //
+
+    @Test
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopFeatureOperation, failed }`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeName = forge.anAlphabeticalString()
+        val fakeDuration: Long = forge.aLong(min = 0)
+        val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val event = RumRawEvent.StopFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            failureReason = failureReason,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, syntheticsResultId = fakeResultId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSyntheticsTest(fakeTestId, fakeResultId)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
+        }
+    }
+    // endregion
 
     // region Internal
     private fun withAttributesCheckingMergeWithViewAttributes(

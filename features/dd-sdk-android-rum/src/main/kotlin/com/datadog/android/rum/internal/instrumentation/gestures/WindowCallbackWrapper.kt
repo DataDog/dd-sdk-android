@@ -15,6 +15,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.FixedWindowCallback
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider

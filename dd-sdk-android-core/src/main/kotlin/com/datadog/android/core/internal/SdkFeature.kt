@@ -61,6 +61,7 @@ import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
 import java.util.Locale
 import java.util.concurrent.Callable
+import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReadWriteLock
@@ -194,6 +195,20 @@ internal class SdkFeature(
                 val context = contextProvider.getContext(withFeatureContexts)
                 callback(context)
             }
+    }
+
+    internal fun getContextFuture(withFeatureContexts: Set<String>): Future<DatadogContext?>? {
+        return coreFeature.contextExecutorService.submitSafe(
+            "getContextFuture-${wrappedFeature.name}",
+            internalLogger,
+            Callable {
+                if (coreFeature.initialized.get()) {
+                    contextProvider.getContext(withFeatureContexts)
+                } else {
+                    null
+                }
+            }
+        )
     }
 
     override fun getWriteContextSync(

@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
-import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale

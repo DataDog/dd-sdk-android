@@ -8,6 +8,7 @@ package com.datadog.gradle.plugin.jsonschema.generator
 
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
 import com.datadog.gradle.plugin.jsonschema.asKotlinTypeName
+import com.datadog.gradle.plugin.jsonschema.nameString
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LIST
@@ -33,12 +34,19 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
     protected fun TypeDefinition.name(): String? {
         return when (this) {
             is TypeDefinition.Array,
-            is TypeDefinition.Primitive,
             is TypeDefinition.Constant,
             is TypeDefinition.Null -> null
             is TypeDefinition.Enum -> name
             is TypeDefinition.Class -> name
             is TypeDefinition.OneOfClass -> name
+            is TypeDefinition.Primitive -> type.nameString()
+        }
+    }
+
+    protected fun TypeDefinition.OneOfClass.Option.name(): String? {
+        return when (this) {
+            is TypeDefinition.OneOfClass.Option.Class -> cls.name()
+            is TypeDefinition.OneOfClass.Option.Primitive -> primitive.name()
         }
     }
 
@@ -59,6 +67,18 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
             is TypeDefinition.Class -> withUniqueTypeName(rootTypeName).typeName
             is TypeDefinition.Enum -> withUniqueTypeName(rootTypeName).typeName
             is TypeDefinition.OneOfClass -> withUniqueTypeName(rootTypeName).typeName
+        }
+    }
+
+    protected fun TypeDefinition.OneOfClass.Option.asKotlinTypeName(
+        rootTypeName: String,
+        parent: TypeDefinition.OneOfClass
+    ): TypeName {
+        return when (this) {
+            is TypeDefinition.OneOfClass.Option.Class -> cls.asKotlinTypeName(rootTypeName)
+            is TypeDefinition.OneOfClass.Option.Primitive -> {
+                ClassName(packageName, rootTypeName, parent.name, primitive.type.nameString())
+            }
         }
     }
 

@@ -1,0 +1,17 @@
+Dependencies List
+
+com.apollographql.apollo:apollo-annotations-jvm:4.3.3           :    6 Kb
+com.apollographql.apollo:apollo-api-jvm:4.3.3                   :  330 Kb
+com.apollographql.apollo:apollo-mpp-utils-jvm:4.3.3             : 1477 b 
+com.apollographql.apollo:apollo-runtime-android:4.3.3           :  379 Kb
+com.benasher44:uuid-jvm:0.8.2                                   :    8 Kb
+com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
+com.squareup.okio:okio-jvm:3.9.0                                :  363 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21                  :  963 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21                  :  968 b 
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0         : 1429 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
+
+Total transitive dependencies size                              :    4 Mb
+

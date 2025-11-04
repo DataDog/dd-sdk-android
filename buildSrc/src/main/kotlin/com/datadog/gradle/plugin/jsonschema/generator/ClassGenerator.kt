@@ -59,7 +59,13 @@ class ClassGenerator(
         typeBuilder.addKdoc(generateKDoc(definition))
 
         definition.properties.forEach {
-            typeBuilder.addProperty(generateProperty(it, rootTypeName))
+            typeBuilder.addProperty(
+                generateProperty(
+                    property = it,
+                    rootTypeName = rootTypeName,
+                    isRequired = definition.required.contains(it.name)
+                )
+            )
         }
         if (definition.additionalProperties != null) {
             typeBuilder.addProperty(
@@ -121,7 +127,10 @@ class ClassGenerator(
         funBuilder.addStatement("val json = %T()", ClassNameRef.JsonObject)
 
         definition.properties.forEach { p ->
-            funBuilder.appendPropertySerialization(p)
+            funBuilder.appendPropertySerialization(
+                property = p,
+                isRequired = definition.required.contains(p.name)
+            )
         }
 
         if (definition.additionalProperties != null) {
@@ -137,11 +146,12 @@ class ClassGenerator(
     }
 
     private fun FunSpec.Builder.appendPropertySerialization(
-        property: TypeProperty
+        property: TypeProperty,
+        isRequired: Boolean
     ) {
         val propertyName = property.name.variableName()
         val isNullable =
-            property.optional && property.type !is TypeDefinition.Constant && property.type !is TypeDefinition.Null
+            !isRequired && property.type !is TypeDefinition.Constant && property.type !is TypeDefinition.Null
         val refName = if (isNullable) {
             beginControlFlow("%L?.let·{·%LNonNull·->", propertyName, propertyName)
             "${propertyName}NonNull"
@@ -308,12 +318,17 @@ class ClassGenerator(
         definition.properties.forEach { p ->
             if (p.type !is TypeDefinition.Constant) {
                 val propertyName = p.name.variableName()
-                val isNullable = (p.optional || p.type is TypeDefinition.Null)
+                val isRequired = definition.required.contains(p.name)
+                val isNullable = (!isRequired || p.type is TypeDefinition.Null)
                 val notNullableType = p.type.asKotlinTypeName(rootTypeName)
                 val propertyType = notNullableType.copy(nullable = isNullable)
                 constructorBuilder.addParameter(
                     ParameterSpec.builder(propertyName, propertyType)
-                        .withDefaultValue(p, rootTypeName)
+                        .withDefaultValue(
+                            p = p,
+                            rootTypeName = rootTypeName,
+                            isRequired = isRequired
+                        )
                         .build()
                 )
             }
@@ -334,10 +349,10 @@ class ClassGenerator(
         return constructorBuilder.build()
     }
 
-    private fun generateProperty(property: TypeProperty, rootTypeName: String): PropertySpec {
+    private fun generateProperty(property: TypeProperty, rootTypeName: String, isRequired: Boolean): PropertySpec {
         val propertyName = property.name.variableName()
         val propertyType = property.type
-        val isNullable = (property.optional || propertyType is TypeDefinition.Null) &&
+        val isNullable = (!isRequired || propertyType is TypeDefinition.Null) &&
             (propertyType !is TypeDefinition.Constant)
         val notNullableType = propertyType.asKotlinTypeName(rootTypeName)
         val type = notNullableType.copy(nullable = isNullable)
@@ -427,7 +442,8 @@ class ClassGenerator(
 
     private fun ParameterSpec.Builder.withDefaultValue(
         p: TypeProperty,
-        rootTypeName: String
+        rootTypeName: String,
+        isRequired: Boolean
     ): ParameterSpec.Builder {
         val defaultValue = p.defaultValue
         if (defaultValue != null) {
@@ -456,7 +472,7 @@ class ClassGenerator(
                         "This feature is not supported yet"
                 )
             }
-        } else if (p.optional || p.type is TypeDefinition.Null) {
+        } else if (!isRequired || p.type is TypeDefinition.Null) {
             defaultValue("null")
         }
         return this

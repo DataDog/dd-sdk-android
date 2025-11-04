@@ -23,7 +23,8 @@ tasks.register(
         "_rect-schema.json",
         "_view-container-schema.json",
         "_view-accessibility-schema.json",
-        "_view-performance-schema.json"
+        "_view-performance-schema.json",
+        "_vital-common-schema.json"
     )
     inputNameMapping = mapOf(
         "action-schema.json" to "ActionEvent",

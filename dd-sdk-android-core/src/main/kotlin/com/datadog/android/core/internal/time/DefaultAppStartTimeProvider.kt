@@ -10,8 +10,8 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.DdRumContentProvider
 import java.util.concurrent.TimeUnit
 
 internal class DefaultAppStartTimeProvider(
@@ -25,7 +25,7 @@ internal class DefaultAppStartTimeProvider(
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
             }
-            else -> DatadogCore.startupTimeNs
+            else -> DdRumContentProvider.createTimeNs
         }
     }
 }

@@ -1,3 +1,52 @@
+# 3.2.0 / 2025-10-13
+
+* [FEATURE] Support Apollo GraphQL. See [#2845](https://github.com/DataDog/dd-sdk-android/pull/2845)
+* [FEATURE] Trace: Account ID and User ID propagation support via `baggage` header. See [#2911](https://github.com/DataDog/dd-sdk-android/pull/2911)
+* [FEATURE] TTID (Time To Initial Display) reporting support. See [#2921](https://github.com/DataDog/dd-sdk-android/pull/2921)
+* [BUGFIX] Fix tags which were missing in Vital event reported for Feature Operations. See [#2928](https://github.com/DataDog/dd-sdk-android/pull/2928)
+* [BUGFIX] Fix RUM `sessionId` which was missing for automatic HTTP tracing via `baggage` header. See [#2904](https://github.com/DataDog/dd-sdk-android/pull/2904)
+* [IMPROVEMENT] Move session properties to `ddtags` over query parameters. See [#2866](https://github.com/DataDog/dd-sdk-android/pull/2866)
+* [IMPROVEMENT] Trace: Support `baggage` header updates. See [#2881](https://github.com/DataDog/dd-sdk-android/pull/2881)
+* [IMPROVEMENT] Mute some Compose Reflection telemetry errors in Session Replay. See [#2901](https://github.com/DataDog/dd-sdk-android/pull/2901)
+* [IMPROVEMENT] RUM: Set initialized flag to false when stop `RumFeature`. See [#2903](https://github.com/DataDog/dd-sdk-android/pull/2903)
+* [IMPROVEMENT] RUM: Update doc of `addViewLoadingTime`. See [#2909](https://github.com/DataDog/dd-sdk-android/pull/2909)
+* [IMPROVEMENT] Minor code improvements. See [#2913](https://github.com/DataDog/dd-sdk-android/pull/2913)
+* [IMPROVEMENT] Session Replay: Extend resource handling to support multiple MIME types. See [#2914](https://github.com/DataDog/dd-sdk-android/pull/2914)
+* [MAINTENANCE] Add `libs.versions.toml` in `GenerateTransitiveDependenciesTask` as input. See [#2905](https://github.com/DataDog/dd-sdk-android/pull/2905)
+* [MAINTENANCE] Move `TimeProvider` into `dd-sdk-android-internal`. See [#2906](https://github.com/DataDog/dd-sdk-android/pull/2906)
+* [MAINTENANCE] Bump `dd-trace-java` version to `1.54.0`. See [#2916](https://github.com/DataDog/dd-sdk-android/pull/2916)
+* [MAINTENANCE] Enhancing check last release script. See [#2927](https://github.com/DataDog/dd-sdk-android/pull/2927)
+
+# 3.1.0 / 2025-09-18
+
+* [FEATURE] RUM: Feature Operations public API. See [#2814](https://github.com/DataDog/dd-sdk-android/pull/2814)
+* [FEATURE] RUM: Feature Operations DTO schema integration. See [#2816](https://github.com/DataDog/dd-sdk-android/pull/2816)
+* [FEATURE] RUM: Feature Operations user debug logs support. See [#2819](https://github.com/DataDog/dd-sdk-android/pull/2819)
+* [FEATURE] RUM: Feature Operations usage telemetry support. See [#2818](https://github.com/DataDog/dd-sdk-android/pull/2818)
+* [FEATURE] RUM: Feature Operations parameters validation support. See [#2835](https://github.com/DataDog/dd-sdk-android/pull/2835)
+* [FEATURE] RUM: Feature Operations background processing support. See [#2887](https://github.com/DataDog/dd-sdk-android/pull/2887)
+* [FEATURE] RUM: Feature Operations synthetics attribute support. See [#2888](https://github.com/DataDog/dd-sdk-android/pull/2888)
+* [IMPROVEMENT] RUM: Feature Operations Fix RumVitalEvent serialization logic. See [#2828](https://github.com/DataDog/dd-sdk-android/pull/2828)
+* [IMPROVEMENT] Refactor the vitals screen in the sample application. See [#2820](https://github.com/DataDog/dd-sdk-android/pull/2820)
+* [IMPROVEMENT] Add feature operation block to the `VitalsFragment`. See [#2821](https://github.com/DataDog/dd-sdk-android/pull/2821)
+* [IMPROVEMENT] RUM: Replace `RumVitalEvent` with `VitalEvent`. See [#2831](https://github.com/DataDog/dd-sdk-android/pull/2831)
+* [IMPROVEMENT] RUM: Fix the feature context in the telemetry. See [#2857](https://github.com/DataDog/dd-sdk-android/pull/2857)
+* [IMPROVEMENT] Use single source of truth for `os` and `device` properties definitions for `Logs` and `Traces`. See [#2859](https://github.com/DataDog/dd-sdk-android/pull/2859)
+* [IMPROVEMENT] Safe serialization of `account.extraInfo`. See [#2862](https://github.com/DataDog/dd-sdk-android/pull/2862)
+* [IMPROVEMENT] Update MIGRATION.MD. See [#2858](https://github.com/DataDog/dd-sdk-android/pull/2858)
+* [IMPROVEMENT] Fix for `VitalEvent` date. See [#2875](https://github.com/DataDog/dd-sdk-android/pull/2875)
+* [IMPROVEMENT] Make `AndroidMDrawableToColorMapper` and `AndroidQDrawableToColorMapper` internal. See [#2873](https://github.com/DataDog/dd-sdk-android/pull/2873)
+* [IMPROVEMENT] Trace: Add `@JvmStatic` to kotlin objects for cleaner interop with Java language. See [#2876](https://github.com/DataDog/dd-sdk-android/pull/2876)
+* [IMPROVEMENT] RUM: Check for result of `activity.intent`. See [#2877](https://github.com/DataDog/dd-sdk-android/pull/2877)
+* [IMPROVEMENT] Add documentation to the public API members where missing. See [#2880](https://github.com/DataDog/dd-sdk-android/pull/2880)
+* [MAINTENANCE] Change the order of executors shutdown in `drainAndShutdownExecutors` to fix flaky integration tests. See [#2884](https://github.com/DataDog/dd-sdk-android/pull/2884)
+* [MAINTENANCE] Bump `dd-trace-java` version to `1.53.0`. See [#2860](https://github.com/DataDog/dd-sdk-android/pull/2860)
+* [MAINTENANCE] Split detekt custom rules to handle code point limit. See [#2863](https://github.com/DataDog/dd-sdk-android/pull/2863)
+* [MAINTENANCE] Update Node version. See [#2864](https://github.com/DataDog/dd-sdk-android/pull/2864)
+* [MAINTENANCE] Fix link to `CONTRIBUTING` doc from PR template. See [#2869](https://github.com/DataDog/dd-sdk-android/pull/2869)
+* [MAINTENANCE] Update `CONTRIBUTING` doc with new modules. See [#2870](https://github.com/DataDog/dd-sdk-android/pull/2870)
+* [MAINTENANCE] Bump language and API versions to 1.8. See [#2865](https://github.com/DataDog/dd-sdk-android/pull/2865)
+
 # 3.0.0 / 2025-09-04
 
 This is the first official production version of SDK v3 containing the new architecture for tracing feature. See the [migration guide](https://github.com/DataDog/dd-sdk-android/blob/develop/MIGRATION.MD) for details.
@@ -44,6 +93,14 @@ This is the first official production version of SDK v3 containing the new archi
 * [MAINTENANCE] Update sample to use non-null user id. See [#2682](https://github.com/DataDog/dd-sdk-android/pull/2682)
 * [MAINTENANCE] Bump Kotlin version used to `2.0.21`. See [#2766](https://github.com/DataDog/dd-sdk-android/pull/2766)
 * [MAINTENANCE] Bump `minSdk` version to 23. See [#2844](https://github.com/DataDog/dd-sdk-android/pull/2844)
+
+# 2.26.2 / 2025-10-09
+
+* [IMPROVEMENT] Extend resource handling to support multiple MIME types in RN. See [#2914](https://github.com/DataDog/dd-sdk-android/pull/2914)
+
+# 2.26.1 / 2025-09-11
+
+* [BUGFIX] RUM: Move session properties to `ddtags` over query parameters. See [#2812](https://github.com/DataDog/dd-sdk-android/pull/2812)
 
 # 2.26.0 / 2025-08-27
 

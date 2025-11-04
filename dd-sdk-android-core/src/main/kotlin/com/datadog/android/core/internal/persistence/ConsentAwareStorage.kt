@@ -50,7 +50,7 @@ internal class ConsentAwareStorage(
     private val writeLock = Any()
 
     /** @inheritdoc */
-    @WorkerThread
+    @AnyThread
     override fun getEventWriteScope(
         datadogContext: DatadogContext
     ): EventWriteScope {
@@ -138,7 +138,7 @@ internal class ConsentAwareStorage(
         )
     }
 
-    @WorkerThread
+    @AnyThread
     private fun resolveOrchestrator(datadogContext: DatadogContext): FileOrchestrator? {
         return when (datadogContext.trackingConsent) {
             TrackingConsent.GRANTED -> grantedOrchestrator

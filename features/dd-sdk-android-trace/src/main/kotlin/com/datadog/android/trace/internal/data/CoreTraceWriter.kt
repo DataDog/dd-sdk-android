@@ -16,9 +16,8 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.internal.concurrent.CompletableFuture
-import com.datadog.android.log.LogAttributes
-import com.datadog.android.trace.internal.SpanAttributes
+import com.datadog.android.trace.internal.RumContextPropagator
+import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
@@ -32,7 +31,8 @@ internal class CoreTraceWriter(
     internal val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),
     private val serializer: ContextAwareSerializer<SpanEvent>,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val rumContextPropagator: RumContextPropagator = RumContextPropagator { sdkCore }
 ) : Writer {
 
     // region Writer
@@ -45,10 +45,8 @@ internal class CoreTraceWriter(
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, writeScope ->
                 val writeSpans = trace
-                    .filter {
-                        it.getTraceSamplingPriority() !in DROP_SAMPLING_PRIORITIES
-                    }
-                    .map { it.bundleWithRum() }
+                    .filter { it.getTraceSamplingPriority() !in DROP_SAMPLING_PRIORITIES }
+                    .map { it.extractRumContext(rumContextPropagator) }
                 // TODO RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
                 writeScope {
                     writeSpans
@@ -72,36 +70,7 @@ internal class CoreTraceWriter(
     override fun close() {
         // NO - OP
     }
-
     // endregion
-
-    @Suppress("UNCHECKED_CAST")
-    private fun DDSpan.bundleWithRum(): DDSpan {
-        val initialDatadogContext = tags[SpanAttributes.DATADOG_INITIAL_CONTEXT]
-            as? CompletableFuture<DatadogContext>
-        setTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, null as String?)
-        if (initialDatadogContext != null) {
-            if (initialDatadogContext.isComplete()) {
-                val rumContext = initialDatadogContext.value
-                    .featuresContext[Feature.RUM_FEATURE_NAME]
-                    .orEmpty()
-                setTag(
-                    LogAttributes.RUM_APPLICATION_ID,
-                    rumContext["application_id"] as? String
-                )
-                setTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
-                setTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
-                setTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
-            } else {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR }
-                )
-            }
-        }
-        return this
-    }
 
     @WorkerThread
     private fun writeSpan(
@@ -130,8 +99,6 @@ internal class CoreTraceWriter(
 
     companion object {
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
-        internal const val INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR = "Initial span creation Datadog context" +
-            " is not available at the write time."
         internal val DROP_SAMPLING_PRIORITIES = setOf(
             PrioritySampling.SAMPLER_DROP.toInt(),
             PrioritySampling.USER_DROP.toInt()

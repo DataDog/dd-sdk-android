@@ -38,12 +38,11 @@ import org.mockito.kotlin.mock as kmock
 class StubSDKCore(
     private val forge: Forge,
     private val mockContext: Application = mock(),
-    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() }
+    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() },
+    private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
-    private val featureScopes = mutableMapOf<String, StubFeatureScope>()
-
-    private var datadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
+    private val featureScopes = mutableMapOf<String, FeatureScope>()
 
     init {
         val mockResources = mock<Resources>()
@@ -53,6 +52,7 @@ class StubSDKCore(
         whenever(mockContext.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn mockConfiguration
         whenever(mockContext.contentResolver) doReturn mockContentResolver
+        whenever(mockContext.applicationContext) doReturn mockContext
     }
 
     // region Stub
@@ -63,7 +63,7 @@ class StubSDKCore(
      * @return a list of [StubEvent]
      */
     fun eventsWritten(featureName: String): List<StubEvent> {
-        return featureScopes[featureName]?.eventsWritten() ?: emptyList()
+        return (featureScopes[featureName] as? StubFeatureScope)?.eventsWritten() ?: emptyList()
     }
 
     /**
@@ -80,7 +80,7 @@ class StubSDKCore(
      * @return a list of objects
      */
     fun eventsReceived(featureName: String): List<Any> {
-        return featureScopes[featureName]?.eventsReceived() ?: emptyList()
+        return (featureScopes[featureName] as? StubFeatureScope)?.eventsReceived() ?: emptyList()
     }
 
     /**
@@ -123,6 +123,22 @@ class StubSDKCore(
         )
     }
 
+    /**
+     * Stubs a feature and its corresponding feature scope with a mock.
+     *
+     * @param feature The Datadog feature being used in core.
+     * @param featureScope The feature scope that will be returned by the [getFeature] method.
+     */
+    fun stubFeatureScope(feature: Feature, featureScope: FeatureScope) {
+        // Stop previous registered
+        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
+
+        featureScopes[feature.name] = featureScope
+
+        feature.onInitialize(mockContext)
+        mockSdkCore.registerFeature(feature)
+    }
+
     // endregion
 
     // region InternalSdkCore
@@ -144,12 +160,7 @@ class StubSDKCore(
     override val internalLogger: InternalLogger = StubInternalLogger()
 
     override fun registerFeature(feature: Feature) {
-        // Stop previous registered
-        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
-
-        featureScopes[feature.name] = StubFeatureScope(feature, { datadogContext })
-        feature.onInitialize(mockContext)
-        mockSdkCore.registerFeature(feature)
+        stubFeatureScope(feature, StubFeatureScope(feature, { datadogContext }))
     }
 
     override fun getFeature(featureName: String): FeatureScope? {
