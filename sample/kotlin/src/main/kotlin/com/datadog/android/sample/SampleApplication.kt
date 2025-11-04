@@ -32,7 +32,7 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
-import com.datadog.android.rum.internal.instrumentation.insights.enableDebugWidget
+import com.datadog.android.rum.enableRumDebugWidget
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -297,7 +297,7 @@ class SampleApplication : Application() {
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
             .setSlowFramesConfiguration(SlowFramesConfiguration.DEFAULT)
-            .enableDebugWidget(this)
+            .enableRumDebugWidget(this)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event

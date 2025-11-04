@@ -5,3 +5,38 @@ It is intended for debugging and development purposes only and **should not** be
 As shown in the screenshot below, the widget provides a floating overlay that displays key metrics such as **memory usage**, **CPU load** and **RUM events**.
 
 <img src="../../docs/images/screenshot_rumdebugwidget.png" width="400" alt="Datadog RUM Debug Widget"/>
+
+## Getting Started
+
+To include this module in your project, simply add the following dependency to your application's `build.gradle` file:
+
+```groovy
+dependencies {
+    debugImplementation("com.datadoghq:dd-sdk-android-rum-debug-widget:<latest-version>")
+}
+```
+
+### Initial Setup
+
+To enable the RUM Debug Widget, add the following line to your `RumConfiguration.Builder` setup in the `Application` class:
+
+```kotlin
+import com.datadog.android.rum.enableRumDebugWidget
+
+RumConfiguration.Builder(...)
+    .enableRumDebugWidget(application = this)
+```
+
+## Contributing
+
+Pull requests are welcome, but please open an issue first to discuss what you
+would like to change. For more information, read the 
+[Contributing Guide](../../CONTRIBUTING.md).
+
+## License
+
+[Apache License, v2.0](../../LICENSE)
+
+[1]: https://github.com/ReactiveX/RxJava
+[2]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin
+[3]: https://github.com/ReactiveX/RxJava/wiki

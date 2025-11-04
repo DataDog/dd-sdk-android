@@ -86,6 +86,8 @@ data class com.datadog.android.rum.RumConfiguration
     fun setInsightsCollector(com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun build(): RumConfiguration
+fun RumConfiguration.Builder.enableRumDebugWidget(android.app.Application, Boolean = application.isDebuggable()): RumConfiguration.Builder
+fun android.app.Application.isDebuggable(): Boolean
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
   - SOURCE
