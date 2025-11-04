@@ -128,6 +128,14 @@ client.setEvaluationContext(context)
 - All attribute values must be strings - convert numbers, booleans, and other types to strings before passing them
 - Common targeting keys include user ID, device ID, or session ID
 
+**Targeting Key Best Practices:**
+
+For anonymous or unauthenticated users, use a **persistent UUID** as the targeting key:
+- **Proper traffic splitting**: A unique identifier ensures users are distributed correctly across flag variations
+- **Consistent experience**: Persistence means the same user always sees the same flag values (consistent bucketing)
+- Generate the UUID once and persist it locally (e.g., in SharedPreferences)
+- Transition to a user ID when the user authenticates
+
 ### Evaluate Feature Flags
 
 The `FlagsClient` provides two ways to resolve flag values:
