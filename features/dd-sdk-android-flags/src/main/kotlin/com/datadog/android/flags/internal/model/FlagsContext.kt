@@ -9,7 +9,6 @@ package com.datadog.android.flags.internal.model
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.FlagsConfiguration
-import com.datadog.android.flags.internal.getFlagsEndpoint
 
 /**
  * Internal context containing all configuration needed for the Flags feature.
