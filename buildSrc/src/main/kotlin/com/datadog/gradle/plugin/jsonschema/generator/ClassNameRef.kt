@@ -21,4 +21,5 @@ object ClassNameRef {
     val NullPointerException = ClassName.bestGuess("java.lang.NullPointerException")
     val MutableList = ClassName.bestGuess("kotlin.collections.ArrayList")
     val MutableSet = ClassName.bestGuess("kotlin.collections.HashSet")
+    val UnsupportedOperationException = ClassName.bestGuess("java.lang.UnsupportedOperationException")
 }

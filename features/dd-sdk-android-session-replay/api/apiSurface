@@ -222,7 +222,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): VisualViewportRecord
     companion object 
       fun fromJson(kotlin.String): MobileRecord
-      fun fromJsonObject(com.google.gson.JsonObject): MobileRecord
+      fun fromJsonElement(com.google.gson.JsonElement): MobileRecord
   data class Data
     constructor(kotlin.collections.List<Wireframe>)
     fun toJson(): com.google.gson.JsonElement
@@ -261,7 +261,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): PointerInteractionData
     companion object 
       fun fromJson(kotlin.String): MobileIncrementalData
-      fun fromJsonObject(com.google.gson.JsonObject): MobileIncrementalData
+      fun fromJsonElement(com.google.gson.JsonElement): MobileIncrementalData
   data class Data1
     constructor(kotlin.Long, kotlin.Long, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -319,7 +319,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframe
     companion object 
       fun fromJson(kotlin.String): Wireframe
-      fun fromJsonObject(com.google.gson.JsonObject): Wireframe
+      fun fromJsonElement(com.google.gson.JsonElement): Wireframe
   data class Add
     constructor(kotlin.Long? = null, Wireframe)
     fun toJson(): com.google.gson.JsonElement
@@ -371,7 +371,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframeUpdate
     companion object 
       fun fromJson(kotlin.String): WireframeUpdateMutation
-      fun fromJsonObject(com.google.gson.JsonObject): WireframeUpdateMutation
+      fun fromJsonElement(com.google.gson.JsonElement): WireframeUpdateMutation
   data class Position
     constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement

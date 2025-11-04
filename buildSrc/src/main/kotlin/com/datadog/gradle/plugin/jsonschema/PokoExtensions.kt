@@ -8,7 +8,6 @@ package com.datadog.gradle.plugin.jsonschema
 
 import com.datadog.gradle.utils.joinToCamelCaseAsVar
 import com.squareup.kotlinpoet.BOOLEAN
-import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.NOTHING
 import com.squareup.kotlinpoet.NUMBER
@@ -43,7 +42,6 @@ internal fun JsonType?.asKotlinTypeName(): TypeName {
 internal fun JsonPrimitiveType?.asKotlinTypeName(): TypeName {
     return when (this) {
         JsonPrimitiveType.BOOLEAN -> BOOLEAN
-        JsonPrimitiveType.DOUBLE -> DOUBLE
         JsonPrimitiveType.STRING -> STRING
         JsonPrimitiveType.INTEGER -> LONG
         JsonPrimitiveType.NUMBER -> NUMBER

@@ -216,7 +216,12 @@ class ClassJsonElementDeserializerGenerator(
                 Identifier.PARAM_COLLECTION
             )
 
-            is TypeDefinition.OneOfClass,
+            is TypeDefinition.OneOfClass -> addStatement(
+                "%L.add(%T.%L(it))",
+                Identifier.PARAM_COLLECTION,
+                arrayType.items.asKotlinTypeName(rootTypeName),
+                Identifier.FUN_FROM_JSON_ELEMENT
+            )
             is TypeDefinition.Class -> addStatement(
                 "%L.add(%T.%L(it.asJsonObject))",
                 Identifier.PARAM_COLLECTION,
@@ -262,12 +267,12 @@ class ClassJsonElementDeserializerGenerator(
         rootTypeName: String
     ) {
         val opt = if (nullable) "?" else ""
-        beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
+        beginControlFlow("$assignee = $getter$opt.let")
 
         addStatement(
             "%T.%L(it)",
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON_OBJ
+            Identifier.FUN_FROM_JSON_ELEMENT
         )
         endControlFlow()
     }

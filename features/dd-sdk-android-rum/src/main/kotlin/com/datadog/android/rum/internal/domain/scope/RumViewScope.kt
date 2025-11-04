@@ -46,6 +46,7 @@ import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
+import com.datadog.android.rum.internal.toVital
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -56,8 +57,8 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -88,8 +89,7 @@ internal open class RumViewScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumVitalEventHelper: RumVitalEventHelper
+    private val displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -261,13 +261,15 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 event,
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = VitalEvent.StepType.START,
+                stepType = RumVitalOperationStepEvent.StepType.START,
                 failureReason = null,
                 eventAttributes = event.attributes
             )
@@ -281,13 +283,15 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 event,
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = VitalEvent.StepType.END,
+                stepType = RumVitalOperationStepEvent.StepType.END,
                 failureReason = event.failureReason?.toSchemaFailureReason(),
                 eventAttributes = event.attributes
             )
@@ -301,30 +305,108 @@ internal open class RumViewScope(
         datadogContext: DatadogContext,
         name: String,
         operationKey: String?,
-        stepType: VitalEvent.StepType,
-        failureReason: VitalEvent.FailureReason?,
+        stepType: RumVitalOperationStepEvent.StepType,
+        failureReason: RumVitalOperationStepEvent.FailureReason?,
         eventAttributes: Map<String, Any?>
-    ): VitalEvent {
+    ): RumVitalOperationStepEvent {
         val rumContext = getRumContext()
-
+        val syntheticsAttribute = if (
+            rumContext.syntheticsTestId.isNullOrBlank() ||
+            rumContext.syntheticsResultId.isNullOrBlank()
+        ) {
+            null
+        } else {
+            RumVitalOperationStepEvent.Synthetics(
+                testId = rumContext.syntheticsTestId,
+                resultId = rumContext.syntheticsResultId
+            )
+        }
         val hasReplay = featuresContextResolver.resolveViewHasReplay(
             datadogContext,
             rumContext.viewId.orEmpty()
         )
 
-        return rumVitalEventHelper.newVitalEvent(
-            timestampMs = event.eventTime.timestamp + serverTimeOffsetInMs,
-            datadogContext = datadogContext,
-            eventAttributes = eventAttributes,
-            customAttributes = getCustomAttributes(),
-            view = VitalEvent.VitalEventView(
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
+            syntheticsAttribute == null -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+            else -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
+        }
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
+        val user = datadogContext.userInfo
+
+        return RumVitalOperationStepEvent(
+            date = event.eventTime.timestamp + serverTimeOffsetInMs,
+            context = RumVitalOperationStepEvent.Context(
+                additionalProperties = getCustomAttributes().toMutableMap().also {
+                    it.putAll(eventAttributes)
+                }
+            ),
+            dd = RumVitalOperationStepEvent.Dd(
+                session = RumVitalOperationStepEvent.DdSession(
+                    sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
+                ),
+                configuration = RumVitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
+            ),
+            application = RumVitalOperationStepEvent.Application(
+                id = rumContext.applicationId,
+                currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+            ),
+            synthetics = syntheticsAttribute,
+            session = RumVitalOperationStepEvent.RumVitalOperationStepEventSession(
+                id = rumContext.sessionId,
+                type = sessionType,
+                hasReplay = hasReplay
+            ),
+            view = RumVitalOperationStepEvent.RumVitalOperationStepEventView(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            hasReplay = hasReplay,
-            rumContext = rumContext,
-            vital = VitalEvent.Vital.FeatureOperationProperties(
+            source = RumVitalOperationStepEvent.RumVitalOperationStepEventSource.tryFromSource(
+                source = datadogContext.source,
+                internalLogger = sdkCore.internalLogger
+            ),
+            account = datadogContext.accountInfo?.let {
+                RumVitalOperationStepEvent.Account(
+                    id = it.id,
+                    name = it.name,
+                    additionalProperties = it.extraInfo.toMutableMap()
+                )
+            },
+            usr = if (user.hasUserData()) {
+                RumVitalOperationStepEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    anonymousId = user.anonymousId,
+                    additionalProperties = user.additionalProperties.toMutableMap()
+                )
+            } else {
+                null
+            },
+            device = RumVitalOperationStepEvent.Device(
+                type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                name = datadogContext.deviceInfo.deviceName,
+                model = datadogContext.deviceInfo.deviceModel,
+                brand = datadogContext.deviceInfo.deviceBrand,
+                architecture = datadogContext.deviceInfo.architecture,
+                locales = datadogContext.deviceInfo.localeInfo.locales,
+                timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                batteryLevel = batteryInfo.batteryLevel,
+                powerSavingMode = batteryInfo.lowPowerMode,
+                brightnessLevel = displayInfo.screenBrightness
+            ),
+            os = RumVitalOperationStepEvent.Os(
+                name = datadogContext.deviceInfo.osName,
+                version = datadogContext.deviceInfo.osVersion,
+                versionMajor = datadogContext.deviceInfo.osMajorVersion
+            ),
+            connectivity = datadogContext.networkInfo.toVitalConnectivity(),
+            version = datadogContext.version,
+            service = datadogContext.service,
+            ddtags = buildDDTagsString(datadogContext),
+            vital = RumVitalOperationStepEvent.Vital(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,
@@ -383,8 +465,7 @@ internal open class RumViewScope(
             rumSessionTypeOverride = rumSessionTypeOverride,
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = displayInfoProvider
         )
     }
 
@@ -1671,8 +1752,7 @@ internal open class RumViewScope(
             rumSessionTypeOverride: RumSessionType?,
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
-            displayInfoProvider: InfoProvider<DisplayInfo>,
-            rumVitalEventHelper: RumVitalEventHelper
+            displayInfoProvider: InfoProvider<DisplayInfo>
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1708,8 +1788,7 @@ internal open class RumViewScope(
                 rumSessionTypeOverride = rumSessionTypeOverride,
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider,
-                rumVitalEventHelper = rumVitalEventHelper
+                displayInfoProvider = displayInfoProvider
             )
         }
 
