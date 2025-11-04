@@ -190,7 +190,7 @@ class InvalidStringFormat : Rule() {
         var indexNoRef = 0
         specifiers.forEach { matchResult ->
             val type = matchResult.groupValues[INDEX_TYPE].lowercase(Locale.US).first()
-            val ref = matchResult.groupValues[INDEX_REF].toIntOrNull()
+            val ref = matchResult.groupValues[INDEX_REF].removeSuffix("$").toIntOrNull()
 
             val argIndex = (ref ?: ++indexNoRef) - 1
             if (argIndex >= formatArgs.size) {
