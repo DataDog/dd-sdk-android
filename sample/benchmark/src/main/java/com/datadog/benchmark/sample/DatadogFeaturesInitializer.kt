@@ -11,6 +11,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
@@ -106,6 +107,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalRumApi::class)
     private fun createRumConfiguration(config: BenchmarkConfig): RumConfiguration {
         return RumConfiguration.Builder(BuildConfig.BENCHMARK_RUM_APPLICATION_ID).apply {
             useViewTrackingStrategy(rumViewTrackingStrategy(config))

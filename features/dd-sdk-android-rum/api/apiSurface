@@ -74,6 +74,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
     fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
+    DEPRECATED fun setVitalEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.RumVitalOperationStepEvent>): Builder
     fun setVitalOperationStepEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.RumVitalOperationStepEvent>): Builder
     fun trackBackgroundEvents(Boolean): Builder
     fun trackFrustrations(Boolean): Builder

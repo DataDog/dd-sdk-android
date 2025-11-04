@@ -225,6 +225,19 @@ data class RumConfiguration internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
+        @Deprecated(message = "Use setVitalOperationStepEventMapper instead")
+        fun setVitalEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
+            @OptIn(ExperimentalRumApi::class)
+            return setVitalOperationStepEventMapper(eventMapper)
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent]. You can use this interface implementation
+         * to modify the [RumVitalOperationStepEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        @ExperimentalRumApi
         fun setVitalOperationStepEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
             rumConfig = rumConfig.copy(vitalOperationStepEventMapper = eventMapper)
             return this
