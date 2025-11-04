@@ -102,8 +102,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -374,7 +374,7 @@ internal class RumFeature(
                     resourceEventMapper = configuration.resourceEventMapper,
                     actionEventMapper = configuration.actionEventMapper,
                     longTaskEventMapper = configuration.longTaskEventMapper,
-                    vitalEventMapper = configuration.vitalEventMapper,
+                    vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
                     telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
                     internalLogger = sdkCore.internalLogger
                 ),
@@ -720,7 +720,7 @@ internal class RumFeature(
         val resourceEventMapper: EventMapper<ResourceEvent>,
         val actionEventMapper: EventMapper<ActionEvent>,
         val longTaskEventMapper: EventMapper<LongTaskEvent>,
-        val vitalEventMapper: EventMapper<VitalEvent>,
+        val vitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent>,
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
@@ -772,7 +772,7 @@ internal class RumFeature(
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),
             longTaskEventMapper = NoOpEventMapper(),
-            vitalEventMapper = NoOpEventMapper(),
+            vitalOperationStepEventMapper = NoOpEventMapper(),
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,

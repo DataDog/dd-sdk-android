@@ -11,12 +11,14 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toVitalSessionPrecondition
-import com.datadog.android.rum.model.VitalEvent
-import com.datadog.android.rum.model.VitalEvent.VitalEventSessionType
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<VitalEventAssert, VitalEvent>(
+internal class VitalEventAssert(
+    actual: RumVitalOperationStepEvent
+) : AbstractObjectAssert<VitalEventAssert, RumVitalOperationStepEvent>(
     actual,
     VitalEventAssert::class.java
 ) {
@@ -73,7 +75,7 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
             .isEqualTo(expected)
     }
 
-    fun hasSessionType(expected: VitalEventSessionType) = apply {
+    fun hasSessionType(expected: RumVitalOperationStepEventSessionType) = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage(
                 "Expected event to have session.type:$expected but was ${actual.session.type}"
@@ -89,25 +91,25 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
     }
 
     fun hasViewId(expectedId: String) = apply {
-        assertThat(actual.view?.id)
+        assertThat(actual.view.id)
             .overridingErrorMessage(
-                "Expected event data to have view.id $expectedId but was ${actual.view?.id}"
+                "Expected event data to have view.id $expectedId but was ${actual.view.id}"
             )
             .isEqualTo(expectedId)
     }
 
     fun hasName(expected: String) = apply {
-        assertThat(actual.view?.name)
+        assertThat(actual.view.name)
             .overridingErrorMessage(
-                "Expected event data to have view.name $expected but was ${actual.view?.name}"
+                "Expected event data to have view.name $expected but was ${actual.view.name}"
             )
             .isEqualTo(expected)
     }
 
     fun hasUrl(expected: String) = apply {
-        assertThat(actual.view?.url)
+        assertThat(actual.view.url)
             .overridingErrorMessage(
-                "Expected event data to have view.url $expected but was ${actual.view?.url}"
+                "Expected event data to have view.url $expected but was ${actual.view.url}"
             )
             .isEqualTo(expected)
     }
@@ -134,7 +136,7 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
             ).isEqualTo(resultId)
     }
 
-    fun hasSource(source: VitalEvent.VitalEventSource?) = apply {
+    fun hasSource(source: RumVitalOperationStepEvent.RumVitalOperationStepEventSource?) = apply {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +
@@ -200,7 +202,7 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
         name: String,
         model: String,
         brand: String,
-        type: VitalEvent.DeviceType,
+        type: RumVitalOperationStepEvent.DeviceType,
         architecture: String
     ) = apply {
         assertThat(actual.device?.name)
@@ -256,23 +258,23 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
 
     fun hasConnectivityInfo(expected: NetworkInfo?) = apply {
         val expectedStatus = if (expected?.isConnected() == true) {
-            VitalEvent.ConnectivityStatus.CONNECTED
+            RumVitalOperationStepEvent.Status.CONNECTED
         } else {
-            VitalEvent.ConnectivityStatus.NOT_CONNECTED
+            RumVitalOperationStepEvent.Status.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
-            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalEvent.Interface.ETHERNET)
-            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalEvent.Interface.WIFI)
-            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalEvent.Interface.WIMAX)
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(RumVitalOperationStepEvent.Interface.ETHERNET)
+            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(RumVitalOperationStepEvent.Interface.WIFI)
+            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(RumVitalOperationStepEvent.Interface.WIMAX)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(RumVitalOperationStepEvent.Interface.BLUETOOTH)
             NetworkInfo.Connectivity.NETWORK_2G,
             NetworkInfo.Connectivity.NETWORK_3G,
             NetworkInfo.Connectivity.NETWORK_4G,
             NetworkInfo.Connectivity.NETWORK_5G,
             NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalEvent.Interface.CELLULAR)
+            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(RumVitalOperationStepEvent.Interface.CELLULAR)
 
-            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalEvent.Interface.OTHER)
+            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(RumVitalOperationStepEvent.Interface.OTHER)
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
             null -> null
         }
@@ -336,6 +338,6 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
     }
 
     companion object {
-        internal fun assertThat(actual: VitalEvent): VitalEventAssert = VitalEventAssert(actual)
+        internal fun assertThat(actual: RumVitalOperationStepEvent): VitalEventAssert = VitalEventAssert(actual)
     }
 }
