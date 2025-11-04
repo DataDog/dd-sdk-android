@@ -345,9 +345,7 @@ data class RumConfiguration internal constructor(
          */
         @InternalApi
         @ExperimentalRumApi
-        fun setInsightsCollector(
-            insightsCollector: InsightsCollector
-        ): Builder {
+        fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
             rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
             return this
         }

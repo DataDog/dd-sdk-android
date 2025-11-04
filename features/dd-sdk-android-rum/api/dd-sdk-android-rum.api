@@ -387,6 +387,11 @@ public abstract interface class com/datadog/android/rum/internal/instrumentation
 	public abstract fun onDataUpdated ()V
 }
 
+public final class com/datadog/android/rum/internal/instrumentation/insights/RumDebugWidgetKt {
+	public static final fun enableDebugWidget (Lcom/datadog/android/rum/RumConfiguration$Builder;Landroid/app/Application;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public static synthetic fun enableDebugWidget$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Landroid/app/Application;ZILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+}
+
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {
 	public abstract fun addResourceTiming (Ljava/lang/Object;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public abstract fun notifyInterceptorInstantiated ()V
