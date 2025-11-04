@@ -449,6 +449,7 @@ internal class RumConfigurationBuilderTest {
         )
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M build config with RUM Vital eventMapper W setVitalOperationStepEventMapper() & build()`() {
         // Given
