@@ -54,16 +54,6 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
-public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
-	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
-	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
-	public static final field DD_GRAPHQL_TYPE_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
-	public static final field DD_GRAPHQL_VARIABLES_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
-	public final fun getHeaderValue ()Ljava/lang/String;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/network/GraphQLHeaders;
-	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
-}
-
 public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Object;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -75,6 +65,16 @@ public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public final fun getValue ()Ljava/lang/Object;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
+	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_TYPE_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_VARIABLES_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public final fun getHeaderValue ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
 }
 
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
