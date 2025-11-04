@@ -19,7 +19,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- * Default implementation of [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] that collects performance related events and notifies
+ * Default implementation of [InsightsCollector] that collects performance related events and notifies
  * its listeners at a regular interval.
  *
  * @param maxSize Maximum number of events stored in memory.

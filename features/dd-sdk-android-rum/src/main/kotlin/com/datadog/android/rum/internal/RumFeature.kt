@@ -740,8 +740,7 @@ internal class RumFeature(
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
-        val insightsCollector: InsightsCollector,
-        val enableDebugWidget: Boolean = false
+        val insightsCollector: InsightsCollector
     )
 
     internal companion object {
