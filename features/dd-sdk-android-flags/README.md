@@ -133,7 +133,7 @@ client.setEvaluationContext(context)
 For anonymous or unauthenticated users, use a **persistent UUID** as the targeting key:
 - **Proper traffic splitting**: A unique identifier ensures users are distributed correctly across flag variations
 - **Consistent experience**: Persistence means the same user always sees the same flag values (consistent bucketing)
-- Generate the UUID once and persist it locally (e.g., in SharedPreferences)
+- Generate the UUID once and persist it locally (e.g., in `SharedPreferences`)
 - Transition to a user ID when the user authenticates
 
 ### Evaluate Feature Flags
