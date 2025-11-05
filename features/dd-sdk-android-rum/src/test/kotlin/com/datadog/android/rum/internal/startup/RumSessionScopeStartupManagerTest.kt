@@ -23,6 +23,8 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.domain.scope.RumScopeKey
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSchemaType
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchStartupType
@@ -108,6 +110,8 @@ internal class RumSessionScopeStartupManagerTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    private var mockActiveView: RumViewScope? = null
+
     @Forgery
     lateinit var fakeBatteryInfo: BatteryInfo
 
@@ -181,6 +185,15 @@ internal class RumSessionScopeStartupManagerTest {
             sdkCore = mockSdkCore,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
         )
+
+        if (forge.aBool()) {
+            val activeView: RumViewScope = mock()
+            val rumScopeKey: RumScopeKey = forge.getForgery()
+            whenever(activeView.viewId) doReturn rumScopeKey.id
+            whenever(activeView.url) doReturn rumScopeKey.url
+            whenever(activeView.key) doReturn rumScopeKey
+            mockActiveView = activeView
+        }
     }
 
     @Test
@@ -214,7 +227,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -263,7 +277,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         manager.onAppStartEvent(mock())
@@ -274,7 +289,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -314,7 +330,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         manager.onTTFDEvent(
@@ -323,7 +340,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -377,7 +395,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         manager.onTTFDEvent(
@@ -386,7 +405,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         manager.onAppStartEvent(appStartEvent2)
@@ -397,7 +417,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         manager.onTTFDEvent(
@@ -406,7 +427,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -434,7 +456,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -465,7 +488,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -510,7 +534,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         manager.onTTIDEvent(
@@ -519,7 +544,8 @@ internal class RumSessionScopeStartupManagerTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = fakeParentContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = mockActiveView
         )
 
         // Then
@@ -552,7 +578,16 @@ internal class RumSessionScopeStartupManagerTest {
                 fakeRumSessionType?.toVitalAppLaunch() ?: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
-            hasNullView()
+
+            val activeView = mockActiveView
+            if (activeView != null) {
+                hasViewId(activeView.viewId)
+                hasUrl(activeView.url)
+                hasName(activeView.key.name)
+            } else {
+                hasNullView()
+            }
+
             hasSource(fakeVitalSource)
             hasAccountInfo(fakeDatadogContext.accountInfo)
             hasUserInfo(fakeDatadogContext.userInfo)
@@ -600,7 +635,16 @@ internal class RumSessionScopeStartupManagerTest {
                 fakeRumSessionType?.toVitalAppLaunch() ?: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
-            hasNullView()
+
+            val activeView = mockActiveView
+            if (activeView != null) {
+                hasViewId(activeView.viewId)
+                hasUrl(activeView.url)
+                hasName(activeView.key.name)
+            } else {
+                hasNullView()
+            }
+
             hasSource(fakeVitalSource)
             hasAccountInfo(fakeDatadogContext.accountInfo)
             hasUserInfo(fakeDatadogContext.userInfo)

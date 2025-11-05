@@ -162,7 +162,8 @@ internal class RumSessionScope(
                         writeScope = writeScope,
                         writer = actualWriter,
                         rumContext = getRumContext(),
-                        customAttributes = getCustomAttributes()
+                        customAttributes = getCustomAttributes(),
+                        activeView = activeView
                     )
                 }
             }
@@ -179,7 +180,8 @@ internal class RumSessionScope(
                         writeScope = writeScope,
                         writer = actualWriter,
                         rumContext = getRumContext(),
-                        customAttributes = getCustomAttributes()
+                        customAttributes = getCustomAttributes(),
+                        activeView = activeView
                     )
                 }
             }
