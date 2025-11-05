@@ -344,7 +344,7 @@ internal open class RumViewScope(
             ),
             dd = RumVitalOperationStepEvent.Dd(
                 session = RumVitalOperationStepEvent.DdSession(
-                    sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
+                    sessionPrecondition = rumContext.sessionStartReason.toVitalOperationStepSessionPrecondition()
                 ),
                 configuration = RumVitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
             ),
@@ -386,7 +386,7 @@ internal open class RumViewScope(
                 null
             },
             device = RumVitalOperationStepEvent.Device(
-                type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                type = datadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                 name = datadogContext.deviceInfo.deviceName,
                 model = datadogContext.deviceInfo.deviceModel,
                 brand = datadogContext.deviceInfo.deviceBrand,
@@ -402,7 +402,7 @@ internal open class RumViewScope(
                 version = datadogContext.deviceInfo.osVersion,
                 versionMajor = datadogContext.deviceInfo.osMajorVersion
             ),
-            connectivity = datadogContext.networkInfo.toVitalConnectivity(),
+            connectivity = datadogContext.networkInfo.toVitalOperationStepConnectivity(),
             version = datadogContext.version,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),

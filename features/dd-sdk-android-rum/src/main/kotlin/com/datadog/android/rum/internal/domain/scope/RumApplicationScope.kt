@@ -52,7 +52,6 @@ internal class RumApplicationScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumVitalEventHelper: RumVitalEventHelper,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
 ) : RumScope, RumViewChangedListener {
 
@@ -82,7 +81,6 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
         )
     )
@@ -204,7 +202,6 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
         )
         childScopes.add(newSession)

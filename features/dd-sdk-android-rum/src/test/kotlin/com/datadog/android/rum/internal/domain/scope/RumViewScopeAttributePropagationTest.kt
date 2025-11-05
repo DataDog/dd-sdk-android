@@ -747,14 +747,7 @@ internal class RumViewScopeAttributePropagationTest {
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumSessionTypeOverride = rumSessionType,
-        rumVitalEventHelper = RumVitalEventHelper(
-            rumSessionTypeOverride = rumSessionType,
-            batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider,
-            sampleRate = sampleRate,
-            internalLogger = sdkCore.internalLogger
-        )
+        rumSessionTypeOverride = rumSessionType
     )
 
     // endregion
