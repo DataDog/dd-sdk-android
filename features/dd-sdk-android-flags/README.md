@@ -123,18 +123,14 @@ val context = EvaluationContext(
 client.setEvaluationContext(context)
 ```
 
-**Important Notes:**
-- The `targetingKey` must be consistent for the same user/entity to ensure consistent flag evaluation across requests
-- All attribute values must be strings - convert numbers, booleans, and other types to strings before passing them
-- Common targeting keys include user ID, device ID, or session ID
-
-**Targeting Key Best Practices:**
-
-For anonymous or unauthenticated users, use a **persistent UUID** as the targeting key:
-- **Proper traffic splitting**: A unique identifier ensures users are distributed correctly across flag variations
-- **Consistent experience**: Persistence means the same user always sees the same flag values (consistent bucketing)
-- Generate the UUID once and persist it locally (e.g., in `SharedPreferences`)
-- Transition to a user ID when the user authenticates
+**Notes**
+- The targeting key must be consistent for the same user or entity to ensure consistent flag evaluation across requests. Common targeting keys include user ID, device ID, or session ID.
+- For anonymous or unauthenticated users, use a **persistent UUID** as the targeting key:
+  - **Proper traffic splitting**: A unique identifier ensures users are distributed correctly across flag variations.
+  - **Consistent experience**: Persistence means the same user always sees the same flag values (consistent bucketing).
+  - Generate the UUID once and persist it locally (for example, in `SharedPreferences`).
+  - Transition to a user ID when the user authenticates.
+- All attribute values must be strings. Convert numbers, booleans, and other types to strings before passing them.
 
 ### Evaluate Feature Flags
 
