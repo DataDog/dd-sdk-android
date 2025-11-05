@@ -9,7 +9,6 @@ package com.datadog.android.rum
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
-import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
@@ -338,19 +337,6 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the [InsightsCollector] to collect RUM Insights events, used inside the RUM Debug Widget.
-         *
-         * @param insightsCollector the [InsightsCollector] implementation.
-         * @return the [Builder] instance.
-         */
-        @InternalApi
-        @ExperimentalRumApi
-        fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
-            rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
-            return this
-        }
-
-        /**
          * Enables/Disables collection of an anonymous user ID across sessions.
          *
          * By default, the SDK generates a unique, non-personal anonymous user ID that is
@@ -423,6 +409,17 @@ data class RumConfiguration internal constructor(
          */
         internal fun setRumSessionTypeOverride(rumSessionTypeOverride: RumSessionType): Builder {
             rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
+            return this
+        }
+
+        /**
+         * Sets the [InsightsCollector] to collect RUM Insights events, used inside the RUM Debug Widget.
+         *
+         * @param insightsCollector the [InsightsCollector] implementation.
+         * @return the [Builder] instance.
+         */
+        internal fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
+            rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
             return this
         }
     }

@@ -21,7 +21,6 @@ import com.datadog.android.insights.internal.extensions.setupChartView
 import com.datadog.android.insights.internal.widgets.ChartView
 import com.datadog.android.insights.internal.widgets.DragTouchListener
 import com.datadog.android.insights.internal.widgets.TimelineView
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import com.datadog.android.rumdebugwidget.R
 
@@ -32,7 +31,6 @@ import com.datadog.android.rumdebugwidget.R
  *
  * @param insightsCollector The [DefaultInsightsCollector] that provides the data to display.
  */
-@ExperimentalRumApi
 internal class DefaultInsightsOverlay(
     private val insightsCollector: DefaultInsightsCollector
 ) : InsightsUpdatesListener {
@@ -66,14 +64,14 @@ internal class DefaultInsightsOverlay(
             root = overlayView
 
             viewName = overlayView.findViewById(R.id.view_name)
-            timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline)?.apply {
+            timelineView = overlayView.findViewById<TimelineView>(R.id.timeline)?.apply {
                 setOnClickListener {
                     isPaused = !isPaused
                     setPaused(isPaused)
                 }
             }
 
-            timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend)?.apply {
+            timelineLegend = overlayView.findViewById<TextView>(R.id.timeline_legend)?.apply {
                 text = SpannableStringBuilder()
                     .append(SEP)
                     .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)

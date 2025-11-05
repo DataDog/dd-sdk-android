@@ -13,7 +13,6 @@ import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.insights.internal.platform.Platform
 import com.datadog.android.internal.collections.EvictingQueue
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import java.util.concurrent.CopyOnWriteArraySet
@@ -27,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArraySet
  * @param handler Handler to post updates on. Injected for test purposes.
  * @param platform Platform abstraction to access system information. Injected for test purposes.
  */
-@ExperimentalRumApi
 internal class DefaultInsightsCollector internal constructor(
     maxSize: Int,
     updateIntervalMs: Long,

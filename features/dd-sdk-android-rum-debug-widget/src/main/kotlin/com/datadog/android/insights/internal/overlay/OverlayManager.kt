@@ -15,16 +15,14 @@ import java.util.IdentityHashMap
 
 @ExperimentalRumApi
 internal class OverlayManager(
+    application: Application,
     private val collector: DefaultInsightsCollector
 ) : Application.ActivityLifecycleCallbacks {
 
     private val overlays = IdentityHashMap<Activity, DefaultInsightsOverlay>()
-    private var registered = false
 
-    fun start(application: Application) {
-        if (registered) return
+    init {
         application.registerActivityLifecycleCallbacks(this)
-        registered = true
     }
 
     override fun onActivityResumed(activity: Activity) {
