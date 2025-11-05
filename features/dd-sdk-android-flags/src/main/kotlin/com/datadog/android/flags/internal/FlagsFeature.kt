@@ -64,8 +64,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     // region Domain Objects
 
     /**
-     * This is the same as the default configuration except
-     * that we limit to 50 items per batch, the same as the JS library does.
+     * Uses the default storage configuration with standard batch size (500 items per batch).
      */
     override val storageConfiguration =
         FeatureStorageConfiguration.DEFAULT.copy(
@@ -211,7 +210,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     }
 
     internal companion object {
-        const val MAX_ITEMS_PER_BATCH = 50
+        const val MAX_ITEMS_PER_BATCH = 500
         private const val LOG_TAG = "[Datadog Flags]"
     }
 }
