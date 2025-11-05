@@ -2,7 +2,7 @@
 
 The Datadog Feature Flags SDK for Android allows you to evaluate feature flags and experiments in your Android application and automatically send flag evaluation data to Datadog for monitoring and analysis.
 
-## Getting Started
+## Getting started
 
 Add the Datadog Feature Flags SDK to your application's `build.gradle` file:
 
@@ -15,7 +15,7 @@ dependencies {
 }
 ```
 
-### Initial Setup
+### Initial setup
 
 Before enabling the Feature Flags feature, you must first initialize the Datadog SDK. See the [Datadog Android SDK setup documentation][1] for details.
 
