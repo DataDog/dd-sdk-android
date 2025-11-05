@@ -22,6 +22,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -240,6 +241,18 @@ data class RumConfiguration internal constructor(
         @ExperimentalRumApi
         fun setVitalOperationStepEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
             rumConfig = rumConfig.copy(vitalOperationStepEventMapper = eventMapper)
+            return this
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [RumVitalAppLaunchEvent]. You can use this interface implementation
+         * to modify the [RumVitalAppLaunchEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        @ExperimentalRumApi
+        fun setVitalAppLaunchEventMapper(eventMapper: EventMapper<RumVitalAppLaunchEvent>): Builder {
+            rumConfig = rumConfig.copy(vitalAppLaunchEventMapper = eventMapper)
             return this
         }
 
