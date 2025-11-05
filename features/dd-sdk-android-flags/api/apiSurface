@@ -30,7 +30,7 @@ enum com.datadog.android.flags.model.ErrorCode
 data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
-  constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any>? = null)
+  constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason
   - DEFAULT
   - TARGETING_MATCH
