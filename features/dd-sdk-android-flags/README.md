@@ -136,8 +136,8 @@ client.setEvaluationContext(context)
 
 The `FlagsClient` provides two ways to resolve flag values:
 
-1. **Convenience methods** (`resolveBooleanValue`, `resolveStringValue`, etc.) - Simple methods that return just the value
-2. **Detailed resolution method** (`resolve`) - Returns comprehensive resolution details including error information and metadata
+- **Convenience methods** (`resolveBooleanValue`, `resolveStringValue`, etc.): Simple methods that return just the value
+- **Detailed resolution method** (`resolve`): Returns comprehensive resolution details, including error information and metadata
 
 #### Convenience methods
 
