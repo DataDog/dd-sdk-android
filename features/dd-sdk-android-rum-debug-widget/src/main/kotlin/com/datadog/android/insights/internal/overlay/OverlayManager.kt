@@ -27,15 +27,6 @@ internal class OverlayManager(
         registered = true
     }
 
-    fun stop(application: Application) {
-        if (!registered) return
-        application.unregisterActivityLifecycleCallbacks(this)
-        registered = false
-
-        overlays.values.forEach { it.destroy() }
-        overlays.clear()
-    }
-
     override fun onActivityResumed(activity: Activity) {
         overlays.remove(activity)?.destroy()
 

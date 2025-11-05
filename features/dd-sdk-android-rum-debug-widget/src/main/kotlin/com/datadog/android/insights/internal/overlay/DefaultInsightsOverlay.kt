@@ -26,11 +26,11 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
 import com.datadog.android.rumdebugwidget.R
 
 /**
- * A local overlay displaying performance metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
- * implementation registered in the SDK.
- * This overlay is only displayed when the app is running in debug mode and when an instance of
- * [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered.
- * It can be attached to any [Activity] by calling [attach].
+ * Overlay displaying performance metrics collected by the [DefaultInsightsCollector].
+ * It shows as a floating widget that is attachable to any [Activity] and can be expanded to show more
+ * details.
+ *
+ * @param insightsCollector The [DefaultInsightsCollector] that provides the data to display.
  */
 @ExperimentalRumApi
 internal class DefaultInsightsOverlay(
@@ -52,18 +52,8 @@ internal class DefaultInsightsOverlay(
     private var isPaused: Boolean = false
     private var isTransitioning: Boolean = false
 
-    /**
-     * Attaches the overlay to the given [activity].
-     * It will add a floating button to show/hide the overlay and will display various performance
-     * metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
-     * implementation registered in the SDK.
-     * If no [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered,
-     * this method does nothing.
-     *
-     * @param activity The activity on which to attach the overlay.
-     */
     @Suppress("LongMethod")
-    fun attach(activity: Activity) {
+    internal fun attach(activity: Activity) {
         val parent = activity.findViewById<ViewGroup>(android.R.id.content)
 
         if (root == null) {
