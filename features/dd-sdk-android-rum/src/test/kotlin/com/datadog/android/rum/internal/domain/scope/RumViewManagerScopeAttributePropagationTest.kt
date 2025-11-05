@@ -171,14 +171,7 @@ internal class RumViewManagerScopeAttributePropagationTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionTypeOverride = fakeRumSessionType,
-            rumVitalEventHelper = RumVitalEventHelper(
-                rumSessionTypeOverride = fakeRumSessionType,
-                batteryInfoProvider = mockBatteryInfoProvider,
-                displayInfoProvider = mockDisplayInfoProvider,
-                sampleRate = fakeSampleRate,
-                internalLogger = mockInternalLogger
-            )
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 

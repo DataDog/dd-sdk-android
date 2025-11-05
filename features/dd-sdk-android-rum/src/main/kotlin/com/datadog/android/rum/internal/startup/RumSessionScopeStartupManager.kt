@@ -13,10 +13,10 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
+import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.domain.scope.toVitalStartupType
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
-import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import java.util.UUID
 
 internal interface RumSessionScopeStartupManager {
@@ -42,12 +42,12 @@ internal interface RumSessionScopeStartupManager {
 
     companion object {
         fun create(
-            rumVitalEventHelper: RumVitalEventHelper,
+            rumVitalAppLaunchEventHelper: RumVitalAppLaunchEventHelper,
             sdkCore: InternalSdkCore,
             rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
         ): RumSessionScopeStartupManager {
             return RumSessionScopeStartupManagerImpl(
-                rumVitalEventHelper = rumVitalEventHelper,
+                rumVitalAppLaunchEventHelper = rumVitalAppLaunchEventHelper,
                 sdkCore = sdkCore,
                 rumAppStartupTelemetryReporter
             )
@@ -56,7 +56,7 @@ internal interface RumSessionScopeStartupManager {
 }
 
 internal class RumSessionScopeStartupManagerImpl(
-    private val rumVitalEventHelper: RumVitalEventHelper,
+    private val rumVitalAppLaunchEventHelper: RumVitalAppLaunchEventHelper,
     private val sdkCore: InternalSdkCore,
     private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 ) : RumSessionScopeStartupManager {
@@ -102,7 +102,7 @@ internal class RumSessionScopeStartupManagerImpl(
         ttidSentForSession = true
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            rumVitalEventHelper.newVitalEvent(
+            rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
                 timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
                 datadogContext = datadogContext,
                 eventAttributes = emptyMap(),
@@ -110,11 +110,11 @@ internal class RumSessionScopeStartupManagerImpl(
                 view = null,
                 hasReplay = null,
                 rumContext = rumContext,
-                vital = VitalEvent.Vital.AppLaunchProperties(
+                vital = RumVitalAppLaunchEvent.Vital(
                     id = UUID.randomUUID().toString(),
                     name = null,
                     description = null,
-                    appLaunchMetric = VitalEvent.AppLaunchMetric.TTID,
+                    appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTID,
                     duration = event.info.durationNs,
                     startupType = event.info.scenario.toVitalStartupType(),
                     isPrewarmed = null,
@@ -208,7 +208,7 @@ internal class RumSessionScopeStartupManagerImpl(
         scenario: RumStartupScenario
     ) {
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            rumVitalEventHelper.newVitalEvent(
+            rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
                 timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
                 datadogContext = datadogContext,
                 eventAttributes = emptyMap(),
@@ -216,11 +216,11 @@ internal class RumSessionScopeStartupManagerImpl(
                 view = null,
                 hasReplay = null,
                 rumContext = rumContext,
-                vital = VitalEvent.Vital.AppLaunchProperties(
+                vital = RumVitalAppLaunchEvent.Vital(
                     id = UUID.randomUUID().toString(),
                     name = null,
                     description = null,
-                    appLaunchMetric = VitalEvent.AppLaunchMetric.TTFD,
+                    appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTFD,
                     duration = durationNs,
                     startupType = scenario.toVitalStartupType(),
                     isPrewarmed = null,

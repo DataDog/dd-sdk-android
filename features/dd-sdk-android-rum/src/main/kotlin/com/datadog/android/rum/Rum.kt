@@ -18,7 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
+import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -117,7 +117,7 @@ object Rum {
             sessionSamplingRate = rumFeature.configuration.sampleRate
         )
 
-        val rumVitalEventHelper = RumVitalEventHelper(
+        val rumVitalAppLaunchEventHelper = RumVitalAppLaunchEventHelper(
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
@@ -157,10 +157,10 @@ object Rum {
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper,
+            rumVitalAppLaunchEventHelper = rumVitalAppLaunchEventHelper,
             rumSessionScopeStartupManagerFactory = {
                 RumSessionScopeStartupManager.create(
-                    rumVitalEventHelper = rumVitalEventHelper,
+                    rumVitalAppLaunchEventHelper = rumVitalAppLaunchEventHelper,
                     sdkCore = sdkCore,
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )

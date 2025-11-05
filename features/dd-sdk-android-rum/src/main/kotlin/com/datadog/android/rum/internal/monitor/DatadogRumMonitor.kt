@@ -55,7 +55,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
-import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
+import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
@@ -98,7 +98,7 @@ internal class DatadogRumMonitor(
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    rumVitalEventHelper: RumVitalEventHelper,
+    rumVitalAppLaunchEventHelper: RumVitalAppLaunchEventHelper,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -121,7 +121,7 @@ internal class DatadogRumMonitor(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumVitalEventHelper = rumVitalEventHelper,
+        rumVitalAppLaunchEventHelper = rumVitalAppLaunchEventHelper,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
     )
 

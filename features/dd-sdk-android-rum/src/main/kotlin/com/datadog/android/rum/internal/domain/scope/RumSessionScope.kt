@@ -58,7 +58,7 @@ internal class RumSessionScope(
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
-    private val rumVitalEventHelper: RumVitalEventHelper,
+    private val rumVitalAppLaunchEventHelper: RumVitalAppLaunchEventHelper,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
 ) : RumScope {
 
@@ -96,8 +96,7 @@ internal class RumSessionScope(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider,
-        rumVitalEventHelper = rumVitalEventHelper
+        displayInfoProvider = displayInfoProvider
     )
 
     internal val activeView: RumViewScope?

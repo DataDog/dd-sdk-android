@@ -152,7 +152,7 @@ internal class RumViewManagerScopeTest {
     private var fakeSampleRate: Float = 0.0f
 
     private var fakeRumSessionType: RumSessionType? = null
-    private lateinit var rumVitalEventHelper: RumVitalEventHelper
+    private lateinit var rumVitalAppLaunchEventHelper: RumVitalAppLaunchEventHelper
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -169,7 +169,7 @@ internal class RumViewManagerScopeTest {
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
-        rumVitalEventHelper = RumVitalEventHelper(
+        rumVitalAppLaunchEventHelper = RumVitalAppLaunchEventHelper(
             rumSessionTypeOverride = fakeRumSessionType,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
@@ -195,8 +195,7 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = mockDisplayInfoProvider
         )
     }
 
@@ -582,8 +581,7 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -619,8 +617,7 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -659,8 +656,7 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -732,8 +728,7 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -773,8 +768,7 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = rumVitalEventHelper
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()

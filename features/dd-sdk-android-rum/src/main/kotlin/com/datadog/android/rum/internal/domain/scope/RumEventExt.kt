@@ -17,10 +17,12 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
@@ -387,6 +389,43 @@ internal fun NetworkInfo.toVitalConnectivity(): RumVitalOperationStepEvent.Conne
     )
 }
 
+internal fun NetworkInfo.toAppLaunchVitalConnectivity(): RumVitalAppLaunchEvent.Connectivity {
+    val status = if (isConnected()) {
+        RumVitalAppLaunchEvent.ConnectivityStatus.CONNECTED
+    } else {
+        RumVitalAppLaunchEvent.ConnectivityStatus.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(RumVitalAppLaunchEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(RumVitalAppLaunchEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(RumVitalAppLaunchEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(RumVitalAppLaunchEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(RumVitalAppLaunchEvent.Interface.CELLULAR)
+
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(RumVitalAppLaunchEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        RumVitalAppLaunchEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return RumVitalAppLaunchEvent.Connectivity(
+        status,
+        interfaces,
+        cellular = cellular
+    )
+}
+
 internal fun NetworkInfo.isConnected(): Boolean {
     return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
 }
@@ -464,6 +503,18 @@ internal fun DeviceType.toVitalSchemaType(): RumVitalOperationStepEvent.DeviceTy
         DeviceType.GAMING_CONSOLE -> RumVitalOperationStepEvent.DeviceType.GAMING_CONSOLE
         DeviceType.BOT -> RumVitalOperationStepEvent.DeviceType.BOT
         DeviceType.OTHER -> RumVitalOperationStepEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toAppLaunchVitalSchemaType(): RumVitalAppLaunchEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> RumVitalAppLaunchEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> RumVitalAppLaunchEvent.DeviceType.TABLET
+        DeviceType.TV -> RumVitalAppLaunchEvent.DeviceType.TV
+        DeviceType.DESKTOP -> RumVitalAppLaunchEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> RumVitalAppLaunchEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> RumVitalAppLaunchEvent.DeviceType.BOT
+        DeviceType.OTHER -> RumVitalAppLaunchEvent.DeviceType.OTHER
     }
 }
 
@@ -573,6 +624,23 @@ internal fun RumVitalOperationStepEvent.RumVitalOperationStepEventSource.Compani
     }
 }
 
+internal fun RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
+            e
+        )
+        null
+    }
+}
+
 internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
     "source %s for your events"
 
@@ -664,11 +732,34 @@ internal fun RumSessionScope.StartReason.toVitalSessionPrecondition(): RumVitalO
     }
 }
 
+internal fun RumSessionScope.StartReason.toAppLaunchVitalSessionPrecondition(): RumVitalAppLaunchEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> RumVitalAppLaunchEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT
+            -> RumVitalAppLaunchEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> RumVitalAppLaunchEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> RumVitalAppLaunchEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH
+            -> RumVitalAppLaunchEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> RumVitalAppLaunchEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            RumVitalAppLaunchEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
 internal fun FailureReason.toSchemaFailureReason(): RumVitalOperationStepEvent.FailureReason {
     return when (this) {
         FailureReason.ERROR -> RumVitalOperationStepEvent.FailureReason.ERROR
         FailureReason.ABANDONED -> RumVitalOperationStepEvent.FailureReason.ABANDONED
         FailureReason.OTHER -> RumVitalOperationStepEvent.FailureReason.OTHER
+    }
+}
+
+internal fun RumStartupScenario.toVitalStartupType(): RumVitalAppLaunchEvent.StartupType {
+    return when (this) {
+        is RumStartupScenario.Cold -> RumVitalAppLaunchEvent.StartupType.COLD_START
+        is RumStartupScenario.WarmAfterActivityDestroyed,
+        is RumStartupScenario.WarmFirstActivity -> RumVitalAppLaunchEvent.StartupType.WARM_START
     }
 }
 // endregion

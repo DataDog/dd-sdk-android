@@ -182,7 +182,7 @@ internal class RumSessionScopeAttributePropagationTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = RumVitalEventHelper(
+            rumVitalAppLaunchEventHelper = RumVitalAppLaunchEventHelper(
                 rumSessionTypeOverride = fakeRumSessionType,
                 batteryInfoProvider = mockBatteryInfoProvider,
                 displayInfoProvider = mockDisplayInfoProvider,

@@ -9242,14 +9242,7 @@ internal class RumViewScopeTest {
         rumSessionTypeOverride = fakeRumSessionType,
         accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider,
-        rumVitalEventHelper = RumVitalEventHelper(
-            rumSessionTypeOverride = fakeRumSessionType,
-            batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            sampleRate = sampleRate,
-            internalLogger = sdkCore.internalLogger
-        )
+        displayInfoProvider = mockDisplayInfoProvider
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
