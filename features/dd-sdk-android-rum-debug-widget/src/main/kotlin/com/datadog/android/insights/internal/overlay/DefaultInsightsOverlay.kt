@@ -63,6 +63,7 @@ internal class DefaultInsightsOverlay(
      *
      * @param activity The activity on which to attach the overlay.
      */
+    @SuppressLint("SetTextI18n")
     @Suppress("LongMethod")
     fun attach(activity: Activity) {
         val parent = activity.findViewById<ViewGroup>(android.R.id.content)
