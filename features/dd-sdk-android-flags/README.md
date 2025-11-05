@@ -70,7 +70,7 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-**Note:** This setting only has an effect if you have enabled RUM (see [Initial Setup] section). If RUM is not enabled, flag evaluations are not sent to RUM regardless of this setting.
+**Note:** This setting only has an effect if you have enabled RUM (see [Initial Setup](#initial-setup) section). If RUM is not enabled, flag evaluations are not sent to RUM regardless of this setting.
 
 #### Disable exposure tracking
 
