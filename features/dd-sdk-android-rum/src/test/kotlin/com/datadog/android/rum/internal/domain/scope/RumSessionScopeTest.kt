@@ -1543,7 +1543,8 @@ internal class RumSessionScopeTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = rumContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = testedScope.activeView
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
@@ -1578,7 +1579,8 @@ internal class RumSessionScopeTest {
             writeScope = mockEventWriteScope,
             writer = mockWriter,
             rumContext = rumContext,
-            customAttributes = fakeParentAttributes
+            customAttributes = fakeParentAttributes,
+            activeView = testedScope.activeView
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
