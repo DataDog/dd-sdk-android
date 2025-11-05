@@ -258,11 +258,11 @@ If RUM is not enabled, the Flags SDK will continue to work normally, but flag ev
 
 ## Best practices
 
-1. **Consistent Targeting Keys**: Use consistent targeting keys (for example, user ID) to ensure users see consistent feature flag values across sessions
-2. **Provide Meaningful Defaults**: Always provide sensible default values that maintain core functionality if flag evaluation fails
-3. **Set Context Early**: Set the evaluation context as early as possible in your application lifecycle, typically after user authentication
-4. **Named Clients**: Use named clients if necessary to organize flags by domain (for example, "analytics", "ui", "experiments")
-5. **Attribute Types**: Remember to convert all attribute values to strings before passing them to `EvaluationContext`
+- **Consistent targeting keys**: Use consistent targeting keys (for example, user ID) to ensure users see consistent feature flag values across sessions.
+- **Provide meaningful defaults**: Always provide sensible default values that maintain core functionality if flag evaluation fails.
+- **Set context early**: Set the evaluation context as early as possible in your application lifecycle, typically after user authentication.
+- **Use named clients**: Use named clients if necessary to organize flags by domain (for example, "analytics", "ui", "experiments")
+- **Convert values to strings**: Remember to convert all attribute values to strings before passing them to `EvaluationContext`.
 
 ## Further reading
 
