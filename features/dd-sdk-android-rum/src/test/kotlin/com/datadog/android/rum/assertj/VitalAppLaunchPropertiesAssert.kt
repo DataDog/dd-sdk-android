@@ -6,12 +6,12 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class VitalAppLaunchPropertiesAssert(actual: VitalEvent.Vital.AppLaunchProperties) :
-    AbstractObjectAssert<VitalAppLaunchPropertiesAssert, VitalEvent.Vital.AppLaunchProperties>(
+internal class VitalAppLaunchPropertiesAssert(actual: RumVitalAppLaunchEvent.Vital) :
+    AbstractObjectAssert<VitalAppLaunchPropertiesAssert, RumVitalAppLaunchEvent.Vital>(
         actual,
         VitalAppLaunchPropertiesAssert::class.java
     ) {
@@ -28,7 +28,7 @@ internal class VitalAppLaunchPropertiesAssert(actual: VitalEvent.Vital.AppLaunch
         ).isEqualTo(expected)
     }
 
-    fun hasAppLaunchMetric(expected: VitalEvent.AppLaunchMetric) = apply {
+    fun hasAppLaunchMetric(expected: RumVitalAppLaunchEvent.AppLaunchMetric) = apply {
         assertThat(actual.appLaunchMetric).overridingErrorMessage(
             "Expected event data to have appLaunchMetric $expected but was ${actual.appLaunchMetric}"
         ).isEqualTo(expected)
@@ -40,7 +40,7 @@ internal class VitalAppLaunchPropertiesAssert(actual: VitalEvent.Vital.AppLaunch
         ).isEqualTo(expected)
     }
 
-    fun hasStartupType(expected: VitalEvent.StartupType?) = apply {
+    fun hasStartupType(expected: RumVitalAppLaunchEvent.StartupType?) = apply {
         assertThat(actual.startupType).overridingErrorMessage(
             "Expected event data to have startupType $expected but was ${actual.startupType}"
         ).isEqualTo(expected)
@@ -61,7 +61,7 @@ internal class VitalAppLaunchPropertiesAssert(actual: VitalEvent.Vital.AppLaunch
 
     companion object {
         internal fun assertThat(
-            actual: VitalEvent.Vital.AppLaunchProperties
+            actual: RumVitalAppLaunchEvent.Vital
         ): VitalAppLaunchPropertiesAssert = VitalAppLaunchPropertiesAssert(actual)
     }
 }
