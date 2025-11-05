@@ -25,6 +25,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -451,7 +452,7 @@ internal class RumConfigurationBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M build config with RUM Vital eventMapper W setVitalOperationStepEventMapper() & build()`() {
+    fun `M build config with RUM OperationStep Vital eventMapper W setVitalOperationStepEventMapper() & build()`() {
         // Given
         val eventMapper: EventMapper<RumVitalOperationStepEvent> = mock()
 
@@ -464,6 +465,25 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 vitalOperationStepEventMapper = eventMapper
+            )
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M build config with RUM AppLaunch Vital eventMapper W setVitalAppLaunchEventMapper() & build()`() {
+        // Given
+        val eventMapper: EventMapper<RumVitalAppLaunchEvent> = mock()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setVitalAppLaunchEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                vitalAppLaunchEventMapper = eventMapper
             )
         )
     }

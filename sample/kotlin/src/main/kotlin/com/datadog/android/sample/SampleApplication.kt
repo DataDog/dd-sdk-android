@@ -329,6 +329,10 @@ class SampleApplication : Application() {
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
+            .setVitalAppLaunchEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
             .trackBackgroundEvents(true)
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
