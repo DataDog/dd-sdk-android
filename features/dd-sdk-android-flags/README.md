@@ -2,20 +2,20 @@
 
 The Datadog Feature Flags SDK for Android allows you to evaluate feature flags and experiments in your Android application and automatically send flag evaluation data to Datadog for monitoring and analysis.
 
-## Installation
+## Getting Started
 
 Add the Datadog Feature Flags SDK to your application's `build.gradle` file:
 
 ```groovy
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-flags:<VERSION>"
+    implementation "com.datadoghq:dd-sdk-android-flags:<latest-version>"
     
-    // Optional: Required only if you want RUM integration
-    implementation "com.datadoghq:dd-sdk-android-rum:<VERSION>"
+    // Recommended: RUM integration drives analysis and enriches RUM session data
+    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
 }
 ```
 
-## Prerequisites
+### Initial Setup
 
 Before enabling the Feature Flags feature, you must first initialize the Datadog SDK. See the [Datadog Android SDK setup documentation][1] for details.
 
@@ -31,9 +31,10 @@ val coreConfiguration = Configuration.Builder(
 Datadog.initialize(this, coreConfiguration, trackingConsent)
 ```
 
-### (Optional) Enable RUM for the integration
+### (Recommended) Enable RUM in your application
 
-If you want flag evaluations to be automatically sent to RUM and attached to views, enable RUM before initializing the Flags feature:
+RUM session data is enriched with Feature Flag evaluations and is used to drive the analysis for your Feature Flags. Skip this step if RUM is already configured
+or you are opting out of the RUM integration.
 
 ```kotlin
 val rumConfig = RumConfiguration.Builder(applicationId = "<YOUR_RUM_APPLICATION_ID>")
@@ -59,7 +60,7 @@ Flags.enable(flagsConfig)
 
 The `FlagsConfiguration.Builder` supports the following options:
 
-#### RUM integration
+#### Disable RUM integration
 
 By default, flag evaluations are automatically sent to RUM (Real User Monitoring) and attached to the current view if RUM is enabled. You can disable this integration:
 
@@ -69,9 +70,9 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-**Note:** This setting only has an effect if you have enabled RUM (see `Prerequisites` section). If RUM is not enabled, flag evaluations are not sent to RUM regardless of this setting.
+**Note:** This setting only has an effect if you have enabled RUM (see [Initial Setup] section). If RUM is not enabled, flag evaluations are not sent to RUM regardless of this setting.
 
-#### Exposure tracking
+#### Disable exposure tracking
 
 By default, flag evaluations are tracked and sent to Datadog's exposure intake endpoint. You can disable this:
 
@@ -81,7 +82,7 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-#### Custom endpoints
+#### Configure custom endpoints
 
 For testing or proxy purposes, you can configure custom endpoints:
 
@@ -92,7 +93,7 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-## Usage
+## Use the Feature Flags SDK
 
 ### Create a Flags client
 
@@ -132,7 +133,7 @@ client.setEvaluationContext(context)
   - Transition to a user ID when the user authenticates.
 - All attribute values must be strings. Convert numbers, booleans, and other types to strings before passing them.
 
-### Evaluate Feature Flags
+### Evaluate feature flags
 
 The `FlagsClient` provides two ways to resolve flag values:
 
@@ -143,17 +144,17 @@ The `FlagsClient` provides two ways to resolve flag values:
 
 Use these methods when you only need the flag value:
 
-**Boolean Flags**
+**Boolean flags**
 ```kotlin
 val isNewFeatureEnabled = client.resolveBooleanValue("new-feature-enabled", false)
 ```
 
-**String Flags**
+**String flags**
 ```kotlin
 val theme = client.resolveStringValue("app-theme", "light")
 ```
 
-**Numeric Flags**
+**Numeric flags**
 ```kotlin
 // Integer values
 val maxRetries = client.resolveIntValue("max-retry-count", 3)
@@ -162,7 +163,7 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
-**Structured Flags**
+**Structured flags**
 ```kotlin
 val defaultConfig = JSONObject("""{"timeout": 30, "retries": 3}""")
 val config = client.resolveStructureValue("api-config", defaultConfig)
@@ -208,7 +209,7 @@ if (result.errorCode != null) {
 }
 ```
 
-**ResolutionDetails Properties:**
+##### Detailed resolution properties
 - `value: T` - The resolved flag value (always present, either from evaluation or default)
 - `variant: String?` - Optional identifier for the resolved variant
 - `reason: String?` - Optional explanation of why this value was resolved
@@ -216,7 +217,7 @@ if (result.errorCode != null) {
 - `errorMessage: String?` - Optional human-readable error message
 - `flagMetadata: Map<String, Any>?` - Optional metadata associated with the flag
 
-**Error Codes:**
+##### Error Codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
 - `TYPE_MISMATCH` - The flag type doesn't match the expected type
@@ -226,7 +227,7 @@ if (result.errorCode != null) {
 - `PROVIDER_FATAL` - The provider encountered a fatal error
 - `GENERAL` - A general error occurred
 
-### Retrieving Existing Clients
+### Retrieving existing clients
 
 You can retrieve a previously created client by name:
 
@@ -249,9 +250,9 @@ When RUM is enabled in your application and RUM integration is enabled in the Fl
 
 This allows you to correlate feature flag usage with application performance, errors, and user behavior.
 
-**Prerequisites for RUM Integration:**
+## Prerequisites for RUM Integration
 1. Add the `dd-sdk-android-rum` dependency to your project
-2. Enable RUM before initializing the Flags feature (see `Prerequisites` section)
+2. Enable RUM before initializing the Flags feature (see [Initial Setup](#initial-setup) section)
 3. Ensure `rumIntegrationEnabled` is set to `true` in your `FlagsConfiguration` (this is the default)
 
 If RUM is not enabled, the Flags SDK will continue to work normally, but flag evaluations will not appear in RUM views.
