@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "flags/exposure-event-schema.json",
+  "title": "ExposureEvent",
+  "type": "object",
+  "description": "Schema of all properties of a Feature Flag Exposure event",
+  "definitions": {
+    "Identifier": {
+      "type": "object",
+      "description": "Identifier with a key property",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "The identifier key"
+        }
+      },
+      "required": ["key"]
+    }
+  },
+  "properties": {
+    "timestamp": {
+      "type": "integer",
+      "description": "Timestamp when the exposure event occurred (epoch in milliseconds)"
+    },
+    "allocation": {
+      "$ref": "#/definitions/Identifier",
+      "description": "Allocation identifier for the feature flag"
+    },
+    "flag": {
+      "$ref": "#/definitions/Identifier",
+      "description": "Feature flag identifier"
+    },
+    "variant": {
+      "$ref": "#/definitions/Identifier",
+      "description": "Variant identifier for the feature flag"
+    },
+    "subject": {
+      "type": "object",
+      "description": "Subject information for the exposure",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The targeting key of the subject"
+        },
+        "attributes": {
+          "type": "object",
+          "description": "Additional attributes for the subject",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "attributes"]
+    }
+  },
+  "required": ["timestamp", "allocation", "flag", "variant", "subject"]
+}
+

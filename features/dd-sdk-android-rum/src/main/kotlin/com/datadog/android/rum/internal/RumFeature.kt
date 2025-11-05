@@ -34,6 +34,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -392,6 +393,7 @@ internal class RumFeature(
             is Map<*, *> -> handleMapLikeEvent(event)
             is JvmCrash.Rum -> addJvmCrash(event)
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
+            is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -405,6 +407,12 @@ internal class RumFeature(
     // endregion
 
     // region Internal
+    private fun handleFlagEvaluationEvent(event: RumFlagEvaluationMessage) {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addFeatureFlagEvaluation(
+            name = event.flagKey,
+            value = event.value
+        )
+    }
 
     private fun handleMapLikeEvent(event: Map<*, *>) {
         when (event["type"]) {
