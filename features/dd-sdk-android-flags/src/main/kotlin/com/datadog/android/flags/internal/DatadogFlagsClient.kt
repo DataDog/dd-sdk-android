@@ -357,8 +357,7 @@ internal class DatadogFlagsClient(
         variant = null,
         reason = ResolutionReason.ERROR,
         errorCode = errorCode,
-        errorMessage = "Flag '$flagKey': $errorMessage",
-        flagMetadata = null
+        errorMessage = "Flag '$flagKey': $errorMessage"
     )
 
     private fun parseReason(reasonString: String): ResolutionReason? {

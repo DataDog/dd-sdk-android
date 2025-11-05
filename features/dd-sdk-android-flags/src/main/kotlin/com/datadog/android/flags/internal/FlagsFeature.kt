@@ -55,6 +55,12 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     @Volatile
     private var isDebugBuild: Boolean = false
 
+    /**
+     * Registry of [FlagsClient] instances by name.
+     * This map stores all clients created for this feature instance.
+     */
+    private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+
     // region Domain Objects
 
     /**
@@ -118,12 +124,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
 
     // region FlagsClient Management
-
-    /**
-     * Registry of [FlagsClient] instances by name.
-     * This map stores all clients created for this feature instance.
-     */
-    private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
     /**
      * Gets a registered [FlagsClient] by name.

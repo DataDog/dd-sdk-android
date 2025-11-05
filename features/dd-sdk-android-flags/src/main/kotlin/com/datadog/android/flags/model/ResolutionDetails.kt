@@ -18,7 +18,7 @@ package com.datadog.android.flags.model
  * @property reason Optional reason code explaining why this value was resolved.
  * @property errorCode Optional error code if the resolution failed. Null indicates successful resolution.
  * @property errorMessage Optional human-readable error message providing additional context about failures.
- * @property flagMetadata Optional map of arbitrary metadata associated with the flag (string keys, primitive values).
+ * @property flagMetadata Map of arbitrary metadata associated with the flag (string keys, primitive values). Empty if no metadata.
  */
 data class ResolutionDetails<T : Any>(
     val value: T,
@@ -26,5 +26,5 @@ data class ResolutionDetails<T : Any>(
     val reason: ResolutionReason? = null,
     val errorCode: ErrorCode? = null,
     val errorMessage: String? = null,
-    val flagMetadata: Map<String, Any>? = null
+    val flagMetadata: Map<String, Any> = emptyMap()
 )

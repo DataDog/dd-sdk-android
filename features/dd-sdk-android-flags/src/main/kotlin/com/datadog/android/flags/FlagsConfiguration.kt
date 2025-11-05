@@ -10,11 +10,11 @@ package com.datadog.android.flags
  * Describes configuration to be used for the Flags feature.
  */
 data class FlagsConfiguration internal constructor(
-    internal val trackExposures: Boolean = true,
-    internal val customExposureEndpoint: String? = null,
-    internal val customFlagEndpoint: String? = null,
-    internal val rumIntegrationEnabled: Boolean = true,
-    internal val gracefulModeEnabled: Boolean = true
+    internal val trackExposures: Boolean,
+    internal val customExposureEndpoint: String?,
+    internal val customFlagEndpoint: String?,
+    internal val rumIntegrationEnabled: Boolean,
+    internal val gracefulModeEnabled: Boolean
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -121,6 +121,6 @@ data class FlagsConfiguration internal constructor(
          * - No custom endpoint URL (uses standard Datadog intake)
          * - No custom flag endpoint URL (uses standard Datadog edge assignment endpoint)
          */
-        internal val default = FlagsConfiguration()
+        internal val default = Builder().build()
     }
 }
