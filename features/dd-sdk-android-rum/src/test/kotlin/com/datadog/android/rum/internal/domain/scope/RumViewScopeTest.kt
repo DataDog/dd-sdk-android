@@ -8762,7 +8762,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -8835,7 +8835,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -8905,7 +8905,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -8978,7 +8978,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9049,7 +9049,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9124,7 +9124,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9242,14 +9242,7 @@ internal class RumViewScopeTest {
         rumSessionTypeOverride = fakeRumSessionType,
         accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider,
-        rumVitalEventHelper = RumVitalEventHelper(
-            rumSessionTypeOverride = fakeRumSessionType,
-            batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            sampleRate = sampleRate,
-            internalLogger = sdkCore.internalLogger
-        )
+        displayInfoProvider = mockDisplayInfoProvider
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

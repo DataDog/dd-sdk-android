@@ -35,8 +35,8 @@ import com.datadog.android.rum.internal.startup.testRumStartupScenarios
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -178,7 +178,7 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeDisplayInfo: DisplayInfo
 
-    private var fakeVitalSource: VitalEvent.VitalEventSource? = null
+    private var fakeVitalSource: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? = null
 
     @Mock
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
@@ -223,7 +223,7 @@ internal class RumSessionScopeTest {
         )
 
         fakeVitalSource = if (isValidSource) {
-            VitalEvent.VitalEventSource.fromJson(fakeSource)
+            RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -1616,13 +1616,6 @@ internal class RumSessionScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumVitalEventHelper = RumVitalEventHelper(
-                rumSessionTypeOverride = fakeRumSessionType,
-                batteryInfoProvider = mockBatteryInfoProvider,
-                displayInfoProvider = mockDisplayInfoProvider,
-                sampleRate = sampleRate,
-                internalLogger = mock()
-            ),
             rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager }
         )
 

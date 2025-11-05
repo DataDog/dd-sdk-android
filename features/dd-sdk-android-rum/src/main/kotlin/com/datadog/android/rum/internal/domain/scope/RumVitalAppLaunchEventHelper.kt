@@ -13,12 +13,14 @@ import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
-import com.datadog.android.rum.internal.toVital
+import com.datadog.android.rum.internal.startup.RumStartupScenario
+import com.datadog.android.rum.internal.toVitalAppLaunch
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
-import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import java.util.UUID
 
-internal class RumVitalEventHelper(
+internal class RumVitalAppLaunchEventHelper(
     private val rumSessionTypeOverride: RumSessionType?,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
@@ -26,75 +28,77 @@ internal class RumVitalEventHelper(
     private val internalLogger: InternalLogger
 ) {
     @Suppress("LongMethod")
-    fun newVitalEvent(
+    fun newVitalAppLaunchEvent(
         timestampMs: Long,
         datadogContext: DatadogContext,
         eventAttributes: Map<String, Any?>,
         customAttributes: Map<String, Any?>,
-        view: VitalEvent.VitalEventView?,
+        view: RumVitalAppLaunchEvent.RumVitalAppLaunchEventView?,
         hasReplay: Boolean?,
         rumContext: RumContext,
-        vital: VitalEvent.Vital
-    ): VitalEvent {
+        durationNs: Long,
+        scenario: RumStartupScenario,
+        appLaunchMetric: RumVitalAppLaunchEvent.AppLaunchMetric
+    ): RumVitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
-            VitalEvent.Synthetics(
+            RumVitalAppLaunchEvent.Synthetics(
                 testId = rumContext.syntheticsTestId,
                 resultId = rumContext.syntheticsResultId
             )
         }
 
         val sessionType = when {
-            rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
-            syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
-            else -> VitalEvent.VitalEventSessionType.SYNTHETICS
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toVitalAppLaunch()
+            syntheticsAttribute == null -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
+            else -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.SYNTHETICS
         }
 
         val batteryInfo = batteryInfoProvider.getState()
         val displayInfo = displayInfoProvider.getState()
         val user = datadogContext.userInfo
 
-        return VitalEvent(
+        return RumVitalAppLaunchEvent(
             date = timestampMs,
-            context = VitalEvent.Context(
+            context = RumVitalAppLaunchEvent.Context(
                 additionalProperties = customAttributes.toMutableMap().also {
                     it.putAll(eventAttributes)
                 }
             ),
-            dd = VitalEvent.Dd(
-                session = VitalEvent.DdSession(
-                    sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
+            dd = RumVitalAppLaunchEvent.Dd(
+                session = RumVitalAppLaunchEvent.DdSession(
+                    sessionPrecondition = rumContext.sessionStartReason.toVitalAppLaunchSessionPrecondition()
                 ),
-                configuration = VitalEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = RumVitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate)
             ),
-            application = VitalEvent.Application(
+            application = RumVitalAppLaunchEvent.Application(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
             synthetics = syntheticsAttribute,
-            session = VitalEvent.VitalEventSession(
+            session = RumVitalAppLaunchEvent.RumVitalAppLaunchEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay
             ),
             view = view,
-            source = VitalEvent.VitalEventSource.tryFromSource(
+            source = RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.tryFromSource(
                 source = datadogContext.source,
                 internalLogger = internalLogger
             ),
             account = datadogContext.accountInfo?.let {
-                VitalEvent.Account(
+                RumVitalAppLaunchEvent.Account(
                     id = it.id,
                     name = it.name,
                     additionalProperties = it.extraInfo.toMutableMap()
                 )
             },
             usr = if (user.hasUserData()) {
-                VitalEvent.Usr(
+                RumVitalAppLaunchEvent.Usr(
                     id = user.id,
                     name = user.name,
                     email = user.email,
@@ -104,8 +108,8 @@ internal class RumVitalEventHelper(
             } else {
                 null
             },
-            device = VitalEvent.Device(
-                type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+            device = RumVitalAppLaunchEvent.Device(
+                type = datadogContext.deviceInfo.deviceType.toVitalAppLaunchSchemaType(),
                 name = datadogContext.deviceInfo.deviceName,
                 model = datadogContext.deviceInfo.deviceModel,
                 brand = datadogContext.deviceInfo.deviceBrand,
@@ -116,16 +120,25 @@ internal class RumVitalEventHelper(
                 powerSavingMode = batteryInfo.lowPowerMode,
                 brightnessLevel = displayInfo.screenBrightness
             ),
-            os = VitalEvent.Os(
+            os = RumVitalAppLaunchEvent.Os(
                 name = datadogContext.deviceInfo.osName,
                 version = datadogContext.deviceInfo.osVersion,
                 versionMajor = datadogContext.deviceInfo.osMajorVersion
             ),
-            connectivity = datadogContext.networkInfo.toVitalConnectivity(),
+            connectivity = datadogContext.networkInfo.toAppLaunchVitalConnectivity(),
             version = datadogContext.version,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
-            vital = vital
+            vital = RumVitalAppLaunchEvent.Vital(
+                id = UUID.randomUUID().toString(),
+                name = null,
+                description = null,
+                appLaunchMetric = appLaunchMetric,
+                duration = durationNs,
+                startupType = scenario.toVitalAppLaunchStartupType(),
+                isPrewarmed = null,
+                hasSavedInstanceStateBundle = scenario.hasSavedInstanceStateBundle
+            )
         )
     }
 }

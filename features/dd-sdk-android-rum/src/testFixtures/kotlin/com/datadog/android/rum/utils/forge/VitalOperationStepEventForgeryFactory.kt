@@ -16,7 +16,7 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-class VitalEventForgeryFactory : ForgeryFactory<RumVitalOperationStepEvent> {
+class VitalOperationStepEventForgeryFactory : ForgeryFactory<RumVitalOperationStepEvent> {
     override fun getForgery(forge: Forge): RumVitalOperationStepEvent {
         return RumVitalOperationStepEvent(
             date = forge.aTimestamp(),
