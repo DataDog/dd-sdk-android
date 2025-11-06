@@ -2,7 +2,7 @@
 
 The Datadog Feature Flags SDK for Android allows you to evaluate feature flags and experiments in your Android application and automatically send flag evaluation data to Datadog for monitoring and analysis.
 
-## Getting Started
+## Getting started
 
 Add the Datadog Feature Flags SDK to your application's `build.gradle` file:
 
@@ -15,7 +15,7 @@ dependencies {
 }
 ```
 
-### Initial Setup
+### Initial setup
 
 Before enabling the Feature Flags feature, you must first initialize the Datadog SDK. See the [Datadog Android SDK setup documentation][1] for details.
 
@@ -70,7 +70,7 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-**Note:** This setting only has an effect if you have enabled RUM (see [Initial Setup](#initial-setup) section). If RUM is not enabled, flag evaluations are not sent to RUM regardless of this setting.
+**Note:** This setting only has an effect if you have enabled RUM (see [Initial setup](#initial-setup) section). If RUM is not enabled, flag evaluations are not sent to RUM regardless of this setting.
 
 #### Disable exposure tracking
 
@@ -217,7 +217,7 @@ if (result.errorCode != null) {
 - `errorMessage: String?` - Optional human-readable error message
 - `flagMetadata: Map<String, Any>?` - Optional metadata associated with the flag
 
-##### Error Codes
+##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
 - `TYPE_MISMATCH` - The flag type doesn't match the expected type
@@ -227,7 +227,7 @@ if (result.errorCode != null) {
 - `PROVIDER_FATAL` - The provider encountered a fatal error
 - `GENERAL` - A general error occurred
 
-### Retrieving existing clients
+### Retrieve existing clients
 
 You can retrieve a previously created client by name:
 
@@ -250,9 +250,9 @@ When RUM is enabled in your application and RUM integration is enabled in the Fl
 
 This allows you to correlate feature flag usage with application performance, errors, and user behavior.
 
-## Prerequisites for RUM Integration
+## Prerequisites for RUM integration
 1. Add the `dd-sdk-android-rum` dependency to your project
-2. Enable RUM before initializing the Flags feature (see [Initial Setup](#initial-setup) section)
+2. Enable RUM before initializing the Flags feature (see [Initial setup](#initial-setup) section)
 3. Ensure `rumIntegrationEnabled` is set to `true` in your `FlagsConfiguration` (this is the default)
 
 If RUM is not enabled, the Flags SDK will continue to work normally, but flag evaluations will not appear in RUM views.
