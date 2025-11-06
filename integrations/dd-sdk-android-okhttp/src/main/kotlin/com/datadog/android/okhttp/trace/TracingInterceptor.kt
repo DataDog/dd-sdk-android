@@ -172,10 +172,8 @@ internal constructor(
         response: Response?,
         throwable: Throwable?
     ) {
-        if (span != null) {
-            if (canNotifyListener(sdkCore, request)) {
-                tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
-            }
+        if (span != null && canNotifyListener(sdkCore, request)) {
+            tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
         }
     }
 
