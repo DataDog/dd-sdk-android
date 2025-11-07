@@ -3,6 +3,7 @@ public final class com/datadog/android/BuildConfig {
 	public static final field DEBUG Z
 	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
 	public static final field LOGCAT_ENABLED Ljava/lang/Boolean;
+	public static final field SDK_COMMIT_SHA1 Ljava/lang/String;
 	public static final field SDK_VERSION_CODE I
 	public static final field SDK_VERSION_NAME Ljava/lang/String;
 	public fun <init> ()V
