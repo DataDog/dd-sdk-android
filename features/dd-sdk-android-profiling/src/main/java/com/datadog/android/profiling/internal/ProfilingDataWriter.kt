@@ -66,6 +66,7 @@ internal class ProfilingDataWriter(
             end = formatIsoUtc(profilingResult.end),
             attachments = listOf(PERFETTO_ATTACHMENT_NAME),
             family = ANDROID_FAMILY_NAME,
+            runtime = ANDROID_RUNTIME_NAME,
             version = VERSION_NUMBER,
             tagsProfiler = buildTags(context)
         )
@@ -74,7 +75,11 @@ internal class ProfilingDataWriter(
     private fun buildTags(context: DatadogContext): String = buildString {
         append("$TAG_KEY_SERVICE:${context.service}")
         append(",")
+        append("$TAG_KEY_ENV:${context.env}")
+        append(",")
         append("$TAG_KEY_VERSION:${context.version}")
+        append(",")
+        append("$TAG_KEY_SDK_VERSION:${context.sdkVersion}")
     }
 
     private fun readProfilingData(profilingPath: String): ByteArray? {
@@ -86,8 +91,11 @@ internal class ProfilingDataWriter(
     companion object {
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
+        private const val TAG_KEY_SDK_VERSION = "sdk_version"
+        private const val TAG_KEY_ENV = "env"
         private const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         private const val ANDROID_FAMILY_NAME = "android"
+        private const val ANDROID_RUNTIME_NAME = "android"
 
         // Only `4` is supported by profiling Backend
         private const val VERSION_NUMBER = "4"
