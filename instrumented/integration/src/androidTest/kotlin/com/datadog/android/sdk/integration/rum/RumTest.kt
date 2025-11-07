@@ -58,7 +58,7 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                 }
             }
         val launchEventPredicate = { event: ExpectedEvent ->
-            event is ExpectedApplicationLaunchViewEvent || event is ExpectedApplicationStartActionEvent
+            event is ExpectedApplicationLaunchViewEvent
         }
         val expectedLaunchEvents = expectedEvents.filter(launchEventPredicate)
         val expectedViewEvents = expectedEvents.filterIsInstance<ExpectedViewEvent>()
