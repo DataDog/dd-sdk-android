@@ -45,6 +45,11 @@ interface Feature {
         const val RUM_FEATURE_NAME: String = "rum"
 
         /**
+         * Flags feature name.
+         */
+        const val FLAGS_FEATURE_NAME: String = "flags"
+
+        /**
          * Tracing feature name.
          */
         const val TRACING_FEATURE_NAME: String = "tracing"

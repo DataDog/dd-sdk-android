@@ -83,6 +83,19 @@ public final class com/datadog/android/internal/data/SharedPreferencesStorage : 
 	public fun remove (Ljava/lang/String;)V
 }
 
+public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/internal/flags/RumFlagEvaluationMessage;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/flags/RumFlagEvaluationMessage;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/datadog/android/internal/flags/RumFlagEvaluationMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFlagKey ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
 	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;

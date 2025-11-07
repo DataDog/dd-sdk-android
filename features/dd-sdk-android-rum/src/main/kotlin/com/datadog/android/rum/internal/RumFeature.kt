@@ -34,6 +34,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -103,8 +104,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -375,7 +376,7 @@ internal class RumFeature(
                     resourceEventMapper = configuration.resourceEventMapper,
                     actionEventMapper = configuration.actionEventMapper,
                     longTaskEventMapper = configuration.longTaskEventMapper,
-                    vitalEventMapper = configuration.vitalEventMapper,
+                    vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
                     telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
                     internalLogger = sdkCore.internalLogger
                 ),
@@ -393,6 +394,7 @@ internal class RumFeature(
             is Map<*, *> -> handleMapLikeEvent(event)
             is JvmCrash.Rum -> addJvmCrash(event)
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
+            is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -406,6 +408,12 @@ internal class RumFeature(
     // endregion
 
     // region Internal
+    private fun handleFlagEvaluationEvent(event: RumFlagEvaluationMessage) {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addFeatureFlagEvaluation(
+            name = event.flagKey,
+            value = event.value
+        )
+    }
 
     private fun handleMapLikeEvent(event: Map<*, *>) {
         when (event["type"]) {
@@ -725,7 +733,7 @@ internal class RumFeature(
         val resourceEventMapper: EventMapper<ResourceEvent>,
         val actionEventMapper: EventMapper<ActionEvent>,
         val longTaskEventMapper: EventMapper<LongTaskEvent>,
-        val vitalEventMapper: EventMapper<VitalEvent>,
+        val vitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent>,
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
@@ -777,7 +785,7 @@ internal class RumFeature(
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),
             longTaskEventMapper = NoOpEventMapper(),
-            vitalEventMapper = NoOpEventMapper(),
+            vitalOperationStepEventMapper = NoOpEventMapper(),
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,

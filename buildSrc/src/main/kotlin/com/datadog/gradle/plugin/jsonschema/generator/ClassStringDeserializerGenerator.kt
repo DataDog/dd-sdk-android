@@ -21,7 +21,6 @@ class ClassStringDeserializerGenerator(
     knownTypes
 ) {
     override fun generate(definition: TypeDefinition.Class, rootTypeName: String): FunSpec {
-        val isConstantClass = definition.isConstantClass()
         val returnType = ClassName.bestGuess(definition.name)
 
         val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON)

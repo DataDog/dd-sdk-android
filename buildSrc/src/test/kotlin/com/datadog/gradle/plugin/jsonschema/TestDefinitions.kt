@@ -68,7 +68,7 @@ val Animal = TypeDefinition.OneOfClass(
                 )
             )
         )
-    ),
+    ).map { TypeDefinition.OneOfClass.Option.Class(it) },
     description = "A representation of the animal kingdom"
 )
 
@@ -676,7 +676,7 @@ val Household = TypeDefinition.Class(
                                 TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN))
                             )
                         )
-                    ),
+                    ).map { TypeDefinition.OneOfClass.Option.Class(it) },
                     description = "A representation of the animal kingdom"
                 )
             )
@@ -686,29 +686,36 @@ val Household = TypeDefinition.Class(
             type = TypeDefinition.OneOfClass(
                 name = "Situation",
                 options = listOf(
-                    TypeDefinition.Class(
-                        name = "Marriage",
-                        required = setOf("spouses"),
-                        properties = listOf(
-                            TypeProperty(
-                                name = "spouses",
-                                type = TypeDefinition.Array(
-                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                    TypeDefinition.OneOfClass.Option.Class(
+                        TypeDefinition.Class(
+                            name = "Marriage",
+                            required = setOf("spouses"),
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "spouses",
+                                    type = TypeDefinition.Array(
+                                        items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                    )
                                 )
                             )
                         )
                     ),
-                    TypeDefinition.Class(
-                        name = "Cotenancy",
-                        required = setOf("roommates"),
-                        properties = listOf(
-                            TypeProperty(
-                                name = "roommates",
-                                type = TypeDefinition.Array(
-                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                    TypeDefinition.OneOfClass.Option.Class(
+                        TypeDefinition.Class(
+                            name = "Cotenancy",
+                            required = setOf("roommates"),
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "roommates",
+                                    type = TypeDefinition.Array(
+                                        items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                    )
                                 )
                             )
                         )
+                    ),
+                    TypeDefinition.OneOfClass.Option.Primitive(
+                        primitive = TypeDefinition.Primitive(type = JsonPrimitiveType.INTEGER)
                     )
                 )
             )
@@ -977,7 +984,7 @@ val WeirdCombo = TypeDefinition.Class(
                             )
                         )
                     )
-                )
+                ).map { TypeDefinition.OneOfClass.Option.Class(it) }
             )
         )
     )
@@ -990,4 +997,118 @@ val RequiredForOtherAllOf = TypeDefinition.Class(
         TypeProperty(name = "key_1", type = TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
         TypeProperty(name = "key_2", type = TypeDefinition.Primitive(JsonPrimitiveType.STRING))
     )
+)
+
+val PathArrayWithInteger = TypeDefinition.Class(
+    name = "PathArrayWithInteger",
+    properties = listOf(
+        TypeProperty(
+            name = "path",
+            type = TypeDefinition.Array(
+                items = TypeDefinition.OneOfClass(
+                    name = "Path",
+                    options = listOf(
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.BOOLEAN,
+                                description = "boolean element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.STRING,
+                                description = "string element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.INTEGER,
+                                description = "integer element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Class(
+                            cls = TypeDefinition.Class(
+                                name = "Point",
+                                properties = listOf(
+                                    TypeProperty(
+                                        name = "x",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    ),
+                                    TypeProperty(
+                                        name = "y",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    )
+                                ),
+                                required = setOf("x", "y"),
+                                description = "object element"
+                            )
+                        )
+                    ),
+                    description = "This is a definition of a path"
+                ),
+                uniqueItems = false
+            ),
+            readOnly = true
+        )
+    ),
+    required = setOf("path")
+)
+
+val PathArrayWithNumber = TypeDefinition.Class(
+    name = "PathArrayWithNumber",
+    properties = listOf(
+        TypeProperty(
+            name = "path",
+            type = TypeDefinition.Array(
+                items = TypeDefinition.OneOfClass(
+                    name = "Path",
+                    options = listOf(
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.BOOLEAN,
+                                description = "boolean element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.STRING,
+                                description = "string element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Primitive(
+                            primitive = TypeDefinition.Primitive(
+                                type = JsonPrimitiveType.NUMBER,
+                                description = "number element"
+                            )
+                        ),
+                        TypeDefinition.OneOfClass.Option.Class(
+                            cls = TypeDefinition.Class(
+                                name = "Point",
+                                properties = listOf(
+                                    TypeProperty(
+                                        name = "x",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    ),
+                                    TypeProperty(
+                                        name = "y",
+                                        type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                        readOnly = true
+                                    )
+                                ),
+                                required = setOf("x", "y"),
+                                description = "object element"
+                            )
+                        )
+                    ),
+                    description = "This is a definition of a path"
+                ),
+                uniqueItems = false
+            ),
+            readOnly = true
+        )
+    ),
+    required = setOf("path")
 )

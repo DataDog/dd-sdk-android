@@ -58,7 +58,8 @@ sealed class TypeDefinition {
 
     data class Primitive(
         val type: JsonPrimitiveType,
-        override val description: String = ""
+        override val description: String = "",
+        val parentType: OneOfClass? = null
     ) : TypeDefinition() {
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
@@ -76,7 +77,6 @@ sealed class TypeDefinition {
         fun asPrimitiveTypeFun(): String {
             return when (type) {
                 JsonPrimitiveType.BOOLEAN -> "asBoolean"
-                JsonPrimitiveType.DOUBLE -> "asDouble"
                 JsonPrimitiveType.STRING -> "asString"
                 JsonPrimitiveType.INTEGER -> "asLong"
                 JsonPrimitiveType.NUMBER -> "asNumber"
@@ -251,9 +251,14 @@ sealed class TypeDefinition {
 
     data class OneOfClass(
         val name: String,
-        val options: List<Class>,
+        val options: List<Option>,
         override val description: String = ""
     ) : TypeDefinition() {
+
+        sealed interface Option {
+            data class Class(val cls: TypeDefinition.Class) : Option
+            data class Primitive(val primitive: TypeDefinition.Primitive) : Option
+        }
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             error("Can't merge Multiclass with type $other")

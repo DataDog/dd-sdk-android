@@ -349,6 +349,12 @@ internal class LogEventSerializerTest {
         val userName = userInfo.name
         val userEmail = userInfo.email
         val userId = userInfo.id
+        val anonymousId = userInfo.anonymousId
+        if (anonymousId != null) {
+            hasField(KEY_USR_ANONYMOUS_ID, anonymousId)
+        } else {
+            doesNotHaveField(KEY_USR_ANONYMOUS_ID)
+        }
         if (userId != null) {
             hasField(KEY_USR_ID, userId)
         } else {
@@ -542,6 +548,7 @@ internal class LogEventSerializerTest {
         private const val KEY_CLIENT = "client"
         private const val KEY_USR_NAME = "name"
         private const val KEY_USR_EMAIL = "email"
+        private const val KEY_USR_ANONYMOUS_ID = "anonymous_id"
         private const val KEY_USR_ID = "id"
         private const val KEY_ACCOUNT_NAME = "name"
         private const val KEY_ACCOUNT_ID = "id"

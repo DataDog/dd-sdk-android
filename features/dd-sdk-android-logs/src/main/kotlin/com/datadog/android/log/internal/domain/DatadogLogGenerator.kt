@@ -280,6 +280,7 @@ internal class DatadogLogGenerator(
     private fun resolveUserInfo(datadogContext: DatadogContext, userInfo: UserInfo?): LogEvent.Usr {
         return with(userInfo ?: datadogContext.userInfo) {
             LogEvent.Usr(
+                anonymousId = anonymousId,
                 name = name,
                 email = email,
                 id = id,

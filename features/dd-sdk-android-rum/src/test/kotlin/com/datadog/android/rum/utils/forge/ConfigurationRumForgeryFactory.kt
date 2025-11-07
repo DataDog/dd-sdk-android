@@ -45,7 +45,7 @@ internal class ConfigurationRumForgeryFactory :
             resourceEventMapper = mock(),
             errorEventMapper = mock(),
             longTaskEventMapper = mock(),
-            vitalEventMapper = mock(),
+            vitalOperationStepEventMapper = mock(),
             telemetryConfigurationMapper = mock(),
             longTaskTrackingStrategy = mock(),
             backgroundEventTracking = forge.aBool(),
