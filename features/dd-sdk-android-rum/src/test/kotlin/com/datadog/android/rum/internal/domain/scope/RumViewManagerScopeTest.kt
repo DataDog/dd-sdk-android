@@ -13,7 +13,6 @@ import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
-import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -35,7 +34,6 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyApiUsage
 import com.datadog.android.rum.utils.verifyLog
@@ -58,7 +56,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -777,7 +774,7 @@ internal class RumViewManagerScopeTest {
     // region ApplicationStarted
 
     @Test
-    fun `M send ApplicationStarted event W handleEvent ()`(
+    fun `M not send APPLICATION_START action to the intake W handleEvent { ApplicationStarted } ()`(
         forge: Forge
     ) {
         // Given
@@ -786,32 +783,6 @@ internal class RumViewManagerScopeTest {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
         }
-        val fakeAppStartEvent = forge.applicationStartedEvent()
-
-        // When
-        testedScope.handleEvent(fakeAppStartEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter, atLeastOnce()).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.action.type)
-                .isEqualTo(ActionEvent.ActionEventActionType.APPLICATION_START)
-            // Application start event occurs at the start time
-            assertThat(firstValue.date)
-                .isEqualTo(resolveExpectedTimestamp(fakeAppStartEvent.eventTime.timestamp))
-
-            // Duration lasts until the first event is sent to RUM (whatever that is)
-            val loadingTime = fakeAppStartEvent.applicationStartupNanos
-            assertThat(firstValue.action.loadingTime).isEqualTo(loadingTime)
-        }
-    }
-
-    @Test
-    fun `M not send ApplicationStarted event W onViewDisplayed() {app already started}`(
-        forge: Forge
-    ) {
-        // Given
-        testedScope.applicationDisplayed = true
         val fakeAppStartEvent = forge.applicationStartedEvent()
 
         // When

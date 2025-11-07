@@ -40,7 +40,6 @@ internal fun List<JsonObject>.verifyEventMatches(
         when (val expectedEvent = expected[index]) {
             is ExpectedApplicationLaunchViewEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
-            is ExpectedApplicationStartActionEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedResourceEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedErrorEvent -> event.verifyEventMatches(expectedEvent)
             else -> {
@@ -113,19 +112,6 @@ private fun JsonObject.verifyEventMatches(event: ExpectedApplicationLaunchViewEv
     if (viewArguments.isNotEmpty()) {
         assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(viewArguments)
     }
-}
-
-private fun JsonObject.verifyEventMatches(event: ExpectedApplicationStartActionEvent) {
-    assertThat(this)
-        .hasField("application") {
-            hasField("id", event.rumContext.applicationId)
-        }
-        .hasField("session") {
-            hasField("id", event.rumContext.sessionId)
-        }
-        .hasField("action") {
-            hasField("type", "application_start")
-        }
 }
 
 private fun JsonObject.verifyEventMatches(event: ExpectedGestureEvent) {
