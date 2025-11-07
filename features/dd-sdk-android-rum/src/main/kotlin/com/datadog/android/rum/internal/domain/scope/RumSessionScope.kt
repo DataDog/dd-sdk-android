@@ -153,6 +153,8 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
+        val rumContext = activeView?.getRumContext() ?: getRumContext()
+
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
                 if (sessionState == State.TRACKED) {
@@ -161,9 +163,8 @@ internal class RumSessionScope(
                         datadogContext = datadogContext,
                         writeScope = writeScope,
                         writer = actualWriter,
-                        rumContext = getRumContext(),
-                        customAttributes = getCustomAttributes(),
-                        activeView = activeView
+                        rumContext = rumContext,
+                        customAttributes = getCustomAttributes()
                     )
                 }
             }
@@ -179,9 +180,8 @@ internal class RumSessionScope(
                         datadogContext = datadogContext,
                         writeScope = writeScope,
                         writer = actualWriter,
-                        rumContext = getRumContext(),
-                        customAttributes = getCustomAttributes(),
-                        activeView = activeView
+                        rumContext = rumContext,
+                        customAttributes = getCustomAttributes()
                     )
                 }
             }

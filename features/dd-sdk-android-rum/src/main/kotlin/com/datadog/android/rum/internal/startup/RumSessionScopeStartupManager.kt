@@ -13,7 +13,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.RumVitalAppLaunchEvent
@@ -27,8 +26,7 @@ internal interface RumSessionScopeStartupManager {
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
-        customAttributes: Map<String, Any?>,
-        activeView: RumViewScope?
+        customAttributes: Map<String, Any?>
     )
 
     fun onTTFDEvent(
@@ -37,8 +35,7 @@ internal interface RumSessionScopeStartupManager {
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
-        customAttributes: Map<String, Any?>,
-        activeView: RumViewScope?
+        customAttributes: Map<String, Any?>
     )
 
     companion object {
@@ -87,8 +84,7 @@ internal class RumSessionScopeStartupManagerImpl(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
-        customAttributes: Map<String, Any?>,
-        activeView: RumViewScope?
+        customAttributes: Map<String, Any?>
     ) {
         ttidReportedForScenario = true
 
@@ -109,7 +105,6 @@ internal class RumSessionScopeStartupManagerImpl(
                 datadogContext = datadogContext,
                 eventAttributes = emptyMap(),
                 customAttributes = customAttributes,
-                view = activeView,
                 hasReplay = null,
                 rumContext = rumContext,
                 durationNs = event.info.durationNs,
@@ -130,8 +125,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 rumContext = rumContext,
                 customAttributes = customAttributes,
                 durationNs = event.info.durationNs,
-                scenario = event.info.scenario,
-                activeView = activeView
+                scenario = event.info.scenario
             )
         }
     }
@@ -143,8 +137,7 @@ internal class RumSessionScopeStartupManagerImpl(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
-        customAttributes: Map<String, Any?>,
-        activeView: RumViewScope?
+        customAttributes: Map<String, Any?>
     ) {
         if (ttfdReportedForSession) {
             return
@@ -191,8 +184,7 @@ internal class RumSessionScopeStartupManagerImpl(
             rumContext = rumContext,
             customAttributes = customAttributes,
             durationNs = event.eventTime.nanoTime - scenario.initialTime.nanoTime,
-            scenario = scenario,
-            activeView = activeView
+            scenario = scenario
         )
     }
 
@@ -203,8 +195,7 @@ internal class RumSessionScopeStartupManagerImpl(
         rumContext: RumContext,
         customAttributes: Map<String, Any?>,
         durationNs: Long,
-        scenario: RumStartupScenario,
-        activeView: RumViewScope?
+        scenario: RumStartupScenario
     ) {
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
@@ -212,7 +203,6 @@ internal class RumSessionScopeStartupManagerImpl(
                 datadogContext = datadogContext,
                 eventAttributes = emptyMap(),
                 customAttributes = customAttributes,
-                view = activeView,
                 hasReplay = null,
                 rumContext = rumContext,
                 durationNs = durationNs,

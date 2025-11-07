@@ -105,7 +105,7 @@ internal class VitalAppLaunchEventAssert(
             .isNull()
     }
 
-    fun hasViewId(expectedId: String) = apply {
+    fun hasViewId(expectedId: String?) = apply {
         assertThat(actual.view?.id)
             .overridingErrorMessage(
                 "Expected event data to have view.id $expectedId but was ${actual.view?.id}"
@@ -113,7 +113,7 @@ internal class VitalAppLaunchEventAssert(
             .isEqualTo(expectedId)
     }
 
-    fun hasName(expected: String) = apply {
+    fun hasName(expected: String?) = apply {
         assertThat(actual.view?.name)
             .overridingErrorMessage(
                 "Expected event data to have view.name $expected but was ${actual.view?.name}"
@@ -121,7 +121,7 @@ internal class VitalAppLaunchEventAssert(
             .isEqualTo(expected)
     }
 
-    fun hasUrl(expected: String) = apply {
+    fun hasUrl(expected: String?) = apply {
         assertThat(actual.view?.url)
             .overridingErrorMessage(
                 "Expected event data to have view.url $expected but was ${actual.view?.url}"
