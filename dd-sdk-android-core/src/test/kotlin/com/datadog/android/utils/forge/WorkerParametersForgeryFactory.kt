@@ -16,14 +16,15 @@ import androidx.work.impl.utils.taskexecutor.TaskExecutor
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
 class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
 
     // region ForgeryFactory
 
     override fun getForgery(forge: Forge): WorkerParameters {
-        val threadExecutor = Executors.newSingleThreadExecutor()
+        val sameThreadExecutor = object : Executor {
+            override fun execute(command: Runnable) = command.run()
+        }
         return WorkerParameters(
             forge.getForgery(),
             Data.EMPTY,
@@ -31,7 +32,7 @@ class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
             WorkerParameters.RuntimeExtras(),
             forge.aSmallInt(),
             forge.aSmallInt(),
-            threadExecutor,
+            sameThreadExecutor,
             object : TaskExecutor {
                 override fun getMainThreadExecutor(): Executor {
                     TODO()

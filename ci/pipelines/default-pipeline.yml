@@ -527,6 +527,24 @@ publish:release-internal:
       - dd-sdk-android-internal/verification-metadata.xml
 
 # region Publish features/*
+
+publish:release-flags:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :features:dd-sdk-android-flags:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - features/dd-sdk-android-flags/verification-metadata.xml
+
 publish:release-trace-api:
   tags: [ "arch:amd64" ]
   only:
@@ -1099,6 +1117,7 @@ notify:merge-verification-metadata:
     - publish:release-okhttp
     - publish:release-okhttp-otel
     - publish:release-benchmark
+    - publish:release-flags
   script:
     - python3 ./ci/scripts/merge_verification_metadata.py
   artifacts:

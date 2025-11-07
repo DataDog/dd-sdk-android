@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PathArrayWithInteger",
+  "type": "object",
+  "required": ["path"],
+  "properties": {
+    "path": {
+      "title": "Path",
+      "type": "array",
+      "items": {
+        "description": "This is a definition of a path",
+        "oneOf": [
+          {
+            "type": "boolean",
+            "description": "boolean element"
+          },
+          {
+            "type": "string",
+            "description": "string element"
+          },
+          {
+            "type": "integer",
+            "description": "integer element"
+          },
+          {
+            "type": "object",
+            "title": "Point",
+            "description": "object element",
+            "required": ["x", "y"],
+            "properties": {
+              "x": {
+                "type": "integer"
+              },
+              "y": {
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

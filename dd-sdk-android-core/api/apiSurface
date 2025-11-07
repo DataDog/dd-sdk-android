@@ -110,6 +110,7 @@ interface com.datadog.android.api.feature.Feature
   companion object 
     const val LOGS_FEATURE_NAME: String
     const val RUM_FEATURE_NAME: String
+    const val FLAGS_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
@@ -141,6 +142,7 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun removeContextUpdateReceiver(FeatureContextUpdateReceiver)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
+  fun createOkHttpCallFactory(okhttp3.OkHttpClient.Builder.() -> Unit = {}): okhttp3.Call.Factory
   fun setAnonymousId(java.util.UUID?)
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory

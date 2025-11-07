@@ -60,6 +60,7 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
             ddtags = forge.exhaustiveTags().joinToString(separator = ","),
             usr = forge.aNullable {
                 LogEvent.Usr(
+                    anonymousId = userInfo?.anonymousId,
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,

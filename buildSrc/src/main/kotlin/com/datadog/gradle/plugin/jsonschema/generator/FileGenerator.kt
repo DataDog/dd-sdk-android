@@ -23,7 +23,14 @@ class FileGenerator(
 
     private val classGenerator = ClassGenerator(packageName, knownTypes)
     private val enumGenerator = EnumClassGenerator(packageName, knownTypes)
-    private val multiClassGenerator = MultiClassGenerator(classGenerator, packageName, knownTypes)
+    private val oneOfPrimitiveOptionGenerator = OneOfPrimitiveOptionGenerator(packageName)
+
+    private val multiClassGenerator = MultiClassGenerator(
+        classGenerator = classGenerator,
+        oneOfPrimitiveOptionGenerator = oneOfPrimitiveOptionGenerator,
+        packageName = packageName,
+        knownTypes = knownTypes
+    )
 
     // region FileGenerator
 

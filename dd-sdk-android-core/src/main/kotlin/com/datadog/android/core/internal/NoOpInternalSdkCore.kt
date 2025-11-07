@@ -21,6 +21,12 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
+import okhttp3.Call
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
+import okio.Timeout
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.Callable
@@ -138,6 +144,10 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return NoOpScheduledExecutorService()
+    }
+
+    override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+        return NoOpCallFactory
     }
 
     override fun setAnonymousId(anonymousId: UUID?) = Unit
@@ -289,6 +299,49 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
         override fun get(timeout: Long, unit: TimeUnit?): O {
             throw ExecutionException("Unsupported", UnsupportedOperationException())
+        }
+    }
+
+    object NoOpCallFactory : Call.Factory {
+        override fun newCall(request: Request): Call {
+            return NoOpCall(request)
+        }
+    }
+
+    class NoOpCall(private val originalRequest: Request) : Call {
+        override fun cancel() = Unit
+
+        override fun clone(): Call {
+            return NoOpCall(originalRequest)
+        }
+
+        override fun enqueue(responseCallback: okhttp3.Callback) = Unit
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // All required fields are set, won't throw
+        override fun execute(): Response {
+            // Response.Builder.build() requires: request, protocol, code, and message
+            // to be set, otherwise it throws IllegalStateException
+            return Response.Builder()
+                .request(originalRequest)
+                .protocol(Protocol.HTTP_1_1)
+                .message("OK")
+                .build()
+        }
+
+        override fun isCanceled(): Boolean {
+            return false
+        }
+
+        override fun isExecuted(): Boolean {
+            return false
+        }
+
+        override fun request(): Request {
+            return originalRequest
+        }
+
+        override fun timeout(): Timeout {
+            return Timeout.NONE
         }
     }
 }

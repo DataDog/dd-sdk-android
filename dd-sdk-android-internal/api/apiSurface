@@ -41,6 +41,8 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun getBoolean(String, Boolean): Boolean
   override fun remove(String)
   override fun clear()
+data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
+  constructor(String, Any)
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

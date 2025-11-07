@@ -1,0 +1,14 @@
+Dependencies List
+
+androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+androidx.collection:collection-jvm:1.4.5                        :  770 Kb
+com.google.code.gson:gson:2.10.1                                :  276 Kb
+com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
+com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              :    3 Mb
+
