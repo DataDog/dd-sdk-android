@@ -18,6 +18,12 @@ object MavenConfig {
     const val PUBLICATION = "release"
 }
 
+private fun Project.getGitCommitSha1(): String {
+    return providers.exec {
+        commandLine("git", "rev-parse", "HEAD")
+    }.standardOutput.asText.get().trim()
+}
+
 fun Project.publishingConfig(
     projectDescription: String,
     customArtifactId: String = name
@@ -85,6 +91,12 @@ fun Project.publishingConfig(
                         connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
                         developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
                     }
+
+                    properties.set(
+                        mapOf(
+                            "dd-sdk-android.commit.sha1" to getGitCommitSha1()
+                        )
+                    )
                 }
             }
         }
