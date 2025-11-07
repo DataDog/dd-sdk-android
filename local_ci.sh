@@ -98,6 +98,7 @@ if [[ $CLEANUP == 1 ]]; then
   ./gradlew clean
   rm -rf dd-sdk-android-internal/build/
   rm -rf dd-sdk-android-core/build/
+  rm -rf features/dd-sdk-android-flags/build/
   rm -rf features/dd-sdk-android-logs/build/
   rm -rf features/dd-sdk-android-ndk/build/
   rm -rf features/dd-sdk-android-rum/build/
