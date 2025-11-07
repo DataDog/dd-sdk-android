@@ -33,7 +33,6 @@ internal class RumVitalAppLaunchEventHelper(
         datadogContext: DatadogContext,
         eventAttributes: Map<String, Any?>,
         customAttributes: Map<String, Any?>,
-        view: RumVitalAppLaunchEvent.RumVitalAppLaunchEventView?,
         hasReplay: Boolean?,
         rumContext: RumContext,
         durationNs: Long,
@@ -61,6 +60,20 @@ internal class RumVitalAppLaunchEventHelper(
         val batteryInfo = batteryInfoProvider.getState()
         val displayInfo = displayInfoProvider.getState()
         val user = datadogContext.userInfo
+
+        val viewId = rumContext.viewId
+        val viewUrl = rumContext.viewUrl
+
+        val view = if (viewId != null && viewUrl != null) {
+            RumVitalAppLaunchEvent.RumVitalAppLaunchEventView(
+                id = viewId,
+                referrer = null,
+                url = viewUrl,
+                name = rumContext.viewName
+            )
+        } else {
+            null
+        }
 
         return RumVitalAppLaunchEvent(
             date = timestampMs,

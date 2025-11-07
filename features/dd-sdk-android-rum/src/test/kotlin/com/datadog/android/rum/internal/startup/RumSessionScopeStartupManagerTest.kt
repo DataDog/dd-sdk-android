@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSchemaType
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchStartupType
@@ -94,7 +95,7 @@ internal class RumSessionScopeStartupManagerTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeParentContext: RumContext
+    lateinit var rumContext: RumContext
 
     @Forgery
     lateinit var fakeTimeInfo: TimeInfo
@@ -171,9 +172,14 @@ internal class RumSessionScopeStartupManagerTest {
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
-        fakeParentContext = fakeParentContext.copy(
+        val rumScopeKey: RumScopeKey? = forge.aNullable { getForgery() }
+
+        rumContext = rumContext.copy(
             syntheticsTestId = null,
-            syntheticsResultId = null
+            syntheticsResultId = null,
+            viewId = rumScopeKey?.id,
+            viewName = rumScopeKey?.name,
+            viewUrl = rumScopeKey?.url
         )
 
         manager = RumSessionScopeStartupManagerImpl(
@@ -213,7 +219,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -262,7 +268,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -273,7 +279,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -313,7 +319,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -322,7 +328,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -376,7 +382,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -385,7 +391,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -396,7 +402,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -405,7 +411,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -433,7 +439,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -464,7 +470,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -509,7 +515,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -518,7 +524,7 @@ internal class RumSessionScopeStartupManagerTest {
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
-            rumContext = fakeParentContext,
+            rumContext = rumContext,
             customAttributes = fakeParentAttributes
         )
 
@@ -542,17 +548,21 @@ internal class RumSessionScopeStartupManagerTest {
     private fun verifyTTID(value: RumVitalAppLaunchEvent, info: RumTTIDInfo) {
         VitalAppLaunchEventAssert.assertThat(value).apply {
             hasDate(info.scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
-            hasApplicationId(fakeParentContext.applicationId)
+            hasApplicationId(rumContext.applicationId)
             containsExactlyContextAttributes(fakeParentAttributes)
-            hasStartReason(fakeParentContext.sessionStartReason)
+            hasStartReason(rumContext.sessionStartReason)
             hasSampleRate(fakeSampleRate)
             hasNoSyntheticsTest()
-            hasSessionId(fakeParentContext.sessionId)
+            hasSessionId(rumContext.sessionId)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch() ?: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
-            hasNullView()
+
+            hasViewId(rumContext.viewId)
+            hasUrl(rumContext.viewUrl)
+            hasName(rumContext.viewName)
+
             hasSource(fakeVitalSource)
             hasAccountInfo(fakeDatadogContext.accountInfo)
             hasUserInfo(fakeDatadogContext.userInfo)
@@ -590,17 +600,21 @@ internal class RumSessionScopeStartupManagerTest {
     private fun verifyTTFD(value: RumVitalAppLaunchEvent, scenario: RumStartupScenario, durationNs: Long) {
         VitalAppLaunchEventAssert.assertThat(value).apply {
             hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
-            hasApplicationId(fakeParentContext.applicationId)
+            hasApplicationId(rumContext.applicationId)
             containsExactlyContextAttributes(fakeParentAttributes)
-            hasStartReason(fakeParentContext.sessionStartReason)
+            hasStartReason(rumContext.sessionStartReason)
             hasSampleRate(fakeSampleRate)
             hasNoSyntheticsTest()
-            hasSessionId(fakeParentContext.sessionId)
+            hasSessionId(rumContext.sessionId)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch() ?: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
-            hasNullView()
+
+            hasViewId(rumContext.viewId)
+            hasUrl(rumContext.viewUrl)
+            hasName(rumContext.viewName)
+
             hasSource(fakeVitalSource)
             hasAccountInfo(fakeDatadogContext.accountInfo)
             hasUserInfo(fakeDatadogContext.userInfo)
