@@ -13,7 +13,7 @@
         "description": "Profile file name",
         "readOnly": true
       },
-      "readOnly": false
+      "readOnly": true
     },
     "start": {
       "type": "string",
@@ -30,6 +30,11 @@
       "description": "Profile family used by the backend to identify the profile type. For Perfetto, use \"android\".",
       "readOnly": true
     },
+    "runtime": {
+      "type": "string",
+      "description": "Profile runtime. Use \"android\".",
+      "readOnly": true
+    },
     "version": {
       "type": "string",
       "description": "Schema version of the event, only `4` is supported",
@@ -38,7 +43,7 @@
     "tags_profiler": {
       "type": "string",
       "description": "The list of tags joined into a String and divided by ',' ",
-      "readOnly": false
+      "readOnly": true
     }
   },
   "required": [
@@ -46,6 +51,7 @@
     "start",
     "end",
     "family",
+    "runtime",
     "version",
     "tags_profiler"
   ]

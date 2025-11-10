@@ -113,8 +113,10 @@ internal class ProfilingDataWriterTest {
             end = formatIsoUtc(fakeResult.end),
             attachments = listOf("perfetto.proto"),
             family = "android",
+            runtime = "android",
             version = "4",
-            tagsProfiler = "service:${fakeDatadogContext.service},version:${fakeDatadogContext.version}"
+            tagsProfiler = "service:${fakeDatadogContext.service},env:${fakeDatadogContext.env}," +
+                "version:${fakeDatadogContext.version},sdk_version:${fakeDatadogContext.sdkVersion}"
         )
         val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
