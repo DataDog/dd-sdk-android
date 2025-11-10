@@ -17,7 +17,6 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -50,7 +49,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
 
     // OpenFeature SDK
-    api("dev.openfeature:kotlin-sdk:0.6.2")
+    api(libs.openFeatureKotlinSdk)
 
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
@@ -66,8 +65,6 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
