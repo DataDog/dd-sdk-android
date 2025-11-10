@@ -1,0 +1,3 @@
+class com.datadog.android.flags.openfeature.DatadogFlagsProvider
+  fun helloWorld(): String
+  companion object 

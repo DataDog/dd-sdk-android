@@ -112,6 +112,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
+    - ./gradlew :features:dd-sdk-android-flags-openfeature:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
