@@ -54,9 +54,6 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
 
-    // Generate NoOp implementations
-    ksp(project(":tools:noopfactory"))
-
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
