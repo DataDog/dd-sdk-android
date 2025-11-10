@@ -1,0 +1,5 @@
+public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider {
+	public fun <init> ()V
+	public final fun helloWorld ()Ljava/lang/String;
+}
+
