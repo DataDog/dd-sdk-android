@@ -117,7 +117,6 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
         }
 
-        @ExperimentalRumApi
         fun setInsightsCollector(
             builder: Builder,
             insightsCollector: InsightsCollector

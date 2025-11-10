@@ -10,10 +10,8 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import com.datadog.android.insights.internal.DefaultInsightsCollector
-import com.datadog.android.rum.ExperimentalRumApi
 import java.util.IdentityHashMap
 
-@ExperimentalRumApi
 internal class OverlayManager(
     application: Application,
     private val collector: DefaultInsightsCollector
