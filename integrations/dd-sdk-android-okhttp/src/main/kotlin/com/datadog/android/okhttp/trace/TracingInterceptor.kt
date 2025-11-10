@@ -172,7 +172,6 @@ internal constructor(
             try {
                 tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
             } catch (e: StackOverflowError) {
-                val requestKey = "${request.method}:${request.url}"
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
@@ -180,7 +179,7 @@ internal constructor(
                         "StackOverflowError detected in TracedRequestListener. " +
                             "This is likely caused by retrying the same request within the " +
                             "onRequestIntercepted callback, leading to infinite recursion. " +
-                            "Request: $requestKey"
+                            "Request: ${request.method}:${request.url}"
                     },
                     e
                 )
