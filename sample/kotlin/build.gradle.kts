@@ -168,6 +168,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-fresco"))
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
+    implementation(project(":integrations:dd-sdk-android-cronet"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
     implementation(project(":tools:benchmark"))
