@@ -46,10 +46,11 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidXAnnotation)
-    implementation(libs.cronetApi)
-    implementation(libs.cronetPlayServices)
+    api(libs.cronetApi)
+    api(libs.cronetPlayServices)
+
     implementation(libs.kotlin)
+    implementation(libs.androidXAnnotation)
 
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
