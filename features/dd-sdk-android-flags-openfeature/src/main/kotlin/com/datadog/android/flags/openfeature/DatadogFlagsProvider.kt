@@ -11,7 +11,14 @@ package com.datadog.android.flags.openfeature
  */
 class DatadogFlagsProvider {
 
-    fun helloWorld(): String {
-        return "Hello from DatadogFlagsProvider!"
+    /**
+     * Simple hello world method so the module is not empty.
+     *
+     * @return A greeting message
+     */
+    fun helloWorld(): String = GREETING
+
+    companion object {
+        private const val GREETING = "Hello from DatadogFlagsProvider!"
     }
 }

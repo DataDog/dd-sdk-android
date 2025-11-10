@@ -1,5 +1,9 @@
 public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider {
+	public static final field Companion Lcom/datadog/android/flags/openfeature/DatadogFlagsProvider$Companion;
 	public fun <init> ()V
 	public final fun helloWorld ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider$Companion {
 }
 
