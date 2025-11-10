@@ -560,7 +560,6 @@ datadog:
       - "java.util.WeakHashMap.remove(android.app.Activity?)"
       - "java.util.WeakHashMap.remove(android.view.View?)"
       - "java.util.WeakHashMap.remove(android.view.Window?)"
-      - "java.util.WeakHashMap.remove(okhttp3.Request?)"
       - "java.util.concurrent.ExecutionException.constructor(kotlin.String?, kotlin.Throwable?)"
       # endregion
       # region Java Zip
