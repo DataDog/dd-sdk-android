@@ -1659,6 +1659,40 @@ internal open class TracingInterceptorTest {
         verify(mockFuture).get(1, TimeUnit.SECONDS)
     }
 
+    @Test
+    fun `M log error W listener causes StackOverflowError through infinite recursion`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        whenever(
+            mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
+        ).doAnswer {
+            testedInterceptor.intercept(mockChain)
+            return@doAnswer Unit
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                any<StackOverflowError>(),
+                eq(false),
+                eq(null)
+            )
+            val loggedMessage = firstValue()
+            assertThat(loggedMessage).contains("StackOverflowError detected in TracedRequestListener")
+            assertThat(loggedMessage).contains("infinite recursion")
+            assertThat(loggedMessage).contains("Request: $fakeMethod:")
+        }
+    }
+
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
