@@ -38,7 +38,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
-import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -99,9 +98,6 @@ internal constructor(
     }
 
     private val rumContextPropagator = RumContextPropagator { sdkCoreReference.get() as? FeatureSdkCore }
-
-    private val requestInterceptionLock = Any()
-    private val requestInterceptionCounts = WeakHashMap<Request, Int>()
 
     init {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
@@ -172,32 +168,23 @@ internal constructor(
         response: Response?,
         throwable: Throwable?
     ) {
-        if (span != null && canNotifyListener(sdkCore, request)) {
-            tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
-        }
-    }
-
-    private fun canNotifyListener(sdkCore: FeatureSdkCore, request: Request): Boolean {
-        synchronized(requestInterceptionLock) {
-            val currentCount = requestInterceptionCounts[request] ?: 0
-
-            if (currentCount >= MAX_REQUEST_INTERCEPTION_COUNT) {
+        if (span != null) {
+            try {
+                tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
+            } catch (e: StackOverflowError) {
                 val requestKey = "${request.method}:${request.url}"
                 sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
+                    InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     {
-                        "Request has been intercepted $MAX_REQUEST_INTERCEPTION_COUNT times. " +
-                            "Possible infinite loop detected in TracedRequestListener. " +
-                            "Skipping further notifications for this request: $requestKey"
-                    }
+                        "StackOverflowError detected in TracedRequestListener. " +
+                            "This is likely caused by retrying the same request within the " +
+                            "onRequestIntercepted callback, leading to infinite recursion. " +
+                            "Request: $requestKey"
+                    },
+                    e
                 )
-                requestInterceptionCounts.remove(request)
-                return false
             }
-
-            requestInterceptionCounts[request] = currentCount + 1
-            return true
         }
     }
 
@@ -862,8 +849,6 @@ internal constructor(
         internal const val SPAN_NAME = "okhttp.request"
 
         internal const val RESOURCE_NAME_404 = "404"
-
-        internal const val MAX_REQUEST_INTERCEPTION_COUNT = 3
 
         internal const val HEADER_CT = "Content-Type"
         internal const val URL_QUERY_PARAMS_BLOCK_SEPARATOR = '?'
