@@ -155,6 +155,23 @@ Replacement hints:
 
 The OkHttp instrumentation (`com.datadoghq:dd-sdk-android-okhttp:x.x.x`) doesn't require desugaring support. However few migration actions may be necessary.
 
+The default sample rate for the `traceSampler` got increased to 100% with the Android SDK version `3.0.0`.
+
+To keep 20% sampling rate you have to specify it explicitly:
+```kotlin
+private val okHttpClient = OkHttpClient.Builder()
+    .addInterceptor(
+        DatadogInterceptor.Builder(tracedHosts)
+            .setTraceSampleRate(20f)
+            .build()
+    )
+    .addNetworkInterceptor(
+        TracingInterceptor.Builder(tracedHosts)
+            .setTraceSampleRate(20f)
+            .build()
+    )
+
+```
 
 API changes:
 
