@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -43,16 +44,21 @@ android {
 }
 
 dependencies {
-    api(libs.cronetApi)
-//    implementation(libs.cronetPlayServices)
-
     implementation(libs.kotlin)
+    implementation(libs.cronetApi)
     implementation(libs.androidXAnnotation)
 
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":features:dd-sdk-android-trace"))
 
+    unmock(libs.robolectric)
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
+    testImplementation(kotlin("test"))
+    testImplementation(libs.elmyrJUnit4)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -61,12 +67,6 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    unmock(libs.robolectric)
 }
 
 unMock {

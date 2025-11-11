@@ -10,12 +10,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
@@ -112,11 +112,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
         fakeAttributes = forge.exhaustiveAttributes()
+        @Suppress("DEPRECATION")
         whenever(
             mockRumAttributesProvider.onProvideAttributes(
-                any(),
-                anyOrNull(),
-                anyOrNull()
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
             )
         ) doReturn fakeAttributes
         whenever(mockTraceSampler.getSampleRate()) doReturn fakeTracingSampleRate

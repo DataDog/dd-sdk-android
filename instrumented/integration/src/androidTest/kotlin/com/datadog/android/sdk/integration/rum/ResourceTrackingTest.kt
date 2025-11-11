@@ -52,6 +52,7 @@ internal class ResourceTrackingTest {
             .addInterceptor(
                 DatadogInterceptor.Builder(emptyMap())
                     .setRumResourceAttributesProvider(object : RumResourceAttributesProvider {
+                        @Deprecated("Use the variant with RequestInfo/ResponseInfo instead")
                         override fun onProvideAttributes(
                             request: Request,
                             response: Response?,

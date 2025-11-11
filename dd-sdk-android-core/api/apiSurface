@@ -147,6 +147,20 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
+interface com.datadog.android.api.instrumentation.network.RequestInfo
+  val url: String
+  val headers: Map<String, List<String>>
+  val contentType: String?
+  val method: String
+  fun <T> tag(Class<T>): T?
+  fun contentLength(): Long?
+interface com.datadog.android.api.instrumentation.network.ResponseInfo
+  val url: String
+  val statusCode: Int
+  val headers: Map<String, List<String>>
+  val contentType: String?
+  fun contentLength(com.datadog.android.api.InternalLogger): Long?
+  fun headerValue(String): String?
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext
@@ -290,6 +304,28 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
+object com.datadog.android.core.internal.net.HttpSpec
+  object Method
+    const val GET: String
+    const val POST: String
+    const val PATCH: String
+    const val PUT: String
+    const val HEAD: String
+    const val DELETE: String
+    const val TRACE: String
+    const val OPTIONS: String
+    const val CONNECT: String
+    fun values()
+  object Headers
+    const val CONTENT_TYPE: String
+    const val CONTENT_LENGTH: String
+    const val WEBSOCKET_ACCEPT_HEADER: String
+  object ContentType
+    const val TEXT_EVENT_STREAM: String
+    const val APPLICATION_GRPC: String
+    const val APPLICATION_GRPC_PROTO: String
+    const val APPLICATION_GRPC_JSON: String
+    fun isStream(String?): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean

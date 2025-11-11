@@ -14,11 +14,12 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.rum.buildResourceId
+import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
+import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -207,6 +208,7 @@ open class DatadogInterceptor internal constructor(
             }
         }
 
+        @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
@@ -264,6 +266,7 @@ open class DatadogInterceptor internal constructor(
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
+        @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
             null,
@@ -406,7 +409,9 @@ open class DatadogInterceptor internal constructor(
          * @param rumResourceAttributesProvider the [RumResourceAttributesProvider] to use.
          */
         fun setRumResourceAttributesProvider(rumResourceAttributesProvider: RumResourceAttributesProvider): Builder {
-            this.rumResourceAttributesProvider = rumResourceAttributesProvider
+            this.rumResourceAttributesProvider = RumResourceAttributesProviderCompatibilityAdapter(
+                rumResourceAttributesProvider
+            )
             return this
         }
     }
