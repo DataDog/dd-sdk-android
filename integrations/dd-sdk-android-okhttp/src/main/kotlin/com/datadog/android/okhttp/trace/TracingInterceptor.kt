@@ -176,10 +176,7 @@ internal constructor(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     {
-                        "StackOverflowError detected in TracedRequestListener. " +
-                            "This is likely caused by retrying the same request within the " +
-                            "onRequestIntercepted callback, leading to infinite recursion. " +
-                            "Request: ${request.method}:${request.url}"
+                        "$ERROR_STACK_OVERFLOW\nRequest: ${request.method}:${request.url}"
                     },
                     e
                 )
@@ -866,6 +863,11 @@ internal constructor(
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you didn't register any AgentTracer.TracerAPI. " +
                 "We automatically created a local tracer for you."
+
+        internal const val ERROR_STACK_OVERFLOW =
+            "StackOverflowError detected in TracedRequestListener. " +
+                "This is likely caused by retrying the same request within the " +
+                "onRequestIntercepted callback, leading to infinite recursion."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val ALL_IN_SAMPLE_RATE: Double = 100.0

@@ -1677,20 +1677,16 @@ internal open class TracingInterceptorTest {
         // When
         testedInterceptor.intercept(mockChain)
 
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                any<StackOverflowError>(),
-                eq(false),
-                eq(null)
-            )
-            val loggedMessage = firstValue()
-            assertThat(loggedMessage).contains("StackOverflowError detected in TracedRequestListener")
-            assertThat(loggedMessage).contains("infinite recursion")
-            assertThat(loggedMessage).contains("Request: $fakeMethod:")
-        }
+        // Then
+        val expectedMessage = "${TracingInterceptor.ERROR_STACK_OVERFLOW}\n" +
+            "Request: ${fakeRequest.method}:${fakeRequest.url}"
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            expectedMessage,
+            StackOverflowError::class.java
+        )
     }
 
     // region Internal
