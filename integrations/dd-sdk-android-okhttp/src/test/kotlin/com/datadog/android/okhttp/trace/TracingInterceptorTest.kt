@@ -1661,7 +1661,7 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M log error W listener causes StackOverflowError through infinite recursion`(
-        @IntForgery(min = 200, max = 300) statusCode: Int
+        @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
