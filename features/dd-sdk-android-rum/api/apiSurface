@@ -85,8 +85,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun build(): RumConfiguration
-fun RumConfiguration.Builder.enableRumDebugWidget(android.app.Application, Boolean = application.isDebuggable()): RumConfiguration.Builder
-fun android.app.Application.isDebuggable(): Boolean
+fun RumConfiguration.Builder.enableRumDebugWidget(android.app.Application, Boolean = false): RumConfiguration.Builder
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
   - SOURCE
