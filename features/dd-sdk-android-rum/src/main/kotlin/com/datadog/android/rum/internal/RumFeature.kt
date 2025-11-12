@@ -231,13 +231,15 @@ internal class RumFeature(
             initializeVitalExecutorService(frequency)
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
-            initializeFrameStatesAggregator(
-                application = appContext as? Application,
-                listeners = listOfNotNull(
-                    initializeSlowFrameListener(slowFrameListenerConfiguration),
-                    initializeFPSVitalMonitor(frequency)
+            if (!configuration.disableJankStats) {
+                initializeFrameStatesAggregator(
+                    application = appContext as? Application,
+                    listeners = listOfNotNull(
+                        initializeSlowFrameListener(slowFrameListenerConfiguration),
+                        initializeFPSVitalMonitor(frequency)
+                    )
                 )
-            )
+            }
         }
 
         if (configuration.trackNonFatalAnrs) {
@@ -681,7 +683,8 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibility: Boolean
+        val collectAccessibility: Boolean,
+        val disableJankStats: Boolean
     )
 
     internal companion object {
@@ -732,7 +735,8 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibility = false
+            collectAccessibility = false,
+            disableJankStats = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
