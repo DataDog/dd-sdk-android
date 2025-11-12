@@ -7,6 +7,7 @@
 package com.datadog.android.insights.internal
 
 import android.app.Application
+import android.util.Log
 import com.datadog.android.insights.internal.overlay.OverlayManager
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum._RumInternalProxy
@@ -16,6 +17,7 @@ internal object RumDebugWidget {
 
     @JvmStatic
     fun enable(application: Application, builder: RumConfiguration.Builder) {
+        Log.e("RUM_WIDGET", "enabling")
         val insightsCollector = DefaultInsightsCollector()
         _RumInternalProxy.setInsightsCollector(builder, insightsCollector)
         OverlayManager(application, insightsCollector)

@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import android.util.Log
 
 /**
  * Enables the RUM Debug Widget for the given [application].
@@ -26,11 +27,13 @@ fun RumConfiguration.Builder.enableRumDebugWidget(
     application: Application,
     allowInRelease: Boolean = false
 ): RumConfiguration.Builder = apply {
+    Log.e("RUM_WIDGET", "enableRumDebugWidget 1")
     val isApplicationDebuggable = (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     if (!isApplicationDebuggable && !allowInRelease) return@apply
 
     @Suppress("UnsafeThirdPartyFunctionCall")
     runCatching {
+        Log.e("RUM_WIDGET", "enableRumDebugWidget 2")
         val clazz = Class.forName("com.datadog.android.insights.internal.RumDebugWidget")
         val method = clazz.getMethod(
             "enable",
@@ -38,5 +41,6 @@ fun RumConfiguration.Builder.enableRumDebugWidget(
             RumConfiguration.Builder::class.java
         )
         method.invoke(null, application, this)
+        Log.e("RUM_WIDGET", "enableRumDebugWidget 3")
     }
 }
