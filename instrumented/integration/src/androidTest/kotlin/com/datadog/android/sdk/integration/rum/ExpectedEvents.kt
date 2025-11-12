@@ -59,6 +59,11 @@ internal data class ExpectedErrorEvent(
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 
+internal data class ExpectedVitalAppLaunchEvent(
+    val appLaunchMetric: AppLaunchMetric,
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
 internal interface ExpectedEvent {
     val rumContext: ExpectedRumContext
 }
@@ -70,6 +75,11 @@ internal enum class Gesture(val gestureName: String) {
 
 internal enum class ErrorSource(val sourceName: String) {
     NETWORK("network")
+}
+
+internal enum class AppLaunchMetric(val metric: String) {
+    TTID("ttid"),
+    TTFD("ttfd")
 }
 
 private val registryField = Datadog::class.java.getDeclaredField("registry").apply {

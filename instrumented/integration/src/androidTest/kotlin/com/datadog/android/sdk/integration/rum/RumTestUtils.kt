@@ -42,6 +42,7 @@ internal fun List<JsonObject>.verifyEventMatches(
             is ExpectedGestureEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedResourceEvent -> event.verifyEventMatches(expectedEvent)
             is ExpectedErrorEvent -> event.verifyEventMatches(expectedEvent)
+            is ExpectedVitalAppLaunchEvent -> event.verifyEventMatches(expectedEvent)
             else -> {
                 // Do nothing
             }
@@ -190,6 +191,15 @@ private fun JsonObject.verifyEventMatches(event: ExpectedErrorEvent) {
     if (event.extraAttributes.isNotEmpty()) {
         assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(event.extraAttributes)
     }
+}
+
+private fun JsonObject.verifyEventMatches(event: ExpectedVitalAppLaunchEvent) {
+    verifyRootMatches(event)
+
+    assertThat(this)
+        .hasField("vital") {
+            hasField("app_launch_metric", event.appLaunchMetric.metric)
+        }
 }
 
 private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {
