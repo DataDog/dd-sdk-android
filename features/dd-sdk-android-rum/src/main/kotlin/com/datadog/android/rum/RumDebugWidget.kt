@@ -26,8 +26,8 @@ fun RumConfiguration.Builder.enableRumDebugWidget(
     application: Application,
     allowInRelease: Boolean = false
 ): RumConfiguration.Builder = apply {
-    val isDebuggable = (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    if (!isDebuggable && !allowInRelease) return@apply
+    val isApplicationDebuggable = (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    if (!isApplicationDebuggable && !allowInRelease) return@apply
 
     @Suppress("UnsafeThirdPartyFunctionCall")
     runCatching {
