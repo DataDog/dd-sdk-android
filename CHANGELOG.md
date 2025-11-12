@@ -1,3 +1,7 @@
+# 2.26.3 / 2025-11-12
+
+* [IMPROVEMENT] Disable the collection of jank stats for the Unity SDK. See [#3001](https://github.com/DataDog/dd-sdk-android/pull/3001)
+
 # 2.26.2 / 2025-10-09
 
 * [IMPROVEMENT] Extend resource handling to support multiple MIME types in RN. See [#2914](https://github.com/DataDog/dd-sdk-android/pull/2914)
