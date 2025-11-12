@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import androidx.annotation.VisibleForTesting
+import com.datadog.android.internal.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.internal.utils.densityNormalized
 
 internal class ImageTypeResolver {
@@ -23,10 +23,5 @@ internal class ImageTypeResolver {
     fun isPIIByDimensions(width: Int, height: Int): Boolean {
         val isGreaterThan = width >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP || height >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP
         return isGreaterThan
-    }
-
-    internal companion object {
-        // material design icon size is up to 48x48, but use 100 to match more images
-        @VisibleForTesting internal const val IMAGE_DIMEN_CONSIDERED_PII_IN_DP = 100
     }
 }
