@@ -347,13 +347,11 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M frameStatesAggregator == null W initialize { frequency = AVERAGE, additionalConfig disables JankStats }`() {
+    fun `M frameStatesAggregator == null W initialize { frequency = AVERAGE, disableJankStats = true }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
-            additionalConfig = mapOf(
-                RumFeature.DD_RUM_DISABLE_JANK_STATS_TAG to true
-            )
+            disableJankStats = true
         )
         testedFeature = RumFeature(
             mockSdkCore,

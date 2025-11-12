@@ -239,12 +239,7 @@ internal class RumFeature(
             initializeVitalExecutorService(frequency)
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
-
-            // If "_dd.rum.disable_jank_stats" is explicitly set to true, refrain from registering
-            // any frame state listeners; if false or not set, proceed normally
-            val disableJankStats = configuration.additionalConfig[DD_RUM_DISABLE_JANK_STATS_TAG]
-            val allowJankStats = disableJankStats as? Boolean != true
-            if (allowJankStats) {
+            if (!configuration.disableJankStats) {
                 initializeFrameStatesAggregator(
                     application = appContext as? Application,
                     listeners = listOfNotNull(
@@ -749,7 +744,8 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibility: Boolean
+        val collectAccessibility: Boolean,
+        val disableJankStats: Boolean
     )
 
     internal companion object {
@@ -769,7 +765,6 @@ internal class RumFeature(
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
         internal const val DD_TELEMETRY_CONFIG_SAMPLE_RATE_TAG =
             "_dd.telemetry.configuration_sample_rate"
-        internal const val DD_RUM_DISABLE_JANK_STATS_TAG = "_dd.rum.disable_jank_stats"
 
         internal val DEFAULT_RUM_CONFIG = Configuration(
             customEndpointUrl = null,
@@ -802,7 +797,8 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibility = false
+            collectAccessibility = false,
+            disableJankStats = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
