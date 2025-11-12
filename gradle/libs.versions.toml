@@ -1,7 +1,7 @@
 [versions]
 # Commons
 apollo = "4.3.3"
-cronetApi = "112.0.5615.6"
+cronetApi = "141.7340.3"
 cronetPlayServices = "18.1.1"
 gson = "2.10.1"
 kotlin = "2.0.21"

@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("StringLiteralDuplication")
-
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -19,7 +17,6 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -47,7 +44,7 @@ android {
 
 dependencies {
     api(libs.cronetApi)
-    api(libs.cronetPlayServices)
+//    implementation(libs.cronetPlayServices)
 
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
@@ -55,8 +52,6 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
-    // Generate NoOp implementations
-    ksp(project(":tools:noopfactory"))
 
     testImplementation(project(":tools:unit")) {
         attributes {

@@ -183,6 +183,7 @@ dependencies {
 
     // Android dependencies
     implementation(libs.androidXMultidex)
+    implementation(libs.cronetPlayServices)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)

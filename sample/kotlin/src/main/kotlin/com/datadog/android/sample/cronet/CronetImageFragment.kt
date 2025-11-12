@@ -67,14 +67,14 @@ internal class CronetImageFragment : Fragment() {
                 }
 
                 override fun onFailed(
-                    request: UrlRequest?,
+                    request: UrlRequest,
                     info: UrlResponseInfo?,
-                    error: CronetException?
+                    error: CronetException
                 ) {
                     activity?.runOnUiThread {
                         Toast.makeText(
                             requireContext(),
-                            "Failed to load image: ${error?.message}",
+                            "Failed to load image: ${error.message}",
                             Toast.LENGTH_SHORT
                         ).show()
                         loadButton.isEnabled = true
