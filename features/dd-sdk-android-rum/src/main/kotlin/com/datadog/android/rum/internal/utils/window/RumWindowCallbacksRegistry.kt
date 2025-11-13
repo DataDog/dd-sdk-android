@@ -44,26 +44,28 @@ internal class RumWindowCallbacksRegistryImpl : RumWindowCallbacksRegistry {
             }
         }
     }
-}
 
-private fun Window.wrapCallback(): RumWindowCallback {
-    val currentCallback = callback
-    val newCallback = RumWindowCallback(
-        wrapped = currentCallback
-    )
-    callback = newCallback
-    return newCallback
-}
+    private fun Window.wrapCallback(): RumWindowCallback {
+        val currentCallback = callback
+        val newCallback = RumWindowCallback(
+            wrapped = currentCallback,
+            registry = this@RumWindowCallbacksRegistryImpl
+        )
+        callback = newCallback
+        return newCallback
+    }
 
-private fun Window.tryToRemoveCallback() {
-    val currentCallback = callback
-    if (currentCallback is RumWindowCallback) {
-        callback = currentCallback.wrapped
+    private fun Window.tryToRemoveCallback() {
+        val currentCallback = callback
+        if (currentCallback is RumWindowCallback && currentCallback.registry === this@RumWindowCallbacksRegistryImpl) {
+            callback = currentCallback.wrapped
+        }
     }
 }
 
 private class RumWindowCallback(
-    val wrapped: Window.Callback
+    val wrapped: Window.Callback,
+    val registry: RumWindowCallbacksRegistry
 ) : FixedWindowCallback(wrapped) {
 
     val subscription = DDCoreSubscription.create<RumWindowCallbackListener>()

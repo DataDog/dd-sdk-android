@@ -130,6 +130,52 @@ class RumWindowCallbacksRegistryTest {
         // Then
         assertThat(callback).isEqualTo(anotherWrapper)
     }
+
+    @Test
+    fun `M not restore the callback W removeListener { if there is another RumWindowCallbacksRegistry }`() {
+        // Given
+        val anotherRegistry = RumWindowCallbacksRegistryImpl()
+        val anotherListener = mock<RumWindowCallbackListener>()
+
+        registry.addListener(activity, listener)
+        val callback1 = window.callback
+
+        anotherRegistry.addListener(activity, anotherListener)
+        val callback2 = window.callback
+
+        // When
+        registry.removeListener(activity, listener)
+
+        // Then
+        assertThat(callback1).isNotEqualTo(callback2)
+        assertThat(window.callback).isEqualTo(callback2)
+    }
+
+    @Test
+    fun `M call listeners from both RumWindowCallbacksRegistries W addListener { onContentChanged called }`() {
+        // Given
+        val anotherRegistry = RumWindowCallbacksRegistryImpl()
+        val anotherListener = mock<RumWindowCallbackListener>()
+
+        registry.addListener(activity, listener)
+        val callback1 = window.callback
+
+        anotherRegistry.addListener(activity, anotherListener)
+        val callback2 = window.callback
+
+        // When
+        callback.onContentChanged()
+
+        // Then
+        inOrder(listener, existingCallback, anotherListener) {
+            verify(existingCallback).onContentChanged()
+            verify(listener).onContentChanged()
+            verify(anotherListener).onContentChanged()
+            verifyNoMoreInteractions()
+        }
+        assertThat(callback1).isNotEqualTo(callback2)
+        assertThat(window.callback).isEqualTo(callback2)
+    }
 }
 
 private class TestWindowCallbackWrapper(wrapped: Window.Callback) : FixedWindowCallback(wrapped)
