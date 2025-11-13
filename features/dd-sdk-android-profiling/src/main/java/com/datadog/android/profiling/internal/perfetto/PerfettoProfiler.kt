@@ -61,20 +61,16 @@ internal class PerfettoProfiler(
         resultCallback = Consumer<ProfilingResult> { result ->
             val endTime = timeProvider.getDeviceTimestamp()
             val duration = endTime - profilingStartTime
-            if (result.errorCode == ProfilingResult.ERROR_NONE) {
-                result.resultFilePath?.let {
-                    onProfilingSuccess?.invoke(
-                        PerfettoResult(
-                            start = profilingStartTime,
-                            end = endTime,
-                            resultFilePath = it,
-                            errorCode = result.errorCode,
-                            errorMessage = result.errorMessage,
-                            fileSize = getFileSize(result.resultFilePath)
-                        )
-                    )
-                }
-            }
+            onProfilingSuccess?.invoke(
+                PerfettoResult(
+                    start = profilingStartTime,
+                    end = endTime,
+                    resultFilePath = result.resultFilePath,
+                    errorCode = result.errorCode,
+                    errorMessage = result.errorMessage,
+                    fileSize = getFileSize(result.resultFilePath)
+                )
+            )
             sendProfilingEndTelemetry(result = result, duration = duration)
         }
     }
@@ -136,7 +132,7 @@ internal class PerfettoProfiler(
     }
 
     companion object {
-        private val PROFILING_MAX_DURATION_MS = TimeUnit.MINUTES.toMillis(1).toInt()
+        private val PROFILING_MAX_DURATION_MS = TimeUnit.SECONDS.toMillis(5).toInt()
         private const val PROFILING_TAG_APPLICATION_LAUNCH = "ApplicationLaunch"
 
         // Currently we give an estimated maximum size of profiling result to 5MB, it can be

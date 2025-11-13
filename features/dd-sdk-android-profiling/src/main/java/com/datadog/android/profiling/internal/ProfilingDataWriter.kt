@@ -47,14 +47,16 @@ internal class ProfilingDataWriter(
         context: DatadogContext,
         profilingResult: PerfettoResult
     ): RawBatchEvent? {
-        val byteData = readProfilingData(profilingResult.resultFilePath)
-        if (byteData == null || byteData.isEmpty()) {
-            return null
+        return profilingResult.resultFilePath?.let {
+            val byteData = readProfilingData(profilingResult.resultFilePath)
+            if (byteData == null || byteData.isEmpty()) {
+                return null
+            }
+            val profileEvent = createProfileEvent(context, profilingResult)
+            val serializedEvent =
+                profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+            RawBatchEvent(data = serializedEvent, metadata = byteData)
         }
-        val profileEvent = createProfileEvent(context, profilingResult)
-        val serializedEvent =
-            profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-        return RawBatchEvent(data = serializedEvent, metadata = byteData)
     }
 
     private fun createProfileEvent(

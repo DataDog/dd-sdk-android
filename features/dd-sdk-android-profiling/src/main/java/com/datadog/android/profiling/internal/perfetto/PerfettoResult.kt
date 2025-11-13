@@ -21,6 +21,6 @@ internal data class PerfettoResult(
     val errorMessage: String?,
     val start: Long,
     val end: Long,
-    val resultFilePath: String,
+    val resultFilePath: String?,
     val fileSize: Long
 )
