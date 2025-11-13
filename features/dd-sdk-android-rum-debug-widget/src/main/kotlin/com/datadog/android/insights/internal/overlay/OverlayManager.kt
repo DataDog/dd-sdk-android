@@ -13,15 +13,10 @@ import com.datadog.android.insights.internal.DefaultInsightsCollector
 import java.util.IdentityHashMap
 
 internal class OverlayManager(
-    application: Application,
     private val collector: DefaultInsightsCollector
 ) : Application.ActivityLifecycleCallbacks {
 
     private val overlays = IdentityHashMap<Activity, DefaultInsightsOverlay>()
-
-    init {
-        application.registerActivityLifecycleCallbacks(this)
-    }
 
     override fun onActivityResumed(activity: Activity) {
         overlays.remove(activity)?.destroy()

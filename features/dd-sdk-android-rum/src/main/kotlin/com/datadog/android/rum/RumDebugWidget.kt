@@ -8,6 +8,9 @@ package com.datadog.android.rum
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.InternalSdkCore
 
 /**
  * Enables the RUM Debug Widget for the given [application].
@@ -38,5 +41,17 @@ fun RumConfiguration.Builder.enableRumDebugWidget(
             RumConfiguration.Builder::class.java
         )
         method.invoke(null, application, this)
+    }.onFailure {
+        val sdkCore = Datadog.getInstance() as? InternalSdkCore
+        sdkCore?.internalLogger?.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { RUM_DEBUG_WIDGET_MISSING_MODULE },
+            it
+        )
     }
 }
+
+private const val RUM_DEBUG_WIDGET_MISSING_MODULE = "RUM Debug Widget could not be enabled. " +
+    "To use this feature, add the 'dd-sdk-android-rum-debug-widget' module as an " +
+    "'implementation' dependency in your build.gradle file."

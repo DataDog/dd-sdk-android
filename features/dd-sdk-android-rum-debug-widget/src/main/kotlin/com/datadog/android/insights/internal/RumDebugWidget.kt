@@ -18,6 +18,6 @@ internal object RumDebugWidget {
     fun enable(application: Application, builder: RumConfiguration.Builder) {
         val insightsCollector = DefaultInsightsCollector()
         _RumInternalProxy.setInsightsCollector(builder, insightsCollector)
-        OverlayManager(application, insightsCollector)
+        application.registerActivityLifecycleCallbacks(OverlayManager(insightsCollector))
     }
 }

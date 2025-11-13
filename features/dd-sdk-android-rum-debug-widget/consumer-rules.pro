@@ -1,0 +1,1 @@
+-keep class com.datadog.android.insights.internal.RumDebugWidget
