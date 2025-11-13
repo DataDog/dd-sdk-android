@@ -29,13 +29,7 @@ internal class TextLayoutInfoForgeryFactory : ForgeryFactory<TextLayoutInfo> {
                 )
             ),
             textAlign = forge.anElementFrom(TextAlign.values()),
-            textOverflow = forge.anElementFrom(
-                listOf(
-                    MobileSegment.TruncationMode.CLIP,
-                    MobileSegment.TruncationMode.TAIL,
-                    null
-                )
-            )
+            textOverflow = forge.aNullable { aValueFrom(MobileSegment.TruncationMode::class.java) }
         )
     }
 }

@@ -346,17 +346,104 @@ internal class SemanticsUtils(
             .firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }
             ?.modifier ?: return null
 
-        return reflectionUtils.getTextStringSimpleElementOverflow(modifier)?.let { overflow ->
-            resolveTextOverflow(overflow)
+        val overflowValue = reflectionUtils.getTextStringSimpleElementOverflow(modifier)
+        return overflowValue?.let { overflow ->
+            when (overflow) {
+                is Int -> resolveTextOverflow(overflow)
+                else -> {
+                    // TextOverflow value class may be boxed when accessed via reflection
+                    val overflowInt = extractTextOverflowValue(overflow)
+                    if (overflowInt != null) {
+                        resolveTextOverflow(overflowInt)
+                    } else {
+                        logUnknownOverflowType(overflow)
+                        null
+                    }
+                }
+            }
         }
     }
 
-    private fun resolveTextOverflow(overflowMode: Any): MobileSegment.TruncationMode? {
+    private fun resolveTextOverflow(overflowMode: Int): MobileSegment.TruncationMode? {
         return when (overflowMode) {
             TEXT_OVERFLOW_CLIP -> MobileSegment.TruncationMode.CLIP
             TEXT_OVERFLOW_ELLIPSE -> MobileSegment.TruncationMode.TAIL
-            else -> null
+            else -> {
+                logUnknownOverflowOrdinal(overflowMode)
+                null
+            }
         }
+    }
+
+    private fun extractTextOverflowValue(overflowValue: Any): Int? {
+        return try {
+            // Suppressed: All exceptions (NoSuchFieldException, SecurityException, NullPointerException)
+            // are handled by the catch blocks below
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            val valueField = overflowValue.javaClass.getDeclaredField("value")
+            valueField.isAccessible = true
+            // Suppressed: All exceptions (IllegalAccessException, IllegalArgumentException, NullPointerException,
+            // ExceptionInInitializerError) are handled by the catch blocks below
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            valueField.get(overflowValue) as? Int
+        } catch (e: ReflectiveOperationException) {
+            logReflectionExtractionFailure(overflowValue, e)
+            null
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            logReflectionExtractionFailure(overflowValue, e)
+            null
+        }
+    }
+
+    private fun logReflectionExtractionFailure(overflowValue: Any, e: Throwable) {
+        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER),
+            messageBuilder = {
+                "Failed to extract Int value from TextOverflow instance via reflection: ${e.message}. " +
+                    "Type: ${overflowValue.javaClass.name}"
+            },
+            throwable = e,
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                OVERFLOW_TYPE_KEY to (overflowValue::class.simpleName?.toString() ?: UNKNOWN_VALUE),
+                ERROR_TYPE_KEY to (e::class.simpleName?.toString() ?: UNKNOWN_VALUE),
+                COMPONENT_KEY to COMPONENT_NAME
+            )
+        )
+    }
+
+    private fun logUnknownOverflowOrdinal(ordinal: Int) {
+        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            messageBuilder = {
+                "Unknown TextOverflow Int value: $ordinal. " +
+                    "This may indicate a new Compose TextOverflow value class instance that needs to be mapped."
+            },
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                "overflow.value" to ordinal.toString(),
+                COMPONENT_KEY to COMPONENT_NAME
+            )
+        )
+    }
+
+    private fun logUnknownOverflowType(overflowValue: Any) {
+        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            messageBuilder = {
+                "Unexpected type for TextOverflow value: ${overflowValue::class.simpleName}. " +
+                    "Expected Int or TextOverflow value class instance, got ${overflowValue.javaClass.name}. " +
+                    "This may indicate a Compose API change."
+            },
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                OVERFLOW_TYPE_KEY to (overflowValue::class.simpleName?.toString() ?: UNKNOWN_VALUE),
+                COMPONENT_KEY to COMPONENT_NAME
+            )
+        )
     }
 
     private fun convertTextLayoutInfo(
@@ -450,7 +537,13 @@ internal class SemanticsUtils(
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
         private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
 
-        private const val TEXT_OVERFLOW_CLIP = 1
-        private const val TEXT_OVERFLOW_ELLIPSE = 2
+        private const val COMPONENT_NAME = "SemanticsUtils"
+        private const val COMPONENT_KEY = "component"
+        private const val UNKNOWN_VALUE = "unknown"
+        private const val OVERFLOW_TYPE_KEY = "overflow.type"
+        private const val ERROR_TYPE_KEY = "error.type"
+
+        internal const val TEXT_OVERFLOW_CLIP = 1
+        internal const val TEXT_OVERFLOW_ELLIPSE = 2
     }
 }
