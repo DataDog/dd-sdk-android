@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +27,11 @@ import androidx.compose.ui.unit.dp
 @Suppress("LongMethod")
 @Composable
 internal fun TypographySample() {
-    Column {
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .navigationBarsPadding()
+    ) {
         Text(
             text = "Material H3 - onBackground",
             style = MaterialTheme.typography.h3,
@@ -63,6 +70,11 @@ internal fun TypographySample() {
             modifier = Modifier.padding(16.dp)
         )
         Text(
+            text = "TextOverflow.Ellipsis - Ellipsis at end (TAIL)",
+            style = MaterialTheme.typography.caption,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp)
+        )
+        Text(
             text = FAKE_LONG_TEXT,
             style = MaterialTheme.typography.caption.copy(
                 color = Color.Black
@@ -74,6 +86,22 @@ internal fun TypographySample() {
                 .background(color = Color.Yellow)
                 .padding(16.dp)
         )
+        Row {
+            Text(
+                text = "TextOverflow.Ellipsis (TAIL)",
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp, top = 8.dp)
+            )
+            Text(
+                text = "TextOverflow.Clip (CLIP)",
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp, top = 8.dp)
+            )
+        }
         Row {
             Text(
                 text = FAKE_LONG_TEXT,
@@ -100,6 +128,58 @@ internal fun TypographySample() {
                 maxLines = 1
             )
         }
+        Text(
+            text = "TextOverflow.Visible - Shows all text even if it overflows (null)",
+            style = MaterialTheme.typography.caption,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp)
+        )
+        Text(
+            text = FAKE_LONG_TEXT,
+            style = MaterialTheme.typography.caption.copy(
+                color = Color.Black
+            ),
+            overflow = TextOverflow.Visible,
+            modifier = Modifier
+                .height(60.dp)
+                .fillMaxWidth()
+                .background(color = Color.Cyan)
+                .padding(16.dp),
+            maxLines = 2
+        )
+        Text(
+            text = "TextOverflow.StartEllipsis - Ellipsis at start (HEAD)",
+            style = MaterialTheme.typography.caption,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp)
+        )
+        Text(
+            text = FAKE_LONG_TEXT,
+            style = MaterialTheme.typography.caption.copy(
+                color = Color.Black
+            ),
+            overflow = TextOverflow.StartEllipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = Color.Magenta)
+                .padding(16.dp),
+            maxLines = 1
+        )
+        Text(
+            text = "TextOverflow.MiddleEllipsis - Ellipsis in middle (MIDDLE)",
+            style = MaterialTheme.typography.caption,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp)
+        )
+        Text(
+            text = FAKE_LONG_TEXT,
+            style = MaterialTheme.typography.caption.copy(
+                color = Color.Black
+            ),
+            overflow = TextOverflow.MiddleEllipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = Color.LightGray)
+                .padding(16.dp),
+            maxLines = 1
+        )
     }
 }
 

@@ -568,12 +568,29 @@ class SemanticsUtilsTest {
          */
         private class MockTextOverflowValueClass(val value: Int)
 
+        /**
+         * Mock object without a "value" field to simulate reflection extraction failure.
+         * Used to test error handling when reflection fails to extract the Int value.
+         */
+        private class MockOverflowWithoutValueField {
+            override fun toString() = "MockOverflowWithoutValueField"
+        }
+
         @JvmStatic
         fun truncationModeMappings(): Stream<Arguments> {
             return Stream.of(
                 // Int values (unboxed value class)
                 Arguments.of(SemanticsUtils.TEXT_OVERFLOW_CLIP, MobileSegment.TruncationMode.CLIP),
                 Arguments.of(SemanticsUtils.TEXT_OVERFLOW_ELLIPSE, MobileSegment.TruncationMode.TAIL),
+                Arguments.of(SemanticsUtils.TEXT_OVERFLOW_VISIBLE, null),
+                Arguments.of(
+                    SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_START,
+                    MobileSegment.TruncationMode.HEAD
+                ),
+                Arguments.of(
+                    SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE,
+                    MobileSegment.TruncationMode.MIDDLE
+                ),
                 // Value class instances (boxed) - simulates TextOverflow value class
                 Arguments.of(
                     MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_CLIP),
@@ -583,8 +600,25 @@ class SemanticsUtilsTest {
                     MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSE),
                     MobileSegment.TruncationMode.TAIL
                 ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_VISIBLE),
+                    null
+                ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_START),
+                    MobileSegment.TruncationMode.HEAD
+                ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE),
+                    MobileSegment.TruncationMode.MIDDLE
+                ),
                 // Edge cases
                 Arguments.of(UNKNOWN_TEXT_OVERFLOW_ORDINAL, null), // Unknown/unsupported overflow mode
+                Arguments.of("unexpected_type", null), // Unexpected overflow type (triggers logUnknownOverflowType)
+                Arguments.of(
+                    MockOverflowWithoutValueField(),
+                    null
+                ), // Reflection extraction failure (triggers logReflectionExtractionFailure)
                 Arguments.of(null, null) // No overflow modifier
             )
         }
