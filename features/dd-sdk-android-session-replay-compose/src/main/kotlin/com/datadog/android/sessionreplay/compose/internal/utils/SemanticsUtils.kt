@@ -368,6 +368,9 @@ internal class SemanticsUtils(
         return when (overflowMode) {
             TEXT_OVERFLOW_CLIP -> MobileSegment.TruncationMode.CLIP
             TEXT_OVERFLOW_ELLIPSE -> MobileSegment.TruncationMode.TAIL
+            TEXT_OVERFLOW_VISIBLE -> null
+            TEXT_OVERFLOW_ELLIPSIS_START -> MobileSegment.TruncationMode.HEAD
+            TEXT_OVERFLOW_ELLIPSIS_MIDDLE -> MobileSegment.TruncationMode.MIDDLE
             else -> {
                 logUnknownOverflowOrdinal(overflowMode)
                 null
@@ -406,8 +409,8 @@ internal class SemanticsUtils(
             throwable = e,
             onlyOnce = true,
             additionalProperties = mapOf(
-                OVERFLOW_TYPE_KEY to (overflowValue::class.simpleName?.toString() ?: UNKNOWN_VALUE),
-                ERROR_TYPE_KEY to (e::class.simpleName?.toString() ?: UNKNOWN_VALUE),
+                OVERFLOW_TYPE_KEY to (overflowValue::class.simpleName ?: UNKNOWN_VALUE),
+                ERROR_TYPE_KEY to (e::class.simpleName ?: UNKNOWN_VALUE),
                 COMPONENT_KEY to COMPONENT_NAME
             )
         )
@@ -440,7 +443,7 @@ internal class SemanticsUtils(
             },
             onlyOnce = true,
             additionalProperties = mapOf(
-                OVERFLOW_TYPE_KEY to (overflowValue::class.simpleName?.toString() ?: UNKNOWN_VALUE),
+                OVERFLOW_TYPE_KEY to (overflowValue::class.simpleName ?: UNKNOWN_VALUE),
                 COMPONENT_KEY to COMPONENT_NAME
             )
         )
@@ -545,5 +548,8 @@ internal class SemanticsUtils(
 
         internal const val TEXT_OVERFLOW_CLIP = 1
         internal const val TEXT_OVERFLOW_ELLIPSE = 2
+        internal const val TEXT_OVERFLOW_VISIBLE = 3
+        internal const val TEXT_OVERFLOW_ELLIPSIS_START = 4
+        internal const val TEXT_OVERFLOW_ELLIPSIS_MIDDLE = 5
     }
 }
