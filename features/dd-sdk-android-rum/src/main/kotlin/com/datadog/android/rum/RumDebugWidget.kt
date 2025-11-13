@@ -53,5 +53,6 @@ fun RumConfiguration.Builder.enableRumDebugWidget(
 }
 
 private const val RUM_DEBUG_WIDGET_MISSING_MODULE = "RUM Debug Widget could not be enabled. " +
-    "To use this feature, add the 'dd-sdk-android-rum-debug-widget' module as an " +
-    "'implementation' dependency in your build.gradle file."
+    "The 'dd-sdk-android-rum-debug-widget' module is missing or not configured correctly. " +
+    "Please add it to your build.gradle file: use 'debugImplementation' by default, " +
+    "or 'implementation' to enable it in release builds."
