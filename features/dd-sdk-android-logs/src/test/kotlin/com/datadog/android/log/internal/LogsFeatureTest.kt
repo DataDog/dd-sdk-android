@@ -461,7 +461,8 @@ internal class LogsFeatureTest {
                     setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
                     )
                 )
         }
