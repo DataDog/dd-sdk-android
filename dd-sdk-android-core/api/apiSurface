@@ -30,6 +30,7 @@ class com.datadog.android._InternalProxy
     fun debug(String)
     fun error(String, Throwable? = null)
     fun error(String, String?, String?)
+    fun setMetricTelemetrySampleRateBypass(Float)
   val _telemetry: _TelemetryProxy
   fun setCustomAppVersion(String)
   companion object 

@@ -188,6 +188,7 @@ internal class CoreFeature(
     internal var batchSize: BatchSize = BatchSize.MEDIUM
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
+    internal var metricTelemetrySampleRateBypass: Float? = null
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
 
     @Volatile
