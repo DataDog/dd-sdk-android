@@ -141,9 +141,9 @@ internal abstract class TracesTest {
         assertThat(metaObject)
             .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
             .hasField("version", context.version)
-            .hasField("application.variant", context.variant)
+            .hasField("variant", context.variant)
 
-        assertThat(metaObject).hasField("dd") {
+        assertThat(metaObject).hasField("_dd") {
             hasField("source", context.source)
         }
 
