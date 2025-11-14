@@ -346,6 +346,9 @@ class SampleApplication : Application() {
             .setFirstPartyHosts(tracedHosts)
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
+            .also {
+                Datadog._internalProxy()._telemetry.setMetricTelemetrySampleRateBypass(100f)
+            }
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))

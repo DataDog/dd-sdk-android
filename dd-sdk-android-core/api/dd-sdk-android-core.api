@@ -86,6 +86,7 @@ public final class com/datadog/android/_InternalProxy$_TelemetryProxy {
 	public final fun error (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun error (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public static synthetic fun error$default (Lcom/datadog/android/_InternalProxy$_TelemetryProxy;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+	public final fun setMetricTelemetrySampleRateBypass (F)V
 }
 
 public abstract interface class com/datadog/android/api/InternalLogger {

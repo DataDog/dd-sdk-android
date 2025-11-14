@@ -6,6 +6,7 @@
 
 package com.datadog.android
 
+import androidx.annotation.FloatRange
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
@@ -68,6 +69,12 @@ class _InternalProxy internal constructor(
                 kind = kind
             )
             rumFeature?.sendEvent(telemetryEvent)
+        }
+
+        fun setMetricTelemetrySampleRateBypass(
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float
+        ) {
+            (sdkCore as? DatadogCore)?.coreFeature?.metricTelemetrySampleRateBypass = sampleRate
         }
     }
 
