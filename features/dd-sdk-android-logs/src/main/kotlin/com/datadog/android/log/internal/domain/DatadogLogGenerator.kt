@@ -260,6 +260,15 @@ internal class DatadogLogGenerator(
         }
     }
 
+    private fun serviceTag(datadogContext: DatadogContext): String? {
+        val service = datadogContext.service
+        return if (service.isNotEmpty()) {
+            "${LogAttributes.SERVICE}:$service"
+        } else {
+            null
+        }
+    }
+
     private fun resolveNetworkInfo(
         datadogContext: DatadogContext,
         networkInfo: NetworkInfo?
@@ -314,6 +323,9 @@ internal class DatadogLogGenerator(
             combinedTags.add(it)
         }
         variantTag(datadogContext)?.let {
+            combinedTags.add(it)
+        }
+        serviceTag(datadogContext)?.let {
             combinedTags.add(it)
         }
 

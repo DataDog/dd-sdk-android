@@ -25,7 +25,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -737,7 +736,7 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val deserializedTags = log.ddtags.split(",")
-        Assertions.assertThat(deserializedTags)
+        assertThat(deserializedTags)
             .contains("${LogAttributes.ENV}:${fakeDatadogContext.env}")
     }
 
@@ -765,7 +764,8 @@ internal class DatadogLogGeneratorTest {
         // THEN
         val expectedTags = fakeTags +
             "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
-            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}" +
+            "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
@@ -787,7 +787,7 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val deserializedTags = log.ddtags.split(",")
-        Assertions.assertThat(deserializedTags)
+        assertThat(deserializedTags)
             .contains("${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}")
     }
 
@@ -815,7 +815,8 @@ internal class DatadogLogGeneratorTest {
         // THEN
         val expectedTags = fakeTags +
             "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
-            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}" +
+            "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
@@ -837,7 +838,7 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val deserializedTags = log.ddtags.split(",")
-        Assertions.assertThat(deserializedTags)
+        assertThat(deserializedTags)
             .contains("${LogAttributes.VARIANT}:${fakeDatadogContext.variant}")
     }
 
@@ -865,7 +866,59 @@ internal class DatadogLogGeneratorTest {
         // THEN
         val expectedTags = fakeTags +
             "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
-            "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}"
+            "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
+            "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
+        assertThat(log).hasExactlyTags(expectedTags)
+    }
+
+    @Test
+    fun `M add the serviceTag W not empty`() {
+        // When
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // Then
+        val deserializedTags = log.ddtags.split(",")
+        assertThat(deserializedTags)
+            .contains("${LogAttributes.SERVICE}:${fakeDatadogContext.service}")
+    }
+
+    @Test
+    fun `M not add the serviceTag W empty`() {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(
+            service = ""
+        )
+
+        // When
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // Then
+        val expectedTags = fakeTags +
+            "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
+            "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
+            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
@@ -906,7 +959,7 @@ internal class DatadogLogGeneratorTest {
         )
 
         // THEN
-        Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
+        assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.DD_TRACE_ID to fakeTraceId,
                 LogAttributes.DD_SPAN_ID to fakeSpanId
@@ -1036,7 +1089,7 @@ internal class DatadogLogGeneratorTest {
         )
 
         // THEN
-        Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
+        assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
                 LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
