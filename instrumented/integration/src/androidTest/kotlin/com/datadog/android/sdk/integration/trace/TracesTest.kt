@@ -16,8 +16,6 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
-import com.datadog.android.trace.api.resolveMeta
-import com.datadog.android.trace.api.resolveMetrics
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
@@ -119,8 +117,6 @@ internal abstract class TracesTest {
     }
 
     private fun assertMatches(jsonObject: JsonObject, span: DatadogSpan, context: DatadogContext) {
-        val meta = span.resolveMeta(context)
-        val metrics = span.resolveMetrics()
         assertThat(jsonObject)
             .hasField(SERVICE_NAME_KEY, span.serviceName)
             .hasField(TRACE_ID_KEY, span.leastSignificant64BitsTraceId())
@@ -140,11 +136,42 @@ internal abstract class TracesTest {
             .hasField(DURATION_KEY, span.durationNano)
             .hasField(RESOURCE_KEY, span.resourceName.orEmpty())
             .hasField(OPERATION_NAME_KEY, span.operationName)
-            .hasField(META_KEY, meta)
-            .hasField(METRICS_KEY, metrics)
+
         val metaObject = jsonObject.getAsJsonObject(META_KEY)
         assertThat(metaObject)
             .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
+            .hasField("version", context.version)
+            .hasField("application.variant", context.variant)
+
+        assertThat(metaObject).hasField("dd") {
+            hasField("source", context.source)
+        }
+
+        assertThat(metaObject).hasField("tracer") {
+            hasField("version", context.sdkVersion)
+        }
+
+        assertThat(metaObject).hasField("usr") {}
+
+        assertThat(metaObject).hasField("device") {
+            hasField("name", context.deviceInfo.deviceName)
+            hasField("model", context.deviceInfo.deviceModel)
+            hasField("brand", context.deviceInfo.deviceBrand)
+            hasField("architecture", context.deviceInfo.architecture)
+        }
+
+        assertThat(metaObject).hasField("os") {
+            hasField("name", context.deviceInfo.osName)
+            hasField("version", context.deviceInfo.osVersion)
+            hasField("version_major", context.deviceInfo.osMajorVersion)
+        }
+
+        val metricsObject = jsonObject.getAsJsonObject(METRICS_KEY)
+        assertThat(metricsObject).isNotNull
+
+        if (span.parentSpanId == 0L) {
+            assertThat(metricsObject).hasField("_top_level", 1L)
+        }
     }
 
     private fun tracesPayloadToJsonArray(payload: String): List<JsonElement> {
