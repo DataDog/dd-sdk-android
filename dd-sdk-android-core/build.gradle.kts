@@ -65,6 +65,13 @@ android {
             "SDK_VERSION_NAME",
             "\"${AndroidConfig.VERSION.name}\""
         )
+        buildConfigField(
+            "String",
+            "SDK_COMMIT_SHA1",
+            "\"${providers.exec {
+                commandLine("git", "rev-parse", "HEAD")
+            }.standardOutput.asText.get().trim()}\""
+        )
     }
 
     namespace = "com.datadog.android"

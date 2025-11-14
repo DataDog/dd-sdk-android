@@ -70,7 +70,8 @@ internal class ConfigurationRumForgeryFactory :
             composeActionTrackingStrategy = mock(),
             slowFramesConfiguration = forge.getForgery(),
             rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
-            collectAccessibility = forge.aBool()
+            collectAccessibility = forge.aBool(),
+            disableJankStats = false
         )
     }
 }

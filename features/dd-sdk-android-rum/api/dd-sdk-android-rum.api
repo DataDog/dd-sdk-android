@@ -156,6 +156,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun getDebug ()Z
 	public abstract fun removeAttribute (Ljava/lang/String;)V
 	public abstract fun removeViewAttributes (Ljava/util/Collection;)V
+	public abstract fun reportAppFullyDisplayed ()V
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startFeatureOperation (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
@@ -260,6 +261,7 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }

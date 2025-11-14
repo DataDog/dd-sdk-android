@@ -393,6 +393,7 @@ datadog:
       - "java.lang.Thread.currentThread()"
       - "java.lang.Thread.getDefaultUncaughtExceptionHandler()"
       - "java.lang.Thread.interrupted()"
+      - "java.lang.Thread.interrupt()"
       - "java.lang.Thread.setDefaultUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler?)"
       - "java.lang.Thread.threadId()"
       - "java.util.Collections.synchronizedSet(kotlin.collections.MutableSet?)"
@@ -419,6 +420,7 @@ datadog:
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.Any?)"
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.String?)"
       - "java.util.concurrent.CopyOnWriteArraySet.toTypedArray()"
+      - "java.util.concurrent.CountDownLatch.constructor(kotlin.Int)"
       - "java.util.concurrent.CountDownLatch.countDown()"
       - "java.util.concurrent.ExecutorService.shutdown()"
       - "java.util.concurrent.ExecutorService.shutdownNow()"
@@ -597,6 +599,8 @@ datadog:
       - "kotlin.repeat(kotlin.Int, kotlin.Function1)"
       - "kotlin.synchronized(kotlin.Any, kotlin.Function0)"
       - "kotlin.ReplaceWith.constructor(kotlin.String, kotlin.Array)"
+      - "kotlin.Result.failure(kotlin.Throwable)"
+      - "kotlin.Result.fold(kotlin.Function1, kotlin.Function1)"
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
@@ -732,6 +736,7 @@ datadog:
       - "kotlin.collections.MutableCollection.flatMap(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.toList()"
+      - "kotlin.collections.MutableIterator.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableIterator.hasNext()"
       - "kotlin.collections.MutableList.add(com.datadog.android.api.InternalLogger.Target)"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.Batch)"
@@ -881,6 +886,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ErrorEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.LongTaskEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ResourceEvent.Interface)"
+      - "kotlin.collections.listOf(com.datadog.android.rum.model.RumVitalAppLaunchEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.RumVitalOperationStepEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ViewEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.MapperTypeWrapper)"
@@ -1178,6 +1184,8 @@ datadog:
       - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
       - "org.json.JSONObject.keys()"
       - "org.json.JSONObject.toJsonObject()"
+      - "org.json.JSONObject.length()"
+      - "org.json.JSONObject.opt(kotlin.String?)"
       # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.Span.getInvalid()"
