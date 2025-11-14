@@ -240,13 +240,15 @@ internal class RumFeature(
             initializeVitalExecutorService(frequency)
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
-            initializeFrameStatesAggregator(
-                application = appContext as? Application,
-                listeners = listOfNotNull(
-                    initializeSlowFrameListener(slowFrameListenerConfiguration),
-                    initializeFPSVitalMonitor(frequency)
+            if (!configuration.disableJankStats) {
+                initializeFrameStatesAggregator(
+                    application = appContext as? Application,
+                    listeners = listOfNotNull(
+                        initializeSlowFrameListener(slowFrameListenerConfiguration),
+                        initializeFPSVitalMonitor(frequency)
+                    )
                 )
-            )
+            }
         }
 
         if (configuration.trackNonFatalAnrs) {
@@ -691,19 +693,23 @@ internal class RumFeature(
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     val activity = scenario.activity.get() ?: return
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+
+                    rumMonitor.sendAppStartEvent(scenario)
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
-                            val ttid = timestampNs - scenario.initialTimeNs
+                            val durationNs = timestampNs - scenario.initialTime.nanoTime
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = timestampNs - scenario.initialTimeNs
+                                durationNs = durationNs
                             )
-                            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
-                                ?.sendTTIDEvent(info)
+
+                            rumMonitor.sendTTIDEvent(info)
+
                             // Send TTID event to Profiling feature
                             sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
-                                ?.sendEvent(TTIDEvent(ttid))
+                                ?.sendEvent(TTIDEvent(durationNs))
                         }
                     }
 
@@ -747,7 +753,8 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibility: Boolean
+        val collectAccessibility: Boolean,
+        val disableJankStats: Boolean
     )
 
     internal companion object {
@@ -799,7 +806,8 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibility = false
+            collectAccessibility = false,
+            disableJankStats = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

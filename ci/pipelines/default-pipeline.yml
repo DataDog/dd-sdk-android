@@ -102,6 +102,7 @@ analysis:detekt-custom:
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
     - ./gradlew :dd-sdk-android-core:customDetektRules
     - ./gradlew :dd-sdk-android-internal:customDetektRules
+    - ./gradlew :features:dd-sdk-android-flags:customDetektRules
     - ./gradlew :features:dd-sdk-android-logs:customDetektRules
     - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
     - ./gradlew :features:dd-sdk-android-rum:customDetektRules

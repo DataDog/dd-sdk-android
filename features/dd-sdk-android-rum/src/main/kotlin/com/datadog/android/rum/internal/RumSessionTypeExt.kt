@@ -11,6 +11,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 
@@ -52,5 +53,12 @@ internal fun RumSessionType.toVital(): RumVitalOperationStepEvent.RumVitalOperat
     return when (this) {
         RumSessionType.SYNTHETICS -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
         RumSessionType.USER -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+    }
+}
+
+internal fun RumSessionType.toVitalAppLaunch(): RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType {
+    return when (this) {
+        RumSessionType.SYNTHETICS -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.SYNTHETICS
+        RumSessionType.USER -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
     }
 }
