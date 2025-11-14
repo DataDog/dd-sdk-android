@@ -587,7 +587,7 @@ internal class RumSessionScopeStartupManagerTest {
         val vital = value.vital
 
         assertThat(vital).apply {
-            hasName(null)
+            hasName("time_to_initial_display")
             hasDescription(null)
             hasAppLaunchMetric(RumVitalAppLaunchEvent.AppLaunchMetric.TTID)
             hasDuration(info.durationNs)
@@ -639,7 +639,7 @@ internal class RumSessionScopeStartupManagerTest {
         val vital = value.vital
 
         assertThat(vital).apply {
-            hasName(null)
+            hasName("time_to_full_display")
             hasDescription(null)
             hasAppLaunchMetric(RumVitalAppLaunchEvent.AppLaunchMetric.TTFD)
             hasDuration(durationNs)

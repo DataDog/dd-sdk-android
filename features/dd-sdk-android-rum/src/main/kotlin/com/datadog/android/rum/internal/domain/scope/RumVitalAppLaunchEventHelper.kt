@@ -144,7 +144,7 @@ internal class RumVitalAppLaunchEventHelper(
             ddtags = buildDDTagsString(datadogContext),
             vital = RumVitalAppLaunchEvent.Vital(
                 id = UUID.randomUUID().toString(),
-                name = null,
+                name = appLaunchMetric.vitalName(),
                 description = null,
                 appLaunchMetric = appLaunchMetric,
                 duration = durationNs,
@@ -153,5 +153,12 @@ internal class RumVitalAppLaunchEventHelper(
                 hasSavedInstanceStateBundle = scenario.hasSavedInstanceStateBundle
             )
         )
+    }
+}
+
+private fun RumVitalAppLaunchEvent.AppLaunchMetric.vitalName(): String {
+    return when (this) {
+        RumVitalAppLaunchEvent.AppLaunchMetric.TTID -> "time_to_initial_display"
+        RumVitalAppLaunchEvent.AppLaunchMetric.TTFD -> "time_to_full_display"
     }
 }
