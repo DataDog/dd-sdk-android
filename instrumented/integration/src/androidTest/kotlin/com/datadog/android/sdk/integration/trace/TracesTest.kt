@@ -229,7 +229,7 @@ internal abstract class TracesTest {
 
         // endregion
 
-        // SpanEvent.Span keys
+        // region SpanEvent.Span
         const val SPAN_KIND_KEY = "kind"
         const val DEFAULT_SPAN_KIND = "client"
 
