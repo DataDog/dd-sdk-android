@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -124,5 +125,22 @@ internal class InternalProxyTest {
 
         // Then
         verify(mockAppVersionProvider).version = version
+    }
+
+    @Test
+    fun `M set metric telemetry sample rate bypass W setMetricTelemetrySampleRateBypass()`(
+        @FloatForgery(min = 0.0f, max = 100.0f) fakeSampleRateBypass: Float
+    ) {
+        // Given
+        val mockSdkCore = mock<DatadogCore>()
+        val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockSdkCore.coreFeature) doReturn mockCoreFeature
+        val proxy = _InternalProxy(mockSdkCore)
+
+        // When
+        proxy._telemetry.setMetricTelemetrySampleRateBypass(fakeSampleRateBypass)
+
+        // Then
+        verify(mockCoreFeature).metricTelemetrySampleRateBypass = fakeSampleRateBypass
     }
 }
