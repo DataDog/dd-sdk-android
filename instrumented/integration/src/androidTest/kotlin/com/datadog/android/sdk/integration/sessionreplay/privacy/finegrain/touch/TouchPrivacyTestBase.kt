@@ -12,6 +12,7 @@ import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.internal.sessionreplay.RECORD_TYPE_INCREMENTAL_SNAPSHOT
+import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.INITIAL_WAIT_MS
@@ -28,20 +29,20 @@ import org.assertj.core.api.Assertions.assertThat
  * Base class for Session Replay integration tests that verify touch event privacy behavior.
  * Provides common utilities for extracting and asserting on touch interaction records.
  */
-internal abstract class TouchPrivacyTestBase<R : Activity> : BaseSessionReplayTest<R>() {
+internal abstract class TouchPrivacyTestBase<T : Activity> : BaseSessionReplayTest<T>() {
 
     protected fun runTouchScenario() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
 
-        Espresso.onView(ViewMatchers.withId(com.datadog.android.sdk.integration.R.id.button1))
+        Espresso.onView(ViewMatchers.withId(R.id.button1))
             .perform(ViewActions.click())
 
         Espresso.onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_MS))
         instrumentation.waitForIdleSync()
     }
 
-    protected fun assertTouchRecordsExist(rule: SessionReplayTestRule<R>) {
+    protected fun assertTouchRecordsExist(rule: SessionReplayTestRule<T>) {
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val touchRecords = extractTouchRecordsFromRequests(requests)
@@ -58,19 +59,22 @@ internal abstract class TouchPrivacyTestBase<R : Activity> : BaseSessionReplayTe
                 val x = data?.get("x")?.asLong
                 val y = data?.get("y")?.asLong
 
+                requireNotNull(x)
+                requireNotNull(y)
+
+                assertThat(x).isGreaterThan(0)
+                assertThat(y).isGreaterThan(0)
+
                 assertThat(pointerType)
                     .describedAs("Pointer type should be TOUCH")
-                    .isEqualToIgnoringCase("touch")
-
-                assertThat(x).isNotNull.isGreaterThanOrEqualTo(0)
-                assertThat(y).isNotNull.isGreaterThanOrEqualTo(0)
+                    .isEqualTo("touch")
             }
 
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 
-    protected fun assertNoTouchRecords(rule: SessionReplayTestRule<R>) {
+    protected fun assertNoTouchRecords(rule: SessionReplayTestRule<T>) {
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val touchRecords = extractTouchRecordsFromRequests(requests)

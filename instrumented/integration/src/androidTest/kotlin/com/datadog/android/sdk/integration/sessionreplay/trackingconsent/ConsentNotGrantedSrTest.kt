@@ -20,7 +20,7 @@ import org.junit.Test
 internal class ConsentNotGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayPlaygroundActivity::class.java,
         trackingConsent = TrackingConsent.NOT_GRANTED,
         keepRequests = true
@@ -28,7 +28,6 @@ internal class ConsentNotGrantedSrTest : BaseSessionReplayTest<SessionReplayPlay
 
     @Test
     fun verifySessionFirstSnapshot() {
-        runInstrumentationScenario()
         ConditionWatcher {
             // verify the captured log events into the MockedWebServer
             assertThat(rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)).isEmpty()

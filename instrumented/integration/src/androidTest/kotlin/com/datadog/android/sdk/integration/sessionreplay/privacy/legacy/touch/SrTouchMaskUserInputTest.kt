@@ -33,7 +33,7 @@ import org.junit.Test
 internal class SrTouchMaskUserInputTest : BaseSessionReplayTest<SessionReplayTouchActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayTouchActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,

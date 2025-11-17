@@ -24,7 +24,7 @@ internal class SrTextFieldsWithInputMaskUserInputTest :
     BaseSessionReplayTest<SessionReplayTextFieldsWithInputActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayTextFieldsWithInputActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -33,8 +33,6 @@ internal class SrTextFieldsWithInputMaskUserInputTest :
 
     @Test
     fun assessRecordedScreenPayload() {
-        runInstrumentationScenario()
-
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)

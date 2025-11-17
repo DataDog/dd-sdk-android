@@ -33,7 +33,7 @@ import org.junit.Test
 internal class SrTouchAllowTest : BaseSessionReplayTest<SessionReplayTouchActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayTouchActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -58,18 +58,21 @@ internal class SrTouchAllowTest : BaseSessionReplayTest<SessionReplayTouchActivi
 
             touchRecords.forEach { record ->
                 val data = record.get("data")?.asJsonObject
-                assertThat(data).isNotNull
+                requireNotNull(data)
 
-                val pointerType = data?.get("pointerType")?.asString
-                val x = data?.get("x")?.asLong
-                val y = data?.get("y")?.asLong
+                val pointerType = data.get("pointerType")?.asString
+                val x = data.get("x")?.asLong
+                val y = data.get("y")?.asLong
+
+                requireNotNull(x)
+                requireNotNull(y)
+
+                assertThat(x).isGreaterThan(0)
+                assertThat(y).isGreaterThan(0)
 
                 assertThat(pointerType)
                     .describedAs("Pointer type should be TOUCH")
-                    .isEqualToIgnoringCase("touch")
-
-                assertThat(x).isNotNull.isGreaterThanOrEqualTo(0)
-                assertThat(y).isNotNull.isGreaterThanOrEqualTo(0)
+                    .isEqualTo("touch")
             }
 
             true

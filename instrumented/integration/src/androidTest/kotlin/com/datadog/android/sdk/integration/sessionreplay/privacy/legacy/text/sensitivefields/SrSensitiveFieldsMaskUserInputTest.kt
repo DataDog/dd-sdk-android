@@ -23,7 +23,7 @@ import org.junit.Test
 internal class SrSensitiveFieldsMaskUserInputTest : BaseSessionReplayTest<SessionReplaySensitiveFieldsActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplaySensitiveFieldsActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -32,8 +32,6 @@ internal class SrSensitiveFieldsMaskUserInputTest : BaseSessionReplayTest<Sessio
 
     @Test
     fun assessRecordedScreenPayload() {
-        runInstrumentationScenario()
-
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)

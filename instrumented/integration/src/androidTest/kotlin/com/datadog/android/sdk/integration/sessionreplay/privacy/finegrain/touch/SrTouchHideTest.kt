@@ -17,7 +17,7 @@ import org.junit.Test
 internal class SrTouchHideTest : TouchPrivacyTestBase<SessionReplayTouchActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayTouchActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,

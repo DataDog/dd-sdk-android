@@ -26,7 +26,7 @@ internal class SrImagesMaskUserInputTest :
     BaseSessionReplayTest<SessionReplayImagesMixedSizesActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayImagesMixedSizesActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -35,8 +35,6 @@ internal class SrImagesMaskUserInputTest :
 
     @Test
     fun assessRecordedScreenPayload() {
-        runInstrumentationScenario()
-
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
