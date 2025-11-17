@@ -144,33 +144,27 @@ internal abstract class TracesTest {
             .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
             .hasField(VERSION_KEY, context.version)
             .hasField(VARIANT_KEY, context.variant)
-
-        assertThat(metaObject).hasField(DD_KEY) {
-            hasField(SOURCE_KEY, context.source)
-        }
-
-        assertThat(metaObject).hasField(SPAN_KEY) {
-            hasField(SPAN_KIND_KEY, DEFAULT_SPAN_KIND)
-        }
-
-        assertThat(metaObject).hasField(TRACER_KEY) {
-            hasField(TRACER_VERSION_KEY, context.sdkVersion)
-        }
-
-        assertThat(metaObject).hasField(USR_KEY) {}
-
-        assertThat(metaObject).hasField(DEVICE_KEY) {
-            hasField(DEVICE_NAME_KEY, context.deviceInfo.deviceName)
-            hasField(DEVICE_MODEL_KEY, context.deviceInfo.deviceModel)
-            hasField(DEVICE_BRAND_KEY, context.deviceInfo.deviceBrand)
-            hasField(DEVICE_ARCHITECTURE_KEY, context.deviceInfo.architecture)
-        }
-
-        assertThat(metaObject).hasField(OS_KEY) {
-            hasField(OS_NAME_KEY, context.deviceInfo.osName)
-            hasField(OS_VERSION_KEY, context.deviceInfo.osVersion)
-            hasField(OS_VERSION_MAJOR_KEY, context.deviceInfo.osMajorVersion)
-        }
+            .hasField(DD_KEY) {
+                hasField(SOURCE_KEY, context.source)
+            }
+            .hasField(SPAN_KEY) {
+                hasField(SPAN_KIND_KEY, DEFAULT_SPAN_KIND)
+            }
+            .hasField(TRACER_KEY) {
+                hasField(TRACER_VERSION_KEY, context.sdkVersion)
+            }
+            .hasField(USR_KEY) {}
+            .hasField(DEVICE_KEY) {
+                hasField(DEVICE_NAME_KEY, context.deviceInfo.deviceName)
+                hasField(DEVICE_MODEL_KEY, context.deviceInfo.deviceModel)
+                hasField(DEVICE_BRAND_KEY, context.deviceInfo.deviceBrand)
+                hasField(DEVICE_ARCHITECTURE_KEY, context.deviceInfo.architecture)
+            }
+            .hasField(OS_KEY) {
+                hasField(OS_NAME_KEY, context.deviceInfo.osName)
+                hasField(OS_VERSION_KEY, context.deviceInfo.osVersion)
+                hasField(OS_VERSION_MAJOR_KEY, context.deviceInfo.osMajorVersion)
+            }
 
         val metricsObject = jsonObject.getAsJsonObject(METRICS_KEY)
         assertThat(metricsObject).isNotNull
@@ -194,6 +188,7 @@ internal abstract class TracesTest {
 
     companion object {
         // region SpanEvent
+        
         const val TRACE_ID_KEY = "trace_id"
         const val SPAN_ID_KEY = "span_id"
         const val PARENT_ID_KEY = "parent_id"
@@ -211,6 +206,7 @@ internal abstract class TracesTest {
         // endregion
 
         // region SpanEvent.Meta
+        
         const val VERSION_KEY = "version"
         const val DD_KEY = "_dd"
         const val SPAN_KEY = "span"
@@ -225,22 +221,26 @@ internal abstract class TracesTest {
         // endregion
 
         // region SpanEvent.Dd
+        
         const val SOURCE_KEY = "source"
 
         // endregion
 
         // region SpanEvent.Span
+        
         const val SPAN_KIND_KEY = "kind"
         const val DEFAULT_SPAN_KIND = "client"
 
         // endregion
 
         // region SpanEvent.Tracer
+        
         const val TRACER_VERSION_KEY = "version"
 
         //endregion
 
         // region SpanEvent.Device
+        
         const val DEVICE_NAME_KEY = "name"
         const val DEVICE_MODEL_KEY = "model"
         const val DEVICE_BRAND_KEY = "brand"
@@ -249,6 +249,7 @@ internal abstract class TracesTest {
         //endregion
 
         // region SpanEvent.Os
+        
         const val OS_NAME_KEY = "name"
         const val OS_VERSION_KEY = "version"
         const val OS_VERSION_MAJOR_KEY = "version_major"
@@ -256,6 +257,7 @@ internal abstract class TracesTest {
         //endregion
 
         // region SpanEvent.Metrics
+        
         const val TOP_LEVEL_KEY = "_top_level"
 
         //endregion
