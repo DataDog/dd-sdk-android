@@ -557,6 +557,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasBuildVersion(buildVersion: String?): ErrorEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion)
+        return this
+    }
+
     fun hasFeatureFlag(flagName: String, flagValue: Any): ErrorEventAssert {
         assertThat(actual.featureFlags)
             .isNotNull

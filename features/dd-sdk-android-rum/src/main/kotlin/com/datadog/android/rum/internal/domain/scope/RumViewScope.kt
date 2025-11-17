@@ -404,6 +404,8 @@ internal open class RumViewScope(
             ),
             connectivity = datadogContext.networkInfo.toVitalConnectivity(),
             version = datadogContext.version,
+            buildVersion = datadogContext.versionCode,
+            buildId = datadogContext.appBuildId,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
             vital = RumVitalOperationStepEvent.Vital(
@@ -797,6 +799,7 @@ internal open class RumViewScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode,
                 ddtags = buildDDTagsString(datadogContext)
             )
         }
@@ -1340,6 +1343,8 @@ internal open class RumViewScope(
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode,
+                buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             ).apply {
                 sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
@@ -1501,6 +1506,8 @@ internal open class RumViewScope(
                 connectivity = datadogContext.networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode,
+                buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )
         }
@@ -1622,6 +1629,8 @@ internal open class RumViewScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode,
+                buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )
         }

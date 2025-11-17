@@ -118,7 +118,8 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                 version = deviceInfo.osVersion,
                 versionMajor = deviceInfo.osMajorVersion,
                 build = forge.aNullable { anAlphabeticalString() }
-            )
+            ),
+            buildVersion = forge.anInt(min = 0).toString()
         )
     }
 

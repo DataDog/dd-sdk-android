@@ -8,4 +8,5 @@ package com.datadog.android.core.internal.system
 
 internal interface AppVersionProvider {
     var version: String
+    val versionCode: String
 }
