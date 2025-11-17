@@ -136,6 +136,8 @@ internal abstract class TracesTest {
             .hasField(DURATION_KEY, span.durationNano)
             .hasField(RESOURCE_KEY, span.resourceName.orEmpty())
             .hasField(OPERATION_NAME_KEY, span.operationName)
+            .hasField(ERROR_KEY, 0L)
+            .hasField(TYPE_KEY, DEFAULT_SPAN_TYPE)
 
         val metaObject = jsonObject.getAsJsonObject(META_KEY)
         assertThat(metaObject)
@@ -148,7 +150,7 @@ internal abstract class TracesTest {
         }
 
         assertThat(metaObject).hasField(SPAN_KEY) {
-            hasField(SPAN_KIND_KEY, "client")
+            hasField(SPAN_KIND_KEY, DEFAULT_SPAN_KIND)
         }
 
         assertThat(metaObject).hasField(TRACER_KEY) {
@@ -170,11 +172,9 @@ internal abstract class TracesTest {
             hasField(OS_VERSION_MAJOR_KEY, context.deviceInfo.osMajorVersion)
         }
 
-        // Verify metrics object structure
         val metricsObject = jsonObject.getAsJsonObject(METRICS_KEY)
         assertThat(metricsObject).isNotNull
 
-        // Verify topLevel metric based on parentId
         if (span.parentSpanId == 0L) {
             assertThat(metricsObject).hasField(TOP_LEVEL_KEY, 1L)
         }
@@ -193,7 +193,7 @@ internal abstract class TracesTest {
     }
 
     companion object {
-        // Span top-level keys (order matches SpanEvent structure)
+        // region SpanEvent
         const val TRACE_ID_KEY = "trace_id"
         const val SPAN_ID_KEY = "span_id"
         const val PARENT_ID_KEY = "parent_id"
@@ -202,10 +202,15 @@ internal abstract class TracesTest {
         const val SERVICE_NAME_KEY = "service"
         const val DURATION_KEY = "duration"
         const val START_TIMESTAMP_KEY = "start"
+        const val ERROR_KEY = "error"
+        const val TYPE_KEY = "type"
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
+        const val DEFAULT_SPAN_TYPE = "custom"
 
-        // Meta top-level keys (order matches SpanEvent.Meta structure)
+        // endregion
+
+        // region SpanEvent.Meta
         const val VERSION_KEY = "version"
         const val DD_KEY = "_dd"
         const val SPAN_KEY = "span"
@@ -214,32 +219,42 @@ internal abstract class TracesTest {
         const val DEVICE_KEY = "device"
         const val OS_KEY = "os"
 
-        // Meta additionalProperties keys
         const val MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY = "_dd.p.id"
         const val VARIANT_KEY = "variant"
 
-        // Dd nested keys
+        // endregion
+
+        // region SpanEvent.Dd
         const val SOURCE_KEY = "source"
 
-        // Span nested keys
+        // SpanEvent.Span keys
         const val SPAN_KIND_KEY = "kind"
+        const val DEFAULT_SPAN_KIND = "client"
 
-        // Tracer nested keys
+        // region SpanEvent.Tracer
         const val TRACER_VERSION_KEY = "version"
 
-        // Device nested keys
+        //endregion
+
+        // region SpanEvent.Device
         const val DEVICE_NAME_KEY = "name"
         const val DEVICE_MODEL_KEY = "model"
         const val DEVICE_BRAND_KEY = "brand"
         const val DEVICE_ARCHITECTURE_KEY = "architecture"
 
-        // OS nested keys
+        //endregion
+
+        // region SpanEvent.Os
         const val OS_NAME_KEY = "name"
         const val OS_VERSION_KEY = "version"
         const val OS_VERSION_MAJOR_KEY = "version_major"
 
-        // Metrics keys
+        //endregion
+
+        // region SpanEvent.Metrics
         const val TOP_LEVEL_KEY = "_top_level"
+
+        //endregion
 
         internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
