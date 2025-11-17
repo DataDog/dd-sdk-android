@@ -46,6 +46,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeSourceName: String
     lateinit var fakeClientToken: String
     lateinit var fakeSdkVersion: String
+    lateinit var fakeSdkCode: String
     lateinit var fakeStorageDir: File
     lateinit var fakeUploadFrequency: UploadFrequency
     lateinit var fakeSite: DatadogSite
@@ -94,6 +95,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         fakeSourceName = forge.anAlphabeticalString()
         fakeClientToken = forge.anHexadecimalString().lowercase(Locale.US)
         fakeSdkVersion = forge.aStringMatching("[0-9](\\.[0-9]{1,2}){1,3}")
+        fakeSdkCode = forge.anInt(min = 0).toString()
         fakeStorageDir = Files.createTempDirectory(forge.anHexadecimalString()).toFile()
         fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeSite = forge.aValueFrom(DatadogSite::class.java)
@@ -122,7 +124,10 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockAccountInfoProvider = mock()
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
-        mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
+        mockAppVersionProvider = mock {
+            on { version } doReturn appContext.fakeVersionName
+            on { versionCode } doReturn appContext.fakeVersionCode.toString()
+        }
     }
 
     private fun configureCoreFeature() {

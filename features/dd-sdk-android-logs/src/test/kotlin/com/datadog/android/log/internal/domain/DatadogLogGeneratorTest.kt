@@ -288,6 +288,26 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
+    fun `M add build version W creating the Log`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasBuildVersion(fakeDatadogContext.versionCode)
+    }
+
+    @Test
     fun `M add the log timestamp and correct the server offset W creating the Log`() {
         // WHEN
         val log = testedLogGenerator.generateLog(

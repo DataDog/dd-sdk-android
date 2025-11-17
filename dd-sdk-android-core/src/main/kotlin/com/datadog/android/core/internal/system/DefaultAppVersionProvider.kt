@@ -8,7 +8,10 @@ package com.datadog.android.core.internal.system
 
 import java.util.concurrent.atomic.AtomicReference
 
-internal class DefaultAppVersionProvider(initialVersion: String) : AppVersionProvider {
+internal class DefaultAppVersionProvider(
+    initialVersion: String,
+    override val versionCode: String
+) : AppVersionProvider {
 
     private val value = AtomicReference(initialVersion)
 

@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.system
 
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,9 +35,12 @@ internal class DefaultAppVersionProviderTest {
     @StringForgery
     lateinit var fakeVersion: String
 
+    @IntForgery(min = 0)
+    var fakeVersionCode: Int = 0
+
     @BeforeEach
     fun setUp() {
-        testedProvider = DefaultAppVersionProvider(fakeVersion)
+        testedProvider = DefaultAppVersionProvider(fakeVersion, fakeVersionCode.toString())
     }
 
     @Test
