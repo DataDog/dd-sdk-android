@@ -23,7 +23,7 @@ import org.junit.Test
 internal class ConsentGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayPlaygroundActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true
@@ -31,8 +31,6 @@ internal class ConsentGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygro
 
     @Test
     fun assessRecordedScreenPayload() {
-        runInstrumentationScenario()
-
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
@@ -52,15 +50,15 @@ internal class ConsentGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygro
             }
 
             assertThat(metaRecord)
-                .describedAs("Should contain a meta record (type 4)")
+                .describedAs("Should contain a meta record (type $RECORD_TYPE_META)")
                 .isNotNull
 
             assertThat(focusRecord)
-                .describedAs("Should contain a focus record (type 6)")
+                .describedAs("Should contain a focus record (type $RECORD_TYPE_FOCUS)")
                 .isNotNull
 
             assertThat(fullSnapshotRecord)
-                .describedAs("Should contain a full snapshot record (type 10)")
+                .describedAs("Should contain a full snapshot record (type $RECORD_TYPE_FULL_SNAPSHOT)")
                 .isNotNull
 
             val wireframes = fullSnapshotRecord

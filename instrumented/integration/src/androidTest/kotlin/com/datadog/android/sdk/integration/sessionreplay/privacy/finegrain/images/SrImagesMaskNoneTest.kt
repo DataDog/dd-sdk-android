@@ -20,7 +20,7 @@ internal class SrImagesMaskNoneTest :
     ImagePrivacyTestBase<SessionReplayImagesMixedSizesActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayImagesMixedSizesActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -31,7 +31,6 @@ internal class SrImagesMaskNoneTest :
 
     @Test
     fun assessRecordedScreenPayloadMaskNone() {
-        runInstrumentationScenario()
         assertImageWireframes(
             rule = rule,
             expectedImageWireframeType = WIREFRAME_TYPE_IMAGE,

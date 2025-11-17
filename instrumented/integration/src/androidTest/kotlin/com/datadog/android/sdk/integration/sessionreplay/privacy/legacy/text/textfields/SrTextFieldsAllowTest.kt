@@ -25,7 +25,7 @@ import org.junit.Test
 internal class SrTextFieldsAllowTest : BaseSessionReplayTest<SessionReplayTextFieldsActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayTextFieldsActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -35,8 +35,6 @@ internal class SrTextFieldsAllowTest : BaseSessionReplayTest<SessionReplayTextFi
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
     fun assessRecordedScreenPayload() {
-        runInstrumentationScenario()
-
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)

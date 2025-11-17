@@ -18,7 +18,7 @@ internal class SrTextAndInputMaskAllTest :
     TextAndInputPrivacyTestBase<SessionReplayTextAndInputPrivacyActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayTextAndInputPrivacyActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
@@ -29,7 +29,6 @@ internal class SrTextAndInputMaskAllTest :
 
     @Test
     fun assessMaskAllPayload() {
-        runInstrumentationScenario()
         assertStaticTextMasked(rule, "Default Text View")
         assertInputTextMaskedWithFixedMask(rule)
     }

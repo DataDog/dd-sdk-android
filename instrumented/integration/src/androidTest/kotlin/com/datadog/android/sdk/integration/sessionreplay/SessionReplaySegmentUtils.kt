@@ -31,7 +31,7 @@ internal object SessionReplaySegmentUtils {
      * @return The parsed JSON element, or null if no segment found or parsing failed
      */
     fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
-        val compressedSegmentBody = resolveSrSegmentBodyFromRequest(requestBuffer.clone())
+        val compressedSegmentBody = resolveSrSegmentBodyFromRequest(requestBuffer)
         if (compressedSegmentBody.isNotEmpty()) {
             // decompress the segment binary
             return JsonParser.parseString(String(decompressBytes(compressedSegmentBody)))
@@ -58,7 +58,7 @@ internal object SessionReplaySegmentUtils {
     private fun resolveSrSegmentBodyFromRequest(buffer: Buffer): ByteArray {
         var line = buffer.readUtf8Line()
         while (line != null) {
-            if (line.lowercase(Locale.ENGLISH).matches(SEGMENT_FORM_DATA_REGEX)) {
+            if (line.lowercase(Locale.US).matches(SEGMENT_FORM_DATA_REGEX)) {
                 return extractSegmentBody(buffer) ?: ByteArray(0)
             }
             line = buffer.readUtf8Line()
@@ -77,7 +77,7 @@ internal object SessionReplaySegmentUtils {
         buffer.readUtf8Line()
 
         // Read and parse Content-Length
-        val contentLengthLine = buffer.readUtf8Line()?.lowercase(Locale.ENGLISH)
+        val contentLengthLine = buffer.readUtf8Line()?.lowercase(Locale.US)
         val matcher = contentLengthLine?.let { CONTENT_LENGTH_REGEX.find(it, 0) }
         val contentLength = matcher?.groupValues?.getOrNull(1)?.toLongOrNull() ?: return null
 
