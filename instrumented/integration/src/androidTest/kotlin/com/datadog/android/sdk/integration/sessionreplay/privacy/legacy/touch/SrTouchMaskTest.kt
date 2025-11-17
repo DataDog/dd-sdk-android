@@ -10,7 +10,6 @@ import androidx.test.espresso.Espresso
 import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.internal.sessionreplay.RECORD_TYPE_INCREMENTAL_SNAPSHOT
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -24,6 +23,7 @@ import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sdk.utils.waitFor
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.model.RECORD_TYPE_INCREMENTAL_SNAPSHOT
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat

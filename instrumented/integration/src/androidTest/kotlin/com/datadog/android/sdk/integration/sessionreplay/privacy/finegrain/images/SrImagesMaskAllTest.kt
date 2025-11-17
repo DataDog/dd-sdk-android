@@ -6,13 +6,13 @@
 
 package com.datadog.android.sdk.integration.sessionreplay.privacy.finegrain.images
 
-import com.datadog.android.internal.sessionreplay.WIREFRAME_TYPE_PLACEHOLDER
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImagesMixedSizesActivity
 import com.datadog.android.sdk.integration.sessionreplay.privacy.ImagePrivacyTestBase
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_IMAGE_PRIVACY
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.model.WIREFRAME_TYPE_PLACEHOLDER
 import org.junit.Rule
 import org.junit.Test
 

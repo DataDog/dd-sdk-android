@@ -128,21 +128,6 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
 }
 
-public final class com/datadog/android/internal/sessionreplay/MobileSegmentConstantsKt {
-	public static final field IMAGE_DIMEN_CONSIDERED_PII_IN_DP I
-	public static final field RECORD_TYPE_FOCUS J
-	public static final field RECORD_TYPE_FULL_SNAPSHOT J
-	public static final field RECORD_TYPE_INCREMENTAL_SNAPSHOT J
-	public static final field RECORD_TYPE_META J
-	public static final field RECORD_TYPE_VIEW_END J
-	public static final field RECORD_TYPE_VISUAL_VIEWPORT J
-	public static final field WIREFRAME_TYPE_IMAGE Ljava/lang/String;
-	public static final field WIREFRAME_TYPE_PLACEHOLDER Ljava/lang/String;
-	public static final field WIREFRAME_TYPE_SHAPE Ljava/lang/String;
-	public static final field WIREFRAME_TYPE_TEXT Ljava/lang/String;
-	public static final field WIREFRAME_TYPE_WEBVIEW Ljava/lang/String;
-}
-
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 }
 
