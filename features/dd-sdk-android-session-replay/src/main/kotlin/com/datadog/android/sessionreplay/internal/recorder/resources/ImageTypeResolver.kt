@@ -8,8 +8,8 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import com.datadog.android.internal.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 
 internal class ImageTypeResolver {
     fun isDrawablePII(drawable: Drawable, density: Float): Boolean {

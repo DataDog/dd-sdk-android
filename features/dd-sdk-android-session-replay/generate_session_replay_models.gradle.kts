@@ -7,8 +7,10 @@
 import com.android.build.gradle.tasks.SourceJarTask
 import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.nio.file.Paths
 
 val generateSessionReplayModelsTaskName = "generateSessionReplayModels"
+val generateMobileSegmentConstantsTaskName = "generateMobileSegmentConstants"
 
 tasks.register(
     generateSessionReplayModelsTaskName,
@@ -18,14 +20,34 @@ tasks.register(
     targetPackageName = "com.datadog.android.sessionreplay.model"
 }
 
+tasks.register(
+    generateMobileSegmentConstantsTaskName,
+    com.datadog.gradle.plugin.jsonschema.GenerateMobileSegmentConstantsTask::class.java
+) {
+    val generatedModelsDir = project.layout.buildDirectory
+        .dir(Paths.get("generated", "json2kotlin", "main", "kotlin").toString())
+
+    generatedMobileSegmentFile.set(
+        generatedModelsDir.map { it.file("com/datadog/android/sessionreplay/model/MobileSegment.kt") }
+    )
+
+    outputConstantsFile.set(
+        generatedModelsDir.map { it.file("com/datadog/android/sessionreplay/model/MobileSegmentConstants.kt") }
+    )
+
+    dependsOn(generateSessionReplayModelsTaskName)
+}
+
 afterEvaluate {
     tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
         ?.dependsOn(
-            generateSessionReplayModelsTaskName
+            generateSessionReplayModelsTaskName,
+            generateMobileSegmentConstantsTaskName
         )
     tasks.withType(KotlinCompile::class.java) {
         dependsOn(
-            generateSessionReplayModelsTaskName
+            generateSessionReplayModelsTaskName,
+            generateMobileSegmentConstantsTaskName
         )
     }
 
@@ -37,6 +59,6 @@ afterEvaluate {
     // it is not needed for other modules with similar model generation, because they use KSP,
     // and KSP plugin see to establish link between sourcesJar and "generated" folder in general
     tasks.withType(SourceJarTask::class.java) {
-        dependsOn(generateSessionReplayModelsTaskName)
+        dependsOn(generateSessionReplayModelsTaskName, generateMobileSegmentConstantsTaskName)
     }
 }

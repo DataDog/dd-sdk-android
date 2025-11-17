@@ -7,15 +7,15 @@
 package com.datadog.android.sdk.integration.sessionreplay.privacy
 
 import android.app.Activity
-import com.datadog.android.internal.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
-import com.datadog.android.internal.sessionreplay.WIREFRAME_TYPE_IMAGE
-import com.datadog.android.internal.sessionreplay.WIREFRAME_TYPE_PLACEHOLDER
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.INITIAL_WAIT_MS
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplaySegmentUtils.extractSrSegmentAsJson
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
+import com.datadog.android.sessionreplay.model.RECORD_TYPE_FULL_SNAPSHOT
+import com.datadog.android.sessionreplay.model.WIREFRAME_TYPE_IMAGE
+import com.datadog.android.sessionreplay.model.WIREFRAME_TYPE_PLACEHOLDER
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject

@@ -6,7 +6,6 @@
 
 package com.datadog.android.sdk.integration.sessionreplay.privacy.legacy.imagebuttons
 
-import com.datadog.android.internal.sessionreplay.WIREFRAME_TYPE_IMAGE
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
@@ -15,6 +14,7 @@ import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImageButto
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.model.WIREFRAME_TYPE_IMAGE
 import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule

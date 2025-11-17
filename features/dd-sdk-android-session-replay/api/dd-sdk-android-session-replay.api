@@ -24,6 +24,10 @@ public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/sessionreplay/PrivacyConstantsKt {
+	public static final field IMAGE_DIMEN_CONSIDERED_PII_IN_DP I
+}
+
 public abstract interface class com/datadog/android/sessionreplay/PrivacyLevel {
 }
 
@@ -1363,6 +1367,20 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Wirefra
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$WebviewWireframeUpdate$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$WebviewWireframeUpdate;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$WebviewWireframeUpdate;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegmentConstantsKt {
+	public static final field RECORD_TYPE_FOCUS J
+	public static final field RECORD_TYPE_FULL_SNAPSHOT J
+	public static final field RECORD_TYPE_INCREMENTAL_SNAPSHOT J
+	public static final field RECORD_TYPE_META J
+	public static final field RECORD_TYPE_VIEW_END J
+	public static final field RECORD_TYPE_VISUAL_VIEWPORT J
+	public static final field WIREFRAME_TYPE_IMAGE Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_PLACEHOLDER Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_SHAPE Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_TEXT Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_WEBVIEW Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/model/ResourceHashesEntry {

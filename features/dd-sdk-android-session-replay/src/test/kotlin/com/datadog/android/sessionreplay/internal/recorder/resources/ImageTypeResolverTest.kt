@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
-import com.datadog.android.internal.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

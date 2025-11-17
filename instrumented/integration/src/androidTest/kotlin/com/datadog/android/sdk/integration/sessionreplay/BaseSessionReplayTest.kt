@@ -11,14 +11,14 @@ import androidx.test.espresso.Espresso
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.internal.sessionreplay.RECORD_TYPE_FOCUS
-import com.datadog.android.internal.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
-import com.datadog.android.internal.sessionreplay.RECORD_TYPE_META
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplaySegmentUtils.extractSrSegmentAsJson
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
+import com.datadog.android.sessionreplay.model.RECORD_TYPE_FOCUS
+import com.datadog.android.sessionreplay.model.RECORD_TYPE_FULL_SNAPSHOT
+import com.datadog.android.sessionreplay.model.RECORD_TYPE_META
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat
