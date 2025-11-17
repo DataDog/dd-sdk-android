@@ -188,7 +188,7 @@ internal abstract class TracesTest {
 
     companion object {
         // region SpanEvent
-        
+
         const val TRACE_ID_KEY = "trace_id"
         const val SPAN_ID_KEY = "span_id"
         const val PARENT_ID_KEY = "parent_id"
@@ -206,7 +206,7 @@ internal abstract class TracesTest {
         // endregion
 
         // region SpanEvent.Meta
-        
+
         const val VERSION_KEY = "version"
         const val DD_KEY = "_dd"
         const val SPAN_KEY = "span"
@@ -221,26 +221,26 @@ internal abstract class TracesTest {
         // endregion
 
         // region SpanEvent.Dd
-        
+
         const val SOURCE_KEY = "source"
 
         // endregion
 
         // region SpanEvent.Span
-        
+
         const val SPAN_KIND_KEY = "kind"
         const val DEFAULT_SPAN_KIND = "client"
 
         // endregion
 
         // region SpanEvent.Tracer
-        
+
         const val TRACER_VERSION_KEY = "version"
 
         //endregion
 
         // region SpanEvent.Device
-        
+
         const val DEVICE_NAME_KEY = "name"
         const val DEVICE_MODEL_KEY = "model"
         const val DEVICE_BRAND_KEY = "brand"
@@ -249,7 +249,7 @@ internal abstract class TracesTest {
         //endregion
 
         // region SpanEvent.Os
-        
+
         const val OS_NAME_KEY = "name"
         const val OS_VERSION_KEY = "version"
         const val OS_VERSION_MAJOR_KEY = "version_major"
@@ -257,7 +257,7 @@ internal abstract class TracesTest {
         //endregion
 
         // region SpanEvent.Metrics
-        
+
         const val TOP_LEVEL_KEY = "_top_level"
 
         //endregion
