@@ -423,5 +423,14 @@ data class RumConfiguration internal constructor(
             rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
             return this
         }
+
+        /**
+         * Disables JankStats tracking. This flag may be enabled by cross-platform SDKs where
+         * native frame metrics are not meaningful.
+         */
+        internal fun setDisableJankStats(disable: Boolean): Builder {
+            rumConfig = rumConfig.copy(disableJankStats = disable)
+            return this
+        }
     }
 }
