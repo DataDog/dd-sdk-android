@@ -227,9 +227,13 @@ internal abstract class TracesTest {
         // region SpanEvent.Dd
         const val SOURCE_KEY = "source"
 
+        // endregion
+
         // SpanEvent.Span keys
         const val SPAN_KIND_KEY = "kind"
         const val DEFAULT_SPAN_KIND = "client"
+
+        // endregion
 
         // region SpanEvent.Tracer
         const val TRACER_VERSION_KEY = "version"
