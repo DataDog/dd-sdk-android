@@ -153,7 +153,7 @@ internal abstract class TracesTest {
             .hasField(TRACER_KEY) {
                 hasField(TRACER_VERSION_KEY, context.sdkVersion)
             }
-            .hasField(USR_KEY) {}
+            .hasField(USR_KEY) { isEmpty() }
             .hasField(DEVICE_KEY) {
                 hasField(DEVICE_NAME_KEY, context.deviceInfo.deviceName)
                 hasField(DEVICE_MODEL_KEY, context.deviceInfo.deviceModel)
