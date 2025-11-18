@@ -10,8 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.LocaleInfo
 import com.datadog.android.api.context.ProcessInfo
-import com.datadog.android.api.context.TimeInfo
-import java.util.concurrent.TimeUnit
+import com.datadog.android.core.internal.time.composeTimeInfo
 
 internal class DatadogContextProvider(
     private val coreFeature: CoreFeature,
@@ -30,17 +29,7 @@ internal class DatadogContextProvider(
             variant = coreFeature.variant,
             sdkVersion = coreFeature.sdkVersion,
             source = coreFeature.sourceName,
-            time = with(coreFeature.timeProvider) {
-                val deviceTimeMs = getDeviceTimestamp()
-                val serverTimeMs = getServerTimestamp()
-                TimeInfo(
-                    deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
-                    serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),
-                    serverTimeOffsetNs = TimeUnit.MILLISECONDS
-                        .toNanos(serverTimeMs - deviceTimeMs),
-                    serverTimeOffsetMs = serverTimeMs - deviceTimeMs
-                )
-            },
+            time = coreFeature.timeProvider.composeTimeInfo(),
             processInfo = ProcessInfo(
                 isMainProcess = coreFeature.isMainProcess
             ),

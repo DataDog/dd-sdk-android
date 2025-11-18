@@ -209,6 +209,9 @@ internal class CoreFeature(
     internal val appStartTimeNs: Long
         get() = appStartTimeProvider.appStartTimeNs
 
+    internal val appUptimeNs: Long
+        get() = appStartTimeProvider.appUptimeNs
+
     // lazy here on purpose: we need to read it only once, even if it is used in different features
     @get:WorkerThread
     internal val lastViewEvent: JsonObject? by lazy {

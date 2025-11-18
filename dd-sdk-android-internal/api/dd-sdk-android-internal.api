@@ -268,6 +268,10 @@ public abstract interface class com/datadog/android/internal/time/TimeProvider {
 	public abstract fun getServerTimestamp ()J
 }
 
+public final class com/datadog/android/internal/time/TimeProvider$DefaultImpls {
+	public static fun getDeviceTimestamp (Lcom/datadog/android/internal/time/TimeProvider;)J
+}
+
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
