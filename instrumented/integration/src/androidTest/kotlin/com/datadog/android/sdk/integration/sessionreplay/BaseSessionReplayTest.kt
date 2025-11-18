@@ -31,7 +31,7 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
 
     @Before
     fun setUp() {
-        runInstrumentationScenario(rule)
+        runInstrumentationScenario()
     }
 
     @After
@@ -45,7 +45,7 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
                 }
             }
             instrumentation.waitForIdleSync()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Activity may already be finished or not available
         }
         GlobalRumMonitor.get().stopSession()
@@ -97,104 +97,10 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
             .isNotNull
     }
 
-    protected fun runInstrumentationScenario(rule: SessionReplayTestRule<R>) {
-        val activity = rule.activity
+    protected fun runInstrumentationScenario() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
-
-        instrumentation.runOnMainSync {
-            instrumentation.callActivityOnStart(activity)
-            instrumentation.callActivityOnResume(activity)
-            val window = activity.window ?: return@runOnMainSync
-            window.decorView.visibility = android.view.View.VISIBLE
-            window.decorView.requestFocus()
-        }
+        Espresso.onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_MS))
         instrumentation.waitForIdleSync()
-
-        var focusAttempts = 0
-        val maxFocusAttempts = 100
-        while (focusAttempts < maxFocusAttempts) {
-            var hasFocus = false
-            var isVisible = false
-            instrumentation.runOnMainSync {
-                val window = activity.window ?: return@runOnMainSync
-                isVisible = window.decorView.visibility == android.view.View.VISIBLE
-                if (!isVisible) {
-                    window.decorView.visibility = android.view.View.VISIBLE
-                }
-                hasFocus = window.decorView.hasWindowFocus()
-                if (!hasFocus) {
-                    window.decorView.requestFocus()
-                }
-            }
-            instrumentation.waitForIdleSync()
-
-            if (hasFocus && isVisible) {
-                break
-            }
-            focusAttempts++
-            Thread.sleep(50)
-        }
-
-        Thread.sleep(500)
-
-        var espressoAttempts = 0
-        val maxEspressoAttempts = 20
-        while (espressoAttempts < maxEspressoAttempts) {
-            try {
-                Espresso.onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_MS))
-                break
-            } catch (e: androidx.test.espresso.NoActivityResumedException) {
-                handleEspressoException(
-                    e,
-                    activity,
-                    instrumentation,
-                    espressoAttempts,
-                    maxEspressoAttempts,
-                    resumeActivity = true
-                )
-                espressoAttempts++
-            } catch (e: RuntimeException) {
-                if (e.message?.contains("window focus") == true ||
-                    e.javaClass.simpleName.contains("RootViewWithoutFocus")
-                ) {
-                    handleEspressoException(
-                        e,
-                        activity,
-                        instrumentation,
-                        espressoAttempts,
-                        maxEspressoAttempts,
-                        resumeActivity = false
-                    )
-                    espressoAttempts++
-                } else {
-                    throw e
-                }
-            }
-        }
-        instrumentation.waitForIdleSync()
-    }
-
-    private fun handleEspressoException(
-        e: Throwable,
-        activity: Activity,
-        instrumentation: android.app.Instrumentation,
-        attempt: Int,
-        maxAttempts: Int,
-        resumeActivity: Boolean
-    ) {
-        if (attempt == maxAttempts - 1) {
-            throw e
-        }
-        instrumentation.runOnMainSync {
-            if (resumeActivity) {
-                instrumentation.callActivityOnResume(activity)
-            }
-            val window = activity.window ?: return@runOnMainSync
-            window.decorView.visibility = android.view.View.VISIBLE
-            window.decorView.requestFocus()
-        }
-        instrumentation.waitForIdleSync()
-        Thread.sleep(300)
     }
 }

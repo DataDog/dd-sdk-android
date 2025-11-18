@@ -31,7 +31,8 @@ internal object SessionReplaySegmentUtils {
      * @return The parsed JSON element, or null if no segment found or parsing failed
      */
     fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
-        val compressedSegmentBody = resolveSrSegmentBodyFromRequest(requestBuffer)
+        // cloning the requestBuffer is critical, otherwise it causes timeouts on min/median api
+        val compressedSegmentBody = resolveSrSegmentBodyFromRequest(requestBuffer.clone())
         if (compressedSegmentBody.isNotEmpty()) {
             // decompress the segment binary
             return JsonParser.parseString(String(decompressBytes(compressedSegmentBody)))
