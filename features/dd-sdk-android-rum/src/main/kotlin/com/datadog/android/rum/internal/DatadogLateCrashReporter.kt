@@ -192,7 +192,7 @@ internal class DatadogLateCrashReporter(
         val additionalProperties = viewEvent.context?.additionalProperties ?: mutableMapOf()
         val additionalUserProperties = viewEvent.usr?.additionalProperties ?: mutableMapOf()
         val user = viewEvent.usr
-        val hasUserInfo = user?.id != null || user?.name != null ||
+        val hasUserInfo = user?.id != null || user?.anonymousId != null || user?.name != null ||
             user?.email != null || additionalUserProperties.isNotEmpty()
         val account = viewEvent.account
         val deviceInfo = datadogContext.deviceInfo

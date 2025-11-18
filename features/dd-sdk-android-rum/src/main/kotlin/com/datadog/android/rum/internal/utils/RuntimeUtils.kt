@@ -9,6 +9,6 @@ package com.datadog.android.rum.internal.utils
 import com.datadog.android.api.context.UserInfo
 
 internal fun UserInfo.hasUserData(): Boolean {
-    return id != null || name != null ||
+    return id != null || anonymousId != null || name != null ||
         email != null || additionalProperties.isNotEmpty()
 }
