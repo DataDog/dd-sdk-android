@@ -42,7 +42,7 @@ data class DatadogContext(
     val service: String,
     val env: String,
     val version: String,
-    val versionCode: String,
+    val versionCode: Int,
     val variant: String,
     val source: String,
     val sdkVersion: String,

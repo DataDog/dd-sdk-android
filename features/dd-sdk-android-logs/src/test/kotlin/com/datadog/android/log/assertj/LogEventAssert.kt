@@ -272,13 +272,13 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
-    fun hasBuildVersion(buildVersion: String?): LogEventAssert {
+    fun hasBuildVersion(buildVersion: Int?): LogEventAssert {
         assertThat(actual.buildVersion)
             .overridingErrorMessage(
                 "Expected LogEvent to have build version: $buildVersion" +
                     " but instead was ${actual.buildVersion}"
             )
-            .isEqualTo(buildVersion)
+            .isEqualTo(buildVersion.toString())
         return this
     }
 

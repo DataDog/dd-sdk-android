@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultAppVersionProvider(
     initialVersion: String,
-    override val versionCode: String
+    override val versionCode: Int
 ) : AppVersionProvider {
 
     private val value = AtomicReference(initialVersion)

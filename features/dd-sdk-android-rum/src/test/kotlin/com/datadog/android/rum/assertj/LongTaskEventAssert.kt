@@ -365,13 +365,13 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasBuildVersion(buildVersion: String?): LongTaskEventAssert {
+    fun hasBuildVersion(buildVersion: Int?): LongTaskEventAssert {
         assertThat(actual.buildVersion)
             .overridingErrorMessage(
                 "Expected RUM event to have build version: $buildVersion" +
                     " but instead was: ${actual.buildVersion}"
             )
-            .isEqualTo(buildVersion)
+            .isEqualTo(buildVersion.toString())
         return this
     }
 

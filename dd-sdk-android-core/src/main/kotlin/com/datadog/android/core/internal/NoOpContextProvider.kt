@@ -25,7 +25,7 @@ internal class NoOpContextProvider : ContextProvider {
         service = "",
         env = "",
         version = "",
-        versionCode = "0",
+        versionCode = 0,
         variant = "",
         source = "",
         sdkVersion = "",

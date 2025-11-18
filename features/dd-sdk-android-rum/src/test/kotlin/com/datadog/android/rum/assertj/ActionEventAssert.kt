@@ -505,13 +505,13 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasBuildVersion(buildVersion: String?): ActionEventAssert {
+    fun hasBuildVersion(buildVersion: Int?): ActionEventAssert {
         assertThat(actual.buildVersion)
             .overridingErrorMessage(
                 "Expected RUM event to have build version: $buildVersion" +
                     " but instead was: ${actual.buildVersion}"
             )
-            .isEqualTo(buildVersion)
+            .isEqualTo(buildVersion.toString())
         return this
     }
 
