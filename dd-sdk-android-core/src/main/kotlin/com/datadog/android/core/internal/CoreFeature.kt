@@ -511,7 +511,7 @@ internal class CoreFeature(
 
         packageVersionProvider = DefaultAppVersionProvider(
             initialVersion = versionName ?: versionCode?.toString() ?: DEFAULT_APP_VERSION,
-            versionCode = (versionCode ?: 0).toString()
+            versionCode = versionCode ?: 0
         )
         clientToken = configuration.clientToken
         serviceName = configuration.service ?: appContext.packageName

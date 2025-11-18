@@ -352,7 +352,7 @@ internal class RumResourceScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
-                buildVersion = datadogContext.versionCode,
+                buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )
@@ -509,7 +509,7 @@ internal class RumResourceScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
-                buildVersion = datadogContext.versionCode,
+                buildVersion = datadogContext.versionCode.toString(),
                 ddtags = buildDDTagsString(datadogContext)
             )
         }

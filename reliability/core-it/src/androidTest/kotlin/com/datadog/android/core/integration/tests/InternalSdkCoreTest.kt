@@ -585,9 +585,9 @@ class InternalSdkCoreTest : MockServerTest() {
         }
     }
 
-    private fun getVersionCode(): String? {
+    private fun getVersionCode(): Int? {
         @Suppress("DEPRECATION")
-        return getPackageInfo(ApplicationProvider.getApplicationContext())?.versionCode?.toString()
+        return getPackageInfo(ApplicationProvider.getApplicationContext())?.versionCode
     }
 
     private fun getPackageInfo(appContext: Context): PackageInfo? {

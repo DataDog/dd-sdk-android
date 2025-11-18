@@ -40,7 +40,7 @@ internal class DefaultAppVersionProviderTest {
 
     @BeforeEach
     fun setUp() {
-        testedProvider = DefaultAppVersionProvider(fakeVersion, fakeVersionCode.toString())
+        testedProvider = DefaultAppVersionProvider(fakeVersion, fakeVersionCode)
     }
 
     @Test

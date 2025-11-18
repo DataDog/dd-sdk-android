@@ -404,7 +404,7 @@ internal open class RumViewScope(
             ),
             connectivity = datadogContext.networkInfo.toVitalConnectivity(),
             version = datadogContext.version,
-            buildVersion = datadogContext.versionCode,
+            buildVersion = datadogContext.versionCode.toString(),
             buildId = datadogContext.appBuildId,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
@@ -799,7 +799,7 @@ internal open class RumViewScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
-                buildVersion = datadogContext.versionCode,
+                buildVersion = datadogContext.versionCode.toString(),
                 ddtags = buildDDTagsString(datadogContext)
             )
         }
@@ -1343,7 +1343,7 @@ internal open class RumViewScope(
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
-                buildVersion = datadogContext.versionCode,
+                buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             ).apply {
@@ -1506,7 +1506,7 @@ internal open class RumViewScope(
                 connectivity = datadogContext.networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
-                buildVersion = datadogContext.versionCode,
+                buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )
@@ -1629,7 +1629,7 @@ internal open class RumViewScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
-                buildVersion = datadogContext.versionCode,
+                buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )

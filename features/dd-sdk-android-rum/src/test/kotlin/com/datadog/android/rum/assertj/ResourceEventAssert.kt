@@ -626,13 +626,13 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasBuildVersion(buildVersion: String?): ResourceEventAssert {
+    fun hasBuildVersion(buildVersion: Int?): ResourceEventAssert {
         assertThat(actual.buildVersion)
             .overridingErrorMessage(
                 "Expected RUM event to have build version: $buildVersion" +
                     " but instead was: ${actual.buildVersion}"
             )
-            .isEqualTo(buildVersion)
+            .isEqualTo(buildVersion.toString())
         return this
     }
 
