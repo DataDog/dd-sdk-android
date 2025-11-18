@@ -259,7 +259,7 @@
     },
     "build_version": {
       "type": "string",
-      "description": "Build version",
+      "description": "The build version for this application",
       "readOnly": true
     },
     "ddtags": {
