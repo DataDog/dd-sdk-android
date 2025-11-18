@@ -1023,6 +1023,7 @@ public final class com/datadog/android/log/LogAttributes {
 	public static final field RUM_APPLICATION_ID Ljava/lang/String;
 	public static final field RUM_SESSION_ID Ljava/lang/String;
 	public static final field RUM_VIEW_ID Ljava/lang/String;
+	public static final field SERVICE Ljava/lang/String;
 	public static final field SERVICE_NAME Ljava/lang/String;
 	public static final field SOURCE Ljava/lang/String;
 	public static final field SOURCE_TYPE Ljava/lang/String;

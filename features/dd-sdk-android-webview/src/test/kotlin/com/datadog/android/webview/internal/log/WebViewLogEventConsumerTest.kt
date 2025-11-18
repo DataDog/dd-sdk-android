@@ -28,6 +28,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -127,10 +128,7 @@ internal class WebViewLogEventConsumerTest {
         // Given
         val expectedDate = fakeTimeOffset +
             fakeWebLogEvent.getAsJsonPrimitive(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
-        var expectedTags = mobileSdkDdtags()
-        fakeWebLogEvent.get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.let {
-            expectedTags += WebViewLogEventConsumer.DDTAGS_SEPARATOR + it
-        }
+        val expectedTags = fakeWebLogEvent.ddTags.removeSdkTags() + mobileSdkDdtags()
 
         // When
         testedConsumer.consume(
@@ -141,10 +139,39 @@ internal class WebViewLogEventConsumerTest {
         argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
+            assertThat(firstValue.ddTags).containsExactlyInAnyOrderElementsOf(expectedTags)
+        }
+    }
+
+    @Test
+    fun `M write the user event W consume { user event type, known SDK ddtags }`(
+        forge: Forge
+    ) {
+        // Given
+        val expectedDate = fakeTimeOffset +
+            fakeWebLogEvent.getAsJsonPrimitive(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
+        val knownBrowserSdkTags = listOf(
+            "${LogAttributes.APPLICATION_VERSION}:${forge.anAlphaNumericalString()}",
+            "${LogAttributes.ENV}:${forge.anAlphaNumericalString()}",
+            "${LogAttributes.SERVICE}:${forge.anAlphaNumericalString()}"
+        )
+        val eventTags = fakeWebLogEvent.ddTags + knownBrowserSdkTags
+        fakeWebLogEvent.addProperty(
+            WebViewLogEventConsumer.DDTAGS_KEY_NAME,
+            eventTags.joinToString(",")
+        )
+        val expectedTags = eventTags.removeSdkTags() + mobileSdkDdtags()
+
+        // When
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
+            assertThat(firstValue.ddTags).containsExactlyInAnyOrderElementsOf(expectedTags)
         }
     }
 
@@ -190,10 +217,7 @@ internal class WebViewLogEventConsumerTest {
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn fakeRumContext
         val expectedDate = fakeTimeOffset +
             fakeWebLogEvent.get(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
-        var expectedTags = mobileSdkDdtags()
-        fakeWebLogEvent.get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.let {
-            expectedTags += WebViewLogEventConsumer.DDTAGS_SEPARATOR + it
-        }
+        val expectedTags = fakeWebLogEvent.ddTags.removeSdkTags() + mobileSdkDdtags()
 
         // When
         testedConsumer.consume(
@@ -204,10 +228,7 @@ internal class WebViewLogEventConsumerTest {
         argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
+            assertThat(firstValue.ddTags).containsExactlyInAnyOrderElementsOf(expectedTags)
             assertThat(firstValue).hasField(
                 LogAttributes.RUM_APPLICATION_ID,
                 fakeRumContext.applicationId
@@ -223,10 +244,7 @@ internal class WebViewLogEventConsumerTest {
     fun `M skip date correction W consume { user log, date field does not exist }`() {
         // Given
         fakeWebLogEvent.remove(WebViewLogEventConsumer.DATE_KEY_NAME)
-        var expectedTags = mobileSdkDdtags()
-        fakeWebLogEvent.get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.let {
-            expectedTags += WebViewLogEventConsumer.DDTAGS_SEPARATOR + it
-        }
+        val expectedTags = fakeWebLogEvent.ddTags.removeSdkTags() + mobileSdkDdtags()
 
         // When
         testedConsumer.consume(
@@ -237,10 +255,7 @@ internal class WebViewLogEventConsumerTest {
         argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).doesNotHaveField(WebViewLogEventConsumer.DATE_KEY_NAME)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
+            assertThat(firstValue.ddTags).containsExactlyInAnyOrderElementsOf(expectedTags)
         }
     }
 
@@ -298,7 +313,7 @@ internal class WebViewLogEventConsumerTest {
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
+                expectedTags.joinToString(",")
             )
         }
     }
@@ -311,15 +326,32 @@ internal class WebViewLogEventConsumerTest {
         val aJsonObject: JsonObject = getForgery()
         aJsonObject.addProperty(WebViewLogEventConsumer.DATE_KEY_NAME, aLong())
         if (aBool()) {
-            aJsonObject.addProperty(WebViewLogEventConsumer.DDTAGS_KEY_NAME, aString())
+            aJsonObject.addProperty(
+                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
+                aMap { anAlphabeticalString() to anAlphaNumericalString() }
+                    .map { "${it.key}:${it.value}" }
+                    .joinToString(",")
+            )
         }
         return aJsonObject
     }
 
-    private fun mobileSdkDdtags(): String {
-        return "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
-            ",${LogAttributes.ENV}:${fakeDatadogContext.env}"
+    private fun mobileSdkDdtags(): List<String> = listOf(
+        "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
+        "${LogAttributes.ENV}:${fakeDatadogContext.env}",
+        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+        "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
+    )
+
+    private fun List<String>.removeSdkTags(): List<String> = filterNot {
+        it.startsWith("${LogAttributes.APPLICATION_VERSION}:") ||
+            it.startsWith("${LogAttributes.ENV}:") ||
+            it.startsWith("${LogAttributes.VARIANT}:") ||
+            it.startsWith("${LogAttributes.SERVICE}:")
     }
+
+    private val JsonObject.ddTags: List<String>
+        get() = get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.split(",").orEmpty()
 
     // endregion
 
