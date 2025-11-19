@@ -66,7 +66,7 @@ class ClassJsonElementDeserializerGenerator(
                 propertyType = p.type,
                 assignee = "val ${p.name.variableName()}",
                 getter = "${Identifier.PARAM_JSON_OBJ}.get(\"${p.name}\")",
-                nullable = p.optional,
+                nullable = !definition.required.contains(p.name),
                 rootTypeName = rootTypeName
             )
         }
@@ -80,7 +80,7 @@ class ClassJsonElementDeserializerGenerator(
 
         definition.properties
             .filter { it.type is TypeDefinition.Constant }
-            .forEach { appendConstantPropertyCheck(it) }
+            .forEach { appendConstantPropertyCheck(property = it, isRequired = definition.required.contains(it.name)) }
 
         val nonConstantProperties = definition.properties
             .filter { it.type !is TypeDefinition.Constant }
@@ -91,11 +91,11 @@ class ClassJsonElementDeserializerGenerator(
         addStatement("return %L($constructorArguments)", definition.name)
     }
 
-    private fun FunSpec.Builder.appendConstantPropertyCheck(property: TypeProperty) {
+    private fun FunSpec.Builder.appendConstantPropertyCheck(property: TypeProperty, isRequired: Boolean) {
         val constant = property.type as TypeDefinition.Constant
         val variableName = property.name.variableName()
 
-        if (property.optional) {
+        if (!isRequired) {
             beginControlFlow("if (%L != null)", variableName)
         }
 
@@ -113,7 +113,7 @@ class ClassJsonElementDeserializerGenerator(
             JsonType.ARRAY -> TODO()
             null -> TODO()
         }
-        if (property.optional) {
+        if (!isRequired) {
             endControlFlow()
         }
     }
@@ -216,7 +216,12 @@ class ClassJsonElementDeserializerGenerator(
                 Identifier.PARAM_COLLECTION
             )
 
-            is TypeDefinition.OneOfClass,
+            is TypeDefinition.OneOfClass -> addStatement(
+                "%L.add(%T.%L(it))",
+                Identifier.PARAM_COLLECTION,
+                arrayType.items.asKotlinTypeName(rootTypeName),
+                Identifier.FUN_FROM_JSON_ELEMENT
+            )
             is TypeDefinition.Class -> addStatement(
                 "%L.add(%T.%L(it.asJsonObject))",
                 Identifier.PARAM_COLLECTION,
@@ -262,12 +267,12 @@ class ClassJsonElementDeserializerGenerator(
         rootTypeName: String
     ) {
         val opt = if (nullable) "?" else ""
-        beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
+        beginControlFlow("$assignee = $getter$opt.let")
 
         addStatement(
             "%T.%L(it)",
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON_OBJ
+            Identifier.FUN_FROM_JSON_ELEMENT
         )
         endControlFlow()
     }

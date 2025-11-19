@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -56,8 +57,8 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -260,13 +261,15 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 event,
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = VitalEvent.StepType.START,
+                stepType = RumVitalOperationStepEvent.StepType.START,
                 failureReason = null,
                 eventAttributes = event.attributes
             )
@@ -280,13 +283,15 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
+        if (stopped) return
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 event,
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = VitalEvent.StepType.END,
+                stepType = RumVitalOperationStepEvent.StepType.END,
                 failureReason = event.failureReason?.toSchemaFailureReason(),
                 eventAttributes = event.attributes
             )
@@ -300,10 +305,10 @@ internal open class RumViewScope(
         datadogContext: DatadogContext,
         name: String,
         operationKey: String?,
-        stepType: VitalEvent.StepType,
-        failureReason: VitalEvent.FailureReason?,
+        stepType: RumVitalOperationStepEvent.StepType,
+        failureReason: RumVitalOperationStepEvent.FailureReason?,
         eventAttributes: Map<String, Any?>
-    ): VitalEvent {
+    ): RumVitalOperationStepEvent {
         val rumContext = getRumContext()
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -311,7 +316,7 @@ internal open class RumViewScope(
         ) {
             null
         } else {
-            VitalEvent.Synthetics(
+            RumVitalOperationStepEvent.Synthetics(
                 testId = rumContext.syntheticsTestId,
                 resultId = rumContext.syntheticsResultId
             )
@@ -323,54 +328,54 @@ internal open class RumViewScope(
 
         val sessionType = when {
             rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
-            syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
-            else -> VitalEvent.VitalEventSessionType.SYNTHETICS
+            syntheticsAttribute == null -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+            else -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
         }
         val batteryInfo = batteryInfoProvider.getState()
         val displayInfo = displayInfoProvider.getState()
         val user = datadogContext.userInfo
 
-        return VitalEvent(
+        return RumVitalOperationStepEvent(
             date = event.eventTime.timestamp + serverTimeOffsetInMs,
-            context = VitalEvent.Context(
+            context = RumVitalOperationStepEvent.Context(
                 additionalProperties = getCustomAttributes().toMutableMap().also {
                     it.putAll(eventAttributes)
                 }
             ),
-            dd = VitalEvent.Dd(
-                session = VitalEvent.DdSession(
+            dd = RumVitalOperationStepEvent.Dd(
+                session = RumVitalOperationStepEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
                 ),
-                configuration = VitalEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = RumVitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
             ),
-            application = VitalEvent.Application(
+            application = RumVitalOperationStepEvent.Application(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
             synthetics = syntheticsAttribute,
-            session = VitalEvent.VitalEventSession(
+            session = RumVitalOperationStepEvent.RumVitalOperationStepEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay
             ),
-            view = VitalEvent.VitalEventView(
+            view = RumVitalOperationStepEvent.RumVitalOperationStepEventView(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            source = VitalEvent.VitalEventSource.tryFromSource(
+            source = RumVitalOperationStepEvent.RumVitalOperationStepEventSource.tryFromSource(
                 source = datadogContext.source,
                 internalLogger = sdkCore.internalLogger
             ),
             account = datadogContext.accountInfo?.let {
-                VitalEvent.Account(
+                RumVitalOperationStepEvent.Account(
                     id = it.id,
                     name = it.name,
                     additionalProperties = it.extraInfo.toMutableMap()
                 )
             },
             usr = if (user.hasUserData()) {
-                VitalEvent.Usr(
+                RumVitalOperationStepEvent.Usr(
                     id = user.id,
                     name = user.name,
                     email = user.email,
@@ -380,7 +385,7 @@ internal open class RumViewScope(
             } else {
                 null
             },
-            device = VitalEvent.Device(
+            device = RumVitalOperationStepEvent.Device(
                 type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
                 name = datadogContext.deviceInfo.deviceName,
                 model = datadogContext.deviceInfo.deviceModel,
@@ -392,7 +397,7 @@ internal open class RumViewScope(
                 powerSavingMode = batteryInfo.lowPowerMode,
                 brightnessLevel = displayInfo.screenBrightness
             ),
-            os = VitalEvent.Os(
+            os = RumVitalOperationStepEvent.Os(
                 name = datadogContext.deviceInfo.osName,
                 version = datadogContext.deviceInfo.osVersion,
                 versionMajor = datadogContext.deviceInfo.osMajorVersion
@@ -401,13 +406,12 @@ internal open class RumViewScope(
             version = datadogContext.version,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
-            vital = VitalEvent.VitalEventVital(
+            vital = RumVitalOperationStepEvent.Vital(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
-                failureReason = failureReason,
-                type = VitalEvent.VitalEventVitalType.OPERATION_STEP
+                failureReason = failureReason
             )
         )
     }
@@ -1703,11 +1707,11 @@ internal open class RumViewScope(
     }
 
     private fun logSynthetics(key: String, value: String) {
-        sdkCore.internalLogger.log(
-            level = InternalLogger.Level.INFO,
-            target = InternalLogger.Target.USER,
-            messageBuilder = { "$key=$value" }
-        )
+        /**
+         * We use [android.util.Log] here instead of [InternalLogger] because we want to log regardless of the
+         * verbosity level set using [com.datadog.android.Datadog.setVerbosity].
+         */
+        Log.i("DatadogSynthetics", "$key=$value")
     }
 
     // endregion

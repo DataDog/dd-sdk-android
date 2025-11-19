@@ -43,6 +43,8 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import java.io.File
 import java.util.Collections
 import java.util.Locale
@@ -338,6 +340,11 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return coreFeature.createScheduledExecutorService(executorContext)
+    }
+
+    /** @inheritDoc */
+    override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+        return coreFeature.createOkHttpCallFactory(block)
     }
 
     override fun setAnonymousId(anonymousId: UUID?) {

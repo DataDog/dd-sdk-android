@@ -1461,6 +1461,24 @@ internal class DatadogCoreTest {
         assertThat(isActive).isTrue()
     }
 
+    @Test
+    fun `M delegate to core feature W createOkHttpCallFactory() { }`(
+        @LongForgery(min = 0, max = 60) customTimeout: Long,
+        @LongForgery(min = 0, max = 60) customWriteTimeout: Long
+    ) {
+        // Given
+        testedCore.initialize(fakeConfiguration)
+
+        // When
+        val callFactory = testedCore.createOkHttpCallFactory {
+            callTimeout(customTimeout, TimeUnit.SECONDS)
+            writeTimeout(customWriteTimeout, TimeUnit.SECONDS)
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+    }
+
     class ErrorRecordingRunnable(
         private val collector: MutableList<Throwable>,
         private val delegate: Runnable
@@ -1477,6 +1495,7 @@ internal class DatadogCoreTest {
     companion object {
 
         val msToNs = TimeUnit.MILLISECONDS.toNanos(1)
+        val secondsToNs = TimeUnit.SECONDS.toNanos(1)
 
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 

@@ -23,6 +23,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -310,6 +311,47 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
             slowFramesConfiguration = null
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.frameStatesAggregator).isNull()
+    }
+
+    @Test
+    fun `M frameStatesAggregator != null W initialize { frequency = AVERAGE }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.frameStatesAggregator).isNotNull()
+    }
+
+    @Test
+    fun `M frameStatesAggregator == null W initialize { frequency = AVERAGE, disableJankStats = true }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
+            disableJankStats = true
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -1414,6 +1456,31 @@ internal class RumFeatureTest {
         verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifySlowFramesListenerLogMessage()
+    }
+
+    // endregion
+
+    // region FeatureEventReceiver#onReceive + flag events
+
+    @Test
+    fun `M call addFeatureFlagEvaluation W onReceive() { RumFlagEvaluationMessage }`(forge: Forge) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeValue = forge.anAsciiString()
+        val fakeEvent = RumFlagEvaluationMessage(
+            flagKey = fakeFlagKey,
+            value = fakeValue
+        )
+
+        // When
+        testedFeature.onReceive(fakeEvent)
+
+        // Then
+        verify(mockRumMonitor).addFeatureFlagEvaluation(
+            name = fakeFlagKey,
+            value = fakeValue
+        )
     }
 
     // endregion

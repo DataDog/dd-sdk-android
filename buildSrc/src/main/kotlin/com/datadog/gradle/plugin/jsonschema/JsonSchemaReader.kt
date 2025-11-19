@@ -172,7 +172,6 @@ class JsonSchemaReader(
                     TypeProperty(
                         name = "",
                         type = typeDef,
-                        optional = true,
                         readOnly = readOnly ?: false,
                         defaultValue = null
                     )
@@ -185,7 +184,6 @@ class JsonSchemaReader(
                     TypeProperty(
                         name = "",
                         type = typeDef,
-                        optional = true,
                         readOnly = false,
                         defaultValue = null
                     )
@@ -333,22 +331,23 @@ class JsonSchemaReader(
             // because we can't make a type matching both, we simplify it to be always an array
             logger.warn("Simplifying a 'oneOf' constraint to $asArray")
             asArray
-        } else if (options.all { it is TypeDefinition.Class || it is TypeDefinition.OneOfClass }) {
+        } else {
             TypeDefinition.OneOfClass(
                 typeName,
                 options.flatMap {
                     when (it) {
                         is TypeDefinition.OneOfClass -> it.options
-                        is TypeDefinition.Class -> listOf(it)
-                        else -> emptyList()
+                        is TypeDefinition.Class -> listOf(TypeDefinition.OneOfClass.Option.Class(it))
+                        is TypeDefinition.Primitive -> listOf(TypeDefinition.OneOfClass.Option.Primitive(it))
+                        else -> {
+                            throw UnsupportedOperationException(
+                                "Unable to implement `oneOf` constraint with types:\n  " +
+                                    options.joinToString("\n  ")
+                            )
+                        }
                     }
                 },
                 description.orEmpty()
-            )
-        } else {
-            throw UnsupportedOperationException(
-                "Unable to implement `oneOf` constraint with types:\n  " +
-                    options.joinToString("\n  ")
             )
         }
     }
@@ -358,7 +357,11 @@ class JsonSchemaReader(
         allOf: List<JsonDefinition>,
         fromFile: File
     ): TypeDefinition {
-        var mergedType: TypeDefinition = TypeDefinition.Class(typeName, emptyList())
+        var mergedType: TypeDefinition = TypeDefinition.Class(
+            name = typeName,
+            properties = emptyList(),
+            required = emptySet()
+        )
 
         allOf.forEach {
             val type = transform(it, typeName, fromFile)
@@ -374,7 +377,6 @@ class JsonSchemaReader(
     ): TypeDefinition {
         val properties = mutableListOf<TypeProperty>()
         definition.properties?.forEach { (name, property) ->
-            val required = (definition.required != null) && (name in definition.required)
             val readOnly = (property.readOnly == null) || (property.readOnly)
             val propertyType = transform(
                 property,
@@ -385,7 +387,6 @@ class JsonSchemaReader(
                 TypeProperty(
                     name,
                     propertyType,
-                    !required,
                     readOnly,
                     property.default
                 )
@@ -397,7 +398,8 @@ class JsonSchemaReader(
             name = typeName,
             description = definition.description.orEmpty(),
             properties = properties,
-            additionalProperties = additional
+            additionalProperties = additional,
+            required = definition.required.orEmpty().toSet()
         )
     }
 

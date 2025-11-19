@@ -33,6 +33,9 @@ class HouseholdForgeryFactory : ForgeryFactory<Household> {
                 ),
                 Household.Situation.Cotenancy(
                     roommates = forge.aList { anAlphabeticalString() }
+                ),
+                Household.Situation.Long(
+                    item = forge.aLong()
                 )
             )
         )

@@ -22,6 +22,8 @@ class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queu
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
+  constructor(String, Any)
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

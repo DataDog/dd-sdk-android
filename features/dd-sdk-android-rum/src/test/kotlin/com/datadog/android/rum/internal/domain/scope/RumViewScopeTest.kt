@@ -31,6 +31,7 @@ import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
+import com.datadog.android.rum.assertj.VitalFeatureOperationPropertiesAssert
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -69,8 +70,8 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyApiUsage
@@ -215,7 +216,7 @@ internal class RumViewScopeTest {
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
     var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
     var fakeSourceLongTaskEvent: LongTaskEvent.LongTaskEventSource? = null
-    var fakeVitalSourceEvent: VitalEvent.VitalEventSource? = null
+    var fakeVitalSourceEvent: RumVitalOperationStepEvent.RumVitalOperationStepEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
@@ -317,7 +318,7 @@ internal class RumViewScopeTest {
             null
         }
         fakeVitalSourceEvent = if (isValidSource) {
-            VitalEvent.VitalEventSource.fromJson(fakeSource)
+            RumVitalOperationStepEvent.RumVitalOperationStepEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -8609,6 +8610,54 @@ internal class RumViewScopeTest {
     // region Feature Operations
 
     @Test
+    fun `M do nothing if view is stopped W handleEvent { StartFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StartFeatureOperation(
+            name,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            operationKey = forge.aNullable { key },
+            eventTime = fakeEventTime + duration
+        )
+
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M do nothing if view is stopped W handleEvent { StopFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StopFeatureOperation(
+            name,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            operationKey = forge.aNullable { key },
+            failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) },
+            eventTime = fakeEventTime + duration
+        )
+        testedScope.stopped = true
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
     fun `M send view update W handleEvent { StartFeatureOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
@@ -8688,7 +8737,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        argumentCaptor<VitalEvent> {
+        argumentCaptor<RumVitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
@@ -8697,17 +8746,15 @@ internal class RumViewScopeTest {
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
+                .hasSessionType(
+                    fakeRumSessionType?.toVital()
+                        ?: RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+                )
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
                 .hasNoSyntheticsTest()
-                .hasVitalStepType(VitalEvent.StepType.START)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8727,6 +8774,14 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalOperationStepEvent.StepType.START)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8755,7 +8810,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        argumentCaptor<VitalEvent> {
+        argumentCaptor<RumVitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
@@ -8764,17 +8819,15 @@ internal class RumViewScopeTest {
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionType(
+                    fakeRumSessionType?.toVital()
+                        ?: RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
+                )
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
                 .hasSyntheticsTest(fakeTestId, fakeResultId)
-                .hasVitalStepType(VitalEvent.StepType.START)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8794,6 +8847,14 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalOperationStepEvent.StepType.START)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8819,7 +8880,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        argumentCaptor<VitalEvent> {
+        argumentCaptor<RumVitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
@@ -8828,17 +8889,15 @@ internal class RumViewScopeTest {
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
+                .hasSessionType(
+                    fakeRumSessionType?.toVital()
+                        ?: RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+                )
                 .hasSessionReplay(fakeHasReplay)
                 .hasNoSyntheticsTest()
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8858,6 +8917,14 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalOperationStepEvent.StepType.END)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8886,7 +8953,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        argumentCaptor<VitalEvent> {
+        argumentCaptor<RumVitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
@@ -8895,17 +8962,15 @@ internal class RumViewScopeTest {
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionType(
+                    fakeRumSessionType?.toVital()
+                        ?: RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
+                )
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasSyntheticsTest(fakeTestId, fakeResultId)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8925,6 +8990,14 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalOperationStepEvent.StepType.END)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8951,7 +9024,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        argumentCaptor<VitalEvent> {
+        argumentCaptor<RumVitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
@@ -8960,17 +9033,15 @@ internal class RumViewScopeTest {
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
+                .hasSessionType(
+                    fakeRumSessionType?.toVital()
+                        ?: RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+                )
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasNoSyntheticsTest()
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasVitalFailureReason(failureReason)
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8990,6 +9061,14 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalOperationStepEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
         }
     }
 
@@ -9020,7 +9099,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        argumentCaptor<VitalEvent> {
+        argumentCaptor<RumVitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
@@ -9030,16 +9109,14 @@ internal class RumViewScopeTest {
                 .hasSampleRate(fakeSampleRate)
                 .hasSyntheticsTest(fakeTestId, fakeResultId)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionType(
+                    fakeRumSessionType?.toVital()
+                        ?: RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
+                )
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasVitalFailureReason(failureReason)
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -9059,6 +9136,14 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalOperationStepEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
         }
     }
     // endregion

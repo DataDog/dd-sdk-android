@@ -19,6 +19,8 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.flags.Flags
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -159,6 +161,8 @@ class SampleApplication : Application() {
 
         Rum.enable(createRumConfiguration())
 
+        initializeFlags()
+
         GlobalRumMonitor.get().debug = true
     }
 
@@ -204,6 +208,11 @@ class SampleApplication : Application() {
         GlobalOpenTelemetry.set(
             DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
         )
+    }
+
+    private fun initializeFlags() {
+        val flagsConfig = FlagsConfiguration.Builder().build()
+        Flags.enable(flagsConfig)
     }
 
     private fun initializeLogs() {
@@ -316,7 +325,7 @@ class SampleApplication : Application() {
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setVitalEventMapper { event ->
+            .setVitalOperationStepEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }

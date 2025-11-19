@@ -22,8 +22,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -220,13 +220,26 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [VitalEvent]. You can use this interface implementation
-         * to modify the [VitalEvent] attributes before serialisation.
+         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent]. You can use this interface implementation
+         * to modify the [RumVitalOperationStepEvent] attributes before serialisation.
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setVitalEventMapper(eventMapper: EventMapper<VitalEvent>): Builder {
-            rumConfig = rumConfig.copy(vitalEventMapper = eventMapper)
+        @Deprecated(message = "Use setVitalOperationStepEventMapper instead")
+        fun setVitalEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
+            @OptIn(ExperimentalRumApi::class)
+            return setVitalOperationStepEventMapper(eventMapper)
+        }
+
+        /**
+         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent]. You can use this interface implementation
+         * to modify the [RumVitalOperationStepEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        @ExperimentalRumApi
+        fun setVitalOperationStepEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
+            rumConfig = rumConfig.copy(vitalOperationStepEventMapper = eventMapper)
             return this
         }
 
@@ -408,6 +421,15 @@ data class RumConfiguration internal constructor(
          */
         internal fun setRumSessionTypeOverride(rumSessionTypeOverride: RumSessionType): Builder {
             rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
+            return this
+        }
+
+        /**
+         * Disables JankStats tracking. This flag may be enabled by cross-platform SDKs where
+         * native frame metrics are not meaningful.
+         */
+        internal fun setDisableJankStats(disable: Boolean): Builder {
+            rumConfig = rumConfig.copy(disableJankStats = disable)
             return this
         }
     }

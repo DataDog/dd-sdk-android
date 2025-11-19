@@ -3,6 +3,7 @@ public final class com/datadog/android/BuildConfig {
 	public static final field DEBUG Z
 	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
 	public static final field LOGCAT_ENABLED Ljava/lang/Boolean;
+	public static final field SDK_COMMIT_SHA1 Ljava/lang/String;
 	public static final field SDK_VERSION_CODE I
 	public static final field SDK_VERSION_NAME Ljava/lang/String;
 	public fun <init> ()V
@@ -360,6 +361,7 @@ public final class com/datadog/android/api/context/UserInfo {
 
 public abstract interface class com/datadog/android/api/feature/Feature {
 	public static final field Companion Lcom/datadog/android/api/feature/Feature$Companion;
+	public static final field FLAGS_FEATURE_NAME Ljava/lang/String;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
 	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
@@ -372,6 +374,7 @@ public abstract interface class com/datadog/android/api/feature/Feature {
 }
 
 public final class com/datadog/android/api/feature/Feature$Companion {
+	public static final field FLAGS_FEATURE_NAME Ljava/lang/String;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
 	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
@@ -411,6 +414,7 @@ public final class com/datadog/android/api/feature/FeatureScopeExtKt {
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureSdkCore : com/datadog/android/api/SdkCore {
+	public abstract fun createOkHttpCallFactory (Lkotlin/jvm/functions/Function1;)Lokhttp3/Call$Factory;
 	public abstract fun createScheduledExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ScheduledExecutorService;
 	public abstract fun createSingleThreadExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ExecutorService;
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
@@ -426,6 +430,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 }
 
 public final class com/datadog/android/api/feature/FeatureSdkCore$DefaultImpls {
+	public static synthetic fun createOkHttpCallFactory$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lokhttp3/Call$Factory;
 	public static synthetic fun getFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZILjava/lang/Object;)Ljava/util/Map;
 	public static synthetic fun updateFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 }

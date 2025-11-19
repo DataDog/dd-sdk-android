@@ -76,7 +76,7 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         rumMonitor.enableJankStatsTracking(activity)
     }
 
-    internal fun setSyntheticsAttributeFromIntent(intent: Intent) {
+    fun setSyntheticsAttributeFromIntent(intent: Intent) {
         @Suppress("TooGenericExceptionCaught")
         val extras = try { intent.extras } catch (_: Exception) { null }
         val testId = extras?.getString("_dd.synthetics.test_id")
@@ -114,6 +114,13 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             rumSessionTypeOverride: RumSessionType
         ): Builder {
             return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
+        }
+
+        fun setDisableJankStats(
+            builder: Builder,
+            disable: Boolean
+        ): Builder {
+            return builder.setDisableJankStats(disable)
         }
     }
 }

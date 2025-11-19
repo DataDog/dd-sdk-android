@@ -21,6 +21,16 @@ We replaced the `OpenTracing` classes with internal ones. However, we strongly e
 
 ### Trace product changes
 
+The URL provided in the `useCustomEndpoint` method should be the full endpoint URL 
+(e.g.: https://example.com/trace/upload), not just the hostname, i.e:
+```kotlin 
+Trace.enable(
+        TraceConfiguration.Builder()
+            .useCustomEndpoint("https://example.com/trace/upload")
+            .build()
+)
+```
+
 #### Migrating tracing from `OpenTracing` to `OpenTelemetry` (recommended)
 
 > [!WARNING] 
@@ -35,52 +45,52 @@ implementation(project("com.datadoghq:dd-sdk-android-trace-otel:x.x.x"))
 
 2. Replace the `OpenTracing` configuration:
 ```kotlin
-  GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
-        )
+GlobalTracer.registerIfAbsent(
+          AndroidTracer.Builder()
+              .setService(BuildConfig.APPLICATION_ID)
+              .build()
+)
 ```
 
 with the `OpenTelemetry` configuration:
 ```kotlin
-  GlobalOpenTelemetry.set(object : OpenTelemetry {
-            private val tracerProvider = OtelTracerProvider.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
+GlobalOpenTelemetry.set(object : OpenTelemetry {
+          private val tracerProvider = OtelTracerProvider.Builder()
+              .setService(BuildConfig.APPLICATION_ID)
+              .build()
 
-            override fun getTracerProvider(): TracerProvider {
-                return tracerProvider
-            }
+          override fun getTracerProvider(): TracerProvider {
+              return tracerProvider
+          }
 
-            override fun getPropagators(): ContextPropagators {
-                return ContextPropagators.noop()
-            }
-        })
+          override fun getPropagators(): ContextPropagators {
+              return ContextPropagators.noop()
+          }
+      })
 ```
 
 > [!NOTE] 
 > You can use the default configuration to make it even shorter in case if don't provide any additional parameters:
 ```kotlin
-    GlobalOpenTelemetry.set(
-            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
-        )
+GlobalOpenTelemetry.set(
+        DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
+)
 ```
 
 To access the tracer object for manual (custom) tracing, use `io.opentelemetry.api.GlobalOpenTelemetry.get()` instead of `io.opentracing.util.GlobalTracer.get()`.
 For example: 
 ```kotlin
-   val tracer: Tracer = GlobalOpenTelemetry
-            .get()
-            .getTracer("SampleApplicationTracer")
-    
-    val span = tracer
-            .spanBuilder("Executing operation")
-            .startSpan()
+val tracer: Tracer = GlobalOpenTelemetry
+         .get()
+         .getTracer("SampleApplicationTracer")
+ 
+val span = tracer
+         .spanBuilder("Executing operation")
+         .startSpan()
 
-    // Code that should be instrumented
+ // Code that should be instrumented
 
-    span.end()
+span.end()
 ```
 
 Refer to the official `OpenTelemetry` [documentation](https://opentelemetry.io/docs/) for more details.
@@ -92,33 +102,33 @@ Refer to the official `OpenTelemetry` [documentation](https://opentelemetry.io/d
 
 Replace the `OpenTracing` configuration:
 ```kotlin
-  GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
-        )
+GlobalTracer.registerIfAbsent(
+          AndroidTracer.Builder()
+              .setService(BuildConfig.APPLICATION_ID)
+              .build()
+)
 ```
 
 with the `DatadogTracing` configuration:
 ```kotlin
-   GlobalDatadogTracer.registerIfAbsent(
-            DatadogTracing.newTracerBuilder()
-                .build()
-        )
+GlobalDatadogTracer.registerIfAbsent(
+         DatadogTracing.newTracerBuilder()
+             .build()
+)
 ```
 
 For manual (custom) tracing use `com.datadog.android.trace.GlobalDatadogTracer.get()` instead of `io.opentracing.util.GlobalTracer.get()` to access the tracer object.
 For example: 
 ```kotlin
-    val tracer = GlobalDatadogTracer.get()
+val tracer = GlobalDatadogTracer.get()
 
-    val span = tracer
-     .buildSpan("Executing operation")
-     .start()
-    
-    // Code that should be instrumented
-    
-    span.finish()
+val span = tracer
+ .buildSpan("Executing operation")
+ .start()
+
+// Code that should be instrumented
+
+span.finish()
 ```
 Refer to the Datadog [documentation](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/android?tab=kotlin) for more details.
 
@@ -145,6 +155,23 @@ Replacement hints:
 
 The OkHttp instrumentation (`com.datadoghq:dd-sdk-android-okhttp:x.x.x`) doesn't require desugaring support. However few migration actions may be necessary.
 
+The default sample rate for the `traceSampler` got increased to 100% with the Android SDK version `3.0.0`.
+
+To keep 20% sampling rate you have to specify it explicitly:
+```kotlin
+private val okHttpClient = OkHttpClient.Builder()
+    .addInterceptor(
+        DatadogInterceptor.Builder(tracedHosts)
+            .setTraceSampleRate(20f)
+            .build()
+    )
+    .addNetworkInterceptor(
+        TracingInterceptor.Builder(tracedHosts)
+            .setTraceSampleRate(20f)
+            .build()
+    )
+
+```
 
 API changes:
 
@@ -157,6 +184,17 @@ API changes:
 |`DatadogInterceptor(String?,List<String>,TracedRequestListener,RumResourceAttributesProvider,Sampler<Span>)`|Use `DatadogInterceptor.Builder()` instead.|
 | `DatadogInterceptor(String?,TracedRequestListener,RumResourceAttributesProvider,Sampler<Span>) ` | Use `DatadogInterceptor.Builder()` instead. |
 
+### Log product changes
+
+The URL provided in the `useCustomEndpoint` method should be the full endpoint URL 
+(e.g.: https://example.com/logs/upload), not just the hostname, i.e:
+```kotlin 
+Logs.enable(
+        LogsConfiguration.Builder()
+            .useCustomEndpoint("https://example.com/logs/upload")
+            .build()
+)
+```
 
 ### Core product changes
 
@@ -168,6 +206,16 @@ API changes:
 
 
 ### RUM product changes
+
+The URL provided in the `useCustomEndpoint` method should be the full endpoint URL 
+(e.g.: https://example.com/rum/upload), not just the hostname, i.e:
+```kotlin 
+Rum.enable(
+        RumConfiguration.Builder(...)
+            .useCustomEndpoint("https://example.com/rum/upload")
+            .build()
+)
+```
 
 API changes:
 
@@ -182,6 +230,19 @@ API changes:
 |`com.datadog.android.rum.RumMonitor#addErrorWithStacktrace()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
 |`com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor#stopResource()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
 |`com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor#stopResource()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+
+### Session Replay product changes
+
+The URL provided in the `useCustomEndpoint` method should be the full endpoint URL 
+(e.g.: https://example.com/session_replay/upload), not just the hostname, i.e:
+
+```kotlin 
+SessionReplay.enable(
+        SessionReplayConfiguration.Builder(...)
+            .useCustomEndpoint("https://example.com/session_replay/upload")
+            .build()
+)
+```
 
 # Migration from 1.x to 2.0
 
