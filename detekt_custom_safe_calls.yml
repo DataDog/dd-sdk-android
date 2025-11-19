@@ -577,6 +577,9 @@ datadog:
       - "kotlin.ReplaceWith.constructor(kotlin.String, kotlin.Array)"
       - "kotlin.Result.failure(kotlin.Throwable)"
       - "kotlin.Result.fold(kotlin.Function1, kotlin.Function1)"
+      - "kotlin.Result.getOrElse(kotlin.Function1)"
+      - "kotlin.Result.map(kotlin.Function1)"
+      - "kotlin.Result.onFailure(kotlin.Function1)"
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
@@ -1187,5 +1190,6 @@ datadog:
       - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
       # endregion
       # region Kronos
+      - "com.lyft.kronos.Clock.runCatching(kotlin.Function1)"
       - "com.lyft.kronos.KronosClock.shutdown()"
       # endregion
