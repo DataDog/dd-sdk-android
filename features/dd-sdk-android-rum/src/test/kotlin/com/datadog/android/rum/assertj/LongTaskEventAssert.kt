@@ -365,6 +365,26 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasBuildVersion(buildVersion: Int?): LongTaskEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): LongTaskEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+        return this
+    }
+
     fun hasSampleRate(sampleRate: Float?): LongTaskEventAssert {
         assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
             .overridingErrorMessage(

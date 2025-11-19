@@ -505,6 +505,26 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasBuildVersion(buildVersion: Int?): ActionEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): ActionEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+        return this
+    }
+
     fun hasSampleRate(sampleRate: Float?): ActionEventAssert {
         assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
             .overridingErrorMessage(

@@ -626,6 +626,26 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasBuildVersion(buildVersion: Int?): ResourceEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): ResourceEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+        return this
+    }
+
     fun hasSampleRate(sampleRate: Float?): ResourceEventAssert {
         assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
             .overridingErrorMessage(

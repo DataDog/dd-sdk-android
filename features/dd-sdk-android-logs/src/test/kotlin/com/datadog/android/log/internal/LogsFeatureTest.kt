@@ -448,6 +448,7 @@ internal class LogsFeatureTest {
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

@@ -319,6 +319,24 @@ internal class VitalEventAssert(
             .isEqualTo(version)
     }
 
+    fun hasBuildVersion(buildVersion: Int?) = apply {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+    }
+
+    fun hasBuildId(buildId: String?) = apply {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+    }
+
     fun hasServiceName(serviceName: String?) = apply {
         assertThat(actual.service)
             .overridingErrorMessage(

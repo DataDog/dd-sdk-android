@@ -754,6 +754,26 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasBuildVersion(buildVersion: Int?): ViewEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): ViewEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+        return this
+    }
+
     fun hasFeatureFlag(flagName: String, flagValue: Any): ViewEventAssert {
         assertThat(actual.featureFlags)
             .isNotNull

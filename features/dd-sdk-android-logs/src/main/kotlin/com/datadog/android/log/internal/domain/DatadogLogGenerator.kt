@@ -205,7 +205,8 @@ internal class DatadogLogGenerator(
             ddtags = combinedTags.joinToString(separator = ","),
             additionalProperties = combinedAttributes,
             os = resolveOsInfo(deviceInfo),
-            device = resolveDeviceInfo(deviceInfo)
+            device = resolveDeviceInfo(deviceInfo),
+            buildVersion = datadogContext.versionCode.toString()
         )
     }
 
