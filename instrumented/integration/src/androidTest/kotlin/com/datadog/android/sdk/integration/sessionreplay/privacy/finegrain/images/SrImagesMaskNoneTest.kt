@@ -12,7 +12,7 @@ import com.datadog.android.sdk.integration.sessionreplay.privacy.ImagePrivacyTes
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_IMAGE_PRIVACY
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.model.WIREFRAME_TYPE_IMAGE
+import com.datadog.android.sessionreplay.WIREFRAME_TYPE_IMAGE
 import org.junit.Rule
 import org.junit.Test
 

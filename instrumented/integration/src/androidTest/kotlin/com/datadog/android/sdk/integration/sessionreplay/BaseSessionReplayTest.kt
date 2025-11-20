@@ -16,9 +16,9 @@ import com.datadog.android.sdk.integration.sessionreplay.SessionReplaySegmentUti
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_FOCUS
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_FULL_SNAPSHOT
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_META
+import com.datadog.android.sessionreplay.RECORD_TYPE_FOCUS
+import com.datadog.android.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
+import com.datadog.android.sessionreplay.RECORD_TYPE_META
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat

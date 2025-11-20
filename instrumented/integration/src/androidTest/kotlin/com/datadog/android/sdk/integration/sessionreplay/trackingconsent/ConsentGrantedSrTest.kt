@@ -12,9 +12,9 @@ import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.INITIAL_WAIT_MS
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayPlaygroundActivity
 import com.datadog.android.sdk.rules.SessionReplayTestRule
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_FOCUS
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_FULL_SNAPSHOT
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_META
+import com.datadog.android.sessionreplay.RECORD_TYPE_FOCUS
+import com.datadog.android.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
+import com.datadog.android.sessionreplay.RECORD_TYPE_META
 import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
