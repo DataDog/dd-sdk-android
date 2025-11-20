@@ -43,6 +43,7 @@ internal object ComposeReflection {
 
     val TextStringSimpleElement = getClassSafe("androidx.compose.foundation.text.modifiers.TextStringSimpleElement")
     val ColorProducerField = TextStringSimpleElement?.getDeclaredFieldSafe("color")
+    val TextStringSimpleElementOverflowField = TextStringSimpleElement?.getDeclaredFieldSafe("overflow")
 
     val BackgroundElementClass = getClassSafe("androidx.compose.foundation.BackgroundElement")
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")

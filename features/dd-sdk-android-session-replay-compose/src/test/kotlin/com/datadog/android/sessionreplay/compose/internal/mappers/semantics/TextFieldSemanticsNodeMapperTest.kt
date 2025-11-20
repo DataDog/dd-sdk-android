@@ -158,7 +158,8 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
                 family = (fakeTextLayoutInfo.fontFamily as? GenericFontFamily)?.name
                     ?: DEFAULT_FONT_FAMILY,
                 size = fakeTextLayoutInfo.fontSize,
-                color = fakeTextColorHexString
+                color = fakeTextColorHexString,
+                truncationMode = fakeTextLayoutInfo.textOverflow
             ),
             textPosition = MobileSegment.TextPosition(
                 padding = MobileSegment.Padding(
