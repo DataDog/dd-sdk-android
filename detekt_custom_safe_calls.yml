@@ -577,6 +577,7 @@ datadog:
       - "kotlin.ReplaceWith.constructor(kotlin.String, kotlin.Array)"
       - "kotlin.Result.failure(kotlin.Throwable)"
       - "kotlin.Result.fold(kotlin.Function1, kotlin.Function1)"
+      - "kotlin.Result.getOrDefault(kotlin.Int)"
       - "kotlin.Result.getOrElse(kotlin.Function1)"
       - "kotlin.Result.map(kotlin.Function1)"
       - "kotlin.Result.onFailure(kotlin.Function1)"

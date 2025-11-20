@@ -32,7 +32,7 @@ internal class KronosTimeProvider(
                 val delta = server - device
                 delta
             }
-            .getOrElse { 0 }
+            .getOrDefault(0)
     }
 
     override fun getServerOffsetNanos(): Long {
