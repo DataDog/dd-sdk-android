@@ -20,13 +20,11 @@ internal class KronosTimeProvider(
         return System.currentTimeMillis()
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun getServerTimestamp(): Long {
         return clock.safeGetCurrentTimeMs()
             .getOrElse { System.currentTimeMillis() }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun getServerOffsetMillis(): Long {
         return clock.safeGetCurrentTimeMs()
             .map { server ->
