@@ -20,7 +20,7 @@ import com.datadog.android.sdk.integration.sessionreplay.UI_THREAD_DELAY_MS
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_INCREMENTAL_SNAPSHOT
+import com.datadog.android.sessionreplay.RECORD_TYPE_INCREMENTAL_SNAPSHOT
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat

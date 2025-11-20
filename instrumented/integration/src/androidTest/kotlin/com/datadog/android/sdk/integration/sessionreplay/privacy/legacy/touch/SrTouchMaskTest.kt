@@ -22,8 +22,8 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sdk.utils.waitFor
+import com.datadog.android.sessionreplay.RECORD_TYPE_INCREMENTAL_SNAPSHOT
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_INCREMENTAL_SNAPSHOT
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat

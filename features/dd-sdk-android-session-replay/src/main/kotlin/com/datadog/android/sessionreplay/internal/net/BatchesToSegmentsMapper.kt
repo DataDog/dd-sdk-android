@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsLong
@@ -15,7 +16,6 @@ import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.processor.tryFromSource
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.model.RECORD_TYPE_FULL_SNAPSHOT
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
