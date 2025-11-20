@@ -198,6 +198,7 @@ internal class DatadogLogHandlerTest {
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -280,6 +281,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -346,6 +348,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -606,6 +609,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -669,6 +673,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -730,6 +735,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -796,6 +802,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(emptyMap())
                 .hasExactlyTags(
                     setOf(
@@ -1100,6 +1107,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,

@@ -62,6 +62,12 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                     "but was ${actual.usr?.id}"
             )
             .isEqualTo(expected?.id)
+        assertThat(actual.usr?.anonymousId)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.anonymousId ${expected?.anonymousId} " +
+                    "but was ${actual.usr?.anonymousId}"
+            )
+            .isEqualTo(expected?.anonymousId)
         assertThat(actual.usr?.name)
             .overridingErrorMessage(
                 "Expected RUM event to have usr.name ${expected?.name} " +
@@ -362,6 +368,26 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                     " but instead was: ${actual.version}"
             )
             .isEqualTo(version)
+        return this
+    }
+
+    fun hasBuildVersion(buildVersion: Int?): LongTaskEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+        return this
+    }
+
+    fun hasBuildId(buildId: String?): LongTaskEventAssert {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
         return this
     }
 

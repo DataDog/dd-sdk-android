@@ -129,7 +129,8 @@ internal open class AbstractSemanticsNodeMapperTest {
                 else -> DEFAULT_FONT_FAMILY
             },
             size = fakeTextLayoutInfo.fontSize,
-            color = fakeColorHexString
+            color = fakeColorHexString,
+            truncationMode = fakeTextLayoutInfo.textOverflow
         )
         mockColorStringFormatter(fakeTextLayoutInfo.color.toLong(), fakeColorHexString)
 
@@ -138,6 +139,75 @@ internal open class AbstractSemanticsNodeMapperTest {
 
         // Then
         assertThat(result).isEqualTo(expected)
+    }
+
+    @Test
+    fun `M return CLIP truncation mode W TextLayoutInfo has CLIP overflow`(
+        @Forgery fakeUiContext: UiContext,
+        @StringForgery fakeColorHexString: String
+    ) {
+        // Given
+        val fakeTextLayoutInfo = TextLayoutInfo(
+            text = "test",
+            color = 0UL,
+            fontSize = 12,
+            fontFamily = null,
+            textAlign = TextAlign.Start,
+            textOverflow = MobileSegment.TruncationMode.CLIP
+        )
+        mockColorStringFormatter(fakeTextLayoutInfo.color.toLong(), fakeColorHexString)
+
+        // When
+        val result = testedMapper.stubTextLayoutInfoToTextStyle(fakeUiContext, fakeTextLayoutInfo)
+
+        // Then
+        assertThat(result.truncationMode).isEqualTo(MobileSegment.TruncationMode.CLIP)
+    }
+
+    @Test
+    fun `M return TAIL truncation mode W TextLayoutInfo has TAIL overflow`(
+        @Forgery fakeUiContext: UiContext,
+        @StringForgery fakeColorHexString: String
+    ) {
+        // Given
+        val fakeTextLayoutInfo = TextLayoutInfo(
+            text = "test",
+            color = 0UL,
+            fontSize = 12,
+            fontFamily = null,
+            textAlign = TextAlign.Start,
+            textOverflow = MobileSegment.TruncationMode.TAIL
+        )
+        mockColorStringFormatter(fakeTextLayoutInfo.color.toLong(), fakeColorHexString)
+
+        // When
+        val result = testedMapper.stubTextLayoutInfoToTextStyle(fakeUiContext, fakeTextLayoutInfo)
+
+        // Then
+        assertThat(result.truncationMode).isEqualTo(MobileSegment.TruncationMode.TAIL)
+    }
+
+    @Test
+    fun `M return null truncation mode W TextLayoutInfo has null overflow`(
+        @Forgery fakeUiContext: UiContext,
+        @StringForgery fakeColorHexString: String
+    ) {
+        // Given
+        val fakeTextLayoutInfo = TextLayoutInfo(
+            text = "test",
+            color = 0UL,
+            fontSize = 12,
+            fontFamily = null,
+            textAlign = TextAlign.Start,
+            textOverflow = null
+        )
+        mockColorStringFormatter(fakeTextLayoutInfo.color.toLong(), fakeColorHexString)
+
+        // When
+        val result = testedMapper.stubTextLayoutInfoToTextStyle(fakeUiContext, fakeTextLayoutInfo)
+
+        // Then
+        assertThat(result.truncationMode).isNull()
     }
 
     @Test

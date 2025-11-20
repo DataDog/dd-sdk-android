@@ -502,13 +502,16 @@ internal class CoreFeature(
     }
 
     private fun readApplicationInformation(appContext: Context, configuration: Configuration) {
+        val packageInfo = getPackageInfo(appContext)
+
+        val versionName = packageInfo?.versionName
+
+        @Suppress("DEPRECATION")
+        val versionCode = packageInfo?.versionCode
+
         packageVersionProvider = DefaultAppVersionProvider(
-            getPackageInfo(appContext)?.let {
-                // we need to use the deprecated method because getLongVersionCode method is only
-                // available from API 28 and above
-                @Suppress("DEPRECATION")
-                it.versionName ?: it.versionCode.toString()
-            } ?: DEFAULT_APP_VERSION
+            initialVersion = versionName ?: versionCode?.toString() ?: DEFAULT_APP_VERSION,
+            versionCode = versionCode ?: 0
         )
         clientToken = configuration.clientToken
         serviceName = configuration.service ?: appContext.packageName
