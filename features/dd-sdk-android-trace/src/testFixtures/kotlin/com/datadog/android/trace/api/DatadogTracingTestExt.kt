@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.api
 
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
@@ -20,12 +19,9 @@ import com.datadog.android.trace.internal.DatadogTraceIdAdapter
 import com.datadog.android.trace.internal.DatadogTracerAdapter
 import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter
 import com.datadog.android.trace.internal.DatadogTracingToolkit
-import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.core.CoreTracer
-import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
-import com.google.gson.JsonElement
 
 val DatadogTracer.partialFlushMinSpans: Int?
     get() = coreTracer?.partialFlushMinSpans
@@ -45,18 +41,6 @@ fun DatadogTraceId.Companion.from(traceId: Long): DatadogTraceId {
 
 fun DatadogTraceId.Companion.from(traceId: String): DatadogTraceId {
     return DatadogTraceIdAdapter(DDTraceId.from(traceId))
-}
-
-fun DatadogSpan.resolveMeta(datadogContext: DatadogContext): JsonElement {
-    val mapper = CoreTracerSpanToSpanEventMapper(false)
-    val ddSpan = (this as DatadogSpanAdapter).delegate as DDSpan
-    return mapper.resolveMeta(datadogContext, ddSpan).toJson()
-}
-
-fun DatadogSpan.resolveMetrics(): JsonElement {
-    val mapper = CoreTracerSpanToSpanEventMapper(false)
-    val ddSpan = (this as DatadogSpanAdapter).delegate as DDSpan
-    return mapper.resolveMetrics(ddSpan).toJson()
 }
 
 fun DatadogSpan.forceSamplingDecision() {
