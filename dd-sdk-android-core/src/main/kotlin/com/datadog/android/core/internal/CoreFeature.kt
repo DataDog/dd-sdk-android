@@ -487,7 +487,7 @@ internal class CoreFeature(
                 }
             }
 
-            timeProvider = KronosTimeProvider(this)
+            timeProvider = KronosTimeProvider(this, internalLogger)
         }
     }
 
