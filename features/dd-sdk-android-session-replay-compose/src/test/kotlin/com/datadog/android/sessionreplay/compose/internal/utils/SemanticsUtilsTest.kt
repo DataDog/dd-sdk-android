@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -57,6 +58,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -66,6 +70,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -121,6 +126,59 @@ class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getOnDraw(mockModifier)) doReturn mockOnDraw
         whenever(mockReflectionUtils.getCheckCache(mockOnDraw)) doReturn mockCheckCache
         fakeOffset = Offset(x = forge.aFloat(), y = forge.aFloat())
+    }
+
+    private data class TextLayoutTestData(
+        val fakeText: AnnotatedString,
+        val fakeColorValue: ULong,
+        val fakeFontSize: Float,
+        val fakeFontFamily: FontFamily,
+        val fakeTextAlign: TextAlign,
+        val textLayoutResult: TextLayoutResult
+    )
+
+    private fun setupTextLayoutMocks(forge: Forge): TextLayoutTestData {
+        val fakeText = AnnotatedString(forge.aString())
+        val fakeColorValue = forge.aLong().toULong()
+        val fakeFontSize = forge.aFloat()
+        val fakeFontFamily = forge.anElementFrom(
+            FontFamily.Serif,
+            FontFamily.SansSerif,
+            FontFamily.Cursive,
+            FontFamily.Monospace,
+            FontFamily.Default
+        )
+        val fakeTextAlign = forge.anElementFrom(TextAlign.values())
+        val mockResult = mock<AccessibilityAction<(MutableList<TextLayoutResult>) -> Boolean>>()
+        val mockAction = mock<(MutableList<TextLayoutResult>) -> Boolean>()
+        val textLayoutResult = mock<TextLayoutResult>()
+        val textLayoutResults = mutableListOf<TextLayoutResult>()
+        val mockTextLayoutInput = mock<TextLayoutInput>()
+        val mockTextStyle = mock<TextStyle>()
+
+        whenever(mockConfig.getOrNull(SemanticsActions.GetTextLayoutResult)) doReturn mockResult
+        whenever(mockResult.action) doReturn mockAction
+        whenever(textLayoutResult.layoutInput) doReturn mockTextLayoutInput
+        doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            (invocation.arguments[0] as MutableList<TextLayoutResult>).add(textLayoutResult)
+            true
+        }.whenever(mockAction).invoke(textLayoutResults)
+        whenever(mockTextLayoutInput.style) doReturn mockTextStyle
+        whenever(mockTextLayoutInput.text) doReturn fakeText
+        whenever(mockTextStyle.color) doReturn Color(fakeColorValue)
+        whenever(mockTextStyle.textAlign) doReturn fakeTextAlign
+        whenever(mockTextStyle.fontSize) doReturn TextUnit(fakeFontSize, TextUnitType.Sp)
+        whenever(mockTextStyle.fontFamily) doReturn fakeFontFamily
+
+        return TextLayoutTestData(
+            fakeText = fakeText,
+            fakeColorValue = fakeColorValue,
+            fakeFontSize = fakeFontSize,
+            fakeFontFamily = fakeFontFamily,
+            fakeTextAlign = fakeTextAlign,
+            textLayoutResult = textLayoutResult
+        )
     }
 
     @Test
@@ -299,50 +357,18 @@ class SemanticsUtilsTest {
     @Test
     fun `M return TextLayoutInfo W resolveTextLayoutInfo modifier color is null`(forge: Forge) {
         // Given
-        val fakeText = AnnotatedString(forge.aString())
-        val fakeColorValue = forge.aLong().toULong()
-        val fakeFontSize = forge.aFloat()
-        val fakeFontFamily = forge.anElementFrom(
-            listOf(
-                FontFamily.Serif,
-                FontFamily.SansSerif,
-                FontFamily.Cursive,
-                FontFamily.Monospace,
-                FontFamily.Default
-            )
-        )
-        val fakeTextAlign = forge.anElementFrom(TextAlign.values())
-        val mockResult = mock<AccessibilityAction<(MutableList<TextLayoutResult>) -> Boolean>>()
-        val mockAction = mock<(MutableList<TextLayoutResult>) -> Boolean>()
-        val textLayoutResult: TextLayoutResult = mock()
-        val textLayoutResults = mutableListOf<TextLayoutResult>()
-        val mockTextLayoutInput = mock<TextLayoutInput>()
-        val mockTextStyle = mock<TextStyle>()
-        whenever(mockConfig.getOrNull(SemanticsActions.GetTextLayoutResult)) doReturn mockResult
-        whenever(mockResult.action) doReturn mockAction
-        whenever(textLayoutResult.layoutInput) doReturn mockTextLayoutInput
-        doAnswer { invocation ->
-            @Suppress("UNCHECKED_CAST")
-            (invocation.arguments[0] as MutableList<TextLayoutResult>).add(textLayoutResult)
-            true
-        }.whenever(mockAction).invoke(textLayoutResults)
-        whenever(mockTextLayoutInput.style) doReturn mockTextStyle
-        whenever(mockTextLayoutInput.text) doReturn fakeText
-        whenever(mockTextStyle.color) doReturn Color(fakeColorValue)
-        whenever(mockTextStyle.textAlign) doReturn fakeTextAlign
-        whenever(mockTextStyle.fontSize) doReturn TextUnit(fakeFontSize, TextUnitType.Sp)
-        whenever(mockTextStyle.fontFamily) doReturn fakeFontFamily
+        val testData = setupTextLayoutMocks(forge)
 
         // When
-        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
 
         // Then
         val expected = TextLayoutInfo(
-            text = resolveAnnotatedString(fakeText),
-            color = fakeColorValue,
-            textAlign = fakeTextAlign,
-            fontSize = fakeFontSize.toLong(),
-            fontFamily = fakeFontFamily
+            text = resolveAnnotatedString(testData.fakeText),
+            color = testData.fakeColorValue,
+            textAlign = testData.fakeTextAlign,
+            fontSize = testData.fakeFontSize.toLong(),
+            fontFamily = testData.fakeFontFamily
         )
         assertThat(result).isEqualTo(expected)
     }
@@ -350,54 +376,23 @@ class SemanticsUtilsTest {
     @Test
     fun `M return TextLayoutInfo W resolveTextLayoutInfo modifier color is not null`(forge: Forge) {
         // Given
-        val fakeText = AnnotatedString(forge.aString())
-        val fakeColorValue = forge.aLong().toULong()
+        val testData = setupTextLayoutMocks(forge)
         val fakeModifierColorValue = forge.aLong().toULong()
-        val fakeFontSize = forge.aFloat()
-        val fakeFontFamily = forge.anElementFrom(
-            listOf(
-                FontFamily.Serif,
-                FontFamily.SansSerif,
-                FontFamily.Cursive,
-                FontFamily.Monospace,
-                FontFamily.Default
-            )
-        )
-        val fakeTextAlign = forge.anElementFrom(TextAlign.values())
-        val mockResult = mock<AccessibilityAction<(MutableList<TextLayoutResult>) -> Boolean>>()
-        val mockAction = mock<(MutableList<TextLayoutResult>) -> Boolean>()
-        val textLayoutResult: TextLayoutResult = mock()
-        val textLayoutResults = mutableListOf<TextLayoutResult>()
-        val mockTextLayoutInput = mock<TextLayoutInput>()
-        val mockTextStyle = mock<TextStyle>()
-        whenever(mockConfig.getOrNull(SemanticsActions.GetTextLayoutResult)) doReturn mockResult
-        whenever(mockResult.action) doReturn mockAction
-        whenever(textLayoutResult.layoutInput) doReturn mockTextLayoutInput
-        doAnswer { invocation ->
-            invocation.getArgument<MutableList<TextLayoutResult>>(0).add(textLayoutResult)
-            true
-        }.whenever(mockAction).invoke(textLayoutResults)
-        whenever(mockTextLayoutInput.style) doReturn mockTextStyle
-        whenever(mockTextLayoutInput.text) doReturn fakeText
-        whenever(mockTextStyle.color) doReturn Color(fakeColorValue)
-        whenever(mockTextStyle.textAlign) doReturn fakeTextAlign
-        whenever(mockTextStyle.fontSize) doReturn TextUnit(fakeFontSize, TextUnitType.Sp)
-        whenever(mockTextStyle.fontFamily) doReturn fakeFontFamily
         whenever(mockReflectionUtils.isTextStringSimpleElement(mockModifier)) doReturn true
         whenever(mockReflectionUtils.getColorProducerColor(mockModifier)) doReturn Color(
             fakeModifierColorValue
         )
 
         // When
-        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
 
         // Then
         val expected = TextLayoutInfo(
-            text = resolveAnnotatedString(fakeText),
+            text = resolveAnnotatedString(testData.fakeText),
             color = fakeModifierColorValue,
-            textAlign = fakeTextAlign,
-            fontSize = fakeFontSize.toLong(),
-            fontFamily = fakeFontFamily
+            textAlign = testData.fakeTextAlign,
+            fontSize = testData.fakeFontSize.toLong(),
+            fontFamily = testData.fakeFontFamily
         )
         assertThat(result).isEqualTo(expected)
     }
@@ -405,41 +400,12 @@ class SemanticsUtilsTest {
     @Test
     fun `M return TextLayoutInfo W resolveTextLayoutInfo with text overflow`(forge: Forge) {
         // Given
-        val fakeText = AnnotatedString(forge.aString())
+        val testData = setupTextLayoutMocks(forge)
         val fakeCapturedText = forge.aString()
-        val fakeColorValue = forge.aLong().toULong()
         val fakeModifierColorValue = forge.aLong().toULong()
-        val fakeFontSize = forge.aFloat()
-        val fakeFontFamily = forge.anElementFrom(
-            FontFamily.Serif,
-            FontFamily.SansSerif,
-            FontFamily.Cursive,
-            FontFamily.Monospace,
-            FontFamily.Default
-        )
-        val fakeTextAlign = forge.anElementFrom(TextAlign.values())
-        val mockResult = mock<AccessibilityAction<(MutableList<TextLayoutResult>) -> Boolean>>()
-        val mockAction = mock<(MutableList<TextLayoutResult>) -> Boolean>()
-        val textLayoutResult = mock<TextLayoutResult>()
-        val textLayoutResults = mutableListOf<TextLayoutResult>()
-        val mockTextLayoutInput = mock<TextLayoutInput>()
-        val mockTextStyle = mock<TextStyle>()
         val mockMultiParagraph = mock<MultiParagraph>()
-        whenever(mockConfig.getOrNull(SemanticsActions.GetTextLayoutResult)) doReturn mockResult
-        whenever(mockResult.action) doReturn mockAction
-        whenever(textLayoutResult.layoutInput) doReturn mockTextLayoutInput
-        whenever(textLayoutResult.didOverflowHeight) doReturn true
-        whenever(textLayoutResult.multiParagraph) doReturn mockMultiParagraph
-        doAnswer { invocation ->
-            invocation.getArgument<MutableList<TextLayoutResult>>(0).add(textLayoutResult)
-            true
-        }.whenever(mockAction).invoke(textLayoutResults)
-        whenever(mockTextLayoutInput.style) doReturn mockTextStyle
-        whenever(mockTextLayoutInput.text) doReturn fakeText
-        whenever(mockTextStyle.color) doReturn Color(fakeColorValue)
-        whenever(mockTextStyle.textAlign) doReturn fakeTextAlign
-        whenever(mockTextStyle.fontSize) doReturn TextUnit(fakeFontSize, TextUnitType.Sp)
-        whenever(mockTextStyle.fontFamily) doReturn fakeFontFamily
+        whenever(testData.textLayoutResult.didOverflowHeight) doReturn true
+        whenever(testData.textLayoutResult.multiParagraph) doReturn mockMultiParagraph
         whenever(mockReflectionUtils.isTextStringSimpleElement(mockModifier)) doReturn true
         whenever(mockReflectionUtils.getColorProducerColor(mockModifier)) doReturn Color(
             fakeModifierColorValue
@@ -447,15 +413,15 @@ class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getMultiParagraphCapturedText(mockMultiParagraph)) doReturn fakeCapturedText
 
         // When
-        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
 
         // Then
         val expected = TextLayoutInfo(
             text = fakeCapturedText,
             color = fakeModifierColorValue,
-            textAlign = fakeTextAlign,
-            fontSize = fakeFontSize.toLong(),
-            fontFamily = fakeFontFamily
+            textAlign = testData.fakeTextAlign,
+            fontSize = testData.fakeFontSize.toLong(),
+            fontFamily = testData.fakeFontFamily
         )
         assertThat(result).isEqualTo(expected)
     }
@@ -566,6 +532,96 @@ class SemanticsUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(BitmapInfo(mockBitmap, true))
+    }
+
+    @ParameterizedTest(name = "{index} (overflowValue: {0}, expectedMode: {1})")
+    @MethodSource("truncationModeMappings")
+    fun `M return correct truncation mode W resolveTextLayoutInfo`(
+        overflowValue: Any?,
+        expectedMode: MobileSegment.TruncationMode?,
+        forge: Forge
+    ) {
+        // Given
+        setupTextLayoutMocks(forge)
+        if (overflowValue != null) {
+            whenever(mockReflectionUtils.isTextStringSimpleElement(mockModifier)) doReturn true
+            whenever(mockReflectionUtils.getTextStringSimpleElementOverflow(mockModifier)) doReturn overflowValue
+        }
+
+        // When
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
+
+        // Then
+        assertThat(result.textOverflow).isEqualTo(expectedMode)
+    }
+
+    companion object {
+        /**
+         * Constant representing an unknown/unsupported TextOverflow Int value.
+         * Used in tests to verify behavior when encountering unknown overflow modes.
+         */
+        private const val UNKNOWN_TEXT_OVERFLOW_ORDINAL = 99
+
+        /**
+         * Mock class that simulates TextOverflow value class structure (has "value" field).
+         * Used to test reflection-based extraction of Int value from value class instances.
+         */
+        private class MockTextOverflowValueClass(val value: Int)
+
+        /**
+         * Mock object without a "value" field to simulate reflection extraction failure.
+         * Used to test error handling when reflection fails to extract the Int value.
+         */
+        private class MockOverflowWithoutValueField {
+            override fun toString() = "MockOverflowWithoutValueField"
+        }
+
+        @JvmStatic
+        fun truncationModeMappings(): Stream<Arguments> {
+            return Stream.of(
+                // Int values (unboxed value class)
+                Arguments.of(SemanticsUtils.TEXT_OVERFLOW_CLIP, MobileSegment.TruncationMode.CLIP),
+                Arguments.of(SemanticsUtils.TEXT_OVERFLOW_ELLIPSE, MobileSegment.TruncationMode.TAIL),
+                Arguments.of(SemanticsUtils.TEXT_OVERFLOW_VISIBLE, null),
+                Arguments.of(
+                    SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_START,
+                    MobileSegment.TruncationMode.HEAD
+                ),
+                Arguments.of(
+                    SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE,
+                    MobileSegment.TruncationMode.MIDDLE
+                ),
+                // Value class instances (boxed) - simulates TextOverflow value class
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_CLIP),
+                    MobileSegment.TruncationMode.CLIP
+                ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSE),
+                    MobileSegment.TruncationMode.TAIL
+                ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_VISIBLE),
+                    null
+                ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_START),
+                    MobileSegment.TruncationMode.HEAD
+                ),
+                Arguments.of(
+                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE),
+                    MobileSegment.TruncationMode.MIDDLE
+                ),
+                // Edge cases
+                Arguments.of(UNKNOWN_TEXT_OVERFLOW_ORDINAL, null), // Unknown/unsupported overflow mode
+                Arguments.of("unexpected_type", null), // Unexpected overflow type (triggers logUnknownOverflowType)
+                Arguments.of(
+                    MockOverflowWithoutValueField(),
+                    null
+                ), // Reflection extraction failure (triggers logReflectionExtractionFailure)
+                Arguments.of(null, null) // No overflow modifier
+            )
+        }
     }
 
     private fun rectToBounds(rect: Rect, density: Float): GlobalBounds {
