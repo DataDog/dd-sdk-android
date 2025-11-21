@@ -19,6 +19,7 @@ import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
+import com.datadog.android.rum.TTIDEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -97,17 +98,33 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M write the result in a batch W write`(@Forgery fakeResult: PerfettoResult) {
+    fun `M write the result in a batch W write`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeTTIDEvent: TTIDEvent
+    ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
         file.writeBytes(fakeByteArray)
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath)
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            ttidEvent = fakeTTIDEvent
         )
 
         // Then
+        val tags = "service:${fakeDatadogContext.service},env:${fakeDatadogContext.env}," +
+            "version:${fakeDatadogContext.version},sdk_version:${fakeDatadogContext.sdkVersion}," +
+            "application_id:${fakeTTIDEvent.applicationId}," +
+            "session_id:${fakeTTIDEvent.sessionId},vital_id:${fakeTTIDEvent.vitalId}"
+        val tagsBuilder = StringBuilder(tags)
+        fakeTTIDEvent.viewId?.let {
+            tagsBuilder.append(",view_id:$it")
+        }
+        fakeTTIDEvent.viewName?.let {
+            tagsBuilder.append(",view_name:$it")
+        }
+
         val expectedProfileEvent = ProfileEvent(
             start = formatIsoUtc(fakeResult.start),
             end = formatIsoUtc(fakeResult.end),
@@ -115,8 +132,8 @@ internal class ProfilingDataWriterTest {
             family = "android",
             runtime = "android",
             version = "4",
-            tagsProfiler = "service:${fakeDatadogContext.service},env:${fakeDatadogContext.env}," +
-                "version:${fakeDatadogContext.version},sdk_version:${fakeDatadogContext.sdkVersion}"
+            tagsProfiler = tagsBuilder.toString()
+
         )
         val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
@@ -134,13 +151,17 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing W write {can't read perfetto File}`(@Forgery fakeResult: PerfettoResult) {
+    fun `M skip writing W write {can't read perfetto File}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeTTIDEvent: TTIDEvent
+    ) {
         // Given
         // Don't create the tmp file so it can't be found
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult
+            profilingResult = fakeResult,
+            ttidEvent = fakeTTIDEvent
         )
 
         // Then
@@ -148,14 +169,18 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing W file is empty`(@Forgery fakeResult: PerfettoResult) {
+    fun `M skip writing W file is empty`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeTTIDEvent: TTIDEvent
+    ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
         file.writeBytes(ByteArray(0))
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath)
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            ttidEvent = fakeTTIDEvent
         )
 
         // Then

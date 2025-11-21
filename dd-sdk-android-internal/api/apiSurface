@@ -158,6 +158,6 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
     var processImportance: Int
     val createTimeNs: Long
 data class com.datadog.android.rum.TTIDEvent
-  constructor(Long)
+  constructor(Long, String, String, String, String?, String?)
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

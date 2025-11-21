@@ -9,8 +9,10 @@ package com.datadog.android.rum.internal.startup
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.rum.TTIDEvent
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
@@ -99,18 +101,30 @@ internal class RumSessionScopeStartupManagerImpl(
 
         ttidSentForSession = true
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
-                timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
-                datadogContext = datadogContext,
-                eventAttributes = emptyMap(),
-                customAttributes = customAttributes,
-                hasReplay = null,
-                rumContext = rumContext,
+        val ttidEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
+            timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
+            datadogContext = datadogContext,
+            eventAttributes = emptyMap(),
+            customAttributes = customAttributes,
+            hasReplay = null,
+            rumContext = rumContext,
+            durationNs = event.info.durationNs,
+            appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTID,
+            scenario = event.info.scenario
+        )
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            TTIDEvent(
                 durationNs = event.info.durationNs,
-                appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTID,
-                scenario = event.info.scenario
+                applicationId = rumContext.applicationId,
+                sessionId = rumContext.sessionId,
+                viewId = rumContext.viewId,
+                viewName = rumContext.viewName,
+                vitalId = ttidEvent.vital.id
             )
+        )
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            ttidEvent
         }.submit()
 
         if (ttfdReportedForScenario) {

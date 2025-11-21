@@ -40,7 +40,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.TTIDEvent
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -706,10 +705,6 @@ internal class RumFeature(
                             )
 
                             rumMonitor.sendTTIDEvent(info)
-
-                            // Send TTID event to Profiling feature
-                            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
-                                ?.sendEvent(TTIDEvent(durationNs))
                         }
                     }
 
@@ -814,8 +809,6 @@ internal class RumFeature(
         internal const val EVENT_THROWABLE_PROPERTY = "throwable"
         internal const val EVENT_ATTRIBUTES_PROPERTY = "attributes"
         internal const val EVENT_STACKTRACE_PROPERTY = "stacktrace"
-
-        internal const val RUM_TTID_BUS_MESSAGE_KEY = "rum_ttid"
 
         internal const val UNSUPPORTED_EVENT_TYPE =
             "RUM feature receive an event of unsupported type=%s."
