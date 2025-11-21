@@ -138,7 +138,7 @@ internal class InternalProxyTest {
         val proxy = _InternalProxy(mockSdkCore)
 
         // When
-        proxy._telemetry.setMetricTelemetrySampleRateBypass(fakeSampleRateBypass)
+        proxy.setMetricTelemetrySampleRateBypass(fakeSampleRateBypass)
 
         // Then
         verify(mockCoreFeature).metricTelemetrySampleRateBypass = fakeSampleRateBypass
