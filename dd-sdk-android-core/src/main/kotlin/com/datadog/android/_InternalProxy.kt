@@ -70,16 +70,16 @@ class _InternalProxy internal constructor(
             )
             rumFeature?.sendEvent(telemetryEvent)
         }
-
-        fun setMetricTelemetrySampleRateBypass(
-            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float
-        ) {
-            (sdkCore as? DatadogCore)?.coreFeature?.metricTelemetrySampleRateBypass = sampleRate
-        }
     }
 
     @Suppress("PropertyName")
     val _telemetry: _TelemetryProxy = _TelemetryProxy(sdkCore)
+
+    fun setMetricTelemetrySampleRateBypass(
+        @FloatRange(from = 0.0, to = 100.0) sampleRate: Float
+    ) {
+        (sdkCore as? DatadogCore)?.coreFeature?.metricTelemetrySampleRateBypass = sampleRate
+    }
 
     fun setCustomAppVersion(version: String) {
         val coreFeature = (sdkCore as? DatadogCore)?.coreFeature
