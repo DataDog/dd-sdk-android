@@ -17,7 +17,6 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.rum.TTIDEvent
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -110,9 +109,11 @@ class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M stop Profiling W receive TTID event`(@LongForgery fakeTtid: Long) {
+    fun `M stop Profiling W receive TTID event`(
+        @Forgery fakeTTIDEvent: TTIDEvent
+    ) {
         // When
-        testedFeature.onReceive(TTIDEvent(fakeTtid))
+        testedFeature.onReceive(fakeTTIDEvent)
 
         // Then
         verify(mockProfiler).stop()

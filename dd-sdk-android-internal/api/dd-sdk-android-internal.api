@@ -382,12 +382,22 @@ public final class com/datadog/android/rum/DdRumContentProvider$Companion {
 }
 
 public final class com/datadog/android/rum/TTIDEvent {
-	public fun <init> (J)V
+	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()J
-	public final fun copy (J)Lcom/datadog/android/rum/TTIDEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/TTIDEvent;JILjava/lang/Object;)Lcom/datadog/android/rum/TTIDEvent;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/TTIDEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/TTIDEvent;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/TTIDEvent;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getValue ()J
+	public final fun getApplicationId ()Ljava/lang/String;
+	public final fun getDurationNs ()J
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getViewId ()Ljava/lang/String;
+	public final fun getViewName ()Ljava/lang/String;
+	public final fun getVitalId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

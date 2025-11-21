@@ -29,6 +29,8 @@ internal class ProfilingFeature(
 
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
+    private var ttidEvent: TTIDEvent? = null
+
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         configuration.customEndpointUrl,
         sdkCore.internalLogger
@@ -44,7 +46,10 @@ internal class ProfilingFeature(
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
             this.onProfilingSuccess = { result ->
-                dataWriter.write(profilingResult = result)
+                dataWriter.write(
+                    profilingResult = result,
+                    ttidEvent = ttidEvent
+                )
             }
         }
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -67,11 +72,12 @@ internal class ProfilingFeature(
             )
             return
         }
+        this.ttidEvent = event
         profiler.stop()
         sdkCore.internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            { "Profiling stopped with TTID=${event.value}" }
+            { "Profiling stopped with TTID=${event.durationNs}" }
         )
     }
 

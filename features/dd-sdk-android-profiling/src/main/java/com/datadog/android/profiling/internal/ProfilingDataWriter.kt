@@ -15,20 +15,23 @@ import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
+import com.datadog.android.rum.TTIDEvent
 import java.io.File
 
 internal class ProfilingDataWriter(
     private val sdkCore: FeatureSdkCore
 ) : ProfilingWriter {
     override fun write(
-        profilingResult: PerfettoResult
+        profilingResult: PerfettoResult,
+        ttidEvent: TTIDEvent?
     ) {
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
             ?.withWriteContext { context, writeScope ->
                 writeScope { writer ->
                     val rawBatchEvent = buildRawBatchEvent(
                         context = context,
-                        profilingResult = profilingResult
+                        profilingResult = profilingResult,
+                        ttidEvent = ttidEvent
                     )
                     if (rawBatchEvent != null) {
                         synchronized(this) {
@@ -45,13 +48,18 @@ internal class ProfilingDataWriter(
 
     private fun buildRawBatchEvent(
         context: DatadogContext,
-        profilingResult: PerfettoResult
+        profilingResult: PerfettoResult,
+        ttidEvent: TTIDEvent?
     ): RawBatchEvent? {
         val byteData = readProfilingData(profilingResult.resultFilePath)
         if (byteData == null || byteData.isEmpty()) {
             return null
         }
-        val profileEvent = createProfileEvent(context, profilingResult)
+        val profileEvent = createProfileEvent(
+            context,
+            profilingResult,
+            ttidEvent
+        )
         val serializedEvent =
             profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
         return RawBatchEvent(data = serializedEvent, metadata = byteData)
@@ -59,7 +67,8 @@ internal class ProfilingDataWriter(
 
     private fun createProfileEvent(
         context: DatadogContext,
-        profilingResult: PerfettoResult
+        profilingResult: PerfettoResult,
+        ttidEvent: TTIDEvent?
     ): ProfileEvent {
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
@@ -68,11 +77,14 @@ internal class ProfilingDataWriter(
             family = ANDROID_FAMILY_NAME,
             runtime = ANDROID_RUNTIME_NAME,
             version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context)
+            tagsProfiler = buildTags(context, ttidEvent)
         )
     }
 
-    private fun buildTags(context: DatadogContext): String = buildString {
+    private fun buildTags(
+        context: DatadogContext,
+        ttidEvent: TTIDEvent?
+    ): String = buildString {
         append("$TAG_KEY_SERVICE:${context.service}")
         append(",")
         append("$TAG_KEY_ENV:${context.env}")
@@ -80,6 +92,22 @@ internal class ProfilingDataWriter(
         append("$TAG_KEY_VERSION:${context.version}")
         append(",")
         append("$TAG_KEY_SDK_VERSION:${context.sdkVersion}")
+        ttidEvent?.apply {
+            append(",")
+            append("$TAG_KEY_RUM_APPLICATION_ID:$applicationId")
+            append(",")
+            append("$TAG_KEY_RUM_SESSION_ID:$sessionId")
+            append(",")
+            append("$TAG_KEY_RUM_VITAL_ID:$vitalId")
+            viewId?.let {
+                append(",")
+                append("$TAG_KEY_RUM_VIEW_ID:$it")
+            }
+            viewName?.let {
+                append(",")
+                append("$TAG_KEY_RUM_VIEW_NAME:$it")
+            }
+        }
     }
 
     private fun readProfilingData(profilingPath: String): ByteArray? {
@@ -92,6 +120,11 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
         private const val TAG_KEY_SDK_VERSION = "sdk_version"
+        private const val TAG_KEY_RUM_APPLICATION_ID = "application_id"
+        private const val TAG_KEY_RUM_SESSION_ID = "session_id"
+        private const val TAG_KEY_RUM_VITAL_ID = "vital_id"
+        private const val TAG_KEY_RUM_VIEW_ID = "view_id"
+        private const val TAG_KEY_RUM_VIEW_NAME = "view_name"
         private const val TAG_KEY_ENV = "env"
         private const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         private const val ANDROID_FAMILY_NAME = "android"
