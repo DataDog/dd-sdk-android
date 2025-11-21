@@ -129,7 +129,7 @@ internal class InternalProxyTest {
 
     @Test
     fun `M set metric telemetry sample rate bypass W setMetricTelemetrySampleRateBypass()`(
-        @FloatForgery(min = 0.0f, max = 100.0f) fakeSampleRateBypass: Float
+        @FloatForgery(min = 0.0f, max = 100.0f) fakeSampleRate: Float
     ) {
         // Given
         val mockSdkCore = mock<DatadogCore>()
@@ -138,9 +138,9 @@ internal class InternalProxyTest {
         val proxy = _InternalProxy(mockSdkCore)
 
         // When
-        proxy.setMetricTelemetrySampleRateBypass(fakeSampleRateBypass)
+        proxy.setMetricTelemetrySampleRateBypass(fakeSampleRate)
 
         // Then
-        verify(mockCoreFeature).metricTelemetrySampleRateBypass = fakeSampleRateBypass
+        verify(mockCoreFeature).metricTelemetrySampleRateBypass = fakeSampleRate
     }
 }
