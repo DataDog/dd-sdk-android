@@ -505,13 +505,13 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `M use bypass sample rate W logMetric() {bypass is set}`(
+    fun `M use bypass metric telemetry sample rate W logMetric() {bypass is set}`(
         forge: Forge,
         @FloatForgery(min = 0.0f, max = 100.0f) fakeSampleRate: Float
     ) {
         // Given
-        val bypassSampleRate = 100.0f // Use 100% to ensure the event is always sent
-        givenLoggerWithSamplingBypass(bypassSampleRate)
+        val bypassSampleRate = 100.0f
+        givenLoggerWithMetricTelemetrySampleRateBypass(bypassSampleRate)
 
         val mockLambda = mockMessageLambda(forge.aString())
 
@@ -528,7 +528,6 @@ internal class SdkInternalLoggerTest {
             verify(mockRumFeatureScope).sendEvent(capture())
             val metricEvent = firstValue as InternalTelemetryEvent.Metric
 
-            // Verify the bypass rate is used instead of hardcoded rate
             assertThat(
                 metricEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString())
             ).isEqualTo(bypassSampleRate)
@@ -540,8 +539,8 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val hardcodedSampleRate = 100.0f // Use 100% to ensure the event is always sent
-        givenLoggerWithSamplingBypass(null)
+        val hardcodedSampleRate = 100.0f
+        givenLoggerWithMetricTelemetrySampleRateBypass(null)
 
         val mockLambda = mockMessageLambda(forge.aString())
 
@@ -569,7 +568,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        givenLoggerWithSamplingBypass(0.0f)
+        givenLoggerWithMetricTelemetrySampleRateBypass(0.0f)
 
         val mockLambda = mockMessageLambda(forge.aString())
 
@@ -577,7 +576,7 @@ internal class SdkInternalLoggerTest {
         testedInternalLogger.logMetric(
             mockLambda,
             emptyMap(),
-            100.0f, // hardcoded rate is 100, but bypass is 0
+            100.0f,
             null
         )
 
@@ -885,13 +884,12 @@ internal class SdkInternalLoggerTest {
         return mockLambda
     }
 
-    private fun givenLoggerWithSamplingBypass(bypassValue: Float?) {
+    private fun givenLoggerWithMetricTelemetrySampleRateBypass(sampleRate: Float?) {
         val mockDatadogCore: DatadogCore = mock()
         val mockCoreFeature: CoreFeature = mock()
         whenever(mockDatadogCore.coreFeature) doReturn mockCoreFeature
-        whenever(mockCoreFeature.metricTelemetrySampleRateBypass) doReturn bypassValue
+        whenever(mockCoreFeature.metricTelemetrySampleRateBypass) doReturn sampleRate
         whenever(mockDatadogCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockDatadogCore.name) doReturn fakeInstanceName
 
         testedInternalLogger = SdkInternalLogger(
             sdkCore = mockDatadogCore,
