@@ -42,7 +42,7 @@ internal class PerfettoProfiler(
 
     private val resultCallback: Consumer<ProfilingResult>
 
-    private var profilingStarted: AtomicBoolean = AtomicBoolean(false)
+    private val profilingStarted = AtomicBoolean(false)
 
     private var profilingStartTime = 0L
 
@@ -86,7 +86,12 @@ internal class PerfettoProfiler(
     }
 
     override fun stop() {
+        profilingStarted.set(false)
         stopSignal.cancel()
+    }
+
+    override fun isRunning(): Boolean {
+        return profilingStarted.get()
     }
 
     private fun sendProfilingStartTelemetry() {
