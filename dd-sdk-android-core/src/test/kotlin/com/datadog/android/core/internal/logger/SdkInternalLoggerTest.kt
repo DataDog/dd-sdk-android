@@ -506,14 +506,14 @@ internal class SdkInternalLoggerTest {
 
     @Test
     fun `M use bypass metric telemetry sample rate W logMetric() {bypass is set}`(
-        forge: Forge,
+        @StringForgery fakeMessage: String,
         @FloatForgery(min = 0.0f, max = 100.0f) fakeSampleRate: Float
     ) {
         // Given
         val bypassSampleRate = 100.0f
         givenLoggerWithMetricTelemetrySampleRateBypass(bypassSampleRate)
 
-        val mockLambda = mockMessageLambda(forge.aString())
+        val mockLambda = mockMessageLambda(fakeMessage)
 
         // When
         testedInternalLogger.logMetric(
@@ -536,13 +536,13 @@ internal class SdkInternalLoggerTest {
 
     @Test
     fun `M use hardcoded sample rate W logMetric() {bypass is null}`(
-        forge: Forge
+        @StringForgery fakeMessage: String
     ) {
         // Given
         val hardcodedSampleRate = 100.0f
         givenLoggerWithMetricTelemetrySampleRateBypass(null)
 
-        val mockLambda = mockMessageLambda(forge.aString())
+        val mockLambda = mockMessageLambda(fakeMessage)
 
         // When
         testedInternalLogger.logMetric(
