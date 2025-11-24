@@ -9,13 +9,13 @@ package com.datadog.android.flags
 import com.datadog.android.flags.model.FlagsClientState
 
 /**
- * Observer interface for receiving state change notifications from a [FlagsClient].
+ * Listener interface for receiving state change notifications from a [FlagsClient].
  *
  * Implementations of this interface can be registered with a [FlagsClient] to receive
  * callbacks whenever the client's state changes (e.g., from NOT_READY to READY, or
  * from READY to RECONCILING when the evaluation context changes).
  */
-interface FlagsStateObserver {
+interface FlagsStateListener {
     /**
      * Called when the state of the [FlagsClient] changes.
      *

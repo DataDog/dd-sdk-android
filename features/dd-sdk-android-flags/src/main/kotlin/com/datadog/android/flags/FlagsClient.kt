@@ -160,23 +160,23 @@ interface FlagsClient {
     fun getCurrentState(): FlagsClientState
 
     /**
-     * Registers an observer to receive state change notifications.
+     * Registers a listener to receive state change notifications.
      *
-     * The observer will be notified whenever the client's state changes (e.g., from NOT_READY
+     * The listener will be notified whenever the client's state changes (e.g., from NOT_READY
      * to READY, or from READY to RECONCILING when the evaluation context changes).
      *
-     * @param observer The [FlagsStateObserver] to register.
+     * @param listener The [FlagsStateListener] to register.
      */
-    fun addStateObserver(observer: FlagsStateObserver)
+    fun addStateListener(listener: FlagsStateListener)
 
     /**
-     * Unregisters a previously registered state observer.
+     * Unregisters a previously registered state listener.
      *
-     * After removal, the observer will no longer receive state change notifications.
+     * After removal, the listener will no longer receive state change notifications.
      *
-     * @param observer The [FlagsStateObserver] to unregister.
+     * @param listener The [FlagsStateListener] to unregister.
      */
-    fun removeStateObserver(observer: FlagsStateObserver)
+    fun removeStateListener(listener: FlagsStateListener)
 
     /**
      * Builder for creating [FlagsClient] instances with custom configuration.
