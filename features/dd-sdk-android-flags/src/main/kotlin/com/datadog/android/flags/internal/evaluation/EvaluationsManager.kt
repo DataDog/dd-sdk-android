@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.flags.internal.FlagsStateChannel
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
@@ -26,13 +27,15 @@ import java.util.concurrent.ExecutorService
  * @param flagsRepository local storage for flag data and evaluation context
  * @param assignmentsReader handles reading assignments for the context.
  * @param precomputeMapper transforms network responses into internal flag format
+ * @param flagStateChannel channel for notifying state change listeners
  */
 internal class EvaluationsManager(
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     private val flagsRepository: FlagsRepository,
     private val assignmentsReader: PrecomputedAssignmentsReader,
-    private val precomputeMapper: PrecomputeMapper
+    private val precomputeMapper: PrecomputeMapper,
+    private val flagStateChannel: FlagsStateChannel
 ) {
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -48,6 +51,9 @@ internal class EvaluationsManager(
      * a valid targeting key.
      */
     fun updateEvaluationsForContext(context: EvaluationContext) {
+        // Transition to RECONCILING before starting the fetch operation
+        flagStateChannel.notifyReconciling()
+
         executorService.executeSafe(
             operationName = FETCH_AND_STORE_OPERATION_NAME,
             internalLogger = internalLogger
@@ -76,6 +82,13 @@ internal class EvaluationsManager(
                 InternalLogger.Target.MAINTAINER,
                 { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
             )
+
+            // Transition to READY after successful storage, or ERROR if fetch failed
+            if (response != null) {
+                flagStateChannel.notifyReady()
+            } else {
+                flagStateChannel.notifyError()
+            }
         }
     }
 
