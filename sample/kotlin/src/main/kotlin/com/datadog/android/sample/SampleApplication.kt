@@ -150,8 +150,6 @@ class SampleApplication : Application() {
             preferences.getTrackingConsent()
         )
 
-        Datadog._internalProxy().setMetricTelemetrySampleRateBypass(100f)
-
         initializeSessionReplay()
         initializeLogs()
         initializeTraces()
