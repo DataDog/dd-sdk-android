@@ -220,7 +220,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -323,7 +326,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -470,7 +476,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -576,7 +585,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -778,7 +790,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -863,7 +878,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -963,7 +981,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,

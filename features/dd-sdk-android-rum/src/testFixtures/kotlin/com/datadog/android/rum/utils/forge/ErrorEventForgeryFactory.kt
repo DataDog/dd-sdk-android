@@ -132,7 +132,10 @@ class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                     timeZone = forge.aNullable { anAlphabeticalString() },
                     batteryLevel = forge.aNullable { aDouble(min = 0.0, max = 100.0) },
                     powerSavingMode = forge.aNullable { aBool() },
-                    brightnessLevel = forge.aNullable { aDouble(min = 0.0, max = 1.0) }
+                    brightnessLevel = forge.aNullable { aDouble(min = 0.0, max = 1.0) },
+                    isLowRam = forge.aNullable { aBool() },
+                    logicalCpuCount = forge.aNullable { anInt() },
+                    totalRam = forge.aNullable { anInt() }
                 )
             },
             context = forge.aNullable {

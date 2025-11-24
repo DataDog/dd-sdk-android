@@ -55,7 +55,10 @@ internal class NoOpContextProvider : ContextProvider {
                 locales = emptyList(),
                 currentLocale = "",
                 timeZone = ""
-            )
+            ),
+            logicalCpuCount = 0,
+            totalRam = null,
+            isLowRam = null
         ),
         userInfo = UserInfo(null, null, null, null, emptyMap()),
         accountInfo = null,

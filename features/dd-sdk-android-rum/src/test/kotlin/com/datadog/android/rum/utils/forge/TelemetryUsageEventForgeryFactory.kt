@@ -45,7 +45,10 @@ internal class TelemetryUsageEventForgeryFactory : ForgeryFactory<TelemetryUsage
                     TelemetryUsageEvent.Device(
                         architecture = anAlphabeticalString(),
                         brand = anAlphabeticalString(),
-                        model = anAlphabeticalString()
+                        model = anAlphabeticalString(),
+                        isLowRam = forge.aNullable { aBool() },
+                        logicalCpuCount = forge.aNullable { anInt() },
+                        totalRam = forge.aNullable { anInt() }
                     )
                 },
                 os = forge.aNullable {

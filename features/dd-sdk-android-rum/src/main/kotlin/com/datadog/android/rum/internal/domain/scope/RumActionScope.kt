@@ -344,7 +344,10 @@ internal class RumActionScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture,
                     locales = datadogContext.deviceInfo.localeInfo.locales,
-                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                    logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
                 context = ActionEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ActionEvent.Dd(

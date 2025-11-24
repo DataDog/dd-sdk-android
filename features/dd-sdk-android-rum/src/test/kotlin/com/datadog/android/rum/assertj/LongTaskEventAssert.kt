@@ -287,7 +287,10 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         model: String,
         brand: String,
         type: LongTaskEvent.DeviceType,
-        architecture: String
+        architecture: String,
+        isLowRam: Boolean?,
+        logicalCpuCount: Number?,
+        totalRam: Number?
     ): LongTaskEventAssert {
         assertThat(actual.device?.name)
             .overridingErrorMessage(
@@ -315,6 +318,21 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                     " but was ${actual.device?.architecture}"
             )
             .isEqualTo(architecture)
+        assertThat(actual.device?.isLowRam)
+            .overridingErrorMessage(
+                "Expected event data to have device.isLowRam $isLowRam" +
+                    " but was ${actual.device?.isLowRam}"
+            ).isEqualTo(isLowRam)
+        assertThat(actual.device?.logicalCpuCount)
+            .overridingErrorMessage(
+                "Expected event data to have device.logicalCpuCount $logicalCpuCount" +
+                    " but was ${actual.device?.logicalCpuCount}"
+            ).isEqualTo(logicalCpuCount)
+        assertThat(actual.device?.totalRam)
+            .overridingErrorMessage(
+                "Expected event data to have device.totalRam $totalRam" +
+                    " but was ${actual.device?.totalRam}"
+            ).isEqualTo(totalRam)
         return this
     }
 

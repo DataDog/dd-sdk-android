@@ -46,7 +46,10 @@ class VitalAppLaunchEventForgeryFactory : ForgeryFactory<VitalAppLaunchEvent> {
                     model = forge.aString(),
                     brand = forge.aString(),
                     type = forge.aValueFrom(VitalAppLaunchEvent.DeviceType::class.java),
-                    architecture = forge.aString()
+                    architecture = forge.aString(),
+                    isLowRam = forge.aNullable { aBool() },
+                    logicalCpuCount = forge.aNullable { anInt() },
+                    totalRam = forge.aNullable { anInt() }
                 )
             },
             context = forge.aNullable {

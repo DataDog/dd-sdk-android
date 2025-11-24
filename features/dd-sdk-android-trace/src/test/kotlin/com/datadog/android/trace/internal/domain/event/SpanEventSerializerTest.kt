@@ -464,13 +464,16 @@ internal class SpanEventSerializerTest {
         val deviceName = spanEvent.meta.device.name
         val deviceModel = spanEvent.meta.device.model
         val deviceBrand = spanEvent.meta.device.brand
-        val deviceArhitecture = spanEvent.meta.device.architecture
+        val deviceArchitecture = spanEvent.meta.device.architecture
         val deviceLocale = spanEvent.meta.device.locale
         val deviceLocales = spanEvent.meta.device.locales
         val deviceTimezone = spanEvent.meta.device.timeZone
         val deviceBatteryLevel = spanEvent.meta.device.batteryLevel
         val devicePowerSavingMode = spanEvent.meta.device.powerSavingMode
         val deviceBrightnessLevel = spanEvent.meta.device.brightnessLevel
+        val deviceIsLowRam = spanEvent.meta.device.isLowRam
+        val deviceLogicalCpuCount = spanEvent.meta.device.logicalCpuCount
+        val deviceTotalRam = spanEvent.meta.device.totalRam
         if (deviceType != null) {
             hasField(KEY_TYPE, deviceType.name.lowercase(Locale.US))
         } else {
@@ -491,8 +494,8 @@ internal class SpanEventSerializerTest {
         } else {
             doesNotHaveField(KEY_BRAND)
         }
-        if (deviceArhitecture != null) {
-            hasField(KEY_ARCHITECTURE, deviceArhitecture)
+        if (deviceArchitecture != null) {
+            hasField(KEY_ARCHITECTURE, deviceArchitecture)
         } else {
             doesNotHaveField(KEY_ARCHITECTURE)
         }
@@ -525,6 +528,21 @@ internal class SpanEventSerializerTest {
             hasField(KEY_BRIGHTNESS_LEVEL, deviceBrightnessLevel)
         } else {
             doesNotHaveField(KEY_BRIGHTNESS_LEVEL)
+        }
+        if (deviceIsLowRam != null) {
+            hasField(KEY_IS_LOW_RAM, deviceIsLowRam)
+        } else {
+            doesNotHaveField(KEY_IS_LOW_RAM)
+        }
+        if (deviceLogicalCpuCount != null) {
+            hasField(KEY_LOGICAL_CPU_COUNT, deviceLogicalCpuCount)
+        } else {
+            doesNotHaveField(KEY_LOGICAL_CPU_COUNT)
+        }
+        if (deviceTotalRam != null) {
+            hasField(KEY_TOTAL_RAM, deviceTotalRam)
+        } else {
+            doesNotHaveField(KEY_TOTAL_RAM)
         }
     }
 
@@ -607,6 +625,10 @@ internal class SpanEventSerializerTest {
         private const val KEY_BATTERY_LEVEL = "battery_level"
         private const val KEY_POWER_SAVING_MODE = "power_saving_mode"
         private const val KEY_BRIGHTNESS_LEVEL = "brightness_level"
+
+        private const val KEY_IS_LOW_RAM = "is_low_ram"
+        private const val KEY_LOGICAL_CPU_COUNT = "logical_cpu_count"
+        private const val KEY_TOTAL_RAM = "total_ram"
         private const val KEY_NAME = "name"
     }
 }

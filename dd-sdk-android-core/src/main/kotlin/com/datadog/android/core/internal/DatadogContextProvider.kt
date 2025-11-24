@@ -53,7 +53,10 @@ internal class DatadogContextProvider(
                             currentLocale = currentLocale,
                             timeZone = timeZone
                         )
-                    }
+                    },
+                    logicalCpuCount = logicalCpuCount,
+                    totalRam = totalRam,
+                    isLowRam = isLowRam
                 )
             },
             userInfo = coreFeature.userInfoProvider.getUserInfo(),
