@@ -71,7 +71,7 @@ data class com.datadog.android.api.context.AccountInfo
 data class com.datadog.android.api.context.DatadogContext
   constructor(com.datadog.android.DatadogSite, String, String, String, String, Int, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo)
+  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo, Int, Int?, Boolean?)
 enum com.datadog.android.api.context.DeviceType
   - MOBILE
   - TABLET

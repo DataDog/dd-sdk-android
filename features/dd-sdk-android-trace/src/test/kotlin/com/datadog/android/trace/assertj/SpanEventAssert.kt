@@ -394,6 +394,27 @@ internal class SpanEventAssert(actual: SpanEvent) :
                     "instead was: ${actual.meta.device.architecture}"
             )
             .isEqualTo(deviceInfo.architecture)
+        assertThat(actual.meta.device.isLowRam)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device isLowRam: " +
+                    "${deviceInfo.isLowRam} but " +
+                    "instead was: ${actual.meta.device.isLowRam}"
+            )
+            .isEqualTo(deviceInfo.isLowRam)
+        assertThat(actual.meta.device.logicalCpuCount)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device isLowRam: " +
+                    "${deviceInfo.isLowRam} but " +
+                    "instead was: ${actual.meta.device.logicalCpuCount}"
+            )
+            .isEqualTo(deviceInfo.logicalCpuCount)
+        assertThat(actual.meta.device.totalRam)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have device totalRam: " +
+                    "${deviceInfo.totalRam} but " +
+                    "instead was: ${actual.meta.device.totalRam}"
+            )
+            .isEqualTo(deviceInfo.totalRam)
         return this
     }
 
