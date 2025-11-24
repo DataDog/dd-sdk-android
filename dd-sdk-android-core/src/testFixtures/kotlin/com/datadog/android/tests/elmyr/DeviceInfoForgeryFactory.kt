@@ -24,7 +24,10 @@ class DeviceInfoForgeryFactory : ForgeryFactory<DeviceInfo> {
             osMajorVersion = forge.aString(),
             architecture = forge.aString(),
             numberOfDisplays = forge.aNullable { forge.anInt() },
-            localeInfo = forge.getForgery()
+            localeInfo = forge.getForgery(),
+            logicalCpuCount = forge.anInt(),
+            totalRam = forge.aNullable { anInt() },
+            isLowRam = forge.aNullable { aBool() }
         )
     }
 }

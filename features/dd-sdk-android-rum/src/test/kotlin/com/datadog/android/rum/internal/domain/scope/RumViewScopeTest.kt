@@ -624,7 +624,10 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam,
+                    fakeDatadogContext.deviceInfo.isLowRam
                 )
                 hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -708,7 +711,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -788,7 +794,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -878,7 +887,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -965,7 +977,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1048,7 +1063,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1118,7 +1136,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1203,7 +1224,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1295,7 +1319,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1383,7 +1410,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1468,7 +1498,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1588,7 +1621,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1683,7 +1719,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1787,7 +1826,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1885,7 +1927,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1961,7 +2006,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2057,7 +2105,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2158,7 +2209,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2269,7 +2323,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2372,7 +2429,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2609,7 +2669,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2800,7 +2863,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2878,7 +2944,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3399,7 +3468,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3482,7 +3554,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3558,7 +3633,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3633,7 +3711,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3710,7 +3791,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3789,7 +3873,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3928,7 +4015,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4008,7 +4098,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4090,7 +4183,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4145,7 +4241,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4226,7 +4325,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4309,7 +4411,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4364,7 +4469,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4461,7 +4569,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4516,7 +4627,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4598,7 +4712,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4681,7 +4798,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4914,7 +5034,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -4972,7 +5095,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5041,7 +5167,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5110,7 +5239,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5353,7 +5485,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5440,7 +5575,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5500,7 +5638,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5602,7 +5743,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5698,7 +5842,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5796,7 +5943,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -5876,7 +6026,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -6161,7 +6314,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -6243,7 +6399,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -6324,7 +6483,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -6415,7 +6577,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -6506,7 +6671,10 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam,
+                        fakeDatadogContext.deviceInfo.isLowRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,

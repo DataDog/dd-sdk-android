@@ -135,7 +135,10 @@ internal class RumVitalAppLaunchEventHelper(
                 timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                 batteryLevel = batteryInfo.batteryLevel,
                 powerSavingMode = batteryInfo.lowPowerMode,
-                brightnessLevel = displayInfo.screenBrightness
+                brightnessLevel = displayInfo.screenBrightness,
+                isLowRam = datadogContext.deviceInfo.isLowRam,
+                logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                totalRam = datadogContext.deviceInfo.totalRam
             ),
             os = VitalAppLaunchEvent.Os(
                 name = datadogContext.deviceInfo.osName,
