@@ -95,7 +95,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Network
       fun fromJsonObject(com.google.gson.JsonObject): Network
   data class Device
-    constructor(Type? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null)
+    constructor(Type? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Device

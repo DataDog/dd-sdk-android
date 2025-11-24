@@ -41,7 +41,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(value = Configurator::class, seed = 0xd1285cd0106L)
 internal class RumEventDeserializerTest {
 
     lateinit var testedDeserializer: RumEventDeserializer

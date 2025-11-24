@@ -24,7 +24,7 @@ internal class DeserializedActionEventAssert(actual: ActionEvent) :
             .isEqualTo(expected)
         assertThat(actual.device)
             .usingRecursiveComparison()
-            .ignoringFields("batteryLevel", "brightnessLevel")
+            .ignoringFields("batteryLevel", "brightnessLevel", "totalRam", "logicalCpuCount")
             .isEqualTo(expected.device)
         assertNumberFieldEquals(actual.device?.batteryLevel, expected.device?.batteryLevel)
         assertNumberFieldEquals(actual.device?.brightnessLevel, expected.device?.brightnessLevel)

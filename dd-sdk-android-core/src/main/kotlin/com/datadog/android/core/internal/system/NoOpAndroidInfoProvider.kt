@@ -22,4 +22,7 @@ internal class NoOpAndroidInfoProvider : AndroidInfoProvider {
     override val locales: List<String> = emptyList()
     override val currentLocale: String = ""
     override val timeZone: String = ""
+    override val logicalCpuCount: Int = 0
+    override val totalRam: Int? = null
+    override val isLowRam: Boolean? = null
 }
