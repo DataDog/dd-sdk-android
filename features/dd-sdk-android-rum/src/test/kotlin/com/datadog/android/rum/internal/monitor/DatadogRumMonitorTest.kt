@@ -233,7 +233,15 @@ internal class DatadogRumMonitorTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         whenever(
-            mockRumFeatureScope.withWriteContext(eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)), any())
+            mockRumFeatureScope.withWriteContext(
+                eq(
+                    setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.PROFILING_FEATURE_NAME
+                    )
+                ),
+                any()
+            )
         ) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)

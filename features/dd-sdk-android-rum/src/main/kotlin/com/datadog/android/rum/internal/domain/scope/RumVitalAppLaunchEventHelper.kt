@@ -37,7 +37,8 @@ internal class RumVitalAppLaunchEventHelper(
         rumContext: RumContext,
         durationNs: Long,
         scenario: RumStartupScenario,
-        appLaunchMetric: RumVitalAppLaunchEvent.AppLaunchMetric
+        appLaunchMetric: RumVitalAppLaunchEvent.AppLaunchMetric,
+        profilingStatus: RumVitalAppLaunchEvent.ProfilingStatus?
     ): RumVitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -86,7 +87,10 @@ internal class RumVitalAppLaunchEventHelper(
                 session = RumVitalAppLaunchEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalAppLaunchSessionPrecondition()
                 ),
-                configuration = RumVitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = RumVitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
+                profiling = RumVitalAppLaunchEvent.Profiling(
+                    status = profilingStatus
+                )
             ),
             application = RumVitalAppLaunchEvent.Application(
                 id = rumContext.applicationId,

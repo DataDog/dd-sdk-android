@@ -55,6 +55,9 @@ internal class ProfilingFeature(
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.setProfilingFlag(appContext)
         sdkCore.setEventReceiver(name, this)
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context.put(PROFILER_IS_RUNNING, profiler.isRunning())
+        }
         dataWriter = createDataWriter(sdkCore)
     }
 
@@ -88,5 +91,6 @@ internal class ProfilingFeature(
     companion object {
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature receive an event of unsupported type=%s."
+        private const val PROFILER_IS_RUNNING = "profiler_is_running"
     }
 }

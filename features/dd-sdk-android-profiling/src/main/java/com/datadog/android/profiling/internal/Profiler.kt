@@ -21,4 +21,6 @@ internal interface Profiler {
     fun start(appContext: Context)
 
     fun stop()
+
+    fun isRunning(): Boolean
 }

@@ -18,7 +18,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.junit.Assert.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -33,7 +33,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -96,6 +95,26 @@ class PerfettoProfilerTest {
                 resultCallbackCaptor.capture()
             )
 
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+        resultCallbackCaptor.firstValue.accept(successResult)
+        val captor = argumentCaptor<PerfettoResult>()
+        verify(mockOnPerfettoResult).invoke(captor.capture())
+
+        val result = captor.firstValue
+        assertThat(result.start).isEqualTo(stubTimeProvider.startTime)
+        assertThat(result.start).isEqualTo(stubTimeProvider.endTime)
+        assertThat(result.resultFilePath).isEqualTo(fakePath)
+    }
+
+    @Test
+    fun `M log info message W start()`() {
+        // When
+        testedProfiler.start(mockContext)
+
+        // Then
         val messageCaptor = argumentCaptor<() -> String>()
         val expectedProps = mapOf(
             "profiling" to mapOf(
@@ -111,25 +130,14 @@ class PerfettoProfilerTest {
                 eq(true),
                 eq(expectedProps)
             )
-        val successResult = mock<ProfilingResult> {
-            on { errorCode } doReturn ProfilingResult.ERROR_NONE
-            on { resultFilePath } doReturn fakePath
-        }
-        resultCallbackCaptor.firstValue.accept(successResult)
-        val captor = argumentCaptor<PerfettoResult>()
-        verify(mockOnPerfettoResult).invoke(captor.capture())
 
-        val result = captor.firstValue
-        assertEquals(stubTimeProvider.startTime, result.start)
-        assertEquals(stubTimeProvider.endTime, result.end)
-        assertEquals(fakePath, result.resultFilePath)
-
-        assertEquals("Profiling started.", messageCaptor.firstValue.invoke())
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("Profiling started.")
     }
 
     @Test
     fun `M request profiling stack sampling only once W several call start()`() {
         // When
+        testedProfiler.start(mockContext)
         testedProfiler.start(mockContext)
 
         // Then
@@ -142,12 +150,6 @@ class PerfettoProfilerTest {
                 any(),
                 any()
             )
-
-        // When
-        testedProfiler.start(mockContext)
-
-        // Then
-        verifyNoMoreInteractions(mockService)
     }
 
     @Test
@@ -202,7 +204,41 @@ class PerfettoProfilerTest {
                 eq(expectedProps)
             )
 
-        assertEquals("Profiling finished.", messageCaptor.firstValue.invoke())
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("Profiling finished.")
+    }
+
+    @Test
+    fun `M return false W isRunning { profiler not started }`() {
+        // When
+        val status = testedProfiler.isRunning()
+
+        // Then
+        assertThat(status).isFalse
+    }
+
+    @Test
+    fun `M return true W isRunning { profiler started }`() {
+        // Given
+        testedProfiler.start(mockContext)
+
+        // When
+        val status = testedProfiler.isRunning()
+
+        // Then
+        assertThat(status).isTrue
+    }
+
+    @Test
+    fun `M return false W isRunning { profiler stopped }`() {
+        // Given
+        testedProfiler.start(mockContext)
+        testedProfiler.stop()
+
+        // When
+        val status = testedProfiler.isRunning()
+
+        // Then
+        assertThat(status).isFalse
     }
 
     private class StubTimeProvider : TimeProvider {

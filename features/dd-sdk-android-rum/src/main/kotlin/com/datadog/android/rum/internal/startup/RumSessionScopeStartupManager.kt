@@ -110,7 +110,8 @@ internal class RumSessionScopeStartupManagerImpl(
             rumContext = rumContext,
             durationNs = event.info.durationNs,
             appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTID,
-            scenario = event.info.scenario
+            scenario = event.info.scenario,
+            profilingStatus = datadogContext.getProfilingStatus()
         )
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
             TTIDEvent(
@@ -221,12 +222,21 @@ internal class RumSessionScopeStartupManagerImpl(
                 rumContext = rumContext,
                 durationNs = durationNs,
                 appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTFD,
-                scenario = scenario
+                scenario = scenario,
+                profilingStatus = null
             )
         }.submit()
     }
 
+    private fun DatadogContext.getProfilingStatus(): RumVitalAppLaunchEvent.ProfilingStatus? {
+        val isProfilerRunning = featuresContext[Feature.PROFILING_FEATURE_NAME]
+            ?.get(PROFILER_IS_RUNNING)
+        return if (isProfilerRunning == true) RumVitalAppLaunchEvent.ProfilingStatus.RUNNING else null
+    }
+
     companion object {
+        private const val PROFILER_IS_RUNNING = "profiler_is_running"
+
         internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
             "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
 
