@@ -248,7 +248,10 @@ internal class DatadogLateCrashReporter(
                 name = deviceInfo.deviceName,
                 model = deviceInfo.deviceModel,
                 brand = deviceInfo.deviceBrand,
-                architecture = deviceInfo.architecture
+                architecture = deviceInfo.architecture,
+                processorCount = deviceInfo.processorCount,
+                totalRam = deviceInfo.totalRam,
+                isLowRamDevice = deviceInfo.isLowRamDevice
             ),
             dd = ErrorEvent.Dd(
                 session = ErrorEvent.DdSession(),

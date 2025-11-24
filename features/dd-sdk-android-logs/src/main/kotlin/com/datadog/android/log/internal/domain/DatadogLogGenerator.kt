@@ -221,7 +221,10 @@ internal class DatadogLogGenerator(
         name = deviceInfo.deviceName,
         model = deviceInfo.deviceModel,
         brand = deviceInfo.deviceBrand,
-        architecture = deviceInfo.architecture
+        architecture = deviceInfo.architecture,
+        processorCount = deviceInfo.processorCount,
+        totalRam = deviceInfo.totalRam,
+        isLowRamDevice = deviceInfo.isLowRamDevice
     )
 
     private fun resolveDeviceType(deviceType: DeviceType): LogEvent.Type = when (deviceType) {
