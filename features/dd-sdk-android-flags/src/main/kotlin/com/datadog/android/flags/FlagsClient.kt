@@ -27,6 +27,7 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
@@ -147,6 +148,35 @@ interface FlagsClient {
      * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
      */
     fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
+
+    /**
+     * Gets the current state of this [FlagsClient].
+     *
+     * The state indicates whether the client is ready to evaluate flags, currently loading
+     * new flag values, or in an error state.
+     *
+     * @return The current [FlagsClientState].
+     */
+    fun getCurrentState(): FlagsClientState
+
+    /**
+     * Registers an observer to receive state change notifications.
+     *
+     * The observer will be notified whenever the client's state changes (e.g., from NOT_READY
+     * to READY, or from READY to RECONCILING when the evaluation context changes).
+     *
+     * @param observer The [FlagsStateObserver] to register.
+     */
+    fun addStateObserver(observer: FlagsStateObserver)
+
+    /**
+     * Unregisters a previously registered state observer.
+     *
+     * After removal, the observer will no longer receive state change notifications.
+     *
+     * @param observer The [FlagsStateObserver] to unregister.
+     */
+    fun removeStateObserver(observer: FlagsStateObserver)
 
     /**
      * Builder for creating [FlagsClient] instances with custom configuration.
