@@ -8,8 +8,10 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
@@ -112,6 +114,28 @@ internal class NoOpFlagsClient(
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
         logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
+    }
+
+    /**
+     * Returns [FlagsClientState.ERROR] as this is a no-op client.
+     * @return Always [FlagsClientState.ERROR].
+     */
+    override fun getCurrentState(): FlagsClientState = FlagsClientState.ERROR
+
+    /**
+     * No-op implementation that ignores listener registration.
+     * @param listener Ignored listener.
+     */
+    override fun addStateListener(listener: FlagsStateListener) {
+        // No-op: listeners are not supported on NoOpFlagsClient
+    }
+
+    /**
+     * No-op implementation that ignores listener removal.
+     * @param listener Ignored listener.
+     */
+    override fun removeStateListener(listener: FlagsStateListener) {
+        // No-op: listeners are not supported on NoOpFlagsClient
     }
 
     /**
