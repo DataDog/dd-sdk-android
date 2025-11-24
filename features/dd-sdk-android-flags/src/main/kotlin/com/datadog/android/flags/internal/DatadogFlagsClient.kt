@@ -19,7 +19,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
-import com.datadog.android.internal.utils.DDCoreSubscription
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicReference
 
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
+ * @param flagStateChannel channel for managing state change listeners
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -47,7 +47,8 @@ internal class DatadogFlagsClient(
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
     private val rumEvaluationLogger: RumEvaluationLogger,
-    private val processor: EventsProcessor
+    private val processor: EventsProcessor,
+    private val flagStateChannel: FlagsStateChannel
 ) : FlagsClient {
 
     // region State Management
@@ -59,33 +60,21 @@ internal class DatadogFlagsClient(
     private val currentState = AtomicReference(FlagsClientState.NOT_READY)
 
     /**
-     * Subscription for managing state change listeners.
-     * Thread-safe: DDCoreSubscription handles concurrent add/remove operations.
-     */
-    private val stateListeners = DDCoreSubscription.create<FlagsStateListener>()
-
-    /**
-     * Lock for ensuring ordered delivery of state change notifications.
-     * Synchronizes notification calls to guarantee listeners receive state changes in order.
-     */
-    private val notificationLock = Any()
-
-    /**
      * Updates the client state and notifies all registered listeners.
      *
      * This method is thread-safe and guarantees that listeners receive state changes in order.
-     * Multiple concurrent calls to this method will be serialized to prevent out-of-order
-     * notifications.
+     * The notification is delegated to [flagStateChannel] which handles synchronization.
      *
      * @param newState The new state to transition to.
      * @param error Optional error that caused the state change.
      */
-    private fun updateState(newState: FlagsClientState, error: Throwable? = null) {
+    internal fun updateState(newState: FlagsClientState, error: Throwable? = null) {
         currentState.set(newState)
-        synchronized(notificationLock) {
-            stateListeners.notifyListeners {
-                onStateChanged(newState, error)
-            }
+        when (newState) {
+            FlagsClientState.NOT_READY -> flagStateChannel.notifyNotReady()
+            FlagsClientState.READY -> flagStateChannel.notifyReady()
+            FlagsClientState.RECONCILING -> flagStateChannel.notifyReconciling()
+            FlagsClientState.ERROR -> flagStateChannel.notifyError(error)
         }
     }
 
@@ -198,11 +187,11 @@ internal class DatadogFlagsClient(
     override fun getCurrentState(): FlagsClientState = currentState.get()
 
     override fun addStateListener(listener: FlagsStateListener) {
-        stateListeners.addListener(listener)
+        flagStateChannel.addListener(listener)
     }
 
     override fun removeStateListener(listener: FlagsStateListener) {
-        stateListeners.removeListener(listener)
+        flagStateChannel.removeListener(listener)
     }
 
     // endregion

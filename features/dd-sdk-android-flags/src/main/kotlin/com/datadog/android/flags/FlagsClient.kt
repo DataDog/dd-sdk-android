@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.FlagsStateChannel
 import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
@@ -29,6 +30,7 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
+import com.datadog.android.internal.utils.DDCoreSubscription
 import org.json.JSONObject
 
 /**
@@ -430,12 +432,18 @@ interface FlagsClient {
 
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
+                // Create shared channel for state change notifications
+                val flagStateChannel = FlagsStateChannel(
+                    subscription = DDCoreSubscription.create()
+                )
+
                 val evaluationsManager = EvaluationsManager(
                     executorService = executorService,
                     internalLogger = featureSdkCore.internalLogger,
                     flagsRepository = flagsRepository,
                     assignmentsReader = assignmentsDownloader,
-                    precomputeMapper = precomputeMapper
+                    precomputeMapper = precomputeMapper,
+                    flagStateChannel = flagStateChannel
                 )
 
                 val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -446,7 +454,8 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
-                    processor = flagsFeature.processor
+                    processor = flagsFeature.processor,
+                    flagStateChannel = flagStateChannel
                 )
             }
         }
