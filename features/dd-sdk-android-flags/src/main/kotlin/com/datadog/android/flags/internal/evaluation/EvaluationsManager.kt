@@ -51,7 +51,6 @@ internal class EvaluationsManager(
      * a valid targeting key.
      */
     fun updateEvaluationsForContext(context: EvaluationContext) {
-        // Transition to RECONCILING before starting the fetch operation
         flagStateChannel.notifyReconciling()
 
         executorService.executeSafe(
@@ -83,7 +82,6 @@ internal class EvaluationsManager(
                 { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
             )
 
-            // Transition to READY after successful storage, or ERROR if fetch failed
             if (response != null) {
                 flagStateChannel.notifyReady()
             } else {

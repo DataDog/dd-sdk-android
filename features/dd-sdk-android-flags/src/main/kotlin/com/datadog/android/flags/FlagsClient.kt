@@ -432,7 +432,6 @@ interface FlagsClient {
 
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
-                // Create shared channel for state change notifications
                 val flagStateChannel = FlagsStateChannel(
                     subscription = DDCoreSubscription.create()
                 )
