@@ -180,6 +180,7 @@ internal constructor(
                     },
                     e
                 )
+                @Suppress("ThrowingInternalException")
                 throw e
             }
         }
