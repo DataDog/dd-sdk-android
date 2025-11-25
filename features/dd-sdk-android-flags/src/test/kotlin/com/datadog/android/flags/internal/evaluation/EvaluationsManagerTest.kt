@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.FlagsStateChannel
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -53,6 +54,9 @@ internal class EvaluationsManagerTest {
     @Mock
     lateinit var mockPrecomputeMapper: PrecomputeMapper
 
+    @Mock
+    lateinit var mockFlagsStateChannel: FlagsStateChannel
+
     @StringForgery
     lateinit var fakeTargetingKey: String
 
@@ -75,7 +79,8 @@ internal class EvaluationsManagerTest {
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
             assignmentsReader = mockAssignmentsDownloader,
-            precomputeMapper = mockPrecomputeMapper
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateChannel = mockFlagsStateChannel
         )
 
         // Mock executor to run tasks synchronously for testing
@@ -218,4 +223,43 @@ internal class EvaluationsManagerTest {
 
         assertThat(logCaptor.firstValue.invoke()).contains("Processing evaluation context: $fakeTargetingKey")
     }
+
+    // region State Transitions
+
+    @Test
+    fun `M notify RECONCILING then READY W updateEvaluationsForContext() { successful fetch }`() {
+        // Given
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val mockResponse = "{}"
+        val expectedFlags = mapOf<String, PrecomputedFlag>()
+
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(mockResponse)
+        whenever(mockPrecomputeMapper.map(mockResponse)).thenReturn(expectedFlags)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext)
+
+        // Then
+        val inOrder = org.mockito.kotlin.inOrder(mockFlagsStateChannel)
+        inOrder.verify(mockFlagsStateChannel).notifyReconciling()
+        inOrder.verify(mockFlagsStateChannel).notifyReady()
+    }
+
+    @Test
+    fun `M notify RECONCILING then ERROR W updateEvaluationsForContext() { network failure }`() {
+        // Given
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext)
+
+        // Then
+        val inOrder = org.mockito.kotlin.inOrder(mockFlagsStateChannel)
+        inOrder.verify(mockFlagsStateChannel).notifyReconciling()
+        inOrder.verify(mockFlagsStateChannel).notifyError()
+    }
+
+    // endregion
 }

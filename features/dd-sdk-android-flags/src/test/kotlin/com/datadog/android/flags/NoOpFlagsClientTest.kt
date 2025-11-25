@@ -11,6 +11,7 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -422,6 +424,45 @@ internal class NoOpFlagsClientTest {
             },
             eq(InternalLogger.Level.WARN)
         )
+    }
+
+    // endregion
+
+    // region State Management
+
+    @Test
+    fun `M return ERROR state W getCurrentState()`() {
+        // When
+        val result = testedClient.getCurrentState()
+
+        // Then
+        assertThat(result).isEqualTo(FlagsClientState.ERROR)
+    }
+
+    @Test
+    fun `M do nothing W addStateListener()`() {
+        // Given
+        val mockListener = org.mockito.Mockito.mock(FlagsStateListener::class.java)
+
+        // When
+        testedClient.addStateListener(mockListener)
+
+        // Then
+        // No exception should be thrown, method should be no-op
+        verifyNoInteractions(mockListener)
+    }
+
+    @Test
+    fun `M do nothing W removeStateListener()`() {
+        // Given
+        val mockListener = org.mockito.Mockito.mock(FlagsStateListener::class.java)
+
+        // When
+        testedClient.removeStateListener(mockListener)
+
+        // Then
+        // No exception should be thrown, method should be no-op
+        verifyNoInteractions(mockListener)
     }
 
     // endregion
