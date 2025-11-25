@@ -7,17 +7,32 @@
 package com.datadog.android.insights.internal
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import com.datadog.android.insights.internal.overlay.OverlayManager
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum._RumInternalProxy
 
-@Suppress("OPT_IN_USAGE")
-internal object RumDebugWidget {
+/**
+ * Enables the RUM Debug Widget for the given [application].
+ *
+ * By default, the widget is only enabled in debug builds (when the application is debuggable).
+ * To enable it in release builds (e.g., for local testing), set [allowInRelease] to `true` and
+ * add the `dd-sdk-android-rum-debug-widget` module as `implementation` (not `debugImplementation`)
+ * in your `build.gradle` file.
+ *
+ * @param application The application where to enable the RUM Debug Widget.
+ * @param allowInRelease Set to `true` to enable the widget in release builds. Defaults to `false`
+ * to prevent accidental exposure in production.
+ * @return The same [RumConfiguration.Builder] instance.
+ */
+fun RumConfiguration.Builder.enableRumDebugWidget(
+    application: Application,
+    allowInRelease: Boolean = false
+): RumConfiguration.Builder = apply {
+    val isApplicationDebuggable = (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    if (!isApplicationDebuggable && !allowInRelease) return@apply
 
-    @JvmStatic
-    fun enable(application: Application, builder: RumConfiguration.Builder) {
-        val insightsCollector = DefaultInsightsCollector()
-        _RumInternalProxy.setInsightsCollector(builder, insightsCollector)
-        application.registerActivityLifecycleCallbacks(OverlayManager(insightsCollector))
-    }
+    val insightsCollector = DefaultInsightsCollector()
+    _RumInternalProxy.setInsightsCollector(this, insightsCollector)
+    application.registerActivityLifecycleCallbacks(OverlayManager(insightsCollector))
 }

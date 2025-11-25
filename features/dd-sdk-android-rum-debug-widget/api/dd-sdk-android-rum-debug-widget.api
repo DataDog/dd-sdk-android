@@ -1,0 +1,5 @@
+public final class com/datadog/android/insights/internal/RumDebugWidgetKt {
+	public static final fun enableRumDebugWidget (Lcom/datadog/android/rum/RumConfiguration$Builder;Landroid/app/Application;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public static synthetic fun enableRumDebugWidget$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Landroid/app/Application;ZILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+}
+
