@@ -10,14 +10,17 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.utils.DDCoreSubscription
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -97,7 +100,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            flagStateChannel = FlagsStateChannel(DDCoreSubscription.create())
         )
     }
 
@@ -1289,6 +1293,105 @@ internal class DatadogFlagsClientTest {
         // Then
         // toIntOrNull() returns null for values outside Int range, so default is returned
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    // endregion
+
+    // region State Management
+
+    @Test
+    fun `M return NOT_READY W getCurrentState() {initial state}`() {
+        // When
+        val result = testedClient.getCurrentState()
+
+        // Then
+        assertThat(result).isEqualTo(FlagsClientState.NOT_READY)
+    }
+
+    @Test
+    fun `M add listener W addStateListener()`() {
+        // Given
+        val mockListener = mock(FlagsStateListener::class.java)
+
+        // When
+        testedClient.addStateListener(mockListener)
+
+        // Then
+        // No exception should be thrown
+        verifyNoInteractions(mockListener)
+    }
+
+    @Test
+    fun `M remove listener W removeStateListener()`() {
+        // Given
+        val mockListener = mock(FlagsStateListener::class.java)
+        testedClient.addStateListener(mockListener)
+
+        // When
+        testedClient.removeStateListener(mockListener)
+
+        // Then
+        // No exception should be thrown
+        verifyNoInteractions(mockListener)
+    }
+
+    @Test
+    fun `M notify listener W updateState() called`() {
+        // Given
+        val mockListener = mock(FlagsStateListener::class.java)
+        testedClient.addStateListener(mockListener)
+
+        // When
+        testedClient.updateState(FlagsClientState.READY, null)
+
+        // Then
+        verify(mockListener).onStateChanged(FlagsClientState.READY, null)
+        assertThat(testedClient.getCurrentState()).isEqualTo(FlagsClientState.READY)
+    }
+
+    @Test
+    fun `M notify listener with error W updateState(ERROR) called`() {
+        // Given
+        val mockListener = mock(FlagsStateListener::class.java)
+        val fakeError = RuntimeException("Test error")
+        testedClient.addStateListener(mockListener)
+
+        // When
+        testedClient.updateState(FlagsClientState.ERROR, fakeError)
+
+        // Then
+        verify(mockListener).onStateChanged(FlagsClientState.ERROR, fakeError)
+        assertThat(testedClient.getCurrentState()).isEqualTo(FlagsClientState.ERROR)
+    }
+
+    @Test
+    fun `M notify all listeners W updateState() with multiple listeners`() {
+        // Given
+        val mockListener1 = mock(FlagsStateListener::class.java)
+        val mockListener2 = mock(FlagsStateListener::class.java)
+        testedClient.addStateListener(mockListener1)
+        testedClient.addStateListener(mockListener2)
+
+        // When
+        testedClient.updateState(FlagsClientState.RECONCILING, null)
+
+        // Then
+        verify(mockListener1).onStateChanged(FlagsClientState.RECONCILING, null)
+        verify(mockListener2).onStateChanged(FlagsClientState.RECONCILING, null)
+    }
+
+    @Test
+    fun `M not notify removed listener W removeStateListener() then updateState()`() {
+        // Given
+        val mockListener = mock(FlagsStateListener::class.java)
+        testedClient.addStateListener(mockListener)
+        testedClient.removeStateListener(mockListener)
+
+        // When
+        testedClient.updateState(FlagsClientState.READY, null)
+
+        // Then
+        verifyNoInteractions(mockListener)
     }
 
     // endregion
