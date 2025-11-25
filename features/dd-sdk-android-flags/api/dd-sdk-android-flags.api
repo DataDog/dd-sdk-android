@@ -8,9 +8,12 @@ public final class com/datadog/android/flags/Flags {
 
 public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static final field Companion Lcom/datadog/android/flags/FlagsClient$Companion;
+	public abstract fun addStateListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public static fun get ()Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
+	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
+	public abstract fun removeStateListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public abstract fun resolve (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/model/ResolutionDetails;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
@@ -53,6 +56,14 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Companion {
+}
+
+public abstract interface class com/datadog/android/flags/FlagsStateListener {
+	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;Ljava/lang/Throwable;)V
+}
+
+public final class com/datadog/android/flags/FlagsStateListener$DefaultImpls {
+	public static synthetic fun onStateChanged$default (Lcom/datadog/android/flags/FlagsStateListener;Lcom/datadog/android/flags/model/FlagsClientState;Ljava/lang/Throwable;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
@@ -168,6 +179,15 @@ public final class com/datadog/android/flags/model/ExposureEvent$Subject {
 public final class com/datadog/android/flags/model/ExposureEvent$Subject$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/flags/model/ExposureEvent$Subject;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/flags/model/ExposureEvent$Subject;
+}
+
+public final class com/datadog/android/flags/model/FlagsClientState : java/lang/Enum {
+	public static final field ERROR Lcom/datadog/android/flags/model/FlagsClientState;
+	public static final field NOT_READY Lcom/datadog/android/flags/model/FlagsClientState;
+	public static final field READY Lcom/datadog/android/flags/model/FlagsClientState;
+	public static final field RECONCILING Lcom/datadog/android/flags/model/FlagsClientState;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/model/FlagsClientState;
+	public static fun values ()[Lcom/datadog/android/flags/model/FlagsClientState;
 }
 
 public final class com/datadog/android/flags/model/ResolutionDetails {
