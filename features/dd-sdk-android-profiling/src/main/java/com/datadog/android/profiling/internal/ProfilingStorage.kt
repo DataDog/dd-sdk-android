@@ -15,16 +15,19 @@ internal object ProfilingStorage {
 
     private var sharedPreferencesStorage: SharedPreferencesStorage? = null
 
-    internal fun setProfilingFlag(appContext: Context) {
-        getStorage(appContext).putBoolean(KEY_PROFILING_ENABLED, true)
+    internal fun setProfilingFlag(appContext: Context, sdkInstanceName: String) {
+        getStorage(appContext).putString(KEY_PROFILING_ENABLED, sdkInstanceName)
     }
 
-    internal fun isProfilingEnabled(appContext: Context): Boolean {
-        return getStorage(appContext).getBoolean(KEY_PROFILING_ENABLED, false)
+    internal fun getProfilingEnabledInstanceName(appContext: Context): String? {
+        return getStorage(appContext).getString(KEY_PROFILING_ENABLED)
     }
 
-    internal fun removeProfilingFlag(appContext: Context) {
-        getStorage(appContext).remove(KEY_PROFILING_ENABLED)
+    internal fun removeProfilingFlag(appContext: Context, sdkInstanceName: String) {
+        val oldValue = getStorage(appContext).getString(KEY_PROFILING_ENABLED)
+        if (oldValue == sdkInstanceName) {
+            getStorage(appContext).remove(KEY_PROFILING_ENABLED)
+        }
     }
 
     @Suppress("ReturnCount")

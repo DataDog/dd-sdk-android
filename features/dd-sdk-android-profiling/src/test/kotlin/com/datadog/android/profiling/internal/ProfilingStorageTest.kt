@@ -8,8 +8,9 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.content.SharedPreferences
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -26,7 +28,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @Extensions(
-    ExtendWith(MockitoExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class ProfilingStorageTest {
@@ -40,64 +43,82 @@ internal class ProfilingStorageTest {
     @Mock
     lateinit var mockEditor: SharedPreferences.Editor
 
+    @StringForgery
+    lateinit var fakeInstanceName: String
+
+    private val otherInstanceName: String
+        get() = "$fakeInstanceName.suffix"
+
     @BeforeEach
     fun `set up`() {
-        whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockPrefs
-        whenever(mockPrefs.edit()) doReturn mockEditor
-        whenever(mockEditor.remove(any())) doReturn mockEditor
-        whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
-    }
-
-    @AfterEach
-    fun `clean up`() {
         // Reset the singleton
         val storageField = ProfilingStorage::class.java.getDeclaredField("sharedPreferencesStorage")
         storageField.isAccessible = true
         storageField.set(ProfilingStorage, null)
+        whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockPrefs
+        whenever(mockPrefs.edit()) doReturn mockEditor
+        whenever(mockEditor.remove(any())) doReturn mockEditor
+        whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putString(any(), any())) doReturn mockEditor
     }
 
     @Test
     fun `M set flag W setProfilingFlag()`() {
         // When
-        ProfilingStorage.setProfilingFlag(mockContext)
+        ProfilingStorage.setProfilingFlag(mockContext, fakeInstanceName)
 
         // Then
-        verify(mockEditor).putBoolean("dd_profiling_enabled", true)
+        verify(mockEditor).putString("dd_profiling_enabled", fakeInstanceName)
         verify(mockEditor).apply()
     }
 
     @Test
     fun `M return true W isProfilingEnabled() {flag is set}`() {
         // Given
-        whenever(mockPrefs.getBoolean("dd_profiling_enabled", false)) doReturn true
+        whenever(mockPrefs.getString("dd_profiling_enabled", null)) doReturn fakeInstanceName
 
         // When
-        val isEnabled = ProfilingStorage.isProfilingEnabled(mockContext)
+        val actualInstanceName = ProfilingStorage.getProfilingEnabledInstanceName(mockContext)
 
         // Then
-        assertThat(isEnabled).isTrue()
+        assertThat(actualInstanceName).isEqualTo(fakeInstanceName)
     }
 
     @Test
     fun `M return false W isProfilingEnabled() {flag is not set}`() {
         // Given
-        whenever(mockPrefs.getBoolean("dd_profiling_enabled", false)) doReturn false
+        whenever(mockPrefs.getString("dd_profiling_enabled", null)) doReturn null
 
         // When
-        val isEnabled = ProfilingStorage.isProfilingEnabled(mockContext)
+        val actualInstanceName = ProfilingStorage.getProfilingEnabledInstanceName(mockContext)
 
         // Then
-        assertThat(isEnabled).isFalse()
+        assertThat(actualInstanceName).isNull()
     }
 
     @Test
-    fun `M remove flag W removeProfilingFlag()`() {
+    fun `M remove flag W removeProfilingFlag(){ same instance name }`() {
+        // Given
+        whenever(mockPrefs.getString("dd_profiling_enabled", null)).doReturn(fakeInstanceName)
+
         // When
-        ProfilingStorage.removeProfilingFlag(mockContext)
+        ProfilingStorage.removeProfilingFlag(mockContext, fakeInstanceName)
 
         // Then
         verify(mockEditor).remove("dd_profiling_enabled")
         verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M remove flag W removeProfilingFlag(){ different instance name }`() {
+        // Given
+        ProfilingStorage.setProfilingFlag(mockContext, fakeInstanceName)
+
+        // When
+        ProfilingStorage.removeProfilingFlag(mockContext, otherInstanceName)
+
+        // Then
+        verify(mockEditor, never()).remove("dd_profiling_enabled")
     }
 
     @Test
@@ -108,7 +129,7 @@ internal class ProfilingStorageTest {
         // When
         repeat(10) {
             Thread {
-                ProfilingStorage.setProfilingFlag(mockContext)
+                ProfilingStorage.setProfilingFlag(mockContext, fakeInstanceName)
                 latch.countDown()
             }.start()
         }

@@ -52,13 +52,13 @@ object Profiling {
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    internal fun start(context: Context) {
+    internal fun start(context: Context, sdkInstanceName: String) {
         profiler = PerfettoProfiler(
             timeProvider = DefaultTimeProvider(),
             profilingExecutor = Executors.newSingleThreadExecutor()
         ).apply {
-            this.start(context)
+            this.start(context, sdkInstanceName)
         }
-        ProfilingStorage.removeProfilingFlag(context)
+        ProfilingStorage.removeProfilingFlag(context, sdkInstanceName)
     }
 }

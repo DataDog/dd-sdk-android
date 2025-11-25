@@ -17,11 +17,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.Profiler
+import com.datadog.android.profiling.internal.ProfilerCallback
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
 /**
@@ -42,13 +43,15 @@ internal class PerfettoProfiler(
 
     private val resultCallback: Consumer<ProfilingResult>
 
-    private val profilingStarted = AtomicBoolean(false)
+    // This flag represents which instance of this class is working for.
+    private val runningInstance: AtomicReference<String?> = AtomicReference(null)
 
     private var profilingStartTime = 0L
 
     override var internalLogger: InternalLogger? = null
 
-    override var onProfilingSuccess: ((PerfettoResult) -> Unit)? = null
+    // Map of <InstanceName, ProfilerCallback>
+    private val callbackMap: MutableMap<String, ProfilerCallback> = mutableMapOf()
 
     init {
         requestBuilder = StackSamplingRequestBuilder()
@@ -63,35 +66,52 @@ internal class PerfettoProfiler(
             val duration = endTime - profilingStartTime
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 result.resultFilePath?.let {
-                    onProfilingSuccess?.invoke(
-                        PerfettoResult(
-                            start = profilingStartTime,
-                            end = endTime,
-                            resultFilePath = it
+                    runningInstance.get()?.let { instanceName ->
+                        val callback = callbackMap[instanceName]
+                        callback?.onSuccess(
+                            PerfettoResult(
+                                start = profilingStartTime,
+                                end = endTime,
+                                resultFilePath = it
+                            )
                         )
-                    )
+                    }
                 }
             }
+            runningInstance.set(null)
             sendProfilingEndTelemetry(result = result, duration = duration)
         }
     }
 
-    override fun start(appContext: Context) {
-        // profiling can start only once, so we never set `profilingStarted` back to false.
-        if (profilingStarted.compareAndSet(false, true)) {
+    override fun start(appContext: Context, sdkInstanceName: String) {
+        // profiling will be launched when no instance is currently running profiling.
+        if (runningInstance.compareAndSet(null, sdkInstanceName)) {
+            runningInstance.set(sdkInstanceName)
             sendProfilingStartTelemetry()
             profilingStartTime = timeProvider.getDeviceTimestamp()
             requestProfiling(appContext, requestBuilder.build(), profilingExecutor, resultCallback)
         }
     }
 
-    override fun stop() {
-        profilingStarted.set(false)
-        stopSignal.cancel()
+    override fun stop(sdkInstanceName: String) {
+        if (runningInstance.get() == sdkInstanceName) {
+            stopSignal.cancel()
+        }
     }
 
-    override fun isRunning(): Boolean {
-        return profilingStarted.get()
+    override fun isRunning(sdkInstanceName: String): Boolean {
+        return runningInstance.get() == sdkInstanceName
+    }
+
+    override fun registerProfilingCallback(
+        sdkInstanceName: String,
+        callback: ProfilerCallback
+    ) {
+        callbackMap[sdkInstanceName] = callback
+    }
+
+    override fun unregisterProfilingCallback(sdkInstanceName: String) {
+        callbackMap.remove(sdkInstanceName)
     }
 
     private fun sendProfilingStartTelemetry() {

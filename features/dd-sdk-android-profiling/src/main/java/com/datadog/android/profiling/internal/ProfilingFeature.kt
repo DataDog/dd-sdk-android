@@ -45,7 +45,7 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
-            this.onProfilingSuccess = { result ->
+            registerProfilingCallback(sdkCore.name) { result ->
                 dataWriter.write(
                     profilingResult = result,
                     ttidEvent = ttidEvent
@@ -53,16 +53,19 @@ internal class ProfilingFeature(
             }
         }
         // Set the profiling flag in SharedPreferences to profile for the next app launch
-        ProfilingStorage.setProfilingFlag(appContext)
+        ProfilingStorage.setProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context.put(PROFILER_IS_RUNNING, profiler.isRunning())
+            context.put(PROFILER_IS_RUNNING, profiler.isRunning(sdkCore.name))
         }
         dataWriter = createDataWriter(sdkCore)
     }
 
     override fun onStop() {
-        profiler.stop()
+        profiler.apply {
+            stop(sdkCore.name)
+            unregisterProfilingCallback(sdkCore.name)
+        }
         sdkCore.removeEventReceiver(name)
     }
 
@@ -76,7 +79,7 @@ internal class ProfilingFeature(
             return
         }
         this.ttidEvent = event
-        profiler.stop()
+        profiler.stop(sdkCore.name)
         sdkCore.internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,

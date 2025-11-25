@@ -33,6 +33,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -58,7 +59,21 @@ class PerfettoProfilerTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockOnPerfettoResult: (PerfettoResult) -> Unit
+    private lateinit var mockProfilerCallback: ProfilerCallback
+
+    @Mock
+    private lateinit var mockOtherProfilerCallback: ProfilerCallback
+
+    @StringForgery
+    private lateinit var fakeInstanceName: String
+
+    private val callbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+
+    @StringForgery
+    private lateinit var fakePath: String
+
+    private val otherInstanceName: String
+        get() = "$fakeInstanceName.suffix"
 
     private val stubTimeProvider: StubTimeProvider = StubTimeProvider()
 
@@ -72,19 +87,16 @@ class PerfettoProfilerTest {
             profilingExecutor = mockExecutorService
         )
         testedProfiler.internalLogger = mockInternalLogger
-        testedProfiler.onProfilingSuccess = mockOnPerfettoResult
+        testedProfiler.registerProfilingCallback(fakeInstanceName, mockProfilerCallback)
+        testedProfiler.registerProfilingCallback(otherInstanceName, mockOtherProfilerCallback)
     }
 
     @Test
-    fun `M request profiling stack sampling W start()`(
-        @StringForgery fakePath: String
-    ) {
+    fun `M request profiling stack sampling W start()`() {
         // When
-        testedProfiler.start(mockContext)
+        testedProfiler.start(mockContext, fakeInstanceName)
 
         // Then
-        val resultCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
-
         verify(mockService)
             .requestProfiling(
                 eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
@@ -92,16 +104,16 @@ class PerfettoProfilerTest {
                 any<String>(),
                 any<CancellationSignal>(),
                 any(),
-                resultCallbackCaptor.capture()
+                callbackCaptor.capture()
             )
 
         val successResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_NONE
             on { resultFilePath } doReturn fakePath
         }
-        resultCallbackCaptor.firstValue.accept(successResult)
+        callbackCaptor.firstValue.accept(successResult)
         val captor = argumentCaptor<PerfettoResult>()
-        verify(mockOnPerfettoResult).invoke(captor.capture())
+        verify(mockProfilerCallback).onSuccess(captor.capture())
 
         val result = captor.firstValue
         assertThat(result.start).isEqualTo(stubTimeProvider.startTime)
@@ -112,7 +124,7 @@ class PerfettoProfilerTest {
     @Test
     fun `M log info message W start()`() {
         // When
-        testedProfiler.start(mockContext)
+        testedProfiler.start(mockContext, fakeInstanceName)
 
         // Then
         val messageCaptor = argumentCaptor<() -> String>()
@@ -135,10 +147,28 @@ class PerfettoProfilerTest {
     }
 
     @Test
-    fun `M request profiling stack sampling only once W several call start()`() {
+    fun `M request profiling stack sampling only once W several call start(){ same instance }`() {
         // When
-        testedProfiler.start(mockContext)
-        testedProfiler.start(mockContext)
+        testedProfiler.start(mockContext, fakeInstanceName)
+        testedProfiler.start(mockContext, fakeInstanceName)
+
+        // Then
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                any()
+            )
+    }
+
+    @Test
+    fun `M request profiling stack sampling only once W several call start(){ different instance }`() {
+        // When
+        testedProfiler.start(mockContext, fakeInstanceName)
+        testedProfiler.start(mockContext, otherInstanceName)
 
         // Then
         verify(mockService)
@@ -163,10 +193,9 @@ class PerfettoProfilerTest {
         stubTimeProvider.endTime = fakeStartTime + fakeDuration
 
         // When
-        testedProfiler.start(mockContext)
+        testedProfiler.start(mockContext, fakeInstanceName)
 
         // Then
-        val callbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService)
             .requestProfiling(
                 eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
@@ -210,7 +239,7 @@ class PerfettoProfilerTest {
     @Test
     fun `M return false W isRunning { profiler not started }`() {
         // When
-        val status = testedProfiler.isRunning()
+        val status = testedProfiler.isRunning(fakeInstanceName)
 
         // Then
         assertThat(status).isFalse
@@ -219,26 +248,160 @@ class PerfettoProfilerTest {
     @Test
     fun `M return true W isRunning { profiler started }`() {
         // Given
-        testedProfiler.start(mockContext)
+        testedProfiler.start(mockContext, fakeInstanceName)
 
         // When
-        val status = testedProfiler.isRunning()
+        val status = testedProfiler.isRunning(fakeInstanceName)
 
         // Then
         assertThat(status).isTrue
     }
 
     @Test
-    fun `M return false W isRunning { profiler stopped }`() {
+    fun `M return false W isRunning in other instance`() {
         // Given
-        testedProfiler.start(mockContext)
-        testedProfiler.stop()
+        testedProfiler.start(mockContext, otherInstanceName)
 
         // When
-        val status = testedProfiler.isRunning()
+        val status = testedProfiler.isRunning(fakeInstanceName)
 
         // Then
         assertThat(status).isFalse
+    }
+
+    @Test
+    fun `M return false W isRunning { profiler stopped by same instance}`() {
+        // Given
+        testedProfiler.start(mockContext, fakeInstanceName)
+        testedProfiler.stop(fakeInstanceName)
+
+        // When
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+        callbackCaptor.firstValue.accept(successResult)
+        val status = testedProfiler.isRunning(fakeInstanceName)
+
+        // Then
+        assertThat(status).isFalse
+    }
+
+    @Test
+    fun `M return true W isRunning { profiler stopped by other instance}`() {
+        // Given
+        testedProfiler.start(mockContext, fakeInstanceName)
+        testedProfiler.stop(otherInstanceName)
+
+        // When
+        val status = testedProfiler.isRunning(fakeInstanceName)
+
+        // Then
+        assertThat(status).isTrue
+    }
+
+    @Test
+    fun `M call resultCallback to same instance W recording done`(
+        @LongForgery(min = 0L) fakeStartTime: Long,
+        @LongForgery(min = 0L) fakeDuration: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+
+        // When
+        testedProfiler.start(mockContext, otherInstanceName)
+
+        // Then
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+
+        callbackCaptor.firstValue.accept(mockResult)
+        verifyNoInteractions(mockProfilerCallback)
+    }
+
+    @Test
+    fun `M call the first instance's callback W several call start()`() {
+        // When
+        testedProfiler.start(mockContext, fakeInstanceName)
+
+        testedProfiler.start(mockContext, otherInstanceName)
+
+        // Then
+        val callbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+        callbackCaptor.firstValue.accept(successResult)
+        val captor = argumentCaptor<PerfettoResult>()
+        verifyNoInteractions(mockOtherProfilerCallback)
+        verify(mockProfilerCallback).onSuccess(captor.capture())
+    }
+
+    @Test
+    fun `M not call resultCallback W callback is unregistered`(
+        @LongForgery(min = 0L) fakeStartTime: Long,
+        @LongForgery(min = 0L) fakeDuration: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+
+        // When
+        testedProfiler.start(mockContext, fakeInstanceName)
+        testedProfiler.unregisterProfilingCallback(fakeInstanceName)
+
+        // Then
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+
+        callbackCaptor.firstValue.accept(mockResult)
+        verifyNoInteractions(mockProfilerCallback)
     }
 
     private class StubTimeProvider : TimeProvider {
