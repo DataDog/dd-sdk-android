@@ -63,20 +63,10 @@ internal class FlagsStateChannel(
         notifyState(FlagsClientState.ERROR, error)
     }
 
-    /**
-     * Registers a listener to receive state change notifications.
-     *
-     * @param listener the listener to register
-     */
     fun addListener(listener: FlagsStateListener) {
         subscription.addListener(listener)
     }
 
-    /**
-     * Unregisters a previously registered listener.
-     *
-     * @param listener the listener to unregister
-     */
     fun removeListener(listener: FlagsStateListener) {
         subscription.removeListener(listener)
     }

@@ -127,7 +127,6 @@ internal class NoOpFlagsClient(
      * @param listener Ignored listener.
      */
     override fun addStateListener(listener: FlagsStateListener) {
-        // No-op: listeners are not supported on NoOpFlagsClient
     }
 
     /**
@@ -135,7 +134,6 @@ internal class NoOpFlagsClient(
      * @param listener Ignored listener.
      */
     override fun removeStateListener(listener: FlagsStateListener) {
-        // No-op: listeners are not supported on NoOpFlagsClient
     }
 
     /**
