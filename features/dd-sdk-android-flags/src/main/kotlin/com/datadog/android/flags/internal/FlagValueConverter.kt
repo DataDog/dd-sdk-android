@@ -55,7 +55,10 @@ internal object FlagValueConverter {
                 String::class -> variationValue as T
                 Int::class -> variationValue.toIntOrNull() as? T
                 Double::class -> variationValue.toDoubleOrNull() as? T
-                JSONObject::class -> JSONObject(variationValue) as? T
+                JSONObject::class -> {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
+                    JSONObject(variationValue) as? T
+                }
                 else -> null
             }
 

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.graphics.Typeface
+import android.text.TextUtils
 import android.view.Gravity
 import android.widget.TextView
 import androidx.annotation.UiThread
@@ -148,9 +149,10 @@ open class TextViewMapper<in T : TextView>(
 
     private fun resolveTextStyle(textView: T, pixelsDensity: Float): MobileSegment.TextStyle {
         return MobileSegment.TextStyle(
-            resolveFontFamily(textView.typeface),
-            textView.textSize.toLong().densityNormalized(pixelsDensity),
-            resolveTextColor(textView)
+            family = resolveFontFamily(textView.typeface),
+            size = textView.textSize.toLong().densityNormalized(pixelsDensity),
+            color = resolveTextColor(textView),
+            truncationMode = resolveTruncationMode(textView)
         )
     }
 
@@ -185,6 +187,17 @@ open class TextViewMapper<in T : TextView>(
             resolvePadding(textView, pixelsDensity),
             resolveAlignment(textView)
         )
+    }
+
+    private fun resolveTruncationMode(textView: T): MobileSegment.TruncationMode? {
+        return textView.ellipsize?.let { truncationMode ->
+            when (truncationMode) {
+                TextUtils.TruncateAt.START -> MobileSegment.TruncationMode.HEAD
+                TextUtils.TruncateAt.END -> MobileSegment.TruncationMode.TAIL
+                TextUtils.TruncateAt.MIDDLE -> MobileSegment.TruncationMode.MIDDLE
+                TextUtils.TruncateAt.MARQUEE -> MobileSegment.TruncationMode.CLIP
+            }
+        }
     }
 
     private fun resolvePadding(textView: TextView, pixelsDensity: Float): MobileSegment.Padding {

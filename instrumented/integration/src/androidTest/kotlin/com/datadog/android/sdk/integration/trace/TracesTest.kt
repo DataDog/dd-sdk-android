@@ -16,8 +16,6 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
-import com.datadog.android.trace.api.resolveMeta
-import com.datadog.android.trace.api.resolveMetrics
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
@@ -78,7 +76,7 @@ internal abstract class TracesTest {
             val json = sentSpansObjects.first { spanJson ->
                 val leastSignificantTraceId = spanJson.get(TRACE_ID_KEY).asString
                 val mostSignificantTraceId = spanJson
-                    .getAsJsonObject("meta")
+                    .getAsJsonObject(META_KEY)
                     .getAsJsonPrimitive(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY).asString
 
                 leastSignificantTraceId == span.leastSignificant64BitsTraceId() &&
@@ -119,8 +117,6 @@ internal abstract class TracesTest {
     }
 
     private fun assertMatches(jsonObject: JsonObject, span: DatadogSpan, context: DatadogContext) {
-        val meta = span.resolveMeta(context)
-        val metrics = span.resolveMetrics()
         assertThat(jsonObject)
             .hasField(SERVICE_NAME_KEY, span.serviceName)
             .hasField(TRACE_ID_KEY, span.leastSignificant64BitsTraceId())
@@ -140,11 +136,42 @@ internal abstract class TracesTest {
             .hasField(DURATION_KEY, span.durationNano)
             .hasField(RESOURCE_KEY, span.resourceName.orEmpty())
             .hasField(OPERATION_NAME_KEY, span.operationName)
-            .hasField(META_KEY, meta)
-            .hasField(METRICS_KEY, metrics)
+            .hasField(ERROR_KEY, 0L)
+            .hasField(TYPE_KEY, DEFAULT_SPAN_TYPE)
+
         val metaObject = jsonObject.getAsJsonObject(META_KEY)
         assertThat(metaObject)
             .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
+            .hasField(VERSION_KEY, context.version)
+            .hasField(VARIANT_KEY, context.variant)
+            .hasField(DD_KEY) {
+                hasField(SOURCE_KEY, context.source)
+            }
+            .hasField(SPAN_KEY) {
+                hasField(SPAN_KIND_KEY, DEFAULT_SPAN_KIND)
+            }
+            .hasField(TRACER_KEY) {
+                hasField(TRACER_VERSION_KEY, context.sdkVersion)
+            }
+            .hasField(USR_KEY) { isEmpty() }
+            .hasField(DEVICE_KEY) {
+                hasField(DEVICE_NAME_KEY, context.deviceInfo.deviceName)
+                hasField(DEVICE_MODEL_KEY, context.deviceInfo.deviceModel)
+                hasField(DEVICE_BRAND_KEY, context.deviceInfo.deviceBrand)
+                hasField(DEVICE_ARCHITECTURE_KEY, context.deviceInfo.architecture)
+            }
+            .hasField(OS_KEY) {
+                hasField(OS_NAME_KEY, context.deviceInfo.osName)
+                hasField(OS_VERSION_KEY, context.deviceInfo.osVersion)
+                hasField(OS_VERSION_MAJOR_KEY, context.deviceInfo.osMajorVersion)
+            }
+
+        val metricsObject = jsonObject.getAsJsonObject(METRICS_KEY)
+        assertThat(metricsObject).isNotNull
+
+        if (span.parentSpanId == 0L) {
+            assertThat(metricsObject).hasField(TOP_LEVEL_KEY, 1L)
+        }
     }
 
     private fun tracesPayloadToJsonArray(payload: String): List<JsonElement> {
@@ -160,17 +187,81 @@ internal abstract class TracesTest {
     }
 
     companion object {
-        const val START_TIMESTAMP_KEY = "start"
-        const val DURATION_KEY = "duration"
-        const val SERVICE_NAME_KEY = "service"
+        // region SpanEvent
+
         const val TRACE_ID_KEY = "trace_id"
-        const val MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY = "_dd.p.id"
         const val SPAN_ID_KEY = "span_id"
         const val PARENT_ID_KEY = "parent_id"
         const val RESOURCE_KEY = "resource"
         const val OPERATION_NAME_KEY = "name"
+        const val SERVICE_NAME_KEY = "service"
+        const val DURATION_KEY = "duration"
+        const val START_TIMESTAMP_KEY = "start"
+        const val ERROR_KEY = "error"
+        const val TYPE_KEY = "type"
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
+        const val DEFAULT_SPAN_TYPE = "custom"
+
+        // endregion
+
+        // region SpanEvent.Meta
+
+        const val VERSION_KEY = "version"
+        const val DD_KEY = "_dd"
+        const val SPAN_KEY = "span"
+        const val TRACER_KEY = "tracer"
+        const val USR_KEY = "usr"
+        const val DEVICE_KEY = "device"
+        const val OS_KEY = "os"
+
+        const val MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY = "_dd.p.id"
+        const val VARIANT_KEY = "variant"
+
+        // endregion
+
+        // region SpanEvent.Dd
+
+        const val SOURCE_KEY = "source"
+
+        // endregion
+
+        // region SpanEvent.Span
+
+        const val SPAN_KIND_KEY = "kind"
+        const val DEFAULT_SPAN_KIND = "client"
+
+        // endregion
+
+        // region SpanEvent.Tracer
+
+        const val TRACER_VERSION_KEY = "version"
+
+        //endregion
+
+        // region SpanEvent.Device
+
+        const val DEVICE_NAME_KEY = "name"
+        const val DEVICE_MODEL_KEY = "model"
+        const val DEVICE_BRAND_KEY = "brand"
+        const val DEVICE_ARCHITECTURE_KEY = "architecture"
+
+        //endregion
+
+        // region SpanEvent.Os
+
+        const val OS_NAME_KEY = "name"
+        const val OS_VERSION_KEY = "version"
+        const val OS_VERSION_MAJOR_KEY = "version_major"
+
+        //endregion
+
+        // region SpanEvent.Metrics
+
+        const val TOP_LEVEL_KEY = "_top_level"
+
+        //endregion
+
         internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         private const val TAG_STATUS = "status"

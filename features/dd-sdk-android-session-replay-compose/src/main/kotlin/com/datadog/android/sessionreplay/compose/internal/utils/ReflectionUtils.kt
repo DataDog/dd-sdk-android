@@ -99,6 +99,10 @@ internal class ReflectionUtils {
         return (ComposeReflection.ColorProducerField?.getSafe(modifier) as? ColorProducer)?.invoke()
     }
 
+    fun getTextStringSimpleElementOverflow(modifier: Modifier): Any? {
+        return ComposeReflection.TextStringSimpleElementOverflowField?.getSafe(modifier)
+    }
+
     fun getPlaceable(semanticsNode: SemanticsNode): Placeable? {
         val layoutNode = LayoutNodeField?.getSafe(semanticsNode)
         val innerLayerCoordinator = layoutNode?.let { GetInnerLayerCoordinatorMethod?.invoke(it) }

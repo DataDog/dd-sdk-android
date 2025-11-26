@@ -26,6 +26,8 @@ internal class DefaultFlagsRepository(
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
 
     private val persistenceManager = FlagsPersistenceManager(
@@ -97,6 +99,7 @@ internal class DefaultFlagsRepository(
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()
         }
     }

@@ -14,16 +14,15 @@ internal class MutationDataForgeryFactory :
     ForgeryFactory<MobileSegment.MobileIncrementalData.MobileMutationData> {
     override fun getForgery(forge: Forge): MobileSegment.MobileIncrementalData.MobileMutationData {
         return MobileSegment.MobileIncrementalData.MobileMutationData(
-            adds = forge.aNullable {
-                forge.aList {
-                    MobileSegment.Add(
-                        previousId = forge.aNullable { forge.aLong() },
-                        forge.getForgery(MobileSegment.Wireframe::class.java)
-                    )
-                }
+            adds =
+            forge.aList {
+                MobileSegment.Add(
+                    previousId = forge.aNullable { forge.aLong() },
+                    forge.getForgery(MobileSegment.Wireframe::class.java)
+                )
             },
-            removes = forge.aNullable { forge.aList { MobileSegment.Remove(forge.aLong()) } },
-            updates = forge.aNullable { forge.aList { forge.getForgery() } }
+            removes = forge.aList { MobileSegment.Remove(forge.aLong()) },
+            updates = forge.aList { forge.getForgery() }
         )
     }
 }

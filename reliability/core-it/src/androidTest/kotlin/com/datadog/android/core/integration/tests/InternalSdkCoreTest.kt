@@ -145,6 +145,7 @@ class InternalSdkCoreTest : MockServerTest() {
         assertThat(context.site).isEqualTo(fakeConfiguration.site())
         assertThat(context.trackingConsent).isEqualTo(fakeTrackingConsent)
         assertThat(context.version).isEqualTo(getAppVersion())
+        assertThat(context.versionCode).isEqualTo(getVersionCode())
         assertThat(context.appBuildId).isEqualTo(BUILD_ID)
         assertThat(context.source).isEqualTo(ANDROID_SOURCE)
         assertThat(context.processInfo.isMainProcess).isTrue()
@@ -582,6 +583,11 @@ class InternalSdkCoreTest : MockServerTest() {
             @Suppress("DEPRECATION")
             it.versionName ?: it.versionCode.toString()
         }
+    }
+
+    private fun getVersionCode(): Int? {
+        @Suppress("DEPRECATION")
+        return getPackageInfo(ApplicationProvider.getApplicationContext())?.versionCode
     }
 
     private fun getPackageInfo(appContext: Context): PackageInfo? {

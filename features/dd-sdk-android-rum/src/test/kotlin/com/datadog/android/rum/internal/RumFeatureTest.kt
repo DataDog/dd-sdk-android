@@ -327,6 +327,47 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M frameStatesAggregator != null W initialize { frequency = AVERAGE }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.frameStatesAggregator).isNotNull()
+    }
+
+    @Test
+    fun `M frameStatesAggregator == null W initialize { frequency = AVERAGE, disableJankStats = true }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
+            disableJankStats = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.frameStatesAggregator).isNull()
+    }
+
+    @Test
     fun `M set sample rate to 100 W initialize() {developer mode enabled}`() {
         // Given
         whenever(mockSdkCore.isDeveloperModeEnabled) doReturn true

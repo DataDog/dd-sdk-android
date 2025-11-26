@@ -11,4 +11,6 @@ internal class NoOpAppVersionProvider : AppVersionProvider {
     override var version: String
         get() = ""
         set(value) {}
+    override val versionCode: Int
+        get() = 0
 }
