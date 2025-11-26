@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.os.Build
+import android.os.ProfilingResult
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -17,6 +18,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.profiling.ProfilingConfiguration
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.rum.TTIDEvent
 import java.util.Locale
 
@@ -30,6 +32,8 @@ internal class ProfilingFeature(
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     private var ttidEvent: TTIDEvent? = null
+
+    private var profilingResult: PerfettoResult? = null
 
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         configuration.customEndpointUrl,
@@ -46,10 +50,8 @@ internal class ProfilingFeature(
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
             registerProfilingCallback(sdkCore.name) { result ->
-                dataWriter.write(
-                    profilingResult = result,
-                    ttidEvent = ttidEvent
-                )
+                profilingResult = result
+                writeProfilingIfNeeded()
             }
         }
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -80,10 +82,23 @@ internal class ProfilingFeature(
         }
         this.ttidEvent = event
         profiler.stop(sdkCore.name)
+
+        writeProfilingIfNeeded()
+
         sdkCore.internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             { "Profiling stopped with TTID=${event.durationNs}" }
+        )
+    }
+
+    private fun writeProfilingIfNeeded() {
+        val profilingResult = profilingResult ?: return
+        val ttidEvent = ttidEvent ?: return
+
+        dataWriter.write(
+            profilingResult = profilingResult,
+            ttidEvent = ttidEvent
         )
     }
 
