@@ -90,6 +90,7 @@ class ProfilingFeatureTest {
         whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
         whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
     }

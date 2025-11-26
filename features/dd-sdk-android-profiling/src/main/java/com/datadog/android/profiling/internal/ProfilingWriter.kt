@@ -15,6 +15,6 @@ internal interface ProfilingWriter {
 
     fun write(
         profilingResult: PerfettoResult,
-        ttidEvent: TTIDEvent?
+        ttidEvent: TTIDEvent
     )
 }

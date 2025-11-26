@@ -23,15 +23,38 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
     }
 
     override fun getInt(key: String, defaultValue: Int): Int {
-        return prefs.getInt(key, defaultValue)
+        return runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.getInt(key, defaultValue)
+        } ?: defaultValue
     }
 
     override fun getString(key: String, defaultValue: String?): String? {
-        return prefs.getString(key, defaultValue)
+        return runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.getString(key, defaultValue)
+        } ?: defaultValue
     }
 
     override fun putString(key: String, value: String) {
         prefs.edit().putString(key, value).apply()
+    }
+
+    override fun getStringSet(
+        key: String,
+        defaultValue: Set<String>
+    ): Set<String> {
+        return runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.getStringSet(key, defaultValue)
+        } ?: defaultValue
+    }
+
+    override fun putStringSet(key: String, value: Set<String>) {
+        prefs.edit().putStringSet(key, value).apply()
     }
 
     override fun putBoolean(key: String, value: Boolean) {
@@ -39,7 +62,11 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
     }
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
-        return prefs.getBoolean(key, defaultValue)
+        return runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.getBoolean(key, defaultValue)
+        } ?: defaultValue
     }
 
     override fun remove(key: String) {
@@ -48,6 +75,16 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
 
     override fun clear() {
         prefs.edit().clear().apply()
+    }
+
+    @Suppress("SwallowedException")
+    private fun <T> runSafe(runnable: () -> T): T? {
+        return try {
+            runnable.invoke()
+        } catch (e: ClassCastException) {
+            // It happens when SDK updates the data type, we can ignore it by returning null.
+            null
+        }
     }
 
     internal companion object {
