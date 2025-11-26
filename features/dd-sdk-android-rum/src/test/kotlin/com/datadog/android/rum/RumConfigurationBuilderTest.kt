@@ -688,7 +688,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M use NoOpInsightsCollector W don't setInsightsCollector()`() {
+    fun `M use NoOpInsightsCollector W build() { default configuration }`() {
         // When
         val rumConfiguration = testedBuilder
             .build()
