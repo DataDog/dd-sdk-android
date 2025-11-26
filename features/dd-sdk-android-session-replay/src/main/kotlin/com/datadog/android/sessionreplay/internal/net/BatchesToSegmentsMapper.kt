@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsLong
@@ -186,7 +187,7 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
 
     companion object {
 
-        private const val FULL_SNAPSHOT_RECORD_TYPE_MOBILE = 10L
+        private const val FULL_SNAPSHOT_RECORD_TYPE_MOBILE = RECORD_TYPE_FULL_SNAPSHOT
         private const val FULL_SNAPSHOT_RECORD_TYPE_BROWSER = 2L
 
         internal const val RECORDS_KEY = "records"

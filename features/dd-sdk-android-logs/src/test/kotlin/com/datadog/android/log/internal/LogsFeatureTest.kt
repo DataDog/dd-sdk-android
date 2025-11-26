@@ -448,6 +448,7 @@ internal class LogsFeatureTest {
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -460,7 +461,8 @@ internal class LogsFeatureTest {
                     setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
                     )
                 )
         }

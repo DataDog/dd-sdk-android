@@ -9,6 +9,7 @@ package com.datadog.android.sdk.rules
 import android.app.Activity
 import android.content.Intent
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.sessionreplay.SLEEP_DELAY_BEFORE_ACTIVITY_LAUNCH_MS
 import com.datadog.android.sdk.integration.sessionreplay.overrideProcessImportance
 import com.datadog.android.sdk.utils.addExtras
 
@@ -27,7 +28,7 @@ internal open class SessionReplayTestRule<T : Activity>(
         // in the process of being removed. This creates an issue with our SR recorder which
         // calls the WindowInspector.getGlobalWindowViews() which can return the previous window +
         // the current window and alters the tests.
-        Thread.sleep(2000)
+        Thread.sleep(SLEEP_DELAY_BEFORE_ACTIVITY_LAUNCH_MS)
         removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
         super.beforeActivityLaunched()
         overrideProcessImportance()

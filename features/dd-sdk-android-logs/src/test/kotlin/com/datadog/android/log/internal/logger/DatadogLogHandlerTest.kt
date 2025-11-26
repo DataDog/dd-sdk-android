@@ -121,6 +121,7 @@ internal class DatadogLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
         fakeDatadogContext = fakeDatadogContext.copy(
+            service = fakeServiceName,
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = 0L
             ),
@@ -197,6 +198,7 @@ internal class DatadogLogHandlerTest {
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -209,7 +211,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
                 .doesNotHaveError()
@@ -278,6 +281,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -290,7 +294,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
                 .hasError(
@@ -343,6 +348,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -355,7 +361,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
                 .hasError(
@@ -602,6 +609,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -614,7 +622,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
         }
@@ -664,6 +673,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -676,7 +686,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
         }
@@ -724,6 +735,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -736,7 +748,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
         }
@@ -789,12 +802,14 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(emptyMap())
                 .hasExactlyTags(
                     setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
                 .doesNotHaveError()
@@ -1092,6 +1107,7 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasBuildId(fakeDatadogContext.appBuildId)
+                .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
@@ -1104,7 +1120,8 @@ internal class DatadogLogHandlerTest {
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:${fakeDatadogContext.env}",
                         "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}",
+                        "${LogAttributes.SERVICE}:$fakeServiceName"
                     )
                 )
         }

@@ -24,6 +24,24 @@ public final class com/datadog/android/sessionreplay/MapperTypeWrapper {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/sessionreplay/MobileSegmentConstantsKt {
+	public static final field RECORD_TYPE_FOCUS J
+	public static final field RECORD_TYPE_FULL_SNAPSHOT J
+	public static final field RECORD_TYPE_INCREMENTAL_SNAPSHOT J
+	public static final field RECORD_TYPE_META J
+	public static final field RECORD_TYPE_VIEW_END J
+	public static final field RECORD_TYPE_VISUAL_VIEWPORT J
+	public static final field WIREFRAME_TYPE_IMAGE Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_PLACEHOLDER Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_SHAPE Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_TEXT Ljava/lang/String;
+	public static final field WIREFRAME_TYPE_WEBVIEW Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/PrivacyConstantsKt {
+	public static final field IMAGE_DIMEN_CONSIDERED_PII_IN_DP I
+}
+
 public abstract interface class com/datadog/android/sessionreplay/PrivacyLevel {
 }
 
@@ -377,9 +395,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileI
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$MobileMutationData : com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$MobileMutationData$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Ljava/util/List;
 	public final fun component3 ()Ljava/util/List;
@@ -852,18 +868,21 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$TextPos
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$TextStyle {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle$Companion;
-	public fun <init> (Ljava/lang/String;JLjava/lang/String;)V
+	public fun <init> (Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;)V
+	public synthetic fun <init> (Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()J
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;JLjava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;Ljava/lang/String;JLjava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
+	public final fun component4 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public final fun copy (Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
 	public final fun getColor ()Ljava/lang/String;
 	public final fun getFamily ()Ljava/lang/String;
 	public final fun getSize ()J
+	public final fun getTruncationMode ()Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
@@ -872,6 +891,22 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$TextSty
 public final class com/datadog/android/sessionreplay/model/MobileSegment$TextStyle$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TextStyle;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$TruncationMode : java/lang/Enum {
+	public static final field CLIP Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode$Companion;
+	public static final field HEAD Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public static final field MIDDLE Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public static final field TAIL Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$TruncationMode$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Vertical : java/lang/Enum {

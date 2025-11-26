@@ -47,6 +47,7 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
 
         val body = buildRequestBody(context, flagsContext) ?: return null
 
+        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
             .url(url)
             .headers(headers)

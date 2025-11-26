@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
@@ -101,7 +102,12 @@ internal class SdkInternalLogger(
         samplingRate: Float,
         creationSampleRate: Float?
     ) {
-        if (!sample(samplingRate)) return
+        val updatedSamplingRate = (sdkCore as? DatadogCore)
+            ?.coreFeature
+            ?.metricTelemetrySampleRateBypass
+            ?: samplingRate
+
+        if (!sample(updatedSamplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val additionalPropertiesMutable = additionalProperties.toMutableMap()
             .enrichWithNonNullAttribute(
@@ -110,7 +116,7 @@ internal class SdkInternalLogger(
             )
             .enrichWithNonNullAttribute(
                 LocalAttribute.Key.REPORTING_SAMPLING_RATE,
-                samplingRate
+                updatedSamplingRate
             )
 
         val metricEvent = InternalTelemetryEvent.Metric(
