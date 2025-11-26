@@ -12,22 +12,55 @@ import androidx.core.view.marginEnd
 import androidx.core.view.marginStart
 import androidx.core.view.marginTop
 
-private const val ANIMATION_DURATION = 300L
+private const val ANIMATION_DURATION_MS = 150L
+private const val SCALE_HIDDEN = 0.95f
+private const val SCALE_VISIBLE = 1f
+private const val ALPHA_HIDDEN = 0f
+private const val ALPHA_VISIBLE = 1f
 
-internal fun View.animateVisibility(newVisibilityState: Boolean) {
-    scaleX = if (!isVisible) 0f else 1f
-    scaleY = if (!isVisible) 0f else 1f
-    alpha = if (!isVisible) 0f else 1f
-    isVisible = true
+internal fun View.animateVisibility(
+    newVisibilityState: Boolean,
+    end: (() -> Unit)? = null
+) {
+    animate().cancel()
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0
-    newOnlyAnimation()
-        .scaleX(1f - scaleX)
-        .scaleY(1f - scaleY)
-        .alpha(1f - alpha)
-        .setDuration(ANIMATION_DURATION)
-        .withEndAction { isVisible = newVisibilityState }
-        .start()
+    if (newVisibilityState) {
+        if (!isVisible) {
+            scaleX = SCALE_HIDDEN
+            scaleY = SCALE_HIDDEN
+            alpha = ALPHA_HIDDEN
+            isVisible = true
+        }
+        isClickable = false
+        @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0
+        animate()
+            .scaleX(SCALE_VISIBLE)
+            .scaleY(SCALE_VISIBLE)
+            .alpha(ALPHA_VISIBLE)
+            .setDuration(ANIMATION_DURATION_MS)
+            .withEndAction {
+                isClickable = true
+                end?.invoke()
+            }
+            .start()
+    } else {
+        if (!isVisible) {
+            end?.invoke()
+            return
+        }
+        isClickable = false
+        @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0
+        animate()
+            .scaleX(SCALE_HIDDEN)
+            .scaleY(SCALE_HIDDEN)
+            .alpha(ALPHA_HIDDEN)
+            .setDuration(ANIMATION_DURATION_MS)
+            .withEndAction {
+                isVisible = false
+                end?.invoke()
+            }
+            .start()
+    }
 }
 
 @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0

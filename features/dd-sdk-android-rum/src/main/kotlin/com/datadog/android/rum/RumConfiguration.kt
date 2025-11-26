@@ -15,7 +15,6 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
-import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -24,7 +23,6 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -338,20 +336,6 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the [InsightsCollector] to collect RUM Insights events, used inside the RUM Debug Widget.
-         *
-         * @param insightsCollector the [InsightsCollector] implementation. Pass `null` to disable RUM Insights collection.
-         * @return the [Builder] instance.
-         */
-        @ExperimentalRumApi
-        fun setInsightsCollector(
-            insightsCollector: InsightsCollector?
-        ): Builder {
-            rumConfig = rumConfig.copy(insightsCollector = insightsCollector ?: NoOpInsightsCollector())
-            return this
-        }
-
-        /**
          * Enables/Disables collection of an anonymous user ID across sessions.
          *
          * By default, the SDK generates a unique, non-personal anonymous user ID that is
@@ -424,6 +408,17 @@ data class RumConfiguration internal constructor(
          */
         internal fun setRumSessionTypeOverride(rumSessionTypeOverride: RumSessionType): Builder {
             rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
+            return this
+        }
+
+        /**
+         * Sets the [InsightsCollector] to collect RUM Insights events, used inside the RUM Debug Widget.
+         *
+         * @param insightsCollector the [InsightsCollector] implementation.
+         * @return the [Builder] instance.
+         */
+        internal fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
+            rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
             return this
         }
     }

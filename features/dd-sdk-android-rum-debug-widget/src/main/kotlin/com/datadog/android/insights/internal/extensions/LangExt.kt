@@ -38,10 +38,6 @@ internal fun Float.clip(size: Int, min: Int, max: Int): Float {
     return max(min(this, (max - size).toFloat()), min.toFloat())
 }
 
-internal fun <F, S> multiLet(first: F?, second: S?, block: (F, S) -> Unit) {
-    if (first != null && second != null) block(first, second)
-}
-
 internal fun SpannableStringBuilder.appendColored(text: String, color: Int): SpannableStringBuilder = apply {
     if (text.isEmpty()) return@apply
 

@@ -19,7 +19,7 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.insights.DefaultInsightsCollector
+import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -297,7 +297,7 @@ class SampleApplication : Application() {
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
             .setSlowFramesConfiguration(SlowFramesConfiguration.DEFAULT)
-            .setInsightsCollector(DefaultInsightsCollector())
+            .enableRumDebugWidget(this)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
