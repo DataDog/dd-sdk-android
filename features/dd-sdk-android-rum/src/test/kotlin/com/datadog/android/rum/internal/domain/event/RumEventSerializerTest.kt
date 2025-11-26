@@ -14,8 +14,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -557,7 +557,7 @@ internal class RumEventSerializerTest {
 
     @RepeatedTest(8)
     fun `M serialize RUM event W serialize() with VitalEvent`(
-        @Forgery event: VitalEvent
+        @Forgery event: RumVitalOperationStepEvent
     ) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -566,13 +566,13 @@ internal class RumEventSerializerTest {
             .hasField("type", "vital")
             .hasField("date", event.date)
             .hasField("vital") {
-                hasField("type", event.vital.type.toJson())
-                event.vital.name?.let { hasField("name", it) }
-                event.vital.operationKey?.let { hasField("operation_key", it) }
-                event.vital.description?.let { hasField("description", it) }
-                event.vital.duration?.let { hasField("duration", it) }
-                event.vital.stepType?.let { hasField("step_type", it.toJson()) }
-                event.vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
+                val vital = event.vital
+                hasField("type", vital.type)
+                vital.name?.let { hasField("name", it) }
+                vital.operationKey?.let { hasField("operation_key", it) }
+                vital.description?.let { hasField("description", it) }
+                hasField("step_type", vital.stepType.toJson())
+                vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
             }
             .hasField("application") {
                 hasField("id", event.application.id)
@@ -583,10 +583,11 @@ internal class RumEventSerializerTest {
                 event.session.hasReplay?.let { hasField("has_replay", it) }
             }
             .hasField("view") {
-                hasField("id", event.view.id)
-                hasField("url", event.view.url)
-                event.view.referrer?.let { hasField("referrer", it) }
-                event.view.name?.let { hasField("name", it) }
+                val view = checkNotNull(event.view)
+                hasField("id", view.id)
+                hasField("url", view.url)
+                view.referrer?.let { hasField("referrer", it) }
+                view.name?.let { hasField("name", it) }
             }
             .hasField("_dd") {
                 event.dd.browserSdkVersion?.let { hasField("browser_sdk_version", it) }
@@ -1339,7 +1340,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M use the attributes group verbose name W validateAttributes { VitalEvent }`(
-        @Forgery fakeEvent: VitalEvent
+        @Forgery fakeEvent: RumVitalOperationStepEvent
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
@@ -2021,7 +2022,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M drop non-serializable attributes W serialize() with VitalEvent { bad usr#additionalProperties }`(
-        @Forgery event: VitalEvent,
+        @Forgery event: RumVitalOperationStepEvent,
         forge: Forge
     ) {
         // Given
@@ -2058,7 +2059,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M drop non-serializable attributes W serialize() with VitalEvent { bad context#additionalProperties }`(
-        @Forgery event: VitalEvent,
+        @Forgery event: RumVitalOperationStepEvent,
         forge: Forge
     ) {
         // Given
@@ -2126,10 +2127,10 @@ internal class RumEventSerializerTest {
                 )
             }
 
-            5 -> this.getForgery(VitalEvent::class.java).let {
+            5 -> this.getForgery(RumVitalOperationStepEvent::class.java).let {
                 it.copy(
-                    context = VitalEvent.Context(additionalProperties = attributes),
-                    usr = (it.usr ?: VitalEvent.Usr())
+                    context = RumVitalOperationStepEvent.Context(additionalProperties = attributes),
+                    usr = (it.usr ?: RumVitalOperationStepEvent.Usr())
                         .copy(additionalProperties = userAttributes)
                 )
             }

@@ -13,6 +13,6 @@ package com.datadog.android.internal.network
 enum class GraphQLHeaders(val headerValue: String) {
     DD_GRAPHQL_NAME_HEADER("_dd-custom-header-graph-ql-operation-name"),
     DD_GRAPHQL_VARIABLES_HEADER("_dd-custom-header-graph-ql-variables"),
-    DD_GRAPHQL_TYPE_HEADER("_dd-custom-header-graph-ql-operation_type"),
+    DD_GRAPHQL_TYPE_HEADER("_dd-custom-header-graph-ql-operation-type"),
     DD_GRAPHQL_PAYLOAD_HEADER("_dd-custom-header-graph-ql-payload")
 }

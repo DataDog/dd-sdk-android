@@ -9,6 +9,7 @@ import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
+import java.lang.UnsupportedOperationException
 import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
@@ -56,12 +57,12 @@ public data class Household(
                 val pets = jsonObject.get("pets")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Animal>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Animal.fromJsonObject(it.asJsonObject))
+                        collection.add(Animal.fromJsonElement(it))
                     }
                     collection
                 }
-                val situation = jsonObject.get("situation")?.asJsonObject?.let {
-                    Situation.fromJsonObject(it)
+                val situation = jsonObject.get("situation")?.let {
+                    Situation.fromJsonElement(it)
                 }
                 return Household(pets, situation)
             } catch (e: IllegalStateException) {
@@ -202,8 +203,8 @@ public data class Household(
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Animal {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                    return fromJsonObject(jsonObject)
+                    val jsonElement = JsonParser.parseString(jsonString)
+                    return fromJsonElement(jsonElement)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(
                         "Unable to parse json into one of type Animal",
@@ -214,16 +215,26 @@ public data class Household(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Animal {
+            public fun fromJsonElement(jsonElement: JsonElement): Animal {
                 val errors = mutableListOf<Throwable>()
                 val asFish = try {
-                    Fish.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Fish.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Fish")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asBird = try {
-                    Bird.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Bird.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Bird")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
@@ -361,13 +372,50 @@ public data class Household(
             }
         }
 
+        public data class Long(
+            public val item: kotlin.Long,
+        ) : Situation() {
+            override fun toJson(): JsonElement = JsonPrimitive(item)
+
+            public companion object {
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJson(jsonString: String): Long {
+                    val jsonElement = JsonParser.parseString(jsonString)
+                    try {
+                        return fromJsonPrimitive(jsonElement.asJsonPrimitive)
+                    } catch (e: IllegalStateException) {
+                        throw JsonParseException("Unable to parse json into type Long", e)
+                    }
+                }
+
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJsonPrimitive(jsonPrimitive: JsonPrimitive): Long {
+                    try {
+                        if (jsonPrimitive.isNumber) {
+                            return Long(jsonPrimitive.asLong)
+                        } else {
+                            throw JsonParseException("Can't convert jsonPrimitive to Long")
+                        }
+                    } catch (e: IllegalStateException) {
+                        throw JsonParseException("Unable to parse json into type Long", e)
+                    } catch (e: NumberFormatException) {
+                        throw JsonParseException("Unable to parse json into type Long", e)
+                    } catch (e: UnsupportedOperationException) {
+                        throw JsonParseException("Unable to parse json into type Long", e)
+                    }
+                }
+            }
+        }
+
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Situation {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                    return fromJsonObject(jsonObject)
+                    val jsonElement = JsonParser.parseString(jsonString)
+                    return fromJsonElement(jsonElement)
                 } catch (e: IllegalStateException) {
                     throw JsonParseException(
                         "Unable to parse json into one of type Situation",
@@ -378,16 +426,37 @@ public data class Household(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonObject(jsonObject: JsonObject): Situation {
+            public fun fromJsonElement(jsonElement: JsonElement): Situation {
                 val errors = mutableListOf<Throwable>()
                 val asMarriage = try {
-                    Marriage.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Marriage.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Marriage")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asCotenancy = try {
-                    Cotenancy.fromJsonObject(jsonObject)
+                    if (jsonElement is JsonObject) {
+                        Cotenancy.fromJsonObject(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "Cotenancy")
+                    }
+                } catch (e: JsonParseException) {
+                    errors.add(e)
+                    null
+                }
+                val asLong = try {
+                    if (jsonElement is JsonPrimitive) {
+                        Long.fromJsonPrimitive(jsonElement)
+                    } else {
+                        throw JsonParseException("Unable to parse json into type "
+                                 + "kotlin.Long")
+                    }
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
@@ -395,6 +464,7 @@ public data class Household(
                 val result = arrayOf(
                     asMarriage,
                     asCotenancy,
+                    asLong,
                 ).firstOrNull { it != null }
                 if (result == null) {
                     val message = "Unable to parse json into one of type \n" + "Situation\n" +

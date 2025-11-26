@@ -356,6 +356,8 @@ internal class RumActionScope(
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode.toString(),
+                buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )
         }

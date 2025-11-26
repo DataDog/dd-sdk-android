@@ -60,6 +60,7 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
             ddtags = forge.exhaustiveTags().joinToString(separator = ","),
             usr = forge.aNullable {
                 LogEvent.Usr(
+                    anonymousId = userInfo?.anonymousId,
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,
@@ -117,7 +118,8 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                 version = deviceInfo.osVersion,
                 versionMajor = deviceInfo.osMajorVersion,
                 build = forge.aNullable { anAlphabeticalString() }
-            )
+            ),
+            buildVersion = forge.anInt(min = 0).toString()
         )
     }
 

@@ -45,7 +45,7 @@ internal class ConfigurationRumForgeryFactory :
             resourceEventMapper = mock(),
             errorEventMapper = mock(),
             longTaskEventMapper = mock(),
-            vitalEventMapper = mock(),
+            vitalOperationStepEventMapper = mock(),
             telemetryConfigurationMapper = mock(),
             longTaskTrackingStrategy = mock(),
             backgroundEventTracking = forge.aBool(),
@@ -71,6 +71,7 @@ internal class ConfigurationRumForgeryFactory :
             slowFramesConfiguration = forge.getForgery(),
             rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
             collectAccessibility = forge.aBool(),
+            disableJankStats = false,
             insightsCollector = mock()
         )
     }

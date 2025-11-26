@@ -1428,7 +1428,7 @@ internal class RumSessionScopeTest {
 
     @ParameterizedTest
     @MethodSource("testScenarios")
-    fun `M call reportTTID and create new session W handleEvent { AppLaunchTTIDEvent }`(
+    fun `M call reportTTID W handleEvent { AppLaunchTTIDEvent }`(
         scenario: RumStartupScenario,
         forge: Forge
     ) {
@@ -1440,6 +1440,13 @@ internal class RumSessionScopeTest {
 
         val event = RumRawEvent.AppStartTTIDEvent(
             info = info
+        )
+
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
         )
 
         // When
@@ -1486,6 +1493,13 @@ internal class RumSessionScopeTest {
 
         val event2 = RumRawEvent.AppStartTTIDEvent(
             info = info2
+        )
+
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
         )
 
         // When

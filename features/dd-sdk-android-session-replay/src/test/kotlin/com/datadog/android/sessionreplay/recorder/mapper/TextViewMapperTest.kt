@@ -2,6 +2,7 @@ package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.graphics.Typeface
 import android.text.Layout
+import android.text.TextUtils
 import android.view.Gravity
 import android.widget.TextView
 import com.datadog.android.internal.utils.densityNormalized
@@ -170,6 +171,42 @@ internal abstract class TextViewMapperTest :
         assertThat(textWireframe.textStyle.size).isCloseTo(expectedFontSize, offset(1L))
     }
 
+    @ParameterizedTest(name = "{index} (truncateAt: {0}, expectedMode: {1})")
+    @MethodSource("truncationModeMappings")
+    fun `M resolves truncation mode W ellipsize is set`(
+        truncateAt: TextUtils.TruncateAt?,
+        expectedTruncationMode: MobileSegment.TruncationMode?
+    ) {
+        // Given
+        prepareMockView<TextView> { mockView ->
+            whenever(mockView.layout) doReturn mockLayout
+            whenever(mockView.typeface) doReturn null
+            whenever(mockView.textSize) doReturn fakeFontSize
+            whenever(mockView.currentTextColor) doReturn fakeTextColor
+            whenever(mockView.textAlignment) doReturn TextView.TEXT_ALIGNMENT_VIEW_START
+            whenever(mockView.gravity) doReturn Gravity.NO_GRAVITY
+            whenever(mockView.text) doReturn fakeText
+            whenever(mockView.totalPaddingBottom) doReturn fakeTotalBottomPadding
+            whenever(mockView.totalPaddingTop) doReturn fakeTotalTopPadding
+            whenever(mockView.totalPaddingStart) doReturn fakeTotalStartPadding
+            whenever(mockView.totalPaddingEnd) doReturn fakeTotalEndPadding
+            whenever(mockView.ellipsize) doReturn truncateAt
+        }
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(1)
+        val textWireframe = wireframes[0] as MobileSegment.Wireframe.TextWireframe
+        assertThat(textWireframe.textStyle.truncationMode).isEqualTo(expectedTruncationMode)
+    }
+
     companion object {
 
         @JvmStatic
@@ -303,6 +340,17 @@ internal abstract class TextViewMapperTest :
             }
 
             return argsMatrix.stream()
+        }
+
+        @JvmStatic
+        fun truncationModeMappings(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(TextUtils.TruncateAt.MARQUEE, MobileSegment.TruncationMode.CLIP),
+                Arguments.of(TextUtils.TruncateAt.END, MobileSegment.TruncationMode.TAIL),
+                Arguments.of(TextUtils.TruncateAt.START, MobileSegment.TruncationMode.HEAD),
+                Arguments.of(TextUtils.TruncateAt.MIDDLE, MobileSegment.TruncationMode.MIDDLE),
+                Arguments.of(null, null)
+            )
         }
     }
 }

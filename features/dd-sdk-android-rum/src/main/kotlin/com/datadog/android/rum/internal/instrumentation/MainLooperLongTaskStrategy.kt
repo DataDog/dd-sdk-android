@@ -13,7 +13,9 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class MainLooperLongTaskStrategy(
     internal val thresholdMs: Long
@@ -28,11 +30,15 @@ internal class MainLooperLongTaskStrategy(
 
     override fun register(sdkCore: SdkCore, context: Context) {
         this.sdkCore = sdkCore
-        Looper.getMainLooper().setMessageLogging(this)
+        if (CompositePrinter.isRegistered.compareAndSet(false, true)) {
+            // not in the class constructor to make setup easier for tests
+            Looper.getMainLooper().setMessageLogging(CompositePrinter)
+        }
+        CompositePrinter.registeredPrinters.add(this)
     }
 
     override fun unregister(context: Context?) {
-        Looper.getMainLooper().setMessageLogging(null)
+        CompositePrinter.registeredPrinters.remove(this)
     }
 
     // endregion
@@ -92,5 +98,14 @@ internal class MainLooperLongTaskStrategy(
         private const val PREFIX_START = ">>>>> Dispatching to "
         private const val PREFIX_END = "<<<<< Finished to "
         private const val PREFIX_START_LENGTH = PREFIX_START.length
+    }
+
+    internal object CompositePrinter : Printer {
+        val isRegistered = AtomicBoolean(false)
+        val registeredPrinters = CopyOnWriteArraySet<Printer>()
+
+        override fun println(x: String?) {
+            registeredPrinters.forEach { it.println(x) }
+        }
     }
 }

@@ -1,0 +1,63 @@
+object com.datadog.android.flags.Flags
+  fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
+interface com.datadog.android.flags.FlagsClient
+  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext)
+  fun resolveBooleanValue(String, Boolean): Boolean
+  fun resolveStringValue(String, String): String
+  fun resolveDoubleValue(String, Double): Double
+  fun resolveIntValue(String, Int): Int
+  fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
+  class Builder
+    constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun build(): FlagsClient
+  companion object 
+    fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+data class com.datadog.android.flags.FlagsConfiguration
+  class Builder
+    fun trackExposures(Boolean): Builder
+    fun useCustomExposureEndpoint(String): Builder
+    fun useCustomFlagEndpoint(String): Builder
+    fun rumIntegrationEnabled(Boolean): Builder
+    fun gracefulModeEnabled(Boolean): Builder
+    fun build(): FlagsConfiguration
+  companion object 
+enum com.datadog.android.flags.model.ErrorCode
+  - PROVIDER_NOT_READY
+  - FLAG_NOT_FOUND
+  - PARSE_ERROR
+  - TYPE_MISMATCH
+data class com.datadog.android.flags.model.EvaluationContext
+  constructor(String, Map<String, String> = emptyMap())
+data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
+  constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
+enum com.datadog.android.flags.model.ResolutionReason
+  - DEFAULT
+  - TARGETING_MATCH
+  - RULE_MATCH
+  - PREREQUISITE_FAILED
+  - ERROR
+data class com.datadog.android.flags.model.ExposureEvent
+  constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ExposureEvent
+    fun fromJsonObject(com.google.gson.JsonObject): ExposureEvent
+  data class Identifier
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Identifier
+      fun fromJsonObject(com.google.gson.JsonObject): Identifier
+  data class Subject
+    constructor(kotlin.String, Attributes)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Subject
+      fun fromJsonObject(com.google.gson.JsonObject): Subject
+  data class Attributes
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Attributes
+      fun fromJsonObject(com.google.gson.JsonObject): Attributes

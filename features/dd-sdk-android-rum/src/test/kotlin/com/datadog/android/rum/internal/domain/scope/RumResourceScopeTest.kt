@@ -324,6 +324,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -395,6 +397,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -483,6 +487,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -559,6 +565,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -630,6 +638,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -724,6 +734,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -786,6 +798,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -839,6 +853,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -969,6 +985,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1041,6 +1059,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1114,6 +1134,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1188,6 +1210,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1264,6 +1288,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1344,6 +1370,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1420,6 +1448,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1518,6 +1548,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1617,6 +1649,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1713,6 +1747,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1810,6 +1846,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1890,6 +1928,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -1970,6 +2010,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -2049,6 +2091,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -2129,6 +2173,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -2213,6 +2259,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -2298,6 +2346,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
@@ -2473,6 +2523,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2542,6 +2594,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2613,6 +2667,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2736,6 +2792,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2804,6 +2862,8 @@ internal class RumResourceScopeTest {
                     )
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }

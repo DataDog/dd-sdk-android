@@ -13,6 +13,18 @@ data class com.datadog.android.sessionreplay.MapperTypeWrapper<T: android.view.V
   fun getUnsafeMapper(): com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<android.view.View>
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+const val RECORD_TYPE_META: Long
+const val RECORD_TYPE_FOCUS: Long
+const val RECORD_TYPE_VIEW_END: Long
+const val RECORD_TYPE_VISUAL_VIEWPORT: Long
+const val RECORD_TYPE_FULL_SNAPSHOT: Long
+const val RECORD_TYPE_INCREMENTAL_SNAPSHOT: Long
+const val WIREFRAME_TYPE_SHAPE: String
+const val WIREFRAME_TYPE_TEXT: String
+const val WIREFRAME_TYPE_IMAGE: String
+const val WIREFRAME_TYPE_PLACEHOLDER: String
+const val WIREFRAME_TYPE_WEBVIEW: String
+const val IMAGE_DIMEN_CONSIDERED_PII_IN_DP: Int
 interface com.datadog.android.sessionreplay.PrivacyLevel
 fun android.view.View.setSessionReplayHidden(Boolean)
 fun android.view.View.setSessionReplayImagePrivacy(ImagePrivacy?)
@@ -222,7 +234,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): VisualViewportRecord
     companion object 
       fun fromJson(kotlin.String): MobileRecord
-      fun fromJsonObject(com.google.gson.JsonObject): MobileRecord
+      fun fromJsonElement(com.google.gson.JsonElement): MobileRecord
   data class Data
     constructor(kotlin.collections.List<Wireframe>)
     fun toJson(): com.google.gson.JsonElement
@@ -232,7 +244,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
   sealed class MobileIncrementalData
     abstract fun toJson(): com.google.gson.JsonElement
     data class MobileMutationData : MobileIncrementalData
-      constructor(kotlin.collections.List<Add>? = null, kotlin.collections.List<Remove>? = null, kotlin.collections.List<WireframeUpdateMutation>? = null)
+      constructor(kotlin.collections.List<Add>, kotlin.collections.List<Remove>, kotlin.collections.List<WireframeUpdateMutation>)
       val source: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
@@ -261,7 +273,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): PointerInteractionData
     companion object 
       fun fromJson(kotlin.String): MobileIncrementalData
-      fun fromJsonObject(com.google.gson.JsonObject): MobileIncrementalData
+      fun fromJsonElement(com.google.gson.JsonElement): MobileIncrementalData
   data class Data1
     constructor(kotlin.Long, kotlin.Long, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -319,7 +331,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframe
     companion object 
       fun fromJson(kotlin.String): Wireframe
-      fun fromJsonObject(com.google.gson.JsonObject): Wireframe
+      fun fromJsonElement(com.google.gson.JsonElement): Wireframe
   data class Add
     constructor(kotlin.Long? = null, Wireframe)
     fun toJson(): com.google.gson.JsonElement
@@ -371,7 +383,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
         fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframeUpdate
     companion object 
       fun fromJson(kotlin.String): WireframeUpdateMutation
-      fun fromJsonObject(com.google.gson.JsonObject): WireframeUpdateMutation
+      fun fromJsonElement(com.google.gson.JsonElement): WireframeUpdateMutation
   data class Position
     constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
@@ -397,7 +409,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       fun fromJson(kotlin.String): ShapeBorder
       fun fromJsonObject(com.google.gson.JsonObject): ShapeBorder
   data class TextStyle
-    constructor(kotlin.String, kotlin.Long, kotlin.String)
+    constructor(kotlin.String, kotlin.Long, kotlin.String, TruncationMode? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TextStyle
@@ -446,6 +458,15 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): PointerType
+  enum TruncationMode
+    constructor(kotlin.String)
+    - CLIP
+    - HEAD
+    - TAIL
+    - MIDDLE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TruncationMode
   enum Horizontal
     constructor(kotlin.String)
     - LEFT

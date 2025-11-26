@@ -197,6 +197,13 @@ internal class LogEventAssert(actual: LogEvent) :
     }
 
     fun hasUserInfo(userInfo: UserInfo): LogEventAssert {
+        assertThat(actual.usr?.anonymousId)
+            .overridingErrorMessage(
+                "Expected LogEvent to have anonymousId: " +
+                    "${userInfo.anonymousId} but " +
+                    "instead was: ${actual.usr?.anonymousId}"
+            )
+            .isEqualTo(userInfo.anonymousId)
         assertThat(actual.usr?.name)
             .overridingErrorMessage(
                 "Expected LogEvent to have user name: " +
@@ -262,6 +269,16 @@ internal class LogEventAssert(actual: LogEvent) :
                     " but instead was ${actual.buildId}"
             )
             .isEqualTo(buildId)
+        return this
+    }
+
+    fun hasBuildVersion(buildVersion: Int?): LogEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected LogEvent to have build version: $buildVersion" +
+                    " but instead was ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
         return this
     }
 

@@ -44,21 +44,21 @@ internal class RumWindowCallbacksRegistryImpl : RumWindowCallbacksRegistry {
             }
         }
     }
-}
 
-private fun Window.wrapCallback(): RumWindowCallback {
-    val currentCallback = callback
-    val newCallback = RumWindowCallback(
-        wrapped = currentCallback
-    )
-    callback = newCallback
-    return newCallback
-}
+    private fun Window.wrapCallback(): RumWindowCallback {
+        val currentCallback = callback
+        val newCallback = RumWindowCallback(
+            wrapped = currentCallback
+        )
+        callback = newCallback
+        return newCallback
+    }
 
-private fun Window.tryToRemoveCallback() {
-    val currentCallback = callback
-    if (currentCallback is RumWindowCallback) {
-        callback = currentCallback.wrapped
+    private fun Window.tryToRemoveCallback() {
+        val currentCallback = callback
+        if (currentCallback is RumWindowCallback && currentCallback in callbacks.values) {
+            callback = currentCallback.wrapped
+        }
     }
 }
 

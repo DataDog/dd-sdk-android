@@ -275,6 +275,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -342,6 +344,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -413,6 +417,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -487,6 +493,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -580,6 +588,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -676,6 +686,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -751,6 +763,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -838,6 +852,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -919,6 +935,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1008,6 +1026,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1067,6 +1087,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1130,6 +1152,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1193,6 +1217,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1267,6 +1293,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1343,6 +1371,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1401,6 +1431,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1464,6 +1496,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1527,6 +1561,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1601,6 +1637,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1677,6 +1715,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1739,6 +1779,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1837,6 +1879,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1927,6 +1971,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -1995,6 +2041,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2058,6 +2106,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2131,6 +2181,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2205,6 +2257,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2271,6 +2325,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2340,6 +2396,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2404,6 +2462,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2466,6 +2526,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2531,6 +2593,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2663,6 +2727,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2727,6 +2793,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }
@@ -2785,6 +2853,8 @@ internal class RumContinuousActionScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
+                    hasBuildVersion(fakeDatadogContext.versionCode)
+                    hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                 }
         }

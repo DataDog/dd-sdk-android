@@ -8,6 +8,8 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -114,6 +116,28 @@ interface FeatureSdkCore : SdkCore {
      * @param executorContext Context to be used for logging and naming threads running on this executor.
      */
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService
+
+    /**
+     * Creates an OkHttp [okhttp3.Call.Factory] with custom configuration that shares the SDK's
+     * underlying thread pool and connection pool.
+     *
+     * This method allows features to configure their HTTP client while efficiently
+     * sharing resources (dispatcher thread pool, connection pool) across the entire SDK.
+     * Using a shared base client reduces resource consumption and improves performance
+     * through better connection reuse.
+     *
+     * Example:
+     * ```
+     * val callFactory = sdkCore.createOkHttpCallFactory {
+     *     callTimeout(45, TimeUnit.SECONDS)
+     *     writeTimeout(30, TimeUnit.SECONDS)
+     * }
+     * ```
+     *
+     * @param block Configuration block to customize the [OkHttpClient.Builder]
+     * @return A [Call.Factory] instance configured with shared resources
+     */
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit = {}): Call.Factory
 
     /**
      * Allows the given feature to set the anonymous ID for the SDK.

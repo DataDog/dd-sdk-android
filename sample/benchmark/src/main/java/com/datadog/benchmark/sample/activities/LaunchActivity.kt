@@ -49,7 +49,7 @@ internal class LaunchActivity : AppCompatActivity() {
          * have [SyntheticsRun.Instrumented] or [SyntheticsRun.Baseline] only in [LaunchActivity.onCreate].
          * It is derived from intent extras.
          */
-        benchmarkFeaturesInitializer.initialize(config)
+        benchmarkFeaturesInitializer.initialize(config = config, intent = intent)
 
         initializeCoil()
 

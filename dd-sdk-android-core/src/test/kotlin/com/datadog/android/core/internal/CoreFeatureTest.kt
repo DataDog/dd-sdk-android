@@ -63,6 +63,7 @@ import okhttp3.Authenticator
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.TlsVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -1508,6 +1509,90 @@ internal class CoreFeatureTest {
             verify(mockContextExecutor).shutdown()
             verify(mockContextExecutor).awaitTermination(10, TimeUnit.SECONDS)
         }
+    }
+
+    // endregion
+
+    // region createOkHttpCallFactory
+
+    @Test
+    fun `M create call factory W createOkHttpCallFactory()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        val callFactory = testedFeature.createOkHttpCallFactory {
+            // Empty configuration block
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+
+        // Verify the factory can create calls
+        val request = Request.Builder().url("https://example.com").build()
+        val call = callFactory.newCall(request)
+        assertThat(call).isNotNull()
+        assertThat(call.request()).isEqualTo(request)
+    }
+
+    @Test
+    fun `M apply custom configuration W createOkHttpCallFactory() { with custom timeouts }`(
+        @LongForgery(min = 0, max = 30_000) customTimeout: Long
+    ) {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        val callFactory = testedFeature.createOkHttpCallFactory {
+            callTimeout(customTimeout, TimeUnit.MILLISECONDS)
+            writeTimeout(customTimeout, TimeUnit.MILLISECONDS)
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+
+        // Verify the factory can create calls
+        val request = Request.Builder().url("https://example.com").build()
+        val call = callFactory.newCall(request)
+        assertThat(call).isNotNull()
+        assertThat(call.request()).isEqualTo(request)
+
+        // Verify custom timeout was applied
+        assertThat(call.timeout().timeoutNanos()).isEqualTo(TimeUnit.MILLISECONDS.toNanos(customTimeout))
+    }
+
+    @Test
+    fun `M create independent instances W createOkHttpCallFactory() { multiple calls }`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        val callFactory1 = testedFeature.createOkHttpCallFactory {
+            callTimeout(30, TimeUnit.SECONDS)
+        }
+        val callFactory2 = testedFeature.createOkHttpCallFactory {
+            callTimeout(45, TimeUnit.SECONDS)
+        }
+
+        // Then
+        assertThat(callFactory1).isNotNull()
+        assertThat(callFactory2).isNotNull()
+        assertThat(callFactory1).isNotSameAs(callFactory2)
     }
 
     // endregion

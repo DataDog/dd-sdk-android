@@ -16,13 +16,16 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "long_task"],
+      "required": ["type", "view", "long_task"],
       "properties": {
         "type": {
           "type": "string",
           "description": "RUM event type",
           "const": "long_task",
           "readOnly": true
+        },
+        "view": {
+          "type": "object"
         },
         "long_task": {
           "type": "object",
@@ -61,19 +64,19 @@
             },
             "render_start": {
               "type": "number",
-              "description": "Start time of the rendering cycle, which includes requestAnimationFrame callbacks, style and layout calculation, resize observer and intersection observer callbacks",
+              "description": "Time difference (in ns) between the timeOrigin and the start time of the rendering cycle, which includes requestAnimationFrame callbacks, style and layout calculation, resize observer and intersection observer callbacks",
               "minimum": 0,
               "readOnly": true
             },
             "style_and_layout_start": {
               "type": "number",
-              "description": "Start time of the time period spent in style and layout calculations",
+              "description": "Time difference (in ns) between the timeOrigin and the start time of the time period spent in style and layout calculations",
               "minimum": 0,
               "readOnly": true
             },
             "first_ui_event_timestamp": {
               "type": "number",
-              "description": "Start time of of the first UI event (mouse/keyboard and so on) to be handled during the course of this frame",
+              "description": "Time difference (in ns) between the timeOrigin and the start time of of the first UI event (mouse/keyboard and so on) to be handled during the course of this frame",
               "minimum": 0,
               "readOnly": true
             },
