@@ -1660,7 +1660,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M log error W listener causes StackOverflowError through infinite recursion`(
+    fun `M log error and rethrow W listener causes StackOverflowError`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
@@ -1669,13 +1669,12 @@ internal open class TracingInterceptorTest {
 
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
-        ).doAnswer {
-            testedInterceptor.intercept(mockChain)
-            return@doAnswer Unit
-        }
+        ).doAnswer { throw StackOverflowError() }
 
         // When
-        testedInterceptor.intercept(mockChain)
+        assertThrows<StackOverflowError> {
+            testedInterceptor.intercept(mockChain)
+        }
 
         // Then
         val expectedMessage = "${TracingInterceptor.ERROR_STACK_OVERFLOW}\n" +
@@ -1685,7 +1684,8 @@ internal open class TracingInterceptorTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             expectedMessage,
-            StackOverflowError::class.java
+            StackOverflowError::class.java,
+            mode = org.mockito.kotlin.atLeast(1)
         )
     }
 
