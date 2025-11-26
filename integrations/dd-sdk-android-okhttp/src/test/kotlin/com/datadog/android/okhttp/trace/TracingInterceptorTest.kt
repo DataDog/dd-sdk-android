@@ -1659,6 +1659,36 @@ internal open class TracingInterceptorTest {
         verify(mockFuture).get(1, TimeUnit.SECONDS)
     }
 
+    @Test
+    fun `M log error and rethrow W listener causes StackOverflowError`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        whenever(
+            mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
+        ).doAnswer { throw StackOverflowError() }
+
+        // When
+        assertThrows<StackOverflowError> {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        // Then
+        val expectedMessage = "${TracingInterceptor.ERROR_STACK_OVERFLOW}\n" +
+            "Request: ${fakeRequest.method}:${fakeRequest.url}"
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            expectedMessage,
+            StackOverflowError::class.java,
+            mode = org.mockito.kotlin.atLeast(1)
+        )
+    }
+
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
