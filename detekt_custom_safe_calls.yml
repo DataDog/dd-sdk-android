@@ -164,6 +164,7 @@ datadog:
       - "android.graphics.Matrix.preScale(kotlin.Float, kotlin.Float)"
       - "android.graphics.Matrix.preTranslate(kotlin.Float, kotlin.Float)"
       - "android.graphics.Paint.constructor()"
+      - "android.graphics.Paint.constructor(kotlin.Int)"
       - "android.graphics.Path.computeBounds(android.graphics.RectF, kotlin.Boolean)"
       - "android.graphics.Path.transform(android.graphics.Matrix)"
       - "android.graphics.PathMeasure.constructor(android.graphics.Path?, kotlin.Boolean)"
