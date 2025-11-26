@@ -53,7 +53,7 @@ internal class ProfilingFeature(
             }
         }
         // Set the profiling flag in SharedPreferences to profile for the next app launch
-        ProfilingStorage.setProfilingFlag(appContext, sdkCore.name)
+        ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context.put(PROFILER_IS_RUNNING, profiler.isRunning(sdkCore.name))

@@ -19,6 +19,7 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -44,14 +45,14 @@ internal class PerfettoProfiler(
     private val resultCallback: Consumer<ProfilingResult>
 
     // This flag represents which instance of this class is working for.
-    private val runningInstance: AtomicReference<String?> = AtomicReference(null)
+    private val runningInstances: AtomicReference<Set<String>> = AtomicReference(emptySet())
 
     private var profilingStartTime = 0L
 
     override var internalLogger: InternalLogger? = null
 
     // Map of <InstanceName, ProfilerCallback>
-    private val callbackMap: MutableMap<String, ProfilerCallback> = mutableMapOf()
+    private val callbackMap: MutableMap<String, ProfilerCallback> = ConcurrentHashMap()
 
     init {
         requestBuilder = StackSamplingRequestBuilder()
@@ -66,27 +67,29 @@ internal class PerfettoProfiler(
             val duration = endTime - profilingStartTime
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 result.resultFilePath?.let {
-                    runningInstance.get()?.let { instanceName ->
-                        val callback = callbackMap[instanceName]
-                        callback?.onSuccess(
-                            PerfettoResult(
-                                start = profilingStartTime,
-                                end = endTime,
-                                resultFilePath = it
-                            )
+                    notifyAllCallbacks(
+                        PerfettoResult(
+                            start = profilingStartTime,
+                            end = endTime,
+                            resultFilePath = it
                         )
-                    }
+                    )
                 }
             }
-            runningInstance.set(null)
             sendProfilingEndTelemetry(result = result, duration = duration)
         }
     }
 
-    override fun start(appContext: Context, sdkInstanceName: String) {
+    private fun notifyAllCallbacks(result: PerfettoResult) {
+        callbackMap.filter { runningInstances.get().contains(it.key) }.forEach { callback ->
+            callback.value.onSuccess(result)
+        }
+        runningInstances.set(null)
+    }
+
+    override fun start(appContext: Context, sdkInstanceNames: Set<String>) {
         // profiling will be launched when no instance is currently running profiling.
-        if (runningInstance.compareAndSet(null, sdkInstanceName)) {
-            runningInstance.set(sdkInstanceName)
+        if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             sendProfilingStartTelemetry()
             profilingStartTime = timeProvider.getDeviceTimestamp()
             requestProfiling(appContext, requestBuilder.build(), profilingExecutor, resultCallback)
@@ -94,13 +97,13 @@ internal class PerfettoProfiler(
     }
 
     override fun stop(sdkInstanceName: String) {
-        if (runningInstance.get() == sdkInstanceName) {
+        if (runningInstances.get().contains(sdkInstanceName)) {
             stopSignal.cancel()
         }
     }
 
     override fun isRunning(sdkInstanceName: String): Boolean {
-        return runningInstance.get() == sdkInstanceName
+        return runningInstances.get().contains(sdkInstanceName)
     }
 
     override fun registerProfilingCallback(

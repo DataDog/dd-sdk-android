@@ -35,6 +35,16 @@ interface PreferencesStorage {
     fun putString(key: String, value: String)
 
     /**
+     * Get a string set value from the storage.
+     */
+    fun getStringSet(key: String, defaultValue: Set<String>? = null): Set<String>?
+
+    /**
+     * Put a string set value in the storage.
+     */
+    fun putStringSet(key: String, value: Set<String>)
+
+    /**
      * Put a boolean value in the storage.
      */
     fun putBoolean(key: String, value: Boolean)

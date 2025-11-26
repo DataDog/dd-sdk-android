@@ -26,9 +26,9 @@ class DdProfilingContentProvider : ContentProvider() {
     override fun onCreate(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             context?.let {
-                val instanceName = ProfilingStorage.getProfilingEnabledInstanceName(it)
-                if (instanceName != null && isProcessFromLauncher()) {
-                    Profiling.start(it, instanceName)
+                val instanceNames = ProfilingStorage.getProfilingEnabledInstanceNames(it)
+                if (instanceNames.isNotEmpty() && isProcessFromLauncher()) {
+                    Profiling.start(it, instanceNames)
                 }
             }
         }

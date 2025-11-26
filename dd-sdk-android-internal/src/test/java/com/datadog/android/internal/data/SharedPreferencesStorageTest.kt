@@ -52,6 +52,7 @@ internal class SharedPreferencesStorageTest {
         whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
         whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
         whenever(mockEditor.clear()) doReturn mockEditor
 
         testedStorage = SharedPreferencesStorage(mockContext)
@@ -147,6 +148,34 @@ internal class SharedPreferencesStorageTest {
 
         // Then
         assertThat(result).isEqualTo(fakeValue)
+    }
+
+    @Test
+    fun `M persist data W putStringSet`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // When
+        testedStorage.putStringSet(fakeKey, setOf(fakeValue))
+
+        // Then
+        verify(mockEditor).putStringSet(fakeKey, setOf(fakeValue))
+        verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M read data W getStringSet`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        whenever(mockPrefs.getStringSet(fakeKey, null)) doReturn setOf(fakeValue)
+
+        // When
+        val result = testedStorage.getStringSet(fakeKey, null)
+
+        // Then
+        assertThat(result).isEqualTo(setOf(fakeValue))
     }
 
     @Test

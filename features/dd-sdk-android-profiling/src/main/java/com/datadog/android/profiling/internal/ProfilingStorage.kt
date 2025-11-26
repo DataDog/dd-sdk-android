@@ -15,18 +15,27 @@ internal object ProfilingStorage {
 
     private var sharedPreferencesStorage: SharedPreferencesStorage? = null
 
-    internal fun setProfilingFlag(appContext: Context, sdkInstanceName: String) {
-        getStorage(appContext).putString(KEY_PROFILING_ENABLED, sdkInstanceName)
+    internal fun addProfilingFlag(appContext: Context, sdkInstanceName: String) {
+        getStorage(appContext).apply {
+            val oldValue = getStringSet(KEY_PROFILING_ENABLED, emptySet()).orEmpty()
+            val newSet = oldValue + sdkInstanceName
+            putStringSet(KEY_PROFILING_ENABLED, newSet)
+        }
     }
 
-    internal fun getProfilingEnabledInstanceName(appContext: Context): String? {
-        return getStorage(appContext).getString(KEY_PROFILING_ENABLED)
+    internal fun getProfilingEnabledInstanceNames(appContext: Context): Set<String> {
+        return getStorage(appContext).getStringSet(KEY_PROFILING_ENABLED) ?: emptySet()
     }
 
-    internal fun removeProfilingFlag(appContext: Context, sdkInstanceName: String) {
-        val oldValue = getStorage(appContext).getString(KEY_PROFILING_ENABLED)
-        if (oldValue == sdkInstanceName) {
-            getStorage(appContext).remove(KEY_PROFILING_ENABLED)
+    internal fun removeProfilingFlag(appContext: Context, sdkInstanceNames: Set<String>) {
+        getStorage(appContext).apply {
+            val oldValue = getStringSet(KEY_PROFILING_ENABLED) ?: emptySet()
+            val newSet = mutableSetOf<String>()
+            newSet.addAll(oldValue)
+            val removed = newSet.removeAll(sdkInstanceNames)
+            if (removed) {
+                putStringSet(KEY_PROFILING_ENABLED, newSet)
+            }
         }
     }
 
