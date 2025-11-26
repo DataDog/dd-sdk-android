@@ -75,6 +75,7 @@ public final class com/datadog/android/_InternalProxy {
 	public static final field Companion Lcom/datadog/android/_InternalProxy$Companion;
 	public final fun get_telemetry ()Lcom/datadog/android/_InternalProxy$_TelemetryProxy;
 	public final fun setCustomAppVersion (Ljava/lang/String;)V
+	public final fun setMetricTelemetrySampleRateBypass (F)V
 }
 
 public final class com/datadog/android/_InternalProxy$Companion {
