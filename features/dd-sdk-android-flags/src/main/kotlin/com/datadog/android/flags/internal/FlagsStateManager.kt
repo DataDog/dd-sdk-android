@@ -56,17 +56,17 @@ internal class FlagsStateManager(
      * Registers a listener to receive state change notifications.
      *
      * The listener will immediately receive the current state, then be notified
-     * of all future state changes.
+     * of all future state changes. The current state is read atomically on the
+     * same executor where all state updates occur, ensuring correct ordering.
      *
      * @param listener The listener to add.
      */
     fun addListener(listener: FlagsStateListener) {
         subscription.addListener(listener)
 
-        // Emit current state to new listener
-        val state = currentState
+        // Emit current state to new listener - read inside executor for atomicity
         executorService.execute {
-            listener.onStateChanged(state)
+            listener.onStateChanged(currentState)
         }
     }
 
