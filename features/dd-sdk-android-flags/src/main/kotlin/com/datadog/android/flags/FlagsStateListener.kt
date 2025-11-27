@@ -12,16 +12,14 @@ import com.datadog.android.flags.model.FlagsClientState
  * Listener interface for receiving state change notifications from a [FlagsClient].
  *
  * Implementations of this interface can be registered with a [FlagsClient] to receive
- * callbacks whenever the client's state changes (e.g., from NOT_READY to READY, or
- * from READY to RECONCILING when the evaluation context changes).
+ * callbacks whenever the client's state changes.
  */
 interface FlagsStateListener {
     /**
      * Called when the state of the [FlagsClient] changes.
      *
-     * @param newState The new state of the client.
-     * @param error Optional error that caused the state change. This is typically provided
-     *              when transitioning to the [FlagsClientState.ERROR] state.
+     * @param newState The new state of the client. If the state is [FlagsClientState.Error],
+     *                 the error details are contained within the state object itself.
      */
-    fun onStateChanged(newState: FlagsClientState, error: Throwable? = null)
+    fun onStateChanged(newState: FlagsClientState)
 }
