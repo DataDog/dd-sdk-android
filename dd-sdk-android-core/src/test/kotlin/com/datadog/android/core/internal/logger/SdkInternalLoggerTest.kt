@@ -12,6 +12,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.internal.attributes.LocalAttribute
@@ -105,8 +107,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         whenever(mockUserLogHandler.canLog(any())) doReturn true
@@ -134,8 +135,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         whenever(mockUserLogHandler.canLog(any())) doReturn true
@@ -186,12 +186,10 @@ internal class SdkInternalLoggerTest {
 
     @Test
     fun `M not evaluate lambda W log { USER target }`(
-        @StringForgery fakeMessage: String,
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(forge.aString())
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         whenever(mockUserLogHandler.canLog(any())) doReturn false
@@ -217,8 +215,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         whenever(mockMaintainerLogHandler.canLog(any())) doReturn true
@@ -245,8 +242,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         whenever(mockMaintainerLogHandler.canLog(any())) doReturn true
@@ -276,8 +272,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
 
         // When
@@ -306,8 +301,7 @@ internal class SdkInternalLoggerTest {
         val fakeAdditionalProperties = forge.aMap {
             forge.anAlphabeticalString() to forge.aNullable { anAlphabeticalString() }
         }
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
 
         // When
@@ -334,8 +328,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
 
         // When
@@ -363,8 +356,7 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
 
         // When
@@ -392,8 +384,7 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aThrowable()
 
@@ -422,8 +413,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
 
         // When
@@ -455,8 +445,7 @@ internal class SdkInternalLoggerTest {
         val fakeAdditionalProperties = forge.exhaustiveAttributes().also {
             it[LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString()] = samplingRate
         }
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
 
         // When
         testedInternalLogger.logMetric(
@@ -481,10 +470,7 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockLambda: () -> String = mock {
-            on { invoke() } doReturn forge.aString()
-        }
-        whenever(mockLambda.invoke()) doReturn forge.aString()
+        val mockLambda = mockMessageLambda(forge.aString())
 
         // When
         val samplingRate = 100.0f
@@ -516,6 +502,86 @@ internal class SdkInternalLoggerTest {
                 samplingRate
             )
         }
+    }
+
+    @Test
+    fun `M use bypass metric telemetry sample rate W logMetric() {bypass is set}`(
+        @StringForgery fakeMessage: String,
+        @FloatForgery(min = 0.0f, max = 100.0f) fakeSampleRate: Float
+    ) {
+        // Given
+        val bypassSampleRate = 100.0f
+        givenLoggerWithMetricTelemetrySampleRateBypass(bypassSampleRate)
+
+        val mockLambda = mockMessageLambda(fakeMessage)
+
+        // When
+        testedInternalLogger.logMetric(
+            mockLambda,
+            emptyMap(),
+            fakeSampleRate,
+            null
+        )
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val metricEvent = firstValue as InternalTelemetryEvent.Metric
+
+            assertThat(
+                metricEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString())
+            ).isEqualTo(bypassSampleRate)
+        }
+    }
+
+    @Test
+    fun `M use hardcoded sample rate W logMetric() {bypass is null}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val hardcodedSampleRate = 100.0f
+        givenLoggerWithMetricTelemetrySampleRateBypass(null)
+
+        val mockLambda = mockMessageLambda(fakeMessage)
+
+        // When
+        testedInternalLogger.logMetric(
+            mockLambda,
+            emptyMap(),
+            hardcodedSampleRate,
+            null
+        )
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val metricEvent = firstValue as InternalTelemetryEvent.Metric
+
+            assertThat(
+                metricEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString())
+            ).isEqualTo(hardcodedSampleRate)
+        }
+    }
+
+    @Test
+    fun `M not send metric W logMetric() {bypass rate is 0}`(
+        forge: Forge
+    ) {
+        // Given
+        givenLoggerWithMetricTelemetrySampleRateBypass(0.0f)
+
+        val mockLambda = mockMessageLambda(forge.aString())
+
+        // When
+        testedInternalLogger.logMetric(
+            mockLambda,
+            emptyMap(),
+            100.0f,
+            null
+        )
+
+        // Then
+        verify(mockRumFeatureScope, never()).sendEvent(any())
     }
 
     @Test
@@ -635,8 +701,7 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
         val repeatCount = 100
         val expectedCallCount = (repeatCount * fakeSampleRate / 100f).toInt()
         val marginOfError = (repeatCount * 0.25f).toInt()
@@ -662,8 +727,7 @@ internal class SdkInternalLoggerTest {
     ) {
         // Given
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
 
         // When
         testedInternalLogger.logMetric(
@@ -685,8 +749,7 @@ internal class SdkInternalLoggerTest {
         // Given
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
-        val mockLambda: () -> String = mock()
-        whenever(mockLambda.invoke()) doReturn fakeMessage
+        val mockLambda = mockMessageLambda(fakeMessage)
 
         // When
         assertDoesNotThrow {
@@ -813,6 +876,26 @@ internal class SdkInternalLoggerTest {
         // Then
         val margin = (repeatCount / 8) // Allow a 12.5% margin of error
         assertThat(sampleCount).isCloseTo(expectedSampledCount, offset(margin))
+    }
+
+    private fun mockMessageLambda(returnValue: String): () -> String {
+        val mockLambda: () -> String = mock()
+        whenever(mockLambda.invoke()) doReturn returnValue
+        return mockLambda
+    }
+
+    private fun givenLoggerWithMetricTelemetrySampleRateBypass(sampleRate: Float?) {
+        val mockDatadogCore: DatadogCore = mock()
+        val mockCoreFeature: CoreFeature = mock()
+        whenever(mockDatadogCore.coreFeature) doReturn mockCoreFeature
+        whenever(mockCoreFeature.metricTelemetrySampleRateBypass) doReturn sampleRate
+        whenever(mockDatadogCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        testedInternalLogger = SdkInternalLogger(
+            sdkCore = mockDatadogCore,
+            userLogHandlerFactory = { mockUserLogHandler },
+            maintainerLogHandlerFactory = { mockMaintainerLogHandler }
+        )
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {

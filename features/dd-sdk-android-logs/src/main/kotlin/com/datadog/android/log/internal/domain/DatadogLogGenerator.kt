@@ -205,7 +205,8 @@ internal class DatadogLogGenerator(
             ddtags = combinedTags.joinToString(separator = ","),
             additionalProperties = combinedAttributes,
             os = resolveOsInfo(deviceInfo),
-            device = resolveDeviceInfo(deviceInfo)
+            device = resolveDeviceInfo(deviceInfo),
+            buildVersion = datadogContext.versionCode.toString()
         )
     }
 
@@ -255,6 +256,15 @@ internal class DatadogLogGenerator(
         val variant = datadogContext.variant
         return if (variant.isNotEmpty()) {
             "${LogAttributes.VARIANT}:$variant"
+        } else {
+            null
+        }
+    }
+
+    private fun serviceTag(datadogContext: DatadogContext): String? {
+        val service = datadogContext.service
+        return if (service.isNotEmpty()) {
+            "${LogAttributes.SERVICE}:$service"
         } else {
             null
         }
@@ -314,6 +324,9 @@ internal class DatadogLogGenerator(
             combinedTags.add(it)
         }
         variantTag(datadogContext)?.let {
+            combinedTags.add(it)
+        }
+        serviceTag(datadogContext)?.let {
             combinedTags.add(it)
         }
 
