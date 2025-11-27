@@ -74,6 +74,9 @@ internal class DatadogFlagsClientTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockFlagsStateManager: FlagsStateManager
+
     private lateinit var testedClient: DatadogFlagsClient
 
     @StringForgery
@@ -111,11 +114,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
-            flagStateManager = FlagsStateManager(
-                DDCoreSubscription.create(),
-                mockExecutorService,
-                mockInternalLogger
-            )
+            flagStateManager = mockFlagsStateManager
         )
     }
 
@@ -657,11 +656,7 @@ internal class DatadogFlagsClientTest {
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
-            flagStateManager = FlagsStateManager(
-                DDCoreSubscription.create(),
-                mockExecutorService,
-                mockInternalLogger
-            )
+            flagStateManager = mockFlagsStateManager
         )
 
         // When
@@ -961,11 +956,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
-            flagStateManager = FlagsStateManager(
-                DDCoreSubscription.create(),
-                mockExecutorService,
-                mockInternalLogger
-            )
+            flagStateManager = mockFlagsStateManager
         )
 
         // When
@@ -1070,11 +1061,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
-            flagStateManager = FlagsStateManager(
-                DDCoreSubscription.create(),
-                mockExecutorService,
-                mockInternalLogger
-            )
+            flagStateManager = mockFlagsStateManager
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             (fakeFlag to fakeEvaluationContext)
@@ -1329,7 +1316,7 @@ internal class DatadogFlagsClientTest {
     // region State Management
 
     @Test
-    fun `M add listener W state_addListener()`() {
+    fun `M delegate to state manager W state_addListener()`() {
         // Given
         val mockListener = mock(FlagsStateListener::class.java)
 
@@ -1337,23 +1324,21 @@ internal class DatadogFlagsClientTest {
         testedClient.state.addListener(mockListener)
 
         // Then
-        // Listener should immediately receive current state (NotReady)
-        verify(mockListener).onStateChanged(FlagsClientState.NotReady)
+        // Verify delegation to state manager
+        verify(mockFlagsStateManager).addListener(mockListener)
     }
 
     @Test
-    fun `M remove listener W state_removeListener()`() {
+    fun `M delegate to state manager W state_removeListener()`() {
         // Given
         val mockListener = mock(FlagsStateListener::class.java)
-        testedClient.state.addListener(mockListener)
-        // Verify initial state was emitted
-        verify(mockListener).onStateChanged(FlagsClientState.NotReady)
 
         // When
         testedClient.state.removeListener(mockListener)
 
-        // Then - no exception should be thrown
-        org.mockito.kotlin.verifyNoMoreInteractions(mockListener)
+        // Then
+        // Verify delegation to state manager
+        verify(mockFlagsStateManager).removeListener(mockListener)
     }
 
     // Note: updateState() tests removed - this is now an internal method called only by
