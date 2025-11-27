@@ -189,10 +189,7 @@ internal class DefaultFlagsRepositoryTest {
 
     @Test
     fun `M return expected value W hasFlags() { for various states }`(forge: Forge) {
-        data class TestCase(
-            val given: () -> Unit,
-            val then: Boolean
-        )
+        data class TestCase(val given: () -> Unit, val then: Boolean)
 
         val testCases = listOf(
             TestCase(

@@ -18,7 +18,8 @@ import java.util.concurrent.ExecutorService
  * methods are thread-safe and guarantee ordered delivery to listeners by using a
  * single-threaded executor service.
  *
- * State updates trigger listener notifications asynchronously on the executor service.
+ * The current state is stored and emitted to new listeners immediately upon registration,
+ * ensuring every listener receives the current state.
  *
  * @param subscription the underlying subscription for managing listeners
  * @param executorService single-threaded executor for ordered state notification delivery
@@ -28,15 +29,23 @@ internal class FlagsStateManager(
     private val executorService: ExecutorService
 ) {
     /**
+     * The current state of the client.
+     * Thread-safe: uses volatile for visibility across threads.
+     */
+    @Volatile
+    private var currentState: FlagsClientState = FlagsClientState.NotReady
+
+    /**
      * Updates the state and notifies all listeners.
      *
-     * This method asynchronously notifies all registered listeners on the executor service,
-     * ensuring ordered delivery.
+     * This method stores the new state and asynchronously notifies all registered listeners
+     * on the executor service, ensuring ordered delivery.
      *
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
         executorService.execute {
+            currentState = newState
             subscription.notifyListeners {
                 onStateChanged(newState)
             }
@@ -46,10 +55,19 @@ internal class FlagsStateManager(
     /**
      * Registers a listener to receive state change notifications.
      *
+     * The listener will immediately receive the current state, then be notified
+     * of all future state changes.
+     *
      * @param listener The listener to add.
      */
     fun addListener(listener: FlagsStateListener) {
         subscription.addListener(listener)
+
+        // Emit current state to new listener
+        val state = currentState
+        executorService.execute {
+            listener.onStateChanged(state)
+        }
     }
 
     /**
