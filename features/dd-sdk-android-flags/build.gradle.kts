@@ -52,6 +52,7 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.kotlin)
+    implementation(libs.coroutinesCore)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)

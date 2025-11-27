@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
@@ -37,6 +38,9 @@ internal class FlagsStateManagerTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var testedManager: FlagsStateManager
 
     @BeforeEach
@@ -48,8 +52,9 @@ internal class FlagsStateManagerTest {
         }
 
         testedManager = FlagsStateManager(
-            subscription = DDCoreSubscription.create(),
-            executorService = mockExecutorService
+            DDCoreSubscription.create(),
+            mockExecutorService,
+            mockInternalLogger
         )
     }
 

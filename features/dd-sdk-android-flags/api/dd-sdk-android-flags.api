@@ -8,11 +8,10 @@ public final class com/datadog/android/flags/Flags {
 
 public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static final field Companion Lcom/datadog/android/flags/FlagsClient$Companion;
-	public abstract fun addStateListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public static fun get ()Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
-	public abstract fun removeStateListener (Lcom/datadog/android/flags/FlagsStateListener;)V
+	public abstract fun getState ()Lcom/datadog/android/flags/StateObservable;
 	public abstract fun resolve (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/model/ResolutionDetails;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
@@ -59,6 +58,13 @@ public final class com/datadog/android/flags/FlagsConfiguration$Companion {
 
 public abstract interface class com/datadog/android/flags/FlagsStateListener {
 	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;)V
+}
+
+public abstract interface class com/datadog/android/flags/StateObservable {
+	public abstract fun addListener (Lcom/datadog/android/flags/FlagsStateListener;)V
+	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
+	public abstract fun getFlow ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun removeListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {

@@ -8,7 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsClient
-import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
@@ -32,6 +32,8 @@ internal class NoOpFlagsClient(
     private val reason: String,
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
+
+    override val state: StateObservable = NoOpStateObservable()
 
     /**
      * No-op implementation that ignores context updates and logs a warning.
@@ -113,20 +115,6 @@ internal class NoOpFlagsClient(
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
         logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
-    }
-
-    /**
-     * No-op implementation that ignores listener registration.
-     * @param listener Ignored listener.
-     */
-    override fun addStateListener(listener: FlagsStateListener) {
-    }
-
-    /**
-     * No-op implementation that ignores listener removal.
-     * @param listener Ignored listener.
-     */
-    override fun removeStateListener(listener: FlagsStateListener) {
     }
 
     /**

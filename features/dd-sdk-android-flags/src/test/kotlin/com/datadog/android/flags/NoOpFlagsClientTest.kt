@@ -11,6 +11,7 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -431,12 +432,21 @@ internal class NoOpFlagsClientTest {
     // region State Management
 
     @Test
-    fun `M do nothing W addStateListener()`() {
+    fun `M return error state W state_getCurrentState()`() {
+        // When
+        val state = testedClient.state.getCurrentState()
+
+        // Then
+        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+    }
+
+    @Test
+    fun `M do nothing W state_addListener()`() {
         // Given
         val mockListener = mock<FlagsStateListener>()
 
         // When
-        testedClient.addStateListener(mockListener)
+        testedClient.state.addListener(mockListener)
 
         // Then
         // No exception should be thrown, method should be no-op
@@ -444,12 +454,12 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M do nothing W removeStateListener()`() {
+    fun `M do nothing W state_removeListener()`() {
         // Given
         val mockListener = mock<FlagsStateListener>()
 
         // When
-        testedClient.removeStateListener(mockListener)
+        testedClient.state.removeListener(mockListener)
 
         // Then
         // No exception should be thrown, method should be no-op
