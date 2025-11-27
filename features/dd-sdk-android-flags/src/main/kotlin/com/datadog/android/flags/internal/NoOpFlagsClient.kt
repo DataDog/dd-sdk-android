@@ -11,7 +11,6 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
@@ -115,12 +114,6 @@ internal class NoOpFlagsClient(
         logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }
-
-    /**
-     * Returns [FlagsClientState.ERROR] as this is a no-op client.
-     * @return Always [FlagsClientState.ERROR].
-     */
-    override fun getCurrentState(): FlagsClientState = FlagsClientState.ERROR
 
     /**
      * No-op implementation that ignores listener registration.
