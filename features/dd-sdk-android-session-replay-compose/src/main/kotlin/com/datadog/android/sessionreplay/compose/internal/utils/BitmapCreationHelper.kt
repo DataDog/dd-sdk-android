@@ -45,7 +45,7 @@ internal class DefaultBitmapCreationHelper(
 
         // Fill with Black (Transparency -> Black pixel)
         canvas.drawColor(android.graphics.Color.BLACK)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        val paint = Paint()
         // Draw content in White (Opacity -> White pixel)
         // Intermediate alpha levels will blend to create shades of gray (Grayscale)
         paint.color = android.graphics.Color.WHITE
@@ -55,11 +55,6 @@ internal class DefaultBitmapCreationHelper(
             canvas.drawBitmap(source, 0f, 0f, paint)
             destination
         } catch (e: IllegalArgumentException) {
-            // This can happen if:
-            // - The source bitmap is recycled.
-            // - The source and destination are the same.
-            // - The bitmap has hardware features (e.g. Config.HARDWARE) incompatible with software rendering
-            //   (throwIfHasHwFeaturesInSwMode).
             logger.log(
                 target = InternalLogger.Target.MAINTAINER,
                 level = InternalLogger.Level.ERROR,
@@ -68,7 +63,6 @@ internal class DefaultBitmapCreationHelper(
             )
             null
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            // This can happen if the bitmap is recycled (on some Android versions) or on other native failures.
             logger.log(
                 target = InternalLogger.Target.MAINTAINER,
                 level = InternalLogger.Level.ERROR,
@@ -77,7 +71,6 @@ internal class DefaultBitmapCreationHelper(
             )
             null
         } catch (e: OutOfMemoryError) {
-            // This can happen if the native allocation fails during drawing.
             logger.log(
                 target = InternalLogger.Target.MAINTAINER,
                 level = InternalLogger.Level.ERROR,
