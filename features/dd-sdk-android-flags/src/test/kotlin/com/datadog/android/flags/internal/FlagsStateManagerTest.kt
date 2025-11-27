@@ -20,8 +20,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -65,11 +65,18 @@ internal class FlagsStateManagerTest {
         testedManager.updateState(state)
 
         // Then
-        verify(mockListener).onStateChanged(state)
+        if (state == FlagsClientState.NotReady) {
+            // Special case: NotReady is both initial state and transition state
+            verify(mockListener, times(2)).onStateChanged(FlagsClientState.NotReady)
+        } else {
+            inOrder(mockListener) {
+                verify(mockListener).onStateChanged(FlagsClientState.NotReady) // Initial state on add
+                verify(mockListener).onStateChanged(state) // State change
+            }
+        }
     }
 
     // endregion
-
 
     // region addListener / removeListener
 
@@ -82,20 +89,26 @@ internal class FlagsStateManagerTest {
         testedManager.updateState(FlagsClientState.Ready)
 
         // Then
-        verify(mockListener).onStateChanged(FlagsClientState.Ready)
+        inOrder(mockListener) {
+            verify(mockListener).onStateChanged(FlagsClientState.NotReady) // Current state on add
+            verify(mockListener).onStateChanged(FlagsClientState.Ready) // State update
+        }
     }
 
     @Test
-    fun `M not notify listener W removeListener() and notify`() {
+    fun `M not notify listener after removal W removeListener() and notify`() {
         // Given
         testedManager.addListener(mockListener)
+        // Verify initial state was emitted
+        verify(mockListener).onStateChanged(FlagsClientState.NotReady)
+
         testedManager.removeListener(mockListener)
 
         // When
         testedManager.updateState(FlagsClientState.Ready)
 
-        // Then
-        verifyNoInteractions(mockListener)
+        // Then - no further notifications after removal
+        org.mockito.kotlin.verifyNoMoreInteractions(mockListener)
     }
 
     @Test
@@ -109,8 +122,13 @@ internal class FlagsStateManagerTest {
         testedManager.updateState(FlagsClientState.Ready)
 
         // Then
-        verify(mockListener).onStateChanged(FlagsClientState.Ready)
-        verify(mockListener2).onStateChanged(FlagsClientState.Ready)
+        // Both listeners get current state on add, then Ready notification
+        inOrder(mockListener, mockListener2) {
+            verify(mockListener).onStateChanged(FlagsClientState.NotReady)
+            verify(mockListener2).onStateChanged(FlagsClientState.NotReady)
+            verify(mockListener).onStateChanged(FlagsClientState.Ready)
+            verify(mockListener2).onStateChanged(FlagsClientState.Ready)
+        }
     }
 
     @Test
@@ -119,15 +137,14 @@ internal class FlagsStateManagerTest {
         testedManager.addListener(mockListener)
 
         // When
-        testedManager.updateState(FlagsClientState.NotReady)
         testedManager.updateState(FlagsClientState.Reconciling)
         testedManager.updateState(FlagsClientState.Ready)
 
         // Then
         inOrder(mockListener) {
-            verify(mockListener).onStateChanged(FlagsClientState.NotReady)
-            verify(mockListener).onStateChanged(FlagsClientState.Reconciling)
-            verify(mockListener).onStateChanged(FlagsClientState.Ready)
+            verify(mockListener).onStateChanged(FlagsClientState.NotReady) // Initial on add
+            verify(mockListener).onStateChanged(FlagsClientState.Reconciling) // Transition
+            verify(mockListener).onStateChanged(FlagsClientState.Ready) // Transition
         }
     }
 

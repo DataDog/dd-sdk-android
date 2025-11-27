@@ -17,6 +17,7 @@ import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreSubscription
@@ -1332,8 +1333,8 @@ internal class DatadogFlagsClientTest {
         testedClient.addStateListener(mockListener)
 
         // Then
-        // No exception should be thrown
-        verifyNoInteractions(mockListener)
+        // Listener should immediately receive current state (NotReady)
+        verify(mockListener).onStateChanged(FlagsClientState.NotReady)
     }
 
     @Test
@@ -1341,13 +1342,14 @@ internal class DatadogFlagsClientTest {
         // Given
         val mockListener = mock(FlagsStateListener::class.java)
         testedClient.addStateListener(mockListener)
+        // Verify initial state was emitted
+        verify(mockListener).onStateChanged(FlagsClientState.NotReady)
 
         // When
         testedClient.removeStateListener(mockListener)
 
-        // Then
-        // No exception should be thrown
-        verifyNoInteractions(mockListener)
+        // Then - no exception should be thrown
+        org.mockito.kotlin.verifyNoMoreInteractions(mockListener)
     }
 
     // Note: updateState() tests removed - this is now an internal method called only by
