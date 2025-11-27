@@ -38,13 +38,15 @@ internal class FlagsStateManager(
 ) : StateObservable {
     /**
      * The current state of the client as a mutable flow.
-     * Updates are synchronized through the executor service to ensure ordered delivery.
+     *
+     * Updates are coordinated through the executor service to ensure ordered delivery.
+     * MutableStateFlow itself is thread-safe.
      */
     private val _stateFlow = MutableStateFlow<FlagsClientState>(FlagsClientState.NotReady)
 
     /**
      * The current state of the client.
-     * Thread-safe: uses volatile for visibility across threads.
+     * Thread-safe: synchronized to ensure atomicity with flow updates.
      */
     @Volatile
     private var currentState: FlagsClientState = FlagsClientState.NotReady
@@ -62,8 +64,10 @@ internal class FlagsStateManager(
             operationName = UPDATE_STATE_OPERATION_NAME,
             internalLogger = internalLogger
         ) {
-            currentState = newState
-            _stateFlow.value = newState
+            synchronized(this) {
+                currentState = newState
+                _stateFlow.value = newState
+            }
             subscription.notifyListeners {
                 onStateChanged(newState)
             }
@@ -72,17 +76,19 @@ internal class FlagsStateManager(
 
     override val flow: StateFlow<FlagsClientState> = _stateFlow.asStateFlow()
 
+    @Synchronized
     override fun getCurrentState(): FlagsClientState = currentState
 
     override fun addListener(listener: FlagsStateListener) {
         subscription.addListener(listener)
 
-        // Emit current state to new listener - read inside executor for atomicity
+        // Emit current state to new listener
         executorService.executeSafe(
             operationName = NOTIFY_NEW_LISTENER_OPERATION_NAME,
             internalLogger = internalLogger
         ) {
-            listener.onStateChanged(currentState)
+            val state = synchronized(this) { currentState }
+            listener.onStateChanged(state)
         }
     }
 

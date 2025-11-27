@@ -1067,6 +1067,7 @@ datadog:
       - "kotlin.IllegalArgumentException(kotlin.String?)"
       - "kotlin.IllegalStateException(kotlin.String?)"
       - "kotlin.Throwable.constructor()"
+      - "kotlin.Throwable.constructor(kotlin.String?)"
       - "kotlin.Throwable.fillInStackTrace()"
       - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.UnsupportedOperationException()"
@@ -1084,6 +1085,8 @@ datadog:
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
       - "kotlinx.coroutines.flow.FlowCollector(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.flow(kotlin.coroutines.SuspendFunction1)"
+      - "kotlinx.coroutines.flow.MutableStateFlow(com.datadog.android.flags.model.FlagsClientState)"
+      - "kotlinx.coroutines.flow.MutableStateFlow.asStateFlow()"
       # endregion
       # region Kronos
       - "com.lyft.kronos.AndroidClockFactory.createKronosClock(android.content.Context, com.lyft.kronos.SyncListener?, kotlin.collections.List, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long)"
