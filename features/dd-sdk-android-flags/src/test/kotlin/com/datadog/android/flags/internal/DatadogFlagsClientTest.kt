@@ -17,7 +17,6 @@ import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreSubscription
@@ -43,6 +42,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -70,6 +70,9 @@ internal class DatadogFlagsClientTest {
     @Mock
     lateinit var mockRumEvaluationLogger: RumEvaluationLogger
 
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
+
     private lateinit var testedClient: DatadogFlagsClient
 
     @StringForgery
@@ -82,6 +85,12 @@ internal class DatadogFlagsClientTest {
     fun `set up`(forge: Forge) {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockFeatureSdkCore.getFeature(RUM_FEATURE_NAME)) doReturn mock()
+
+        // Mock executor to run tasks synchronously for testing
+        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
+            val runnable = invocation.getArgument<Runnable>(0)
+            runnable.run()
+        }
 
         // Mock evaluation context as ready by default
         // Tests that need to test "not ready" state should override this
@@ -101,7 +110,10 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
-            flagStateChannel = FlagsStateChannel(DDCoreSubscription.create())
+            flagStateManager = FlagsStateManager(
+                subscription = DDCoreSubscription.create(),
+                executorService = mockExecutorService
+            )
         )
     }
 
@@ -642,7 +654,11 @@ internal class DatadogFlagsClientTest {
             flagsRepository = customRepository,
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            flagStateManager = FlagsStateManager(
+                subscription = DDCoreSubscription.create(),
+                executorService = mockExecutorService
+            )
         )
 
         // When
@@ -941,7 +957,11 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            flagStateManager = FlagsStateManager(
+                subscription = DDCoreSubscription.create(),
+                executorService = mockExecutorService
+            )
         )
 
         // When
@@ -1045,7 +1065,11 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            flagStateManager = FlagsStateManager(
+                subscription = DDCoreSubscription.create(),
+                executorService = mockExecutorService
+            )
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             (fakeFlag to fakeEvaluationContext)
@@ -1300,15 +1324,6 @@ internal class DatadogFlagsClientTest {
     // region State Management
 
     @Test
-    fun `M return NOT_READY W getCurrentState() {initial state}`() {
-        // When
-        val result = testedClient.getCurrentState()
-
-        // Then
-        assertThat(result).isEqualTo(FlagsClientState.NOT_READY)
-    }
-
-    @Test
     fun `M add listener W addStateListener()`() {
         // Given
         val mockListener = mock(FlagsStateListener::class.java)
@@ -1335,64 +1350,8 @@ internal class DatadogFlagsClientTest {
         verifyNoInteractions(mockListener)
     }
 
-    @Test
-    fun `M notify listener W updateState() called`() {
-        // Given
-        val mockListener = mock(FlagsStateListener::class.java)
-        testedClient.addStateListener(mockListener)
-
-        // When
-        testedClient.updateState(FlagsClientState.READY, null)
-
-        // Then
-        verify(mockListener).onStateChanged(FlagsClientState.READY, null)
-        assertThat(testedClient.getCurrentState()).isEqualTo(FlagsClientState.READY)
-    }
-
-    @Test
-    fun `M notify listener with error W updateState(ERROR) called`() {
-        // Given
-        val mockListener = mock(FlagsStateListener::class.java)
-        val fakeError = RuntimeException("Test error")
-        testedClient.addStateListener(mockListener)
-
-        // When
-        testedClient.updateState(FlagsClientState.ERROR, fakeError)
-
-        // Then
-        verify(mockListener).onStateChanged(FlagsClientState.ERROR, fakeError)
-        assertThat(testedClient.getCurrentState()).isEqualTo(FlagsClientState.ERROR)
-    }
-
-    @Test
-    fun `M notify all listeners W updateState() with multiple listeners`() {
-        // Given
-        val mockListener1 = mock(FlagsStateListener::class.java)
-        val mockListener2 = mock(FlagsStateListener::class.java)
-        testedClient.addStateListener(mockListener1)
-        testedClient.addStateListener(mockListener2)
-
-        // When
-        testedClient.updateState(FlagsClientState.RECONCILING, null)
-
-        // Then
-        verify(mockListener1).onStateChanged(FlagsClientState.RECONCILING, null)
-        verify(mockListener2).onStateChanged(FlagsClientState.RECONCILING, null)
-    }
-
-    @Test
-    fun `M not notify removed listener W removeStateListener() then updateState()`() {
-        // Given
-        val mockListener = mock(FlagsStateListener::class.java)
-        testedClient.addStateListener(mockListener)
-        testedClient.removeStateListener(mockListener)
-
-        // When
-        testedClient.updateState(FlagsClientState.READY, null)
-
-        // Then
-        verifyNoInteractions(mockListener)
-    }
+    // Note: updateState() tests removed - this is now an internal method called only by
+    // EvaluationsManager. State notification testing is covered in FlagsStateManagerTest.
 
     // endregion
 }
