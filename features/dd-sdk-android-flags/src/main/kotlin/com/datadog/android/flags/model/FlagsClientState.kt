@@ -8,32 +8,37 @@ package com.datadog.android.flags.model
 
 /**
  * Represents the current state of a [com.datadog.android.flags.FlagsClient].
- *
- * Note: A STALE state is not currently defined as there is no mechanism to determine
- * whether configuration is stale. This may be added in a future release.
  */
-enum class FlagsClientState {
+sealed class FlagsClientState {
     /**
      * The client has been created but no evaluation context has been set.
      * No flags are available for evaluation in this state.
      */
-    NOT_READY,
+    object NotReady : FlagsClientState()
 
     /**
      * The client has successfully loaded flags and they are available for evaluation.
      * This is the normal operational state.
      */
-    READY,
+    object Ready : FlagsClientState()
 
     /**
      * The client is currently fetching new flags for a context change.
      * Cached flags may still be available for evaluation during this state.
      */
-    RECONCILING,
+    object Reconciling : FlagsClientState()
+
+    /**
+     * The client is currently stale.
+     * Cached flags may still be available for evaluation during this state.
+     */
+    object Stale : FlagsClientState()
 
     /**
      * An unrecoverable error has occurred.
      * The client cannot provide flag evaluations in this state.
+     *
+     * @param error The error that caused the transition to this state, or null if unknown.
      */
-    ERROR
+    data class Error(val error: Throwable? = null) : FlagsClientState()
 }
