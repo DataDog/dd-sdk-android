@@ -8,10 +8,15 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 
 /**
@@ -33,7 +38,13 @@ internal class NoOpFlagsClient(
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
 
-    override val state: StateObservable = NoOpStateObservable()
+    override val state: StateObservable = object : StateObservable {
+        private val _stateFlow = MutableStateFlow<FlagsClientState>(FlagsClientState.Ready)
+        override val flow: StateFlow<FlagsClientState> = _stateFlow.asStateFlow()
+        override fun getCurrentState(): FlagsClientState = FlagsClientState.Ready
+        override fun addListener(listener: FlagsStateListener) { /* no-op */ }
+        override fun removeListener(listener: FlagsStateListener) { /* no-op */ }
+    }
 
     /**
      * No-op implementation that ignores context updates and logs a warning.

@@ -432,12 +432,13 @@ internal class NoOpFlagsClientTest {
     // region State Management
 
     @Test
-    fun `M return error state W state_getCurrentState()`() {
+    fun `M return ready state W state_getCurrentState()`() {
         // When
         val state = testedClient.state.getCurrentState()
 
         // Then
-        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        // NoOp client is always "ready" to return default values
+        assertThat(state).isEqualTo(FlagsClientState.Ready)
     }
 
     @Test

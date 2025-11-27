@@ -372,14 +372,9 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             name: String
         ): FlagsClient {
-            // Separate executors for network I/O vs state notifications
-            // Network executor handles slow operations (fetching flags, JSON parsing)
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
-
-            // State notification executor handles fast operations (listener callbacks)
-            // Separate from network to ensure state updates are not blocked by I/O
             val stateNotificationExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME
             )
