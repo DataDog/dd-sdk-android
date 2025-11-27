@@ -16,11 +16,9 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import org.json.JSONObject
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
@@ -38,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
- * @param flagStateChannel channel for managing state change listeners
+ * @param flagStateManager channel for managing state change listeners
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -48,38 +46,8 @@ internal class DatadogFlagsClient(
     private val flagsConfiguration: FlagsConfiguration,
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val processor: EventsProcessor,
-    private val flagStateChannel: FlagsStateChannel
+    private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
-
-    // region State Management
-
-    /**
-     * The current state of this client.
-     * Thread-safe: uses atomic reference for lock-free reads and updates.
-     */
-    private val currentState = AtomicReference(FlagsClientState.NOT_READY)
-
-    /**
-     * Updates the client state and notifies all registered listeners.
-     *
-     * This method is thread-safe and guarantees that listeners receive state changes in order.
-     * The notification is delegated to [flagStateChannel] which handles synchronization.
-     *
-     * @param newState The new state to transition to.
-     * @param error Optional error that caused the state change.
-     */
-    internal fun updateState(newState: FlagsClientState, error: Throwable? = null) {
-        currentState.set(newState)
-        when (newState) {
-            FlagsClientState.NOT_READY -> flagStateChannel.notifyNotReady()
-            FlagsClientState.READY -> flagStateChannel.notifyReady()
-            FlagsClientState.RECONCILING -> flagStateChannel.notifyReconciling()
-            FlagsClientState.ERROR -> flagStateChannel.notifyError(error)
-        }
-    }
-
-    // endregion
-
     // region FlagsClient
 
     /**
@@ -184,14 +152,12 @@ internal class DatadogFlagsClient(
         }
     }
 
-    override fun getCurrentState(): FlagsClientState = currentState.get()
-
     override fun addStateListener(listener: FlagsStateListener) {
-        flagStateChannel.addListener(listener)
+        flagStateManager.addListener(listener)
     }
 
     override fun removeStateListener(listener: FlagsStateListener) {
-        flagStateChannel.removeListener(listener)
+        flagStateManager.removeListener(listener)
     }
 
     // endregion

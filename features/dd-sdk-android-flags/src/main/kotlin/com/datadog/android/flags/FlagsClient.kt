@@ -16,7 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.FlagsStateChannel
+import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
@@ -28,7 +28,6 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreSubscription
 import org.json.JSONObject
@@ -152,20 +151,11 @@ interface FlagsClient {
     fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
 
     /**
-     * Gets the current state of this [FlagsClient].
-     *
-     * The state indicates whether the client is ready to evaluate flags, currently loading
-     * new flag values, or in an error state.
-     *
-     * @return The current [FlagsClientState].
-     */
-    fun getCurrentState(): FlagsClientState
-
-    /**
      * Registers a listener to receive state change notifications.
      *
-     * The listener will be notified whenever the client's state changes (e.g., from NOT_READY
-     * to READY, or from READY to RECONCILING when the evaluation context changes).
+     * The listener will be notified whenever the client's state changes (e.g., from
+     * [FlagsClientState.NotReady] to [FlagsClientState.Ready], or from [FlagsClientState.Ready]
+     * to [FlagsClientState.Reconciling] when the evaluation context changes).
      *
      * @param listener The [FlagsStateListener] to register.
      */
@@ -432,8 +422,9 @@ interface FlagsClient {
 
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
-                val flagStateChannel = FlagsStateChannel(
-                    subscription = DDCoreSubscription.create()
+                val flagStateManager = FlagsStateManager(
+                    subscription = DDCoreSubscription.create(),
+                    executorService = executorService
                 )
 
                 val evaluationsManager = EvaluationsManager(
@@ -442,7 +433,7 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     assignmentsReader = assignmentsDownloader,
                     precomputeMapper = precomputeMapper,
-                    flagStateChannel = flagStateChannel
+                    flagStateManager = flagStateManager
                 )
 
                 val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -454,7 +445,7 @@ interface FlagsClient {
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
                     processor = flagsFeature.processor,
-                    flagStateChannel = flagStateChannel
+                    flagStateManager = flagStateManager
                 )
             }
         }
