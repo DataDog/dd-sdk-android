@@ -151,24 +151,26 @@ interface FlagsClient {
     fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
 
     /**
-     * Registers a listener to receive state change notifications.
+     * Observable interface for tracking client state changes.
      *
-     * The listener will be notified whenever the client's state changes (e.g., from
-     * [FlagsClientState.NotReady] to [FlagsClientState.Ready], or from [FlagsClientState.Ready]
-     * to [FlagsClientState.Reconciling] when the evaluation context changes).
+     * Provides three ways to observe state:
+     * - Synchronous: [StateObservable.getCurrentState] for immediate queries (Java-friendly)
+     * - Reactive: [StateObservable.flow] for coroutine-based updates (Kotlin)
+     * - Callback: [StateObservable.addListener] for traditional observers (Java-friendly)
      *
-     * @param listener The [FlagsStateListener] to register.
+     * Example:
+     * ```kotlin
+     * // Synchronous
+     * val current = client.state.getCurrentState()
+     *
+     * // Reactive Flow
+     * client.state.flow.collect { state -> /* ... */ }
+     *
+     * // Callback
+     * client.state.addListener(listener)
+     * ```
      */
-    fun addStateListener(listener: FlagsStateListener)
-
-    /**
-     * Unregisters a previously registered state listener.
-     *
-     * After removal, the listener will no longer receive state change notifications.
-     *
-     * @param listener The [FlagsStateListener] to unregister.
-     */
-    fun removeStateListener(listener: FlagsStateListener)
+    val state: StateObservable
 
     /**
      * Builder for creating [FlagsClient] instances with custom configuration.
@@ -360,7 +362,8 @@ interface FlagsClient {
 
         // region Internal
 
-        internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
+        internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        internal const val FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME = "flags-state-notifications"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -369,8 +372,16 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             name: String
         ): FlagsClient {
-            val executorService = featureSdkCore.createSingleThreadExecutorService(
-                executorContext = FLAGS_CLIENT_EXECUTOR_NAME
+            // Separate executors for network I/O vs state notifications
+            // Network executor handles slow operations (fetching flags, JSON parsing)
+            val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
+                executorContext = FLAGS_NETWORK_EXECUTOR_NAME
+            )
+
+            // State notification executor handles fast operations (listener callbacks)
+            // Separate from network to ensure state updates are not blocked by I/O
+            val stateNotificationExecutorService = featureSdkCore.createSingleThreadExecutorService(
+                executorContext = FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME
             )
 
             val datadogContext = (featureSdkCore as InternalSdkCore).getDatadogContext()
@@ -423,12 +434,13 @@ interface FlagsClient {
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
                 val flagStateManager = FlagsStateManager(
-                    subscription = DDCoreSubscription.create(),
-                    executorService = executorService
+                    DDCoreSubscription.create(),
+                    stateNotificationExecutorService,
+                    featureSdkCore.internalLogger
                 )
 
                 val evaluationsManager = EvaluationsManager(
-                    executorService = executorService,
+                    executorService = networkExecutorService,
                     internalLogger = featureSdkCore.internalLogger,
                     flagsRepository = flagsRepository,
                     assignmentsReader = assignmentsDownloader,

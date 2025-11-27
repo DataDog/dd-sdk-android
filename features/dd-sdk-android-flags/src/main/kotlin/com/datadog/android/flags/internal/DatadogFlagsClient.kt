@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
-import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -48,6 +48,9 @@ internal class DatadogFlagsClient(
     private val processor: EventsProcessor,
     private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
+
+    override val state: StateObservable = flagStateManager
+
     // region FlagsClient
 
     /**
@@ -150,14 +153,6 @@ internal class DatadogFlagsClient(
                 )
             }
         }
-    }
-
-    override fun addStateListener(listener: FlagsStateListener) {
-        flagStateManager.addListener(listener)
-    }
-
-    override fun removeStateListener(listener: FlagsStateListener) {
-        flagStateManager.removeListener(listener)
     }
 
     // endregion

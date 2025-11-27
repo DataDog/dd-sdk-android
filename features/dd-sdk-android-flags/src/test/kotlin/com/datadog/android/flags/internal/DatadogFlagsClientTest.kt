@@ -112,8 +112,9 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
             flagStateManager = FlagsStateManager(
-                subscription = DDCoreSubscription.create(),
-                executorService = mockExecutorService
+                DDCoreSubscription.create(),
+                mockExecutorService,
+                mockInternalLogger
             )
         )
     }
@@ -657,8 +658,9 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
             flagStateManager = FlagsStateManager(
-                subscription = DDCoreSubscription.create(),
-                executorService = mockExecutorService
+                DDCoreSubscription.create(),
+                mockExecutorService,
+                mockInternalLogger
             )
         )
 
@@ -960,8 +962,9 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
             flagStateManager = FlagsStateManager(
-                subscription = DDCoreSubscription.create(),
-                executorService = mockExecutorService
+                DDCoreSubscription.create(),
+                mockExecutorService,
+                mockInternalLogger
             )
         )
 
@@ -1068,8 +1071,9 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor,
             flagStateManager = FlagsStateManager(
-                subscription = DDCoreSubscription.create(),
-                executorService = mockExecutorService
+                DDCoreSubscription.create(),
+                mockExecutorService,
+                mockInternalLogger
             )
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
@@ -1325,12 +1329,12 @@ internal class DatadogFlagsClientTest {
     // region State Management
 
     @Test
-    fun `M add listener W addStateListener()`() {
+    fun `M add listener W state_addListener()`() {
         // Given
         val mockListener = mock(FlagsStateListener::class.java)
 
         // When
-        testedClient.addStateListener(mockListener)
+        testedClient.state.addListener(mockListener)
 
         // Then
         // Listener should immediately receive current state (NotReady)
@@ -1338,15 +1342,15 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M remove listener W removeStateListener()`() {
+    fun `M remove listener W state_removeListener()`() {
         // Given
         val mockListener = mock(FlagsStateListener::class.java)
-        testedClient.addStateListener(mockListener)
+        testedClient.state.addListener(mockListener)
         // Verify initial state was emitted
         verify(mockListener).onStateChanged(FlagsClientState.NotReady)
 
         // When
-        testedClient.removeStateListener(mockListener)
+        testedClient.state.removeListener(mockListener)
 
         // Then - no exception should be thrown
         org.mockito.kotlin.verifyNoMoreInteractions(mockListener)

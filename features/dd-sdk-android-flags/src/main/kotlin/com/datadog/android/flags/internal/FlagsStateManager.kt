@@ -6,9 +6,15 @@
 
 package com.datadog.android.flags.internal
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.ExecutorService
 
 /**
@@ -23,11 +29,19 @@ import java.util.concurrent.ExecutorService
  *
  * @param subscription the underlying subscription for managing listeners
  * @param executorService single-threaded executor for ordered state notification delivery
+ * @param internalLogger logger for error and debug messages
  */
 internal class FlagsStateManager(
     private val subscription: DDCoreSubscription<FlagsStateListener>,
-    private val executorService: ExecutorService
-) {
+    private val executorService: ExecutorService,
+    private val internalLogger: InternalLogger
+) : StateObservable {
+    /**
+     * The current state of the client as a mutable flow.
+     * Updates are synchronized through the executor service to ensure ordered delivery.
+     */
+    private val _stateFlow = MutableStateFlow<FlagsClientState>(FlagsClientState.NotReady)
+
     /**
      * The current state of the client.
      * Thread-safe: uses volatile for visibility across threads.
@@ -44,38 +58,40 @@ internal class FlagsStateManager(
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
-        executorService.execute {
+        executorService.executeSafe(
+            operationName = UPDATE_STATE_OPERATION_NAME,
+            internalLogger = internalLogger
+        ) {
             currentState = newState
+            _stateFlow.value = newState
             subscription.notifyListeners {
                 onStateChanged(newState)
             }
         }
     }
 
-    /**
-     * Registers a listener to receive state change notifications.
-     *
-     * The listener will immediately receive the current state, then be notified
-     * of all future state changes. The current state is read atomically on the
-     * same executor where all state updates occur, ensuring correct ordering.
-     *
-     * @param listener The listener to add.
-     */
-    fun addListener(listener: FlagsStateListener) {
+    override val flow: StateFlow<FlagsClientState> = _stateFlow.asStateFlow()
+
+    override fun getCurrentState(): FlagsClientState = currentState
+
+    override fun addListener(listener: FlagsStateListener) {
         subscription.addListener(listener)
 
         // Emit current state to new listener - read inside executor for atomicity
-        executorService.execute {
+        executorService.executeSafe(
+            operationName = NOTIFY_NEW_LISTENER_OPERATION_NAME,
+            internalLogger = internalLogger
+        ) {
             listener.onStateChanged(currentState)
         }
     }
 
-    /**
-     * Unregisters a previously registered listener.
-     *
-     * @param listener The listener to remove.
-     */
-    fun removeListener(listener: FlagsStateListener) {
+    override fun removeListener(listener: FlagsStateListener) {
         subscription.removeListener(listener)
+    }
+
+    companion object {
+        private const val UPDATE_STATE_OPERATION_NAME = "Update flags client state"
+        private const val NOTIFY_NEW_LISTENER_OPERATION_NAME = "Notify new listener of current flags state"
     }
 }
