@@ -184,4 +184,119 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(result?.variationValue).isEqualTo(flagValue)
     }
+
+    // region hasFlags
+
+    @Test
+    fun `M return expected value W hasFlags() { for various states }`(forge: Forge) {
+        data class TestCase(
+            val given: () -> Unit,
+            val then: Boolean
+        )
+
+        val testCases = listOf(
+            TestCase(
+                given = { /* no state set */ },
+                then = false
+            ),
+            TestCase(
+                given = {
+                    testedRepository.setFlagsAndContext(
+                        EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+                        emptyMap()
+                    )
+                },
+                then = false
+            ),
+            TestCase(
+                given = {
+                    testedRepository.setFlagsAndContext(
+                        EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+                        mapOf(
+                            forge.anAlphabeticalString() to PrecomputedFlag(
+                                variationType = "string",
+                                variationValue = forge.anAlphabeticalString(),
+                                doLog = false,
+                                allocationKey = forge.anAlphabeticalString(),
+                                variationKey = forge.anAlphabeticalString(),
+                                extraLogging = JSONObject(),
+                                reason = "DEFAULT"
+                            )
+                        )
+                    )
+                },
+                then = true
+            ),
+            TestCase(
+                given = {
+                    testedRepository.setFlagsAndContext(
+                        EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+                        mapOf(
+                            forge.anAlphabeticalString() to PrecomputedFlag(
+                                variationType = "string",
+                                variationValue = forge.anAlphabeticalString(),
+                                doLog = false,
+                                allocationKey = forge.anAlphabeticalString(),
+                                variationKey = forge.anAlphabeticalString(),
+                                extraLogging = JSONObject(),
+                                reason = "DEFAULT"
+                            ),
+                            forge.anAlphabeticalString() to PrecomputedFlag(
+                                variationType = "boolean",
+                                variationValue = "true",
+                                doLog = false,
+                                allocationKey = forge.anAlphabeticalString(),
+                                variationKey = forge.anAlphabeticalString(),
+                                extraLogging = JSONObject(),
+                                reason = "TARGETING_MATCH"
+                            )
+                        )
+                    )
+                },
+                then = true
+            )
+        )
+
+        testCases.forEach { testCase ->
+            // Given
+            testCase.given()
+
+            // When
+            val result = testedRepository.hasFlags()
+
+            // Then
+            assertThat(result).isEqualTo(testCase.then)
+        }
+    }
+
+    @Test
+    fun `M not block W hasFlags() { persistence still loading }`() {
+        // Given
+        val startTime = System.currentTimeMillis()
+        doAnswer {
+            // Never call the callback - simulate slow persistence
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = any(),
+            callback = any(),
+            deserializer = any()
+        )
+        val slowRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "slow",
+            persistenceLoadTimeoutMs = 1000L // Long timeout
+        )
+
+        // When
+        val result = slowRepository.hasFlags()
+        val elapsedTime = System.currentTimeMillis() - startTime
+
+        // Then
+        assertThat(result).isFalse
+        assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+    }
+
+    // endregion
 }
