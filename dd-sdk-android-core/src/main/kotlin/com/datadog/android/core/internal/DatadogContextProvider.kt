@@ -27,6 +27,7 @@ internal class DatadogContextProvider(
             service = coreFeature.serviceName,
             env = coreFeature.envName,
             version = coreFeature.packageVersionProvider.version,
+            versionCode = coreFeature.packageVersionProvider.versionCode,
             variant = coreFeature.variant,
             sdkVersion = coreFeature.sdkVersion,
             source = coreFeature.sourceName,

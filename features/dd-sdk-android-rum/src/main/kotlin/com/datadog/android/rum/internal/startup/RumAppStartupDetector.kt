@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.startup
 import android.app.Application
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTimeNs
 
@@ -30,7 +29,6 @@ internal interface RumAppStartupDetector {
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs.asTimeNs() },
-                processImportanceProvider = { DdRumContentProvider.processImportance },
                 timeProvider = { Time() },
                 listener
             )

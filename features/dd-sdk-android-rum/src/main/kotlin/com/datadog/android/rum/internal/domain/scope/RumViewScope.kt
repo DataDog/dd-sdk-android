@@ -401,6 +401,8 @@ internal open class RumViewScope(
             ),
             connectivity = datadogContext.networkInfo.toVitalOperationStepConnectivity(),
             version = datadogContext.version,
+            buildVersion = datadogContext.versionCode.toString(),
+            buildId = datadogContext.appBuildId,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
             vital = RumVitalOperationStepEvent.Vital(
@@ -794,6 +796,7 @@ internal open class RumViewScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode.toString(),
                 ddtags = buildDDTagsString(datadogContext)
             )
         }
@@ -1337,6 +1340,8 @@ internal open class RumViewScope(
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode.toString(),
+                buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             ).apply {
                 sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
@@ -1504,6 +1509,8 @@ internal open class RumViewScope(
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
+                buildVersion = datadogContext.versionCode.toString(),
+                buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
             )
         }

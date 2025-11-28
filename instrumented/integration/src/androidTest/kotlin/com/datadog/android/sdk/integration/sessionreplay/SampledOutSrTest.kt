@@ -18,18 +18,17 @@ import org.junit.Test
 internal class SampledOutSrTest : BaseSessionReplayTest<SessionReplayPlaygroundActivity>() {
 
     @get:Rule
-    val rule = SessionReplayTestRule(
+    override val rule = SessionReplayTestRule(
         SessionReplayPlaygroundActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
         intentExtras = mapOf(
-            SR_SAMPLE_RATE to 0f
+            SR_SAMPLE_RATE to SAMPLE_RATE_NONE
         )
     )
 
     @Test
     fun verifySessionFirstSnapshot() {
-        runInstrumentationScenario()
         ConditionWatcher {
             assertThat(rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)).isEmpty()
             true

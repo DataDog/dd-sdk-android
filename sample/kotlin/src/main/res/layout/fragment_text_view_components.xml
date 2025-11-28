@@ -4,11 +4,17 @@
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/default_padding"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:fitsSystemWindows="true"
+    android:fillViewport="true">
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/default_padding">
 
     <TextView
         app:layout_constraintTop_toTopOf="parent"
@@ -22,16 +28,96 @@
     <TextView
         app:layout_constraintTop_toBottomOf="@+id/text_view"
         app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/ellipsize_start_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ellipsize=&quot;start&quot; - Ellipsis at start (HEAD)"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_start_label"
+        app:layout_constraintStart_toStartOf="parent"
         android:ellipsize="start"
-        android:id="@+id/ellipsize_text_view"
+        android:id="@+id/ellipsize_start_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:singleLine="true"
         android:textColor="@color/datadog_violet"
         android:text="@string/ellipsize_text_view" />
 
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_start_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/ellipsize_end_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ellipsize=&quot;end&quot; - Ellipsis at end (TAIL)"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_end_label"
+        app:layout_constraintStart_toStartOf="parent"
+        android:ellipsize="end"
+        android:id="@+id/ellipsize_end_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/ellipsize_text_view" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_end_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/ellipsize_middle_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ellipsize=&quot;middle&quot; - Ellipsis in middle (MIDDLE)"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_middle_label"
+        app:layout_constraintStart_toStartOf="parent"
+        android:ellipsize="middle"
+        android:id="@+id/ellipsize_middle_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/ellipsize_text_view" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_middle_text_view"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="@dimen/default_padding"
+        android:id="@+id/ellipsize_marquee_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ellipsize=&quot;marquee&quot; - Scrolling marquee (CLIP)"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_marquee_label"
+        app:layout_constraintStart_toStartOf="parent"
+        android:ellipsize="marquee"
+        android:id="@+id/ellipsize_marquee_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:textColor="@color/datadog_violet"
+        android:text="@string/ellipsize_text_view" />
+
     <com.google.android.material.textview.MaterialTextView
-        app:layout_constraintTop_toBottomOf="@+id/ellipsize_text_view"
+        app:layout_constraintTop_toBottomOf="@+id/ellipsize_marquee_text_view"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/default_padding"
         android:id="@+id/material_text_view"
@@ -167,5 +253,6 @@
         app:layout_constraintStart_toEndOf="@+id/chip_1"
         app:layout_constraintTop_toBottomOf="@+id/app_compat_checked_text_view" />
 
-
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

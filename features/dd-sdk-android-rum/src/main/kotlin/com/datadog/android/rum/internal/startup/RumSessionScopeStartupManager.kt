@@ -18,6 +18,8 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 internal interface RumSessionScopeStartupManager {
     fun onAppStartEvent(event: RumRawEvent.AppStartEvent)
@@ -113,6 +115,7 @@ internal class RumSessionScopeStartupManagerImpl(
             scenario = event.info.scenario,
             profilingStatus = datadogContext.getProfilingStatus()
         )
+
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
             TTIDEvent(
                 durationNs = event.info.durationNs,
@@ -124,9 +127,12 @@ internal class RumSessionScopeStartupManagerImpl(
             )
         )
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            ttidEvent
-        }.submit()
+        sendTTIDEvent(
+            datadogContext = datadogContext,
+            writeScope = writeScope,
+            writer = writer,
+            ttidEvent = ttidEvent
+        )
 
         if (ttfdReportedForScenario) {
             /**
@@ -212,6 +218,20 @@ internal class RumSessionScopeStartupManagerImpl(
         durationNs: Long,
         scenario: RumStartupScenario
     ) {
+        if (durationNs > MAX_TTFD_DURATION_NS) {
+            sdkCore.internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = {
+                    TTFD_TOO_LARGE_MESSAGE
+                },
+                throwable = null,
+                onlyOnce = false,
+                additionalProperties = null
+            )
+            return
+        }
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
                 timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
@@ -225,6 +245,33 @@ internal class RumSessionScopeStartupManagerImpl(
                 scenario = scenario,
                 profilingStatus = null
             )
+        }.submit()
+    }
+
+    private fun sendTTIDEvent(
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>,
+        ttidEvent: RumVitalAppLaunchEvent
+    ) {
+        val durationNs = ttidEvent.vital.duration.toLong()
+
+        if (durationNs > MAX_TTID_DURATION_NS) {
+            sdkCore.internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = {
+                    TTID_TOO_LARGE_MESSAGE
+                },
+                throwable = null,
+                onlyOnce = false,
+                additionalProperties = null
+            )
+            return
+        }
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            ttidEvent
         }.submit()
     }
 
@@ -242,5 +289,12 @@ internal class RumSessionScopeStartupManagerImpl(
 
         internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE =
             "RumMonitor.reportAppFullyDisplayed was called before TTID was computed, will report TTID as TTFD."
+
+        internal const val TTID_TOO_LARGE_MESSAGE = "TTID value is too large, skipping it"
+
+        internal const val TTFD_TOO_LARGE_MESSAGE = "TTFD value is too large, skipping it"
+
+        internal val MAX_TTID_DURATION_NS: Long = 1.minutes.inWholeNanoseconds
+        internal val MAX_TTFD_DURATION_NS: Long = 90.seconds.inWholeNanoseconds
     }
 }
