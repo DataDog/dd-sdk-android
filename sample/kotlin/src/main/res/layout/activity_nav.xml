@@ -11,6 +11,7 @@
              android:id="@+id/frame_container"
              android:layout_width="match_parent"
              android:layout_height="match_parent"
+             android:fitsSystemWindows="true"
              tools:context=".NavActivity">
 
     <TextView

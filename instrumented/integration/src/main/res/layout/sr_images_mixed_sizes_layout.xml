@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <!-- Small image: below 100dp threshold - bitmap set programmatically -->
+    <ImageView
+        android:id="@+id/smallImageView"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        android:contentDescription="@string/image_view" />
+
+    <!-- Large image: above 100dp threshold - bitmap set programmatically -->
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/largeImageView"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:contentDescription="@string/app_compat_image_view"
+        android:scaleType="fitXY" />
+
+</LinearLayout>
+

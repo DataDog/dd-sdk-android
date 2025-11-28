@@ -6,8 +6,13 @@
 
 package com.datadog.android.core.internal.time
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.time.KronosTimeProvider.Companion.FAIL_MESSAGE
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
+import com.datadog.tools.unit.forge.anException
 import com.lyft.kronos.Clock
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -21,6 +26,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Date
@@ -42,10 +48,13 @@ internal class KronosTimeProviderTest {
     @Forgery
     lateinit var fakeDate: Date
 
+    @Mock
+    lateinit var internalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         whenever(mockClock.getCurrentTimeMs()) doReturn fakeDate.time
-        testedTimeProvider = KronosTimeProvider(mockClock)
+        testedTimeProvider = KronosTimeProvider(mockClock, internalLogger)
     }
 
     @Test
@@ -84,6 +93,49 @@ internal class KronosTimeProviderTest {
         val now = System.currentTimeMillis()
         val result = testedTimeProvider.getDeviceTimestamp()
 
+        assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
+    }
+
+    @Test
+    fun `M log and return 0 W getServerOffsetMillis { getCurrentTimeMs throws }`(forge: Forge) {
+        // Given
+        val exception = forge.anException()
+        whenever(mockClock.getCurrentTimeMs()) doThrow exception
+
+        // When
+        val result = testedTimeProvider.getServerOffsetMillis()
+
+        // Then
+        internalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = FAIL_MESSAGE,
+            throwable = exception,
+            onlyOnce = true,
+            additionalProperties = emptyMap()
+        )
+        assertThat(result).isZero()
+    }
+
+    @Test
+    fun `M log and return System currentTimeMillis W getServerTimestamp { getCurrentTimeMs throws }`(forge: Forge) {
+        // Given
+        val exception = forge.anException()
+        whenever(mockClock.getCurrentTimeMs()) doThrow exception
+
+        // When
+        val now = System.currentTimeMillis()
+        val result = testedTimeProvider.getServerTimestamp()
+
+        // Then
+        internalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = FAIL_MESSAGE,
+            throwable = exception,
+            onlyOnce = true,
+            additionalProperties = emptyMap()
+        )
         assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
     }
 

@@ -100,11 +100,27 @@ internal class WebViewLogEventConsumer(
     }
 
     private fun addDdTags(event: JsonObject, datadogContext: DatadogContext) {
-        val sdkDdTags = "${LogAttributes.APPLICATION_VERSION}:${datadogContext.version}" +
-            ",${LogAttributes.ENV}:${datadogContext.env}"
-        var eventDdTags: String? = null
-        try {
-            eventDdTags = event.get(DDTAGS_KEY_NAME)?.asString
+        val sdkDdTags = mapOf(
+            LogAttributes.APPLICATION_VERSION to datadogContext.version,
+            LogAttributes.ENV to datadogContext.env,
+            LogAttributes.VARIANT to datadogContext.variant,
+            LogAttributes.SERVICE to datadogContext.service
+        )
+        val eventDdTags = try {
+            event.get(DDTAGS_KEY_NAME)?.asString?.let {
+                it.split(DDTAGS_SEPARATOR)
+                    .mapNotNull { tag ->
+                        @Suppress("UnsafeThirdPartyFunctionCall") // safe indexOf invocation
+                        val splitIndex = tag.indexOf(":")
+                        if (splitIndex == -1 || splitIndex == tag.lastIndex) {
+                            null
+                        } else {
+                            @Suppress("UnsafeThirdPartyFunctionCall") // safe substring invocations
+                            tag.substring(0, splitIndex) to tag.substring(splitIndex + 1)
+                        }
+                    }
+                    .associate { it }
+            }.orEmpty()
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -112,6 +128,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
+            emptyMap<String, String>()
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -119,6 +136,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
+            emptyMap<String, String>()
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -126,12 +144,14 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
+            emptyMap<String, String>()
         }
-        if (eventDdTags.isNullOrEmpty()) {
-            event.addProperty(DDTAGS_KEY_NAME, sdkDdTags)
-        } else {
-            event.addProperty(DDTAGS_KEY_NAME, sdkDdTags + DDTAGS_SEPARATOR + eventDdTags)
-        }
+        event.addProperty(
+            DDTAGS_KEY_NAME,
+            (eventDdTags + sdkDdTags)
+                .map { "${it.key}:${it.value}" }
+                .joinToString(DDTAGS_SEPARATOR)
+        )
     }
 
     companion object {

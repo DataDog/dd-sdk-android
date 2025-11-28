@@ -8,11 +8,13 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal data class TextLayoutInfo(
     val text: String,
     val color: ULong,
     val fontSize: Long,
     val fontFamily: FontFamily?,
-    val textAlign: TextAlign? = TextAlign.Start
+    val textAlign: TextAlign? = TextAlign.Start,
+    val textOverflow: MobileSegment.TruncationMode? = null
 )
