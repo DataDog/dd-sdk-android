@@ -12,9 +12,6 @@ import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.ExecutorService
 
 /**
@@ -37,19 +34,18 @@ internal class FlagsStateManager(
     private val internalLogger: InternalLogger
 ) : StateObservable {
     /**
-     * The current state of the client as a mutable flow.
-     *
-     * Updates are coordinated through the executor service to ensure ordered delivery.
-     * MutableStateFlow itself is thread-safe.
-     */
-    private val _stateFlow = MutableStateFlow<FlagsClientState>(FlagsClientState.NotReady)
-
-    /**
      * The current state of the client.
-     * Thread-safe: synchronized to ensure atomicity with flow updates.
+     * Thread-safe: uses volatile for visibility across threads.
      */
     @Volatile
     private var currentState: FlagsClientState = FlagsClientState.NotReady
+
+    /**
+     * Returns the current state synchronously.
+     *
+     * @return The current [FlagsClientState].
+     */
+    override fun getCurrentState(): FlagsClientState = currentState
 
     /**
      * Updates the state and notifies all listeners.
@@ -64,20 +60,12 @@ internal class FlagsStateManager(
             operationName = UPDATE_STATE_OPERATION_NAME,
             internalLogger = internalLogger
         ) {
-            synchronized(this) {
-                currentState = newState
-                _stateFlow.value = newState
-            }
+            currentState = newState
             subscription.notifyListeners {
                 onStateChanged(newState)
             }
         }
     }
-
-    override val flow: StateFlow<FlagsClientState> = _stateFlow.asStateFlow()
-
-    @Synchronized
-    override fun getCurrentState(): FlagsClientState = currentState
 
     override fun addListener(listener: FlagsStateListener) {
         subscription.addListener(listener)

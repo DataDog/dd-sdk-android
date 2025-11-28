@@ -7,32 +7,24 @@
 package com.datadog.android.flags
 
 import com.datadog.android.flags.model.FlagsClientState
-import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Observable interface for tracking [FlagsClient] state changes.
  *
- * This interface provides three ways to observe state:
- * 1. **Synchronous getter**: [getCurrentState] for immediate state queries (Java-friendly)
- * 2. **Reactive Flow**: [flow] for coroutine-based reactive updates (Kotlin)
- * 3. **Callback pattern**: [addListener]/[removeListener] for traditional observers (Java-friendly)
+ * This interface provides two ways to observe state:
+ * 1. **Synchronous getter**: [getCurrentState] for immediate state queries
+ * 2. **Callback pattern**: [addListener]/[removeListener] for reactive observers
  *
  * ## Usage Examples
  *
  * ```kotlin
- * // Synchronous getter (Java-friendly, no Flow dependency)
+ * // Synchronous getter
  * val current = client.state.getCurrentState()
  * if (current is FlagsClientState.Ready) {
  *     // Proceed
  * }
  *
- * // Reactive Flow (Kotlin coroutines)
- * client.state.flow.value  // Current value
- * client.state.flow.collect { state ->  // Collect updates
- *     // Handle state change
- * }
- *
- * // Callback pattern (Java-friendly)
+ * // Callback pattern
  * client.state.addListener(object : FlagsStateListener {
  *     override fun onStateChanged(newState: FlagsClientState) {
  *         // Handle state change
@@ -42,18 +34,9 @@ import kotlinx.coroutines.flow.StateFlow
  */
 interface StateObservable {
     /**
-     * Reactive Flow of state changes.
-     *
-     * This [StateFlow] emits the current state immediately to new collectors,
-     * then emits all subsequent state changes. Suitable for Kotlin coroutines users.
-     */
-    val flow: StateFlow<FlagsClientState>
-
-    /**
      * Returns the current state synchronously.
      *
-     * This method is safe to call from any thread and does not require coroutines.
-     * Suitable for Java users or quick state checks.
+     * This method is safe to call from any thread.
      *
      * @return The current [FlagsClientState].
      */
@@ -63,8 +46,7 @@ interface StateObservable {
      * Registers a listener to receive state change notifications.
      *
      * The listener will immediately receive the current state upon registration,
-     * then be notified of all future state changes. Suitable for Java users or
-     * when Flow is not available.
+     * then be notified of all future state changes.
      *
      * @param listener The [FlagsStateListener] to register.
      */
