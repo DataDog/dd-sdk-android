@@ -75,7 +75,7 @@ internal class FlagsStateManager(
             operationName = NOTIFY_NEW_LISTENER_OPERATION_NAME,
             internalLogger = internalLogger
         ) {
-            val state = synchronized(this) { currentState }
+            val state = currentState
             listener.onStateChanged(state)
         }
     }
