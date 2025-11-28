@@ -26,7 +26,6 @@ data class com.datadog.android.flags.FlagsConfiguration
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.StateObservable
-  val flow: kotlinx.coroutines.flow.StateFlow<com.datadog.android.flags.model.FlagsClientState>
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
   fun removeListener(FlagsStateListener)

@@ -14,9 +14,6 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 
 /**
@@ -39,9 +36,7 @@ internal class NoOpFlagsClient(
 ) : FlagsClient {
 
     override val state: StateObservable = object : StateObservable {
-        private val _stateFlow = MutableStateFlow<FlagsClientState>(FlagsClientState.Ready)
-        override val flow: StateFlow<FlagsClientState> = _stateFlow.asStateFlow()
-        override fun getCurrentState(): FlagsClientState = FlagsClientState.Ready
+        override fun getCurrentState(): FlagsClientState = FlagsClientState.Error(null)
         override fun addListener(listener: FlagsStateListener) { /* no-op */ }
         override fun removeListener(listener: FlagsStateListener) { /* no-op */ }
     }

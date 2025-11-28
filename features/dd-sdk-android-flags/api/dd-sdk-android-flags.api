@@ -63,7 +63,6 @@ public abstract interface class com/datadog/android/flags/FlagsStateListener {
 public abstract interface class com/datadog/android/flags/StateObservable {
 	public abstract fun addListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
-	public abstract fun getFlow ()Lkotlinx/coroutines/flow/StateFlow;
 	public abstract fun removeListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 }
 
