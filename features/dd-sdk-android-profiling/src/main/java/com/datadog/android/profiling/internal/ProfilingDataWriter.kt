@@ -23,7 +23,7 @@ internal class ProfilingDataWriter(
 ) : ProfilingWriter {
     override fun write(
         profilingResult: PerfettoResult,
-        ttidEvent: TTIDEvent?
+        ttidEvent: TTIDEvent
     ) {
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
             ?.withWriteContext { context, writeScope ->
@@ -49,7 +49,7 @@ internal class ProfilingDataWriter(
     private fun buildRawBatchEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        ttidEvent: TTIDEvent?
+        ttidEvent: TTIDEvent
     ): RawBatchEvent? {
         val byteData = readProfilingData(profilingResult.resultFilePath)
         if (byteData == null || byteData.isEmpty()) {
@@ -68,7 +68,7 @@ internal class ProfilingDataWriter(
     private fun createProfileEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        ttidEvent: TTIDEvent?
+        ttidEvent: TTIDEvent
     ): ProfileEvent {
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
@@ -83,7 +83,7 @@ internal class ProfilingDataWriter(
 
     private fun buildTags(
         context: DatadogContext,
-        ttidEvent: TTIDEvent?
+        ttidEvent: TTIDEvent
     ): String = buildString {
         append("$TAG_KEY_SERVICE:${context.service}")
         append(",")
@@ -92,7 +92,7 @@ internal class ProfilingDataWriter(
         append("$TAG_KEY_VERSION:${context.version}")
         append(",")
         append("$TAG_KEY_SDK_VERSION:${context.sdkVersion}")
-        ttidEvent?.apply {
+        ttidEvent.apply {
             append(",")
             append("$TAG_KEY_RUM_APPLICATION_ID:$applicationId")
             append(",")

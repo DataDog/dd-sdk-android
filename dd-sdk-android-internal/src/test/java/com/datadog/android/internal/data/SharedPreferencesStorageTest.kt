@@ -8,6 +8,7 @@ package com.datadog.android.internal.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -15,6 +16,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -22,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -52,6 +55,7 @@ internal class SharedPreferencesStorageTest {
         whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
         whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
         whenever(mockEditor.clear()) doReturn mockEditor
 
         testedStorage = SharedPreferencesStorage(mockContext)
@@ -150,6 +154,34 @@ internal class SharedPreferencesStorageTest {
     }
 
     @Test
+    fun `M persist data W putStringSet`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // When
+        testedStorage.putStringSet(fakeKey, setOf(fakeValue))
+
+        // Then
+        verify(mockEditor).putStringSet(fakeKey, setOf(fakeValue))
+        verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M read data W getStringSet`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        whenever(mockPrefs.getStringSet(fakeKey, emptySet())) doReturn setOf(fakeValue)
+
+        // When
+        val result = testedStorage.getStringSet(fakeKey, emptySet())
+
+        // Then
+        assertThat(result).isEqualTo(setOf(fakeValue))
+    }
+
+    @Test
     fun `M remove data W remove`() {
         // Given
         val key = "key"
@@ -170,5 +202,82 @@ internal class SharedPreferencesStorageTest {
         // Then
         verify(mockEditor).clear()
         verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M not throw ClassCastException W getString {data type mismatch}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeDefaultValue: String
+    ) {
+        // Given
+        whenever(
+            mockPrefs.getString(fakeKey, fakeDefaultValue)
+        ) doThrow ClassCastException("Class cast exception")
+
+        assertDoesNotThrow {
+            // When
+            val value = testedStorage.getString(fakeKey, fakeDefaultValue)
+
+            // Then
+            assertThat(value).isEqualTo(fakeDefaultValue)
+        }
+    }
+
+    @Test
+    fun `M not throw ClassCastException W getBool {data type mismatch}`(
+        @StringForgery fakeKey: String,
+        @BoolForgery fakeDefaultValue: Boolean
+    ) {
+        // Given
+        whenever(
+            mockPrefs.getBoolean(fakeKey, fakeDefaultValue)
+        ) doThrow ClassCastException("Class cast exception")
+
+        assertDoesNotThrow {
+            // When
+            val value = testedStorage.getBoolean(fakeKey, fakeDefaultValue)
+
+            // Then
+            assertThat(value).isEqualTo(fakeDefaultValue)
+        }
+    }
+
+    @Test
+    fun `M not throw ClassCastException W getInt {data type mismatch}`(
+        @StringForgery fakeKey: String,
+        @IntForgery fakeDefaultValue: Int
+    ) {
+        // Given
+        whenever(
+            mockPrefs.getInt(fakeKey, fakeDefaultValue)
+        ) doThrow ClassCastException("Class cast exception")
+
+        assertDoesNotThrow {
+            // When
+            val value = testedStorage.getInt(fakeKey, fakeDefaultValue)
+
+            // Then
+            assertThat(value).isEqualTo(fakeDefaultValue)
+        }
+    }
+
+    @Test
+    fun `M not throw ClassCastException W getStringSet {data type mismatch}`(
+        forge: Forge
+    ) {
+        val fakeKey = forge.aString()
+        val fakeDefaultValue = forge.aList { forge.aString() }.toSet()
+        // Given
+        whenever(
+            mockPrefs.getStringSet(fakeKey, fakeDefaultValue)
+        ) doThrow ClassCastException("Class cast exception")
+
+        assertDoesNotThrow {
+            // When
+            val value = testedStorage.getStringSet(fakeKey, fakeDefaultValue)
+
+            // Then
+            assertThat(value).isEqualTo(fakeDefaultValue)
+        }
     }
 }

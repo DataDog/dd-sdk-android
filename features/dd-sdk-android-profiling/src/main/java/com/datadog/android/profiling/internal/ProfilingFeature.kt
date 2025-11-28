@@ -17,6 +17,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.profiling.ProfilingConfiguration
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.rum.TTIDEvent
 import java.util.Locale
 
@@ -30,6 +31,8 @@ internal class ProfilingFeature(
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     private var ttidEvent: TTIDEvent? = null
+
+    private var perfettoResult: PerfettoResult? = null
 
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         configuration.customEndpointUrl,
@@ -45,24 +48,25 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
-            this.onProfilingSuccess = { result ->
-                dataWriter.write(
-                    profilingResult = result,
-                    ttidEvent = ttidEvent
-                )
+            registerProfilingCallback(sdkCore.name) { result ->
+                perfettoResult = result
+                tryWriteProfilingEvent()
             }
         }
         // Set the profiling flag in SharedPreferences to profile for the next app launch
-        ProfilingStorage.setProfilingFlag(appContext)
+        ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context.put(PROFILER_IS_RUNNING, profiler.isRunning())
+            context.put(PROFILER_IS_RUNNING, profiler.isRunning(sdkCore.name))
         }
         dataWriter = createDataWriter(sdkCore)
     }
 
     override fun onStop() {
-        profiler.stop()
+        profiler.apply {
+            stop(sdkCore.name)
+            unregisterProfilingCallback(sdkCore.name)
+        }
         sdkCore.removeEventReceiver(name)
     }
 
@@ -76,11 +80,21 @@ internal class ProfilingFeature(
             return
         }
         this.ttidEvent = event
-        profiler.stop()
+        profiler.stop(sdkCore.name)
+        tryWriteProfilingEvent()
         sdkCore.internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             { "Profiling stopped with TTID=${event.durationNs}" }
+        )
+    }
+
+    private fun tryWriteProfilingEvent() {
+        val perfettoResult = perfettoResult ?: return
+        val ttidEvent = ttidEvent ?: return
+        dataWriter.write(
+            profilingResult = perfettoResult,
+            ttidEvent = ttidEvent
         )
     }
 

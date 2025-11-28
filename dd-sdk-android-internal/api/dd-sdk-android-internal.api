@@ -59,9 +59,11 @@ public abstract interface class com/datadog/android/internal/data/PreferencesSto
 	public abstract fun getBoolean (Ljava/lang/String;Z)Z
 	public abstract fun getInt (Ljava/lang/String;I)I
 	public abstract fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public abstract fun getStringSet (Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;
 	public abstract fun putBoolean (Ljava/lang/String;Z)V
 	public abstract fun putInt (Ljava/lang/String;I)V
 	public abstract fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public abstract fun putStringSet (Ljava/lang/String;Ljava/util/Set;)V
 	public abstract fun remove (Ljava/lang/String;)V
 }
 
@@ -69,6 +71,7 @@ public final class com/datadog/android/internal/data/PreferencesStorage$DefaultI
 	public static synthetic fun getBoolean$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;ZILjava/lang/Object;)Z
 	public static synthetic fun getInt$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;IILjava/lang/Object;)I
 	public static synthetic fun getString$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public static synthetic fun getStringSet$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/Set;
 }
 
 public final class com/datadog/android/internal/data/SharedPreferencesStorage : com/datadog/android/internal/data/PreferencesStorage {
@@ -77,9 +80,11 @@ public final class com/datadog/android/internal/data/SharedPreferencesStorage : 
 	public fun getBoolean (Ljava/lang/String;Z)Z
 	public fun getInt (Ljava/lang/String;I)I
 	public fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public fun getStringSet (Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;
 	public fun putBoolean (Ljava/lang/String;Z)V
 	public fun putInt (Ljava/lang/String;I)V
 	public fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public fun putStringSet (Ljava/lang/String;Ljava/util/Set;)V
 	public fun remove (Ljava/lang/String;)V
 }
 

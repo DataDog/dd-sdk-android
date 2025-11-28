@@ -76,9 +76,13 @@ class ProfilingFeatureTest {
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
 
+    @StringForgery
+    private lateinit var fakeInstanceName: String
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
@@ -86,6 +90,7 @@ class ProfilingFeatureTest {
         whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
         whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
     }
@@ -116,7 +121,7 @@ class ProfilingFeatureTest {
         testedFeature.onReceive(fakeTTIDEvent)
 
         // Then
-        verify(mockProfiler).stop()
+        verify(mockProfiler).stop(fakeInstanceName)
     }
 
     @Test
@@ -136,6 +141,6 @@ class ProfilingFeatureTest {
         )
         assertThat(argumentCaptor.firstValue.invoke())
             .isEqualTo("Profiling feature receive an event of unsupported type=${String::class.java.canonicalName}.")
-        verify(mockProfiler, never()).stop()
+        verify(mockProfiler, never()).stop(fakeInstanceName)
     }
 }

@@ -8,7 +8,6 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -16,11 +15,13 @@ internal interface Profiler {
 
     var internalLogger: InternalLogger?
 
-    var onProfilingSuccess: ((PerfettoResult) -> Unit)?
+    fun start(appContext: Context, sdkInstanceNames: Set<String>)
 
-    fun start(appContext: Context)
+    fun stop(sdkInstanceName: String)
 
-    fun stop()
+    fun isRunning(sdkInstanceName: String): Boolean
 
-    fun isRunning(): Boolean
+    fun registerProfilingCallback(sdkInstanceName: String, callback: ProfilerCallback)
+
+    fun unregisterProfilingCallback(sdkInstanceName: String)
 }
