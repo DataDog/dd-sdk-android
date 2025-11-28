@@ -20,6 +20,7 @@ import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -53,6 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -64,6 +66,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.lang.ref.WeakReference
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
 @Extensions(
@@ -309,7 +312,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
 
-        val ttfdEvent = RumRawEvent.AppStartTTFDEvent()
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
 
         // When
         manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
@@ -371,8 +374,8 @@ internal class RumSessionScopeStartupManagerTest {
         val ttidEvent1 = RumRawEvent.AppStartTTIDEvent(info = info1)
         val ttidEvent2 = RumRawEvent.AppStartTTIDEvent(info = info2)
 
-        val ttfdEvent1 = RumRawEvent.AppStartTTFDEvent()
-        val ttfdEvent2 = RumRawEvent.AppStartTTFDEvent()
+        val ttfdEvent1 = forge.createTTFDEvent(scenario1.initialTime)
+        val ttfdEvent2 = forge.createTTFDEvent(scenario2.initialTime)
 
         // When
         manager.onAppStartEvent(appStartEvent1)
@@ -545,6 +548,109 @@ internal class RumSessionScopeStartupManagerTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M not send TTID vital event W onTTIDEvent { duration is too large }`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(
+                min = RumSessionScopeStartupManagerImpl.MAX_TTID_DURATION_NS + 1
+            )
+        )
+
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = info
+        )
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        verifyNoInteractions(mockWriter)
+
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = RumSessionScopeStartupManagerImpl.TTID_TOO_LARGE_MESSAGE,
+            throwable = null,
+            onlyOnce = false,
+            additionalProperties = null
+        )
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M not send TTFD vital event W onTTFDEvent { duration is too large }`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+
+        val ttfdEvent = forge.createTTFDEvent(
+            initialTime = scenario.initialTime,
+            offsetNs = RumSessionScopeStartupManagerImpl.MAX_TTFD_DURATION_NS + 1
+        )
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        inOrder(mockWriter) {
+            argumentCaptor<RumVitalAppLaunchEvent> {
+                verify(mockWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+                verifyTTID(value = firstValue, info = info)
+            }
+            verifyNoMoreInteractions()
+        }
+
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = RumSessionScopeStartupManagerImpl.TTFD_TOO_LARGE_MESSAGE,
+            throwable = null,
+            onlyOnce = false,
+            additionalProperties = null,
+            mode = atLeastOnce()
+        )
+    }
+
     private fun verifyTTID(value: RumVitalAppLaunchEvent, info: RumTTIDInfo) {
         VitalAppLaunchEventAssert.assertThat(value).apply {
             hasDate(info.scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
@@ -679,5 +785,19 @@ internal class RumSessionScopeStartupManagerTest {
                 }
                 .stream()
         }
+    }
+
+    private fun Forge.createTTFDEvent(
+        initialTime: Time,
+        offsetNs: Long = aLong(min = 0, max = 10000)
+    ): RumRawEvent.AppStartTTFDEvent {
+        val offsetMs = TimeUnit.NANOSECONDS.toMillis(offsetNs)
+
+        return RumRawEvent.AppStartTTFDEvent(
+            eventTime = Time(
+                timestamp = initialTime.timestamp + offsetMs,
+                nanoTime = initialTime.nanoTime + offsetNs
+            )
+        )
     }
 }
