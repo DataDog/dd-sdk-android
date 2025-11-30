@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class ResourceResolver(
+    private val applicationContext: Context,
     private val bitmapCachesManager: BitmapCachesManager,
     private val pathUtils: PathUtils,
     internal val threadPoolExecutor: ExecutorService = THREADPOOL_EXECUTOR,
@@ -36,10 +37,22 @@ internal class ResourceResolver(
     private val logger: InternalLogger,
     private val md5HashGenerator: MD5HashGenerator,
     private val recordedDataQueueHandler: DataQueueHandler,
+    private val alpha8BitmapConverter: BitmapConverter = Alpha8BitmapConverter(logger),
+    private val alpha8ResourceCache: Alpha8ResourceCache = DefaultAlpha8ResourceCache(
+        signatureGenerator = DefaultBitmapSignatureGenerator()
+    ),
     private val resourceItemCreationHandler: ResourceItemCreationHandler = ResourceItemCreationHandler(
         recordedDataQueueHandler = recordedDataQueueHandler
     )
 ) {
+
+    init {
+        applicationContext.registerComponentCallbacks(alpha8ResourceCache)
+    }
+
+    internal fun unregisterCallbacks() {
+        applicationContext.unregisterComponentCallbacks(alpha8ResourceCache)
+    }
 
     // region internal
 
@@ -355,27 +368,87 @@ internal class ResourceResolver(
 
     @WorkerThread
     private fun getResourceIdFromBitmap(bitmap: Bitmap, resourceResolverCallback: ResourceResolverCallback) {
-        val compressedBitmapBytes = webPImageCompression.compressBitmap(bitmap)
+        if (bitmap.config == Bitmap.Config.ALPHA_8) {
+            getResourceIdFromAlpha8Bitmap(bitmap, resourceResolverCallback)
+        } else {
+            getResourceIdFromRegularBitmap(bitmap, resourceResolverCallback)
+        }
+    }
 
-        // failed to compress bitmap
+    @WorkerThread
+    @Suppress("ReturnCount")
+    private fun getResourceIdFromAlpha8Bitmap(
+        bitmap: Bitmap,
+        resourceResolverCallback: ResourceResolverCallback
+    ) {
+        // Generate cache key once and reuse for both lookup and storage
+        val cacheKey = alpha8ResourceCache.generateKey(bitmap)
+
+        if (cacheKey != null) {
+            val cachedResourceId = alpha8ResourceCache.get(cacheKey)
+            if (cachedResourceId != null) {
+                resourceResolverCallback.onSuccess(cachedResourceId)
+                return
+            }
+        }
+
+        val convertedBitmap = alpha8BitmapConverter.convertAlpha8BitmapToArgb8888(bitmap)
+        if (convertedBitmap == null) {
+            resourceResolverCallback.onFailure()
+            return
+        }
+
+        val compressedBitmapBytes = webPImageCompression.compressBitmap(convertedBitmap)
+        convertedBitmap.recycle()
+
         if (compressedBitmapBytes.isEmpty()) {
             resourceResolverCallback.onFailure()
             return
-        } else {
-            resolveBitmapHash(
-                compressedBitmapBytes = compressedBitmapBytes,
-                resolveResourceCallback = object : ResolveResourceCallback {
-                    override fun onResolved(resourceId: String, resourceData: ByteArray) {
-                        resourceItemCreationHandler.queueItem(resourceId, resourceData)
-                        resourceResolverCallback.onSuccess(resourceId)
-                    }
-
-                    override fun onFailed() {
-                        resourceResolverCallback.onFailure()
-                    }
-                }
-            )
         }
+
+        resolveBitmapHash(
+            compressedBitmapBytes = compressedBitmapBytes,
+            resolveResourceCallback = object : ResolveResourceCallback {
+                override fun onResolved(resourceId: String, resourceData: ByteArray) {
+                    if (cacheKey != null) {
+                        alpha8ResourceCache.put(cacheKey, resourceId)
+                    }
+                    resourceItemCreationHandler.queueItem(resourceId, resourceData)
+                    resourceResolverCallback.onSuccess(resourceId)
+                }
+
+                override fun onFailed() {
+                    resourceResolverCallback.onFailure()
+                }
+            }
+        )
+    }
+
+    @WorkerThread
+    private fun getResourceIdFromRegularBitmap(
+        bitmap: Bitmap,
+        resourceResolverCallback: ResourceResolverCallback
+    ) {
+        val compressedBitmapBytes = webPImageCompression.compressBitmap(bitmap)
+
+        if (compressedBitmapBytes.isEmpty()) {
+            resourceResolverCallback.onFailure()
+            return
+        }
+
+        resolveBitmapHash(
+            compressedBitmapBytes = compressedBitmapBytes,
+            resolveResourceCallback = object : ResolveResourceCallback {
+                override fun onResolved(resourceId: String, resourceData: ByteArray) {
+                    resourceItemCreationHandler.queueItem(resourceId, resourceData)
+                    resourceResolverCallback.onSuccess(resourceId)
+                }
+
+                override fun onFailed() {
+                    resourceResolverCallback.onFailure()
+                }
+            }
+        )
     }
 
     @WorkerThread

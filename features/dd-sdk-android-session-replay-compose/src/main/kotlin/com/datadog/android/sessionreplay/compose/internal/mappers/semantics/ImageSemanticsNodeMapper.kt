@@ -24,26 +24,26 @@ internal class ImageSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
         val bounds = resolveBounds(semanticsNode)
-        val bitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode)
+        val rawBitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode)
         val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
         val imagePrivacy =
             semanticsUtils.getImagePrivacyOverride(semanticsNode) ?: parentContext.imagePrivacy
-        val imageWireframe = if (bitmapInfo != null) {
+
+        val imageWireframe = rawBitmapInfo?.bitmap?.let { bitmap ->
             parentContext.imageWireframeHelper.createImageWireframeByBitmap(
                 id = semanticsNode.id.toLong(),
                 globalBounds = bounds,
-                bitmap = bitmapInfo.bitmap,
+                bitmap = bitmap,
                 density = parentContext.density,
-                isContextualImage = bitmapInfo.isContextualImage,
+                isContextualImage = rawBitmapInfo.isContextualImage,
                 imagePrivacy = imagePrivacy,
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 clipping = null,
                 shapeStyle = null,
                 border = null
             )
-        } else {
-            null
         }
+
         imageWireframe?.let {
             containerFrames.add(it)
         }

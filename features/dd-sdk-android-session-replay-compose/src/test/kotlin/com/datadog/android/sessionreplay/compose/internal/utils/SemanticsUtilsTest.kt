@@ -68,7 +68,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.stream.Stream
@@ -115,14 +114,10 @@ class SemanticsUtilsTest {
     @Mock
     private lateinit var mockConfig: SemanticsConfiguration
 
-    @Mock
-    private lateinit var mockBitmapCreationHelper: BitmapCreationHelper
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         testedSemanticsUtils = SemanticsUtils(
-            reflectionUtils = mockReflectionUtils,
-            bitmapCreationHelper = mockBitmapCreationHelper
+            reflectionUtils = mockReflectionUtils
         )
         whenever(mockSemanticsNode.layoutInfo) doReturn mockLayoutInfo
         whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockModifierInfo)
@@ -542,103 +537,20 @@ class SemanticsUtilsTest {
     }
 
     @Test
-    fun `M return converted bitmap W resolveSemanticsPainter { ALPHA_8 bitmap, creation succeeds }`(
-        forge: Forge
-    ) {
+    fun `M return raw ALPHA_8 bitmap W resolveSemanticsPainter { ALPHA_8 bitmap }`() {
         // Given
         val mockVectorPainter = mock<VectorPainter>()
         val mockBitmap = mock<Bitmap>()
-        val mockNewBitmap = mock<Bitmap>()
-        val fakeWidth = forge.anInt(min = 1, max = 100)
-        val fakeHeight = forge.anInt(min = 1, max = 100)
 
         whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
         whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
         whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
-        whenever(mockBitmap.width) doReturn fakeWidth
-        whenever(mockBitmap.height) doReturn fakeHeight
-
-        whenever(
-            mockBitmapCreationHelper
-                .createBitmap(fakeWidth, fakeHeight, Bitmap.Config.ARGB_8888)
-        ) doReturn mockNewBitmap
-        whenever(mockBitmapCreationHelper.drawBitmap(mockNewBitmap, mockBitmap)) doReturn mockNewBitmap
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
 
         // Then
-        verify(mockBitmapCreationHelper).drawBitmap(mockNewBitmap, mockBitmap)
-        assertThat(result).isEqualTo(BitmapInfo(mockNewBitmap, false))
-    }
-
-    @Test
-    fun `M return null W resolveSemanticsPainter { ALPHA_8 bitmap, creation fails }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockVectorPainter = mock<VectorPainter>()
-        val mockBitmap = mock<Bitmap>()
-        val fakeWidth = forge.anInt(min = 1, max = 100)
-        val fakeHeight = forge.anInt(min = 1, max = 100)
-
-        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
-        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
-        whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
-        whenever(mockBitmap.width) doReturn fakeWidth
-        whenever(mockBitmap.height) doReturn fakeHeight
-
-        whenever(mockBitmapCreationHelper.createBitmap(any(), any(), any())) doReturn null
-
-        // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M return null W resolveSemanticsPainter { ALPHA_8 bitmap, width is 0 }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockVectorPainter = mock<VectorPainter>()
-        val mockBitmap = mock<Bitmap>()
-        val fakeHeight = forge.anInt(min = 1, max = 100)
-
-        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
-        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
-        whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
-        whenever(mockBitmap.width) doReturn 0
-        whenever(mockBitmap.height) doReturn fakeHeight
-
-        // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M return null W resolveSemanticsPainter { ALPHA_8 bitmap, height is 0 }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockVectorPainter = mock<VectorPainter>()
-        val mockBitmap = mock<Bitmap>()
-        val fakeWidth = forge.anInt(min = 1, max = 100)
-
-        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
-        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
-        whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
-        whenever(mockBitmap.width) doReturn fakeWidth
-        whenever(mockBitmap.height) doReturn 0
-
-        // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
-
-        // Then
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, false))
     }
 
     @ParameterizedTest(name = "{index} (overflowValue: {0}, expectedMode: {1})")

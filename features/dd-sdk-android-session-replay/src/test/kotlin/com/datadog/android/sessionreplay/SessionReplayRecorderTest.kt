@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -77,6 +78,9 @@ internal class SessionReplayRecorderTest {
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
+    @Mock
+    lateinit var mockResourceResolver: ResourceResolver
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeActiveWindows = forge.aList { mock() }
@@ -98,6 +102,7 @@ internal class SessionReplayRecorderTest {
             sessionReplayLifecycleCallback = mockLifecycleCallback,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            resourceResolver = mockResourceResolver,
             uiHandler = mockUiHandler,
             internalLogger = mockInternalLogger
         )
@@ -119,6 +124,7 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(mockLifecycleCallback)
+        verify(mockResourceResolver).unregisterCallbacks()
     }
 
     @Test

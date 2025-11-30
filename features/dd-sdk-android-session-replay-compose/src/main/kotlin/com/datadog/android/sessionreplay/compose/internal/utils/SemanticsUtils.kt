@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
-import android.os.Build
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
@@ -47,8 +46,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 @Suppress("TooManyFunctions")
 internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
-    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE),
-    private val bitmapCreationHelper: BitmapCreationHelper = DefaultBitmapCreationHelper()
+    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
 ) {
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
@@ -260,12 +258,11 @@ internal class SemanticsUtils(
 
         val bitmap = resolveBitmapFromPainter(painter)
 
-        // Send telemetry about the original bitmap before copying it.
         bitmap?.let {
             sendBitmapInfoTelemetry(it, isContextualImage)
         }
 
-        return resolveBitmap(bitmap)?.let {
+        return bitmap?.let {
             BitmapInfo(it, isContextualImage)
         }
     }
@@ -300,25 +297,6 @@ internal class SemanticsUtils(
                 null
             }
         }
-    }
-
-    private fun resolveBitmap(bitmap: Bitmap?): Bitmap? {
-        if (bitmap == null) return null
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
-            bitmap
-        } else if (bitmap.config == Bitmap.Config.ALPHA_8) {
-            createBitmapFromAlpha8(bitmap)
-        } else {
-            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
-            bitmap.copy(Bitmap.Config.ARGB_8888, false)
-        }
-    }
-
-    private fun createBitmapFromAlpha8(bitmap: Bitmap): Bitmap? {
-        return bitmapCreationHelper.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-            ?.let { newBitmap ->
-                bitmapCreationHelper.drawBitmap(newBitmap, bitmap)
-            }
     }
 
     private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean) {
