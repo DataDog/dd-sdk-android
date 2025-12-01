@@ -8,8 +8,11 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
@@ -31,6 +34,12 @@ internal class NoOpFlagsClient(
     private val reason: String,
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
+
+    override val state: StateObservable = object : StateObservable {
+        override fun getCurrentState(): FlagsClientState = FlagsClientState.Error(null)
+        override fun addListener(listener: FlagsStateListener) = Unit
+        override fun removeListener(listener: FlagsStateListener) = Unit
+    }
 
     /**
      * No-op implementation that ignores context updates and logs a warning.
