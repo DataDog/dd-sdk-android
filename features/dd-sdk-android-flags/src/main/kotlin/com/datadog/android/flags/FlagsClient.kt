@@ -155,16 +155,12 @@ interface FlagsClient {
      *
      * Provides three ways to observe state:
      * - Synchronous: [StateObservable.getCurrentState] for immediate queries (Java-friendly)
-     * - Reactive: [StateObservable.flow] for coroutine-based updates (Kotlin)
      * - Callback: [StateObservable.addListener] for traditional observers (Java-friendly)
      *
      * Example:
      * ```kotlin
      * // Synchronous
      * val current = client.state.getCurrentState()
-     *
-     * // Reactive Flow
-     * client.state.flow.collect { state -> /* ... */ }
      *
      * // Callback
      * client.state.addListener(listener)

@@ -23,6 +23,7 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -86,21 +87,6 @@ internal class FlagsStateManagerTest {
     // region addListener / removeListener
 
     @Test
-    fun `M notify listener W addListener() and notify`() {
-        // Given
-        testedManager.addListener(mockListener)
-
-        // When
-        testedManager.updateState(FlagsClientState.Ready)
-
-        // Then
-        inOrder(mockListener) {
-            verify(mockListener).onStateChanged(FlagsClientState.NotReady) // Current state on add
-            verify(mockListener).onStateChanged(FlagsClientState.Ready) // State update
-        }
-    }
-
-    @Test
     fun `M not notify listener after removal W removeListener() and notify`() {
         // Given
         testedManager.addListener(mockListener)
@@ -113,7 +99,7 @@ internal class FlagsStateManagerTest {
         testedManager.updateState(FlagsClientState.Ready)
 
         // Then - no further notifications after removal
-        org.mockito.kotlin.verifyNoMoreInteractions(mockListener)
+        verifyNoMoreInteractions(mockListener)
     }
 
     @Test

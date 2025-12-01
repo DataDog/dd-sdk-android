@@ -52,8 +52,12 @@ internal class DefaultFlagsRepositoryTest {
 
     private lateinit var testedRepository: DefaultFlagsRepository
 
+    private lateinit var testContext: EvaluationContext
+    private lateinit var singleFlagMap: Map<String, PrecomputedFlag>
+    private lateinit var multipleFlagsMap: Map<String, PrecomputedFlag>
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(
             mockDataStore.value<FlagsStateEntry>(
@@ -72,6 +76,42 @@ internal class DefaultFlagsRepositoryTest {
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
             instanceName = "default"
+        )
+
+        // Setup test fixtures for hasFlags tests
+        testContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+
+        singleFlagMap = mapOf(
+            forge.anAlphabeticalString() to PrecomputedFlag(
+                variationType = "string",
+                variationValue = forge.anAlphabeticalString(),
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "DEFAULT"
+            )
+        )
+
+        multipleFlagsMap = mapOf(
+            forge.anAlphabeticalString() to PrecomputedFlag(
+                variationType = "string",
+                variationValue = forge.anAlphabeticalString(),
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "DEFAULT"
+            ),
+            forge.anAlphabeticalString() to PrecomputedFlag(
+                variationType = "boolean",
+                variationValue = "true",
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "TARGETING_MATCH"
+            )
         )
     }
 
@@ -188,88 +228,44 @@ internal class DefaultFlagsRepositoryTest {
     // region hasFlags
 
     @Test
-    fun `M return expected value W hasFlags() { for various states }`(forge: Forge) {
-        data class TestCase(val given: () -> Unit, val then: Boolean)
+    fun `M return false W hasFlags() { no state set }`() {
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isFalse()
+    }
 
-        val testCases = listOf(
-            TestCase(
-                given = { /* no state set */ },
-                then = false
-            ),
-            TestCase(
-                given = {
-                    testedRepository.setFlagsAndContext(
-                        EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
-                        emptyMap()
-                    )
-                },
-                then = false
-            ),
-            TestCase(
-                given = {
-                    testedRepository.setFlagsAndContext(
-                        EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
-                        mapOf(
-                            forge.anAlphabeticalString() to PrecomputedFlag(
-                                variationType = "string",
-                                variationValue = forge.anAlphabeticalString(),
-                                doLog = false,
-                                allocationKey = forge.anAlphabeticalString(),
-                                variationKey = forge.anAlphabeticalString(),
-                                extraLogging = JSONObject(),
-                                reason = "DEFAULT"
-                            )
-                        )
-                    )
-                },
-                then = true
-            ),
-            TestCase(
-                given = {
-                    testedRepository.setFlagsAndContext(
-                        EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
-                        mapOf(
-                            forge.anAlphabeticalString() to PrecomputedFlag(
-                                variationType = "string",
-                                variationValue = forge.anAlphabeticalString(),
-                                doLog = false,
-                                allocationKey = forge.anAlphabeticalString(),
-                                variationKey = forge.anAlphabeticalString(),
-                                extraLogging = JSONObject(),
-                                reason = "DEFAULT"
-                            ),
-                            forge.anAlphabeticalString() to PrecomputedFlag(
-                                variationType = "boolean",
-                                variationValue = "true",
-                                doLog = false,
-                                allocationKey = forge.anAlphabeticalString(),
-                                variationKey = forge.anAlphabeticalString(),
-                                extraLogging = JSONObject(),
-                                reason = "TARGETING_MATCH"
-                            )
-                        )
-                    )
-                },
-                then = true
-            )
+    @Test
+    fun `M return false W hasFlags() { empty flags map }`(forge: Forge) {
+        // Given
+        testedRepository.setFlagsAndContext(
+            EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            emptyMap()
         )
 
-        testCases.forEach { testCase ->
-            // Given
-            testCase.given()
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isFalse()
+    }
 
-            // When
-            val result = testedRepository.hasFlags()
+    @Test
+    fun `M return true W hasFlags() { single flag }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
 
-            // Then
-            assertThat(result).isEqualTo(testCase.then)
-        }
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isTrue()
+    }
+
+    @Test
+    fun `M return true W hasFlags() { multiple flags }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isTrue()
     }
 
     @Test
     fun `M not block W hasFlags() { persistence still loading }`() {
         // Given
-        val startTime = System.currentTimeMillis()
         doAnswer {
             // Never call the callback - simulate slow persistence
             null
@@ -287,6 +283,7 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When
+        val startTime = System.currentTimeMillis()
         val result = slowRepository.hasFlags()
         val elapsedTime = System.currentTimeMillis() - startTime
 
