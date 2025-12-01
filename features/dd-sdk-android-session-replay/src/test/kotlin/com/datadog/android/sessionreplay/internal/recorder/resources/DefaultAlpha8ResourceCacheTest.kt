@@ -36,7 +36,7 @@ internal class DefaultAlpha8ResourceCacheTest {
     private lateinit var mockSignatureGenerator: BitmapSignatureGenerator
 
     @Mock
-    private lateinit var mockCache: LruCache<Alpha8CacheKey, String>
+    private lateinit var mockCache: LruCache<Alpha8CacheKey, ByteArray>
 
     @Mock
     private lateinit var mockBitmap: Bitmap
@@ -92,7 +92,7 @@ internal class DefaultAlpha8ResourceCacheTest {
     fun `M return cached resourceId W get { key found in cache }`() {
         // Given
         val key = Alpha8CacheKey(100, 100, fakeSignature)
-        whenever(mockCache[key]).thenReturn(fakeResourceId)
+        whenever(mockCache[key]).thenReturn(fakeResourceId.toByteArray(Charsets.UTF_8))
 
         // When
         val result = testedCache.get(key)
@@ -127,7 +127,7 @@ internal class DefaultAlpha8ResourceCacheTest {
         testedCache.put(key, fakeResourceId)
 
         // Then
-        verify(mockCache).put(key, fakeResourceId)
+        verify(mockCache).put(key, fakeResourceId.toByteArray(Charsets.UTF_8))
     }
 
     // endregion

@@ -36,19 +36,9 @@ internal class Alpha8BitmapConverter(
             return null
         }
 
-        val argbBitmap = try {
-            // Safe: width/height validated > 0 above, config is non-null constant. OOM caught below.
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-        } catch (e: OutOfMemoryError) {
-            logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { BITMAP_CREATION_OOM },
-                e
-            )
-            return null
-        }
+        // Safe: width/height validated > 0 above, config is non-null constant.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val argbBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
 
         return try {
             drawAlpha8ToArgb(argbBitmap, bitmap)
@@ -82,7 +72,6 @@ internal class Alpha8BitmapConverter(
     }
 
     private companion object {
-        private const val BITMAP_CREATION_OOM = "OutOfMemoryError creating ARGB_8888 bitmap for alpha8 conversion"
         private const val BITMAP_DRAWING_FAILED = "Failed to draw alpha8 bitmap to ARGB_8888"
     }
 }

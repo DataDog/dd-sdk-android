@@ -32,11 +32,10 @@ internal data class Alpha8CacheKey(
 
 internal class DefaultAlpha8ResourceCache(
     private val signatureGenerator: BitmapSignatureGenerator,
-    private val cache: LruCache<Alpha8CacheKey, String> =
-        object :
-            LruCache<Alpha8CacheKey, String>(MAX_CACHE_MEMORY_SIZE_BYTES) {
-            override fun sizeOf(key: Alpha8CacheKey, value: String): Int {
-                return value.toByteArray().size
+    private val cache: LruCache<Alpha8CacheKey, ByteArray> =
+        object : LruCache<Alpha8CacheKey, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
+            override fun sizeOf(key: Alpha8CacheKey, value: ByteArray): Int {
+                return value.size
             }
         }
 ) : Alpha8ResourceCache {
@@ -47,11 +46,11 @@ internal class DefaultAlpha8ResourceCache(
     }
 
     override fun get(key: Alpha8CacheKey): String? {
-        return cache[key]
+        return cache[key]?.toString(Charsets.UTF_8)
     }
 
     override fun put(key: Alpha8CacheKey, resourceId: String) {
-        cache.put(key, resourceId)
+        cache.put(key, resourceId.toByteArray(Charsets.UTF_8))
     }
 
     @Suppress("DEPRECATION")
