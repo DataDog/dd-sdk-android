@@ -8,6 +8,7 @@ interface com.datadog.android.flags.FlagsClient
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
+  val state: StateObservable
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): FlagsClient
@@ -22,6 +23,12 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
   companion object 
+interface com.datadog.android.flags.FlagsStateListener
+  fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
+interface com.datadog.android.flags.StateObservable
+  fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
+  fun addListener(FlagsStateListener)
+  fun removeListener(FlagsStateListener)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
@@ -29,6 +36,13 @@ enum com.datadog.android.flags.model.ErrorCode
   - TYPE_MISMATCH
 data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
+sealed class com.datadog.android.flags.model.FlagsClientState
+  object NotReady : FlagsClientState
+  object Ready : FlagsClientState
+  object Reconciling : FlagsClientState
+  object Stale : FlagsClientState
+  data class Error : FlagsClientState
+    constructor(Throwable? = null)
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason
