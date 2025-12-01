@@ -58,8 +58,7 @@ internal class FlagsTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.createSingleThreadExecutorService(org.mockito.kotlin.any())) doReturn
-            mockExecutorService
+        whenever(mockSdkCore.createSingleThreadExecutorService(org.mockito.kotlin.any())) doReturn mockExecutorService
 
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
         whenever(mockDatadogContext.site) doReturn DatadogSite.US1

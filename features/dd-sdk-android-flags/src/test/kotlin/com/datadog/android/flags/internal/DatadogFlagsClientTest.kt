@@ -1316,7 +1316,7 @@ internal class DatadogFlagsClientTest {
     @Test
     fun `M delegate to state manager W state_addListener()`() {
         // Given
-        val mockListener = mock(FlagsStateListener::class.java)
+        val mockListener = mock<FlagsStateListener>()
 
         // When
         testedClient.state.addListener(mockListener)
@@ -1329,7 +1329,7 @@ internal class DatadogFlagsClientTest {
     @Test
     fun `M delegate to state manager W state_removeListener()`() {
         // Given
-        val mockListener = mock(FlagsStateListener::class.java)
+        val mockListener = mock<FlagsStateListener>()
 
         // When
         testedClient.state.removeListener(mockListener)
