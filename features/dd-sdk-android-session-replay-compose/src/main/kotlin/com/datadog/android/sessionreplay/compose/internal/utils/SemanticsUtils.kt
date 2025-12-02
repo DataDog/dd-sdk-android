@@ -502,6 +502,80 @@ internal class SemanticsUtils(
         return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
     }
 
+    internal fun isNodeFadingOut(semanticsNode: SemanticsNode): Boolean {
+        return isCurrentNodeFading(semanticsNode) ||
+            isSemanticsAncestorFading(semanticsNode.parent) ||
+            reflectionUtils.hasAncestorWithAlphaLessThanOne(semanticsNode) ||
+            isExitingScreenInTransition(semanticsNode)
+    }
+
+    private fun isCurrentNodeFading(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.layoutInfo.getModifierInfo().any { modifierInfo ->
+            if (reflectionUtils.isGraphicsLayerElement(modifierInfo.modifier)) {
+                val alpha = reflectionUtils.getAlpha(modifierInfo.modifier)
+                alpha != null && alpha < 1f
+            } else {
+                false
+            }
+        }
+    }
+
+    private fun isSemanticsAncestorFading(semanticsNode: SemanticsNode?): Boolean {
+        if (semanticsNode == null) return false
+        if (isCurrentNodeFading(semanticsNode)) return true
+        return isSemanticsAncestorFading(semanticsNode.parent)
+    }
+
+    private fun isExitingScreenInTransition(semanticsNode: SemanticsNode): Boolean {
+        val parent = semanticsNode.parent ?: return false
+        val siblings = parent.children
+        if (siblings.size != 2) return false
+
+        val currentBounds = semanticsNode.boundsInRoot
+        val currentIndex = siblings.indexOf(semanticsNode)
+        val otherIndex = if (currentIndex == 0) 1 else 0
+        val otherSibling = siblings[otherIndex]
+        val otherBounds = otherSibling.boundsInRoot
+
+        val boundsOverlap = currentBounds.left == otherBounds.left &&
+            currentBounds.top == otherBounds.top &&
+            currentBounds.right == otherBounds.right &&
+            currentBounds.bottom == otherBounds.bottom
+
+        if (!boundsOverlap) return false
+
+        val rootNode = findRootNode(semanticsNode)
+        val rootBounds = rootNode?.boundsInRoot ?: return false
+        val rootWidth = rootBounds.right - rootBounds.left
+        val rootHeight = rootBounds.bottom - rootBounds.top
+        val nodeWidth = currentBounds.right - currentBounds.left
+        val nodeHeight = currentBounds.bottom - currentBounds.top
+
+        val isLargeEnoughToBeScreen = nodeWidth >= rootWidth * SCREEN_SIZE_THRESHOLD &&
+            nodeHeight >= rootHeight * SCREEN_SIZE_THRESHOLD
+
+        if (!isLargeEnoughToBeScreen) return false
+
+        val bothHaveGraphicsLayer = hasGraphicsLayerModifier(semanticsNode) &&
+            hasGraphicsLayerModifier(otherSibling)
+
+        return bothHaveGraphicsLayer && currentIndex < otherIndex
+    }
+
+    private fun hasGraphicsLayerModifier(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.layoutInfo.getModifierInfo().any { modifierInfo ->
+            reflectionUtils.isGraphicsLayerElement(modifierInfo.modifier)
+        }
+    }
+
+    private fun findRootNode(semanticsNode: SemanticsNode): SemanticsNode? {
+        var current: SemanticsNode? = semanticsNode
+        while (current?.parent != null) {
+            current = current.parent
+        }
+        return current
+    }
+
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
         return reflectionUtils.getInteropView(semanticsNode)
     }
@@ -556,6 +630,7 @@ internal class SemanticsUtils(
         internal const val DEFAULT_COLOR_BLACK = "#000000FF"
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
         private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
+        private const val SCREEN_SIZE_THRESHOLD = 0.5f
 
         private const val COMPONENT_NAME = "SemanticsUtils"
         private const val COMPONENT_KEY = "component"

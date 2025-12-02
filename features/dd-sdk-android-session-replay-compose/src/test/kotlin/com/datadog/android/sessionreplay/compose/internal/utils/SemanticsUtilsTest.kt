@@ -559,6 +559,87 @@ class SemanticsUtilsTest {
         assertThat(result.textOverflow).isEqualTo(expectedMode)
     }
 
+    @Test
+    fun `M return true W isNodeFadingOut { alpha is 0 }`() {
+        // Given
+        val mockGraphicsLayerModifier = mock<Modifier>()
+        val mockGraphicsLayerModifierInfo = mock<ModifierInfo>()
+        whenever(mockGraphicsLayerModifierInfo.modifier) doReturn mockGraphicsLayerModifier
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockGraphicsLayerModifierInfo)
+        whenever(mockReflectionUtils.isGraphicsLayerElement(mockGraphicsLayerModifier)) doReturn true
+        whenever(mockReflectionUtils.getAlpha(mockGraphicsLayerModifier)) doReturn 0f
+
+        // When
+        val result = testedSemanticsUtils.isNodeFadingOut(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return true W isNodeFadingOut { alpha is 0_5 }`() {
+        // Given
+        val mockGraphicsLayerModifier = mock<Modifier>()
+        val mockGraphicsLayerModifierInfo = mock<ModifierInfo>()
+        whenever(mockGraphicsLayerModifierInfo.modifier) doReturn mockGraphicsLayerModifier
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockGraphicsLayerModifierInfo)
+        whenever(mockReflectionUtils.isGraphicsLayerElement(mockGraphicsLayerModifier)) doReturn true
+        whenever(mockReflectionUtils.getAlpha(mockGraphicsLayerModifier)) doReturn 0.5f
+
+        // When
+        val result = testedSemanticsUtils.isNodeFadingOut(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W isNodeFadingOut { alpha is 1 }`() {
+        // Given
+        val mockGraphicsLayerModifier = mock<Modifier>()
+        val mockGraphicsLayerModifierInfo = mock<ModifierInfo>()
+        whenever(mockGraphicsLayerModifierInfo.modifier) doReturn mockGraphicsLayerModifier
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockGraphicsLayerModifierInfo)
+        whenever(mockReflectionUtils.isGraphicsLayerElement(mockGraphicsLayerModifier)) doReturn true
+        whenever(mockReflectionUtils.getAlpha(mockGraphicsLayerModifier)) doReturn 1f
+
+        // When
+        val result = testedSemanticsUtils.isNodeFadingOut(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W isNodeFadingOut { no graphics layer modifier }`() {
+        // Given
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockModifierInfo)
+        whenever(mockReflectionUtils.isGraphicsLayerElement(mockModifier)) doReturn false
+
+        // When
+        val result = testedSemanticsUtils.isNodeFadingOut(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W isNodeFadingOut { alpha is null }`() {
+        // Given
+        val mockGraphicsLayerModifier = mock<Modifier>()
+        val mockGraphicsLayerModifierInfo = mock<ModifierInfo>()
+        whenever(mockGraphicsLayerModifierInfo.modifier) doReturn mockGraphicsLayerModifier
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockGraphicsLayerModifierInfo)
+        whenever(mockReflectionUtils.isGraphicsLayerElement(mockGraphicsLayerModifier)) doReturn true
+        whenever(mockReflectionUtils.getAlpha(mockGraphicsLayerModifier)) doReturn null
+
+        // When
+        val result = testedSemanticsUtils.isNodeFadingOut(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
     companion object {
         /**
          * Constant representing an unknown/unsupported TextOverflow Int value.

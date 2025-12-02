@@ -98,6 +98,13 @@ internal class RootSemanticsNodeMapper(
             return
         }
 
+        // Skip nodes that are fading out (alpha < 1.0) or have a fading ancestor.
+        // This prevents the previous screen from being superimposed on the new one
+        // during navigation transitions.
+        if (semanticsUtils.isNodeFadingOut(semanticsNode)) {
+            return
+        }
+
         // If Hidden node is detected, add placeholder wireframe and return
         if (semanticsUtils.isNodeHidden(semanticsNode)) {
             composeHiddenMapper.map(

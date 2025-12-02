@@ -25,6 +25,8 @@ internal object ComposeReflection {
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
     val GetInteropViewMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInteropView")
     val NodesFieldOfLayoutNode = LayoutNodeClass?.getDeclaredFieldSafe("nodes")
+    val ParentOfLayoutNode = LayoutNodeClass?.getDeclaredFieldSafe("parent", isCritical = false)
+    val GetModifierInfoMethod = LayoutNodeClass?.getDeclaredMethodSafe("getModifierInfo", isCritical = false)
     val NodeChainClass = getClassSafe("androidx.compose.ui.node.NodeChain")
     val HeadFieldOfNodeChain = NodeChainClass?.getDeclaredFieldSafe("head")
     val ModifierNodeClass = getClassSafe("androidx.compose.ui.Modifier\$Node")
@@ -70,6 +72,7 @@ internal object ComposeReflection {
 
     val GraphicsLayerElementClass = getClassSafe("androidx.compose.ui.graphics.GraphicsLayerElement")
     val ClipShapeField = GraphicsLayerElementClass?.getDeclaredFieldSafe("shape")
+    val AlphaField = GraphicsLayerElementClass?.getDeclaredFieldSafe("alpha", isCritical = false)
 
     val PainterElementClass = getClassSafe("androidx.compose.ui.draw.PainterElement")
     val PainterField = PainterElementClass?.getDeclaredFieldSafe("painter")

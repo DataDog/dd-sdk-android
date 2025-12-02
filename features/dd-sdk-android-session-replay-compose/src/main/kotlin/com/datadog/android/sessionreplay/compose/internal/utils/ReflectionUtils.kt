@@ -41,6 +41,7 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.NodesFieldOfLayoutNode
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ParentOfLayoutNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
@@ -50,6 +51,7 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterMethodOfAsync3ImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterNodeClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetModifierInfoMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 
 @Suppress("TooManyFunctions")
@@ -139,6 +141,49 @@ internal class ReflectionUtils {
 
     fun getClipShape(modifier: Modifier): Shape? {
         return ComposeReflection.ClipShapeField?.getSafe(modifier) as? Shape
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    fun getAlpha(modifier: Modifier): Float? {
+        val alphaValue = ComposeReflection.AlphaField?.getSafe(modifier) ?: return null
+        return when (alphaValue) {
+            is Float -> alphaValue
+            is Function0<*> -> {
+                try {
+                    alphaValue.invoke() as? Float
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            else -> null
+        }
+    }
+
+    @Suppress("NestedBlockDepth")
+    fun hasAncestorWithAlphaLessThanOne(semanticsNode: SemanticsNode): Boolean {
+        var currentLayoutNode = LayoutNodeField?.getSafe(semanticsNode)
+        while (currentLayoutNode != null) {
+            val parentLayoutNode = ParentOfLayoutNode?.getSafe(currentLayoutNode) ?: break
+            val modifierInfoList = try {
+                @Suppress("UNCHECKED_CAST")
+                GetModifierInfoMethod?.invoke(parentLayoutNode) as? List<Any>
+            } catch (_: Exception) {
+                null
+            }
+            modifierInfoList?.forEach { modifierInfo ->
+                val modifier = modifierInfo.javaClass.getDeclaredField("modifier")
+                    .apply { isAccessible = true }
+                    .get(modifierInfo) as? Modifier
+                if (modifier != null && isGraphicsLayerElement(modifier)) {
+                    val alpha = getAlpha(modifier)
+                    if (alpha != null && alpha < 1f) {
+                        return true
+                    }
+                }
+            }
+            currentLayoutNode = parentLayoutNode
+        }
+        return false
     }
 
     fun getBitmapInVectorPainter(vectorPainter: VectorPainter): Bitmap? {
