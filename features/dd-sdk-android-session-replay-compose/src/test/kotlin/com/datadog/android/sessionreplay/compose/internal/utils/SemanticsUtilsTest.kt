@@ -38,6 +38,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -475,7 +476,10 @@ class SemanticsUtilsTest {
             mockPaddingModifierInfo,
             mockBackgroundModifierInfo
         )
-        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeRect
+        whenever(mockSemanticsNode.size) doReturn IntSize(
+            (fakeRect.right - fakeRect.left).toInt(),
+            (fakeRect.bottom - fakeRect.top).toInt()
+        )
         whenever(mockSemanticsNode.positionInRoot) doReturn Offset(fakeRect.left, fakeRect.top)
         val size = Size(
             fakeBounds.width.toFloat() * fakeDensity.density,

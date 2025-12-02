@@ -183,8 +183,11 @@ internal class SemanticsUtils(
     internal fun resolveInnerBounds(semanticsNode: SemanticsNode): GlobalBounds {
         val offset = semanticsNode.positionInRoot
         // Resolve the measured size.
-        // Some semantics node doesn't have InnerLayerCoordinator, so use boundsInRoot as a fallback.
-        val size = resolveInnerSize(semanticsNode) ?: semanticsNode.boundsInRoot.size
+        // Some semantics node doesn't have InnerLayerCoordinator, so use semanticsNode.size as
+        // a fallback. Note: boundsInRoot.size cannot be used because it returns the clipped/visible
+        // bounds which causes images to appear squashed when partially scrolled off screen.
+        val size = resolveInnerSize(semanticsNode)
+            ?: Size(semanticsNode.size.width.toFloat(), semanticsNode.size.height.toFloat())
         val density = semanticsNode.layoutInfo.density.density
         val width = (size.width / density).toLong()
         val height = (size.height / density).toLong()
