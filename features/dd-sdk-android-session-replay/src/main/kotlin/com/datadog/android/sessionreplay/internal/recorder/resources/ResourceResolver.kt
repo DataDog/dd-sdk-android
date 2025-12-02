@@ -46,7 +46,7 @@ internal class ResourceResolver(
     )
 ) {
 
-    init {
+    internal fun registerCallbacks() {
         applicationContext.registerComponentCallbacks(alpha8ResourceCache)
     }
 

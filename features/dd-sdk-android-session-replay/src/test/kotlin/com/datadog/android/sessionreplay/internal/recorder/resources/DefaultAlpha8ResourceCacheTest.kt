@@ -21,6 +21,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -36,7 +37,7 @@ internal class DefaultAlpha8ResourceCacheTest {
     private lateinit var mockSignatureGenerator: BitmapSignatureGenerator
 
     @Mock
-    private lateinit var mockCache: LruCache<Alpha8CacheKey, ByteArray>
+    private lateinit var mockCache: LruCache<Alpha8CacheKey, String>
 
     @Mock
     private lateinit var mockBitmap: Bitmap
@@ -92,7 +93,7 @@ internal class DefaultAlpha8ResourceCacheTest {
     fun `M return cached resourceId W get { key found in cache }`() {
         // Given
         val key = Alpha8CacheKey(100, 100, fakeSignature)
-        whenever(mockCache[key]).thenReturn(fakeResourceId.toByteArray(Charsets.UTF_8))
+        whenever(mockCache[key]).thenReturn(fakeResourceId)
 
         // When
         val result = testedCache.get(key)
@@ -127,7 +128,7 @@ internal class DefaultAlpha8ResourceCacheTest {
         testedCache.put(key, fakeResourceId)
 
         // Then
-        verify(mockCache).put(key, fakeResourceId.toByteArray(Charsets.UTF_8))
+        verify(mockCache).put(key, fakeResourceId)
     }
 
     // endregion
@@ -208,8 +209,8 @@ internal class DefaultAlpha8ResourceCacheTest {
         testedCache.onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
 
         // Then
-        verify(mockCache, org.mockito.kotlin.never()).evictAll()
-        verify(mockCache, org.mockito.kotlin.never()).trimToSize(any())
+        verify(mockCache, never()).evictAll()
+        verify(mockCache, never()).trimToSize(any())
     }
 
     @Test

@@ -109,7 +109,7 @@ datadog:
       - "androidx.collection.LruCache.evictAll()"
       - "androidx.collection.LruCache.maxSize()"
       - "androidx.collection.LruCache.put(com.datadog.android.flags.internal.ExposureEventsProcessor.CacheKey, kotlin.Boolean)"
-      - "androidx.collection.LruCache.put(com.datadog.android.sessionreplay.internal.recorder.resources.Alpha8CacheKey, kotlin.ByteArray)"
+      - "androidx.collection.LruCache.put(com.datadog.android.sessionreplay.internal.recorder.resources.Alpha8CacheKey, kotlin.String)"
       - "androidx.collection.LruCache.size()"
       - "androidx.collection.LruCache.hitCount()"
       - "androidx.collection.LruCache.missCount()"

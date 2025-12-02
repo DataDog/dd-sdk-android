@@ -115,6 +115,7 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(appContext.mockInstance).registerActivityLifecycleCallbacks(mockLifecycleCallback)
+        verify(mockResourceResolver).registerCallbacks()
     }
 
     @Test

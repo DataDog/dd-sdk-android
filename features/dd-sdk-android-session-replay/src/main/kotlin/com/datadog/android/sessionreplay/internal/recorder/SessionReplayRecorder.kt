@@ -248,6 +248,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     override fun registerCallbacks() {
         appContext.registerActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
+        resourceResolver.registerCallbacks()
     }
 
     override fun unregisterCallbacks() {
