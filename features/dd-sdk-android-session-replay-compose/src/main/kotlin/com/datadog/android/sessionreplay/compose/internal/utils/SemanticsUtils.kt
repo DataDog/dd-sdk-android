@@ -285,16 +285,30 @@ internal class SemanticsUtils(
             sendBitmapInfoTelemetry(it, isContextualImage)
         }
 
+        // Get contentScale and alignment for local images
+        val contentScale = reflectionUtils.getContentScale(semanticsNode)
+        val alignment = reflectionUtils.getAlignment(semanticsNode)
+
         // Avoid copying hardware bitmap because it is slow and may violate [StrictMode#noteSlowCall]
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap?.config == Bitmap.Config.HARDWARE) {
-            return BitmapInfo(bitmap, isContextualImage)
+            return BitmapInfo(
+                bitmap = bitmap,
+                isContextualImage = isContextualImage,
+                contentScale = contentScale,
+                alignment = alignment
+            )
         }
         val newBitmap = bitmap?.let {
             @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
             it.copy(Bitmap.Config.ARGB_8888, false)
         }
         return newBitmap?.let {
-            BitmapInfo(it, isContextualImage)
+            BitmapInfo(
+                bitmap = it,
+                isContextualImage = isContextualImage,
+                contentScale = contentScale,
+                alignment = alignment
+            )
         }
     }
 
