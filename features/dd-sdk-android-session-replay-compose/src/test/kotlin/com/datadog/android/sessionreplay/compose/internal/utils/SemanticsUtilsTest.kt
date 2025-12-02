@@ -7,11 +7,13 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.view.View
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composition
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -21,6 +23,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.Placeable
@@ -508,15 +511,27 @@ class SemanticsUtilsTest {
         // Given
         val mockVectorPainter = mock<VectorPainter>()
         val mockBitmap = mock<Bitmap>()
+        val mockCopiedBitmap = mock<Bitmap>()
+        val fakeContentScale = ContentScale.Crop
+        val fakeAlignment = Alignment.TopStart
         whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
         whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
-        whenever(mockBitmap.copy(any(), any())) doReturn mockBitmap
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
+        whenever(mockBitmap.copy(any(), any())) doReturn mockCopiedBitmap
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
 
         // Then
-        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, false))
+        assertThat(result).isEqualTo(
+            BitmapInfo(
+                bitmap = mockCopiedBitmap,
+                isContextualImage = false,
+                contentScale = fakeContentScale,
+                alignment = fakeAlignment
+            )
+        )
     }
 
     @Test
@@ -524,33 +539,105 @@ class SemanticsUtilsTest {
         // Given
         val mockBitmapPainter = mock<BitmapPainter>()
         val mockBitmap = mock<Bitmap>()
+        val mockCopiedBitmap = mock<Bitmap>()
+        val fakeContentScale = ContentScale.FillWidth
+        val fakeAlignment = Alignment.BottomEnd
         whenever(mockReflectionUtils.getAsyncImagePainter(mockSemanticsNode)) doReturn mockBitmapPainter
         whenever(mockReflectionUtils.getBitmapInBitmapPainter(mockBitmapPainter)) doReturn mockBitmap
         whenever(mockReflectionUtils.isAsyncImagePainter(mockBitmapPainter)) doReturn false
-        whenever(mockBitmap.copy(any(), any())) doReturn mockBitmap
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
+        whenever(mockBitmap.copy(any(), any())) doReturn mockCopiedBitmap
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
 
         // Then
-        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, true))
+        assertThat(result).isEqualTo(
+            BitmapInfo(
+                bitmap = mockCopiedBitmap,
+                isContextualImage = true,
+                contentScale = fakeContentScale,
+                alignment = fakeAlignment
+            )
+        )
     }
 
     @Test
-    fun `M return raw ALPHA_8 bitmap W resolveSemanticsPainter { ALPHA_8 bitmap }`() {
+    fun `M return raw ALPHA_8 bitmap with contentScale W resolveSemanticsPainter { ALPHA_8 bitmap }`() {
         // Given
         val mockVectorPainter = mock<VectorPainter>()
         val mockBitmap = mock<Bitmap>()
-
+        val fakeContentScale = ContentScale.Inside
+        val fakeAlignment = Alignment.CenterStart
         whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
         whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
         whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
 
         // Then
-        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, false))
+        assertThat(result).isEqualTo(
+            BitmapInfo(
+                bitmap = mockBitmap,
+                isContextualImage = false,
+                contentScale = fakeContentScale,
+                alignment = fakeAlignment
+            )
+        )
+    }
+
+    @Test
+    fun `M return raw HARDWARE bitmap with contentScale W resolveSemanticsPainter { HARDWARE bitmap, API 26+ }`() {
+        // Given
+        val mockVectorPainter = mock<VectorPainter>()
+        val mockBitmap = mock<Bitmap>()
+        val fakeContentScale = ContentScale.Fit
+        val fakeAlignment = Alignment.Center
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
+        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
+        whenever(mockBitmap.config) doReturn Bitmap.Config.HARDWARE
+
+        // When
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+        } else {
+            null
+        }
+
+        // Then
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            assertThat(result).isEqualTo(
+                BitmapInfo(
+                    bitmap = mockBitmap,
+                    isContextualImage = false,
+                    contentScale = fakeContentScale,
+                    alignment = fakeAlignment
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M return null W resolveSemanticsPainter { bitmap copy fails }`() {
+        // Given
+        val mockVectorPainter = mock<VectorPainter>()
+        val mockBitmap = mock<Bitmap>()
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
+        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
+        whenever(mockBitmap.config) doReturn Bitmap.Config.ARGB_8888
+        whenever(mockBitmap.copy(any(), any())) doReturn null
+
+        // When
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @ParameterizedTest(name = "{index} (overflowValue: {0}, expectedMode: {1})")

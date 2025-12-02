@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
@@ -262,8 +263,29 @@ internal class SemanticsUtils(
             sendBitmapInfoTelemetry(it, isContextualImage)
         }
 
-        return bitmap?.let {
-            BitmapInfo(it, isContextualImage)
+        val contentScale = reflectionUtils.getContentScale(semanticsNode)
+        val alignment = reflectionUtils.getAlignment(semanticsNode)
+
+        // Use raw bitmap without copying for:
+        // - HARDWARE: copying is slow and may violate StrictMode#noteSlowCall
+        // - ALPHA_8: cannot be copied to ARGB_8888 directly (copy returns null)
+        val skipCopy = bitmap?.config == Bitmap.Config.ALPHA_8 ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap?.config == Bitmap.Config.HARDWARE)
+
+        val finalBitmap = if (skipCopy) {
+            bitmap
+        } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
+            bitmap?.copy(Bitmap.Config.ARGB_8888, false)
+        }
+
+        return finalBitmap?.let {
+            BitmapInfo(
+                bitmap = it,
+                isContextualImage = isContextualImage,
+                contentScale = contentScale,
+                alignment = alignment
+            )
         }
     }
 
