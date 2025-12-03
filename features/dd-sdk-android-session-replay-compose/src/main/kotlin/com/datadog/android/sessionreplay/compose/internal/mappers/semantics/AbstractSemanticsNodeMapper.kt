@@ -42,12 +42,14 @@ internal abstract class AbstractSemanticsNodeMapper(
     protected fun resolveModifierWireframes(
         semanticsNode: SemanticsNode
     ): List<MobileSegment.Wireframe> {
+        val clipping = semanticsUtils.resolveClipping(semanticsNode)
         return semanticsUtils.resolveBackgroundInfo(semanticsNode)
             .mapIndexed { index, backgroundInfo ->
                 convertBackgroundInfoToWireframes(
                     semanticsNode = semanticsNode,
                     backgroundInfo = backgroundInfo,
-                    index = index
+                    index = index,
+                    clipping = clipping
                 )
             }
     }
@@ -55,7 +57,8 @@ internal abstract class AbstractSemanticsNodeMapper(
     private fun convertBackgroundInfoToWireframes(
         semanticsNode: SemanticsNode,
         backgroundInfo: BackgroundInfo,
-        index: Int
+        index: Int,
+        clipping: MobileSegment.WireframeClip?
     ): MobileSegment.Wireframe {
         val shapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = backgroundInfo.color?.let { convertColor(it) },
@@ -67,7 +70,8 @@ internal abstract class AbstractSemanticsNodeMapper(
             y = backgroundInfo.globalBounds.y,
             width = backgroundInfo.globalBounds.width,
             height = backgroundInfo.globalBounds.height,
-            shapeStyle = shapeStyle
+            shapeStyle = shapeStyle,
+            clip = clipping
         )
     }
 

@@ -28,14 +28,16 @@ internal class ImageSemanticsNodeMapper(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
-        val containerBounds = resolveBounds(semanticsNode)
+
+        val bounds = resolveBounds(semanticsNode)
+        val clipping = semanticsUtils.resolveClipping(semanticsNode)
         val bitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode)
         val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
         val imagePrivacy =
             semanticsUtils.getImagePrivacyOverride(semanticsNode) ?: parentContext.imagePrivacy
         val imageWireframe = if (bitmapInfo != null) {
             val scaledImageInfo = calculateScaledImageBounds(
-                containerBounds = containerBounds,
+                containerBounds = bounds,
                 bitmapInfo = bitmapInfo,
                 density = parentContext.density
             )
@@ -47,7 +49,7 @@ internal class ImageSemanticsNodeMapper(
                 isContextualImage = bitmapInfo.isContextualImage,
                 imagePrivacy = imagePrivacy,
                 asyncJobStatusCallback = asyncJobStatusCallback,
-                clipping = scaledImageInfo.clipping,
+                clipping = clipping,
                 shapeStyle = null,
                 border = null
             )

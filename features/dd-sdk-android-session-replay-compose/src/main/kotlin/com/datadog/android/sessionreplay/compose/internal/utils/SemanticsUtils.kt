@@ -196,6 +196,33 @@ internal class SemanticsUtils(
         return GlobalBounds(x, y, width, height)
     }
 
+    internal fun resolveClipping(semanticsNode: SemanticsNode): MobileSegment.WireframeClip? {
+        val fullBounds = resolveInnerBounds(semanticsNode)
+        val visibleBounds = semanticsNode.boundsInRoot
+        val density = semanticsNode.layoutInfo.density.density
+
+        val visibleLeft = (visibleBounds.left / density).toLong()
+        val visibleTop = (visibleBounds.top / density).toLong()
+        val visibleRight = (visibleBounds.right / density).toLong()
+        val visibleBottom = (visibleBounds.bottom / density).toLong()
+
+        val clipLeft = maxOf(0L, visibleLeft - fullBounds.x)
+        val clipTop = maxOf(0L, visibleTop - fullBounds.y)
+        val clipRight = maxOf(0L, (fullBounds.x + fullBounds.width) - visibleRight)
+        val clipBottom = maxOf(0L, (fullBounds.y + fullBounds.height) - visibleBottom)
+
+        return if (clipLeft > 0 || clipTop > 0 || clipRight > 0 || clipBottom > 0) {
+            MobileSegment.WireframeClip(
+                left = clipLeft,
+                top = clipTop,
+                right = clipRight,
+                bottom = clipBottom
+            )
+        } else {
+            null
+        }
+    }
+
     private fun resolveInnerSize(semanticsNode: SemanticsNode): Size? {
         val placeable = reflectionUtils.getPlaceable(semanticsNode)
         val height = placeable?.height

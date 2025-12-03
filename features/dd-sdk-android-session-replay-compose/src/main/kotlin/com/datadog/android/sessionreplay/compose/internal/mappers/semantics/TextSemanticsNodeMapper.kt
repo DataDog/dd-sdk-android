@@ -51,6 +51,7 @@ internal open class TextSemanticsNodeMapper(
             transformCapturedText(it, textAndInputPrivacy)
         }
         val bounds = resolveBounds(semanticsNode)
+        val clipping = semanticsUtils.resolveClipping(semanticsNode)
         return capturedText?.let { text ->
             MobileSegment.Wireframe.TextWireframe(
                 id = semanticsNode.id.toLong(),
@@ -58,6 +59,7 @@ internal open class TextSemanticsNodeMapper(
                 y = bounds.y,
                 width = bounds.width,
                 height = bounds.height,
+                clip = clipping,
                 text = text,
                 textStyle = resolveTextStyle(parentContext, textLayoutInfo),
                 textPosition = resolveTextAlign(textLayoutInfo)
