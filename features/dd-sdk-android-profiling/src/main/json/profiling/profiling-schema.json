@@ -44,6 +44,72 @@
       "type": "string",
       "description": "The list of tags joined into a String and divided by ',' ",
       "readOnly": true
+    },
+    "application": {
+      "type": "object",
+      "description": "The RUM Application this profile event is associated with.",
+      "readOnly": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of RUM Application in the UUID format.",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "session": {
+      "type": "object",
+      "description": "The RUM Session this profile event is associated with.",
+      "readOnly": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of RUM Session in the UUID format.",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "view": {
+      "type": "object",
+      "description": "The RUM View this profile event is associated with.",
+      "readOnly": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier in the UUID format.",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the RUM view.",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "vital": {
+      "type": "object",
+      "description": "The RUM Vital this profile event is associated with.",
+      "readOnly": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of RUM Vital in the UUID format.",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "id"
+      ]
     }
   },
   "required": [
@@ -53,6 +119,9 @@
     "family",
     "runtime",
     "version",
-    "tags_profiler"
+    "tags_profiler",
+    "application",
+    "session",
+    "vital"
   ]
 }

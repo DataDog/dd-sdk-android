@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.utils.formatIsoUtc
+import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
@@ -113,37 +114,40 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
-        val tags = "service:${fakeDatadogContext.service},env:${fakeDatadogContext.env}," +
-            "version:${fakeDatadogContext.version},sdk_version:${fakeDatadogContext.sdkVersion}," +
-            "application_id:${fakeTTIDEvent.applicationId}," +
-            "session_id:${fakeTTIDEvent.sessionId},vital_id:${fakeTTIDEvent.vitalId}"
-        val tagsBuilder = StringBuilder(tags)
-        fakeTTIDEvent.viewId?.let {
-            tagsBuilder.append(",view_id:$it")
-        }
-        fakeTTIDEvent.viewName?.let {
-            tagsBuilder.append(",view_name:$it")
-        }
-
-        val expectedProfileEvent = ProfileEvent(
-            start = formatIsoUtc(fakeResult.start),
-            end = formatIsoUtc(fakeResult.end),
-            attachments = listOf("perfetto.proto"),
-            family = "android",
-            runtime = "android",
-            version = "4",
-            tagsProfiler = tagsBuilder.toString()
-
-        )
         val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
             event = argumentCaptor.capture(),
             batchMetadata = isNull(),
             eventType = eq(EventType.DEFAULT)
         )
-        assertThat(argumentCaptor.firstValue.data).isEqualTo(
-            expectedProfileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-        )
+        val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
+        assertThat(actualEvent)
+            .hasStart(formatIsoUtc(fakeResult.start))
+            .hasEnd(formatIsoUtc(fakeResult.end))
+            .hasAttachments(listOf("perfetto.proto"))
+            .hasFamily("android")
+            .hasRuntime("android")
+            .hasVersion("4")
+            .hasTags(
+                listOf(
+                    "service:${fakeDatadogContext.service}",
+                    "env:${fakeDatadogContext.env}",
+                    "version:${fakeDatadogContext.version}",
+                    "sdk_version:${fakeDatadogContext.sdkVersion}"
+                )
+            )
+            .hasApplicationId(fakeTTIDEvent.applicationId)
+            .hasSessionId(fakeTTIDEvent.sessionId)
+            .hasVitalId(fakeTTIDEvent.vitalId)
+            .apply {
+                if (fakeTTIDEvent.viewId != null && fakeTTIDEvent.viewName != null) {
+                    hasViewId(fakeTTIDEvent.viewId)
+                    hasViewName(fakeTTIDEvent.viewName)
+                } else {
+                    hasViewId(null)
+                    hasViewName(null)
+                }
+            }
         assertThat(argumentCaptor.firstValue.metadata).isEqualTo(
             fakeByteArray
         )
