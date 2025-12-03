@@ -30,7 +30,7 @@ internal class ImageSemanticsNodeMapper(
     ): SemanticsWireframe {
 
         val bounds = resolveBounds(semanticsNode)
-        val clipping = semanticsUtils.resolveClipping(semanticsNode)
+        val containerClipping = semanticsUtils.resolveClipping(semanticsNode)
         val bitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode)
         val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
         val imagePrivacy =
@@ -41,6 +41,7 @@ internal class ImageSemanticsNodeMapper(
                 bitmapInfo = bitmapInfo,
                 density = parentContext.density
             )
+            val combinedClipping = mergeClipping(scaledImageInfo.clipping, containerClipping)
             parentContext.imageWireframeHelper.createImageWireframeByBitmap(
                 id = semanticsNode.id.toLong(),
                 globalBounds = scaledImageInfo.bounds,
@@ -49,7 +50,7 @@ internal class ImageSemanticsNodeMapper(
                 isContextualImage = bitmapInfo.isContextualImage,
                 imagePrivacy = imagePrivacy,
                 asyncJobStatusCallback = asyncJobStatusCallback,
-                clipping = clipping,
+                clipping = combinedClipping,
                 shapeStyle = null,
                 border = null
             )
@@ -253,6 +254,27 @@ internal class ImageSemanticsNodeMapper(
 
     private fun hasClipping(left: Long, top: Long, right: Long, bottom: Long): Boolean {
         return left > 0 || top > 0 || right > 0 || bottom > 0
+    }
+
+    private fun mergeClipping(
+        contentScaleClipping: MobileSegment.WireframeClip?,
+        containerClipping: MobileSegment.WireframeClip?
+    ): MobileSegment.WireframeClip? {
+        if (contentScaleClipping == null && containerClipping == null) {
+            return null
+        }
+        if (contentScaleClipping == null) {
+            return containerClipping
+        }
+        if (containerClipping == null) {
+            return contentScaleClipping
+        }
+        return MobileSegment.WireframeClip(
+            left = maxOf(contentScaleClipping.left ?: 0L, containerClipping.left ?: 0L),
+            top = maxOf(contentScaleClipping.top ?: 0L, containerClipping.top ?: 0L),
+            right = maxOf(contentScaleClipping.right ?: 0L, containerClipping.right ?: 0L),
+            bottom = maxOf(contentScaleClipping.bottom ?: 0L, containerClipping.bottom ?: 0L)
+        )
     }
 
     internal data class ScaledSize(val width: Float, val height: Float)

@@ -560,8 +560,9 @@ internal class SemanticsUtils(
 
         val currentBounds = semanticsNode.boundsInRoot
         val currentIndex = siblings.indexOf(semanticsNode)
+        if (currentIndex < 0) return false
         val otherIndex = if (currentIndex == 0) 1 else 0
-        val otherSibling = siblings[otherIndex]
+        val otherSibling = siblings.getOrNull(otherIndex) ?: return false
         val otherBounds = otherSibling.boundsInRoot
 
         val boundsOverlap = currentBounds.left == otherBounds.left &&

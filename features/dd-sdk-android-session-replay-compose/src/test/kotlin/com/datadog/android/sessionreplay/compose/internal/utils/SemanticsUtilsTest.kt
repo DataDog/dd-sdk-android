@@ -640,6 +640,96 @@ class SemanticsUtilsTest {
         assertThat(result).isFalse()
     }
 
+    // region resolveClipping
+
+    @Test
+    fun `M return null W resolveClipping { element fully visible }`() {
+        // Given
+        val fakeRect = Rect(100f, 100f, 300f, 400f)
+        val density = Density(fakeDensity)
+        whenever(mockLayoutInfo.density) doReturn density
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeRect
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset(fakeRect.left, fakeRect.top)
+        whenever(mockSemanticsNode.size) doReturn IntSize(
+            (fakeRect.right - fakeRect.left).toInt(),
+            (fakeRect.bottom - fakeRect.top).toInt()
+        )
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn emptyList()
+
+        // When
+        val result = testedSemanticsUtils.resolveClipping(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return clip W resolveClipping { element clipped at top }`() {
+        // Given
+        val fullTop = 50f
+        val visibleTop = 100f
+        val fakeFullRect = Rect(100f, fullTop, 300f, 400f)
+        val fakeVisibleRect = Rect(100f, visibleTop, 300f, 400f)
+        val density = Density(fakeDensity)
+
+        whenever(mockLayoutInfo.density) doReturn density
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeVisibleRect
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset(fakeFullRect.left, fakeFullRect.top)
+        whenever(mockSemanticsNode.size) doReturn IntSize(
+            (fakeFullRect.right - fakeFullRect.left).toInt(),
+            (fakeFullRect.bottom - fakeFullRect.top).toInt()
+        )
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn emptyList()
+
+        // When
+        val result = testedSemanticsUtils.resolveClipping(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isNotNull
+        val visibleTopDp = (visibleTop / fakeDensity).toLong()
+        val fullTopDp = (fullTop / fakeDensity).toLong()
+        val expectedClipTop = visibleTopDp - fullTopDp
+        assertThat(result?.top).isEqualTo(expectedClipTop)
+        assertThat(result?.bottom).isEqualTo(0L)
+        assertThat(result?.left).isEqualTo(0L)
+        assertThat(result?.right).isEqualTo(0L)
+    }
+
+    @Test
+    fun `M return clip W resolveClipping { element clipped at bottom }`() {
+        // Given
+        val fullBottom = 500f
+        val visibleBottom = 400f
+        val fakeFullRect = Rect(100f, 100f, 300f, fullBottom)
+        val fakeVisibleRect = Rect(100f, 100f, 300f, visibleBottom)
+        val density = Density(fakeDensity)
+
+        whenever(mockLayoutInfo.density) doReturn density
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeVisibleRect
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset(fakeFullRect.left, fakeFullRect.top)
+        whenever(mockSemanticsNode.size) doReturn IntSize(
+            (fakeFullRect.right - fakeFullRect.left).toInt(),
+            (fakeFullRect.bottom - fakeFullRect.top).toInt()
+        )
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn emptyList()
+
+        // When
+        val result = testedSemanticsUtils.resolveClipping(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isNotNull
+        val fullBoundsY = (fakeFullRect.top / fakeDensity).toLong()
+        val fullBoundsHeight = ((fakeFullRect.bottom - fakeFullRect.top) / fakeDensity).toLong()
+        val visibleBottomDp = (visibleBottom / fakeDensity).toLong()
+        val expectedClipBottom = maxOf(0L, (fullBoundsY + fullBoundsHeight) - visibleBottomDp)
+        assertThat(result?.bottom).isEqualTo(expectedClipBottom)
+        assertThat(result?.top).isEqualTo(0L)
+        assertThat(result?.left).isEqualTo(0L)
+        assertThat(result?.right).isEqualTo(0L)
+    }
+
+    // endregion
+
     companion object {
         /**
          * Constant representing an unknown/unsupported TextOverflow Int value.
