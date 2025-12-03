@@ -81,6 +81,16 @@ internal class DatadogEventListenerFactoryTest {
         assertThat(result).isSameAs(DatadogEventListener.Factory.NO_OP_EVENT_LISTENER)
     }
 
+    @Test
+    fun `M not generate UUID in the resource key W create()`() {
+        // When
+        val result = testedFactory.create(mockCall)
+
+        // Then
+        check(result is DatadogEventListener)
+        assertThat(result.key.uuid).isEqualTo(null)
+    }
+
     companion object {
         val datadogCore = DatadogSingletonTestConfiguration()
 
