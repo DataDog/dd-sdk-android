@@ -5,13 +5,13 @@
   -->
 
 <resources>
-<!--    <color name="vital_bg">#B5B5B5</color>-->
-    <color name="widget_text">#FFFFFF</color>
-    <color name="vital_bg">#373737</color>
+    <!-- Light theme colors -->
+    <color name="widget_text">#1A1A1A</color>
+    <color name="vital_bg">#E0E0E0</color>
     <color name="vital_chart">#AAFF0000</color>
-    <color name="widget_bg">#292929</color>
-    <color name="timeline_action">#FFC0CB</color>
-    <color name="timeline_slow_frame">#FFFF00</color>
-    <color name="timeline_freeze_frame">#FF0000</color>
-    <color name="timeline_resource">#00FF00</color>
+    <color name="widget_bg">#F5F5F5</color>
+    <color name="timeline_action">#C71585</color>
+    <color name="timeline_slow_frame">#B8860B</color>
+    <color name="timeline_freeze_frame">#CC0000</color>
+    <color name="timeline_resource">#228B22</color>
 </resources>
