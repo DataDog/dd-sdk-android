@@ -14,8 +14,32 @@ data class com.datadog.android.profiling.ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration
 data class com.datadog.android.profiling.model.ProfileEvent
-  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String)
+  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, Application, Session, View? = null, Vital)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): ProfileEvent
     fun fromJsonObject(com.google.gson.JsonObject): ProfileEvent
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class View
+    constructor(kotlin.String, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
+  data class Vital
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Vital
+      fun fromJsonObject(com.google.gson.JsonObject): Vital

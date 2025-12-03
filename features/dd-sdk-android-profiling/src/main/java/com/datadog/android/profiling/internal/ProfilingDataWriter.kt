@@ -70,6 +70,9 @@ internal class ProfilingDataWriter(
         profilingResult: PerfettoResult,
         ttidEvent: TTIDEvent
     ): ProfileEvent {
+        // needed to benefit from smart-cast below, reading property only once
+        val rumViewId = ttidEvent.viewId
+        val rumViewName = ttidEvent.viewName
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
@@ -77,13 +80,23 @@ internal class ProfilingDataWriter(
             family = ANDROID_FAMILY_NAME,
             runtime = ANDROID_RUNTIME_NAME,
             version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context, ttidEvent)
+            tagsProfiler = buildTags(context),
+            application = ProfileEvent.Application(id = ttidEvent.applicationId),
+            session = ProfileEvent.Session(id = ttidEvent.sessionId),
+            vital = ProfileEvent.Vital(id = ttidEvent.vitalId),
+            view = if (rumViewId != null && rumViewName != null) {
+                ProfileEvent.View(
+                    id = rumViewId,
+                    name = rumViewName
+                )
+            } else {
+                null
+            }
         )
     }
 
     private fun buildTags(
-        context: DatadogContext,
-        ttidEvent: TTIDEvent
+        context: DatadogContext
     ): String = buildString {
         append("$TAG_KEY_SERVICE:${context.service}")
         append(",")
@@ -92,22 +105,6 @@ internal class ProfilingDataWriter(
         append("$TAG_KEY_VERSION:${context.version}")
         append(",")
         append("$TAG_KEY_SDK_VERSION:${context.sdkVersion}")
-        ttidEvent.apply {
-            append(",")
-            append("$TAG_KEY_RUM_APPLICATION_ID:$applicationId")
-            append(",")
-            append("$TAG_KEY_RUM_SESSION_ID:$sessionId")
-            append(",")
-            append("$TAG_KEY_RUM_VITAL_ID:$vitalId")
-            viewId?.let {
-                append(",")
-                append("$TAG_KEY_RUM_VIEW_ID:$it")
-            }
-            viewName?.let {
-                append(",")
-                append("$TAG_KEY_RUM_VIEW_NAME:$it")
-            }
-        }
     }
 
     private fun readProfilingData(profilingPath: String): ByteArray? {
@@ -120,11 +117,6 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
         private const val TAG_KEY_SDK_VERSION = "sdk_version"
-        private const val TAG_KEY_RUM_APPLICATION_ID = "application_id"
-        private const val TAG_KEY_RUM_SESSION_ID = "session_id"
-        private const val TAG_KEY_RUM_VITAL_ID = "vital_id"
-        private const val TAG_KEY_RUM_VIEW_ID = "view_id"
-        private const val TAG_KEY_RUM_VIEW_NAME = "view_name"
         private const val TAG_KEY_ENV = "env"
         private const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         private const val ANDROID_FAMILY_NAME = "android"
