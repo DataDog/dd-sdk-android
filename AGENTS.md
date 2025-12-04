@@ -23,6 +23,7 @@ All `.kt` and `.kts` files must start with:
 - Commit: `<JIRA-ID>: <description>` (internal) or `<description>` (external)
 - PR title: same as commit format
 - PR body: What, Motivation, Additional Notes (see [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md))
+- Before PR: run `./local_ci.sh -c -n -a` (compile, clean, analysis), then `./local_ci.sh -t` (tests)
 
 ## Commands
 
