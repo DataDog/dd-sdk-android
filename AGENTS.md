@@ -22,7 +22,7 @@ All `.kt` and `.kts` files must start with:
 - Branch: `<username>/<JIRA-ID>/<short-description>` (internal) or `<username>/<short-description>` (external)
 - Commit: `<JIRA-ID>: <description>` (internal) or `<description>` (external)
 - PR title: same as commit format
-- PR body: What, Motivation, Additional Notes (see `.github/PULL_REQUEST_TEMPLATE.md`)
+- PR body: What, Motivation, Additional Notes (see [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md))
 
 ## Commands
 
