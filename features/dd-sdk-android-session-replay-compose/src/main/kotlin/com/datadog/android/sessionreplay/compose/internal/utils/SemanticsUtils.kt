@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
-import android.os.Build
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
@@ -254,6 +253,21 @@ internal class SemanticsUtils(
     internal fun resolveSemanticsPainter(
         semanticsNode: SemanticsNode
     ): BitmapInfo? {
+        val (painter, isContextualImage) = resolvePainter(semanticsNode)
+        if (painter == null) return null
+
+        val bitmap = resolveBitmapFromPainter(painter)
+
+        bitmap?.let {
+            sendBitmapInfoTelemetry(it, isContextualImage)
+        }
+
+        return bitmap?.let {
+            BitmapInfo(it, isContextualImage)
+        }
+    }
+
+    private fun resolvePainter(semanticsNode: SemanticsNode): Pair<Painter?, Boolean> {
         var isContextualImage = false
         var painter = reflectionUtils.getLocalImagePainter(semanticsNode)
 
@@ -271,30 +285,17 @@ internal class SemanticsUtils(
         if (painter == null) {
             painter = reflectionUtils.getCoil3AsyncImagePainter(semanticsNode)
         }
-        val bitmap = when (painter) {
+        return painter to isContextualImage
+    }
+
+    private fun resolveBitmapFromPainter(painter: Painter): Bitmap? {
+        return when (painter) {
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
             is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
             else -> {
                 logUnsupportedPainter(painter)
                 null
             }
-        }
-
-        // Send telemetry about the original bitmap before copying it.
-        bitmap?.let {
-            sendBitmapInfoTelemetry(it, isContextualImage)
-        }
-
-        // Avoid copying hardware bitmap because it is slow and may violate [StrictMode#noteSlowCall]
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap?.config == Bitmap.Config.HARDWARE) {
-            return BitmapInfo(bitmap, isContextualImage)
-        }
-        val newBitmap = bitmap?.let {
-            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
-            it.copy(Bitmap.Config.ARGB_8888, false)
-        }
-        return newBitmap?.let {
-            BitmapInfo(it, isContextualImage)
         }
     }
 

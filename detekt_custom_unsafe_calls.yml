@@ -18,6 +18,7 @@ datadog:
       - "android.graphics.Bitmap.createBitmap(android.util.DisplayMetrics?, kotlin.Int, kotlin.Int, android.graphics.Bitmap.Config):java.lang.IllegalArgumentException"
       - "android.graphics.Bitmap.createBitmap(kotlin.Int, kotlin.Int, android.graphics.Bitmap.Config):java.lang.IllegalArgumentException"
       - "android.graphics.Bitmap.createScaledBitmap(android.graphics.Bitmap, kotlin.Int, kotlin.Int, kotlin.Boolean):java.lang.IllegalArgumentException"
+      - "android.graphics.Bitmap.getPixel(kotlin.Int, kotlin.Int):java.lang.IllegalArgumentException,java.lang.IllegalStateException"
       - "android.graphics.Canvas.constructor(android.graphics.Bitmap):java.lang.IllegalStateException"
       - "android.graphics.Color.parseColor(kotlin.String?):java.lang.IllegalArgumentException"
       - "android.graphics.drawable.LayerDrawable.getDrawable(kotlin.Int):java.lang.IndexOutOfBoundsException"

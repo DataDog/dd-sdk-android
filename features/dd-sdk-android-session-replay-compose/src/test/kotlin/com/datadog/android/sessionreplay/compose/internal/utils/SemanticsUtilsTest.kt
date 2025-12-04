@@ -116,7 +116,9 @@ class SemanticsUtilsTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        testedSemanticsUtils = SemanticsUtils(reflectionUtils = mockReflectionUtils)
+        testedSemanticsUtils = SemanticsUtils(
+            reflectionUtils = mockReflectionUtils
+        )
         whenever(mockSemanticsNode.layoutInfo) doReturn mockLayoutInfo
         whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockModifierInfo)
         whenever(mockModifierInfo.modifier) doReturn mockModifier
@@ -532,6 +534,23 @@ class SemanticsUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(BitmapInfo(mockBitmap, true))
+    }
+
+    @Test
+    fun `M return raw ALPHA_8 bitmap W resolveSemanticsPainter { ALPHA_8 bitmap }`() {
+        // Given
+        val mockVectorPainter = mock<VectorPainter>()
+        val mockBitmap = mock<Bitmap>()
+
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
+        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
+        whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
+
+        // When
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(BitmapInfo(mockBitmap, false))
     }
 
     @ParameterizedTest(name = "{index} (overflowValue: {0}, expectedMode: {1})")
