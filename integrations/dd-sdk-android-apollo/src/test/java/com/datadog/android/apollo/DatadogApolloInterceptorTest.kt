@@ -6,6 +6,7 @@
 
 package com.datadog.android.apollo
 
+import android.util.Base64
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.CustomScalarAdapters
 import com.apollographql.apollo.api.ExecutionContext
@@ -391,6 +392,8 @@ internal class DatadogApolloInterceptorTest {
 
     // endregion
 
+    // endregion
+
     // region helper methods
 
     private fun setupBasicMocks(
@@ -421,10 +424,16 @@ internal class DatadogApolloInterceptorTest {
         expectedHeaderValue: String? = null
     ) {
         if (expectedHeaderValue != null) {
-            verify(requestBuilder).addHttpHeader(eq(headerName), eq(expectedHeaderValue))
+            val expectedBase64Value = expectedHeaderValue.toBase64()
+            verify(requestBuilder).addHttpHeader(eq(headerName), eq(expectedBase64Value))
         } else {
             verify(requestBuilder).addHttpHeader(eq(headerName), any<String>())
         }
+    }
+
+    private fun String.toBase64(): String {
+        val bytes = this.toByteArray(Charsets.UTF_8)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     private fun checkHeaderWasNotAdded(
