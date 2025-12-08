@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
-import android.os.Build
 import android.view.View
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.foundation.shape.CornerSize
@@ -591,10 +590,11 @@ class SemanticsUtilsTest {
     }
 
     @Test
-    fun `M return raw HARDWARE bitmap with contentScale W resolveSemanticsPainter { HARDWARE bitmap, API 26+ }`() {
+    fun `M return copied bitmap W resolveSemanticsPainter { HARDWARE bitmap }`() {
         // Given
         val mockVectorPainter = mock<VectorPainter>()
         val mockBitmap = mock<Bitmap>()
+        val mockCopiedBitmap = mock<Bitmap>()
         val fakeContentScale = ContentScale.Fit
         val fakeAlignment = Alignment.Center
         whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
@@ -602,25 +602,20 @@ class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
         whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
         whenever(mockBitmap.config) doReturn Bitmap.Config.HARDWARE
+        whenever(mockBitmap.copy(Bitmap.Config.ARGB_8888, false)) doReturn mockCopiedBitmap
 
         // When
-        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
-        } else {
-            null
-        }
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
 
         // Then
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            assertThat(result).isEqualTo(
-                BitmapInfo(
-                    bitmap = mockBitmap,
-                    isContextualImage = false,
-                    contentScale = fakeContentScale,
-                    alignment = fakeAlignment
-                )
+        assertThat(result).isEqualTo(
+            BitmapInfo(
+                bitmap = mockCopiedBitmap,
+                isContextualImage = false,
+                contentScale = fakeContentScale,
+                alignment = fakeAlignment
             )
-        }
+        )
     }
 
     @Test
