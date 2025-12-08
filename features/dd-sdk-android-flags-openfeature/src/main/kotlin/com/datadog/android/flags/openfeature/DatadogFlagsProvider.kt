@@ -6,19 +6,395 @@
 
 package com.datadog.android.flags.openfeature
 
+import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
+import com.datadog.android.flags.openfeature.internal.adapters.convertValueToJson
+import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
+import com.datadog.android.flags.openfeature.internal.adapters.toMap
+import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
+import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
+import dev.openfeature.kotlin.sdk.FeatureProvider
+import dev.openfeature.kotlin.sdk.Hook
+import dev.openfeature.kotlin.sdk.ProviderEvaluation
+import dev.openfeature.kotlin.sdk.ProviderMetadata
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import org.json.JSONException
+import org.json.JSONObject
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
+
 /**
- * OpenFeature Provider implementation backed by Datadog Feature Flags.
+ * OpenFeature [FeatureProvider] implementation backed by Datadog Feature Flags.
+ *
+ * This provider bridges the OpenFeature API with Datadog's Feature Flags SDK, enabling
+ * standardized feature flag management while leveraging Datadog's observability platform.
+ *
+ * ## Usage
+ *
+ * Create a [FlagsClient] and wrap it with the extension function:
+ *
+ * ```kotlin
+ * import com.datadog.android.flags.FlagsClient
+ * import com.datadog.android.flags.openfeature.asOpenFeatureProvider
+ * import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+ *
+ * // Create a FlagsClient and convert to OpenFeature provider
+ * val provider = FlagsClient.Builder().build().asOpenFeatureProvider()
+ *
+ * // Or with custom configuration
+ * val provider = FlagsClient.Builder("analytics")
+ *     .useCustomExposureEndpoint("https://custom.endpoint.com")
+ *     .build()
+ *     .asOpenFeatureProvider()
+ *
+ * // Set it as the OpenFeature provider
+ * OpenFeatureAPI.setProviderAndWait(provider)
+ *
+ * // Use OpenFeature API
+ * val client = OpenFeatureAPI.getClient()
+ * val isEnabled = client.getBooleanValue("my-feature", false)
+ * ```
+ *
+ * ## Thread Safety
+ *
+ * This provider is thread-safe and all methods can be safely called from any thread.
+ * The underlying [FlagsClient] handles thread coordination.
  */
-class DatadogFlagsProvider {
+class DatadogFlagsProvider private constructor(private val flagsClient: FlagsClient, sdkCore: SdkCore) :
+    FeatureProvider {
+
+    private val internalLogger: InternalLogger? = (sdkCore as? FeatureSdkCore)?.internalLogger
+
+    override val metadata: ProviderMetadata = object : ProviderMetadata {
+        override val name: String = PROVIDER_NAME
+    }
+
+    override val hooks: List<Hook<*>> = emptyList()
 
     /**
-     * Simple hello world method so the module is not empty.
+     * Initializes the provider with the given evaluation context.
      *
-     * @return A greeting message
+     * Sets the initial evaluation context on the underlying [FlagsClient] and waits for
+     * the provider to reach a ready state. Per the OpenFeature spec, this method blocks
+     * until the provider is "ready" - where "ready" means a configuration has been set
+     * and flags have been loaded.
+     *
+     * The method suspends until the FlagsClient reaches either:
+     * - [FlagsClientState.Ready]: Flags successfully loaded, resumes normally
+     * - [FlagsClientState.Error]: Initialization failed, throws exception
+     *
+     * @param initialContext The initial evaluation context to set
+     * @throws Exception if initialization fails (FlagsClientState.Error)
      */
-    fun helloWorld(): String = GREETING
+    override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
+        if (initialContext == null) return
+
+        // Trigger context setting first
+        flagsClient.setEvaluationContext(initialContext.toDatadogEvaluationContext())
+
+        // Then wait for Ready or Error state
+        suspendCoroutine<Unit> { continuation ->
+            val listener = object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    when (newState) {
+                        is FlagsClientState.Ready -> {
+                            flagsClient.state.removeListener(this)
+                            continuation.resume(Unit)
+                        }
+                        is FlagsClientState.Error -> {
+                            flagsClient.state.removeListener(this)
+                            continuation.resumeWithException(
+                                newState.error ?: Exception("Initialization failed")
+                            )
+                        }
+                        else -> {} // Still waiting (NotReady, Reconciling, Stale)
+                    }
+                }
+            }
+
+            flagsClient.state.addListener(listener)
+
+            // Check if already in terminal state (sticky state pattern)
+            when (val currentState = flagsClient.state.getCurrentState()) {
+                is FlagsClientState.Ready -> {
+                    flagsClient.state.removeListener(listener)
+                    continuation.resume(Unit)
+                }
+                is FlagsClientState.Error -> {
+                    flagsClient.state.removeListener(listener)
+                    continuation.resumeWithException(
+                        currentState.error ?: Exception("Initialization failed")
+                    )
+                }
+                else -> {} // Wait for state change notification
+            }
+        }
+    }
+
+    /**
+     * Called when the evaluation context changes.
+     *
+     * Per the OpenFeature spec, this method performs blocking work and suspends until
+     * the provider is ready again or encounters an error. This allows the OpenFeature SDK
+     * to emit PROVIDER_RECONCILING events while this method executes.
+     *
+     * The method suspends while the FlagsClient fetches updated flags for the new context,
+     * and resumes when reaching a terminal state:
+     * - [FlagsClientState.Ready]: Flags updated successfully, resumes normally
+     * - [FlagsClientState.Stale]: Network failed but cached flags available, resumes normally
+     * - [FlagsClientState.Error]: Unrecoverable error, throws exception
+     *
+     * @param oldContext The previous evaluation context (unused)
+     * @param newContext The new evaluation context to set
+     * @throws Exception if an unrecoverable error occurs during context reconciliation
+     */
+    override suspend fun onContextSet(
+        oldContext: OpenFeatureEvaluationContext?,
+        newContext: OpenFeatureEvaluationContext
+    ) {
+        // Trigger context change first
+        setContext(newContext)
+
+        // Then wait for Ready, Stale, or Error state
+        suspendCoroutine<Unit> { continuation ->
+            val listener = object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    when (newState) {
+                        FlagsClientState.Ready, FlagsClientState.Stale -> {
+                            flagsClient.state.removeListener(this)
+                            continuation.resume(Unit)
+                        }
+                        is FlagsClientState.Error -> {
+                            flagsClient.state.removeListener(this)
+                            continuation.resumeWithException(
+                                newState.error ?: Exception("Context reconciliation failed")
+                            )
+                        }
+                        else -> {} // Still reconciling (Reconciling, NotReady)
+                    }
+                }
+            }
+
+            flagsClient.state.addListener(listener)
+
+            // Check if already in terminal state (sticky state pattern)
+            when (val currentState = flagsClient.state.getCurrentState()) {
+                FlagsClientState.Ready, FlagsClientState.Stale -> {
+                    flagsClient.state.removeListener(listener)
+                    continuation.resume(Unit)
+                }
+                is FlagsClientState.Error -> {
+                    flagsClient.state.removeListener(listener)
+                    continuation.resumeWithException(
+                        currentState.error ?: Exception("Context reconciliation failed")
+                    )
+                }
+                else -> {} // Wait for state change notification
+            }
+        }
+    }
+
+    override fun getBooleanEvaluation(
+        key: String,
+        defaultValue: Boolean,
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Boolean> {
+        context?.let {
+            internalLogger?.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
+            )
+        }
+        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+    }
+
+    override fun getStringEvaluation(
+        key: String,
+        defaultValue: String,
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<String> {
+        context?.let {
+            internalLogger?.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
+            )
+        }
+        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+    }
+
+    override fun getIntegerEvaluation(
+        key: String,
+        defaultValue: Int,
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Int> {
+        context?.let {
+            internalLogger?.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
+            )
+        }
+        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+    }
+
+    override fun getDoubleEvaluation(
+        key: String,
+        defaultValue: Double,
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Double> {
+        context?.let {
+            internalLogger?.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
+            )
+        }
+        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+    }
+
+    override fun getObjectEvaluation(
+        key: String,
+        defaultValue: Value,
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Value> {
+        context?.let {
+            internalLogger?.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
+            )
+        }
+
+        val jsonDefault = when (val converted = convertValueToJson(defaultValue)) {
+            is JSONObject -> converted
+            else -> JSONObject()
+        }
+
+        val resolutionDetails = flagsClient.resolve(key, jsonDefault)
+
+        val errorCode = resolutionDetails.errorCode
+        if (errorCode != null) {
+            return ProviderEvaluation(
+                value = defaultValue,
+                variant = resolutionDetails.variant,
+                reason = resolutionDetails.reason?.name,
+                errorCode = errorCode.toOpenFeatureErrorCode(),
+                errorMessage = resolutionDetails.errorMessage
+            )
+        }
+
+        return try {
+            val resultValue = Value.Structure(
+                resolutionDetails.value.toMap(internalLogger).mapValues { (_, v) -> convertToValue(v, internalLogger) }
+            )
+
+            ProviderEvaluation(
+                value = resultValue,
+                variant = resolutionDetails.variant,
+                reason = resolutionDetails.reason?.name,
+                errorCode = null,
+                errorMessage = null
+            )
+        } catch (e: JSONException) {
+            ProviderEvaluation(
+                value = defaultValue,
+                reason = ERROR_REASON,
+                errorCode = OpenFeatureErrorCode.PARSE_ERROR,
+                errorMessage = "Failed to parse JSON structure: ${e.message}"
+            )
+        } catch (e: ClassCastException) {
+            ProviderEvaluation(
+                value = defaultValue,
+                reason = ERROR_REASON,
+                errorCode = OpenFeatureErrorCode.TYPE_MISMATCH,
+                errorMessage = "Type mismatch during value conversion: ${e.message}"
+            )
+        } catch (e: IllegalStateException) {
+            ProviderEvaluation(
+                value = defaultValue,
+                reason = ERROR_REASON,
+                errorCode = OpenFeatureErrorCode.GENERAL,
+                errorMessage = "Invalid value state: ${e.message}"
+            )
+        }
+    }
+
+    override fun shutdown() {
+        // No-op: FlagsClient lifecycle is managed separately
+    }
+
+    /**
+     * Returns a Flow that emits provider state change events.
+     *
+     * Per the OpenFeature spec, providers emit only certain events - others are handled
+     * by the SDK automatically:
+     *
+     * **Provider emits** (via this Flow):
+     * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
+     * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
+     * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
+     *
+     * **SDK emits** (not from provider):
+     * - PROVIDER_RECONCILING: SDK emits while [onContextSet] is executing
+     * - PROVIDER_CONTEXT_CHANGED: SDK emits when [onContextSet] completes
+     *
+     * **Filtered** (not emitted):
+     * - [FlagsClientState.NotReady]: Pre-initialization state, [initialize] blocks
+     * - [FlagsClientState.Reconciling]: Context reconciliation, SDK handles via blocking [onContextSet]
+     *
+     * The Flow automatically cleans up the listener when the collector is cancelled.
+     *
+     * @return Flow of provider state change events
+     */
+    override fun observe(): Flow<OpenFeatureProviderEvents> = callbackFlow {
+        val listener = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                val providerEvent: OpenFeatureProviderEvents? = when (newState) {
+                    FlagsClientState.NotReady -> null // SDK handles via blocking initialize()
+                    FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
+                    FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
+                    FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
+                    is FlagsClientState.Error -> OpenFeatureProviderEvents.ProviderError(
+                        error = OpenFeatureError.ProviderFatalError()
+                    )
+                }
+                providerEvent?.let { trySend(it) }
+            }
+        }
+
+        flagsClient.state.addListener(listener)
+        awaitClose {
+            flagsClient.state.removeListener(listener)
+        }
+    }
+
+    private fun setContext(context: OpenFeatureEvaluationContext) {
+        flagsClient.setEvaluationContext(context.toDatadogEvaluationContext())
+    }
 
     companion object {
-        private const val GREETING = "Hello from DatadogFlagsProvider!"
+        private const val PROVIDER_NAME = "Datadog Feature Flags Provider"
+        private const val ERROR_REASON = "ERROR"
+        private const val INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE =
+            "Invocation Context is not supported in Static-Paradigm clients"
+
+        internal fun wrap(flagsClient: FlagsClient, sdkCore: SdkCore = Datadog.getInstance()): DatadogFlagsProvider =
+            DatadogFlagsProvider(flagsClient, sdkCore)
     }
 }

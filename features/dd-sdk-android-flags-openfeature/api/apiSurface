@@ -1,3 +1,15 @@
-class com.datadog.android.flags.openfeature.DatadogFlagsProvider
-  fun helloWorld(): String
+class com.datadog.android.flags.openfeature.DatadogFlagsProvider : dev.openfeature.kotlin.sdk.FeatureProvider
+  override val metadata: dev.openfeature.kotlin.sdk.ProviderMetadata
+  override val hooks: List<dev.openfeature.kotlin.sdk.Hook<*>>
+  override fun initialize(dev.openfeature.kotlin.sdk.EvaluationContext?)
+  override fun onContextSet(dev.openfeature.kotlin.sdk.EvaluationContext?, dev.openfeature.kotlin.sdk.EvaluationContext)
+  override fun getBooleanEvaluation(String, Boolean, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Boolean>
+  override fun getStringEvaluation(String, String, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<String>
+  override fun getIntegerEvaluation(String, Int, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Int>
+  override fun getDoubleEvaluation(String, Double, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Double>
+  override fun getObjectEvaluation(String, dev.openfeature.kotlin.sdk.Value, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<dev.openfeature.kotlin.sdk.Value>
+  override fun shutdown()
+  override fun observe(): kotlinx.coroutines.flow.Flow<dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents>
   companion object 
+    fun create(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): DatadogFlagsProvider
+fun com.datadog.android.flags.FlagsClient.asOpenFeatureProvider(): dev.openfeature.kotlin.sdk.FeatureProvider
