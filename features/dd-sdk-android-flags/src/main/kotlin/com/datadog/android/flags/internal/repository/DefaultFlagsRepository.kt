@@ -85,6 +85,8 @@ internal class DefaultFlagsRepository(
         return atomicState.get()?.context
     }
 
+    override fun hasFlags(): Boolean = atomicState.get()?.flags?.isNotEmpty() ?: false
+
     @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
         waitForPersistenceLoad()
