@@ -20,5 +20,5 @@ internal class OkHttpRequestInfo(internal val request: Request) : RequestInfo {
     override val method: String get() = request.method
 
     override fun <T> tag(type: Class<out T>): T? = request.tag(type)
-    override fun contentLength(): Long = request.body?.contentLength() ?: 0L
+    override fun contentLength(): Long? = request.body?.contentLength()
 }

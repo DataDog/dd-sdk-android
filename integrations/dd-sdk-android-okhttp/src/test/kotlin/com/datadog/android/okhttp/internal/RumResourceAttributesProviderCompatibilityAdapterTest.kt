@@ -90,7 +90,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
     }
 
     @Test
-    fun `M call delegate first THEN deprecated W onProvideAttributes { RequestInfo }`(
+    fun `M call delegate first then calls deprecated implementation  W onProvideAttributes { RequestInfo }`(
         forge: Forge
     ) {
         // Given

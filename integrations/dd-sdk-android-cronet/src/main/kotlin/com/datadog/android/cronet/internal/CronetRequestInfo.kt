@@ -25,7 +25,7 @@ internal data class CronetRequestInfo(
     override fun contentLength(): Long? = headers[HttpSpec.Headers.CONTENT_LENGTH]
         ?.firstOrNull()
         ?.toLongOrNull()
-        ?: uploadDataProvider?.length
+        ?: uploadDataProvider?.length?.takeIf { it >= 0 }
 
     private fun Class<*>.isInstanceOf(value: Any) = when (this) {
         Boolean::class.javaPrimitiveType -> value is Boolean

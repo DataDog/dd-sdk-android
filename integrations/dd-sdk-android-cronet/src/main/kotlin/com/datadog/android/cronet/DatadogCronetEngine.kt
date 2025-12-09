@@ -70,7 +70,8 @@ class DatadogCronetEngine(
 
         /**
          * Creates a new builder with Datadog instrumentation.
-         * @param context the Android context
+         *
+         * @param context the Android context, which is used by {@link Builder} to retrieve the application context
          * @param delegate the delegate builder to wrap in case if several wrappers should be used,
          * defaults to a new CronetEngine.Builder
          */
@@ -421,7 +422,7 @@ class DatadogCronetEngine(
 
         // endregion
         companion object {
-            // Exception thrown only for wrong arguments, buy those ones is correct
+            //  Exception thrown only for wrong arguments, but those ones are correct
             @Suppress("UnsafeThirdPartyFunctionCall")
             private fun newListenerExecutor(): ThreadPoolExecutor = ThreadPoolExecutor(
                 0,

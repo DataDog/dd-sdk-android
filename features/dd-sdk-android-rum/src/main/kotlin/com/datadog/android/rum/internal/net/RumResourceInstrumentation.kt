@@ -171,14 +171,14 @@ class RumResourceInstrumentation(
             }
 
         private fun ResponseInfo.getRumResourceKind() =
-            when (val mimeType = headerValue(HttpSpec.Headers.CONTENT_TYPE)) {
+            when (val mimeType = contentType) {
                 null -> RumResourceKind.NATIVE
                 else -> RumResourceKind.fromMimeType(mimeType)
             }
 
         private fun ResponseInfo.getBodyLength(internalLogger: InternalLogger): Long? {
             val isStream = HttpSpec.ContentType.isStream(contentType)
-            val isWebSocket = !headerValue(HttpSpec.Headers.WEBSOCKET_ACCEPT_HEADER).isNullOrBlank()
+            val isWebSocket = !headers[HttpSpec.Headers.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()
             return if (isStream || isWebSocket) null else computeContentLength(internalLogger)
         }
 

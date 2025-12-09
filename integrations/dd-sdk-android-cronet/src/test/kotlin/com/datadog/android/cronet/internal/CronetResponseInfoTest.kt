@@ -218,36 +218,4 @@ internal class CronetResponseInfoTest {
         // Then
         assertThat(result).isEqualTo(fakeHeaderLength)
     }
-
-    @Test
-    fun `M return header value W headerValue() { header exists }`(
-        @StringForgery fakeHeaderName: String,
-        @StringForgery fakeHeaderValue: String
-    ) {
-        // Given
-        val fakeHeaders = fakeHeaders + mapOf(fakeHeaderName to listOf(fakeHeaderValue))
-        whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
-        val responseInfo = CronetResponseInfo(mockUrlResponseInfo)
-
-        // When
-        val result = responseInfo.headerValue(fakeHeaderName)
-
-        // Then
-        assertThat(result).isEqualTo(fakeHeaderValue)
-    }
-
-    @Test
-    fun `M return null W headerValue() { header does not exist }`(
-        @StringForgery fakeHeaderName: String
-    ) {
-        // Given
-        whenever(mockUrlResponseInfo.allHeaders).thenReturn(emptyMap())
-        val responseInfo = CronetResponseInfo(mockUrlResponseInfo)
-
-        // When
-        val result = responseInfo.headerValue(fakeHeaderName)
-
-        // Then
-        assertThat(result).isNull()
-    }
 }

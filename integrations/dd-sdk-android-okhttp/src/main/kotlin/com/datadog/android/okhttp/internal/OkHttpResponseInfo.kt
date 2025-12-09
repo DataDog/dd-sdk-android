@@ -1,3 +1,8 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
@@ -28,7 +33,7 @@ internal class OkHttpResponseInfo(
             // however, OkHttp will drop Content-Length header if transparent compression is
             // used (since the value reported cannot be applied to decompressed body), so to be
             // able to still read it, we force decompression by calling peekBody
-            response.body?.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK).contentLengthOrNull()
+            response.body?.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK_BYTES).contentLengthOrNull()
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -60,7 +65,7 @@ internal class OkHttpResponseInfo(
     internal companion object {
 
         // We need to limit this value as the body will be loaded in memory
-        private const val MAX_BODY_PEEK: Long = 32 * 1024L * 1024L
+        private const val MAX_BODY_PEEK_BYTES: Long = 32 * 1024L * 1024L
 
         internal const val ERROR_PEEK_BODY = "Unable to peek response body."
 

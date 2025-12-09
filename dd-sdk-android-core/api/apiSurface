@@ -159,8 +159,7 @@ interface com.datadog.android.api.instrumentation.network.ResponseInfo
   val statusCode: Int
   val headers: Map<String, List<String>>
   val contentType: String?
-  fun contentLength(com.datadog.android.api.InternalLogger): Long?
-  fun headerValue(String): String?
+  fun computeContentLength(com.datadog.android.api.InternalLogger): Long?
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext
@@ -321,6 +320,7 @@ object com.datadog.android.core.internal.net.HttpSpec
     const val CONTENT_LENGTH: String
     const val WEBSOCKET_ACCEPT_HEADER: String
   object ContentType
+    const val TEXT_PLAIN: String
     const val TEXT_EVENT_STREAM: String
     const val APPLICATION_GRPC: String
     const val APPLICATION_GRPC_PROTO: String

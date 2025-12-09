@@ -458,11 +458,6 @@ public abstract interface class com/datadog/android/api/instrumentation/network/
 	public abstract fun getHeaders ()Ljava/util/Map;
 	public abstract fun getStatusCode ()I
 	public abstract fun getUrl ()Ljava/lang/String;
-	public abstract fun headerValue (Ljava/lang/String;)Ljava/lang/String;
-}
-
-public final class com/datadog/android/api/instrumentation/network/ResponseInfo$DefaultImpls {
-	public static fun headerValue (Lcom/datadog/android/api/instrumentation/network/ResponseInfo;Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class com/datadog/android/api/net/Request {

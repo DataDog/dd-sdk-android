@@ -41,14 +41,4 @@ interface ResponseInfo {
      * @return the content length as a Long if available, or null if it cannot be determined.
      */
     fun computeContentLength(internalLogger: InternalLogger): Long?
-
-    /**
-     * Retrieves the first value associated with the specified header key.
-     *
-     * @param key the name of the header to retrieve.
-     * @return the first value of the header as a string, or null if the header does not exist or has no values.
-     */
-    fun headerValue(key: String): String? {
-        return headers[key]?.firstOrNull()
-    }
 }

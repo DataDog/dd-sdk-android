@@ -117,7 +117,7 @@ internal class CronetRequestInfoTest {
             forge.anInt().toByte(),
             forge.aLong(),
             forge.aFloat(),
-            forge.aDouble(),
+            forge.aDouble()
         )
         val requestInfo = CronetRequestInfo(
             url = fakeUrl,
@@ -258,7 +258,7 @@ internal class CronetRequestInfoTest {
         val requestInfo = CronetRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
-            headers = fakeHeaders,
+            headers = emptyMap(),
             uploadDataProvider = mockUploadDataProvider,
             annotations = emptyList()
         )
@@ -267,7 +267,7 @@ internal class CronetRequestInfoTest {
         val result = requestInfo.contentLength()
 
         // Then
-        assertThat(result).isEqualTo(-1)
+        assertThat(result).isNull()
     }
 
     @Test

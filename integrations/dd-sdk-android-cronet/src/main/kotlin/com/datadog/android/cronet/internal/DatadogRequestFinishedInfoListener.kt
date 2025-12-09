@@ -1,3 +1,8 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.RequestInfo
@@ -15,7 +20,7 @@ internal class DatadogRequestFinishedInfoListener(
 ) : RequestFinishedInfo.Listener(executor) {
 
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
-        val requestInfo = finishedInfo.annotations?.firstOrNull { it is RequestInfo } as? RequestInfo
+        val requestInfo = finishedInfo.annotations?.filterIsInstance<RequestInfo>()?.firstOrNull()
 
         if (requestInfo == null) {
             rumResourceInstrumentation.reportInstrumentationError(
@@ -89,20 +94,20 @@ internal class DatadogRequestFinishedInfoListener(
         val downloadDurationMs = metrics.requestEnd - metrics.responseStart
 
         return ResourceTiming(
-            connectStart = connectStartMs.toNanos(),
-            connectDuration = connectDurationMs.toNanos(),
+            connectStart = connectStartMs.millisToNanos(),
+            connectDuration = connectDurationMs.millisToNanos(),
 
-            dnsStart = dnsStartMs.toNanos(),
-            dnsDuration = dnsDurationMs.toNanos(),
+            dnsStart = dnsStartMs.millisToNanos(),
+            dnsDuration = dnsDurationMs.millisToNanos(),
 
-            sslStart = sslStartMs.toNanos(),
-            sslDuration = sslDurationMs.toNanos(),
+            sslStart = sslStartMs.millisToNanos(),
+            sslDuration = sslDurationMs.millisToNanos(),
 
-            firstByteStart = headersFetchingStartedMs.toNanos(),
-            firstByteDuration = headersFetchDurationMs.toNanos(),
+            firstByteStart = headersFetchingStartedMs.millisToNanos(),
+            firstByteDuration = headersFetchDurationMs.millisToNanos(),
 
-            downloadStart = downloadStartMs.toNanos(),
-            downloadDuration = downloadDurationMs.toNanos()
+            downloadStart = downloadStartMs.millisToNanos(),
+            downloadDuration = downloadDurationMs.millisToNanos()
         )
     }
 
@@ -122,6 +127,6 @@ internal class DatadogRequestFinishedInfoListener(
             return if (thisTime == null || otherTime == null) 0L else thisTime - otherTime
         }
 
-        private fun Long.toNanos(): Long = TimeUnit.MILLISECONDS.toNanos(this)
+        private fun Long.millisToNanos(): Long = TimeUnit.MILLISECONDS.toNanos(this)
     }
 }

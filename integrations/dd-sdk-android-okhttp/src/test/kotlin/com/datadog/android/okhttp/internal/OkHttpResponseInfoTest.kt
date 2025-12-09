@@ -105,7 +105,7 @@ internal class OkHttpResponseInfoTest {
 
     @Test
     fun `M delegate W computeContentLength() { body present }`(
-        @LongForgery(min = 1, max = 1000) fakeContentLength: Long,
+        @LongForgery(min = 1, max = 1000) fakeContentLength: Long
     ) {
         // Given
         val mockInternalLogger = mock<InternalLogger>()
@@ -121,7 +121,7 @@ internal class OkHttpResponseInfoTest {
 
     @Test
     fun `M delegate W computeContentLength() { peak body present }`(
-        @LongForgery(min = 1, max = 1000) fakeContentLength: Long,
+        @LongForgery(min = 1, max = 1000) fakeContentLength: Long
     ) {
         // Given
         val mockInternalLogger = mock<InternalLogger>()

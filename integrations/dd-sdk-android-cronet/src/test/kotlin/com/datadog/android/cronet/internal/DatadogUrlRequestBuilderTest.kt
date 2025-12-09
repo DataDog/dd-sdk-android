@@ -7,8 +7,8 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.RequestInfoAssert
 import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.api.instrumentation.network.RequestInfoAssertions
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -253,7 +253,7 @@ internal class DatadogUrlRequestBuilderTest {
     fun `M addAnnotation W build`(
         @StringForgery key: String,
         @StringForgery value: String,
-        @StringForgery tag: String,
+        @StringForgery tag: String
     ) {
         // When
         testedBuilder.setHttpMethod(HttpSpec.Method.POST)
@@ -266,7 +266,7 @@ internal class DatadogUrlRequestBuilderTest {
         verify(mockDelegate).addRequestAnnotation(any<RequestInfo>())
         argumentCaptor<RequestInfo> {
             verify(mockDelegate).addRequestAnnotation(capture())
-            RequestInfoAssertions.assertThat(firstValue)
+            RequestInfoAssert.assertThat(firstValue)
                 .hasUrl(fakeUrl)
                 .hasHeader(key, value)
                 .hasHeader(HttpSpec.Headers.CONTENT_TYPE, HttpSpec.ContentType.APPLICATION_GRPC_JSON)

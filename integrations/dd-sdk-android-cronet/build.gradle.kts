@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
