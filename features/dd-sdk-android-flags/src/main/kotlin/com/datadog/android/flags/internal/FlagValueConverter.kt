@@ -55,6 +55,7 @@ internal object FlagValueConverter {
                 String::class -> variationValue as T
                 Int::class -> variationValue.toIntOrNull() as? T
                 Double::class -> variationValue.toDoubleOrNull() as? T
+                Map::class -> variationValue.toMap() as? T
                 JSONObject::class -> JSONObject(variationValue) as? T
                 else -> null
             }
@@ -78,6 +79,7 @@ internal object FlagValueConverter {
             variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value ||
                 variationType == VariationType.INTEGER.value
         JSONObject::class -> variationType == VariationType.OBJECT.value
+        Map::class -> variationType == VariationType.OBJECT.value
         else -> false
     }
 
@@ -87,6 +89,7 @@ internal object FlagValueConverter {
         Int::class -> "Int"
         Double::class -> "Double"
         JSONObject::class -> "JSONObject"
+        Map::class -> "Map"
         else -> targetType.simpleName ?: "Unknown"
     }
 }

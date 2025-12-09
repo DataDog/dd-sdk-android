@@ -490,8 +490,6 @@ internal class DatadogFlagsClientTest {
 
     // endregion
 
-    // region resolveStructureValue()
-
     @Test
     fun `M return flag value W resolveStructureValue() { flag exists with valid JSON string }`(forge: Forge) {
         // Given
@@ -616,6 +614,80 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = JSONObject().apply {
             put(fakeJsonKey, forge.anAlphabeticalString())
         }
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        verifyNoInteractions(mockRumEvaluationLogger)
+    }
+
+    // endregion
+
+    // region resolveStructureValue() - Map overload
+
+    @Test
+    fun `M return flag value as map W resolveStructureValue() {map default, flag exists}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = mapOf("default" to "value")
+        val fakeFlagValue = JSONObject().apply {
+            put("name", "Alice")
+            put("age", 30)
+            put(
+                "nested",
+                JSONObject().apply {
+                    put("city", "NYC")
+                }
+            )
+        }
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.OBJECT.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then - returns Map with no JSON types
+        assertThat(result).isInstanceOf(Map::class.java)
+        assertThat(result["name"]).isEqualTo("Alice")
+        assertThat(result["age"]).isEqualTo(30)
+        assertThat(result["nested"]).isInstanceOf(Map::class.java)
+        val nested = result["nested"] as Map<*, *>
+        assertThat(nested["city"]).isEqualTo("NYC")
+    }
+
+    @Test
+    fun `M return default map W resolveStructureValue() {map default, flag does not exist}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = mapOf(
+            "key" to "value",
+            "number" to 42
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default map W resolveStructureValue() {map default, provider not ready}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = mapOf("default" to true)
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
 
         // When
@@ -1164,9 +1236,7 @@ internal class DatadogFlagsClientTest {
     ) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject().apply {
-            put("default", "value")
-        }
+        val fakeDefaultValue = mapOf("default" to "value")
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.STRING.value,
             variationValue = "just a string"
@@ -1181,7 +1251,7 @@ internal class DatadogFlagsClientTest {
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        assertThat(result.toString()).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result).isEqualTo(fakeDefaultValue)
         // Verify no exposure tracked for type mismatch
         verifyNoInteractions(mockProcessor)
 

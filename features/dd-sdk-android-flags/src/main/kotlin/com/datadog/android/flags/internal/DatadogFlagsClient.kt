@@ -129,6 +129,25 @@ internal class DatadogFlagsClient(
         resolveValue(flagKey, defaultValue)
 
     /**
+     * Resolves a structured flag value as a Map (overload).
+     *
+     * The returned Map contains no JSON types - all nested structures are recursively
+     * converted to Maps and Lists with only primitives, null, and nested collections.
+     *
+     * If the flag cannot be found or an error occurs, the default value is returned.
+     *
+     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param defaultValue The map to return if the flag cannot be found or resolved.
+     * @return The map value of the flag, or the default value if unavailable.
+     */
+    override fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?> {
+        // Convert Map to JSONObject for resolution, then convert back to Map
+        val jsonDefault = defaultValue.toJSONObject()
+        val jsonResult = resolveValue(flagKey, jsonDefault)
+        return jsonResult.toMap()
+    }
+
+    /**
      * Resolves a flag value with detailed resolution information.
      *
      * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).

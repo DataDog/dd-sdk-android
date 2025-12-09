@@ -117,6 +117,22 @@ interface FlagsClient {
     fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
 
     /**
+     * Resolves a structured flag value as a Map with no JSON types (overload).
+     *
+     * The returned Map contains only primitives (String, Int, Long, Double, Boolean),
+     * null values, nested Maps, and Lists. All nested structures are recursively
+     * converted - no JSONObject or JSONArray types are present in the result.
+     *
+     * This method is useful for integrations that prefer working with Kotlin collections
+     * over JSON types (e.g., OpenFeature provider).
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The map to return if the flag cannot be retrieved or parsed.
+     * @return The map value of the flag, or the default value if unavailable.
+     */
+    fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?>
+
+    /**
      * Resolves a flag value with detailed resolution information.
      *
      * This is the core resolution method that provides comprehensive details about the flag
