@@ -4,7 +4,7 @@ This module can be integrated into your application to help visualize RUM data b
 It is intended for debugging and development purposes and **should not** be included in production builds by default.
 As shown in the screenshot below, the widget provides a floating overlay that displays key metrics such as **memory usage**, **CPU load** and **RUM events**.
 
-<img src="../../docs/images/screenshot_rumdebugwidget.png" width="400" alt="Datadog RUM Debug Widget"/>
+<img src="images/screenshot_rumdebugwidget.png" width="400" alt="Datadog RUM Debug Widget"/>
 
 ## Getting Started
 
