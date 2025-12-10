@@ -21,6 +21,8 @@ import org.json.JSONObject
  * @throws JSONException if the string is not valid JSON
  */
 internal fun String.toMap(): Map<String, Any?> {
+    // Safe: Input validation happens at call site; JSONException is expected to propagate
+    @Suppress("UnsafeThirdPartyFunctionCall")
     val jsonObject = JSONObject(this)
     return jsonObject.toMap()
 }
@@ -45,6 +47,8 @@ internal fun JSONObject.toMap(): Map<String, Any?> {
     while (keys.hasNext()) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         val key = keys.next()
+        // Safe: Key exists because it came from keys() iterator
+        @Suppress("UnsafeThirdPartyFunctionCall")
         result[key] = convertJsonValue(this.get(key))
     }
 
@@ -68,6 +72,7 @@ internal fun JSONArray.toList(): List<Any?> {
     // Safe: Iterating within bounds (0 until length)
     @Suppress("UnsafeThirdPartyFunctionCall")
     for (i in 0 until this.length()) {
+        // Safe: Index is within bounds (0 until length)
         @Suppress("UnsafeThirdPartyFunctionCall")
         result.add(convertJsonValue(this.get(i)))
     }
@@ -87,7 +92,7 @@ internal fun Map<String, Any?>.toJSONObject(): JSONObject {
     val jsonObject = JSONObject()
 
     forEach { (key, value) ->
-        // Safe: put() on JSONObject doesn't throw for valid key/value pairs
+        // Safe: convertToJsonValue ensures valid types (primitives, JSONObject.NULL, JSONObject, JSONArray)
         @Suppress("UnsafeThirdPartyFunctionCall")
         jsonObject.put(key, convertToJsonValue(value))
     }
@@ -107,7 +112,7 @@ internal fun List<Any?>.toJSONArray(): JSONArray {
     val jsonArray = JSONArray()
 
     forEach { value ->
-        // Safe: put() on JSONArray doesn't throw for valid values
+        // Safe: convertToJsonValue ensures valid types (primitives, JSONObject.NULL, JSONObject, JSONArray)
         @Suppress("UnsafeThirdPartyFunctionCall")
         jsonArray.put(convertToJsonValue(value))
     }

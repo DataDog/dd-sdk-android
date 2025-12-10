@@ -83,8 +83,14 @@ internal class DatadogFlagsClientTest {
     @StringForgery
     lateinit var fakeJsonKey: String
 
+    private lateinit var fakeDefaultMapValue: Map<String, Any?>
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeDefaultMapValue = mapOf(
+            "name" to forge.anAlphabeticalString(),
+            "age" to forge.anInt()
+        )
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockFeatureSdkCore.getFeature(RUM_FEATURE_NAME)) doReturn mock()
 
@@ -497,9 +503,11 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = JSONObject().apply {
             put(fakeJsonKey, forge.anAlphabeticalString())
         }
+        val fakeKey1Value = forge.anAlphabeticalString()
+        val fakeKey2Value = forge.anInt()
         val fakeFlagValue = JSONObject().apply {
-            put("key1", forge.anAlphabeticalString())
-            put("key2", forge.anInt())
+            put("key1", fakeKey1Value)
+            put("key2", fakeKey2Value)
         }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.OBJECT.value,
@@ -633,14 +641,23 @@ internal class DatadogFlagsClientTest {
     fun `M return flag value as map W resolveStructureValue() {map default, flag exists}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = mapOf("default" to "value")
+        val fakeName = forge.anAlphabeticalString()
+        val fakeAge = forge.anInt()
+        val fakeCity = forge.anAlphabeticalString()
+        val expectedMap = mapOf(
+            "name" to fakeName,
+            "age" to fakeAge,
+            "nested" to mapOf(
+                "city" to fakeCity
+            )
+        )
         val fakeFlagValue = JSONObject().apply {
-            put("name", "Alice")
-            put("age", 30)
+            put("name", fakeName)
+            put("age", fakeAge)
             put(
                 "nested",
                 JSONObject().apply {
-                    put("city", "NYC")
+                    put("city", fakeCity)
                 }
             )
         }
@@ -656,15 +673,10 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
 
         // Then - returns Map with no JSON types
-        assertThat(result).isInstanceOf(Map::class.java)
-        assertThat(result["name"]).isEqualTo("Alice")
-        assertThat(result["age"]).isEqualTo(30)
-        assertThat(result["nested"]).isInstanceOf(Map::class.java)
-        val nested = result["nested"] as Map<*, *>
-        assertThat(nested["city"]).isEqualTo("NYC")
+        assertThat(result).isEqualTo(expectedMap)
 
         // Verify exposure tracked
         verify(mockProcessor).processEvent(
@@ -678,17 +690,13 @@ internal class DatadogFlagsClientTest {
     fun `M return default map W resolveStructureValue() {map default, flag does not exist}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = mapOf(
-            "key" to "value",
-            "number" to 42
-        )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isSameAs(fakeDefaultMapValue)
         verifyNoInteractions(mockProcessor)
     }
 
@@ -696,14 +704,13 @@ internal class DatadogFlagsClientTest {
     fun `M return default map W resolveStructureValue() {map default, provider not ready}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = mapOf("default" to true)
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isSameAs(fakeDefaultMapValue)
         verifyNoInteractions(mockProcessor)
         verifyNoInteractions(mockRumEvaluationLogger)
     }
@@ -728,10 +735,9 @@ internal class DatadogFlagsClientTest {
     fun `M return default map W resolveStructureValue() {map default, type mismatch}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = mapOf("key" to "value")
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.STRING.value,
-            variationValue = "not-an-object"
+            variationValue = forge.anAlphabeticalString()
         )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -740,10 +746,10 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isSameAs(fakeDefaultMapValue)
         verifyNoInteractions(mockProcessor) // No exposure tracked for type mismatch
     }
 
@@ -1284,7 +1290,9 @@ internal class DatadogFlagsClientTest {
     ) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = mapOf("default" to "value")
+        val fakeDefaultValue = JSONObject().apply {
+            put("default", "value")
+        }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.STRING.value,
             variationValue = "just a string"

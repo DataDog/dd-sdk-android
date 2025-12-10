@@ -57,7 +57,14 @@ internal object FlagValueConverter {
                 Double::class -> variationValue.toDoubleOrNull() as? T
                 Map::class -> variationValue.toMap() as? T
                 JSONObject::class -> JSONObject(variationValue) as? T
-                else -> null
+                else -> {
+                    // Check if targetType is a Map implementation
+                    if (Map::class.java.isAssignableFrom(targetType.java)) {
+                        variationValue.toMap() as? T
+                    } else {
+                        null
+                    }
+                }
             }
 
             result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
@@ -80,7 +87,14 @@ internal object FlagValueConverter {
                 variationType == VariationType.INTEGER.value
         JSONObject::class -> variationType == VariationType.OBJECT.value
         Map::class -> variationType == VariationType.OBJECT.value
-        else -> false
+        else -> {
+            // Check if targetType is a Map implementation (e.g., LinkedHashMap, HashMap, etc.)
+            if (Map::class.java.isAssignableFrom(targetType.java)) {
+                variationType == VariationType.OBJECT.value
+            } else {
+                false
+            }
+        }
     }
 
     fun getTypeName(targetType: KClass<*>): String = when (targetType) {

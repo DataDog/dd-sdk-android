@@ -8,6 +8,8 @@ package com.datadog.android.flags.internal
 
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,14 +30,16 @@ internal class JsonExtensionsTest {
     fun `M convert primitives W toMap() {simple object}`(
         @StringForgery key1: String,
         @StringForgery value1: String,
-        @IntForgery value2: Int
+        @IntForgery value2: Int,
+        @BoolForgery boolVal: Boolean,
+        @DoubleForgery doubleVal: Double
     ) {
         // Given
         val jsonObject = JSONObject().apply {
             put(key1, value1)
             put("number", value2)
-            put("bool", true)
-            put("double", 3.14)
+            put("bool", boolVal)
+            put("double", doubleVal)    
         }
 
         // When
@@ -45,20 +49,24 @@ internal class JsonExtensionsTest {
         assertThat(result).hasSize(4)
         assertThat(result[key1]).isEqualTo(value1)
         assertThat(result["number"]).isEqualTo(value2)
-        assertThat(result["bool"]).isEqualTo(true)
-        assertThat(result["double"]).isEqualTo(3.14)
+        assertThat(result["bool"]).isEqualTo(boolVal)
+        assertThat(result["double"]).isEqualTo(doubleVal)   
     }
 
     @Test
-    fun `M convert nested object W toMap() {nested JSONObject}`() {
+    fun `M convert nested object W toMap() {nested JSONObject}`(
+        @StringForgery fakeName: String,
+        @IntForgery fakeAge: Int,
+        @StringForgery fakeCity: String
+    ) {
         // Given
         val jsonObject = JSONObject().apply {
-            put("name", "Alice")
+            put("name", fakeName)
             put(
                 "details",
                 JSONObject().apply {
-                    put("age", 30)
-                    put("city", "NYC")
+                    put("age", fakeAge)
+                    put("city", fakeCity)
                 }
             )
         }
@@ -67,23 +75,27 @@ internal class JsonExtensionsTest {
         val result = jsonObject.toMap()
 
         // Then
-        assertThat(result["name"]).isEqualTo("Alice")
+        assertThat(result["name"]).isEqualTo(fakeName)
         assertThat(result["details"]).isInstanceOf(Map::class.java)
         val details = result["details"] as Map<*, *>
-        assertThat(details["age"]).isEqualTo(30)
-        assertThat(details["city"]).isEqualTo("NYC")
+        assertThat(details["age"]).isEqualTo(fakeAge)
+        assertThat(details["city"]).isEqualTo(fakeCity)
     }
 
     @Test
-    fun `M convert array W toMap() {JSONArray value}`() {
+    fun `M convert array W toMap() {JSONArray value}`(
+        @StringForgery fakeItem1: String,
+        @StringForgery fakeItem2: String,
+        @IntForgery fakeItem3: Int
+    ) {
         // Given
         val jsonObject = JSONObject().apply {
             put(
                 "items",
                 JSONArray().apply {
-                    put("item1")
-                    put("item2")
-                    put(42)
+                    put(fakeItem1)
+                    put(fakeItem2)
+                    put(fakeItem3)
                 }
             )
         }
@@ -95,9 +107,9 @@ internal class JsonExtensionsTest {
         assertThat(result["items"]).isInstanceOf(List::class.java)
         val items = result["items"] as List<*>
         assertThat(items).hasSize(3)
-        assertThat(items[0]).isEqualTo("item1")
-        assertThat(items[1]).isEqualTo("item2")
-        assertThat(items[2]).isEqualTo(42)
+        assertThat(items[0]).isEqualTo(fakeItem1)
+        assertThat(items[1]).isEqualTo(fakeItem2)
+        assertThat(items[2]).isEqualTo(fakeItem3)
     }
 
     @Test
@@ -115,7 +127,9 @@ internal class JsonExtensionsTest {
     }
 
     @Test
-    fun `M handle deeply nested structures W toMap() {complex nesting}`() {
+    fun `M handle deeply nested structures W toMap() {complex nesting}`(
+        @StringForgery fakeValue: String
+    ) {
         // Given
         val jsonObject = JSONObject().apply {
             put(
@@ -129,7 +143,7 @@ internal class JsonExtensionsTest {
                                 JSONArray().apply {
                                     put(
                                         JSONObject().apply {
-                                            put("value", "deep")
+                                            put("value", fakeValue)
                                         }
                                     )
                                 }
@@ -148,7 +162,7 @@ internal class JsonExtensionsTest {
         val level2 = level1["level2"] as Map<*, *>
         val level3 = level2["level3"] as List<*>
         val item = level3[0] as Map<*, *>
-        assertThat(item["value"]).isEqualTo("deep")
+        assertThat(item["value"]).isEqualTo(fakeValue)
     }
 
     // endregion
@@ -156,13 +170,18 @@ internal class JsonExtensionsTest {
     // region JSONArray.toList()
 
     @Test
-    fun `M convert primitives W toList() {simple array}`() {
+    fun `M convert primitives W toList() {simple array}`(
+        @StringForgery fakeString: String,
+        @IntForgery fakeInt: Int,
+        @BoolForgery fakeBool: Boolean,
+        @DoubleForgery fakeDouble: Double
+    ) {
         // Given
         val jsonArray = JSONArray().apply {
-            put("string")
-            put(42)
-            put(true)
-            put(3.14)
+            put(fakeString)
+            put(fakeInt)
+            put(fakeBool)
+            put(fakeDouble)
         }
 
         // When
@@ -170,22 +189,27 @@ internal class JsonExtensionsTest {
 
         // Then
         assertThat(result).hasSize(4)
-        assertThat(result[0]).isEqualTo("string")
-        assertThat(result[1]).isEqualTo(42)
-        assertThat(result[2]).isEqualTo(true)
-        assertThat(result[3]).isEqualTo(3.14)
+        assertThat(result[0]).isEqualTo(fakeString)
+        assertThat(result[1]).isEqualTo(fakeInt)
+        assertThat(result[2]).isEqualTo(fakeBool)
+        assertThat(result[3]).isEqualTo(fakeDouble)
     }
 
     @Test
-    fun `M convert nested array W toList() {nested JSONArray}`() {
+    fun `M convert nested array W toList() {nested JSONArray}`(
+        @StringForgery fakeFirst: String,
+        @IntForgery fakeInt1: Int,
+        @IntForgery fakeInt2: Int,
+        @IntForgery fakeInt3: Int
+    ) {
         // Given
         val jsonArray = JSONArray().apply {
-            put("first")
+            put(fakeFirst)
             put(
                 JSONArray().apply {
-                    put(1)
-                    put(2)
-                    put(3)
+                    put(fakeInt1)
+                    put(fakeInt2)
+                    put(fakeInt3)
                 }
             )
         }
@@ -194,20 +218,23 @@ internal class JsonExtensionsTest {
         val result = jsonArray.toList()
 
         // Then
-        assertThat(result[0]).isEqualTo("first")
+        assertThat(result[0]).isEqualTo(fakeFirst)
         assertThat(result[1]).isInstanceOf(List::class.java)
         val nested = result[1] as List<*>
-        assertThat(nested).containsExactly(1, 2, 3)
+        assertThat(nested).containsExactly(fakeInt1, fakeInt2, fakeInt3)
     }
 
     @Test
-    fun `M convert object in array W toList() {JSONObject in array}`() {
+    fun `M convert object in array W toList() {JSONObject in array}`(
+        @StringForgery fakeName: String,
+        @IntForgery fakeAge: Int
+    ) {
         // Given
         val jsonArray = JSONArray().apply {
             put(
                 JSONObject().apply {
-                    put("name", "Alice")
-                    put("age", 30)
+                    put("name", fakeName)
+                    put("age", fakeAge)
                 }
             )
         }
@@ -218,8 +245,8 @@ internal class JsonExtensionsTest {
         // Then
         assertThat(result[0]).isInstanceOf(Map::class.java)
         val obj = result[0] as Map<*, *>
-        assertThat(obj["name"]).isEqualTo("Alice")
-        assertThat(obj["age"]).isEqualTo(30)
+        assertThat(obj["name"]).isEqualTo(fakeName)
+        assertThat(obj["age"]).isEqualTo(fakeAge)
     }
 
     @Test
@@ -241,13 +268,19 @@ internal class JsonExtensionsTest {
     // region Map.toJSONObject()
 
     @Test
-    fun `M convert primitives W toJSONObject() {simple map}`(@StringForgery key: String, @StringForgery value: String) {
+    fun `M convert primitives W toJSONObject() {simple map}`(
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @IntForgery fakeInt: Int,
+        @BoolForgery fakeBool: Boolean,
+        @DoubleForgery fakeDouble: Double
+    ) {
         // Given
         val map = mapOf(
             key to value,
-            "number" to 42,
-            "bool" to true,
-            "double" to 3.14
+            "number" to fakeInt,
+            "bool" to fakeBool,
+            "double" to fakeDouble
         )
 
         // When
@@ -255,18 +288,21 @@ internal class JsonExtensionsTest {
 
         // Then
         assertThat(result.getString(key)).isEqualTo(value)
-        assertThat(result.getInt("number")).isEqualTo(42)
-        assertThat(result.getBoolean("bool")).isTrue()
-        assertThat(result.getDouble("double")).isEqualTo(3.14)
+        assertThat(result.getInt("number")).isEqualTo(fakeInt)
+        assertThat(result.getBoolean("bool")).isEqualTo(fakeBool)
+        assertThat(result.getDouble("double")).isEqualTo(fakeDouble)
     }
 
     @Test
-    fun `M convert nested map W toJSONObject() {nested Map}`() {
+    fun `M convert nested map W toJSONObject() {nested Map}`(
+        @StringForgery fakeName: String,
+        @IntForgery fakeAge: Int
+    ) {
         // Given
         val map = mapOf(
             "user" to mapOf(
-                "name" to "Alice",
-                "age" to 30
+                "name" to fakeName,
+                "age" to fakeAge
             )
         )
 
@@ -276,15 +312,19 @@ internal class JsonExtensionsTest {
         // Then
         val user = result.getJSONObject("user")
         assertThat(user).isNotNull
-        assertThat(user.getString("name")).isEqualTo("Alice")
-        assertThat(user.getInt("age")).isEqualTo(30)
+        assertThat(user.getString("name")).isEqualTo(fakeName)
+        assertThat(user.getInt("age")).isEqualTo(fakeAge)
     }
 
     @Test
-    fun `M convert list W toJSONObject() {List value}`() {
+    fun `M convert list W toJSONObject() {List value}`(
+        @StringForgery fakeItem1: String,
+        @StringForgery fakeItem2: String,
+        @StringForgery fakeItem3: String
+    ) {
         // Given
         val map = mapOf(
-            "items" to listOf("a", "b", "c")
+            "items" to listOf(fakeItem1, fakeItem2, fakeItem3)
         )
 
         // When
@@ -294,9 +334,9 @@ internal class JsonExtensionsTest {
         val items = result.getJSONArray("items")
         assertThat(items).isNotNull
         assertThat(items.length()).isEqualTo(3)
-        assertThat(items.getString(0)).isEqualTo("a")
-        assertThat(items.getString(1)).isEqualTo("b")
-        assertThat(items.getString(2)).isEqualTo("c")
+        assertThat(items.getString(0)).isEqualTo(fakeItem1)
+        assertThat(items.getString(1)).isEqualTo(fakeItem2)
+        assertThat(items.getString(2)).isEqualTo(fakeItem3)
     }
 
     @Test
@@ -316,46 +356,59 @@ internal class JsonExtensionsTest {
     // region List.toJSONArray()
 
     @Test
-    fun `M convert primitives W toJSONArray() {simple list}`() {
+    fun `M convert primitives W toJSONArray() {simple list}`(
+        @StringForgery fakeString: String,
+        @IntForgery fakeInt: Int,
+        @BoolForgery fakeBool: Boolean,
+        @DoubleForgery fakeDouble: Double
+    ) {
         // Given
-        val list = listOf("string", 42, true, 3.14)
+        val list = listOf(fakeString, fakeInt, fakeBool, fakeDouble)
 
         // When
         val result = list.toJSONArray()
 
         // Then
         assertThat(result.length()).isEqualTo(4)
-        assertThat(result.getString(0)).isEqualTo("string")
-        assertThat(result.getInt(1)).isEqualTo(42)
-        assertThat(result.getBoolean(2)).isTrue()
-        assertThat(result.getDouble(3)).isEqualTo(3.14)
+        assertThat(result.getString(0)).isEqualTo(fakeString)
+        assertThat(result.getInt(1)).isEqualTo(fakeInt)
+        assertThat(result.getBoolean(2)).isEqualTo(fakeBool)
+        assertThat(result.getDouble(3)).isEqualTo(fakeDouble)
     }
 
     @Test
-    fun `M convert nested list W toJSONArray() {nested List}`() {
+    fun `M convert nested list W toJSONArray() {nested List}`(
+        @StringForgery fakeFirst: String,
+        @IntForgery fakeInt1: Int,
+        @IntForgery fakeInt2: Int,
+        @IntForgery fakeInt3: Int
+    ) {
         // Given
         val list = listOf(
-            "first",
-            listOf(1, 2, 3)
+            fakeFirst,
+            listOf(fakeInt1, fakeInt2, fakeInt3)
         )
 
         // When
         val result = list.toJSONArray()
 
         // Then
-        assertThat(result.getString(0)).isEqualTo("first")
+        assertThat(result.getString(0)).isEqualTo(fakeFirst)
         val nested = result.getJSONArray(1)
         assertThat(nested.length()).isEqualTo(3)
-        assertThat(nested.getInt(0)).isEqualTo(1)
-        assertThat(nested.getInt(1)).isEqualTo(2)
-        assertThat(nested.getInt(2)).isEqualTo(3)
+        assertThat(nested.getInt(0)).isEqualTo(fakeInt1)
+        assertThat(nested.getInt(1)).isEqualTo(fakeInt2)
+        assertThat(nested.getInt(2)).isEqualTo(fakeInt3)
     }
 
     @Test
-    fun `M convert map W toJSONArray() {Map in list}`() {
+    fun `M convert map W toJSONArray() {Map in list}`(
+        @StringForgery fakeName: String,
+        @IntForgery fakeAge: Int
+    ) {
         // Given
         val list = listOf(
-            mapOf("name" to "Alice", "age" to 30)
+            mapOf("name" to fakeName, "age" to fakeAge)
         )
 
         // When
@@ -363,8 +416,8 @@ internal class JsonExtensionsTest {
 
         // Then
         val obj = result.getJSONObject(0)
-        assertThat(obj.getString("name")).isEqualTo("Alice")
-        assertThat(obj.getInt("age")).isEqualTo(30)
+        assertThat(obj.getString("name")).isEqualTo(fakeName)
+        assertThat(obj.getInt("age")).isEqualTo(fakeAge)
     }
 
     @Test
@@ -385,18 +438,26 @@ internal class JsonExtensionsTest {
     // region Round-trip conversion
 
     @Test
-    fun `M preserve structure W toMap then toJSONObject() {round trip}`(forge: Forge) {
+    fun `M preserve structure W toMap then toJSONObject() {round trip}`(
+        @StringForgery fakeString: String,
+        @IntForgery fakeNumber: Int,
+        @BoolForgery fakeBool: Boolean,
+        @IntForgery fakeDeepValue: Int,
+        @IntForgery fakeArrayItem1: Int,
+        @IntForgery fakeArrayItem2: Int,
+        @IntForgery fakeArrayItem3: Int
+    ) {
         // Given
         val original = mapOf(
-            "string" to forge.anAlphabeticalString(),
-            "number" to forge.anInt(),
+            "string" to fakeString,
+            "number" to fakeNumber,
             "nested" to mapOf(
-                "bool" to forge.aBool(),
+                "bool" to fakeBool,
                 "deep" to mapOf(
-                    "value" to forge.anInt()
+                    "value" to fakeDeepValue
                 )
             ),
-            "array" to listOf(1, 2, 3)
+            "array" to listOf(fakeArrayItem1, fakeArrayItem2, fakeArrayItem3)
         )
 
         // When - round trip: Map → JSON → Map
@@ -416,7 +477,7 @@ internal class JsonExtensionsTest {
         assertThat(deep["value"]).isEqualTo(originalDeep["value"])
 
         val array = result["array"] as List<*>
-        assertThat(array).containsExactly(1, 2, 3)
+        assertThat(array).containsExactly(fakeArrayItem1, fakeArrayItem2, fakeArrayItem3)
     }
 
     // endregion
