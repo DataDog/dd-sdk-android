@@ -15,6 +15,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.sample.R
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
@@ -40,6 +41,7 @@ internal class CronetImageFragment : Fragment() {
         "https://storage.googleapis.com/cronet/walnut.jpg"
     )
 
+    @OptIn(ExperimentalRumApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

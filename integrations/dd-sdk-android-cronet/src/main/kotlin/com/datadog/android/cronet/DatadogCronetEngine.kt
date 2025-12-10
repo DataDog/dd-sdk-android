@@ -8,6 +8,7 @@ package com.datadog.android.cronet
 import android.content.Context
 import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener
 import com.datadog.android.cronet.internal.DatadogUrlRequestBuilder
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
@@ -49,7 +50,7 @@ class DatadogCronetEngine(
      * Builder wrapper for [CronetEngine] that adds Datadog instrumentation.
      * Datadog's instrumentation for Cronet is made using delegating instead of inheritance in order to make possible
      * for the customers to add several instrumentations at the same time. The [delegate] could be the pure
-     * [Cronet.Builder] instance or another wrapper, provided by different vendor.
+     * [CronetEngine.Builder] instance or another wrapper, provided by different vendor.
      */
     @Suppress("TooManyFunctions") // The amount of functions is depend on Cronet
     class Builder : CronetEngine.Builder {
@@ -61,6 +62,7 @@ class DatadogCronetEngine(
          * @param iCronetEngineBuilder - an instance [ICronetEngineBuilder] usually made from [Context].
          * @param delegate - the delegate builder to wrap, defaults to a new CronetEngine.Builder
          */
+        @ExperimentalRumApi
         internal constructor(
             iCronetEngineBuilder: ICronetEngineBuilder,
             delegate: CronetEngine.Builder = CronetEngine.Builder(iCronetEngineBuilder)
@@ -75,6 +77,7 @@ class DatadogCronetEngine(
          * @param delegate the delegate builder to wrap in case if several wrappers should be used,
          * defaults to a new CronetEngine.Builder
          */
+        @ExperimentalRumApi
         constructor(
             context: Context,
             delegate: CronetEngine.Builder = CronetEngine.Builder(context)
