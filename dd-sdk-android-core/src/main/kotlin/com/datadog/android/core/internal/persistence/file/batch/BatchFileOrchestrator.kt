@@ -107,9 +107,7 @@ internal class BatchFileOrchestrator(
             return null
         }
 
-        val files = listSortedBatchFiles().let {
-            deleteObsoleteFiles(it)
-        }
+        val files = deleteObsoleteFiles(listSortedBatchFiles())
         lastCleanupTimestamp = System.currentTimeMillis()
         pendingFiles.set(files.count())
 

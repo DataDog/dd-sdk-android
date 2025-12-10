@@ -361,7 +361,7 @@ internal class BatchFileOrchestratorTest {
             argThat { this is RemovalReason.Obsolete },
             eq(fakePendingBatches)
         )
-        argumentCaptor<BatchClosedMetadata>() {
+        argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(
                 eq(result),
                 capture()
@@ -442,7 +442,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile.readText()).isEqualTo(previousData)
-        argumentCaptor<BatchClosedMetadata>() {
+        argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
             assertThat(firstValue.lastTimeWasUsedInMs)
                 .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
@@ -502,7 +502,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile).doesNotExist()
-        argumentCaptor<BatchClosedMetadata>() {
+        argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
             assertThat(firstValue.lastTimeWasUsedInMs)
                 .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
@@ -537,7 +537,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(previousFile.readText()).isEqualTo(previousData)
-        argumentCaptor<BatchClosedMetadata>() {
+        argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
             assertThat(firstValue.lastTimeWasUsedInMs)
                 .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
@@ -562,7 +562,7 @@ internal class BatchFileOrchestratorTest {
                 forge.anAlphabeticalString()
             }
 
-            previousFile?.writeText(previousData[0])
+            previousFile.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
                 val file = testedOrchestrator.getWritableFile()
@@ -583,10 +583,10 @@ internal class BatchFileOrchestratorTest {
                 .hasParent(fakeRootDir)
             assertThat(nextFile.name.toLong())
                 .isBetween(start, end)
-            assertThat(previousFile?.readText())
+            assertThat(previousFile.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
-            argumentCaptor<BatchClosedMetadata>() {
+            argumentCaptor<BatchClosedMetadata> {
                 verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile!!), capture())
                 assertThat(firstValue.lastTimeWasUsedInMs)
                     .isBetween(beforeFileCreateTimestamp, afterLastFileUsageTimestamp)
