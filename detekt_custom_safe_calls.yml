@@ -998,6 +998,7 @@ datadog:
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
+      - "kotlin.Pair.constructor(kotlin.Float, kotlin.Float)"
       - "kotlin.Pair.constructor(kotlin.Int, kotlin.Int)"
       - "kotlin.Pair.constructor(kotlin.Long, kotlin.Long)"
       - "kotlin.Triple.constructor(kotlin.String?, kotlin.String?, kotlin.String?)"
