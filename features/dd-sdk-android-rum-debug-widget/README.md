@@ -1,6 +1,6 @@
 # Datadog RUM Debug Widget for Android
 
-This module can be integrated into your application to help visualize RUM data being collected in **real-time**.
+This module can be integrated into your application to help visualize RUM data being collected in **real time**.
 It is intended for debugging and development purposes and **should not** be included in production builds by default.
 As shown in the screenshot below, the widget provides a floating overlay that displays key metrics such as **memory usage**, **CPU load** and **RUM events**.
 
@@ -8,7 +8,7 @@ As shown in the screenshot below, the widget provides a floating overlay that di
 
 ## Getting Started
 
-To include this module in your project, simply add the following dependency to your application's `build.gradle` file:
+To include this module in your project, add the following dependency to your application's `build.gradle` file:
 
 ```groovy
 dependencies {
