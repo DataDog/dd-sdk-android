@@ -34,6 +34,8 @@ internal class ProfilingFeature(
 
     private var perfettoResult: PerfettoResult? = null
 
+    internal lateinit var appContext: Context
+
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         configuration.customEndpointUrl,
         sdkCore.internalLogger
@@ -46,6 +48,7 @@ internal class ProfilingFeature(
         get() = Feature.Companion.PROFILING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
+        this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
             registerProfilingCallback(sdkCore.name) { result ->
@@ -53,8 +56,6 @@ internal class ProfilingFeature(
                 tryWriteProfilingEvent()
             }
         }
-        // Set the profiling flag in SharedPreferences to profile for the next app launch
-        ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context.put(PROFILER_IS_RUNNING, profiler.isRunning(sdkCore.name))
@@ -87,6 +88,15 @@ internal class ProfilingFeature(
             InternalLogger.Target.USER,
             { "Profiling stopped with TTID=${event.durationNs}" }
         )
+    }
+
+    internal fun profileNextAppStartup(enable: Boolean) {
+        // Set the profiling flag in SharedPreferences to profile for the next app launch
+        if (enable) {
+            ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
+        } else {
+            ProfilingStorage.removeProfilingFlag(appContext, setOf(sdkCore.name))
+        }
     }
 
     private fun tryWriteProfilingEvent() {
