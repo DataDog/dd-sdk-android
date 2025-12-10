@@ -8,8 +8,9 @@ package com.datadog.android.cronet
 
 import com.datadog.android.cronet.DatadogCronetEngine.Companion.CRONET_NETWORK_INSTRUMENTATION_NAME
 import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.rum.internal.net.RumResourceInstrumentationAssertion
+import com.datadog.android.rum.internal.net.RumResourceInstrumentationAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -57,6 +58,7 @@ internal class DatadogCronetEngineBuilderTest {
 
     private lateinit var testedBuilder: DatadogCronetEngine.Builder
 
+    @OptIn(ExperimentalRumApi::class)
     @BeforeEach
     fun `set up`() {
         testedBuilder = DatadogCronetEngine.Builder(
@@ -334,6 +336,7 @@ internal class DatadogCronetEngineBuilderTest {
         assertThat(builder).isSameAs(testedBuilder)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M propagate RumResourceAttributesProvider W setRumResourceAttributesProvider()`() {
         // Given
@@ -347,10 +350,11 @@ internal class DatadogCronetEngineBuilderTest {
         // Then
         assertThat(builder).isSameAs(testedBuilder)
         check(engine is DatadogCronetEngine)
-        RumResourceInstrumentationAssertion.assertThat(engine.rumResourceInstrumentation)
+        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
             .hasRumResourceAttributesProvider(customProvider)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M propagate sdkInstanceName W setSdkInstanceName()`(@StringForgery sdkInstanceName: String) {
         // When
@@ -360,7 +364,7 @@ internal class DatadogCronetEngineBuilderTest {
         // Then
         check(engine is DatadogCronetEngine)
         assertThat(builder).isSameAs(testedBuilder)
-        RumResourceInstrumentationAssertion.assertThat(engine.rumResourceInstrumentation)
+        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
             .hasSdkInstanceName(sdkInstanceName)
     }
 
@@ -374,10 +378,11 @@ internal class DatadogCronetEngineBuilderTest {
 
         // Then
         check(engine is DatadogCronetEngine)
-        RumResourceInstrumentationAssertion.assertThat(engine.rumResourceInstrumentation)
+        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
             .hasNetworkLayerName(CRONET_NETWORK_INSTRUMENTATION_NAME)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M propagate executor W setListenerExecutor()`() {
         // Given

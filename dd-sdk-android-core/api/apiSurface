@@ -147,19 +147,21 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
-interface com.datadog.android.api.instrumentation.network.RequestInfo
+interface com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+  fun <T> tag(Class<T>): T?
+fun <T> HttpRequestInfo.tag(Class<T>): T?
+interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val url: String
   val headers: Map<String, List<String>>
   val contentType: String?
   val method: String
-  fun <T> tag(Class<T>): T?
   fun contentLength(): Long?
-interface com.datadog.android.api.instrumentation.network.ResponseInfo
+interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
   val statusCode: Int
   val headers: Map<String, List<String>>
   val contentType: String?
-  fun computeContentLength(com.datadog.android.api.InternalLogger): Long?
+  val contentLength: Long?
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext

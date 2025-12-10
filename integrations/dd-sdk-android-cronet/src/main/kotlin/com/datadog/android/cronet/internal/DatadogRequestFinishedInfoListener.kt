@@ -5,7 +5,7 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import org.chromium.net.RequestFinishedInfo
@@ -20,7 +20,7 @@ internal class DatadogRequestFinishedInfoListener(
 ) : RequestFinishedInfo.Listener(executor) {
 
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
-        val requestInfo = finishedInfo.annotations?.filterIsInstance<RequestInfo>()?.firstOrNull()
+        val requestInfo = finishedInfo.annotations?.filterIsInstance<HttpRequestInfo>()?.firstOrNull()
 
         if (requestInfo == null) {
             rumResourceInstrumentation.reportInstrumentationError(
@@ -48,7 +48,7 @@ internal class DatadogRequestFinishedInfoListener(
             }
 
             RequestFinishedInfo.SUCCEEDED -> {
-                val responseInfo = finishedInfo.responseInfo?.let { CronetResponseInfo(it) }
+                val responseInfo = finishedInfo.responseInfo?.let { CronetHttpResponseInfo(it) }
 
                 if (responseInfo == null) {
                     rumResourceInstrumentation.stopResourceWithError(

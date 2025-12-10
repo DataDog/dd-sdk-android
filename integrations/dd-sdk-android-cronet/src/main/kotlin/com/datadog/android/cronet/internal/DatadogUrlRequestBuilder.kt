@@ -7,7 +7,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
-import com.datadog.android.rum.resource.buildResourceId
+import com.datadog.android.rum.internal.net.RumResourceInstrumentation.Companion.buildResourceId
 import org.chromium.net.RequestFinishedInfo
 import org.chromium.net.UploadDataProvider
 import org.chromium.net.UrlRequest
@@ -87,7 +87,7 @@ internal class DatadogUrlRequestBuilder(
     }
 
     override fun build(): UrlRequest {
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = url,
             method = method,
             headers = headers,
@@ -96,7 +96,7 @@ internal class DatadogUrlRequestBuilder(
         )
 
         addRequestAnnotation(requestInfo)
-        addRequestAnnotation(requestInfo.buildResourceId(generateUuid = true))
+        addRequestAnnotation(buildResourceId(requestInfo, generateUuid = true))
 
         return DatadogUrlRequest(
             info = requestInfo,

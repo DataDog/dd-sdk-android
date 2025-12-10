@@ -5,13 +5,13 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import org.chromium.net.UrlRequest
 import java.nio.ByteBuffer
 
 internal class DatadogUrlRequest(
-    private val info: RequestInfo,
+    private val info: HttpRequestInfo,
     private val delegate: UrlRequest,
     private val rumResourceInstrumentation: RumResourceInstrumentation
 ) : UrlRequest() {

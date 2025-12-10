@@ -5,13 +5,10 @@
  */
 package com.datadog.android.api.instrumentation.network
 
-import com.datadog.android.api.InternalLogger
-
 /**
  * Represents information about an HTTP response.
- * Isolates specific library's details from the Datadog SDK.
  */
-interface ResponseInfo {
+interface HttpResponseInfo {
     /**
      * Represents the URL associated with an HTTP response.
      */
@@ -29,16 +26,13 @@ interface ResponseInfo {
 
     /**
      * Represents the MIME type of the payload associated with an HTTP response.
-     *
-     * The existence of this value depends on the specific implementation and may be null.
      */
     val contentType: String?
 
     /**
-     * Calculates and retrieves the content length from the response information.
+     * Retrieves the content length from the response information.
      *
-     * @param internalLogger the logger used for reporting internal messages or errors during computation.
      * @return the content length as a Long if available, or null if it cannot be determined.
      */
-    fun computeContentLength(internalLogger: InternalLogger): Long?
+    val contentLength: Long?
 }

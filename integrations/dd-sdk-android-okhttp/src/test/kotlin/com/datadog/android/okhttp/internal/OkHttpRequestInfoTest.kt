@@ -15,6 +15,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -40,11 +41,11 @@ internal class OkHttpRequestInfoTest {
     @Test
     fun `M delegate W url property`(@StringForgery fakeUrl: String) {
         // Given
-        val mockHttpUrl = mock<okhttp3.HttpUrl> { on { toString() } doReturn fakeUrl }
+        val mockHttpUrl = mock<HttpUrl> { on { toString() } doReturn fakeUrl }
         val mockRequest = mock<Request> { on { url } doReturn mockHttpUrl }
 
         // When
-        val result = OkHttpRequestInfo(mockRequest).url
+        val result = OkHttpHttpRequestInfo(mockRequest).url
 
         // Then
         assertThat(result).isEqualTo(fakeUrl)
@@ -56,7 +57,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { method } doReturn fakeMethod }
 
         // When
-        val result = OkHttpRequestInfo(mockRequest).method
+        val result = OkHttpHttpRequestInfo(mockRequest).method
 
         // Then
         assertThat(result).isEqualTo(fakeMethod)
@@ -70,7 +71,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { headers } doReturn mockHeaders }
 
         // When
-        val result = OkHttpRequestInfo(mockRequest).headers
+        val result = OkHttpHttpRequestInfo(mockRequest).headers
 
         // Then
         assertThat(result).isEqualTo(fakeHeaders)
@@ -86,7 +87,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { body } doReturn mockRequestBody }
 
         // When
-        val result = OkHttpRequestInfo(mockRequest).contentType
+        val result = OkHttpHttpRequestInfo(mockRequest).contentType
 
         // Then
         assertThat(result).isEqualTo(fakeContentType)
@@ -99,7 +100,7 @@ internal class OkHttpRequestInfoTest {
         }
 
         // When
-        val tag = OkHttpRequestInfo(mockRequest).tag(String::class.java)
+        val tag = OkHttpHttpRequestInfo(mockRequest).tag(String::class.java)
 
         // Then
         assertThat(tag).isEqualTo(fakeTag)
@@ -112,7 +113,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { body } doReturn mockRequestBody }
 
         // When
-        val result = OkHttpRequestInfo(mockRequest).contentLength()
+        val result = OkHttpHttpRequestInfo(mockRequest).contentLength()
 
         // Then
         assertThat(result).isEqualTo(fakeContentLength)

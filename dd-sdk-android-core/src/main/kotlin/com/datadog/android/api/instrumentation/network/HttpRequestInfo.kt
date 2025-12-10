@@ -5,13 +5,10 @@
  */
 package com.datadog.android.api.instrumentation.network
 
-import java.io.IOException
-
 /**
  * Represents information about an HTTP request.
- * Isolates specific library's details from the Datadog SDK.
  */
-interface RequestInfo {
+interface HttpRequestInfo {
     /**
      * The URL associated with the HTTP request.
      */
@@ -25,8 +22,6 @@ interface RequestInfo {
     /**
      * The MIME type of the payload associated with the HTTP request or response, represented
      * as a string. Can be null if the content type is unspecified.
-     *
-     * The existence of this value depends on the specific implementation and may be null.
      */
     val contentType: String?
 
@@ -36,16 +31,9 @@ interface RequestInfo {
     val method: String
 
     /**
-     * Returns the tag attached with type as a key, or null if no tag is attached with that key.
-     */
-    fun <T> tag(type: Class<out T>): T?
-
-    /**
      * Retrieves the content length of the HTTP request.
      *
      * @return the length of the content in bytes, or null if the content length is unavailable.
-     * @throws IOException if an error occurs while calculating the content length.
      */
-    @Throws(IOException::class)
     fun contentLength(): Long?
 }

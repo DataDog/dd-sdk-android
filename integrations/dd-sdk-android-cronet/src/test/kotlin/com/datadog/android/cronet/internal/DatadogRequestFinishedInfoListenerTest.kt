@@ -5,7 +5,7 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener.Companion.minus
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
@@ -54,7 +54,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
     private lateinit var mockResponseInfo: UrlResponseInfo
 
     @Forgery
-    private lateinit var fakeRequestInfo: RequestInfo
+    private lateinit var fakeRequestInfo: HttpRequestInfo
 
     private lateinit var testedListener: DatadogRequestFinishedInfoListener
 
@@ -135,7 +135,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
         // Then
         verify(mockRumResourceInstrumentation).stopResource(
             requestInfo = fakeRequestInfo,
-            responseInfo = CronetResponseInfo(mockResponseInfo)
+            responseInfo = CronetHttpResponseInfo(mockResponseInfo)
         )
     }
 

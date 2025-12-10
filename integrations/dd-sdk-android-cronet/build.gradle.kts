@@ -43,18 +43,19 @@ android {
 }
 
 dependencies {
+    api(libs.cronetApi)
     implementation(libs.kotlin)
-    implementation(libs.cronetApi)
     implementation(libs.androidXAnnotation)
 
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
 
     unmock(libs.robolectric)
+    // Trying to add most recent lib version in order to test the instrumentation, see CronetApiInstrumentationTest
+    testImplementation("${libs.cronetApi.get().module}:+")
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
-    testImplementation(kotlin("test"))
     testImplementation(libs.elmyrJUnit4)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

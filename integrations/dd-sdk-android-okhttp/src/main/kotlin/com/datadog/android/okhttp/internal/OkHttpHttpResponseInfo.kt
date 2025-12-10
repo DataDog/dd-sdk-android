@@ -6,14 +6,15 @@
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.instrumentation.network.ResponseInfo
+import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
 
-internal class OkHttpResponseInfo(
-    internal val response: Response
-) : ResponseInfo {
+internal class OkHttpHttpResponseInfo(
+    internal val response: Response,
+    internal val internalLogger: InternalLogger
+) : HttpResponseInfo {
 
     override val contentType: String?
         get() = response.body?.contentType()?.let {
@@ -27,8 +28,8 @@ internal class OkHttpResponseInfo(
 
     override val headers: Map<String, List<String>> get() = response.headers.toMultimap()
 
-    override fun computeContentLength(internalLogger: InternalLogger): Long? {
-        return try {
+    override val contentLength: Long?
+        get() = try {
             // if there is a Content-Length available, we can read it directly
             // however, OkHttp will drop Content-Length header if transparent compression is
             // used (since the value reported cannot be applied to decompressed body), so to be
@@ -60,7 +61,6 @@ internal class OkHttpResponseInfo(
             )
             null
         }
-    }
 
     internal companion object {
 

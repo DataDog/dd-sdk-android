@@ -1,34 +1,5 @@
 class com.datadog.android.cronet.DatadogCronetEngine : org.chromium.net.CronetEngine
-  constructor(org.chromium.net.CronetEngine, com.datadog.android.rum.internal.net.RumResourceInstrumentation)
-  class Builder : org.chromium.net.CronetEngine.Builder
-    constructor(android.content.Context, org.chromium.net.CronetEngine.Builder = CronetEngine.Builder(context))
-    fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
-    fun setSdkInstanceName(String)
-    fun setListenerExecutor(java.util.concurrent.Executor)
-    override fun build(): org.chromium.net.CronetEngine
-    override fun getDefaultUserAgent(): String
-    override fun enableQuic(Boolean)
-    override fun setStoragePath(String?)
-    override fun setUserAgent(String?)
-    override fun setLibraryLoader(LibraryLoader?)
-    override fun enableHttp2(Boolean)
-    DEPRECATED override fun enableSdch(Boolean)
-    override fun enableBrotli(Boolean)
-    override fun enableHttpCache(Int, Long)
-    override fun addQuicHint(String?, Int, Int)
-    override fun addPublicKeyPins(String?, Set<ByteArray?>?, Boolean, java.util.Date?)
-    override fun enablePublicKeyPinningBypassForLocalTrustAnchors(Boolean)
-    DEPRECATED override fun setThreadPriority(Int)
-    override fun enableNetworkQualityEstimator(Boolean)
-    override fun setQuicOptions(org.chromium.net.QuicOptions?)
-    override fun setQuicOptions(org.chromium.net.QuicOptions.Builder?)
-    override fun setDnsOptions(org.chromium.net.DnsOptions?)
-    override fun setDnsOptions(org.chromium.net.DnsOptions.Builder?)
-    override fun setConnectionMigrationOptions(org.chromium.net.ConnectionMigrationOptions?)
-    override fun setConnectionMigrationOptions(org.chromium.net.ConnectionMigrationOptions.Builder)
-    override fun setProxyOptions(org.chromium.net.ProxyOptions?)
-    companion object 
-  override fun newUrlRequestBuilder(String, org.chromium.net.UrlRequest.Callback, java.util.concurrent.Executor): org.chromium.net.UrlRequest.Builder?
+  override fun newUrlRequestBuilder(String, org.chromium.net.UrlRequest.Callback, java.util.concurrent.Executor): org.chromium.net.UrlRequest.Builder
   override fun getVersionString(): String?
   override fun shutdown()
   override fun startNetLogToFile(String?, Boolean)
@@ -51,4 +22,30 @@ class com.datadog.android.cronet.DatadogCronetEngine : org.chromium.net.CronetEn
   override fun removeRttListener(org.chromium.net.NetworkQualityRttListener?)
   override fun addThroughputListener(org.chromium.net.NetworkQualityThroughputListener?)
   override fun removeThroughputListener(org.chromium.net.NetworkQualityThroughputListener?)
-  companion object 
+  class Builder : org.chromium.net.CronetEngine.Builder
+    constructor(android.content.Context, org.chromium.net.CronetEngine.Builder = CronetEngine.Builder(context))
+    fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
+    fun setSdkInstanceName(String)
+    fun setListenerExecutor(java.util.concurrent.Executor)
+    override fun getDefaultUserAgent(): String
+    override fun enableQuic(Boolean)
+    override fun setStoragePath(String?)
+    override fun setUserAgent(String?)
+    override fun setLibraryLoader(LibraryLoader?)
+    override fun enableHttp2(Boolean)
+    DEPRECATED override fun enableSdch(Boolean)
+    override fun enableBrotli(Boolean)
+    override fun enableHttpCache(Int, Long)
+    override fun addQuicHint(String?, Int, Int)
+    override fun addPublicKeyPins(String?, Set<ByteArray?>?, Boolean, java.util.Date?)
+    override fun enablePublicKeyPinningBypassForLocalTrustAnchors(Boolean)
+    DEPRECATED override fun setThreadPriority(Int)
+    override fun enableNetworkQualityEstimator(Boolean)
+    override fun setQuicOptions(org.chromium.net.QuicOptions?)
+    override fun setQuicOptions(org.chromium.net.QuicOptions.Builder?)
+    override fun setDnsOptions(org.chromium.net.DnsOptions?)
+    override fun setDnsOptions(org.chromium.net.DnsOptions.Builder?)
+    override fun setConnectionMigrationOptions(org.chromium.net.ConnectionMigrationOptions?)
+    override fun setConnectionMigrationOptions(org.chromium.net.ConnectionMigrationOptions.Builder)
+    override fun setProxyOptions(org.chromium.net.ProxyOptions?)
+    override fun build(): org.chromium.net.CronetEngine

@@ -6,12 +6,14 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.chromium.net.UrlRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,7 +43,7 @@ internal class DatadogUrlRequestTest {
     lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
 
     @Forgery
-    lateinit var fakeRequestInfo: RequestInfo
+    lateinit var fakeRequestInfo: HttpRequestInfo
 
     lateinit var testedRequest: DatadogUrlRequest
 
@@ -94,16 +96,16 @@ internal class DatadogUrlRequestTest {
     }
 
     @Test
-    fun `M delegate to request W isDone()`() {
+    fun `M delegate to request W isDone`(@BoolForgery fakeDone: Boolean) {
         // Given
-        whenever(mockDelegate.isDone).thenReturn(true)
+        whenever(mockDelegate.isDone).thenReturn(fakeDone)
 
         // When
         val result = testedRequest.isDone
 
         // Then
         verify(mockDelegate).isDone
-        assert(result)
+        assertThat(result).isEqualTo(fakeDone)
     }
 
     @Test

@@ -6,7 +6,7 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.RequestInfoAssert
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
@@ -263,8 +263,8 @@ internal class DatadogUrlRequestBuilderTest {
             .build()
 
         // Then
-        verify(mockDelegate).addRequestAnnotation(any<RequestInfo>())
-        argumentCaptor<RequestInfo> {
+        verify(mockDelegate).addRequestAnnotation(any<HttpRequestInfo>())
+        argumentCaptor<HttpRequestInfo> {
             verify(mockDelegate).addRequestAnnotation(capture())
             RequestInfoAssert.assertThat(firstValue)
                 .hasUrl(fakeUrl)

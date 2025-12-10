@@ -6,8 +6,11 @@
 
 package com.datadog.android.okhttp.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
-import com.datadog.android.api.instrumentation.network.ResponseInfo
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpResponseInfo
+import com.datadog.android.core.SdkReference
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -18,7 +21,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Request
 import okhttp3.Response
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -26,7 +29,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -46,16 +54,22 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
     private lateinit var mockDelegate: RumResourceAttributesProvider
 
     @Mock
+    private lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     private lateinit var mockOkHttpRequest: Request
 
     @Mock
     private lateinit var mockOkHttpResponse: Response
 
-    @Mock
-    private lateinit var mockRequestInfo: RequestInfo
+    private lateinit var requestInfo: HttpRequestInfo
+
+    private lateinit var responseInfo: HttpResponseInfo
 
     @Mock
-    private lateinit var mockResponseInfo: ResponseInfo
+    private lateinit var mockSdkReference: SdkReference
+
+    private lateinit var fakeAttributes: Map<String, Any?>
 
     private var fakeThrowable: Throwable? = null
 
@@ -63,105 +77,222 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeAttributes = forge.exhaustiveAttributes()
         fakeThrowable = forge.aNullable { forge.aThrowable() }
-        testedProvider = RumResourceAttributesProviderCompatibilityAdapter(mockDelegate)
+        testedProvider = RumResourceAttributesProviderCompatibilityAdapter(mockDelegate, mockSdkReference)
+        requestInfo = OkHttpHttpRequestInfo(mockOkHttpRequest)
+        responseInfo = OkHttpHttpResponseInfo(mockOkHttpResponse, mockInternalLogger)
     }
 
     @Test
-    fun `M delegate W onProvideAttributes { OkHttp }`(forge: Forge) {
+    @Suppress("MaxLineLength")
+    fun `M return attributes from deprecated method W onProvideAttributes(OkHttp) { deprecated returns attributes }`() {
         // Given
-        val expectedAttributes = forge.exhaustiveAttributes()
-        whenever(
-            mockDelegate.onProvideAttributes(
-                mockOkHttpRequest,
-                mockOkHttpResponse,
-                fakeThrowable
-            )
-        )
-            .doReturn(expectedAttributes)
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(fakeAttributes)
 
         // When
-        val result = testedProvider.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
+        val attributes = testedProvider.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
 
         // Then
-        Assertions.assertThat(result).isEqualTo(expectedAttributes)
+        assertThat(attributes).isEqualTo(fakeAttributes)
         verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verifyNoMoreInteractions(mockDelegate)
     }
 
     @Test
-    fun `M call delegate first then calls deprecated implementation  W onProvideAttributes { RequestInfo }`(
-        forge: Forge
-    ) {
+    fun `M return attributes from new method W onProvideAttributes(OkHttp) { deprecated - empty, new - no empty }`() {
         // Given
-        val okHttpRequestInfo = OkHttpRequestInfo(mockOkHttpRequest)
-        val okHttpResponseInfo = OkHttpResponseInfo(mockOkHttpResponse)
-        val expectedAttributes = forge.exhaustiveAttributes()
-
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(emptyMap())
         whenever(
             mockDelegate.onProvideAttributes(
-                okHttpRequestInfo,
-                okHttpResponseInfo,
-                fakeThrowable
+                any<OkHttpHttpRequestInfo>(),
+                anyOrNull<OkHttpHttpResponseInfo>(),
+                anyOrNull<Throwable>()
             )
-        )
-            .doReturn(emptyMap())
-
-        whenever(
-            mockDelegate.onProvideAttributes(
-                mockOkHttpRequest,
-                mockOkHttpResponse,
-                fakeThrowable
-            )
-        )
-            .doReturn(expectedAttributes)
+        ).thenReturn(fakeAttributes)
 
         // When
-        val result = testedProvider.onProvideAttributes(okHttpRequestInfo, okHttpResponseInfo, fakeThrowable)
+        val attributes = testedProvider.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
 
         // Then
-        Assertions.assertThat(result).isEqualTo(expectedAttributes)
-        verify(mockDelegate).onProvideAttributes(okHttpRequestInfo, okHttpResponseInfo, fakeThrowable)
+        assertThat(attributes).isEqualTo(fakeAttributes)
+        verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
+        verify(mockDelegate).onProvideAttributes(
+            any<OkHttpHttpRequestInfo>(),
+            anyOrNull<OkHttpHttpResponseInfo>(),
+            anyOrNull<Throwable>()
+        )
+        verifyNoMoreInteractions(mockDelegate)
+    }
+
+    @Test
+    fun `M return empty attributes W onProvideAttributes(OkHttp) { deprecated returns empty, new returns empty }`() {
+        // Given
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(emptyMap())
+
+        whenever(
+            mockDelegate.onProvideAttributes(
+                any<OkHttpHttpRequestInfo>(),
+                anyOrNull<OkHttpHttpResponseInfo>(),
+                anyOrNull<Throwable>()
+            )
+        ).thenReturn(emptyMap())
+
+        // When
+        val attributes = testedProvider.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
+
+        // Then
+        assertThat(attributes).isEmpty()
+        verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
+        verify(mockDelegate).onProvideAttributes(
+            any<OkHttpHttpRequestInfo>(),
+            anyOrNull<OkHttpHttpResponseInfo>(),
+            anyOrNull<Throwable>()
+        )
+        verifyNoMoreInteractions(mockDelegate)
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `M return attributes from new method W onProvideAttributes(RequestInfo) { new returns attributes }`() {
+        // Given
+        whenever(mockDelegate.onProvideAttributes(requestInfo, responseInfo, fakeThrowable))
+            .thenReturn(fakeAttributes)
+
+        // When
+        val attributes = testedProvider.onProvideAttributes(
+            requestInfo,
+            responseInfo,
+            fakeThrowable
+        )
+
+        // Then
+        assertThat(attributes).isEqualTo(fakeAttributes)
+        verify(mockDelegate).onProvideAttributes(requestInfo, responseInfo, fakeThrowable)
+        verifyNoMoreInteractions(mockDelegate)
+    }
+
+    @Test
+    fun `M return attributes from old method W onProvideAttributes(RequestInfo){ new - empty, old - attributes }`() {
+        // Given
+        whenever(mockDelegate.onProvideAttributes(requestInfo, responseInfo, fakeThrowable))
+            .thenReturn(emptyMap())
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(fakeAttributes)
+
+        // When
+        val attributes = testedProvider.onProvideAttributes(
+            requestInfo,
+            responseInfo,
+            fakeThrowable
+        )
+
+        // Then
+        assertThat(attributes).isEqualTo(fakeAttributes)
+        verify(mockDelegate).onProvideAttributes(requestInfo, responseInfo, fakeThrowable)
         verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verifyNoMoreInteractions(mockDelegate)
     }
 
     @Test
-    fun `M return delegate result W onProvideAttributes { RequestInfo, delegate returns non-empty }`(forge: Forge) {
+    fun `M empty attributes W onProvideAttributes(RequestInfo) { new returns empty, old returns empty }`() {
         // Given
-        val okHttpRequestInfo = OkHttpRequestInfo(mockOkHttpRequest)
-        val okHttpResponseInfo = OkHttpResponseInfo(mockOkHttpResponse)
-        val expectedAttributes = forge.exhaustiveAttributes()
-        whenever(
-            mockDelegate.onProvideAttributes(
-                okHttpRequestInfo,
-                okHttpResponseInfo,
-                fakeThrowable
-            )
-        )
-            .doReturn(expectedAttributes)
+        whenever(mockDelegate.onProvideAttributes(requestInfo, responseInfo, fakeThrowable))
+            .thenReturn(emptyMap())
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(emptyMap())
 
         // When
-        val result = testedProvider.onProvideAttributes(okHttpRequestInfo, okHttpResponseInfo, fakeThrowable)
+        val attributes = testedProvider.onProvideAttributes(
+            requestInfo,
+            responseInfo,
+            fakeThrowable
+        )
 
         // Then
-        Assertions.assertThat(result).isEqualTo(expectedAttributes)
-        verify(mockDelegate).onProvideAttributes(okHttpRequestInfo, okHttpResponseInfo, fakeThrowable)
+        assertThat(attributes).isEmpty()
+        verify(mockDelegate).onProvideAttributes(requestInfo, responseInfo, fakeThrowable)
+        verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verifyNoMoreInteractions(mockDelegate)
     }
 
     @Test
-    fun `M return empty map if RequestInfo in not OkHttpRequestInfo W onProvideAttributes { RequestInfo }`() {
+    fun `M use internalLogger from sdkReference W onProvideAttributes(OkHttp) { reference is ready }`() {
         // Given
-        whenever(mockDelegate.onProvideAttributes(mockRequestInfo, mockResponseInfo, fakeThrowable))
-            .doReturn(emptyMap())
+        val mockFeatureSdkCore = mock<FeatureSdkCore> {
+            on { internalLogger } doReturn mockInternalLogger
+        }
+        whenever(mockSdkReference.get()).thenReturn(mockFeatureSdkCore)
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(emptyMap())
+
+        argumentCaptor<OkHttpHttpResponseInfo> {
+            // When
+            testedProvider.onProvideAttributes(
+                mockOkHttpRequest,
+                mockOkHttpResponse,
+                fakeThrowable
+            )
+
+            // Then
+            verify(mockDelegate).onProvideAttributes(
+                any<HttpRequestInfo>(),
+                capture(),
+                anyOrNull<Throwable>()
+            )
+
+            assertThat(firstValue.internalLogger).isSameAs(mockInternalLogger)
+        }
+    }
+
+    @Test
+    fun `M use UNBOUND logger W onProvideAttributes(OkHttp) { reference is not ready }`() {
+        // Given
+        whenever(mockSdkReference.get()).thenReturn(null)
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(emptyMap())
+
+        argumentCaptor<OkHttpHttpResponseInfo> {
+            // When
+            testedProvider.onProvideAttributes(
+                mockOkHttpRequest,
+                mockOkHttpResponse,
+                fakeThrowable
+            )
+
+            // Then
+            verify(mockDelegate).onProvideAttributes(
+                any<HttpRequestInfo>(),
+                capture(),
+                anyOrNull<Throwable>()
+            )
+            assertThat(firstValue.internalLogger).isSameAs(InternalLogger.UNBOUND)
+        }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `M not construct HttpHttpResponseInfo if response is null W onProvideAttributes(OkHttp)`() {
+        // Given
+        whenever(mockSdkReference.get()).thenReturn(null)
+        whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
+            .thenReturn(emptyMap())
 
         // When
-        val result = testedProvider.onProvideAttributes(mockRequestInfo, mockResponseInfo, fakeThrowable)
+        testedProvider.onProvideAttributes(
+            mockOkHttpRequest,
+            null,
+            fakeThrowable
+        )
 
         // Then
-        Assertions.assertThat(result).isEmpty()
-        verify(mockDelegate).onProvideAttributes(mockRequestInfo, mockResponseInfo, fakeThrowable)
-        verifyNoMoreInteractions(mockDelegate)
+        verify(mockDelegate).onProvideAttributes(
+            any<HttpRequestInfo>(),
+            eq(null),
+            anyOrNull<Throwable>()
+        )
     }
 }

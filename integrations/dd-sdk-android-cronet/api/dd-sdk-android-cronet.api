@@ -1,6 +1,4 @@
 public final class com/datadog/android/cronet/DatadogCronetEngine : org/chromium/net/CronetEngine {
-	public static final field Companion Lcom/datadog/android/cronet/DatadogCronetEngine$Companion;
-	public fun <init> (Lorg/chromium/net/CronetEngine;Lcom/datadog/android/rum/internal/net/RumResourceInstrumentation;)V
 	public fun addRequestFinishedListener (Lorg/chromium/net/RequestFinishedInfo$Listener;)V
 	public fun addRttListener (Lorg/chromium/net/NetworkQualityRttListener;)V
 	public fun addThroughputListener (Lorg/chromium/net/NetworkQualityThroughputListener;)V
@@ -27,7 +25,6 @@ public final class com/datadog/android/cronet/DatadogCronetEngine : org/chromium
 }
 
 public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/chromium/net/CronetEngine$Builder {
-	public static final field Companion Lcom/datadog/android/cronet/DatadogCronetEngine$Builder$Companion;
 	public fun <init> (Landroid/content/Context;Lorg/chromium/net/CronetEngine$Builder;)V
 	public synthetic fun <init> (Landroid/content/Context;Lorg/chromium/net/CronetEngine$Builder;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun addPublicKeyPins (Ljava/lang/String;Ljava/util/Set;ZLjava/util/Date;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
@@ -75,11 +72,5 @@ public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/
 	public synthetic fun setThreadPriority (I)Lorg/chromium/net/CronetEngine$Builder;
 	public fun setUserAgent (Ljava/lang/String;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun setUserAgent (Ljava/lang/String;)Lorg/chromium/net/CronetEngine$Builder;
-}
-
-public final class com/datadog/android/cronet/DatadogCronetEngine$Builder$Companion {
-}
-
-public final class com/datadog/android/cronet/DatadogCronetEngine$Companion {
 }
 

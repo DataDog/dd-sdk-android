@@ -243,6 +243,7 @@ internal constructor(
 
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
+            @Suppress("DEPRECATION")
             val resourceId = call.request().buildResourceId(generateUuid = true)
             val sdkCore = sdkCoreReference.get()
             return if (sdkCore != null) {

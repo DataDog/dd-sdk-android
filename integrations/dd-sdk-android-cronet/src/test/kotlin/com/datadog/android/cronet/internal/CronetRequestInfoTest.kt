@@ -52,7 +52,7 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return url W url property`() {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -70,8 +70,7 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return method W method property`() {
         // Given
-        val fakeMethod = fakeMethod
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -89,7 +88,7 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return headers W headers property`() {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -119,7 +118,7 @@ internal class CronetRequestInfoTest {
             forge.aFloat(),
             forge.aDouble()
         )
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -143,7 +142,7 @@ internal class CronetRequestInfoTest {
         @StringForgery fakeContentType: String
     ) {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders + mapOf(HttpSpec.Headers.CONTENT_TYPE to listOf(fakeContentType)),
@@ -161,7 +160,7 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W contentType property { no content type header }`() {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -169,14 +168,17 @@ internal class CronetRequestInfoTest {
             annotations = emptyList()
         )
 
-        // When/Then
-        assertThat(requestInfo.contentType).isNull()
+        // When
+        val actual = requestInfo.contentType
+
+        // Then
+        assertThat(actual).isNull()
     }
 
     @Test
     fun `M return null W tag() { annotation type does not match }`(forge: Forge) {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -194,7 +196,7 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W tag() { no annotations }`() {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -215,7 +217,7 @@ internal class CronetRequestInfoTest {
     ) {
         // Given
         whenever(mockUploadDataProvider.length).thenReturn(fakeLength)
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,
@@ -236,7 +238,7 @@ internal class CronetRequestInfoTest {
     ) {
         // Given
         whenever(mockUploadDataProvider.length).thenReturn(fakeLength)
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders + mapOf(HttpSpec.Headers.CONTENT_LENGTH to listOf(fakeLength.toString())),
@@ -255,7 +257,7 @@ internal class CronetRequestInfoTest {
     fun `M return null W contentLength() { upload data provider length is unknown }`() {
         // Given
         whenever(mockUploadDataProvider.length).thenReturn(-1L)
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = emptyMap(),
@@ -273,7 +275,7 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W contentLength() { no upload data provider }`() {
         // Given
-        val requestInfo = CronetRequestInfo(
+        val requestInfo = CronetHttpRequestInfo(
             url = fakeUrl,
             method = fakeMethod,
             headers = fakeHeaders,

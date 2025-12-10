@@ -443,17 +443,24 @@ public abstract interface class com/datadog/android/api/feature/StorageBackedFea
 	public abstract fun getStorageConfiguration ()Lcom/datadog/android/api/storage/FeatureStorageConfiguration;
 }
 
-public abstract interface class com/datadog/android/api/instrumentation/network/RequestInfo {
+public abstract interface class com/datadog/android/api/instrumentation/network/ExtendedRequestInfo {
+	public abstract fun tag (Ljava/lang/Class;)Ljava/lang/Object;
+}
+
+public final class com/datadog/android/api/instrumentation/network/ExtendedRequestInfoKt {
+	public static final fun tag (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Class;)Ljava/lang/Object;
+}
+
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestInfo {
 	public abstract fun contentLength ()Ljava/lang/Long;
 	public abstract fun getContentType ()Ljava/lang/String;
 	public abstract fun getHeaders ()Ljava/util/Map;
 	public abstract fun getMethod ()Ljava/lang/String;
 	public abstract fun getUrl ()Ljava/lang/String;
-	public abstract fun tag (Ljava/lang/Class;)Ljava/lang/Object;
 }
 
-public abstract interface class com/datadog/android/api/instrumentation/network/ResponseInfo {
-	public abstract fun computeContentLength (Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Long;
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpResponseInfo {
+	public abstract fun getContentLength ()Ljava/lang/Long;
 	public abstract fun getContentType ()Ljava/lang/String;
 	public abstract fun getHeaders ()Ljava/util/Map;
 	public abstract fun getStatusCode ()I

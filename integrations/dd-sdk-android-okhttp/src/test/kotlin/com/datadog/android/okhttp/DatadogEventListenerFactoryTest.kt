@@ -66,6 +66,7 @@ internal class DatadogEventListenerFactoryTest {
 
         // Then
         check(result is DatadogEventListener)
+        @Suppress("DEPRECATION")
         assertThat(result.key).isEqualTo(fakeRequest.buildResourceId(false))
     }
 

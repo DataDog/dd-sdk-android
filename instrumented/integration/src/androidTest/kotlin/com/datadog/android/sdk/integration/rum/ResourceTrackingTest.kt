@@ -9,6 +9,8 @@ package com.datadog.android.sdk.integration.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumResourceAttributesProvider
@@ -46,18 +48,24 @@ internal class ResourceTrackingTest {
 
     @Before
     fun setUp() {
+        val useNewApi = mockServerRule.forge.aBool()
         extraAttributes = mockServerRule.forge.exhaustiveAttributes()
-
         okHttpClient = OkHttpClient.Builder()
             .addInterceptor(
                 DatadogInterceptor.Builder(emptyMap())
                     .setRumResourceAttributesProvider(object : RumResourceAttributesProvider {
-                        @Deprecated("Use the variant with RequestInfo/ResponseInfo instead")
+                        @Deprecated("Use the variant with HttpRequestInfo/HttpResponseInfo instead")
                         override fun onProvideAttributes(
                             request: Request,
                             response: Response?,
                             throwable: Throwable?
-                        ): Map<String, Any?> = extraAttributes
+                        ): Map<String, Any?> = if (useNewApi) emptyMap() else extraAttributes
+
+                        override fun onProvideAttributes(
+                            request: HttpRequestInfo,
+                            response: HttpResponseInfo?,
+                            throwable: Throwable?
+                        ): Map<String, Any?> = if (useNewApi) extraAttributes else emptyMap()
                     }).build()
             )
             .build()

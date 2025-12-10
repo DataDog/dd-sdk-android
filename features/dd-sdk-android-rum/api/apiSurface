@@ -130,7 +130,7 @@ enum com.datadog.android.rum.RumPerformanceMetric
   - JS_FRAME_TIME
 interface com.datadog.android.rum.RumResourceAttributesProvider
   DEPRECATED fun onProvideAttributes(okhttp3.Request, okhttp3.Response?, Throwable?): Map<String, Any?>
-  fun onProvideAttributes(com.datadog.android.api.instrumentation.network.RequestInfo, com.datadog.android.api.instrumentation.network.ResponseInfo?, Throwable?): Map<String, Any?>
+  fun onProvideAttributes(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo?, Throwable?): Map<String, Any?>
 enum com.datadog.android.rum.RumResourceKind
   constructor(String)
   - BEACON
@@ -204,13 +204,14 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
 class com.datadog.android.rum.internal.net.RumResourceInstrumentation
   constructor(String?, String, com.datadog.android.rum.RumResourceAttributesProvider)
-  fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.RequestInfo)
-  fun sendTiming(com.datadog.android.api.instrumentation.network.RequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
-  fun startResource(com.datadog.android.api.instrumentation.network.RequestInfo)
-  fun stopResource(com.datadog.android.api.instrumentation.network.RequestInfo, com.datadog.android.api.instrumentation.network.ResponseInfo)
-  fun stopResourceWithError(com.datadog.android.api.instrumentation.network.RequestInfo, Throwable)
+  fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
+  fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
+  fun startResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
+  fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo)
+  fun stopResourceWithError(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Throwable)
   fun reportInstrumentationError(String)
   companion object 
+    fun buildResourceId(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Boolean): com.datadog.android.rum.resource.ResourceId
 interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
   fun validate(PreviousViewLastInteractionContext): Boolean
 data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
@@ -234,8 +235,6 @@ class com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIden
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
-fun com.datadog.android.api.instrumentation.network.RequestInfo.buildResourceId(Boolean): ResourceId
-fun identifyRequest(com.datadog.android.api.instrumentation.network.RequestInfo): String
 class com.datadog.android.rum.resource.ResourceId
   constructor(String, String?)
   override fun equals(Any?): Boolean

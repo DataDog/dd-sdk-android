@@ -6,13 +6,14 @@
 
 package com.datadog.android.tests.elmyr
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.core.internal.net.HttpSpec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class RequestInfoForgeryFactory : ForgeryFactory<RequestInfo> {
-    override fun getForgery(forge: Forge): RequestInfo {
+class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
+    override fun getForgery(forge: Forge): HttpRequestInfo {
         return StubRequestInfo(
             url = forge.aStringMatching("https://[a-z0-9]+\\.com"),
             headers = forge.aMap { aString() to aList { aString() } },
@@ -30,7 +31,7 @@ class RequestInfoForgeryFactory : ForgeryFactory<RequestInfo> {
         override val method: String,
         private val contentLength: Long?,
         private val tags: Map<Any, Any?>
-    ) : RequestInfo {
+    ) : HttpRequestInfo, ExtendedRequestInfo {
 
         @Suppress("UNCHECKED_CAST")
         override fun <T> tag(type: Class<out T>): T? = tags[type] as? T

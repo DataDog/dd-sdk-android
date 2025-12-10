@@ -75,7 +75,7 @@ open class DatadogInterceptor internal constructor(
     sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
-    internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
+    rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler<DatadogSpan>,
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
@@ -92,6 +92,12 @@ open class DatadogInterceptor internal constructor(
     localTracerFactory,
     globalTracerProvider
 ) {
+    internal val rumResourceAttributesProvider: RumResourceAttributesProvider =
+        rumResourceAttributesProvider as? NoOpRumResourceAttributesProvider
+            ?: RumResourceAttributesProviderCompatibilityAdapter(
+                delegate = rumResourceAttributesProvider,
+                sdkReference = sdkCoreReference
+            )
 
     // region Interceptor
 
@@ -104,6 +110,8 @@ open class DatadogInterceptor internal constructor(
             val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
+
+            @Suppress("DEPRECATION")
             val requestId = request.buildResourceId(generateUuid = true)
 
             (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
@@ -179,6 +187,7 @@ open class DatadogInterceptor internal constructor(
         span: DatadogSpan?,
         isSampled: Boolean
     ) {
+        @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
@@ -263,6 +272,7 @@ open class DatadogInterceptor internal constructor(
         request: Request,
         throwable: Throwable
     ) {
+        @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
@@ -409,9 +419,7 @@ open class DatadogInterceptor internal constructor(
          * @param rumResourceAttributesProvider the [RumResourceAttributesProvider] to use.
          */
         fun setRumResourceAttributesProvider(rumResourceAttributesProvider: RumResourceAttributesProvider): Builder {
-            this.rumResourceAttributesProvider = RumResourceAttributesProviderCompatibilityAdapter(
-                rumResourceAttributesProvider
-            )
+            this.rumResourceAttributesProvider = rumResourceAttributesProvider
             return this
         }
     }

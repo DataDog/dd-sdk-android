@@ -6,34 +6,57 @@
 
 package com.datadog.android.okhttp.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
-import com.datadog.android.api.instrumentation.network.ResponseInfo
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpResponseInfo
+import com.datadog.android.core.SdkReference
 import com.datadog.android.rum.RumResourceAttributesProvider
 import okhttp3.Request
 import okhttp3.Response
 
 internal class RumResourceAttributesProviderCompatibilityAdapter(
-    internal val delegate: RumResourceAttributesProvider
-) : RumResourceAttributesProvider {
+    internal val delegate: RumResourceAttributesProvider,
+    internal val sdkReference: SdkReference
+) : RumResourceAttributesProvider by delegate {
 
-    @Deprecated("Use the variant with RequestInfo/ResponseInfo instead")
+    private val internalLogger: InternalLogger
+        get() = (sdkReference.get() as? FeatureSdkCore)?.internalLogger ?: InternalLogger.UNBOUND
+
+    @Deprecated(
+        "Use the variant with HttpRequestInfo/HttpResponseInfo instead",
+        replaceWith = ReplaceWith(
+            "onProvideAttributes(OkHttpHttpRequestInfo(request), " +
+                "OkHttpHttpResponseInfo(response, internalLogger), throwable)"
+        )
+    )
     override fun onProvideAttributes(
         request: Request,
         response: Response?,
         throwable: Throwable?
     ): Map<String, Any?> {
         @Suppress("DEPRECATION")
-        return delegate.onProvideAttributes(request, response, throwable)
+        return delegate.onProvideAttributes(request, response, throwable).ifEmpty {
+            delegate.onProvideAttributes(
+                OkHttpHttpRequestInfo(request),
+                response?.let { OkHttpHttpResponseInfo(it, internalLogger) },
+                throwable
+            )
+        }
     }
 
     override fun onProvideAttributes(
-        request: RequestInfo,
-        response: ResponseInfo?,
+        request: HttpRequestInfo,
+        response: HttpResponseInfo?,
         throwable: Throwable?
-    ) = delegate.onProvideAttributes(request, response, throwable).ifEmpty {
-        val okHttpRequest = (request as? OkHttpRequestInfo)?.request ?: return emptyMap<String, Any?>()
-        val okHttpResponse = (response as? OkHttpResponseInfo)?.response
-        @Suppress("DEPRECATION")
-        onProvideAttributes(okHttpRequest, okHttpResponse, throwable)
+    ): Map<String, Any?> {
+        return delegate.onProvideAttributes(request, response, throwable).ifEmpty {
+            @Suppress("DEPRECATION")
+            delegate.onProvideAttributes(
+                request = (request as? OkHttpHttpRequestInfo)?.request ?: return emptyMap(),
+                response = (response as? OkHttpHttpResponseInfo)?.response,
+                throwable = throwable
+            )
+        }
     }
 }

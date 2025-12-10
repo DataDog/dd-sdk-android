@@ -5,17 +5,19 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.RequestInfo
+import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.core.internal.net.HttpSpec
 import org.chromium.net.UploadDataProvider
+import java.io.IOException
 
-internal data class CronetRequestInfo(
+internal data class CronetHttpRequestInfo(
     override val url: String,
     override val method: String,
     override val headers: Map<String, List<String>>,
     private val uploadDataProvider: UploadDataProvider?,
     private val annotations: List<Any>
-) : RequestInfo {
+) : HttpRequestInfo, ExtendedRequestInfo {
 
     override val contentType: String? get() = headers[HttpSpec.Headers.CONTENT_TYPE]?.firstOrNull()
 
@@ -23,9 +25,24 @@ internal data class CronetRequestInfo(
     override fun <T> tag(type: Class<out T>): T? = annotations.firstOrNull { type.isInstanceOf(it) } as? T
 
     override fun contentLength(): Long? = headers[HttpSpec.Headers.CONTENT_LENGTH]
-        ?.firstOrNull()
-        ?.toLongOrNull()
-        ?: uploadDataProvider?.length?.takeIf { it >= 0 }
+        ?.firstOrNull()?.toLongOrNull()
+        ?: uploadDataProvider?.contentLength()
+
+    // We have to override toString in order to prevent StackOverflowException,
+    // as annotations could hold a link to this CronetHttpRequestInfo instance itself.
+    override fun toString() = "CronetHttpRequestInfo(" +
+        "url='$url', " +
+        "method='$method', " +
+        "headers=$headers, " +
+        "provider=$uploadDataProvider, " +
+        "annotations=${annotations.size}" +
+        ")"
+
+    private fun UploadDataProvider.contentLength(): Long? = try {
+        length.takeIf { it >= 0 }
+    } catch (@Suppress("SwallowedException") _: IOException) {
+        null
+    }
 
     private fun Class<*>.isInstanceOf(value: Any) = when (this) {
         Boolean::class.javaPrimitiveType -> value is Boolean
