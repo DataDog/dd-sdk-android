@@ -392,8 +392,6 @@ internal class DatadogApolloInterceptorTest {
 
     // endregion
 
-    // endregion
-
     // region helper methods
 
     private fun setupBasicMocks(
@@ -461,4 +459,6 @@ internal class DatadogApolloInterceptorTest {
             variablesExtractor = mockVariablesExtractor
         )
     }
+
+    // endregion
 }
