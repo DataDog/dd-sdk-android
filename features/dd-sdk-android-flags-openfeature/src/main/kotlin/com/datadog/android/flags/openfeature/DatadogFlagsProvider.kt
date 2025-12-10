@@ -127,21 +127,6 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             }
 
             flagsClient.state.addListener(listener)
-
-            // Check if already in terminal state (sticky state pattern)
-            when (val currentState = flagsClient.state.getCurrentState()) {
-                is FlagsClientState.Ready -> {
-                    flagsClient.state.removeListener(listener)
-                    continuation.resume(Unit)
-                }
-                is FlagsClientState.Error -> {
-                    flagsClient.state.removeListener(listener)
-                    continuation.resumeWithException(
-                        currentState.error ?: Exception("Initialization failed")
-                    )
-                }
-                else -> {} // Wait for state change notification
-            }
         }
     }
 
@@ -190,21 +175,6 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             }
 
             flagsClient.state.addListener(listener)
-
-            // Check if already in terminal state (sticky state pattern)
-            when (val currentState = flagsClient.state.getCurrentState()) {
-                FlagsClientState.Ready, FlagsClientState.Stale -> {
-                    flagsClient.state.removeListener(listener)
-                    continuation.resume(Unit)
-                }
-                is FlagsClientState.Error -> {
-                    flagsClient.state.removeListener(listener)
-                    continuation.resumeWithException(
-                        currentState.error ?: Exception("Context reconciliation failed")
-                    )
-                }
-                else -> {} // Wait for state change notification
-            }
         }
     }
 
