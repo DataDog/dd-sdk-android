@@ -556,13 +556,13 @@ internal class BatchFileOrchestratorTest {
         var previousFile = testedOrchestrator.getWritableFile()
 
         repeat(4) {
-            checkNotNull(previousFile)
+            val currentFile = checkNotNull(previousFile)
 
             val previousData = forge.aList(MAX_ITEM_PER_BATCH) {
                 forge.anAlphabeticalString()
             }
 
-            previousFile.writeText(previousData[0])
+            currentFile.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
                 val file = testedOrchestrator.getWritableFile()
@@ -583,11 +583,11 @@ internal class BatchFileOrchestratorTest {
                 .hasParent(fakeRootDir)
             assertThat(nextFile.name.toLong())
                 .isBetween(start, end)
-            assertThat(previousFile.readText())
+            assertThat(currentFile.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
             argumentCaptor<BatchClosedMetadata> {
-                verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile!!), capture())
+                verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(currentFile), capture())
                 assertThat(firstValue.lastTimeWasUsedInMs)
                     .isBetween(beforeFileCreateTimestamp, afterLastFileUsageTimestamp)
                 assertThat(firstValue.eventsCount).isEqualTo(MAX_ITEM_PER_BATCH.toLong())
