@@ -367,6 +367,19 @@ internal class JsonExtensionsTest {
         assertThat(obj.getInt("age")).isEqualTo(30)
     }
 
+    @Test
+    fun `M preserve nulls W toJSONArray then toList() {null in list}`() {
+        // Given
+        val list = listOf("a", null, "b", null)
+
+        // When
+        val jsonArray = list.toJSONArray()
+        val result = jsonArray.toList()
+
+        // Then
+        assertThat(result).containsExactly("a", null, "b", null)
+    }
+
     // endregion
 
     // region Round-trip conversion

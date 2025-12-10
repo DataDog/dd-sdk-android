@@ -141,10 +141,15 @@ internal class DatadogFlagsClient(
      * @return The map value of the flag, or the default value if unavailable.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?> {
-        // Convert Map to JSONObject for resolution, then convert back to Map
         val jsonDefault = defaultValue.toJSONObject()
         val jsonResult = resolveValue(flagKey, jsonDefault)
-        return jsonResult.toMap()
+
+        // Preserve original default value on failure (avoids round-trip conversion)
+        return if (jsonResult === jsonDefault) {
+            defaultValue
+        } else {
+            jsonResult.toMap()
+        }
     }
 
     /**

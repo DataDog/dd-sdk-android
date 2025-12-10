@@ -119,7 +119,7 @@ internal fun List<Any?>.toJSONArray(): JSONArray {
  * Converts a Kotlin value to a JSON-compatible value.
  *
  * Recursively handles nested structures:
- * - Map<*, *> → JSONObject
+ * - Map<*, *> → JSONObject (non-String keys converted via toString())
  * - List<*> → JSONArray
  * - null → JSONObject.NULL
  * - Primitives → unchanged
@@ -129,8 +129,16 @@ internal fun List<Any?>.toJSONArray(): JSONArray {
  */
 private fun convertToJsonValue(value: Any?): Any = when (value) {
     null -> JSONObject.NULL
-    is Map<*, *> -> (value as Map<String, Any?>).toJSONObject()
-    is List<*> -> (value as List<Any?>).toJSONArray()
+    is Map<*, *> -> {
+        // Convert keys to String (supports non-String keys via toString())
+        @Suppress("UNCHECKED_CAST")
+        val stringMap = value.entries.associate { (k, v) -> k.toString() to v }
+        stringMap.toJSONObject()
+    }
+    is List<*> -> {
+        @Suppress("UNCHECKED_CAST")
+        (value as List<Any?>).toJSONArray()
+    }
     else -> value // Primitives: String, Int, Long, Double, Boolean
 }
 

@@ -646,7 +646,8 @@ internal class DatadogFlagsClientTest {
         }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.OBJECT.value,
-            variationValue = fakeFlagValue.toString()
+            variationValue = fakeFlagValue.toString(),
+            doLog = true
         )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -664,6 +665,13 @@ internal class DatadogFlagsClientTest {
         assertThat(result["nested"]).isInstanceOf(Map::class.java)
         val nested = result["nested"] as Map<*, *>
         assertThat(nested["city"]).isEqualTo("NYC")
+
+        // Verify exposure tracked
+        verify(mockProcessor).processEvent(
+            flagName = eq(fakeFlagKey),
+            context = eq(fakeContext),
+            data = eq(fakeFlag)
+        )
     }
 
     @Test
@@ -681,6 +689,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -697,6 +706,45 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
         verifyNoInteractions(mockProcessor)
         verifyNoInteractions(mockRumEvaluationLogger)
+    }
+
+    @Test
+    fun `M return empty map W resolveStructureValue() {empty map default, flag not found}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = emptyMap<String, Any?>()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEmpty()
+        assertThat(result).isSameAs(fakeDefaultValue) // Preserves original reference
+        verifyNoInteractions(mockProcessor)
+    }
+
+    @Test
+    fun `M return default map W resolveStructureValue() {map default, type mismatch}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = mapOf("key" to "value")
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = "not-an-object"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor) // No exposure tracked for type mismatch
     }
 
     // endregion
