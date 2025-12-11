@@ -1,6 +1,24 @@
-# 3.3.0 / 2025-11-18
+# 3.4.0 / 2025-12-11
 
-## What's Changed
+* [FEATURE] State change notification for flags client. See [#3025](https://github.com/DataDog/dd-sdk-android/pull/3025)
+* [BUGFIX] Fix crash in `KronosTimeProvider`. See [#3014](https://github.com/DataDog/dd-sdk-android/pull/3014)
+* [BUGFIX] Fix RUM resource duration breakdown. See [#3010](https://github.com/DataDog/dd-sdk-android/pull/3010)
+* [BUGFIX] Handle potential `StackOverflowError`. See [#2990](https://github.com/DataDog/dd-sdk-android/pull/2990)
+* [IMPROVEMENT] Send text truncation mode in Session Replay. See [#2978](https://github.com/DataDog/dd-sdk-android/pull/2978)
+* [IMPROVEMENT] Support svgs with `navigation3`. See [#3027](https://github.com/DataDog/dd-sdk-android/pull/3027)
+* [IMPROVEMENT] Support content scaling in Jetpack Compose. See [#3035](https://github.com/DataDog/dd-sdk-android/pull/3035)
+* [IMPROVEMENT] Support non-ASCII GraphQL headers. See [#3041](https://github.com/DataDog/dd-sdk-android/pull/3041)
+* [IMPROVEMENT] Add service name to `ddtags` of `LogEvent`. See [#3006](https://github.com/DataDog/dd-sdk-android/pull/3006)
+* [IMPROVEMENT] Add `versionCode` and `buildId` in more places. See [#3007](https://github.com/DataDog/dd-sdk-android/pull/3007)
+* [IMPROVEMENT] Add `anonymousId` to the empty `UserInfo` object check. See [#3012](https://github.com/DataDog/dd-sdk-android/pull/3012)
+* [IMPROVEMENT] Override Metrics telemetry sample rate. See [#3022](https://github.com/DataDog/dd-sdk-android/pull/3022)
+* [IMPROVEMENT] Stop using process importance when distinguishing between cold and warm launches. See [#3030](https://github.com/DataDog/dd-sdk-android/pull/3030)
+* [MAINTENANCE] Merge `release/3.3.0` into `develop`. See [#3016](https://github.com/DataDog/dd-sdk-android/pull/3016)
+* [MAINTENANCE] Remove `resolveMeta` & `resolveMetrics` methods in tests. See [#3005](https://github.com/DataDog/dd-sdk-android/pull/3005)
+* [MAINTENANCE] Revive Session Replay instrumentation tests. See [#2965](https://github.com/DataDog/dd-sdk-android/pull/2965)
+* [MAINTENANCE] Next dev iteration. See [#3009](https://github.com/DataDog/dd-sdk-android/pull/3009)
+
+# 3.3.0 / 2025-11-18
 
 * [FEATURE] Feature flags. See [#2982](https://github.com/DataDog/dd-sdk-android/pull/2982) and [#2879](https://github.com/DataDog/dd-sdk-android/pull/2879) 
 * [FEATURE] Feature flags: Apply readme suggestions. See [#2988](https://github.com/DataDog/dd-sdk-android/pull/2988)

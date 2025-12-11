@@ -106,11 +106,14 @@ datadog:
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
       - "android.view.Window.peekDecorView()"
       - "android.view.inspector.WindowInspector.getGlobalWindowViews()"
+      - "androidx.collection.LruCache.evictAll()"
       - "androidx.collection.LruCache.maxSize()"
       - "androidx.collection.LruCache.put(com.datadog.android.flags.internal.ExposureEventsProcessor.CacheKey, kotlin.Boolean)"
+      - "androidx.collection.LruCache.put(com.datadog.android.sessionreplay.internal.recorder.resources.Alpha8CacheKey, kotlin.String)"
       - "androidx.collection.LruCache.size()"
       - "androidx.collection.LruCache.hitCount()"
       - "androidx.collection.LruCache.missCount()"
+      - "androidx.collection.LruCache.trimToSize(kotlin.Int)"
       # endregion
       # region Android Webview APIs
       - "android.webkit.ConsoleMessage.MessageLevel.toLogLevel()"
@@ -164,6 +167,7 @@ datadog:
       - "android.graphics.Matrix.preScale(kotlin.Float, kotlin.Float)"
       - "android.graphics.Matrix.preTranslate(kotlin.Float, kotlin.Float)"
       - "android.graphics.Paint.constructor()"
+      - "android.graphics.Paint.constructor(kotlin.Int)"
       - "android.graphics.Path.computeBounds(android.graphics.RectF, kotlin.Boolean)"
       - "android.graphics.Path.transform(android.graphics.Matrix)"
       - "android.graphics.PathMeasure.constructor(android.graphics.Path?, kotlin.Boolean)"
@@ -449,6 +453,7 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.api.SdkCore?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.api.feature.FeatureEventReceiver?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.flags.internal.repository.DefaultFlagsRepository.FlagsState?)"
+      - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.flags.model.FlagsClientState?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.flags.model.ProviderContext?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.rum.internal.domain.RumContext?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.collections.Map?)"
@@ -577,6 +582,10 @@ datadog:
       - "kotlin.ReplaceWith.constructor(kotlin.String, kotlin.Array)"
       - "kotlin.Result.failure(kotlin.Throwable)"
       - "kotlin.Result.fold(kotlin.Function1, kotlin.Function1)"
+      - "kotlin.Result.getOrDefault(kotlin.Long)"
+      - "kotlin.Result.getOrElse(kotlin.Function1)"
+      - "kotlin.Result.map(kotlin.Function1)"
+      - "kotlin.Result.onFailure(kotlin.Function1)"
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
@@ -945,6 +954,7 @@ datadog:
       - "kotlin.Float.toLong()"
       - "kotlin.FloatArray.constructor(kotlin.Int)"
       - "kotlin.Int.and(kotlin.Int)"
+      - "kotlin.Int.coerceAtLeast(kotlin.Int)"
       - "kotlin.Int.coerceAtMost(kotlin.Int)"
       - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
@@ -988,6 +998,7 @@ datadog:
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
+      - "kotlin.Pair.constructor(kotlin.Float, kotlin.Float)"
       - "kotlin.Pair.constructor(kotlin.Int, kotlin.Int)"
       - "kotlin.Pair.constructor(kotlin.Long, kotlin.Long)"
       - "kotlin.Triple.constructor(kotlin.String?, kotlin.String?, kotlin.String?)"
@@ -1060,6 +1071,7 @@ datadog:
       - "kotlin.IllegalArgumentException(kotlin.String?)"
       - "kotlin.IllegalStateException(kotlin.String?)"
       - "kotlin.Throwable.constructor()"
+      - "kotlin.Throwable.constructor(kotlin.String?)"
       - "kotlin.Throwable.fillInStackTrace()"
       - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.UnsupportedOperationException()"
@@ -1187,5 +1199,6 @@ datadog:
       - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
       # endregion
       # region Kronos
+      - "com.lyft.kronos.Clock.runCatching(kotlin.Function1)"
       - "com.lyft.kronos.KronosClock.shutdown()"
       # endregion

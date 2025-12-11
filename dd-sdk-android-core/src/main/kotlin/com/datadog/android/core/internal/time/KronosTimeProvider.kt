@@ -6,12 +6,14 @@
 
 package com.datadog.android.core.internal.time
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.lyft.kronos.Clock
 import java.util.concurrent.TimeUnit
 
 internal class KronosTimeProvider(
-    private val clock: Clock
+    private val clock: Clock,
+    private val internalLogger: InternalLogger
 ) : TimeProvider {
 
     override fun getDeviceTimestamp(): Long {
@@ -19,17 +21,40 @@ internal class KronosTimeProvider(
     }
 
     override fun getServerTimestamp(): Long {
-        return clock.getCurrentTimeMs()
+        return clock.safeGetCurrentTimeMs()
+            .getOrElse { System.currentTimeMillis() }
     }
 
     override fun getServerOffsetMillis(): Long {
-        val server = clock.getCurrentTimeMs()
-        val device = System.currentTimeMillis()
-        val delta = server - device
-        return delta
+        return clock.safeGetCurrentTimeMs()
+            .map { server ->
+                val device = System.currentTimeMillis()
+                val delta = server - device
+                delta
+            }
+            .getOrDefault(0)
     }
 
     override fun getServerOffsetNanos(): Long {
         return TimeUnit.MILLISECONDS.toNanos(getServerOffsetMillis())
+    }
+
+    private fun Clock.safeGetCurrentTimeMs(): Result<Long> {
+        return runCatching {
+            getCurrentTimeMs()
+        }.onFailure { ex ->
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { FAIL_MESSAGE },
+                throwable = ex,
+                onlyOnce = true,
+                additionalProperties = emptyMap()
+            )
+        }
+    }
+
+    companion object {
+        const val FAIL_MESSAGE = "KronosClock.getCurrentTimeMs failed with an exception"
     }
 }

@@ -8,10 +8,12 @@ package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.ExecutorService
 
 /**
@@ -26,13 +28,15 @@ import java.util.concurrent.ExecutorService
  * @param flagsRepository local storage for flag data and evaluation context
  * @param assignmentsReader handles reading assignments for the context.
  * @param precomputeMapper transforms network responses into internal flag format
+ * @param flagStateManager channel for notifying state change listeners
  */
 internal class EvaluationsManager(
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     private val flagsRepository: FlagsRepository,
     private val assignmentsReader: PrecomputedAssignmentsReader,
-    private val precomputeMapper: PrecomputeMapper
+    private val precomputeMapper: PrecomputeMapper,
+    private val flagStateManager: FlagsStateManager
 ) {
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -48,6 +52,8 @@ internal class EvaluationsManager(
      * a valid targeting key.
      */
     fun updateEvaluationsForContext(context: EvaluationContext) {
+        flagStateManager.updateState(FlagsClientState.Reconciling)
+
         executorService.executeSafe(
             operationName = FETCH_AND_STORE_OPERATION_NAME,
             internalLogger = internalLogger
@@ -58,24 +64,31 @@ internal class EvaluationsManager(
                 { "Processing evaluation context: ${context.targetingKey}" }
             )
 
+            val hadFlags = flagsRepository.hasFlags()
             val response = assignmentsReader.readPrecomputedFlags(context)
-            val flagsMap = if (response != null) {
-                precomputeMapper.map(response)
+            if (response != null) {
+                val flagsMap = precomputeMapper.map(response)
+                flagsRepository.setFlagsAndContext(context, flagsMap)
+                internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+                )
+
+                flagStateManager.updateState(FlagsClientState.Ready)
             } else {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
                     { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
-                emptyMap()
-            }
 
-            flagsRepository.setFlagsAndContext(context, flagsMap)
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-            )
+                if (hadFlags) {
+                    flagStateManager.updateState(FlagsClientState.Stale)
+                } else {
+                    flagStateManager.updateState(FlagsClientState.Error(Throwable(NETWORK_REQUEST_FAILED_MESSAGE)))
+                }
+            }
         }
     }
 

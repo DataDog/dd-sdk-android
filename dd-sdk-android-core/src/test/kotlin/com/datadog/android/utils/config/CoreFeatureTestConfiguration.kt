@@ -122,7 +122,10 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockAccountInfoProvider = mock()
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
-        mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
+        mockAppVersionProvider = mock {
+            on { version } doReturn appContext.fakeVersionName
+            on { versionCode } doReturn appContext.fakeVersionCode
+        }
     }
 
     private fun configureCoreFeature() {

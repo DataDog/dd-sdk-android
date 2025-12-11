@@ -121,6 +121,8 @@ internal class DatadogContextProviderTest {
         assertThat(context.env).isEqualTo(coreFeature.mockInstance.envName)
         assertThat(context.version)
             .isEqualTo(coreFeature.mockInstance.packageVersionProvider.version)
+        assertThat(context.versionCode)
+            .isEqualTo(coreFeature.mockInstance.packageVersionProvider.versionCode)
         assertThat(context.sdkVersion).isEqualTo(coreFeature.mockInstance.sdkVersion)
         assertThat(context.source).isEqualTo(coreFeature.mockInstance.sourceName)
 

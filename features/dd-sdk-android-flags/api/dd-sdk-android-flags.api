@@ -11,6 +11,7 @@ public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static fun get ()Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
+	public abstract fun getState ()Lcom/datadog/android/flags/StateObservable;
 	public abstract fun resolve (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/model/ResolutionDetails;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
@@ -53,6 +54,16 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Companion {
+}
+
+public abstract interface class com/datadog/android/flags/FlagsStateListener {
+	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;)V
+}
+
+public abstract interface class com/datadog/android/flags/StateObservable {
+	public abstract fun addListener (Lcom/datadog/android/flags/FlagsStateListener;)V
+	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
+	public abstract fun removeListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
@@ -168,6 +179,38 @@ public final class com/datadog/android/flags/model/ExposureEvent$Subject {
 public final class com/datadog/android/flags/model/ExposureEvent$Subject$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/flags/model/ExposureEvent$Subject;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/flags/model/ExposureEvent$Subject;
+}
+
+public abstract class com/datadog/android/flags/model/FlagsClientState {
+}
+
+public final class com/datadog/android/flags/model/FlagsClientState$Error : com/datadog/android/flags/model/FlagsClientState {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lcom/datadog/android/flags/model/FlagsClientState$Error;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/model/FlagsClientState$Error;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/datadog/android/flags/model/FlagsClientState$Error;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/flags/model/FlagsClientState$NotReady : com/datadog/android/flags/model/FlagsClientState {
+	public static final field INSTANCE Lcom/datadog/android/flags/model/FlagsClientState$NotReady;
+}
+
+public final class com/datadog/android/flags/model/FlagsClientState$Ready : com/datadog/android/flags/model/FlagsClientState {
+	public static final field INSTANCE Lcom/datadog/android/flags/model/FlagsClientState$Ready;
+}
+
+public final class com/datadog/android/flags/model/FlagsClientState$Reconciling : com/datadog/android/flags/model/FlagsClientState {
+	public static final field INSTANCE Lcom/datadog/android/flags/model/FlagsClientState$Reconciling;
+}
+
+public final class com/datadog/android/flags/model/FlagsClientState$Stale : com/datadog/android/flags/model/FlagsClientState {
+	public static final field INSTANCE Lcom/datadog/android/flags/model/FlagsClientState$Stale;
 }
 
 public final class com/datadog/android/flags/model/ResolutionDetails {
