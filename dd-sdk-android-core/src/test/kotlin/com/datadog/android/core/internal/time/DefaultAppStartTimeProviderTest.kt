@@ -12,7 +12,6 @@ import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -40,55 +39,23 @@ class DefaultAppStartTimeProviderTest {
     @Test
     fun `M return process start time W appStartTime { N+ }`(
         @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int,
-        @LongForgery(min = 0L) fakeCurrentTimeNs: Long,
-        forge: Forge
+        @LongForgery(min = 0L) fakeCurrentTimeNs: Long
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.version).thenReturn(apiVersion)
         whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(fakeCurrentTimeNs)
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-        val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
-
-        DdRumContentProvider.createTimeNs = startTimeNs +
-            forge.aLong(min = 0, max = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
-
-        val testedProvider = DefaultAppStartTimeProvider(
-            mockTimeProvider,
-            mockBuildSdkVersionProvider
-        )
+        val expectedStartTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
 
         // When
-        val providedStartTime = testedProvider.appStartTimeNs
-
-        // Then
-        assertThat(providedStartTime).isEqualTo(startTimeNs)
-    }
-
-    @Test
-    fun `M fall back to DdRumContentProvider W appStartTime { N+ getStartElapsedRealtime returns buggy value }`(
-        @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int,
-        @LongForgery(min = 0L) fakeCurrentTimeNs: Long,
-        forge: Forge
-    ) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.version).thenReturn(apiVersion)
-
-        val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-        val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
-
-        DdRumContentProvider.createTimeNs = startTimeNs +
-            forge.aLong(min = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
-
-        // WHEN
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedAppStartTimeProvider = DefaultAppStartTimeProvider(
             mockTimeProvider,
             mockBuildSdkVersionProvider
         )
+        val providedStartTime = testedAppStartTimeProvider.appStartTimeNs
 
-        val providedStartTime = testedProvider.appStartTimeNs
-
-        // THEN
-        assertThat(providedStartTime).isEqualTo(DdRumContentProvider.createTimeNs)
+        // Then
+        assertThat(providedStartTime).isEqualTo(expectedStartTimeNs)
     }
 
     @Test
@@ -98,13 +65,13 @@ class DefaultAppStartTimeProviderTest {
         // Given
         whenever(mockBuildSdkVersionProvider.version).thenReturn(apiVersion)
         val startTimeNs = DdRumContentProvider.createTimeNs
-        val testedProvider = DefaultAppStartTimeProvider(
+
+        // When
+        val testedAppStartTimeProvider = DefaultAppStartTimeProvider(
             mockTimeProvider,
             mockBuildSdkVersionProvider
         )
-
-        // When
-        val providedStartTime = testedProvider.appStartTimeNs
+        val providedStartTime = testedAppStartTimeProvider.appStartTimeNs
 
         // Then
         assertThat(providedStartTime).isEqualTo(startTimeNs)
@@ -125,12 +92,13 @@ class DefaultAppStartTimeProviderTest {
             .thenReturn(fakeStartTimeNs + fakeUptimeNs)
 
         // When
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedAppStartTimeProvider = DefaultAppStartTimeProvider(
             mockTimeProvider,
             mockBuildSdkVersionProvider
         )
-        testedProvider.appStartTimeNs
-        val uptime = testedProvider.appUptimeNs
+        // First call initializes appStartTimeNs
+        testedAppStartTimeProvider.appStartTimeNs
+        val uptime = testedAppStartTimeProvider.appUptimeNs
 
         // Then
         assertThat(uptime).isEqualTo(fakeUptimeNs)
@@ -151,13 +119,14 @@ class DefaultAppStartTimeProviderTest {
             .thenReturn(fakeStartTimeNs + 200L)
 
         // When
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedAppStartTimeProvider = DefaultAppStartTimeProvider(
             mockTimeProvider,
             mockBuildSdkVersionProvider
         )
-        testedProvider.appStartTimeNs
-        val uptime1 = testedProvider.appUptimeNs
-        val uptime2 = testedProvider.appUptimeNs
+        // First call initializes appStartTimeNs
+        testedAppStartTimeProvider.appStartTimeNs
+        val uptime1 = testedAppStartTimeProvider.appUptimeNs
+        val uptime2 = testedAppStartTimeProvider.appUptimeNs
 
         // Then
         assertThat(uptime2).isGreaterThan(uptime1)

@@ -34,6 +34,7 @@ import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
+import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -101,17 +102,7 @@ internal class DatadogCore(
     /** @inheritDoc */
     override val time: TimeInfo
         get() {
-            return with(coreFeature.timeProvider) {
-                val deviceTimeMs = getDeviceTimestamp()
-                val serverTimeMs = getServerTimestamp()
-                TimeInfo(
-                    deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
-                    serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),
-                    serverTimeOffsetNs = TimeUnit.MILLISECONDS
-                        .toNanos(serverTimeMs - deviceTimeMs),
-                    serverTimeOffsetMs = serverTimeMs - deviceTimeMs
-                )
-            }
+            return timeProvider.composeTimeInfo()
         }
 
     /** @inheritDoc */
