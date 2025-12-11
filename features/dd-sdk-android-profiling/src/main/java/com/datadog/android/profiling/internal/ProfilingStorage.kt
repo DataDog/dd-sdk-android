@@ -15,6 +15,7 @@ internal object ProfilingStorage {
 
     private var sharedPreferencesStorage: SharedPreferencesStorage? = null
 
+    @JvmStatic
     internal fun addProfilingFlag(appContext: Context, sdkInstanceName: String) {
         getStorage(appContext).apply {
             val oldValue = getStringSet(KEY_PROFILING_ENABLED, emptySet())
@@ -23,10 +24,12 @@ internal object ProfilingStorage {
         }
     }
 
+    @JvmStatic
     internal fun getProfilingEnabledInstanceNames(appContext: Context): Set<String> {
         return getStorage(appContext).getStringSet(KEY_PROFILING_ENABLED)
     }
 
+    @JvmStatic
     internal fun removeProfilingFlag(appContext: Context, sdkInstanceNames: Set<String>) {
         getStorage(appContext).apply {
             val value = getStringSet(KEY_PROFILING_ENABLED).toMutableSet()

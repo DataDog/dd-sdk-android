@@ -15,6 +15,7 @@ import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
+import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.rum.TTIDEvent
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -142,5 +144,33 @@ class ProfilingFeatureTest {
         assertThat(argumentCaptor.firstValue.invoke())
             .isEqualTo("Profiling feature receive an event of unsupported type=${String::class.java.canonicalName}.")
         verify(mockProfiler, never()).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M add profiling flag W profileNextAppStartup {enable = true}`() {
+        Mockito.mockStatic(ProfilingStorage::class.java).use { mockedStatic ->
+
+            // When
+            testedFeature.profileNextAppStartup(true)
+
+            // Then
+            mockedStatic.verify {
+                ProfilingStorage.addProfilingFlag(mockContext, fakeInstanceName)
+            }
+        }
+    }
+
+    @Test
+    fun `M remove profiling flag W profileNextAppStartup {enable = false}`() {
+        Mockito.mockStatic(ProfilingStorage::class.java).use { mockedStatic ->
+
+            // When
+            testedFeature.profileNextAppStartup(false)
+
+            // Then
+            mockedStatic.verify {
+                ProfilingStorage.removeProfilingFlag(mockContext, setOf(fakeInstanceName))
+            }
+        }
     }
 }

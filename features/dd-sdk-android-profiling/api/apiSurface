@@ -7,6 +7,7 @@ class com.datadog.android.profiling.DdProfilingContentProvider : android.content
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 object com.datadog.android.profiling.Profiling
   fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun profileNextAppStartup(com.datadog.android.api.SdkCore = Datadog.getInstance(), Boolean)
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
     fun useCustomEndpoint(String): Builder
