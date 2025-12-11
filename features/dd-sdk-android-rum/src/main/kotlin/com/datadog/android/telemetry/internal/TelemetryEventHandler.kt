@@ -38,6 +38,7 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent.ActionType
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
 @Suppress("TooManyFunctions")
@@ -202,6 +203,7 @@ internal class TelemetryEventHandler(
         val resolvedAdditionalProperties = additionalProperties.orEmpty()
             .toMutableMap()
             .cleanUpInternalAttributes()
+            .addDiagnosticsAttributes()
 
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
@@ -248,6 +250,7 @@ internal class TelemetryEventHandler(
         val resolvedAdditionalProperties = additionalProperties.orEmpty()
             .toMutableMap()
             .cleanUpInternalAttributes()
+            .addDiagnosticsAttributes()
 
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
@@ -527,8 +530,15 @@ internal class TelemetryEventHandler(
 
     private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.toString()) as? Float
 
-    private fun Map<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
+    private fun MutableMap<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
         LocalAttribute.Key.values().forEach { key -> remove(key.toString()) }
+    }
+
+    private fun MutableMap<String, Any?>.addDiagnosticsAttributes() = apply {
+        put(
+            DIAGNOSTICS_PROCESS_UPTIME,
+            TimeUnit.NANOSECONDS.toMillis(sdkCore.appUptimeNs)
+        )
     }
 
     // endregion
@@ -557,5 +567,10 @@ internal class TelemetryEventHandler(
 
         internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
         internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
+
+        // A name of the telemetry attribute set for all ERROR and DEBUG telemetry events (including metrics).
+        // The value of this attribute represents the number of milliseconds elapsed from the process start
+        // to the moment the telemetry event was recorded.
+        internal const val DIAGNOSTICS_PROCESS_UPTIME = "process_uptime"
     }
 }
