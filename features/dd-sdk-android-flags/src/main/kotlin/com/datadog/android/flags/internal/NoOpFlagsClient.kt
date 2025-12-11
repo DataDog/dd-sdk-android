@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -137,5 +138,9 @@ internal class NoOpFlagsClient(
                 "with FlagsClient.Builder(\"$name\").build() before using it.",
             level
         )
+    }
+
+    override fun _getInternal(): _FlagsInternalProxy? {
+        return null
     }
 }

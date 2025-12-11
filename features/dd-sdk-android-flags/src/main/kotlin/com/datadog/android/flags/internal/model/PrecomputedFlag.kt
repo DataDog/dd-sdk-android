@@ -8,7 +8,7 @@ package com.datadog.android.flags.internal.model
 
 import org.json.JSONObject
 
-internal data class PrecomputedFlag(
+data class PrecomputedFlag(
     val variationType: String,
     val variationValue: String,
     val doLog: Boolean,

@@ -8,6 +8,7 @@ interface com.datadog.android.flags.FlagsClient
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
+  fun _getInternal(): _FlagsInternalProxy?
   val state: StateObservable
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
@@ -29,6 +30,10 @@ interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
   fun removeListener(FlagsStateListener)
+class com.datadog.android.flags._FlagsInternalProxy
+  constructor(FlagsClient)
+  fun resolveAllFlags(): Map<String, com.datadog.android.flags.model.ResolutionDetails<Any>>?
+  fun trackResolution(String, com.datadog.android.flags.model.ResolutionDetails<*>)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND

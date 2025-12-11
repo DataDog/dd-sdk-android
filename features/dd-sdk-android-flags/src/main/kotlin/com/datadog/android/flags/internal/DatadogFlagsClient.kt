@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -18,7 +19,10 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.internal.model.VariationType
+import org.json.JSONException
 import org.json.JSONObject
+import java.util.Locale
 
 /**
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
@@ -400,14 +404,67 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        if (resolution.flag.doLog) {
+        trackResolution(resolution.flagKey, resolution.flag, resolution.value, resolution.context)
+    }
+
+    private fun <T : Any> trackResolution(flagKey: String, flag: PrecomputedFlag, flagValue: T, context: EvaluationContext) {
+        if (flag.doLog) {
             if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(resolution.flagKey, resolution.flag, resolution.context)
+                writeExposureEvent(flagKey, flag, context)
             }
             if (flagsConfiguration.rumIntegrationEnabled) {
-                logEvaluation(resolution.flagKey, resolution.value)
+                logEvaluation(flagKey, flagValue)
             }
         }
+    }
+
+    // endregion
+
+    // region Internal APIs exposed through _FlagsInternalProxy
+
+    private val internalProxy = _FlagsInternalProxy(this)
+
+    override fun _getInternal(): _FlagsInternalProxy {
+        return internalProxy
+    }
+
+    /**
+     * Retrieves a snapshot of all flag assignments.
+     *
+     * Supposed to be used by internal Datadog packages to get flags state snapshot for a given evaluation context.
+     *
+     * @return A map of flag key to precomputed flag, or null if no flags are available.
+     */
+    internal fun getFlagAssignmentsSnapshot(): Map<String, PrecomputedFlag>? {
+        return flagsRepository.getFlagsSnapshot()
+    }
+
+    /**
+     * Tracks the evaluation of a flag from an exact flags state snapshot.
+     *
+     * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
+     */
+    internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: PrecomputedFlag, context: EvaluationContext) {
+        val flagValue = parsePrecomputedFlagValue(flag)
+
+        trackResolution(flagKey, flag, flagValue, context)
+    }
+
+    private fun parsePrecomputedFlagValue(flag: PrecomputedFlag): Any {
+        val value: Any = when (flag.variationType) {
+            VariationType.BOOLEAN.value -> flag.variationValue.lowercase(Locale.US).toBooleanStrictOrNull() ?: flag.variationValue
+            VariationType.STRING.value -> flag.variationValue
+            VariationType.INTEGER.value -> flag.variationValue.toIntOrNull() ?: flag.variationValue
+            VariationType.NUMBER.value, VariationType.FLOAT.value -> flag.variationValue.toDoubleOrNull() ?: flag.variationValue
+            VariationType.OBJECT.value -> try {
+                JSONObject(flag.variationValue)
+            } catch (e: JSONException) {
+                flag.variationValue
+            }
+            else -> flag.variationValue
+        }
+
+        return value
     }
 
     // endregion

@@ -8,6 +8,7 @@ public final class com/datadog/android/flags/Flags {
 
 public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static final field Companion Lcom/datadog/android/flags/FlagsClient$Companion;
+	public abstract synthetic fun _getInternal ()Lcom/datadog/android/flags/_FlagsInternalProxy;
 	public static fun get ()Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
@@ -64,6 +65,12 @@ public abstract interface class com/datadog/android/flags/StateObservable {
 	public abstract fun addListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
 	public abstract fun removeListener (Lcom/datadog/android/flags/FlagsStateListener;)V
+}
+
+public final class com/datadog/android/flags/_FlagsInternalProxy {
+	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
+	public final fun resolveAllFlags ()Ljava/util/Map;
+	public final fun trackResolution (Ljava/lang/String;)V
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
