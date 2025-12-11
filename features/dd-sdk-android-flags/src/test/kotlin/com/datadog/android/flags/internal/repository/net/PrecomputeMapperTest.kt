@@ -7,7 +7,7 @@
 package com.datadog.android.flags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.model.VariationType
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery

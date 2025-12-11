@@ -70,30 +70,7 @@ public abstract interface class com/datadog/android/flags/StateObservable {
 public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
 	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
-	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/internal/model/PrecomputedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
-}
-
-public final class com/datadog/android/flags/internal/model/PrecomputedFlag {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Z
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lorg/json/JSONObject;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)Lcom/datadog/android/flags/internal/model/PrecomputedFlag;
-	public static synthetic fun copy$default (Lcom/datadog/android/flags/internal/model/PrecomputedFlag;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/internal/model/PrecomputedFlag;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAllocationKey ()Ljava/lang/String;
-	public final fun getDoLog ()Z
-	public final fun getExtraLogging ()Lorg/json/JSONObject;
-	public final fun getReason ()Ljava/lang/String;
-	public final fun getVariationKey ()Ljava/lang/String;
-	public final fun getVariationType ()Ljava/lang/String;
-	public final fun getVariationValue ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/PrecomputedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
@@ -241,6 +218,29 @@ public final class com/datadog/android/flags/model/FlagsClientState$Reconciling 
 
 public final class com/datadog/android/flags/model/FlagsClientState$Stale : com/datadog/android/flags/model/FlagsClientState {
 	public static final field INSTANCE Lcom/datadog/android/flags/model/FlagsClientState$Stale;
+}
+
+public final class com/datadog/android/flags/model/PrecomputedFlag {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Lorg/json/JSONObject;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)Lcom/datadog/android/flags/model/PrecomputedFlag;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/model/PrecomputedFlag;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/model/PrecomputedFlag;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllocationKey ()Ljava/lang/String;
+	public final fun getDoLog ()Z
+	public final fun getExtraLogging ()Lorg/json/JSONObject;
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getVariationKey ()Ljava/lang/String;
+	public final fun getVariationType ()Ljava/lang/String;
+	public final fun getVariationValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/flags/model/ResolutionDetails {

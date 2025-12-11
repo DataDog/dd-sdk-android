@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.model.VariationType
 import org.json.JSONObject
 import java.util.Locale
 import kotlin.reflect.KClass
