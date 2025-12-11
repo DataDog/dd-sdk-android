@@ -12,7 +12,7 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 
 internal class FlagsPersistenceManager(

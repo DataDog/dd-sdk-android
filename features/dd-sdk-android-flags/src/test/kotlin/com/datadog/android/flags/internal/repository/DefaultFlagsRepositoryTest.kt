@@ -11,7 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge

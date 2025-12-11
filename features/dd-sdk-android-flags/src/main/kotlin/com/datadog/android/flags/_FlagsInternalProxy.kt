@@ -7,7 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.DatadogFlagsClient
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.lint.InternalApi
 

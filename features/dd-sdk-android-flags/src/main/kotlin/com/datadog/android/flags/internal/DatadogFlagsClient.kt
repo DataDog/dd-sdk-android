@@ -13,13 +13,13 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.model.VariationType
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -468,7 +468,7 @@ internal class DatadogFlagsClient(
 
             VariationType.OBJECT.value -> try {
                 JSONObject(flag.variationValue)
-            } catch (e: JSONException) {
+            } catch (_: JSONException) {
                 flag.variationValue
             }
 

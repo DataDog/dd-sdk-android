@@ -4,10 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.internal.model
+package com.datadog.android.flags.model
 
+import com.datadog.android.lint.InternalApi
 import org.json.JSONObject
 
+@InternalApi
 data class PrecomputedFlag(
     val variationType: String,
     val variationValue: String,

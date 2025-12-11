@@ -8,7 +8,7 @@ package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension

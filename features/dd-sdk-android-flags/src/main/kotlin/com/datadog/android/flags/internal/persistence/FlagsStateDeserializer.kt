@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.JsonKeys
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import org.json.JSONException
 import org.json.JSONObject
