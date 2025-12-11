@@ -15,6 +15,9 @@ interface TimeProvider {
 
     /**
      * Returns the current device timestamp in milliseconds.
+     *
+     * Default implementation returns [System.currentTimeMillis].
+     * This should not be overridden as device time always refers to the local system clock.
      */
     fun getDeviceTimestamp(): Long = System.currentTimeMillis()
 
@@ -22,6 +25,14 @@ interface TimeProvider {
      * Returns the current server timestamp in milliseconds.
      */
     fun getServerTimestamp(): Long
+
+    /**
+     * Returns the current device elapsed time in nanoseconds.
+     *
+     * Default implementation returns [System.nanoTime].
+     * This should not be overridden as device elapsed time always refers to the monotonic system clock.
+     */
+    fun getDeviceElapsedTimeNs(): Long = System.nanoTime()
 
     /**
      * Returns the offset between the device and server time references in nanoseconds.

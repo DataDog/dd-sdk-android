@@ -9,9 +9,10 @@ package com.datadog.android.internal.time
 /**
  * A [TimeProvider] implementation that provides the current device time as both device and server time.
  * The offsets are always 0.
+ *
+ * Device timestamp and elapsed time are inherited from [TimeProvider] default implementations.
  */
 class DefaultTimeProvider : TimeProvider {
-
     override fun getServerTimestamp(): Long = System.currentTimeMillis()
 
     override fun getServerOffsetNanos(): Long = 0L

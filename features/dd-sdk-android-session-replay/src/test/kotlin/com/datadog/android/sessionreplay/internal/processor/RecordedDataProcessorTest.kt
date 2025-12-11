@@ -46,7 +46,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -60,9 +59,6 @@ internal class RecordedDataProcessorTest {
     lateinit var mockWriter: RecordWriter
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockMutationResolver: MutationResolver
 
     @Mock
@@ -71,7 +67,7 @@ internal class RecordedDataProcessorTest {
     @Mock
     lateinit var mockResourcesWriter: ResourcesWriter
 
-    @LongForgery
+    @LongForgery(min = 0L)
     var fakeTimestamp: Long = 0L
 
     @Forgery
@@ -93,6 +89,9 @@ internal class RecordedDataProcessorTest {
 
     @Mock
     lateinit var mockResourceDataStoreManager: ResourceDataStoreManager
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
 
     private val invalidRumContext = SessionReplayRumContext()
 
@@ -153,13 +152,13 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.aList { forge.getForgery() })
         whenever(mockMutationResolver.resolveMutations(any(), any()))
             .thenReturn(forge.getForgery())
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         testedProcessor = RecordedDataProcessor(
+            resourceDataStoreManager = mockResourceDataStoreManager,
             resourcesWriter = mockResourcesWriter,
             writer = mockWriter,
             mutationResolver = mockMutationResolver,
-            nodeFlattener = mockNodeFlattener,
-            resourceDataStoreManager = mockResourceDataStoreManager
+            timeProvider = mockTimeProvider,
+            nodeFlattener = mockNodeFlattener
         )
     }
 
@@ -280,6 +279,20 @@ internal class RecordedDataProcessorTest {
         forge: Forge
     ) {
         // Given
+        val fakeInitialElapsedTimeNs = forge.aLong(
+            min = RecordedDataProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS,
+            max = Long.MAX_VALUE / 2
+        )
+        val fakeElapsedTimeAfterIntervalNs =
+            fakeInitialElapsedTimeNs + RecordedDataProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS
+
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(
+            fakeInitialElapsedTimeNs,
+            fakeInitialElapsedTimeNs,
+            fakeElapsedTimeAfterIntervalNs,
+            fakeElapsedTimeAfterIntervalNs
+        )
+
         fakeSnapshot1.map {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
@@ -297,15 +310,14 @@ internal class RecordedDataProcessorTest {
         currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
             ?: fail("RumContextData is null")
 
-        fakeSnapshotItem1 = createSnapshotItem(fakeSnapshot1)
+        fakeSnapshotItem1 = createSnapshotItem(fakeSnapshot1, creationTimestampInNs = fakeInitialElapsedTimeNs)
 
         testedProcessor.processScreenSnapshots(fakeSnapshotItem1)
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(RecordedDataProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS))
 
         currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
             ?: fail("RumContextData is null")
 
-        fakeSnapshotItem2 = createSnapshotItem(fakeSnapshot2)
+        fakeSnapshotItem2 = createSnapshotItem(fakeSnapshot2, creationTimestampInNs = fakeElapsedTimeAfterIntervalNs)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshotItem2)
@@ -746,6 +758,7 @@ internal class RecordedDataProcessorTest {
 
         val item = TouchEventRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
+            creationTimestampInNs = fakeTimestamp,
             touchData = fakeTouchRecords
         )
 
@@ -1315,17 +1328,20 @@ internal class RecordedDataProcessorTest {
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
     ): ResourceRecordedDataQueueItem = ResourceRecordedDataQueueItem(
         recordedQueuedItemContext = usedContext,
+        identifier = fakeIdentifier,
         resourceData = resourceData,
-        identifier = fakeIdentifier
+        creationTimestampInNs = fakeTimestamp
     )
 
     private fun createSnapshotItem(
         snapshot: List<Node>,
         systemInformation: SystemInformation = fakeSystemInformation,
-        usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
+        usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext,
+        creationTimestampInNs: Long = fakeTimestamp
     ): SnapshotRecordedDataQueueItem = SnapshotRecordedDataQueueItem(
-        usedContext,
-        systemInformation = systemInformation
+        recordedQueuedItemContext = usedContext,
+        systemInformation = systemInformation,
+        creationTimestampInNs = creationTimestampInNs
     ).apply {
         this.nodes = snapshot
     }
@@ -1335,7 +1351,8 @@ internal class RecordedDataProcessorTest {
         usedContext: RecordedQueuedItemContext = currentRecordedQueuedItemContext
     ): TouchEventRecordedDataQueueItem =
         TouchEventRecordedDataQueueItem(
-            usedContext,
+            recordedQueuedItemContext = usedContext,
+            creationTimestampInNs = fakeTimestamp,
             touchData = touchEvent
         )
 

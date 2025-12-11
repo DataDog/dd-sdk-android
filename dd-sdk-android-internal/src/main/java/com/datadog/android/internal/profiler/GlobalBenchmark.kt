@@ -6,6 +6,8 @@
 
 package com.datadog.android.internal.profiler
 
+import com.datadog.android.internal.time.TimeProvider
+
 /**
  * A global holder of [BenchmarkProfiler]
  * allowing registration and retrieval of [BenchmarkProfiler] and [BenchmarkMeter] implementations.
@@ -48,13 +50,14 @@ object GlobalBenchmark {
     /**
      * Creates the appropriate [ExecutionTimer].
      */
-    fun createExecutionTimer(track: String): ExecutionTimer {
+    fun createExecutionTimer(track: String, timeProvider: TimeProvider): ExecutionTimer {
         if (benchmarkSdkUploads is NoOpBenchmarkSdkUploads) {
             return NoOpExecutionTimer()
         }
 
         return DDExecutionTimer(
-            track = track
+            track = track,
+            timeProvider = timeProvider
         )
     }
 }

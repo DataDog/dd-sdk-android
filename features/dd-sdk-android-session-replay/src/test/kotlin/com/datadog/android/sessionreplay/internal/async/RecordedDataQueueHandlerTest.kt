@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.ITEM_DROPPED_EXPIRED_MESSAGE
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler.Companion.ITEM_DROPPED_INVALID_MESSAGE
@@ -20,6 +21,7 @@ import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -85,6 +87,12 @@ internal class RecordedDataQueueHandlerTest {
     @Mock
     lateinit var mockRateBasedSampler: RateBasedSampler<Unit>
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @LongForgery(min = RecordedDataQueueHandler.MAX_DELAY_NS * 2)
+    var fakeCurrentTimeNs: Long = 0L
+
     @Forgery
     lateinit var fakeRecordedQueuedItemContext: RecordedQueuedItemContext
 
@@ -127,6 +135,7 @@ internal class RecordedDataQueueHandlerTest {
         fakeNodeData = forge.aList { mock() }
 
         whenever(mockRateBasedSampler.sample(any())).thenReturn(true)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(fakeCurrentTimeNs)
 
         testedHandler = RecordedDataQueueHandler(
             processor = mockProcessor,
@@ -134,6 +143,7 @@ internal class RecordedDataQueueHandlerTest {
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
             recordedDataQueue = fakeRecordedDataQueue,
+            timeProvider = mockTimeProvider,
             telemetrySampleRate = 1f,
             sampler = mockRateBasedSampler
         )
@@ -158,6 +168,7 @@ internal class RecordedDataQueueHandlerTest {
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
             recordedDataQueue = mockQueue,
+            timeProvider = mockTimeProvider,
             telemetrySampleRate = 1f,
             sampler = mockRateBasedSampler
         )
@@ -289,9 +300,9 @@ internal class RecordedDataQueueHandlerTest {
         @Mock mockSnapshotItem: SnapshotRecordedDataQueueItem
     ) {
         // Given
+        val expiredTime = fakeCurrentTimeNs - RecordedDataQueueHandler.MAX_DELAY_NS - 1
         mockSnapshotItem.apply {
-            val expiredTime = System.nanoTime() - RecordedDataQueueHandler.MAX_DELAY_NS
-            whenever(creationTimeStampInNs).thenReturn(expiredTime)
+            whenever(creationTimestampInNs).thenReturn(expiredTime)
             whenever(isValid()).thenReturn(true)
             whenever(isReady()).thenReturn(true)
             whenever(nodes).thenReturn(fakeNodeData)
@@ -532,7 +543,7 @@ internal class RecordedDataQueueHandlerTest {
         mockSnapshotItem1.apply {
             whenever(systemInformation).thenReturn(mockSystemInformation)
             whenever(nodes).thenReturn(fakeNodeData)
-            whenever(creationTimeStampInNs).thenReturn(System.nanoTime())
+            whenever(creationTimestampInNs).thenReturn(fakeCurrentTimeNs)
             whenever(isValid()).thenReturn(true)
             whenever(isReady()).thenReturn(true)
         }
@@ -541,7 +552,7 @@ internal class RecordedDataQueueHandlerTest {
         mockSnapshotItem2.apply {
             whenever(systemInformation).thenReturn(mockSystemInformation)
             whenever(nodes).thenReturn(fakeNodeData)
-            whenever(creationTimeStampInNs).thenReturn(System.nanoTime())
+            whenever(creationTimestampInNs).thenReturn(fakeCurrentTimeNs)
             whenever(isValid()).thenReturn(true)
             whenever(isReady()).thenReturn(false)
         }
@@ -550,7 +561,7 @@ internal class RecordedDataQueueHandlerTest {
         mockSnapshotItem3.apply {
             whenever(systemInformation).thenReturn(mockSystemInformation)
             whenever(nodes).thenReturn(fakeNodeData)
-            whenever(creationTimeStampInNs).thenReturn(System.nanoTime())
+            whenever(creationTimestampInNs).thenReturn(fakeCurrentTimeNs)
             whenever(isValid()).thenReturn(true)
             whenever(isReady()).thenReturn(true)
         }
@@ -685,6 +696,7 @@ internal class RecordedDataQueueHandlerTest {
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
             recordedDataQueue = fakeRecordedDataQueue,
+            timeProvider = mockTimeProvider,
             telemetrySampleRate = 0f,
             sampler = mockRateBasedSampler
         )
@@ -721,19 +733,21 @@ internal class RecordedDataQueueHandlerTest {
         @Mock mockSnapshotItem: SnapshotRecordedDataQueueItem
     ) {
         // Given
+        val expiredTime = fakeCurrentTimeNs - RecordedDataQueueHandler.MAX_DELAY_NS - 1
+
         testedHandler = RecordedDataQueueHandler(
             processor = mockProcessor,
             rumContextDataHandler = mockRumContextDataHandler,
             executorService = spyExecutorService,
             internalLogger = mockInternalLogger,
             recordedDataQueue = fakeRecordedDataQueue,
+            timeProvider = mockTimeProvider,
             telemetrySampleRate = 0f,
             sampler = mockRateBasedSampler
         )
 
         mockSnapshotItem.apply {
-            val expiredTime = System.nanoTime() - RecordedDataQueueHandler.MAX_DELAY_NS
-            whenever(creationTimeStampInNs).thenReturn(expiredTime)
+            whenever(creationTimestampInNs).thenReturn(expiredTime)
             whenever(isValid()).thenReturn(true)
             whenever(isReady()).thenReturn(true)
             whenever(nodes).thenReturn(fakeNodeData)
@@ -764,7 +778,7 @@ internal class RecordedDataQueueHandlerTest {
 
     private fun addSnapshotItemToQueue(): SnapshotRecordedDataQueueItem {
         val newRumContext = RecordedQueuedItemContext(
-            timestamp = System.currentTimeMillis(),
+            timestamp = fakeRecordedQueuedItemContext.timestamp,
             newRumContext = fakeRecordedQueuedItemContext.newRumContext
         )
 

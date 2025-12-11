@@ -49,7 +49,7 @@ internal class RecorderWindowCallback(
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
-    private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
+    private var lastPerformedFlushTimeInNs: Long = timeProvider.getDeviceElapsedTimeNs()
     private var shouldRecordMotion: Boolean = false
 
     // region Window.Callback
@@ -99,19 +99,19 @@ internal class RecorderWindowCallback(
         when (event.action.and(MotionEvent.ACTION_MASK)) {
             MotionEvent.ACTION_DOWN -> {
                 // reset the flush time to avoid flush in the next event
-                lastPerformedFlushTimeInNs = System.nanoTime()
+                lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNs()
                 updatePositions(event, MobileSegment.PointerEventType.DOWN)
                 // reset the on move update time in order to take into account the first move event
                 lastOnMoveUpdateTimeInNs = 0
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (System.nanoTime() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
+                if (timeProvider.getDeviceElapsedTimeNs() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
                     updatePositions(event, MobileSegment.PointerEventType.MOVE)
-                    lastOnMoveUpdateTimeInNs = System.nanoTime()
+                    lastOnMoveUpdateTimeInNs = timeProvider.getDeviceElapsedTimeNs()
                 }
                 // make sure we flush from time to time to avoid glitches in the player
-                if (System.nanoTime() - lastPerformedFlushTimeInNs >=
+                if (timeProvider.getDeviceElapsedTimeNs() - lastPerformedFlushTimeInNs >=
                     flushPositionBufferThresholdInNs
                 ) {
                     flushPositions()
@@ -161,7 +161,7 @@ internal class RecorderWindowCallback(
         }
 
         pointerInteractions.clear()
-        lastPerformedFlushTimeInNs = System.nanoTime()
+        lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNs()
     }
 
     private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {

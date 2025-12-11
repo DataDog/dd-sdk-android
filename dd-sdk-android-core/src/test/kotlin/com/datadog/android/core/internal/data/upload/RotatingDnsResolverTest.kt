@@ -6,8 +6,10 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -23,6 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.net.InetAddress
@@ -41,8 +45,14 @@ internal class RotatingDnsResolverTest {
     @Mock
     lateinit var mockDelegate: Dns
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @StringForgery
     lateinit var fakeHostname: String
+
+    @LongForgery(min = 0L)
+    var fakeElapsedTimeNs: Long = 0L
 
     lateinit var fakeInetAddresses: List<InetAddress>
 
@@ -50,7 +60,9 @@ internal class RotatingDnsResolverTest {
     fun `set up`(forge: Forge) {
         fakeInetAddresses = forge.aList { mock() }
 
-        testedDns = RotatingDnsResolver(mockDelegate, TEST_TTL_MS)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeElapsedTimeNs
+
+        testedDns = RotatingDnsResolver(mockDelegate, TEST_TTL_MS, mockTimeProvider)
     }
 
     @Test
@@ -72,12 +84,13 @@ internal class RotatingDnsResolverTest {
         val result = mutableListOf<InetAddress>()
 
         // When
-        fakeInetAddresses.forEach {
+        fakeInetAddresses.forEach { _ ->
             result.add(testedDns.lookup(fakeHostname).first())
         }
 
         // Then
         assertThat(result).containsExactlyElementsOf(fakeInetAddresses)
+        verify(mockDelegate).lookup(fakeHostname)
     }
 
     @Test
@@ -90,12 +103,14 @@ internal class RotatingDnsResolverTest {
 
         // When
         val result = testedDns.lookup(fakeHostname)
-        Thread.sleep(TEST_TTL_MS.inWholeMilliseconds)
+        val fakeExpiredTime = fakeElapsedTimeNs + TEST_TTL_MS.inWholeNanoseconds
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeExpiredTime
         val result2 = testedDns.lookup(fakeHostname)
 
         // Then
         assertThat(result).containsExactlyElementsOf(fakeInetAddresses)
         assertThat(result2).containsExactlyElementsOf(fakeInetAddresses2)
+        verify(mockDelegate, times(2)).lookup(fakeHostname)
     }
 
     @Test
@@ -119,14 +134,15 @@ internal class RotatingDnsResolverTest {
         // the real use case where we have a small number of addresses to rotate
         fakeInetAddresses = forge.aList(size = forge.anInt(min = 1, max = 3)) { mock() }
         whenever(mockDelegate.lookup(fakeHostname)) doReturn fakeInetAddresses
-        // just wait the TTL time to make sure all threads are concurrently accessing the lookup
-        Thread.sleep(TEST_TTL_MS.inWholeMilliseconds)
+
+        val fakeExpiredTime = fakeElapsedTimeNs + TEST_TTL_MS.inWholeNanoseconds
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).doReturn(fakeElapsedTimeNs, fakeExpiredTime)
+
         var exceptionThrown: Exception? = null
 
         // When
         List(100) {
             Thread {
-                Thread.sleep(forge.aLong(min = 0, max = 100))
                 try {
                     testedDns.lookup(fakeHostname)
                 } catch (e: Exception) {

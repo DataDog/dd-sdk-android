@@ -17,9 +17,11 @@ import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.METRIC_TYPE_VALUE
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion.OPERATION_NAME
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -61,6 +63,9 @@ internal class MethodCalledTelemetryTest {
     @Mock
     lateinit var mockDeviceInfo: DeviceInfo
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @StringForgery
     lateinit var fakeDeviceModel: String
 
@@ -85,7 +90,11 @@ internal class MethodCalledTelemetryTest {
     @FloatForgery(min = 0.1f, max = 100f)
     private var fakeCreationSampleRate: Float = 0.1f
 
-    private var fakeStartTime: Long = 0
+    @LongForgery(min = 0L)
+    private var fakeStartTimeNs: Long = 0L
+
+    @LongForgery(min = 0L)
+    private var fakeElapsedTimeNs: Long = 0L
 
     private var fakeStatus: Boolean = false
 
@@ -105,13 +114,16 @@ internal class MethodCalledTelemetryTest {
         whenever(mockDeviceInfo.osVersion).thenReturn(fakeOsVersion)
         whenever(mockDeviceInfo.deviceBuildId).thenReturn(fakeOsBuild)
 
-        fakeStartTime = System.nanoTime()
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
+            .thenReturn(fakeStartTimeNs)
+            .thenReturn(fakeStartTimeNs + fakeElapsedTimeNs)
+
         testedMethodCalledTelemetry = MethodCalledTelemetry(
             internalLogger = mockInternalLogger,
             operationName = fakeOperationName,
             callerClass = fakeCallerClass,
-            startTime = fakeStartTime,
-            creationSampleRate = fakeCreationSampleRate
+            creationSampleRate = fakeCreationSampleRate,
+            timeProvider = mockTimeProvider
         )
     }
 
@@ -137,7 +149,7 @@ internal class MethodCalledTelemetryTest {
         verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f), eq(fakeCreationSampleRate))
         val executionTime = mapCaptor.firstValue[EXECUTION_TIME] as Long
 
-        assertThat(executionTime).isLessThan(System.nanoTime() - fakeStartTime)
+        assertThat(executionTime).isEqualTo(fakeElapsedTimeNs)
     }
 
     @Test

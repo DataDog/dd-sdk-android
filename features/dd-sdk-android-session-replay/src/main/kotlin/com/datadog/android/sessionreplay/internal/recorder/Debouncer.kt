@@ -29,11 +29,11 @@ internal class Debouncer(
             // reason why we are not initializing this in the constructor is that in case the
             // component was initialized earlier than the first debounce request was requested
             // it will execute the runnable directly and will not pass through the handler.
-            lastTimeRecordWasPerformed = System.nanoTime()
+            lastTimeRecordWasPerformed = sdkCore.timeProvider.getDeviceElapsedTimeNs()
             firstRequest = false
         }
         handler.removeCallbacksAndMessages(null)
-        val timePassedSinceLastExecution = System.nanoTime() - lastTimeRecordWasPerformed
+        val timePassedSinceLastExecution = sdkCore.timeProvider.getDeviceElapsedTimeNs() - lastTimeRecordWasPerformed
         if (timePassedSinceLastExecution >= maxRecordDelayInNs) {
             executeRunnable(runnable)
         } else {
@@ -49,14 +49,14 @@ internal class Debouncer(
         } else {
             runnable.run()
         }
-        lastTimeRecordWasPerformed = System.nanoTime()
+        lastTimeRecordWasPerformed = sdkCore.timeProvider.getDeviceElapsedTimeNs()
     }
 
     private fun runInTimeBalance(block: () -> Unit) {
-        if (timeBank.updateAndCheck(System.nanoTime())) {
-            val startTimeInNano = System.nanoTime()
+        if (timeBank.updateAndCheck(sdkCore.timeProvider.getDeviceElapsedTimeNs())) {
+            val startTimeInNano = sdkCore.timeProvider.getDeviceElapsedTimeNs()
             block()
-            val endTimeInNano = System.nanoTime()
+            val endTimeInNano = sdkCore.timeProvider.getDeviceElapsedTimeNs()
             timeBank.consume(endTimeInNano - startTimeInNano)
         } else {
             logSkippedFrame()

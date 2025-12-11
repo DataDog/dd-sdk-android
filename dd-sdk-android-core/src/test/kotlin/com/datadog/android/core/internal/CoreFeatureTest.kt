@@ -147,7 +147,7 @@ internal class CoreFeatureTest {
         testedFeature = CoreFeature(
             mockInternalLogger,
             mockAppStartTimeProvider,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
             scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService }
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))

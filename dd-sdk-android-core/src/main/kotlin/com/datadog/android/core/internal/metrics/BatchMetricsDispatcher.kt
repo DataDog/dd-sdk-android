@@ -25,7 +25,7 @@ internal class BatchMetricsDispatcher(
     private val uploadConfiguration: DataUploadConfiguration?,
     private val filePersistenceConfig: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
-    private val dateTimeProvider: TimeProvider
+    private val timeProvider: TimeProvider
 
 ) : MetricsDispatcher, ProcessLifecycleMonitor.Callback {
 
@@ -90,7 +90,7 @@ internal class BatchMetricsDispatcher(
         numPendingBatches: Int
     ): Map<String, Any?>? {
         val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
-        val fileAgeInMillis = dateTimeProvider.getDeviceTimestamp() - fileCreationTimestamp
+        val fileAgeInMillis = timeProvider.getDeviceTimestamp() - fileCreationTimestamp
         if (fileAgeInMillis < 0) {
             // the device time was manually modified or the time zone changed
             // we are dropping this metric to not skew our charts

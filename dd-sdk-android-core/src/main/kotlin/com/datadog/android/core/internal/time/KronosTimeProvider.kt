@@ -11,6 +11,11 @@ import com.datadog.android.internal.time.TimeProvider
 import com.lyft.kronos.Clock
 import java.util.concurrent.TimeUnit
 
+/**
+ * A [TimeProvider] implementation that uses Kronos NTP for server time synchronization.
+ *
+ * Device timestamp and elapsed time are inherited from [TimeProvider] default implementations.
+ */
 internal class KronosTimeProvider(
     private val clock: Clock,
     private val internalLogger: InternalLogger
@@ -24,7 +29,7 @@ internal class KronosTimeProvider(
     override fun getServerOffsetMillis(): Long {
         return clock.safeGetCurrentTimeMs()
             .map { server ->
-                val device = System.currentTimeMillis()
+                val device = getDeviceTimestamp()
                 val delta = server - device
                 delta
             }

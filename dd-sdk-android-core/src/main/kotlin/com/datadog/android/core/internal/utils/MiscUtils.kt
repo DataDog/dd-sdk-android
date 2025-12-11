@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.lint.InternalApi
 import com.google.gson.JsonArray
@@ -23,9 +24,10 @@ internal fun retryWithDelay(
     times: Int,
     retryDelayNs: Long,
     internalLogger: InternalLogger,
+    timeProvider: TimeProvider,
     block: () -> Boolean
 ): Boolean {
-    return retryWithDelay(block, times, retryDelayNs, internalLogger)
+    return retryWithDelay(block, times, retryDelayNs, internalLogger, timeProvider)
 }
 
 @Suppress("TooGenericExceptionCaught")
@@ -33,13 +35,14 @@ internal inline fun retryWithDelay(
     block: () -> Boolean,
     times: Int,
     loopsDelayInNanos: Long,
-    internalLogger: InternalLogger
+    internalLogger: InternalLogger,
+    timeProvider: TimeProvider
 ): Boolean {
     var retryCounter = 1
     var wasSuccessful = false
-    var loopTimeOrigin = System.nanoTime() - loopsDelayInNanos
+    var loopTimeOrigin = timeProvider.getDeviceElapsedTimeNs() - loopsDelayInNanos
     while (retryCounter <= times && !wasSuccessful) {
-        if ((System.nanoTime() - loopTimeOrigin) >= loopsDelayInNanos) {
+        if ((timeProvider.getDeviceElapsedTimeNs() - loopTimeOrigin) >= loopsDelayInNanos) {
             wasSuccessful = try {
                 block()
             } catch (e: Exception) {
@@ -54,7 +57,7 @@ internal inline fun retryWithDelay(
                 )
                 false
             }
-            loopTimeOrigin = System.nanoTime()
+            loopTimeOrigin = timeProvider.getDeviceElapsedTimeNs()
             retryCounter++
         }
     }

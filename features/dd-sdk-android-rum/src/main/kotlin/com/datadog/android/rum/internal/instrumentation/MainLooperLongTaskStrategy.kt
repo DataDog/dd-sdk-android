@@ -10,6 +10,7 @@ import android.content.Context
 import android.os.Looper
 import android.util.Printer
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -17,9 +18,7 @@ import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class MainLooperLongTaskStrategy(
-    internal val thresholdMs: Long
-) : Printer, TrackingStrategy {
+internal class MainLooperLongTaskStrategy(internal val thresholdMs: Long) : Printer, TrackingStrategy {
 
     private val thresholdNS = TimeUnit.MILLISECONDS.toNanos(thresholdMs)
     private var startUptimeNs: Long = 0L
@@ -79,7 +78,7 @@ internal class MainLooperLongTaskStrategy(
     // region Internal
 
     private fun detectLongTask(message: String) {
-        val now = System.nanoTime()
+        val now = (sdkCore as FeatureSdkCore).timeProvider.getDeviceElapsedTimeNs()
         if (message.startsWith(PREFIX_START)) {
             @Suppress("UnsafeThirdPartyFunctionCall") // substring can't throw IndexOutOfBounds
             target = message.substring(PREFIX_START_LENGTH)

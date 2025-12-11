@@ -6,6 +6,8 @@
 
 package com.datadog.benchmark
 
+import com.datadog.android.Datadog
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.benchmark.exporter.DatadogMetricExporter
 import com.datadog.benchmark.exporter.DatadogSpanExporter
@@ -35,7 +37,9 @@ class DatadogVitalsMeter private constructor(private val meter: Meter) : Datadog
 
     private val cpuVitalReader: CPUVitalReader = CPUVitalReader()
     private val memoryVitalReader: MemoryVitalReader = MemoryVitalReader()
-    private val fpsVitalReader: FpsVitalReader = FpsVitalReader()
+    private val fpsVitalReader: FpsVitalReader = FpsVitalReader(
+        (Datadog.getInstance() as FeatureSdkCore).timeProvider
+    )
 
     private val gaugesByMetricName: MutableMap<String, ObservableDoubleGauge> = mutableMapOf()
 

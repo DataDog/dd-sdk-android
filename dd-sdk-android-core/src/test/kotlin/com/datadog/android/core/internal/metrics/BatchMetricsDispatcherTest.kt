@@ -15,6 +15,7 @@ import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -55,9 +56,10 @@ internal class BatchMetricsDispatcherTest {
     lateinit var fakeUploadConfiguration: DataUploadConfiguration
 
     @Mock
-    lateinit var mockDateTimeProvider: TimeProvider
+    lateinit var mockTimeProvider: TimeProvider
 
-    private var currentTimeInMillis: Long = System.currentTimeMillis()
+    @LongForgery(min = 100001, max = Long.MAX_VALUE / 4)
+    var fakeTimestamp: Long = 0L
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -79,13 +81,13 @@ internal class BatchMetricsDispatcherTest {
                 Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
             )
         )
-        whenever(mockDateTimeProvider.getDeviceTimestamp()).doReturn(currentTimeInMillis)
+        whenever(mockTimeProvider.getDeviceTimestamp()).doReturn(fakeTimestamp)
         testedBatchMetricsDispatcher = BatchMetricsDispatcher(
             fakeFeatureName,
             fakeUploadConfiguration,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockDateTimeProvider
+            mockTimeProvider
         )
     }
 
@@ -118,7 +120,7 @@ internal class BatchMetricsDispatcherTest {
         // Given
         val fakeReason = forge.forgeIncludeInMetricReason()
         val fakeFile: File = forge.forgeValidFile()
-        val newFileName = (currentTimeInMillis + forge.aLong(min = 100, max = 1000)).toString()
+        val newFileName = (fakeTimestamp + forge.aLong(min = 100, max = 1000)).toString()
         whenever(fakeFile.name).thenReturn(newFileName)
 
         // When
@@ -298,7 +300,7 @@ internal class BatchMetricsDispatcherTest {
             fakeUploadConfiguration,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockDateTimeProvider
+            mockTimeProvider
         )
         val fakeReason: RemovalReason.Flushed = forge.getForgery()
         val fakeFile: File = forge.forgeValidFile()
@@ -538,7 +540,7 @@ internal class BatchMetricsDispatcherTest {
             fakeUploadConfiguration,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockDateTimeProvider
+            mockTimeProvider
         )
         val fakeFile: File = forge.forgeValidClosedFile()
 
@@ -553,7 +555,7 @@ internal class BatchMetricsDispatcherTest {
         return mutableMapOf(
             BatchMetricsDispatcher.TYPE_KEY to BatchMetricsDispatcher.BATCH_DELETED_TYPE_VALUE,
             BatchMetricsDispatcher.TRACK_KEY to resolveTrackName(fakeFeatureName),
-            BatchMetricsDispatcher.BATCH_AGE_KEY to max(0, (currentTimeInMillis - file.name.toLong())),
+            BatchMetricsDispatcher.BATCH_AGE_KEY to max(0, (fakeTimestamp - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
                 fakeFilePersistenceConfig.recentDelayMs,
             BatchMetricsDispatcher.UPLOADER_DELAY_KEY to mapOf(
@@ -589,7 +591,7 @@ internal class BatchMetricsDispatcherTest {
     }
 
     private fun Forge.forgeValidFile(): File {
-        val fileNameAsLong = currentTimeInMillis - aLong(min = 1000, max = 100000)
+        val fileNameAsLong = fakeTimestamp - aLong(min = 1000, max = 100000)
         val fileLength = aPositiveLong()
         val dirName = forgeAGrantedDirName()
         val parentDirectory: File = mock {

@@ -42,12 +42,13 @@ internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
     )
 }
 
-internal fun Forge.startActionEvent(continuous: Boolean? = null): RumRawEvent.StartAction {
+internal fun Forge.startActionEvent(continuous: Boolean? = null, eventTime: Time = Time()): RumRawEvent.StartAction {
     return RumRawEvent.StartAction(
         type = aValueFrom(RumActionType::class.java),
         name = anAlphabeticalString(),
         waitForStop = continuous ?: aBool(),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = eventTime
     )
 }
 

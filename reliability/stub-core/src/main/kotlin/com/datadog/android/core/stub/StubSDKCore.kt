@@ -20,6 +20,8 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.time.TimeProvider
+import com.datadog.tools.unit.stub.StubTimeProvider
 import fr.xgouchet.elmyr.Forge
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
@@ -159,6 +161,8 @@ class StubSDKCore(
 
     override val internalLogger: InternalLogger = StubInternalLogger()
 
+    override val timeProvider: TimeProvider = StubTimeProvider()
+
     override fun registerFeature(feature: Feature) {
         stubFeatureScope(feature, StubFeatureScope(feature, { datadogContext }))
     }
@@ -187,7 +191,7 @@ class StubSDKCore(
     }
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
-        return StubScheduledExecutorService(executorContext)
+        return StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestamp)
     }
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {

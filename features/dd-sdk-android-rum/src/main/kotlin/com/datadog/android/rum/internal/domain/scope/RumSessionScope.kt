@@ -65,7 +65,7 @@ internal class RumSessionScope(
     internal var sessionState: State = State.NOT_TRACKED
     private var startReason: StartReason = StartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
-    private val sessionStartNs = AtomicLong(System.nanoTime())
+    private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedTimeNs())
 
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -228,7 +228,7 @@ internal class RumSessionScope(
 
     @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {
-        val nanoTime = System.nanoTime()
+        val nanoTime = sdkCore.timeProvider.getDeviceElapsedTimeNs()
         val isNewSession = sessionId == RumContext.NULL_UUID
 
         val timeSinceLastInteractionNs = nanoTime - lastUserInteractionNs.get()

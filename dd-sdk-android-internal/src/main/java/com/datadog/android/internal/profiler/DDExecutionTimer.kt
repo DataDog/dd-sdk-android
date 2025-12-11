@@ -6,18 +6,22 @@
 
 package com.datadog.android.internal.profiler
 
+import com.datadog.android.internal.time.TimeProvider
+
 internal class DDExecutionTimer(
     private val track: String,
+    private val timeProvider: TimeProvider,
     private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : ExecutionTimer {
+
     override fun <T> measure(action: () -> T): T {
         if (track.isEmpty()) {
             return action()
         }
 
-        val requestStartTime = System.nanoTime()
+        val requestStartTime = timeProvider.getDeviceElapsedTimeNs()
         val result = action()
-        val latencyInSeconds = (System.nanoTime() - requestStartTime) / NANOSECONDS_IN_A_SECOND
+        val latencyInSeconds = (timeProvider.getDeviceElapsedTimeNs() - requestStartTime) / NANOSECONDS_IN_A_SECOND
         responseLatencyReport(latencyInSeconds, track)
         return result
     }

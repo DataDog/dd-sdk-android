@@ -6,6 +6,7 @@
 package com.datadog.android.rum.internal.metric.slowframes
 
 import androidx.metrics.performance.FrameData
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
@@ -22,21 +23,22 @@ internal interface SlowFramesListener : FrameStateListener {
 
 internal class DefaultSlowFramesListener(
     internal val configuration: SlowFramesConfiguration,
-    internal val metricDispatcher: UISlownessMetricDispatcher
+    internal val metricDispatcher: UISlownessMetricDispatcher,
+    timeProvider: TimeProvider
 ) : SlowFramesListener {
 
     @Volatile
     private var currentViewId: String? = null
 
     @Volatile
-    private var currentViewStartedTimeStampNs: Long = System.nanoTime()
+    private var currentViewStartedTimestampNs: Long = timeProvider.getDeviceElapsedTimeNs()
 
     private val slowFramesRecords = ConcurrentHashMap<String, ViewUIPerformanceReport>()
 
     // Called from the main thread
     override fun onViewCreated(viewId: String, startedTimestampNs: Long) {
         currentViewId = viewId
-        currentViewStartedTimeStampNs = startedTimestampNs
+        currentViewStartedTimestampNs = startedTimestampNs
         metricDispatcher.onViewCreated(viewId)
     }
 
@@ -61,7 +63,7 @@ internal class DefaultSlowFramesListener(
     // Called from the background thread
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId
-        if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimeStampNs) {
+        if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimestampNs) {
             if (viewId != null) {
                 metricDispatcher.incrementMissedFrameCount(viewId)
             }
@@ -135,7 +137,7 @@ internal class DefaultSlowFramesListener(
 
     private fun getViewPerformanceReport(viewId: String) = slowFramesRecords.getOrPut(viewId) {
         ViewUIPerformanceReport(
-            currentViewStartedTimeStampNs,
+            currentViewStartedTimestampNs,
             configuration.maxSlowFramesAmount,
             minimumViewLifetimeThresholdNs = configuration.minViewLifetimeThresholdNs
         )

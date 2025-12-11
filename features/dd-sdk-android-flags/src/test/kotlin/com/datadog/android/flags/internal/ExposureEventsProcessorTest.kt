@@ -11,7 +11,9 @@ import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,8 +28,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atMost
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -35,6 +39,12 @@ internal class ExposureEventsProcessorTest {
 
     @Mock
     lateinit var mockRecordWriter: RecordWriter
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @LongForgery(min = 0L)
+    var fakeTimestamp = 0L
 
     @StringForgery
     lateinit var fakeFlagName: String
@@ -53,7 +63,7 @@ internal class ExposureEventsProcessorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        testedProcessor = ExposureEventsProcessor(mockRecordWriter)
+        testedProcessor = ExposureEventsProcessor(mockRecordWriter, mockTimeProvider)
         fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             allocationKey = fakeAllocationKey,
             variationKey = fakeVariationKey
@@ -75,6 +85,7 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimestamp
         testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
 
         // Then
@@ -88,7 +99,7 @@ internal class ExposureEventsProcessorTest {
         assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
         assertThat(capturedEvent.subject.attributes.additionalProperties).containsKeys("user_id", "plan", "age")
         assertThat(capturedEvent.subject.attributes.additionalProperties).hasSize(3)
-        assertThat(capturedEvent.timestamp).isGreaterThan(0)
+        assertThat(capturedEvent.timestamp).isEqualTo(fakeTimestamp)
     }
 
     @Test
@@ -227,22 +238,23 @@ internal class ExposureEventsProcessorTest {
             attributes = mapOf("user_id" to forge.anAlphabeticalString())
         )
 
-        val beforeTime = System.currentTimeMillis()
+        val fakeTimestamp1 = forge.aPositiveLong()
+        val fakeTimestamp2 = forge.aPositiveLong()
+        whenever(mockTimeProvider.getDeviceTimestamp())
+            .thenReturn(fakeTimestamp1)
+            .thenReturn(fakeTimestamp2)
 
         // When
         testedProcessor.processEvent(fakeFlagName, fakeContext1, fakeFlag)
         testedProcessor.processEvent(fakeFlagName, fakeContext2, fakeFlag)
-
-        val afterTime = System.currentTimeMillis()
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
         verify(mockRecordWriter, times(2)).write(eventCaptor.capture())
 
         val capturedEvents = eventCaptor.allValues
-        capturedEvents.forEach { event ->
-            assertThat(event.timestamp).isBetween(beforeTime, afterTime)
-        }
+        assertThat(capturedEvents[0].timestamp).isEqualTo(fakeTimestamp1)
+        assertThat(capturedEvents[1].timestamp).isEqualTo(fakeTimestamp2)
     }
 
     // endregion
@@ -481,7 +493,7 @@ internal class ExposureEventsProcessorTest {
             Thread {
                 repeat(10) {
                     Thread.sleep(5)
-                    testedProcessor = ExposureEventsProcessor(mockRecordWriter)
+                    testedProcessor = ExposureEventsProcessor(mockRecordWriter, mockTimeProvider)
                 }
             }
         }

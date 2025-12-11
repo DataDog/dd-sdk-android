@@ -34,7 +34,6 @@ import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
-import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -42,6 +41,7 @@ import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import okhttp3.Call
@@ -101,7 +101,17 @@ internal class DatadogCore(
     /** @inheritDoc */
     override val time: TimeInfo
         get() {
-            return coreFeature.timeProvider.composeTimeInfo()
+            return with(coreFeature.timeProvider) {
+                val deviceTimeMs = getDeviceTimestamp()
+                val serverTimeMs = getServerTimestamp()
+                TimeInfo(
+                    deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
+                    serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),
+                    serverTimeOffsetNs = TimeUnit.MILLISECONDS
+                        .toNanos(serverTimeMs - deviceTimeMs),
+                    serverTimeOffsetMs = serverTimeMs - deviceTimeMs
+                )
+            }
         }
 
     /** @inheritDoc */
@@ -114,6 +124,10 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override val internalLogger: InternalLogger = internalLoggerProvider(this)
+
+    /** @inheritDoc */
+    override val timeProvider: TimeProvider
+        get() = coreFeature.timeProvider
 
     /** @inheritDoc */
     override var isDeveloperModeEnabled: Boolean = false

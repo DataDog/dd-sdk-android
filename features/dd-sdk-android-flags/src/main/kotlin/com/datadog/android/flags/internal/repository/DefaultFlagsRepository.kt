@@ -53,6 +53,7 @@ internal class DefaultFlagsRepository(
         persistenceManager.saveFlagsState(
             context = context,
             flags = flags,
+            currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestamp(),
             object : DataStoreWriteCallback {
                 override fun onSuccess() {
                 }
