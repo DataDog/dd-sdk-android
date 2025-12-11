@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.tools.unit.forge.BaseConfigurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -39,7 +38,7 @@ internal class JsonExtensionsTest {
             put(key1, value1)
             put("number", value2)
             put("bool", boolVal)
-            put("double", doubleVal)    
+            put("double", doubleVal)
         }
 
         // When
@@ -50,7 +49,7 @@ internal class JsonExtensionsTest {
         assertThat(result[key1]).isEqualTo(value1)
         assertThat(result["number"]).isEqualTo(value2)
         assertThat(result["bool"]).isEqualTo(boolVal)
-        assertThat(result["double"]).isEqualTo(doubleVal)   
+        assertThat(result["double"]).isEqualTo(doubleVal)
     }
 
     @Test
@@ -127,9 +126,7 @@ internal class JsonExtensionsTest {
     }
 
     @Test
-    fun `M handle deeply nested structures W toMap() {complex nesting}`(
-        @StringForgery fakeValue: String
-    ) {
+    fun `M handle deeply nested structures W toMap() {complex nesting}`(@StringForgery fakeValue: String) {
         // Given
         val jsonObject = JSONObject().apply {
             put(
@@ -402,10 +399,7 @@ internal class JsonExtensionsTest {
     }
 
     @Test
-    fun `M convert map W toJSONArray() {Map in list}`(
-        @StringForgery fakeName: String,
-        @IntForgery fakeAge: Int
-    ) {
+    fun `M convert map W toJSONArray() {Map in list}`(@StringForgery fakeName: String, @IntForgery fakeAge: Int) {
         // Given
         val list = listOf(
             mapOf("name" to fakeName, "age" to fakeAge)

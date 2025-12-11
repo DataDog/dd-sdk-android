@@ -108,7 +108,7 @@ interface FlagsClient {
     fun resolveIntValue(flagKey: String, defaultValue: Int): Int
 
     /**
-     * Resolves a structured flag value as a [JSONObject]
+     * Resolves a structured flag value as a [JSONObject].
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
