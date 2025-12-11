@@ -496,18 +496,21 @@ internal class DatadogFlagsClientTest {
 
     // endregion
 
+    // region resolveStructureValue()
+
     @Test
-    fun `M return flag value W resolveStructureValue() { flag exists with valid JSON string }`(forge: Forge) {
+    fun `M return flag value W resolveStructureValue() { flag exists with valid JSON string }`(
+        forge: Forge,
+        @StringForgery fakeFlagKey: String
+    ) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject().apply {
             put(fakeJsonKey, forge.anAlphabeticalString())
         }
-        val fakeKey1Value = forge.anAlphabeticalString()
-        val fakeKey2Value = forge.anInt()
         val fakeFlagValue = JSONObject().apply {
-            put("key1", fakeKey1Value)
-            put("key2", fakeKey2Value)
+            put("key1", forge.anAlphabeticalString())
+            put("key2", forge.anInt())
         }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.OBJECT.value,

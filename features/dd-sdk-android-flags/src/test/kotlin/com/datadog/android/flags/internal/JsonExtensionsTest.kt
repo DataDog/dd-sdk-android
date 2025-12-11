@@ -106,9 +106,7 @@ internal class JsonExtensionsTest {
         assertThat(result["items"]).isInstanceOf(List::class.java)
         val items = result["items"] as List<*>
         assertThat(items).hasSize(3)
-        assertThat(items[0]).isEqualTo(fakeItem1)
-        assertThat(items[1]).isEqualTo(fakeItem2)
-        assertThat(items[2]).isEqualTo(fakeItem3)
+        assertThat(items).isEqualTo(listOf(fakeItem1, fakeItem2, fakeItem3))
     }
 
     @Test
@@ -186,10 +184,7 @@ internal class JsonExtensionsTest {
 
         // Then
         assertThat(result).hasSize(4)
-        assertThat(result[0]).isEqualTo(fakeString)
-        assertThat(result[1]).isEqualTo(fakeInt)
-        assertThat(result[2]).isEqualTo(fakeBool)
-        assertThat(result[3]).isEqualTo(fakeDouble)
+        assertThat(result).isEqualTo(listOf(fakeString, fakeInt, fakeBool, fakeDouble))
     }
 
     @Test

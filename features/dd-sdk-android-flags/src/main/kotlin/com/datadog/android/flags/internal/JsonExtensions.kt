@@ -108,7 +108,7 @@ internal fun Map<String, Any?>.toJSONObject(): JSONObject {
  *
  * @return A JSONArray with all nested structures converted
  */
-internal fun List<Any?>.toJSONArray(): JSONArray {
+internal fun List<*>.toJSONArray(): JSONArray {
     val jsonArray = JSONArray()
 
     forEach { value ->
@@ -136,14 +136,10 @@ private fun convertToJsonValue(value: Any?): Any = when (value) {
     null -> JSONObject.NULL
     is Map<*, *> -> {
         // Convert keys to String (supports non-String keys via toString())
-        @Suppress("UNCHECKED_CAST")
         val stringMap = value.entries.associate { (k, v) -> k.toString() to v }
         stringMap.toJSONObject()
     }
-    is List<*> -> {
-        @Suppress("UNCHECKED_CAST")
-        (value as List<Any?>).toJSONArray()
-    }
+    is List<*> -> value.toJSONArray()
     else -> value // Primitives: String, Int, Long, Double, Boolean
 }
 
