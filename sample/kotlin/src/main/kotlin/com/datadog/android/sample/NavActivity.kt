@@ -19,12 +19,10 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
 import timber.log.Timber
 
-@OptIn(ExperimentalRumApi::class)
 @Suppress("UndocumentedPublicProperty", "UndocumentedPublicClass")
 class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 

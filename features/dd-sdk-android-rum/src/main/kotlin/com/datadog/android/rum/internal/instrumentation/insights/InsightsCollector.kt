@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+
 package com.datadog.android.rum.internal.instrumentation.insights
 
 import com.datadog.android.lint.InternalApi

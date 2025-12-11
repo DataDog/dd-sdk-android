@@ -116,10 +116,7 @@ internal class DefaultSlowFramesListener(
                     previousSlowFrameRecord.durationNs + frameDurationNs,
                     configuration.maxSlowFrameThresholdNs - 1
                 )
-                insightsCollector.onSlowFrame(
-                    frameStartedTimestampNs,
-                    frameDurationNs
-                )
+                insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
             }
         }
     }

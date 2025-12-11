@@ -58,7 +58,6 @@ import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.util.UUID
 
-@Suppress("OPT_IN_USAGE")
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
