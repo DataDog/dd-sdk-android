@@ -14,9 +14,8 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
-import com.datadog.android.flags.openfeature.internal.adapters.convertValueToJson
+import com.datadog.android.flags.openfeature.internal.adapters.convertValueToMap
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
-import com.datadog.android.flags.openfeature.internal.adapters.toMap
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
 import dev.openfeature.kotlin.sdk.FeatureProvider
@@ -29,8 +28,6 @@ import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import org.json.JSONException
-import org.json.JSONObject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -251,12 +248,9 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             )
         }
 
-        val jsonDefault = when (val converted = convertValueToJson(defaultValue)) {
-            is JSONObject -> converted
-            else -> JSONObject()
-        }
+        val mapDefault = (convertValueToMap(defaultValue) as? Map<String, Any?>) ?: emptyMap()
 
-        val resolutionDetails = flagsClient.resolve(key, jsonDefault)
+        val resolutionDetails = flagsClient.resolve(key, mapDefault)
 
         val errorCode = resolutionDetails.errorCode
         if (errorCode != null) {
@@ -271,7 +265,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
         return try {
             val resultValue = Value.Structure(
-                resolutionDetails.value.toMap(internalLogger).mapValues { (_, v) -> convertToValue(v, internalLogger) }
+                resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
             )
 
             ProviderEvaluation(
@@ -280,13 +274,6 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                 reason = resolutionDetails.reason?.name,
                 errorCode = null,
                 errorMessage = null
-            )
-        } catch (e: JSONException) {
-            ProviderEvaluation(
-                value = defaultValue,
-                reason = ERROR_REASON,
-                errorCode = OpenFeatureErrorCode.PARSE_ERROR,
-                errorMessage = "Failed to parse JSON structure: ${e.message}"
             )
         } catch (e: ClassCastException) {
             ProviderEvaluation(

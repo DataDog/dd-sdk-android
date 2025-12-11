@@ -14,7 +14,6 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
-import com.datadog.android.flags.openfeature.internal.adapters.toMap
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
@@ -26,7 +25,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -242,16 +240,14 @@ internal class DatadogFlagsProviderTest {
                 anAlphabeticalString() to Value.String(anAlphabeticalString())
             }
         )
-        val expectedJsonValue = JSONObject(
-            forge.aMap {
-                anAlphabeticalString() to anAlphabeticalString()
-            }
-        )
+        val expectedMapValue: Map<String, Any?> = forge.aMap {
+            anAlphabeticalString() to anAlphabeticalString()
+        }
         val resolution = ResolutionDetails(
-            value = expectedJsonValue,
+            value = expectedMapValue,
             reason = forge.aValueFrom(ResolutionReason::class.java)
         )
-        whenever(mockFlagsClient.resolve(eq(flagKey), any<JSONObject>())).thenReturn(resolution)
+        whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>())).thenReturn(resolution)
 
         // When
         val result = provider.getObjectEvaluation(flagKey, defaultValue, null)
@@ -259,9 +255,8 @@ internal class DatadogFlagsProviderTest {
         // Then
         assertThat(result.value).isInstanceOf(Value.Structure::class.java)
         val structure = checkNotNull(result.value.asStructure())
-        val expectedMap = expectedJsonValue.toMap()
-        assertThat(structure.keys).isEqualTo(expectedMap.keys)
-        expectedMap.forEach { (key, value) ->
+        assertThat(structure.keys).isEqualTo(expectedMapValue.keys)
+        expectedMapValue.forEach { (key, value) ->
             assertThat(structure[key]).isInstanceOf(Value.String::class.java)
             assertThat((structure[key] as Value.String).asString()).isEqualTo(value.toString())
         }
@@ -284,12 +279,12 @@ internal class DatadogFlagsProviderTest {
             )
         )
         val resolution = ResolutionDetails(
-            value = JSONObject(), // This would have lost type info if converted
+            value = emptyMap<String, Any?>(), // Error case returns empty map
             errorCode = fakeErrorCode,
             errorMessage = errorMessage,
             reason = ResolutionReason.ERROR
         )
-        whenever(mockFlagsClient.resolve(eq(flagKey), any<JSONObject>()))
+        whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>()))
             .thenReturn(resolution)
 
         // When
@@ -386,12 +381,12 @@ internal class DatadogFlagsProviderTest {
     ) {
         // Given
         val longValue = forge.anInt().toLong()
-        val jsonObject = JSONObject().apply { put(jsonKey, longValue) }
+        val mapValue: Map<String, Any?> = mapOf(jsonKey to longValue)
         val resolution = ResolutionDetails(
-            value = jsonObject,
+            value = mapValue,
             reason = forge.aValueFrom(ResolutionReason::class.java)
         )
-        whenever(mockFlagsClient.resolve(eq(flagKey), any<JSONObject>()))
+        whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>()))
             .thenReturn(resolution)
 
         // When
@@ -416,12 +411,12 @@ internal class DatadogFlagsProviderTest {
     ) {
         // Given
         val largeValue = forge.aLong(min = Int.MAX_VALUE.toLong() + 1)
-        val jsonObject = JSONObject().apply { put(jsonKey, largeValue) }
+        val mapValue: Map<String, Any?> = mapOf(jsonKey to largeValue)
         val resolution = ResolutionDetails(
-            value = jsonObject,
+            value = mapValue,
             reason = forge.aValueFrom(ResolutionReason::class.java)
         )
-        whenever(mockFlagsClient.resolve(eq(flagKey), any<JSONObject>()))
+        whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>()))
             .thenReturn(resolution)
 
         // When

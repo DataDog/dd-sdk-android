@@ -143,3 +143,35 @@ internal fun convertValueToJson(value: Value): Any? = when (value) {
         jsonObject
     }
 }
+
+/**
+ * Converts an OpenFeature [Value] to a Kotlin Map/List structure.
+ *
+ * Recursively converts:
+ * - Value.Structure → Map<String, Any?>
+ * - Value.List → List<Any?>
+ * - Primitives → native Kotlin types
+ * - Value.Null → null
+ * - Value.Instant → ISO-8601 string
+ *
+ * Returns null for incompatible types.
+ */
+@OptIn(kotlin.time.ExperimentalTime::class)
+internal fun convertValueToMap(value: Value): Any? = when (value) {
+    is Value.Null -> null
+    is Value.Boolean -> value.asBoolean()
+    is Value.Integer -> value.asInteger()
+    is Value.Double -> value.asDouble()
+    is Value.String -> value.asString()
+    is Value.Instant -> value.asInstant()?.toString()
+    is Value.List -> {
+        value.asList()?.mapNotNull { element ->
+            convertValueToMap(element)
+        }
+    }
+    is Value.Structure -> {
+        value.asStructure()?.mapValues { (_, v) ->
+            convertValueToMap(v)
+        }?.filterValues { it != null }
+    }
+}
