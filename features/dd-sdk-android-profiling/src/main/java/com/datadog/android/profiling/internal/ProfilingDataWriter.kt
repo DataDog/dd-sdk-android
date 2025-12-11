@@ -105,6 +105,8 @@ internal class ProfilingDataWriter(
         append("$TAG_KEY_VERSION:${context.version}")
         append(",")
         append("$TAG_KEY_SDK_VERSION:${context.sdkVersion}")
+        append(",")
+        append("$TAG_KEY_BUILD_ID:${context.appBuildId}")
     }
 
     private fun readProfilingData(profilingPath: String): ByteArray? {
@@ -116,6 +118,7 @@ internal class ProfilingDataWriter(
     companion object {
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
+        private const val TAG_KEY_BUILD_ID = "build_id"
         private const val TAG_KEY_SDK_VERSION = "sdk_version"
         private const val TAG_KEY_ENV = "env"
         private const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"

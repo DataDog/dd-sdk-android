@@ -133,7 +133,8 @@ internal class ProfilingDataWriterTest {
                     "service:${fakeDatadogContext.service}",
                     "env:${fakeDatadogContext.env}",
                     "version:${fakeDatadogContext.version}",
-                    "sdk_version:${fakeDatadogContext.sdkVersion}"
+                    "sdk_version:${fakeDatadogContext.sdkVersion}",
+                    "build_id:${fakeDatadogContext.appBuildId}"
                 )
             )
             .hasApplicationId(fakeTTIDEvent.applicationId)

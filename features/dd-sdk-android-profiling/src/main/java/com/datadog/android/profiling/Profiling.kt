@@ -10,7 +10,9 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.internal.NoOpProfiler
@@ -28,8 +30,7 @@ object Profiling {
     private var profiler: Profiler = NoOpProfiler()
 
     /**
-     * Enables the Perfetto based profiler to start recording callstack samples during application
-     * launch.
+     * Enables the profiling feature.
      *
      * @param configuration Configuration to use for the feature.
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
@@ -49,6 +50,33 @@ object Profiling {
             profiler = profiler
         )
         featureSdkCore.registerFeature(profilingFeature)
+    }
+
+    /**
+     * Decides if the next app launch should be profiled.
+     *
+     * @param sdkCore SDK instance to register feature in.
+     * @param enable enables the profiling for next app launch, otherwise disables it.
+     */
+    @JvmStatic
+    @JvmOverloads
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun profileNextAppStartup(
+        sdkCore: SdkCore = Datadog.getInstance(),
+        enable: Boolean
+    ) {
+        val featureSdkCore = sdkCore as FeatureSdkCore
+        val profilingFeature = featureSdkCore
+            .getFeature(Feature.PROFILING_FEATURE_NAME)?.let {
+                it.unwrap() as? ProfilingFeature
+            }
+        profilingFeature?.profileNextAppStartup(enable) ?: run {
+            featureSdkCore.internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.USER,
+                messageBuilder = { "Profiling feature needs to be enabled before calling this method." }
+            )
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
