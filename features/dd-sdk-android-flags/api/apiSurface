@@ -32,8 +32,8 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
-  fun resolveAllFlags(): Map<String, com.datadog.android.flags.model.ResolutionDetails<Any>>?
-  fun trackResolution(String, com.datadog.android.flags.model.ResolutionDetails<*>)
+  fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.PrecomputedFlag>?
+  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.PrecomputedFlag, com.datadog.android.flags.model.EvaluationContext)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
@@ -48,6 +48,8 @@ sealed class com.datadog.android.flags.model.FlagsClientState
   object Stale : FlagsClientState
   data class Error : FlagsClientState
     constructor(Throwable? = null)
+data class com.datadog.android.flags.model.PrecomputedFlag
+  constructor(String, String, Boolean, String, String, org.json.JSONObject, String)
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason

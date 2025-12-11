@@ -140,7 +140,5 @@ internal class NoOpFlagsClient(
         )
     }
 
-    override fun _getInternal(): _FlagsInternalProxy? {
-        return null
-    }
+    override fun _getInternal(): _FlagsInternalProxy? = null
 }

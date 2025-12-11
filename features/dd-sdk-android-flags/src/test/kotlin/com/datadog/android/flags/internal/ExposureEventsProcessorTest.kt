@@ -6,10 +6,10 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
+import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
