@@ -21,7 +21,7 @@ get_secret() {
     export VAULT_ADDR=$DD_VAULT_ADDR
 
     if [ "$CI" = "true" ]; then
-        echo "Login as CI"
+        echo "Login as CI" >&2
         vault login -method=aws -no-print
     else
         if vault token lookup &>/dev/null; then
@@ -39,6 +39,7 @@ get_secret() {
         exit 1
     fi
 
+    echo "Successfully retrieved $secret_name." >&2
     echo "$secret_value"
 }
 

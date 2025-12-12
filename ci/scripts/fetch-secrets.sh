@@ -7,38 +7,47 @@
 source ./ci/scripts/vault_config.sh
 source ./ci/scripts/get-secret.sh
 
+: > ./ci/pipelines/secrets.env
+
 # Gradle properties
-get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./ci/pipelines/secrets/gradle.properties
+echo "GRADLE_PROPERTIES=$(get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES | base64)" >> ./ci/pipelines/secrets.env
+
 # Signing and publishing
-get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY > ./ci/pipelines/secrets/gpg_private_key
-get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE > ./ci/pipelines/secrets/gpg_passphrase
-get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY > ./ci/pipelines/secrets/gpg_public_key
-get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_USERNAME > ./ci/pipelines/secrets/central_username
-get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD > ./ci/pipelines/secrets/central_password
-    # API and App keys
-get_secret $DD_ANDROID_SECRET__API_KEY > ./ci/pipelines/secrets/api_key
-get_secret $DD_ANDROID_SECRET__APP_KEY > ./ci/pipelines/secrets/app_key
-get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN > ./ci/pipelines/secrets/codecov_token
+#echo "SIGNING_GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)" >> ./ci/pipelines/secrets.env
+#echo "SIGNING_GPG_PASSPHRASE=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)" >> ./ci/pipelines/secrets.env
+#echo "SIGNING_GPG_PUBLIC_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY)" >> ./ci/pipelines/secrets.env
+#echo "PUBLISHING_CENTRAL_USERNAME=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_USERNAME)" >> ./ci/pipelines/secrets.env
+#echo "PUBLISHING_CENTRAL_PASSWORD=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD)" >> ./ci/pipelines/secrets.env
+
+# API and App keys
+echo "DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)" >> ./ci/pipelines/secrets.env
+echo "DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)" >> ./ci/pipelines/secrets.env
+#echo "CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)" >> ./ci/pipelines/secrets.env
+
 # Keystore
-get_secret $DD_ANDROID_SECRET__KEYSTORE > ./ci/pipelines/secrets/keystore
-get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD > ./ci/pipelines/secrets/keystore_password
+#echo "KEYSTORE=$(get_secret $DD_ANDROID_SECRET__KEYSTORE | base64)" >> ./ci/pipelines/secrets.env
+#echo "KEYSTORE_PASSWORD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)" >> ./ci/pipelines/secrets.env
+
 # E2E Testing
-get_secret $DD_ANDROID_SECRET__E2E_CONFIG_JSON > ./ci/pipelines/secrets/e2e_config.json
-get_secret $DD_ANDROID_SECRET__E2E_API_KEY > ./ci/pipelines/secrets/e2e_api_key
-get_secret $DD_ANDROID_SECRET__E2E_APP_KEY > ./ci/pipelines/secrets/e2e_app_key
-get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID > ./ci/pipelines/secrets/e2e_mobile_app_id
-    # WebView
-get_secret $DD_ANDROID_SECRET__WEBVIEW_CONFIG_JSON > ./ci/pipelines/secrets/webview_config.json
-get_secret $DD_ANDROID_SECRET__WEBVIEW_API_KEY > ./ci/pipelines/secrets/webview_api_key
-get_secret $DD_ANDROID_SECRET__WEBVIEW_APP_KEY > ./ci/pipelines/secrets/webview_app_key
-get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID > ./ci/pipelines/secrets/webview_mobile_app_id
-    # Staging
-get_secret $DD_ANDROID_SECRET__E2E_STAGING_CONFIG_JSON > ./ci/pipelines/secrets/e2e_staging_config.json
-get_secret $DD_ANDROID_SECRET__E2E_STAGING_API_KEY > ./ci/pipelines/secrets/e2e_staging_api_key
-get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_KEY > ./ci/pipelines/secrets/e2e_staging_app_key
-get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID > ./ci/pipelines/secrets/e2e_staging_app_id
-    # Benchmark
-get_secret $DD_ANDROID_SECRET__BENCHMARK_CONFIG_JSON > ./ci/pipelines/secrets/benchmark_config.json
-get_secret $DD_ANDROID_SECRET__BENCHMARK_API_KEY > ./ci/pipelines/secrets/benchmark_api_key
-get_secret $DD_ANDROID_SECRET__BENCHMARK_APP_KEY > ./ci/pipelines/secrets/benchmark_app_key
-get_secret $DD_ANDROID_SECRET__BENCHMARK_MOBILE_APP_ID > ./ci/pipelines/secrets/benchmark_mobile_app_id
+#echo "E2E_CONFIG_JSON=$(get_secret $DD_ANDROID_SECRET__E2E_CONFIG_JSON | base64)" >> ./ci/pipelines/secrets.env
+echo "E2E_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_API_KEY)" >> ./ci/pipelines/secrets.env
+echo "E2E_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_APP_KEY)" >> ./ci/pipelines/secrets.env
+echo "E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID)" >> ./ci/pipelines/secrets.env
+
+# WebView
+#echo "WEBVIEW_CONFIG_JSON=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_CONFIG_JSON | base64)" >> ./ci/pipelines/secrets.env
+echo "WEBVIEW_API_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_API_KEY)" >> ./ci/pipelines/secrets.env
+echo "WEBVIEW_APP_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_APP_KEY)" >> ./ci/pipelines/secrets.env
+echo "WEBVIEW_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID)" >> ./ci/pipelines/secrets.env
+
+# Staging
+#echo "E2E_STAGING_CONFIG_JSON=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_CONFIG_JSON | base64)" >> ./ci/pipelines/secrets.env
+echo "E2E_STAGING_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_API_KEY)" >> ./ci/pipelines/secrets.env
+echo "E2E_STAGING_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_KEY)" >> ./ci/pipelines/secrets.env
+echo "E2E_STAGING_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID)" >> ./ci/pipelines/secrets.env
+
+# Benchmark
+#echo "BENCHMARK_CONFIG_JSON=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_CONFIG_JSON | base64)" >> ./ci/pipelines/secrets.env
+echo "BENCHMARK_API_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_API_KEY)" >> ./ci/pipelines/secrets.env
+echo "BENCHMARK_APP_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_APP_KEY)" >> ./ci/pipelines/secrets.env
+echo "BENCHMARK_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_MOBILE_APP_ID)" >> ./ci/pipelines/secrets.env
