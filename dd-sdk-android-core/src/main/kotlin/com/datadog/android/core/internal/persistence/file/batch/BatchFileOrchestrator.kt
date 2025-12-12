@@ -27,10 +27,9 @@ import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.roundToLong
 
-// TODO RUM-438 Improve this class: need to make it thread-safe and optimize work with file
-//  system in order to reduce the number of syscalls (which are expensive) for files already seen
 @Suppress("TooManyFunctions")
 internal class BatchFileOrchestrator(
     private val rootDir: File,
@@ -52,7 +51,7 @@ internal class BatchFileOrchestrator(
     private var previousFile: File? = null
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
-    private var lastCleanupTimestamp: Long = 0L
+    private val lastCleanupTimestamp: AtomicLong = AtomicLong(0L)
     private var isFileObserverStarted: Boolean = false
 
     private val knownFiles: MutableSet<File> = mutableSetOf()
@@ -91,7 +90,7 @@ internal class BatchFileOrchestrator(
             var files = listBatchFiles()
             files = deleteObsoleteFiles(files)
             freeSpaceIfNeeded(files)
-            lastCleanupTimestamp = System.currentTimeMillis()
+            lastCleanupTimestamp.set(System.currentTimeMillis())
         }
 
         return getReusableWritableFile() ?: createNewFile()
@@ -104,7 +103,7 @@ internal class BatchFileOrchestrator(
         }
 
         val files = deleteObsoleteFiles(listSortedBatchFiles())
-        lastCleanupTimestamp = System.currentTimeMillis()
+        lastCleanupTimestamp.set(System.currentTimeMillis())
         pendingFiles.set(files.count())
 
         return files.firstOrNull {
@@ -362,7 +361,7 @@ internal class BatchFileOrchestrator(
     }
 
     private fun canDoCleanup(): Boolean {
-        return System.currentTimeMillis() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
+        return System.currentTimeMillis() - lastCleanupTimestamp.get() > config.cleanupFrequencyThreshold
     }
 
     private val File.metadata: File
