@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.logger
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -112,6 +113,9 @@ internal class DatadogLogHandlerTest {
     @Mock
     lateinit var mockSampler: Sampler<Unit>
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
@@ -158,7 +162,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
@@ -227,7 +232,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
@@ -700,7 +706,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
@@ -767,7 +774,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
@@ -1008,7 +1016,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
@@ -1045,7 +1054,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
@@ -1075,7 +1085,8 @@ internal class DatadogLogHandlerTest {
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
-                fakeServiceName
+                fakeServiceName,
+                mockInternalLogger
             ),
             sdkCore = mockSdkCore,
             writer = mockWriter,
