@@ -335,7 +335,8 @@ internal class BatchFileOrchestratorTest {
         val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
-        Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
+        // Wait for both cleanup threshold AND recent delay so a new file will be created
+        Thread.sleep(maxOf(CLEANUP_FREQUENCY_THRESHOLD_MS, RECENT_DELAY_MS) + 1)
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, evenOlderFile.name)
@@ -487,6 +488,7 @@ internal class BatchFileOrchestratorTest {
         checkNotNull(previousFile)
         previousFile.createNewFile()
         previousFile.delete()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.DELETE, previousFile.name)
         Thread.sleep(1)
 
         // When

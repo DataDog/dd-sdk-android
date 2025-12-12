@@ -53,9 +53,9 @@ internal class BatchFileOrchestrator(
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
     private var lastCleanupTimestamp: Long = 0L
+    private var isFileObserverStarted: Boolean = false
 
-    private val knownFiles: MutableSet<File> =
-        rootDir.listFilesSafe(internalLogger)?.toMutableSet() ?: mutableSetOf()
+    private val knownFiles: MutableSet<File> = mutableSetOf()
 
     @Suppress("DEPRECATION") // Recommended constructor only available in API 29 Q
     internal val fileObserver = object : FileObserver(rootDir.path, FILE_OBSERVER_MASK) {
@@ -77,10 +77,6 @@ internal class BatchFileOrchestrator(
                 }
             }
         }
-    }
-
-    init {
-        fileObserver.startWatching()
     }
 
     // region FileOrchestrator
@@ -177,56 +173,60 @@ internal class BatchFileOrchestrator(
         return pendingFiles.decrementAndGet()
     }
 
-    @Suppress("LiftReturnOrAssignment", "ReturnCount")
+    @Suppress("ReturnCount")
     private fun isRootDirValid(): Boolean {
-        if (rootDir.existsSafe(internalLogger)) {
-            if (rootDir.isDirectory) {
-                if (rootDir.canWriteSafe(internalLogger)) {
-                    return true
-                } else {
+        val isValid = if (rootDir.existsSafe(internalLogger)) {
+            when {
+                !rootDir.isDirectory -> {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path) }
+                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                        { ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path) }
                     )
-                    return false
-                }
-            } else {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path) }
-                )
-                return false
-            }
-        } else {
-            synchronized(rootDir) {
-                // double check if directory was already created by some other thread
-                // entered this branch
-                if (rootDir.existsSafe(internalLogger)) {
-                    return true
+                    false
                 }
 
-                if (rootDir.mkdirsSafe(internalLogger)) {
-                    return true
-                } else {
+                !rootDir.canWriteSafe(internalLogger) -> {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path) }
+                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                        { ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path) }
                     )
-                    return false
+                    false
                 }
+
+                else -> true
             }
+        } else {
+            createRootDirectory()
+        }
+
+        if (isValid) startFileObserverIfNotStarted()
+        return isValid
+    }
+
+    private fun createRootDirectory(): Boolean = synchronized(rootDir) {
+        val created = rootDir.existsSafe(internalLogger) || rootDir.mkdirsSafe(internalLogger)
+        if (!created) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path) }
+            )
+        }
+        created
+    }
+
+    @Synchronized
+    private fun startFileObserverIfNotStarted() {
+        if (!isFileObserverStarted) {
+            synchronized(knownFiles) {
+                rootDir.listFilesSafe(internalLogger)
+                    ?.filter { it.name.isBatchFileName }
+                    ?.let { knownFiles.addAll(it) }
+            }
+            fileObserver.startWatching()
+            isFileObserverStarted = true
         }
     }
 
@@ -248,6 +248,9 @@ internal class BatchFileOrchestrator(
         previousFileItemCount = 1
         lastFileAccessTimestamp = System.currentTimeMillis()
         pendingFiles.incrementAndGet()
+        synchronized(knownFiles) {
+            knownFiles.add(newFile)
+        }
         return newFile
     }
 
