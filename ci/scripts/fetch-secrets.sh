@@ -13,11 +13,11 @@ source ./ci/scripts/get-secret.sh
 echo "GRADLE_PROPERTIES=$(get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES | base64)" >> ./ci/pipelines/secrets.env
 
 # Signing and publishing
-#echo "SIGNING_GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)" >> ./ci/pipelines/secrets.env
-#echo "SIGNING_GPG_PASSPHRASE=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)" >> ./ci/pipelines/secrets.env
-#echo "SIGNING_GPG_PUBLIC_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY)" >> ./ci/pipelines/secrets.env
-#echo "PUBLISHING_CENTRAL_USERNAME=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_USERNAME)" >> ./ci/pipelines/secrets.env
-#echo "PUBLISHING_CENTRAL_PASSWORD=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD)" >> ./ci/pipelines/secrets.env
+echo "SIGNING_GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)" >> ./ci/pipelines/secrets.env
+echo "SIGNING_GPG_PASSPHRASE=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)" >> ./ci/pipelines/secrets.env
+echo "SIGNING_GPG_PUBLIC_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY)" >> ./ci/pipelines/secrets.env
+echo "PUBLISHING_CENTRAL_USERNAME=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_USERNAME)" >> ./ci/pipelines/secrets.env
+echo "PUBLISHING_CENTRAL_PASSWORD=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD)" >> ./ci/pipelines/secrets.env
 
 # API and App keys
 echo "DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)" >> ./ci/pipelines/secrets.env
@@ -25,6 +25,7 @@ echo "DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)" >> ./ci/pipelines/se
 echo "CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)" >> ./ci/pipelines/secrets.env
 
 # Keystore
+## This one is too long for dotenv
 #echo "KEYSTORE=$(get_secret $DD_ANDROID_SECRET__KEYSTORE | base64)" >> ./ci/pipelines/secrets.env
 echo "KEYSTORE_PASSWORD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)" >> ./ci/pipelines/secrets.env
 
