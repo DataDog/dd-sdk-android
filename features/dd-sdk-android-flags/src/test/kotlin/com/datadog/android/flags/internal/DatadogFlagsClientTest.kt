@@ -83,6 +83,8 @@ internal class DatadogFlagsClientTest {
     @StringForgery
     lateinit var fakeJsonKey: String
 
+    lateinit var fakeJsonDefaultValue: JSONObject
+
     private lateinit var fakeDefaultMapValue: Map<String, Any?>
 
     @BeforeEach
@@ -91,6 +93,11 @@ internal class DatadogFlagsClientTest {
             "name" to forge.anAlphabeticalString(),
             "age" to forge.anInt()
         )
+
+        fakeJsonDefaultValue = JSONObject().apply {
+            put(fakeJsonKey, forge.anAlphabeticalString())
+        }
+
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockFeatureSdkCore.getFeature(RUM_FEATURE_NAME)) doReturn mock()
 
@@ -106,6 +113,7 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
+
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn defaultContext
 
         testedClient = DatadogFlagsClient(
@@ -504,10 +512,6 @@ internal class DatadogFlagsClientTest {
         @StringForgery fakeFlagKey: String
     ) {
         // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject().apply {
-            put(fakeJsonKey, forge.anAlphabeticalString())
-        }
         val fakeFlagValue = JSONObject().apply {
             put("key1", forge.anAlphabeticalString())
             put("key2", forge.anInt())
@@ -523,7 +527,7 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
 
         // Then
         assertThat(result.toString()).isEqualTo(fakeFlagValue.toString())
@@ -533,9 +537,6 @@ internal class DatadogFlagsClientTest {
     fun `M return default value W resolveStructureValue() { flag exists with invalid JSON }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject().apply {
-            put(fakeJsonKey, forge.anAlphabeticalString())
-        }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.OBJECT.value,
             variationValue = "invalid json {"
@@ -547,10 +548,10 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeJsonDefaultValue)
         // Parse errors are not logged - they're expected in normal operation
     }
 
@@ -558,9 +559,6 @@ internal class DatadogFlagsClientTest {
     fun `M return default value W resolveStructureValue() { flag exists with malformed JSON }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject().apply {
-            put(fakeJsonKey, forge.anAlphabeticalString())
-        }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.OBJECT.value,
             variationValue = "{\"unclosed\": \"quote"
@@ -572,10 +570,10 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeJsonDefaultValue)
         // Parse errors are not logged - they're expected in normal operation
     }
 
@@ -583,7 +581,6 @@ internal class DatadogFlagsClientTest {
     fun `M return default value W resolveStructureValue() { flag exists with completely invalid JSON }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.OBJECT.value,
             variationValue = "not json at all!"
@@ -595,10 +592,10 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeJsonDefaultValue)
         // Parse errors are not logged - they're expected in normal operation
     }
 
@@ -606,32 +603,26 @@ internal class DatadogFlagsClientTest {
     fun `M return default value W resolveStructureValue() {flag does not exist}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject().apply {
-            put(fakeJsonKey, forge.anAlphabeticalString())
-        }
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeJsonDefaultValue)
     }
 
     @Test
     fun `M return default value W resolveStructureValue() { provider not ready }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = JSONObject().apply {
-            put(fakeJsonKey, forge.anAlphabeticalString())
-        }
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeJsonDefaultValue)
         verifyNoInteractions(mockProcessor)
         verifyNoInteractions(mockRumEvaluationLogger)
     }
