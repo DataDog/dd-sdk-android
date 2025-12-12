@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
@@ -28,6 +29,7 @@ import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
+import com.datadog.android.internal.utils.DDCoreSubscription
 import org.json.JSONObject
 
 /**
@@ -147,6 +149,24 @@ interface FlagsClient {
      * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
      */
     fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
+
+    /**
+     * Observable interface for tracking client state changes.
+     *
+     * Provides three ways to observe state:
+     * - Synchronous: [StateObservable.getCurrentState] for immediate queries (Java-friendly)
+     * - Callback: [StateObservable.addListener] for traditional observers (Java-friendly)
+     *
+     * Example:
+     * ```kotlin
+     * // Synchronous
+     * val current = client.state.getCurrentState()
+     *
+     * // Callback
+     * client.state.addListener(listener)
+     * ```
+     */
+    val state: StateObservable
 
     /**
      * Builder for creating [FlagsClient] instances with custom configuration.
@@ -338,7 +358,8 @@ interface FlagsClient {
 
         // region Internal
 
-        internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
+        internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        internal const val FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME = "flags-state-notifications"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -347,8 +368,11 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             name: String
         ): FlagsClient {
-            val executorService = featureSdkCore.createSingleThreadExecutorService(
-                executorContext = FLAGS_CLIENT_EXECUTOR_NAME
+            val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
+                executorContext = FLAGS_NETWORK_EXECUTOR_NAME
+            )
+            val stateNotificationExecutorService = featureSdkCore.createSingleThreadExecutorService(
+                executorContext = FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME
             )
 
             val datadogContext = (featureSdkCore as InternalSdkCore).getDatadogContext()
@@ -400,12 +424,19 @@ interface FlagsClient {
 
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
+                val flagStateManager = FlagsStateManager(
+                    DDCoreSubscription.create(),
+                    stateNotificationExecutorService,
+                    featureSdkCore.internalLogger
+                )
+
                 val evaluationsManager = EvaluationsManager(
-                    executorService = executorService,
+                    executorService = networkExecutorService,
                     internalLogger = featureSdkCore.internalLogger,
                     flagsRepository = flagsRepository,
                     assignmentsReader = assignmentsDownloader,
-                    precomputeMapper = precomputeMapper
+                    precomputeMapper = precomputeMapper,
+                    flagStateManager = flagStateManager
                 )
 
                 val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -416,7 +447,8 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
-                    processor = flagsFeature.processor
+                    processor = flagsFeature.processor,
+                    flagStateManager = flagStateManager
                 )
             }
         }

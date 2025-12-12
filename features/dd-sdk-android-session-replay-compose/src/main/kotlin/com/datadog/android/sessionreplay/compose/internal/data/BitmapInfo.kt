@@ -7,8 +7,12 @@
 package com.datadog.android.sessionreplay.compose.internal.data
 
 import android.graphics.Bitmap
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
 
 internal data class BitmapInfo(
     val bitmap: Bitmap,
-    val isContextualImage: Boolean
+    val isContextualImage: Boolean,
+    val contentScale: ContentScale? = null,
+    val alignment: Alignment? = null
 )

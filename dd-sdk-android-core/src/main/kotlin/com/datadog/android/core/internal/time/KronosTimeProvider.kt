@@ -16,10 +16,6 @@ internal class KronosTimeProvider(
     private val internalLogger: InternalLogger
 ) : TimeProvider {
 
-    override fun getDeviceTimestamp(): Long {
-        return System.currentTimeMillis()
-    }
-
     override fun getServerTimestamp(): Long {
         return clock.safeGetCurrentTimeMs()
             .getOrElse { System.currentTimeMillis() }

@@ -28,4 +28,7 @@ internal class DefaultAppStartTimeProvider(
             else -> DdRumContentProvider.createTimeNs
         }
     }
+
+    override val appUptimeNs: Long
+        get() = System.nanoTime() - appStartTimeNs
 }

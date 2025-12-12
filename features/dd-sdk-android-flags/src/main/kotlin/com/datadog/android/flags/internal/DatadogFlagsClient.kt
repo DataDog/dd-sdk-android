@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -35,6 +36,7 @@ import org.json.JSONObject
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
+ * @param flagStateManager channel for managing state change listeners
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -43,8 +45,11 @@ internal class DatadogFlagsClient(
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
     private val rumEvaluationLogger: RumEvaluationLogger,
-    private val processor: EventsProcessor
+    private val processor: EventsProcessor,
+    private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
+
+    override val state: StateObservable = flagStateManager
 
     // region FlagsClient
 

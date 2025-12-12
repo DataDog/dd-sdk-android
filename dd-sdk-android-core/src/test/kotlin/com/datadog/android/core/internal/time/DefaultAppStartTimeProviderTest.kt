@@ -36,10 +36,10 @@ class DefaultAppStartTimeProviderTest {
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val startTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+        val testedProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
 
         // WHEN
-        val timeProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
-        val providedStartTime = timeProvider.appStartTimeNs
+        val providedStartTime = testedProvider.appStartTimeNs
 
         // THEN
         assertThat(providedStartTime)
@@ -54,12 +54,54 @@ class DefaultAppStartTimeProviderTest {
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
         val startTimeNs = DdRumContentProvider.createTimeNs
+        val testedProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
 
         // WHEN
-        val timeProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
-        val providedStartTime = timeProvider.appStartTimeNs
+        val providedStartTime = testedProvider.appStartTimeNs
 
         // THEN
         assertThat(providedStartTime).isEqualTo(startTimeNs)
+    }
+
+    @Test
+    fun `M return app uptime W appUptimeNs`(
+        @IntForgery(min = Build.VERSION_CODES.M) apiVersion: Int
+    ) {
+        // GIVEN
+        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock {
+            on { version } doReturn apiVersion
+        }
+        val testedProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
+
+        // WHEN
+        val beforeNs = System.nanoTime()
+        val appStartTimeNs = testedProvider.appStartTimeNs
+        val uptime = testedProvider.appUptimeNs
+        val afterNs = System.nanoTime()
+
+        // THEN
+        val expectedUptime = beforeNs - appStartTimeNs
+        assertThat(uptime)
+            .isGreaterThan(0)
+            .isCloseTo(expectedUptime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(100)))
+            .isLessThanOrEqualTo(afterNs - appStartTimeNs)
+    }
+
+    @Test
+    fun `M return increasing uptime W appUptimeNs called multiple times`(
+        @IntForgery(min = Build.VERSION_CODES.M) apiVersion: Int
+    ) {
+        // GIVEN
+        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        val testedProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
+
+        // WHEN
+        val uptime1 = testedProvider.appUptimeNs
+        Thread.sleep(10)
+        val uptime2 = testedProvider.appUptimeNs
+
+        // THEN
+        assertThat(uptime2).isGreaterThan(uptime1)
     }
 }

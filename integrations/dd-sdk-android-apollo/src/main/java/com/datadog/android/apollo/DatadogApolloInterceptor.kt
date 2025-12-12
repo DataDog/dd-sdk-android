@@ -6,6 +6,7 @@
 
 package com.datadog.android.apollo
 
+import android.util.Base64
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.ApolloResponse
 import com.apollographql.apollo.api.CustomScalarAdapters
@@ -48,9 +49,9 @@ class DatadogApolloInterceptor(
         val adapters = request.executionContext[CustomScalarAdapters.Key] ?: CustomScalarAdapters.Empty
         val operation = request.operation
 
-        val operationName = operation.name()
-        val operationType = extractType(operation)
-        val operationVariables = variablesExtractor.extractVariables(operation, adapters)
+        val operationName = operation.name().toBase64()
+        val operationType = extractType(operation)?.toBase64()
+        val operationVariables = variablesExtractor.extractVariables(operation, adapters)?.toBase64()
 
         val requestBuilder = request.newBuilder()
         requestBuilder
@@ -65,10 +66,8 @@ class DatadogApolloInterceptor(
         }
 
         if (sendGraphQLPayloads) {
-            val operationPayload = extractPayload(operation, adapters)
-            operationPayload.let {
-                requestBuilder.addHttpHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, operationPayload)
-            }
+            val operationPayload = extractPayload(operation, adapters).toBase64()
+            requestBuilder.addHttpHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, operationPayload)
         }
 
         val newRequest = requestBuilder.build()
@@ -89,4 +88,10 @@ class DatadogApolloInterceptor(
         buildJsonString {
             operation.composeJsonRequest(this, adapters)
         }
+
+    private fun String.toBase64(): String {
+        val bytes = this.toByteArray(Charsets.UTF_8)
+        @Suppress("UnsafeThirdPartyFunctionCall") // cannot throw UnsupportedEncodingException
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
+    }
 }

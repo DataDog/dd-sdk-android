@@ -12,4 +12,10 @@ internal interface AppStartTimeProvider {
      * if the actual start time is not available.
      */
     val appStartTimeNs: Long
+
+    /**
+     * Provide the time since the application started in nanoseconds from device boot, or our best guess
+     * if the actual start time is not available.
+     */
+    val appUptimeNs: Long
 }
