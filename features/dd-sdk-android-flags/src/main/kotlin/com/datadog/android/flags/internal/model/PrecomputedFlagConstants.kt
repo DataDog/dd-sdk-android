@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.model
+package com.datadog.android.flags.internal.model
 
 internal enum class JsonKeys(val value: String) {
     // EvaluationContext keys

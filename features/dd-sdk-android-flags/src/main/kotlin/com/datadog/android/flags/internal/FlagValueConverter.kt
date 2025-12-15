@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.flags.model.VariationType
+import com.datadog.android.flags.internal.model.VariationType
 import org.json.JSONObject
 import java.util.Locale
 import kotlin.reflect.KClass
@@ -52,18 +52,13 @@ internal object FlagValueConverter {
             @Suppress("UNCHECKED_CAST")
             val result: T? = when (targetType) {
                 Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
-
                 String::class -> variationValue as T
-
                 Int::class -> variationValue.toIntOrNull() as? T
-
                 Double::class -> variationValue.toDoubleOrNull() as? T
-
                 JSONObject::class -> {
                     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
                     JSONObject(variationValue) as? T
                 }
-
                 else -> null
             }
 
@@ -80,17 +75,12 @@ internal object FlagValueConverter {
      */
     fun isTypeCompatible(variationType: String, targetType: KClass<*>): Boolean = when (targetType) {
         Boolean::class -> variationType == VariationType.BOOLEAN.value
-
         String::class -> variationType == VariationType.STRING.value
-
         Int::class -> variationType == VariationType.INTEGER.value || variationType == VariationType.NUMBER.value
-
         Double::class ->
             variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value ||
                 variationType == VariationType.INTEGER.value
-
         JSONObject::class -> variationType == VariationType.OBJECT.value
-
         else -> false
     }
 

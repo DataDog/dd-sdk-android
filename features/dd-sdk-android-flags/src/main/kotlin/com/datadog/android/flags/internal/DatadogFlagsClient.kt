@@ -13,13 +13,13 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.PrecomputedFlag
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
-import com.datadog.android.flags.model.VariationType
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -148,7 +148,6 @@ internal class DatadogFlagsClient(
                 trackResolution(resolution)
                 createSuccessResolution(resolution.flag, resolution.value)
             }
-
             is InternalResolution.Error -> {
                 createErrorResolution(
                     flagKey = flagKey,
@@ -284,7 +283,6 @@ internal class DatadogFlagsClient(
                         errorCode = ErrorCode.TYPE_MISMATCH
                         errorMessage = exception.message ?: "Type mismatch"
                     }
-
                     else -> {
                         errorCode = ErrorCode.PARSE_ERROR
                         val typeName = FlagValueConverter.getTypeName(defaultValue::class)
@@ -330,7 +328,6 @@ internal class DatadogFlagsClient(
             trackResolution(resolution)
             resolution.value
         }
-
         is InternalResolution.Error -> {
             // Only log type mismatches as warnings to help developers identify configuration issues.
             // Other errors (FLAG_NOT_FOUND, PARSE_ERROR) are expected in normal operation.
@@ -458,20 +455,15 @@ internal class DatadogFlagsClient(
         val value: Any = when (flag.variationType) {
             VariationType.BOOLEAN.value -> flag.variationValue.lowercase(Locale.US).toBooleanStrictOrNull()
                 ?: flag.variationValue
-
             VariationType.STRING.value -> flag.variationValue
-
             VariationType.INTEGER.value -> flag.variationValue.toIntOrNull() ?: flag.variationValue
-
             VariationType.NUMBER.value, VariationType.FLOAT.value -> flag.variationValue.toDoubleOrNull()
                 ?: flag.variationValue
-
             VariationType.OBJECT.value -> try {
                 JSONObject(flag.variationValue)
             } catch (_: JSONException) {
                 flag.variationValue
             }
-
             else -> flag.variationValue
         }
 
