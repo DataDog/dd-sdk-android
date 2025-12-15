@@ -11,6 +11,7 @@ import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.DdRumContentProvider
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -29,13 +30,19 @@ import java.util.concurrent.TimeUnit
 class DefaultAppStartTimeProviderTest {
     @Test
     fun `M return process start time W appStartTime { N+ }`(
-        @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int
+        @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int,
+        forge: Forge
     ) {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val startTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+
+        DdRumContentProvider.createTimeNs = startTimeNs +
+            forge.aLong(min = 0, max = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
+
         val testedProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
 
         // WHEN
@@ -44,6 +51,31 @@ class DefaultAppStartTimeProviderTest {
         // THEN
         assertThat(providedStartTime)
             .isCloseTo(startTimeNs, Offset.offset(TimeUnit.MILLISECONDS.toNanos(100)))
+    }
+
+    @Test
+    fun `M fall back to DdRumContentProvider W appStartTime { N+ getStartElapsedRealtime returns buggy value }`(
+        @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int,
+        forge: Forge
+    ) {
+        // GIVEN
+        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+
+        val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
+        val startTimeNs = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+
+        DdRumContentProvider.createTimeNs = startTimeNs +
+            forge.aLong(min = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
+
+        val testedProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)
+
+        // WHEN
+        val providedStartTime = testedProvider.appStartTimeNs
+
+        // THEN
+        assertThat(providedStartTime)
+            .isCloseTo(DdRumContentProvider.createTimeNs, Offset.offset(TimeUnit.MILLISECONDS.toNanos(100)))
     }
 
     @Test

@@ -135,6 +135,6 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
   companion object 
     var processImportance: Int
-    val createTimeNs: Long
+    var createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)
