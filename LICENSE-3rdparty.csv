@@ -63,6 +63,7 @@ import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
 import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
+import,io.coil-kt.coil3,Apache-2.0,Copyright 2021 Coil Contributors
 import,io.opentelemetry,Apache-2.0,Copyright 2019 The OpenTelemetry Authors
 import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.opentracing.contrib,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
@@ -72,6 +73,7 @@ import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin 
 import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.chromium.net,Apache-2.0,"Copyright 2015 The Chromium Authors"
+import,org.jetbrains.skiko,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.reactivestreams,CC0,Copyright 2014 Reactive Streams
 import(test),androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.concurrent,Apache-2.0,Copyright 2018 The Android Open Source Project

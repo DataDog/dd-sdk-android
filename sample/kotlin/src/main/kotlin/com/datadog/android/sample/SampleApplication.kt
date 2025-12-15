@@ -38,6 +38,7 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
+import com.datadog.android.sample.picture.Coil3ImageLoader
 import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
@@ -137,6 +138,7 @@ class SampleApplication : Application() {
 
     private fun initializeImageLoaders() {
         CoilImageLoader.initialize(this, okHttpClient)
+        Coil3ImageLoader.initialize(this, okHttpClient)
         PicassoImageLoader.initialize(this, okHttpClient)
         FrescoImageLoader.initialize(this, okHttpClient)
     }

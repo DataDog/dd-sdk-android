@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier.isStatic
 
 @Suppress("StringLiteralDuplication")
 internal object ComposeReflection {
@@ -179,6 +180,9 @@ internal fun Method.accessible(): Method {
 
 @Suppress("TooGenericExceptionCaught")
 internal fun Field.getSafe(target: Any?): Any? {
+    if (target == null && !isStatic(modifiers)) {
+        return null
+    }
     return try {
         get(target)
     } catch (e: IllegalAccessException) {
