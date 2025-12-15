@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
@@ -282,6 +283,76 @@ internal class EvaluationsManagerTest {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
             verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
         }
+    }
+
+    @Test
+    fun `M invoke onSuccess W updateEvaluationsForContext() { success }`() {
+        // Given
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val mockCallback = org.mockito.kotlin.mock<EvaluationContextCallback>()
+        val jsonResponse = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+        val flagsMap = emptyMap<String, PrecomputedFlag>()
+
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
+        whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
+
+        // Then
+        verify(mockCallback).onSuccess()
+    }
+
+    @Test
+    fun `M invoke onFailure W updateEvaluationsForContext() { network failure, no cached flags }`() {
+        // Given
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val mockCallback = org.mockito.kotlin.mock<EvaluationContextCallback>()
+
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
+
+        // Then
+        argumentCaptor<Throwable>().apply {
+            verify(mockCallback).onFailure(capture())
+            assertThat(firstValue.message).contains("Unable to fetch feature flags")
+        }
+    }
+
+    @Test
+    fun `M invoke onFailure W updateEvaluationsForContext() { network failure, has cached flags }`() {
+        // Given
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val mockCallback = org.mockito.kotlin.mock<EvaluationContextCallback>()
+
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
+
+        // Then
+        argumentCaptor<Throwable>().apply {
+            verify(mockCallback).onFailure(capture())
+            assertThat(firstValue.message).contains("Unable to fetch feature flags")
+        }
+    }
+
+    @Test
+    fun `M not invoke callback W updateEvaluationsForContext() { callback is null }`() {
+        // Given
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val jsonResponse = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+        val flagsMap = emptyMap<String, PrecomputedFlag>()
+
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
+        whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
+
+        // When/Then - should not throw
+        evaluationsManager.updateEvaluationsForContext(publicContext, callback = null)
     }
 
     // endregion

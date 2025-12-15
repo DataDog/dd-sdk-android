@@ -25,6 +25,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -93,6 +94,20 @@ internal class NoOpFlagsClientTest {
             },
             eq(InternalLogger.Level.WARN)
         )
+    }
+
+    @Test
+    fun `M invoke onSuccess W setEvaluationContext() { with callback }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+        val mockCallback = mock<EvaluationContextCallback>()
+
+        // When
+        testedClient.setEvaluationContext(fakeContext, callback = mockCallback)
+
+        // Then
+        // NoOp client follows graceful degradation pattern - succeeds silently
+        verify(mockCallback).onSuccess()
     }
 
     // endregion
