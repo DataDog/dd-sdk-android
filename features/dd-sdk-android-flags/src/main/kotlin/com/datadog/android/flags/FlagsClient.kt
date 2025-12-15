@@ -151,15 +151,6 @@ interface FlagsClient {
     fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
 
     /**
-     * For Datadog internal use only.
-     *
-     * @see _FlagsInternalProxy
-     */
-    @Suppress("FunctionName")
-    @JvmSynthetic
-    fun _getInternal(): _FlagsInternalProxy?
-
-    /**
      * Observable interface for tracking client state changes.
      *
      * Provides three ways to observe state:

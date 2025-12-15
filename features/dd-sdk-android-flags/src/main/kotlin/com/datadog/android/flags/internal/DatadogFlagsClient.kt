@@ -11,7 +11,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
-import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -426,10 +425,6 @@ internal class DatadogFlagsClient(
     // endregion
 
     // region Internal APIs exposed through _FlagsInternalProxy
-
-    private val internalProxy = _FlagsInternalProxy(this)
-
-    override fun _getInternal(): _FlagsInternalProxy = internalProxy
 
     /**
      * Retrieves a snapshot of all flag assignments.
