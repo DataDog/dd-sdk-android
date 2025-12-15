@@ -12,11 +12,12 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.PrecomputedFlag
+import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import org.json.JSONException
@@ -176,7 +177,7 @@ internal class DatadogFlagsClient(
     private fun <T : Any> resolveValue(flagKey: String, defaultValue: T): T =
         resolveTracked(readAndParseAssignment(flagKey, defaultValue))
 
-    private fun writeExposureEvent(name: String, data: PrecomputedFlag, context: EvaluationContext) {
+    private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
         processor.processEvent(
             flagName = name,
             context = context,
@@ -408,7 +409,7 @@ internal class DatadogFlagsClient(
 
     private fun <T : Any> trackResolution(
         flagKey: String,
-        flag: PrecomputedFlag,
+        flag: UnparsedFlag,
         flagValue: T,
         context: EvaluationContext
     ) {
@@ -433,20 +434,20 @@ internal class DatadogFlagsClient(
      *
      * @return A map of flag key to precomputed flag, or null if no flags are available.
      */
-    internal fun getFlagAssignmentsSnapshot(): Map<String, PrecomputedFlag>? = flagsRepository.getFlagsSnapshot()
+    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag>? = flagsRepository.getFlagsSnapshot()
 
     /**
      * Tracks the evaluation of a flag from an exact flags state snapshot.
      *
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
-    internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: PrecomputedFlag, context: EvaluationContext) {
-        val flagValue = parsePrecomputedFlagValue(flag)
+    internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        val flagValue = parseFlagValueString(flag)
 
         trackResolution(flagKey, flag, flagValue, context)
     }
 
-    private fun parsePrecomputedFlagValue(flag: PrecomputedFlag): Any {
+    private fun parseFlagValueString(flag: UnparsedFlag): Any {
         val value: Any = when (flag.variationType) {
             VariationType.BOOLEAN.value -> flag.variationValue.lowercase(Locale.US).toBooleanStrictOrNull()
                 ?: flag.variationValue

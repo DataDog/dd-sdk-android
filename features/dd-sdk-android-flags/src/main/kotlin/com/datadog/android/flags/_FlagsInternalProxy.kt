@@ -8,7 +8,7 @@ package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.PrecomputedFlag
+import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
 
 /**
@@ -31,13 +31,13 @@ import com.datadog.android.lint.InternalApi
     "VariableNaming"
 )
 class _FlagsInternalProxy(private val client: FlagsClient) {
-    fun getFlagAssignmentsSnapshot(): Map<String, PrecomputedFlag>? = if (client is DatadogFlagsClient) {
+    fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag>? = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {
         null
     }
 
-    fun trackFlagSnapshotEvaluation(flagKey: String, flag: PrecomputedFlag, context: EvaluationContext) {
+    fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
         if (client is DatadogFlagsClient) {
             client.trackFlagSnapshotEvaluation(flagKey, flag, context)
         }

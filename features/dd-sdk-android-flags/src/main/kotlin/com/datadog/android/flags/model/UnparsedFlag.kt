@@ -4,13 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+
 package com.datadog.android.flags.model
 
 import com.datadog.android.lint.InternalApi
 import org.json.JSONObject
 
 /**
- * Represents a precomputed flag.
+ * Represents raw flag data.
  *
  * This is an internal API and should not be used by public consumers.
  *
@@ -23,12 +24,12 @@ import org.json.JSONObject
  * @param reason The evaluation reason.
  */
 @InternalApi
-data class PrecomputedFlag(
-    val variationType: String,
-    val variationValue: String,
-    val doLog: Boolean,
-    val allocationKey: String,
-    val variationKey: String,
-    val extraLogging: JSONObject,
+interface UnparsedFlag {
+    val variationType: String
+    val variationValue: String
+    val doLog: Boolean
+    val allocationKey: String
+    val variationKey: String
+    val extraLogging: JSONObject
     val reason: String
-)
+}
