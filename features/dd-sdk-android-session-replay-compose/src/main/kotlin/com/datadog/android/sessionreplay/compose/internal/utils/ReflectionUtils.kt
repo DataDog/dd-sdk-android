@@ -11,6 +11,7 @@ import android.text.StaticLayout
 import android.view.View
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.runtime.Composition
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
@@ -19,17 +20,20 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AlignmentField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainterClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ChildFieldOfModifierNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentScaleField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInteropViewMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.HeadFieldOfNodeChain
@@ -182,6 +186,20 @@ internal class ReflectionUtils {
             PainterElementClass?.isInstance(it.modifier) == true
         }?.modifier
         return modifier?.let { PainterField?.getSafe(it) as? Painter }
+    }
+
+    fun getContentScale(semanticsNode: SemanticsNode): ContentScale? {
+        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
+            PainterElementClass?.isInstance(it.modifier) == true
+        }?.modifier
+        return modifier?.let { ContentScaleField?.getSafe(it) as? ContentScale }
+    }
+
+    fun getAlignment(semanticsNode: SemanticsNode): Alignment? {
+        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
+            PainterElementClass?.isInstance(it.modifier) == true
+        }?.modifier
+        return modifier?.let { AlignmentField?.getSafe(it) as? Alignment }
     }
 
     fun getAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {

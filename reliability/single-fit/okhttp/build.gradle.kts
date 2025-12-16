@@ -77,6 +77,7 @@ unMock {
     keep("dalvik.system.BlockGuard")
     keep("dalvik.system.CloseGuard")
     keepStartingWith("android.os")
+    keepStartingWith("android.util.")
     keepStartingWith("org.json")
 }
 

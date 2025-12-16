@@ -214,8 +214,7 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
         private val reservedTagKeys = setOf(
             "host",
             "device",
-            "source",
-            "service"
+            "source"
         )
     }
 }

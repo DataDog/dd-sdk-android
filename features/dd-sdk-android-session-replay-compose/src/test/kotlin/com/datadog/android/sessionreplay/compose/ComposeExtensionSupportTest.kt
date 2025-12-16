@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.compose
 
 import androidx.compose.ui.platform.ComposeView
-import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ComposeViewMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +22,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ComposeExtensionSupportTest {
 
-    lateinit var testedExtensionSupport: ExtensionSupport
+    private lateinit var testedExtensionSupport: ComposeExtensionSupport
 
     @BeforeEach
     fun `set up`() {

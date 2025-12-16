@@ -16,4 +16,5 @@ internal interface FlagsRepository {
     fun getEvaluationContext(): EvaluationContext?
     fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)
     fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
+    fun hasFlags(): Boolean
 }
