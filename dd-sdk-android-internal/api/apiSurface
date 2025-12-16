@@ -115,7 +115,6 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
 class com.datadog.android.internal.time.DefaultTimeProvider : TimeProvider
-  override fun getDeviceTimestamp(): Long
   override fun getServerTimestamp(): Long
   override fun getServerOffsetNanos(): Long
   override fun getServerOffsetMillis(): Long
@@ -160,7 +159,7 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
   companion object 
     var processImportance: Int
-    val createTimeNs: Long
+    var createTimeNs: Long
 data class com.datadog.android.rum.TTIDEvent
   constructor(Long, String, String, String, String?, String?)
 annotation com.datadog.tools.annotation.NoOpImplementation
