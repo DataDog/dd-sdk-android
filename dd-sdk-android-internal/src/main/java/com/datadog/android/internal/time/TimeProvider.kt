@@ -16,7 +16,7 @@ interface TimeProvider {
     /**
      * Returns the current device timestamp in milliseconds.
      */
-    fun getDeviceTimestamp(): Long
+    fun getDeviceTimestamp(): Long = System.currentTimeMillis()
 
     /**
      * Returns the current server timestamp in milliseconds.

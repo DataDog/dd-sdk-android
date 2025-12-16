@@ -39,6 +39,7 @@ import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.C
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryUsageEventAssert.Companion.assertThat
+import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.DIAGNOSTICS_PROCESS_UPTIME
 import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -51,6 +52,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -83,6 +85,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.jvm.jvmName
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
@@ -134,6 +137,9 @@ internal class TelemetryEventHandlerTest {
 
     @StringForgery
     lateinit var fakeDeviceArchitecture: String
+
+    @LongForgery(min = 0L)
+    private var fakeAppUptimeNs: Long = 0L
 
     @StringForgery
     lateinit var fakeDeviceBrand: String
@@ -211,6 +217,7 @@ internal class TelemetryEventHandlerTest {
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.appUptimeNs) doReturn fakeAppUptimeNs
 
         testedTelemetryHandler = TelemetryEventHandler(
             mockSdkCore,
@@ -1468,7 +1475,7 @@ internal class TelemetryEventHandlerTest {
             .hasSessionId(rumContext.sessionId)
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
-            .hasAdditionalProperties(internalDebugEvent.additionalProperties ?: emptyMap())
+            .hasAdditionalProperties(internalDebugEvent.additionalProperties?.withDiagnosticAttributes() ?: emptyMap())
             .hasDeviceArchitecture(fakeDeviceArchitecture)
             .hasDeviceBrand(fakeDeviceBrand)
             .hasDeviceModel(fakeDeviceModel)
@@ -1493,7 +1500,10 @@ internal class TelemetryEventHandlerTest {
             .hasSessionId(rumContext.sessionId)
             .hasViewId(rumContext.viewId)
             .hasActionId(rumContext.actionId)
-            .hasAdditionalProperties(internalMetricEvent.additionalProperties ?: emptyMap())
+            .hasAdditionalProperties(
+                internalMetricEvent.additionalProperties?.withDiagnosticAttributes()
+                    ?: emptyMap()
+            )
             .hasDeviceArchitecture(fakeDeviceArchitecture)
             .hasDeviceBrand(fakeDeviceBrand)
             .hasDeviceModel(fakeDeviceModel)
@@ -1528,7 +1538,7 @@ internal class TelemetryEventHandlerTest {
             .hasOsBuild(fakeOsBuildId)
             .hasOsName(fakeOsName)
             .hasOsVersion(fakeOsVersion)
-            .hasAdditionalProperties(internalErrorEvent.additionalProperties ?: emptyMap())
+            .hasAdditionalProperties(internalErrorEvent.additionalProperties?.withDiagnosticAttributes() ?: emptyMap())
     }
 
     private fun assertErrorEventMatchesInternalEvent(
@@ -1615,6 +1625,11 @@ internal class TelemetryEventHandlerTest {
             getForgery<InternalTelemetryEvent.Configuration>(),
             getForgery<InternalTelemetryEvent.Metric>()
         )
+    }
+
+    private fun Map<String, Any?>.withDiagnosticAttributes(): Map<String, Any?> {
+        val processUptime = TimeUnit.NANOSECONDS.toMillis(fakeAppUptimeNs)
+        return this + mapOf(DIAGNOSTICS_PROCESS_UPTIME to processUptime)
     }
 
     // endregion
