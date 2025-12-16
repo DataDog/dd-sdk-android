@@ -349,6 +349,7 @@ public final class com/datadog/android/rum/DdRumContentProvider : android/conten
 public final class com/datadog/android/rum/DdRumContentProvider$Companion {
 	public final fun getCreateTimeNs ()J
 	public final fun getProcessImportance ()I
+	public final fun setCreateTimeNs (J)V
 	public final fun setProcessImportance (I)V
 }
 
