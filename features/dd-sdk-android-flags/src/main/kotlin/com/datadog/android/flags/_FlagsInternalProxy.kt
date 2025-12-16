@@ -22,7 +22,7 @@ import com.datadog.android.lint.InternalApi
  * are not considered part of the public interface of the Datadog SDK.
  */
 @InternalApi
-@Suppress("ClassName")
+@Suppress("ClassName", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag>? = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()

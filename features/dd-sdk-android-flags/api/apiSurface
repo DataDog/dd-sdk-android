@@ -8,7 +8,6 @@ interface com.datadog.android.flags.FlagsClient
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
-  fun _getInternal(): _FlagsInternalProxy?
   val state: StateObservable
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
@@ -32,8 +31,8 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
-  fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.PrecomputedFlag>?
-  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.PrecomputedFlag, com.datadog.android.flags.model.EvaluationContext)
+  fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
+  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
@@ -48,8 +47,6 @@ sealed class com.datadog.android.flags.model.FlagsClientState
   object Stale : FlagsClientState
   data class Error : FlagsClientState
     constructor(Throwable? = null)
-data class com.datadog.android.flags.model.PrecomputedFlag
-  constructor(String, String, Boolean, String, String, org.json.JSONObject, String)
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason
@@ -58,6 +55,14 @@ enum com.datadog.android.flags.model.ResolutionReason
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR
+interface com.datadog.android.flags.model.UnparsedFlag
+  val variationType: String
+  val variationValue: String
+  val doLog: Boolean
+  val allocationKey: String
+  val variationKey: String
+  val extraLogging: org.json.JSONObject
+  val reason: String
 data class com.datadog.android.flags.model.ExposureEvent
   constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject)
   fun toJson(): com.google.gson.JsonElement

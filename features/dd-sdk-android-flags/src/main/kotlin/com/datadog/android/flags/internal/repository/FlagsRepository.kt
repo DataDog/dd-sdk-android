@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.internal.repository
 
-import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

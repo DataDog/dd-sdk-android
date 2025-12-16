@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal.model
 
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.internal.model.PrecomputedFlag
 
 internal data class FlagsStateEntry(
     val evaluationContext: EvaluationContext,
