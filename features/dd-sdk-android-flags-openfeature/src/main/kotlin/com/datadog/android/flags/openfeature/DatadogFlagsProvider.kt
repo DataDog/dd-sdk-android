@@ -61,6 +61,14 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
  * // Set it as the OpenFeature provider
  * OpenFeatureAPI.setProviderAndWait(provider)
  *
+ * // Set evaluation context (static-paradigm: applies globally)
+ * OpenFeatureAPI.setEvaluationContext(
+ *     ImmutableContext(
+ *         targetingKey = "user-123",
+ *         attributes = mapOf("email" to Value.String("user@example.com"))
+ *     )
+ * )
+ *
  * // Use OpenFeature API
  * val client = OpenFeatureAPI.getClient()
  * val isEnabled = client.getBooleanValue("my-feature", false)
