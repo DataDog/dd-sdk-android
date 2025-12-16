@@ -1383,9 +1383,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
@@ -1413,9 +1413,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
@@ -1443,9 +1443,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
@@ -1473,9 +1473,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
@@ -1505,9 +1505,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         argumentCaptor<Any> {
             verify(mockRumEvaluationLogger).logEvaluation(
@@ -1538,9 +1538,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
@@ -1582,9 +1582,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
@@ -1700,9 +1700,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
-            context = eq(fakeContext),
-            data = eq(fakeFlag)
+            flagName = fakeFlagKey,
+            context = fakeContext,
+            data = fakeFlag
         )
         verifyNoInteractions(mockRumEvaluationLogger)
     }
