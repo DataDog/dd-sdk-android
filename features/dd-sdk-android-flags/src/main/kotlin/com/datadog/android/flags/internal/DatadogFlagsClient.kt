@@ -17,9 +17,9 @@ import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -442,25 +442,38 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        val flagValue = parseFlagValueString(flag)
+        val flagValue = parseFlagValueString(flagKey, flag)
 
         trackResolution(flagKey, flag, flagValue, context)
     }
 
-    private fun parseFlagValueString(flag: UnparsedFlag): Any {
-        val value: Any = when (flag.variationType) {
+    private fun parseFlagValueString(flagKey: String, flag: UnparsedFlag): Any {
+        val value: Any? = when (flag.variationType) {
             VariationType.BOOLEAN.value -> flag.variationValue.lowercase(Locale.US).toBooleanStrictOrNull()
-                ?: flag.variationValue
             VariationType.STRING.value -> flag.variationValue
-            VariationType.INTEGER.value -> flag.variationValue.toIntOrNull() ?: flag.variationValue
+            VariationType.INTEGER.value -> flag.variationValue.toIntOrNull()
             VariationType.NUMBER.value, VariationType.FLOAT.value -> flag.variationValue.toDoubleOrNull()
-                ?: flag.variationValue
             VariationType.OBJECT.value -> try {
                 JSONObject(flag.variationValue)
-            } catch (_: JSONException) {
+            } catch (exception: JSONException) {
+                featureSdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as JSONObject - ${exception.message}" }
+                )
                 flag.variationValue
             }
-            else -> flag.variationValue
+            else -> null
+        }
+        
+        if (value == null) {
+            featureSdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" }
+            )
+
+            return flag.variationValue
         }
 
         return value
