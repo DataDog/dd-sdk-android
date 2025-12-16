@@ -25,6 +25,7 @@ datadog:
       - "android.net.ConnectivityManager.registerDefaultNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.IllegalArgumentException,java.lang.SecurityException"
       - "android.net.ConnectivityManager.unregisterNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.SecurityException"
       - "android.provider.Settings.System.getInt(android.content.ContentResolver?, kotlin.String?):android.provider.Settings.SettingNotFoundException"
+      - "android.util.Base64.decode(kotlin.String?, kotlin.Int):java.lang.IllegalArgumentException"
       - "android.util.Base64.encodeToString(kotlin.ByteArray?, kotlin.Int):java.lang.AssertionError"
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"

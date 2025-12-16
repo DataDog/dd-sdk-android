@@ -41,16 +41,15 @@ import java.util.concurrent.TimeUnit
 /**
  * A no-op implementation of [SdkCore].
  */
+@Suppress("TooManyFunctions")
 internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override val name: String = "no-op"
 
     override val time: TimeInfo = with(System.currentTimeMillis()) {
-        TimeInfo(
+        TimeInfo.EMPTY.copy(
             deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(this),
-            serverTimeNs = TimeUnit.MILLISECONDS.toNanos(this),
-            serverTimeOffsetNs = 0L,
-            serverTimeOffsetMs = 0L
+            serverTimeNs = TimeUnit.MILLISECONDS.toNanos(this)
         )
     }
 
@@ -77,6 +76,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override val lastFatalAnrSent: Long?
         get() = null
     override val appStartTimeNs: Long
+        get() = 0
+    override val appUptimeNs: Long
         get() = 0
 
     // endregion

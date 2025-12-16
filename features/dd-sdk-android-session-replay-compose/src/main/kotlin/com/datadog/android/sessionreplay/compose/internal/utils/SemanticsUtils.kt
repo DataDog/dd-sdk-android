@@ -262,8 +262,27 @@ internal class SemanticsUtils(
             sendBitmapInfoTelemetry(it, isContextualImage)
         }
 
-        return bitmap?.let {
-            BitmapInfo(it, isContextualImage)
+        val contentScale = reflectionUtils.getContentScale(semanticsNode)
+        val alignment = reflectionUtils.getAlignment(semanticsNode)
+
+        // ALPHA_8 bitmaps cannot be copied to ARGB_8888 directly (copy returns null),
+        // but they are handled separately downstream via Alpha8BitmapConverter.
+        // Hardware bitmaps MUST be copied because Bitmap.compress() throws
+        // IllegalStateException on hardware bitmaps.
+        val finalBitmap = if (bitmap?.config == Bitmap.Config.ALPHA_8) {
+            bitmap
+        } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
+            bitmap?.copy(Bitmap.Config.ARGB_8888, false)
+        }
+
+        return finalBitmap?.let {
+            BitmapInfo(
+                bitmap = it,
+                isContextualImage = isContextualImage,
+                contentScale = contentScale,
+                alignment = alignment
+            )
         }
     }
 

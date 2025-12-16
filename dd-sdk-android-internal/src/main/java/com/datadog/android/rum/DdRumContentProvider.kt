@@ -76,7 +76,8 @@ class DdRumContentProvider : ContentProvider() {
 
         /**
          * fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
+         * Should be set from the outside only in tests.
          */
-        val createTimeNs: Long = System.nanoTime()
+        var createTimeNs: Long = System.nanoTime()
     }
 }

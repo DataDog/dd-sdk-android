@@ -73,6 +73,8 @@ internal object ComposeReflection {
 
     val PainterElementClass = getClassSafe("androidx.compose.ui.draw.PainterElement")
     val PainterField = PainterElementClass?.getDeclaredFieldSafe("painter")
+    val ContentScaleField = PainterElementClass?.getDeclaredFieldSafe("contentScale")
+    val AlignmentField = PainterElementClass?.getDeclaredFieldSafe("alignment")
 
     val VectorPainterClass = getClassSafe("androidx.compose.ui.graphics.vector.VectorPainter")
     val VectorField = VectorPainterClass?.getDeclaredFieldSafe("vector")

@@ -306,62 +306,173 @@ class ApolloIntegrationTest {
     }
 
     @Test
-    fun `M create resource events with GraphQL attributes W DatadogApolloInterceptor`() = runBlocking {
-        // Given
-        rumMonitor.startView(fakeViewKey, fakeViewName)
+    fun `M create resource events with GraphQL attributes W DatadogApolloInterceptor`() {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
 
-        // When
-        apolloClient.query(
-            FakeQuery(
-                userId = fakeUserId,
-                filters = Optional.present(listOf(fakeFilter1, fakeFilter2))
-            )
-        ).execute()
+            // When
+            apolloClient.query(
+                FakeQuery(
+                    userId = fakeUserId,
+                    filters = Optional.present(listOf(fakeFilter1, fakeFilter2))
+                )
+            ).execute()
 
-        // Then
-        val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val resourceEvents = events.filter { event ->
-            val json = JsonParser.parseString(event.eventData).asJsonObject
-            json.get("type")?.asString == "resource"
+            // Then
+            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+            val resourceEvents = events.filter { event ->
+                val json = JsonParser.parseString(event.eventData).asJsonObject
+                json.get("type")?.asString == "resource"
+            }
+            assertThat(resourceEvents).isNotEmpty()
+
+            val resourceEvent = resourceEvents.first()
+            val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
+            val resourceData = resourceJson.get("resource")?.asJsonObject
+
+            assertThat(resourceData?.get("url")?.asString).contains(mockServer.hostName)
+            assertThat(resourceData?.get("method")?.asString).isEqualTo("POST")
+            assertThat(resourceData?.get("status_code")?.asInt).isEqualTo(200)
         }
-        assertThat(resourceEvents).isNotEmpty()
-
-        val resourceEvent = resourceEvents.first()
-        val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
-        val resourceData = resourceJson.get("resource")?.asJsonObject
-
-        assertThat(resourceData?.get("url")?.asString).contains(mockServer.hostName)
-        assertThat(resourceData?.get("method")?.asString).isEqualTo("POST")
-        assertThat(resourceData?.get("status_code")?.asInt).isEqualTo(200)
     }
 
     @Test
-    fun `M track RUM resource timing W DatadogApolloInterceptor { resource duration tracked }`() = runBlocking {
-        // Given
-        rumMonitor.startView(fakeViewKey, fakeViewName)
+    fun `M track RUM resource timing W DatadogApolloInterceptor { resource duration tracked }`() {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
 
-        // When
-        apolloClient.query(
-            FakeQuery(
-                userId = fakeUserId,
-                filters = Optional.present(listOf(fakeFilter1, fakeFilter2))
-            )
-        ).execute()
+            // When
+            apolloClient.query(
+                FakeQuery(
+                    userId = fakeUserId,
+                    filters = Optional.present(listOf(fakeFilter1, fakeFilter2))
+                )
+            ).execute()
 
-        // Then
-        val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val resourceEvents = events.filter { event ->
-            val json = JsonParser.parseString(event.eventData).asJsonObject
-            json.get("type")?.asString == "resource"
+            // Then
+            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+            val resourceEvents = events.filter { event ->
+                val json = JsonParser.parseString(event.eventData).asJsonObject
+                json.get("type")?.asString == "resource"
+            }
+            assertThat(resourceEvents).isNotEmpty()
+
+            val resourceEvent = resourceEvents.first()
+            val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
+            val resourceData = resourceJson.get("resource")?.asJsonObject
+
+            assertThat(resourceData?.has("duration")).isTrue()
+            assertThat(resourceData?.get("duration")?.asLong).isGreaterThan(0)
         }
-        assertThat(resourceEvents).isNotEmpty()
+    }
 
-        val resourceEvent = resourceEvents.first()
-        val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
-        val resourceData = resourceJson.get("resource")?.asJsonObject
+    // endregion
 
-        assertThat(resourceData?.has("duration")).isTrue()
-        assertThat(resourceData?.get("duration")?.asLong).isGreaterThan(0)
+    // region Base64 encoding/decoding
+
+    @Test
+    fun `M correctly decode non-ASCII characters W DatadogInterceptor { base64 encoded GraphQL variables }`(
+        forge: Forge
+    ) {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
+            val nonAsciiName = forgeNonAsciiString(forge)
+            val nonAsciiEmail = forgeNonAsciiString(forge)
+
+            // When
+            apolloClient.mutation(
+                FakeMutation(input = UserInput(name = nonAsciiName, email = nonAsciiEmail))
+            ).execute()
+
+            // Then
+            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+            val resourceEvents = events.filter { event ->
+                val json = JsonParser.parseString(event.eventData).asJsonObject
+                json.get("type")?.asString == "resource"
+            }
+            assertThat(resourceEvents).isNotEmpty()
+
+            val resourceEvent = resourceEvents.first()
+            val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
+            val resourceData = resourceJson.get("resource")?.asJsonObject
+            val graphqlData = resourceData?.get("graphql")?.asJsonObject
+
+            assertThat(graphqlData).isNotNull
+            assertThat(graphqlData?.get("operationType")?.asString).isEqualTo("mutation")
+            assertThat(graphqlData?.get("operationName")?.asString).isEqualTo("FakeMutation")
+
+            val variables = graphqlData?.get("variables")?.asString
+            assertThat(variables).isNotNull
+            assertThat(variables).contains(nonAsciiName)
+            assertThat(variables).contains(nonAsciiEmail)
+        }
+    }
+
+    @Test
+    fun `M correctly decode non-ASCII characters W DatadogInterceptor { base64 encoded GraphQL payload }`(
+        forge: Forge
+    ) {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
+            val nonAsciiFilter = forgeNonAsciiString(forge)
+
+            // When
+            apolloClient.query(
+                FakeQuery(
+                    userId = fakeUserId,
+                    filters = Optional.present(listOf(nonAsciiFilter))
+                )
+            ).execute()
+
+            // Then
+            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+            val resourceEvents = events.filter { event ->
+                val json = JsonParser.parseString(event.eventData).asJsonObject
+                json.get("type")?.asString == "resource"
+            }
+            assertThat(resourceEvents).isNotEmpty()
+
+            val resourceEvent = resourceEvents.first()
+            val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
+            val resourceData = resourceJson.get("resource")?.asJsonObject
+            val graphqlData = resourceData?.get("graphql")?.asJsonObject
+
+            assertThat(graphqlData).isNotNull
+            assertThat(graphqlData?.get("operationType")?.asString).isEqualTo("query")
+            assertThat(graphqlData?.get("operationName")?.asString).isEqualTo("FakeQuery")
+
+            val payload = graphqlData?.get("payload")?.asString
+            assertThat(payload).isNotNull
+            assertThat(payload).contains(nonAsciiFilter)
+        }
+    }
+
+    private fun forgeNonAsciiString(forge: Forge): String {
+        val asciiPart = forge.aString(size = forge.anInt(min = 3, max = 10))
+
+        val accentedStart = 0x0100
+        val accentedEnd = 0x017F
+        val accentedPart = (1..forge.anInt(min = 2, max = 5)).map {
+            Char(forge.anInt(min = accentedStart, max = accentedEnd))
+        }.joinToString("")
+
+        val cjkStart = 0x4E00
+        val cjkEnd = 0x9FFF
+        val cjkPart = (1..forge.anInt(min = 2, max = 5)).map {
+            Char(forge.anInt(min = cjkStart, max = cjkEnd))
+        }.joinToString("")
+
+        val emojiStart = 0x1F300
+        val emojiEnd = 0x1F5FF
+        val emojiPart = (1..forge.anInt(min = 1, max = 3)).joinToString("") {
+            String(Character.toChars(forge.anInt(min = emojiStart, max = emojiEnd)))
+        }
+
+        return asciiPart + accentedPart + cjkPart + emojiPart
     }
 
     // endregion
