@@ -307,7 +307,7 @@ internal class EvaluationsManagerTest {
     fun `M invoke onFailure W updateEvaluationsForContext() { network failure, no cached flags }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val mockCallback = org.mockito.kotlin.mock<EvaluationContextCallback>()
+        val mockCallback = mock<EvaluationContextCallback>()
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
@@ -326,7 +326,7 @@ internal class EvaluationsManagerTest {
     fun `M invoke onFailure W updateEvaluationsForContext() { network failure, has cached flags }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val mockCallback = org.mockito.kotlin.mock<EvaluationContextCallback>()
+        val mockCallback = mock<EvaluationContextCallback>()
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
@@ -352,7 +352,7 @@ internal class EvaluationsManagerTest {
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
 
         // When/Then - should not throw
-        evaluationsManager.updateEvaluationsForContext(publicContext, callback = null)
+        assertDoesNotThrow { evaluationsManager.updateEvaluationsForContext(publicContext, callback = null) }
     }
 
     // endregion

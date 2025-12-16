@@ -938,8 +938,8 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockEvaluationsManager).updateEvaluationsForContext(
-            eq(fakeContext),
-            eq(mockCallback)
+            fakeContext,
+            mockCallback
         )
     }
 
@@ -953,8 +953,8 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockEvaluationsManager).updateEvaluationsForContext(
-            eq(fakeContext),
-            eq(null)
+            fakeContext,
+            null
         )
     }
 
