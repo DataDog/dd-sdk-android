@@ -27,8 +27,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -290,6 +293,42 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(result).isFalse
         assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+    }
+
+    // endregion
+
+    // region getFlagsSnapshot
+
+    @Test
+    fun `M return flags map W getFlagsSnapshot() { flags state set }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        // When
+        val result = testedRepository.getFlagsSnapshot()
+
+        // Then
+        assertThat(result).isEqualTo(multipleFlagsMap)
+    }
+
+    @Test
+    fun `M return null and log warning W getFlagsSnapshot() { no flags state set }`() {
+        // When
+        val result = testedRepository.getFlagsSnapshot()
+
+        // Then
+        assertThat(result).isNull()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(lastValue.invoke()).isEqualTo(DefaultFlagsRepository.WARN_CONTEXT_NOT_SET)
+        }
     }
 
     // endregion
