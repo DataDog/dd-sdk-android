@@ -72,29 +72,6 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 }
 
-public final class com/datadog/android/flags/internal/model/PrecomputedFlag : com/datadog/android/flags/model/UnparsedFlag {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Z
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lorg/json/JSONObject;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)Lcom/datadog/android/flags/internal/model/PrecomputedFlag;
-	public static synthetic fun copy$default (Lcom/datadog/android/flags/internal/model/PrecomputedFlag;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/internal/model/PrecomputedFlag;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getAllocationKey ()Ljava/lang/String;
-	public fun getDoLog ()Z
-	public fun getExtraLogging ()Lorg/json/JSONObject;
-	public fun getReason ()Ljava/lang/String;
-	public fun getVariationKey ()Ljava/lang/String;
-	public fun getVariationType ()Ljava/lang/String;
-	public fun getVariationValue ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 	public static final field FLAG_NOT_FOUND Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PARSE_ERROR Lcom/datadog/android/flags/model/ErrorCode;

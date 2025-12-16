@@ -9,7 +9,7 @@ package com.datadog.android.flags.internal.model
 import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONObject
 
-data class PrecomputedFlag(
+internal data class PrecomputedFlag(
     override val variationType: String,
     override val variationValue: String,
     override val doLog: Boolean,
