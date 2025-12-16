@@ -74,6 +74,7 @@ dependencies {
 
 unMock {
     keepStartingWith("org.json")
+    keepStartingWith("android.util.")
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

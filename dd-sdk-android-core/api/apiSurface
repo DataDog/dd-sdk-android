@@ -203,6 +203,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val lastViewEvent: com.google.gson.JsonObject?
   val lastFatalAnrSent: Long?
   val appStartTimeNs: Long
+  val appUptimeNs: Long
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)

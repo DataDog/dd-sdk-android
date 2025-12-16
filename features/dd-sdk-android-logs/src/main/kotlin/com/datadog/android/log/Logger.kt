@@ -345,7 +345,8 @@ internal constructor(internal var handler: LogHandler) {
                 sdkCore = sdkCore,
                 loggerName = loggerName ?: logsFeature.packageName,
                 logGenerator = DatadogLogGenerator(
-                    serviceName ?: sdkCore.service
+                    serviceName ?: sdkCore.service,
+                    sdkCore.internalLogger
                 ),
                 writer = logsFeature.dataWriter,
                 minLogPriority = minDatadogLogsPriority,

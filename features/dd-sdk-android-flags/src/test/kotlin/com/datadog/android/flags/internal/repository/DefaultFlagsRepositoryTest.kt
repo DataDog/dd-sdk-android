@@ -52,8 +52,12 @@ internal class DefaultFlagsRepositoryTest {
 
     private lateinit var testedRepository: DefaultFlagsRepository
 
+    private lateinit var testContext: EvaluationContext
+    private lateinit var singleFlagMap: Map<String, PrecomputedFlag>
+    private lateinit var multipleFlagsMap: Map<String, PrecomputedFlag>
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(
             mockDataStore.value<FlagsStateEntry>(
@@ -72,6 +76,42 @@ internal class DefaultFlagsRepositoryTest {
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
             instanceName = "default"
+        )
+
+        // Setup test fixtures for hasFlags tests
+        testContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+
+        singleFlagMap = mapOf(
+            forge.anAlphabeticalString() to PrecomputedFlag(
+                variationType = "string",
+                variationValue = forge.anAlphabeticalString(),
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "DEFAULT"
+            )
+        )
+
+        multipleFlagsMap = mapOf(
+            forge.anAlphabeticalString() to PrecomputedFlag(
+                variationType = "string",
+                variationValue = forge.anAlphabeticalString(),
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "DEFAULT"
+            ),
+            forge.anAlphabeticalString() to PrecomputedFlag(
+                variationType = "boolean",
+                variationValue = "true",
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "TARGETING_MATCH"
+            )
         )
     }
 
@@ -184,4 +224,73 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(result?.variationValue).isEqualTo(flagValue)
     }
+
+    // region hasFlags
+
+    @Test
+    fun `M return false W hasFlags() { no state set }`() {
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasFlags() { empty flags map }`(forge: Forge) {
+        // Given
+        testedRepository.setFlagsAndContext(
+            EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            emptyMap()
+        )
+
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isFalse()
+    }
+
+    @Test
+    fun `M return true W hasFlags() { single flag }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
+
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isTrue()
+    }
+
+    @Test
+    fun `M return true W hasFlags() { multiple flags }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        // When + Then
+        assertThat(testedRepository.hasFlags()).isTrue()
+    }
+
+    @Test
+    fun `M not block W hasFlags() { persistence still loading }`() {
+        // Given
+        doAnswer {
+            // Never call the callback - simulate slow persistence
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = any(),
+            callback = any(),
+            deserializer = any()
+        )
+        val slowRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "slow",
+            persistenceLoadTimeoutMs = 1000L // Long timeout
+        )
+
+        // When
+        val startTime = System.currentTimeMillis()
+        val result = slowRepository.hasFlags()
+        val elapsedTime = System.currentTimeMillis() - startTime
+
+        // Then
+        assertThat(result).isFalse
+        assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+    }
+
+    // endregion
 }

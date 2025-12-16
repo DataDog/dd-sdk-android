@@ -29,12 +29,7 @@ internal class NoOpContextProvider : ContextProvider {
         variant = "",
         source = "",
         sdkVersion = "",
-        time = TimeInfo(
-            deviceTimeNs = 0L,
-            serverTimeNs = 0L,
-            serverTimeOffsetMs = 0L,
-            serverTimeOffsetNs = 0L
-        ),
+        time = TimeInfo.EMPTY,
         processInfo = ProcessInfo(isMainProcess = true),
         networkInfo = NetworkInfo(
             connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
