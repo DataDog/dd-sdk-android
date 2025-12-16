@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.evaluation
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.NetworkRequestFailedException
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -86,7 +87,7 @@ internal class EvaluationsManager(
                     { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
 
-                val throwable = Throwable(NETWORK_REQUEST_FAILED_MESSAGE)
+                val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
                 if (hadFlags) {
                     flagStateManager.updateState(FlagsClientState.Stale)
                 } else {

@@ -21,6 +21,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,6 +33,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -289,7 +291,7 @@ internal class EvaluationsManagerTest {
     fun `M invoke onSuccess W updateEvaluationsForContext() { success }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val mockCallback = org.mockito.kotlin.mock<EvaluationContextCallback>()
+        val mockCallback = mock<EvaluationContextCallback>()
         val jsonResponse = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
