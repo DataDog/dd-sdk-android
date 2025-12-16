@@ -460,7 +460,8 @@ internal class DatadogFlagsClient(
                 featureSdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    { "Flag '$flagKey': $errorMessage" }
+                    { "Flag '$flagKey': $errorMessage" },
+                    exception
                 )
                 flag.variationValue
             }
