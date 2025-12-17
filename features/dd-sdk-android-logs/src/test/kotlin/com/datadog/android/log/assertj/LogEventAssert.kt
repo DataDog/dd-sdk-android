@@ -272,6 +272,16 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
+    fun hasBuildVersion(buildVersion: Int?): LogEventAssert {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected LogEvent to have build version: $buildVersion" +
+                    " but instead was ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+        return this
+    }
+
     companion object {
 
         private val dateFormatter =

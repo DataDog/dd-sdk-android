@@ -144,6 +144,17 @@
                 app:layout_constraintTop_toBottomOf="@id/navigation_view_pager"/>
 
         <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_cronet_image"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_cronet_image"
+                android:drawableStart="@drawable/ic_picture_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_picture"/>
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/navigation_compose"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -152,7 +163,7 @@
             android:drawableStart="@drawable/ic_compose_android_24dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/navigation_picture"/>
+            app:layout_constraintTop_toBottomOf="@id/navigation_cronet_image"/>
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/navigation_session_replay"

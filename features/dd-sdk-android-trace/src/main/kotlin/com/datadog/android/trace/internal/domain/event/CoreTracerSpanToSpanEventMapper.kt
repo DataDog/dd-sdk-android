@@ -58,8 +58,7 @@ internal class CoreTracerSpanToSpanEventMapper(
         return DDSpanId.toHexStringPadded(model.parentId)
     }
 
-    // TODO RUM-10805 - make it back private and re-create objects in tests
-    internal fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
+    private fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
         val metrics = resolveMetricsFromSpanContext(event).apply {
             val spanSamplingPriority = event.spanSamplingPriority
             if (spanSamplingPriority != PrioritySampling.UNSET.toInt()) {
@@ -74,8 +73,7 @@ internal class CoreTracerSpanToSpanEventMapper(
         )
     }
 
-    // TODO RUM-10805 - make it back private and re-create objects in tests
-    internal fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
+    private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
         val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
         val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val networkInfoMeta = if (networkInfoEnabled) resolveNetworkInfo(datadogContext.networkInfo) else null

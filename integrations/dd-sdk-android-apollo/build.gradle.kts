@@ -18,6 +18,7 @@ plugins {
     id("com.github.ben-manes.versions")
 
     // Tests
+    id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
@@ -48,6 +49,11 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    unmock(libs.robolectric)
+}
+
+unMock {
+    keepStartingWith("android.util.")
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

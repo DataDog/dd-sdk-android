@@ -18,12 +18,14 @@ datadog:
       - "android.graphics.Bitmap.createBitmap(android.util.DisplayMetrics?, kotlin.Int, kotlin.Int, android.graphics.Bitmap.Config):java.lang.IllegalArgumentException"
       - "android.graphics.Bitmap.createBitmap(kotlin.Int, kotlin.Int, android.graphics.Bitmap.Config):java.lang.IllegalArgumentException"
       - "android.graphics.Bitmap.createScaledBitmap(android.graphics.Bitmap, kotlin.Int, kotlin.Int, kotlin.Boolean):java.lang.IllegalArgumentException"
+      - "android.graphics.Bitmap.getPixel(kotlin.Int, kotlin.Int):java.lang.IllegalArgumentException,java.lang.IllegalStateException"
       - "android.graphics.Canvas.constructor(android.graphics.Bitmap):java.lang.IllegalStateException"
       - "android.graphics.Color.parseColor(kotlin.String?):java.lang.IllegalArgumentException"
       - "android.graphics.drawable.LayerDrawable.getDrawable(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "android.net.ConnectivityManager.registerDefaultNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.IllegalArgumentException,java.lang.SecurityException"
       - "android.net.ConnectivityManager.unregisterNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.SecurityException"
       - "android.provider.Settings.System.getInt(android.content.ContentResolver?, kotlin.String?):android.provider.Settings.SettingNotFoundException"
+      - "android.util.Base64.decode(kotlin.String?, kotlin.Int):java.lang.IllegalArgumentException"
       - "android.util.Base64.encodeToString(kotlin.ByteArray?, kotlin.Int):java.lang.AssertionError"
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
@@ -46,6 +48,10 @@ datadog:
       - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
       # endregion
       # region Apollo Kotlin
+      # region Cronet
+      - "org.chromium.net.CronetEngine.Builder.addPublicKeyPins(kotlin.String?, kotlin.collections.MutableSet?, kotlin.Boolean, java.util.Date?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "org.chromium.net.CronetEngine.openConnection(java.net.URL?):java.io.IOException"
+      # endregion
       - "com.apollographql.apollo.api.Operation.variablesJson(com.apollographql.apollo.api.CustomScalarAdapters):java.io.IOException"
       # endregion
       # region Java File
@@ -116,6 +122,7 @@ datadog:
       - "java.util.concurrent.ScheduledThreadPoolExecutor.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ThreadPoolExecutor.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ThreadPoolExecutor.constructor(kotlin.Int, kotlin.Int, kotlin.Long, java.util.concurrent.TimeUnit, java.util.concurrent.BlockingQueue):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "java.util.concurrent.ThreadPoolExecutor.constructor(kotlin.Int, kotlin.Int, kotlin.Long, java.util.concurrent.TimeUnit?, java.util.concurrent.BlockingQueue?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.concurrent.locks.Lock.lock():java.lang.InterruptedException"
       - "java.util.concurrent.locks.Lock.tryLock(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException,java.lang.NullPointerException"
       - "java.util.concurrent.locks.Lock.unlock():java.lang.IllegalMonitorStateException"

@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
@@ -18,13 +19,15 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
 import java.util.Date
+import java.util.Locale
 
 @Suppress("TooManyFunctions")
 internal class DatadogLogGenerator(
     /**
      * Custom service name. If not provided, value will be taken from [DatadogContext].
      */
-    internal val serviceName: String? = null
+    internal val serviceName: String? = null,
+    private val internalLogger: InternalLogger
 ) : LogGenerator {
 
     private val simpleDateFormat = buildLogDateFormat()
@@ -205,7 +208,8 @@ internal class DatadogLogGenerator(
             ddtags = combinedTags.joinToString(separator = ","),
             additionalProperties = combinedAttributes,
             os = resolveOsInfo(deviceInfo),
-            device = resolveDeviceInfo(deviceInfo)
+            device = resolveDeviceInfo(deviceInfo),
+            buildVersion = datadogContext.versionCode.toString()
         )
     }
 
@@ -260,6 +264,15 @@ internal class DatadogLogGenerator(
         }
     }
 
+    private fun serviceTag(datadogContext: DatadogContext): String? {
+        val service = serviceName ?: datadogContext.service
+        return if (service.isNotEmpty()) {
+            "${LogAttributes.SERVICE}:$service"
+        } else {
+            null
+        }
+    }
+
     private fun resolveNetworkInfo(
         datadogContext: DatadogContext,
         networkInfo: NetworkInfo?
@@ -306,7 +319,24 @@ internal class DatadogLogGenerator(
         datadogContext: DatadogContext,
         tags: Set<String>
     ): MutableSet<String> {
-        val combinedTags = mutableSetOf<String>().apply { addAll(tags) }
+        val combinedTags = tags
+            .filter {
+                val key = it.split(":").firstOrNull()
+                if (key != null && key in RESERVED_TAG_KEYS) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { RESERVED_TAG_DROPPED_WARNING.format(Locale.US, it) },
+                        onlyOnce = true
+                    )
+                    false
+                } else {
+                    true
+                }
+            }
+            .toMutableSet()
+
+        // when doing changes below check also DatadogDataConstraints.reservedTagKeys
         envTag(datadogContext)?.let {
             combinedTags.add(it)
         }
@@ -314,6 +344,9 @@ internal class DatadogLogGenerator(
             combinedTags.add(it)
         }
         variantTag(datadogContext)?.let {
+            combinedTags.add(it)
+        }
+        serviceTag(datadogContext)?.let {
             combinedTags.add(it)
         }
 
@@ -378,5 +411,13 @@ internal class DatadogLogGenerator(
     companion object {
         internal const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
         internal const val CRASH: Int = 9
+        internal const val RESERVED_TAG_DROPPED_WARNING = "User-provided tag %s is dropped," +
+            " because it matches reserved tag key"
+        internal val RESERVED_TAG_KEYS = setOf(
+            LogAttributes.ENV,
+            LogAttributes.APPLICATION_VERSION,
+            LogAttributes.VARIANT,
+            LogAttributes.SERVICE
+        )
     }
 }

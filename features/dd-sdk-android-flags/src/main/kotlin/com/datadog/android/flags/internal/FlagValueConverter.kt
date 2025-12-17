@@ -56,9 +56,16 @@ internal object FlagValueConverter {
                 Int::class -> variationValue.toIntOrNull() as? T
                 Double::class -> variationValue.toDoubleOrNull() as? T
                 Map::class -> variationValue.toMap() as? T
-                JSONObject::class -> JSONObject(variationValue) as? T
+                JSONObject::class -> {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
+                    val json = JSONObject(variationValue)
+                    @Suppress("UNCHECKED_CAST")
+                    json as? T
+                }
                 else -> {
                     // Check if targetType is a Map implementation
+                    // Safe: isAssignableFrom is a standard Java reflection call
+                    @Suppress("UnsafeThirdPartyFunctionCall")
                     if (Map::class.java.isAssignableFrom(targetType.java)) {
                         variationValue.toMap() as? T
                     } else {
@@ -89,6 +96,8 @@ internal object FlagValueConverter {
         Map::class -> variationType == VariationType.OBJECT.value
         else -> {
             // Check if targetType is a Map implementation (e.g., LinkedHashMap, HashMap, etc.)
+            // Safe: isAssignableFrom is a standard Java reflection call
+            @Suppress("UnsafeThirdPartyFunctionCall")
             if (Map::class.java.isAssignableFrom(targetType.java)) {
                 variationType == VariationType.OBJECT.value
             } else {

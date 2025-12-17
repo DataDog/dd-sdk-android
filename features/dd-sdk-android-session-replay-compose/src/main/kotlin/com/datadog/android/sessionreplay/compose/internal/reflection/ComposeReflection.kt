@@ -43,6 +43,7 @@ internal object ComposeReflection {
 
     val TextStringSimpleElement = getClassSafe("androidx.compose.foundation.text.modifiers.TextStringSimpleElement")
     val ColorProducerField = TextStringSimpleElement?.getDeclaredFieldSafe("color")
+    val TextStringSimpleElementOverflowField = TextStringSimpleElement?.getDeclaredFieldSafe("overflow")
 
     val BackgroundElementClass = getClassSafe("androidx.compose.foundation.BackgroundElement")
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
@@ -72,6 +73,8 @@ internal object ComposeReflection {
 
     val PainterElementClass = getClassSafe("androidx.compose.ui.draw.PainterElement")
     val PainterField = PainterElementClass?.getDeclaredFieldSafe("painter")
+    val ContentScaleField = PainterElementClass?.getDeclaredFieldSafe("contentScale")
+    val AlignmentField = PainterElementClass?.getDeclaredFieldSafe("alignment")
 
     val VectorPainterClass = getClassSafe("androidx.compose.ui.graphics.vector.VectorPainter")
     val VectorField = VectorPainterClass?.getDeclaredFieldSafe("vector")

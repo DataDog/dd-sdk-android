@@ -19,12 +19,12 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.RESOURCES_NULL_ERROR
-import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver.Companion.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation

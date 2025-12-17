@@ -31,6 +31,7 @@ class com.datadog.android._InternalProxy
     fun error(String, Throwable? = null)
     fun error(String, String?, String?)
   val _telemetry: _TelemetryProxy
+  fun setMetricTelemetrySampleRateBypass(Float)
   fun setCustomAppVersion(String)
   companion object 
     fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
@@ -68,7 +69,7 @@ interface com.datadog.android.api.SdkCore
 data class com.datadog.android.api.context.AccountInfo
   constructor(String, String? = null, Map<String, Any?> = emptyMap())
 data class com.datadog.android.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, Int, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
   constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo)
 enum com.datadog.android.api.context.DeviceType
@@ -146,6 +147,21 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
+interface com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+  fun <T> tag(Class<T>): T?
+fun <T> HttpRequestInfo.tag(Class<T>): T?
+interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
+  val url: String
+  val headers: Map<String, List<String>>
+  val contentType: String?
+  val method: String
+  fun contentLength(): Long?
+interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
+  val url: String
+  val statusCode: Int
+  val headers: Map<String, List<String>>
+  val contentType: String?
+  val contentLength: Long?
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext
@@ -201,6 +217,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val lastViewEvent: com.google.gson.JsonObject?
   val lastFatalAnrSent: Long?
   val appStartTimeNs: Long
+  val appUptimeNs: Long
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)
@@ -289,6 +306,29 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
+object com.datadog.android.core.internal.net.HttpSpec
+  object Method
+    const val GET: String
+    const val POST: String
+    const val PATCH: String
+    const val PUT: String
+    const val HEAD: String
+    const val DELETE: String
+    const val TRACE: String
+    const val OPTIONS: String
+    const val CONNECT: String
+    fun values()
+  object Headers
+    const val CONTENT_TYPE: String
+    const val CONTENT_LENGTH: String
+    const val WEBSOCKET_ACCEPT_HEADER: String
+  object ContentType
+    const val TEXT_PLAIN: String
+    const val TEXT_EVENT_STREAM: String
+    const val APPLICATION_GRPC: String
+    const val APPLICATION_GRPC_PROTO: String
+    const val APPLICATION_GRPC_JSON: String
+    fun isStream(String?): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
@@ -378,6 +418,7 @@ object com.datadog.android.log.LogAttributes
   const val APPLICATION_PACKAGE: String
   const val APPLICATION_VERSION: String
   const val ENV: String
+  const val SERVICE: String
   const val DATE: String
   const val DB_INSTANCE: String
   const val DB_OPERATION: String
