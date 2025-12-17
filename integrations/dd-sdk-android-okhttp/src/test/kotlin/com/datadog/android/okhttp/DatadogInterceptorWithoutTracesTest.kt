@@ -183,11 +183,12 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 
+        @Suppress("DEPRECATION")
         whenever(
             mockRumAttributesProvider.onProvideAttributes(
-                any(),
-                anyOrNull(),
-                anyOrNull()
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
             )
         ) doReturn fakeResourceAttributes
     }

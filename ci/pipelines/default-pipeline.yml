@@ -115,6 +115,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-cronet:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-glide:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-okhttp:customDetektRules
@@ -788,6 +789,23 @@ publish:release-compose:
     paths:
       - integrations/dd-sdk-android-compose/verification-metadata.xml
 
+publish:release-cronet:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :integrations:dd-sdk-android-cronet:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - integrations/dd-sdk-android-cronet/verification-metadata.xml
+
 publish:release-fresco:
   tags: [ "arch:amd64" ]
   only:
@@ -1089,6 +1107,7 @@ notify:merge-verification-metadata:
     - publish:release-webview
     - publish:release-coil
     - publish:release-compose
+    - publish:release-cronet
     - publish:release-fresco
     - publish:release-glide
     - publish:release-trace-coroutines
