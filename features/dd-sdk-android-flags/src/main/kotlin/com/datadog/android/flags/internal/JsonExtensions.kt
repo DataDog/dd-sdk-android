@@ -109,6 +109,8 @@ internal fun Map<String, Any?>.toJSONObject(): JSONObject {
  * @return A JSONArray with all nested structures converted
  */
 internal fun List<*>.toJSONArray(): JSONArray {
+    // Safe: JSONArray constructor does not throw exceptions with empty initialization
+    @Suppress("UnsafeThirdPartyFunctionCall")
     val jsonArray = JSONArray()
 
     forEach { value ->
