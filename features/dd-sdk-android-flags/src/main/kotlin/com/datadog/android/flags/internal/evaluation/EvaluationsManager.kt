@@ -9,8 +9,8 @@ package com.datadog.android.flags.internal.evaluation
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
-import com.datadog.android.flags.NetworkRequestFailedException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
