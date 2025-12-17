@@ -24,10 +24,10 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
-    fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag>? = if (client is DatadogFlagsClient) {
+    fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {
-        null
+        emptyMap()
     }
 
     fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {

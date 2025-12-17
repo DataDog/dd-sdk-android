@@ -82,7 +82,7 @@ internal class DefaultFlagsRepository(
         return null
     }
 
-    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag>? {
+    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
         waitForPersistenceLoad()
         val state = atomicState.get()
         if (state != null) {
@@ -93,7 +93,7 @@ internal class DefaultFlagsRepository(
             InternalLogger.Target.USER,
             { WARN_CONTEXT_NOT_SET }
         )
-        return null
+        return emptyMap()
     }
 
     override fun getEvaluationContext(): EvaluationContext? {

@@ -432,9 +432,9 @@ internal class DatadogFlagsClient(
      *
      * Supposed to be used by internal Datadog packages to get flags state snapshot for a given evaluation context.
      *
-     * @return A map of flag key to precomputed flag, or null if no flags are available.
+     * @return A map of flag key to an unparsed flag, or an empty map if no flags are available or the client is not ready.
      */
-    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag>? = flagsRepository.getFlagsSnapshot()
+    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = flagsRepository.getFlagsSnapshot()
 
     /**
      * Tracks the evaluation of a flag from an exact flags state snapshot.
