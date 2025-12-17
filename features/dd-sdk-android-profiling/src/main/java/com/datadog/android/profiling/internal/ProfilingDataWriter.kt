@@ -105,8 +105,10 @@ internal class ProfilingDataWriter(
         append("$TAG_KEY_VERSION:${context.version}")
         append(",")
         append("$TAG_KEY_SDK_VERSION:${context.sdkVersion}")
-        append(",")
-        append("$TAG_KEY_BUILD_ID:${context.appBuildId}")
+        context.appBuildId?.let { buildId ->
+            append(",")
+            append("$TAG_KEY_BUILD_ID:$buildId")
+        }
     }
 
     private fun readProfilingData(profilingPath: String): ByteArray? {

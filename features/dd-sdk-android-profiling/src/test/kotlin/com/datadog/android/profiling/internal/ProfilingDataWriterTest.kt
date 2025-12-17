@@ -121,6 +121,16 @@ internal class ProfilingDataWriterTest {
             eventType = eq(EventType.DEFAULT)
         )
         val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
+        val expectedTagList = arrayListOf(
+            "service:${fakeDatadogContext.service}",
+            "env:${fakeDatadogContext.env}",
+            "version:${fakeDatadogContext.version}",
+            "sdk_version:${fakeDatadogContext.sdkVersion}"
+        )
+        fakeDatadogContext.appBuildId?.let {
+            expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
+        }
+
         assertThat(actualEvent)
             .hasStart(formatIsoUtc(fakeResult.start))
             .hasEnd(formatIsoUtc(fakeResult.end))
@@ -128,15 +138,7 @@ internal class ProfilingDataWriterTest {
             .hasFamily("android")
             .hasRuntime("android")
             .hasVersion("4")
-            .hasTags(
-                listOf(
-                    "service:${fakeDatadogContext.service}",
-                    "env:${fakeDatadogContext.env}",
-                    "version:${fakeDatadogContext.version}",
-                    "sdk_version:${fakeDatadogContext.sdkVersion}",
-                    "build_id:${fakeDatadogContext.appBuildId}"
-                )
-            )
+            .hasTags(expectedTagList)
             .hasApplicationId(fakeTTIDEvent.applicationId)
             .hasSessionId(fakeTTIDEvent.sessionId)
             .hasVitalId(fakeTTIDEvent.vitalId)
