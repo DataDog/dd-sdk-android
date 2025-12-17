@@ -4,8 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.okhttp.internal.utils
+package com.datadog.android.okhttp.internal
 
+import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -17,6 +18,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -33,7 +35,7 @@ import java.io.IOException
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(BaseConfigurator::class)
-internal class RequestUniqueIdentifierTest {
+internal class OkHttpRequestResourceIdentifierTest {
 
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")
     private lateinit var fakeUrl: String
@@ -44,146 +46,176 @@ internal class RequestUniqueIdentifierTest {
     @StringForgery
     private lateinit var fakeBody: String
 
+    private var fakeContentLength: Int = 0
+
+    @BeforeEach
+    fun `set up`() {
+        fakeContentLength = fakeBody.length
+    }
+
     @Test
-    fun `identify GET request`() {
+    fun `M return {GET url} W uniqueId {GET request}`() {
+        // Given
         val request = Request.Builder()
             .get().url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        assertThat(id).isEqualTo("GET•$fakeUrl")
+        // Then
+        assertThat(actual).isEqualTo("GET•$fakeUrl")
     }
 
     @Test
-    fun `identify POST request`() {
+    fun `M return {POST url contentLength null} W uniqueId {POST request with body}`() {
+        // Given
         val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .post(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("POST•$fakeUrl•$contentLength•null")
+        // Then
+        assertThat(actual)
+            .isEqualTo("POST•$fakeUrl•$fakeContentLength•null")
     }
 
     @Test
-    fun `identify POST request with content type`() {
+    fun `M return {POST url contentLength contentType} W uniqueId {POST request with body and content type}`() {
+        // Given
         val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .post(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("POST•$fakeUrl•$contentLength•$fakeContentType; charset=utf-8")
+        // Then
+        assertThat(actual)
+            .isEqualTo("POST•$fakeUrl•$fakeContentLength•$fakeContentType; charset=utf-8")
     }
 
     @Test
-    fun `identify PUT request`() {
+    fun `M return {PUT url contentLength null} W uniqueId {PUT request with body}`() {
+        // Given
         val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .put(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("PUT•$fakeUrl•$contentLength•null")
+        // Then
+        assertThat(actual)
+            .isEqualTo("PUT•$fakeUrl•$fakeContentLength•null")
     }
 
     @Test
-    fun `identify PUT request with content type`() {
+    fun `M return {PUT url contentLength contentType} W uniqueId {PUT request with body and content type}`() {
+        // Given
         val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .put(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("PUT•$fakeUrl•$contentLength•$fakeContentType; charset=utf-8")
+        // Then
+        assertThat(actual)
+            .isEqualTo("PUT•$fakeUrl•$fakeContentLength•$fakeContentType; charset=utf-8")
     }
 
     @Test
-    fun `identify PATCH request`() {
+    fun `M return {PATCH url contentLength null} W uniqueId {PATCH request with body}`() {
+        // Given
         val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .patch(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("PATCH•$fakeUrl•$contentLength•null")
+        // Then
+        assertThat(actual)
+            .isEqualTo("PATCH•$fakeUrl•$fakeContentLength•null")
     }
 
     @Test
-    fun `identify PATCH request with content type`() {
+    fun `M return {PATCH url contentLength contentType} W uniqueId {PATCH request with body and content type}`() {
+        // Given
         val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .patch(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("PATCH•$fakeUrl•$contentLength•$fakeContentType; charset=utf-8")
+        // Then
+        assertThat(actual)
+            .isEqualTo("PATCH•$fakeUrl•$fakeContentLength•$fakeContentType; charset=utf-8")
     }
 
     @Test
-    fun `identify DELETE request`() {
+    fun `M return {DELETE url} W uniqueId {DELETE request}`() {
+        // Given
         val request = Request.Builder()
             .delete().url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        assertThat(id)
+        // Then
+        assertThat(actual)
             .isEqualTo("DELETE•$fakeUrl")
     }
 
     @Test
-    fun `identify DELETE request with body`() {
+    fun `M return {DELETE url contentLength null} W uniqueId {DELETE request with body}`() {
+        // Given
         val body = fakeBody.toRequestBody(null)
         val request = Request.Builder()
             .delete(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("DELETE•$fakeUrl•$contentLength•null")
+        // Then
+        assertThat(actual)
+            .isEqualTo("DELETE•$fakeUrl•$fakeContentLength•null")
     }
 
     @Test
-    fun `identify DELETE request with content type`() {
+    fun `M return {DELETE url contentLength contentType} W uniqueId {DELETE request with body and content type}`() {
+        // Given
         val body = fakeBody.toRequestBody(fakeContentType.toMediaTypeOrNull())
         val request = Request.Builder()
             .delete(body).url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        val contentLength = fakeBody.length
-        assertThat(id)
-            .isEqualTo("DELETE•$fakeUrl•$contentLength•$fakeContentType; charset=utf-8")
+        // Then
+        assertThat(actual)
+            .isEqualTo("DELETE•$fakeUrl•$fakeContentLength•$fakeContentType; charset=utf-8")
     }
 
     @ValueSource(strings = ["POST", "PUT", "PATCH", "DELETE"])
     @ParameterizedTest
-    fun `identify request { body#contentLength throws exception }`(
+    fun `M return {method url 0 contentType} W uniqueId {request with exception thrown for content length}`(
         method: String
     ) {
+        // Given
         val body = object : RequestBody() {
             override fun contentLength(): Long {
                 throw IOException("")
@@ -209,9 +241,17 @@ internal class RequestUniqueIdentifierTest {
             .url(fakeUrl)
             .build()
 
-        val id = identifyRequest(request)
+        // When
+        val actual = request.uniqueId
 
-        assertThat(id)
+        // Then
+        assertThat(actual)
             .isEqualTo("$method•$fakeUrl•0•$fakeContentType")
     }
+
+    private val Request.uniqueId: String
+        get() = RumResourceInstrumentation.Companion.buildResourceId(
+            request = OkHttpHttpRequestInfo(this),
+            generateUuid = false
+        ).key
 }

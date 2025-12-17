@@ -14,13 +14,14 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.sample.R
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
 import org.chromium.net.UrlRequest
 import org.chromium.net.UrlResponseInfo
 import java.util.concurrent.Executors
-import kotlin.random.Random
 
 internal class CronetImageFragment : Fragment() {
 
@@ -28,15 +29,19 @@ internal class CronetImageFragment : Fragment() {
     private lateinit var imageView: ImageView
     private lateinit var cronetEngine: CronetEngine
     private val executor = Executors.newSingleThreadExecutor()
+
+    private var imageIndex = 0
     private val imageUrls = listOf(
         "https://storage.googleapis.com/cronet/sun.jpg",
         "https://storage.googleapis.com/cronet/flower.jpg",
         "https://storage.googleapis.com/cronet/chair.jpg",
+        "https://storage.googleapis.com/cronet/404.jpg",
         "https://storage.googleapis.com/cronet/white.jpg",
         "https://storage.googleapis.com/cronet/moka.jpg",
         "https://storage.googleapis.com/cronet/walnut.jpg"
     )
 
+    @OptIn(ExperimentalRumApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -48,12 +53,16 @@ internal class CronetImageFragment : Fragment() {
     ).also { rootView ->
         imageView = rootView.findViewById(R.id.cronet_image_view)
         loadButton = rootView.findViewById(R.id.cronet_load_button)
-        cronetEngine = CronetEngine.Builder(requireContext()).build()
+
+        cronetEngine = DatadogCronetEngine.Builder(requireContext())
+            .enableQuic(true)
+            .enableHttp2(true)
+            .build()
         loadButton.setOnClickListener { loadRandomImage() }
     }
 
     private fun loadRandomImage() {
-        val randomUrl = imageUrls[Random.nextInt(imageUrls.size)]
+        val randomUrl = imageUrls[++imageIndex % imageUrls.size]
         loadButton.isEnabled = false
 
         cronetEngine.newUrlRequestBuilder(

@@ -44,15 +44,21 @@ android {
 
 dependencies {
     api(libs.cronetApi)
-//    implementation(libs.cronetPlayServices)
-
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
 
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":features:dd-sdk-android-trace"))
 
+    unmock(libs.robolectric)
+    // Trying to add most recent lib version in order to test the instrumentation, see CronetApiInstrumentationTest
+    testImplementation("${libs.cronetApi.get().module}:+")
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
+    testImplementation(libs.elmyrJUnit4)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -61,12 +67,6 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    unmock(libs.robolectric)
 }
 
 unMock {
