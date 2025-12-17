@@ -134,8 +134,9 @@ internal class WipeDataMigrationOperationTest {
     }
 
     @Test
-    fun `M not wait for real delay W run() {move always fails, time provider mocked}`() {
+    fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)
 
@@ -146,7 +147,7 @@ internal class WipeDataMigrationOperationTest {
 
         // Then
         verify(mockFileMover, times(3)).delete(fakeTargetDirectory)
-        assertThat(duration).isLessThan(100L)
+        assertThat(duration).isBetween(1000L, 1100L)
     }
 
     companion object {

@@ -73,7 +73,7 @@ internal class ResourceDataStoreManagerTest {
     @StringForgery
     lateinit var fakeHash: String
 
-    @LongForgery(min = 0L)
+    @LongForgery(min = DATASTORE_EXPIRATION_NS + 1)
     var fakeCurrentTimeNs: Long = 0L
 
     @BeforeEach

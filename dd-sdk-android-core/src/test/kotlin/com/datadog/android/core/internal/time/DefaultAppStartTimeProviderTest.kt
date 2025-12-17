@@ -12,6 +12,7 @@ import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -42,39 +43,65 @@ class DefaultAppStartTimeProviderTest {
         @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int,
         @LongForgery(min = 0L) fakeCurrentTimeNs: Long
     ) {
-        // Given
+        // GIVEN
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
         whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeCurrentTimeNs
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val expectedStartTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
-
-        // When
-        val testedAppStartTimeProvider = DefaultAppStartTimeProvider(
-            mockTimeProvider,
+        DdRumContentProvider.createTimeNs = expectedStartTimeNs
+        val testedProvider = DefaultAppStartTimeProvider(
+            { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
-        val providedStartTime = testedAppStartTimeProvider.appStartTimeNs
 
-        // Then
+        // WHEN
+        val providedStartTime = testedProvider.appStartTimeNs
+
+        // THEN
         assertThat(providedStartTime).isEqualTo(expectedStartTimeNs)
+    }
+
+    @Test
+    fun `M fall back to DdRumContentProvider W appStartTime { N+ getStartElapsedRealtime returns buggy value }`(
+        @IntForgery(min = Build.VERSION_CODES.N) apiVersion: Int,
+        @LongForgery(min = 0L) fakeCurrentTimeNs: Long,
+        forge: Forge
+    ) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeCurrentTimeNs
+        val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
+        val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
+        DdRumContentProvider.createTimeNs = startTimeNs +
+            forge.aLong(min = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS + 1)
+        val testedProvider = DefaultAppStartTimeProvider(
+            { mockTimeProvider },
+            mockBuildSdkVersionProvider
+        )
+
+        // WHEN
+        val providedStartTime = testedProvider.appStartTimeNs
+
+        // THEN
+        assertThat(providedStartTime).isEqualTo(DdRumContentProvider.createTimeNs)
     }
 
     @Test
     fun `M return content provider load time W appStartTime { Legacy }`(
         @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.N) apiVersion: Int
     ) {
-        // Given
+        // GIVEN
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
         val startTimeNs = DdRumContentProvider.createTimeNs
-
-        // When
-        val testedAppStartTimeProvider = DefaultAppStartTimeProvider(
-            mockTimeProvider,
+        val testedProvider = DefaultAppStartTimeProvider(
+            { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
-        val providedStartTime = testedAppStartTimeProvider.appStartTimeNs
 
-        // Then
+        // WHEN
+        val providedStartTime = testedProvider.appStartTimeNs
+
+        // THEN
         assertThat(providedStartTime).isEqualTo(startTimeNs)
     }
 
@@ -95,7 +122,7 @@ class DefaultAppStartTimeProviderTest {
             .doReturn(fakeStartTimeNs + fakeUptimeNs)
 
         val testedProvider = DefaultAppStartTimeProvider(
-            mockTimeProvider,
+            { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
 
@@ -123,7 +150,7 @@ class DefaultAppStartTimeProviderTest {
             .doReturn(fakeStartTimeNs + 200L)
 
         val testedProvider = DefaultAppStartTimeProvider(
-            mockTimeProvider,
+            { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
 

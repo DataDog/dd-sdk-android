@@ -116,7 +116,7 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
-class com.datadog.android.internal.time.DefaultTimeProvider : TimeProvider
+class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestamp(): Long
   override fun getServerOffsetNanos(): Long
   override fun getServerOffsetMillis(): Long
@@ -126,6 +126,9 @@ interface com.datadog.android.internal.time.TimeProvider
   fun getDeviceElapsedTimeNs(): Long
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
+abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
+  override fun getDeviceTimestamp(): Long
+  override fun getDeviceElapsedTimeNs(): Long
 fun ByteArray.toHexString(): String
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)

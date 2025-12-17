@@ -457,7 +457,7 @@ internal class DatadogCore(
             executorServiceFactory ?: CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY
         coreFeature = CoreFeature(
             internalLogger,
-            DefaultAppStartTimeProvider(),
+            DefaultAppStartTimeProvider(timeProviderFactory = { timeProvider }),
             flushableExecutorServiceFactory,
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )

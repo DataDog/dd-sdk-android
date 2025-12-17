@@ -150,8 +150,9 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `M not wait for real delay W run() {move fails once, time provider mocked}`() {
+    fun `M retry with 500ms delay W run() {move fails once}`() {
         // Given
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false, true)
 
@@ -162,7 +163,7 @@ internal class MoveDataMigrationOperationTest {
 
         // Then
         verify(mockFileMover, times(2)).moveFiles(fakeFromDirectory, fakeToDirectory)
-        assertThat(duration).isLessThan(100L)
+        assertThat(duration).isBetween(500L, 550L)
     }
 
     @Test
@@ -179,8 +180,9 @@ internal class MoveDataMigrationOperationTest {
     }
 
     @Test
-    fun `M not wait for real delay W run() {move always fails, time provider mocked}`() {
+    fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false)
 
@@ -191,7 +193,7 @@ internal class MoveDataMigrationOperationTest {
 
         // Then
         verify(mockFileMover, times(3)).moveFiles(fakeFromDirectory, fakeToDirectory)
-        assertThat(duration).isLessThan(100L)
+        assertThat(duration).isBetween(1000L, 1100L)
     }
 
     companion object {

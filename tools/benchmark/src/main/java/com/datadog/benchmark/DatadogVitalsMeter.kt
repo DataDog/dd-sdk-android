@@ -6,7 +6,7 @@
 
 package com.datadog.benchmark
 
-import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.benchmark.exporter.DatadogMetricExporter
@@ -33,13 +33,14 @@ import java.util.concurrent.TimeUnit
  * It provides functionalities to start and stop monitoring these metrics, which will be uploaded to
  * Datadog metric API.
  */
-class DatadogVitalsMeter private constructor(private val meter: Meter) : DatadogBaseMeter {
+class DatadogVitalsMeter private constructor(
+    private val meter: Meter,
+    sdkCore: SdkCore
+) : DatadogBaseMeter {
 
     private val cpuVitalReader: CPUVitalReader = CPUVitalReader()
     private val memoryVitalReader: MemoryVitalReader = MemoryVitalReader()
-    private val fpsVitalReader: FpsVitalReader = FpsVitalReader(
-        (Datadog.getInstance() as FeatureSdkCore).timeProvider
-    )
+    private val fpsVitalReader: FpsVitalReader = FpsVitalReader((sdkCore as FeatureSdkCore).timeProvider)
 
     private val gaugesByMetricName: MutableMap<String, ObservableDoubleGauge> = mutableMapOf()
 
@@ -94,7 +95,10 @@ class DatadogVitalsMeter private constructor(private val meter: Meter) : Datadog
         /**
          * Creates an instance of [DatadogVitalsMeter] with the given configuration.
          */
-        fun create(datadogExporterConfiguration: DatadogExporterConfiguration): DatadogVitalsMeter {
+        fun create(
+            datadogExporterConfiguration: DatadogExporterConfiguration,
+            sdkCore: SdkCore
+        ): DatadogVitalsMeter {
             val datadogExporter = DatadogMetricExporter(datadogExporterConfiguration)
             val sdkMeterProvider = SdkMeterProvider.builder()
                 .registerMetricReader(
@@ -113,7 +117,7 @@ class DatadogVitalsMeter private constructor(private val meter: Meter) : Datadog
             GlobalOpenTelemetry.set(openTelemetry)
             GlobalBenchmark.register(DDBenchmarkProfiler())
             val meter = openTelemetry.getMeter(METER_INSTRUMENTATION_SCOPE_NAME)
-            return DatadogVitalsMeter(meter)
+            return DatadogVitalsMeter(meter, sdkCore)
         }
 
         private const val METER_INSTRUMENTATION_SCOPE_NAME = "datadog.open-telemetry"

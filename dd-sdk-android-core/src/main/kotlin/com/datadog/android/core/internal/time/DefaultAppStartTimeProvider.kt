@@ -11,14 +11,13 @@ import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 internal class DefaultAppStartTimeProvider(
-    private val timeProvider: TimeProvider = DefaultTimeProvider(),
+    private val timeProviderFactory: () -> TimeProvider,
     buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : AppStartTimeProvider {
 
@@ -27,7 +26,7 @@ internal class DefaultAppStartTimeProvider(
         when {
             buildSdkVersionProvider.version >= Build.VERSION_CODES.N -> {
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-                val result = timeProvider.getDeviceElapsedTimeNs() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+                val result = timeProviderFactory().getDeviceElapsedTimeNs() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 
                 /**
                  * Occasionally [Process.getStartElapsedRealtime] returns buggy values. We filter them and fall back
@@ -44,7 +43,7 @@ internal class DefaultAppStartTimeProvider(
     }
 
     override val appUptimeNs: Long
-        get() = timeProvider.getDeviceElapsedTimeNs() - appStartTimeNs
+        get() = timeProviderFactory().getDeviceElapsedTimeNs() - appStartTimeNs
 
     companion object {
         internal val PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS = 10.seconds.inWholeNanoseconds

@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.instrumentation
 
 import android.os.Looper
+import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -16,7 +17,6 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.setStaticValue
-import com.datadog.tools.unit.stub.StubTimeProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -33,7 +33,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -124,7 +123,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .addLongTask(eq(fakeDurationNs), eq("$target $callback: $what"))
+            .addLongTask(fakeDurationNs, "$target $callback: $what")
     }
 
     @Test

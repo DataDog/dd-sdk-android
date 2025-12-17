@@ -21,7 +21,6 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.time.TimeProvider
-import com.datadog.tools.unit.stub.StubTimeProvider
 import fr.xgouchet.elmyr.Forge
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
@@ -161,7 +160,13 @@ class StubSDKCore(
 
     override val internalLogger: InternalLogger = StubInternalLogger()
 
-    override val timeProvider: TimeProvider = StubTimeProvider()
+    override val timeProvider = object : TimeProvider {
+        override fun getDeviceTimestamp(): Long = 0L
+        override fun getServerTimestamp(): Long = 0L
+        override fun getDeviceElapsedTimeNs(): Long = 0L
+        override fun getServerOffsetNanos(): Long = 0L
+        override fun getServerOffsetMillis(): Long = 0L
+    }
 
     override fun registerFeature(feature: Feature) {
         stubFeatureScope(feature, StubFeatureScope(feature, { datadogContext }))

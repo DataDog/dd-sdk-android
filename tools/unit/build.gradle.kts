@@ -68,7 +68,6 @@ dependencies {
     implementation(libs.bundles.testTools)
     implementation(libs.gson)
     implementation(libs.mockitoKotlin)
-    implementation(project(":dd-sdk-android-internal"))
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

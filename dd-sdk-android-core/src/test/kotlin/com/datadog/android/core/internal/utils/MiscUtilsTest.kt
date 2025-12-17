@@ -33,6 +33,7 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.Test
@@ -50,6 +51,7 @@ import org.mockito.quality.Strictness
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureNanoTime
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -85,6 +87,27 @@ internal class MiscUtilsTest {
         // Then
         assertThat(wasSuccessful).isFalse()
         verify(mockedBlock, times(fakeTimes)).invoke()
+    }
+
+    @Test
+    fun `M execute the block in a delayed loop W retryWithDelay`(forge: Forge) {
+        // Given
+        val fakeTimes = forge.anInt(min = 1, max = 4)
+        val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
+        val mockedBlock: () -> Boolean = mock()
+        whenever(mockedBlock.invoke()).thenReturn(false)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
+
+        // When
+        val executionTime = measureNanoTime {
+            retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger, mockTimeProvider)
+        }
+
+        // Then
+        assertThat(executionTime).isCloseTo(
+            fakeTimes * fakeDelay,
+            Offset.offset(TimeUnit.SECONDS.toNanos(1))
+        )
     }
 
     @Test

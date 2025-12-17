@@ -60,8 +60,6 @@ internal class RotatingDnsResolverTest {
     fun `set up`(forge: Forge) {
         fakeInetAddresses = forge.aList { mock() }
 
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeElapsedTimeNs
-
         testedDns = RotatingDnsResolver(mockDelegate, TEST_TTL_MS, mockTimeProvider)
     }
 
@@ -84,7 +82,7 @@ internal class RotatingDnsResolverTest {
         val result = mutableListOf<InetAddress>()
 
         // When
-        fakeInetAddresses.forEach { _ ->
+        repeat(fakeInetAddresses.size) {
             result.add(testedDns.lookup(fakeHostname).first())
         }
 
@@ -134,15 +132,15 @@ internal class RotatingDnsResolverTest {
         // the real use case where we have a small number of addresses to rotate
         fakeInetAddresses = forge.aList(size = forge.anInt(min = 1, max = 3)) { mock() }
         whenever(mockDelegate.lookup(fakeHostname)) doReturn fakeInetAddresses
-
-        val fakeExpiredTime = fakeElapsedTimeNs + TEST_TTL_MS.inWholeNanoseconds
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).doReturn(fakeElapsedTimeNs, fakeExpiredTime)
+        // just wait the TTL time to make sure all threads are concurrently accessing the lookup
+        Thread.sleep(TEST_TTL_MS.inWholeMilliseconds)
 
         var exceptionThrown: Exception? = null
 
         // When
         List(100) {
             Thread {
+                Thread.sleep(forge.aLong(min = 0, max = 100))
                 try {
                     testedDns.lookup(fakeHostname)
                 } catch (e: Exception) {

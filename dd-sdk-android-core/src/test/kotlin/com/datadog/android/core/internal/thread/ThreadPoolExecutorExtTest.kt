@@ -14,6 +14,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -24,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -43,12 +44,9 @@ internal class ThreadPoolExecutorExtTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
-    @LongForgery(min = 0L)
-    var fakeElapsedTimeNs: Long = 0L
-
     @BeforeEach
     fun `set up`() {
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(fakeElapsedTimeNs)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
     }
 
     @Test
@@ -61,21 +59,16 @@ internal class ThreadPoolExecutorExtTest {
         val fakeCompletedCount = forge.aLong(min = 0, max = fakeTaskCount - 1)
         whenever(testedMockExecutor.taskCount).thenReturn(fakeTaskCount)
         whenever(testedMockExecutor.completedTaskCount).thenReturn(fakeCompletedCount)
-        val timeoutNs = TimeUnit.MILLISECONDS.toNanos(fakeTimeout)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
-            .thenReturn(fakeElapsedTimeNs)
-            .thenReturn(fakeElapsedTimeNs + timeoutNs + 1)
 
         // WHEN
         val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger, mockTimeProvider)
-        testedMockExecutor.isIdle()
 
         // THEN
         assertThat(isIdled).isFalse()
     }
 
     @Test
-    fun `M exit loop after timeout W waitToIdle { executor not idled }`(
+    fun `M wait max timeout milliseconds W waitToIdle { executor not idled }`(
         @LongForgery(min = 500, max = 1000) fakeTimeout: Long,
         forge: Forge
     ) {
@@ -84,16 +77,14 @@ internal class ThreadPoolExecutorExtTest {
         val fakeCompletedCount = forge.aLong(min = 0, max = fakeTaskCount - 1)
         whenever(testedMockExecutor.taskCount).thenReturn(fakeTaskCount)
         whenever(testedMockExecutor.completedTaskCount).thenReturn(fakeCompletedCount)
-        val timeoutNs = TimeUnit.MILLISECONDS.toNanos(fakeTimeout)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
-            .thenReturn(fakeElapsedTimeNs)
-            .thenReturn(fakeElapsedTimeNs + timeoutNs + 1)
 
         // WHEN
-        val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger, mockTimeProvider)
+        val duration = measureTimeMillis {
+            testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger, mockTimeProvider)
+        }
 
         // THEN
-        assertThat(isIdled).isFalse()
+        assertThat(duration).isCloseTo(fakeTimeout, Offset.offset(130L))
     }
 
     @Test
@@ -127,10 +118,6 @@ internal class ThreadPoolExecutorExtTest {
         whenever(testedMockExecutor.taskCount).thenReturn(fakeTaskCount)
         whenever(testedMockExecutor.completedTaskCount)
             .thenReturn(fakeTaskCount / 2).thenReturn(fakeTaskCount)
-        val timeoutNs = TimeUnit.MILLISECONDS.toNanos(fakeTimeout)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
-            .thenReturn(fakeElapsedTimeNs)
-            .thenReturn(fakeElapsedTimeNs + timeoutNs / 2)
 
         // WHEN
         val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger, mockTimeProvider)
@@ -189,10 +176,6 @@ internal class ThreadPoolExecutorExtTest {
         whenever(testedMockExecutor.completedTaskCount)
             .thenReturn(fakeTaskCount / 2)
             .thenReturn(fakeTaskCount + 2)
-        val fakeTimeoutNs = TimeUnit.MILLISECONDS.toNanos(fakeTimeout)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
-            .thenReturn(fakeElapsedTimeNs)
-            .thenReturn(fakeElapsedTimeNs + fakeTimeoutNs / 2)
 
         // WHEN
         val isIdled = testedMockExecutor.waitToIdle(fakeTimeout, mockInternalLogger, mockTimeProvider)
