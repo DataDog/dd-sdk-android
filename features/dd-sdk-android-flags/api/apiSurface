@@ -28,8 +28,6 @@ data class com.datadog.android.flags.FlagsConfiguration
   companion object 
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
-class com.datadog.android.flags.NetworkRequestFailedException : RuntimeException
-  constructor(String)
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)

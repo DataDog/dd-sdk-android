@@ -9,10 +9,10 @@ package com.datadog.android.flags
 /**
  * Exception thrown when a network request for flag evaluations fails.
  *
- * This exception is used to communicate network failures when updating evaluation contexts.
- * It provides a clear signal that the failure was due to network connectivity issues rather
- * than application logic errors.
+ * This exception is used internally to communicate network failures when updating evaluation
+ * contexts. It provides a clear signal that the failure was due to network connectivity issues
+ * rather than application logic errors.
  *
  * @param message A descriptive message about the network failure
  */
-class NetworkRequestFailedException(message: String) : RuntimeException(message)
+internal class NetworkRequestFailedException(message: String) : RuntimeException(message)

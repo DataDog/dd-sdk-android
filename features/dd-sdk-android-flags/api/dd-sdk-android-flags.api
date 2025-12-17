@@ -69,10 +69,6 @@ public abstract interface class com/datadog/android/flags/FlagsStateListener {
 	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;)V
 }
 
-public final class com/datadog/android/flags/NetworkRequestFailedException : java/lang/RuntimeException {
-	public fun <init> (Ljava/lang/String;)V
-}
-
 public abstract interface class com/datadog/android/flags/StateObservable {
 	public abstract fun addListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
