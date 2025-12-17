@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
@@ -43,10 +44,17 @@ internal class NoOpFlagsClient(
 
     /**
      * No-op implementation that ignores context updates and logs a warning.
+     *
+     * Consistent with the graceful degradation pattern, this method succeeds silently
+     * (invoking the success callback) while logging the no-op behavior. The actual error
+     * state is communicated via [state.getCurrentState] which returns [FlagsClientState.Error].
+     *
      * @param context Ignored evaluation context.
+     * @param callback Optional callback invoked immediately with success.
      */
-    override fun setEvaluationContext(context: EvaluationContext) {
+    override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
         logOperation("setEvaluationContext", InternalLogger.Level.WARN)
+        callback?.onSuccess()
     }
 
     /**

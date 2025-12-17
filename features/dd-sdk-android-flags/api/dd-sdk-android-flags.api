@@ -1,3 +1,8 @@
+public abstract interface class com/datadog/android/flags/EvaluationContextCallback {
+	public abstract fun onFailure (Ljava/lang/Throwable;)V
+	public abstract fun onSuccess ()V
+}
+
 public final class com/datadog/android/flags/Flags {
 	public static final field INSTANCE Lcom/datadog/android/flags/Flags;
 	public static final fun enable ()V
@@ -19,7 +24,7 @@ public abstract interface class com/datadog/android/flags/FlagsClient {
 	public abstract fun resolveStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun resolveStructureValue (Ljava/lang/String;Ljava/util/Map;)Ljava/util/Map;
 	public abstract fun resolveStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
-	public abstract fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;)V
+	public abstract fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;)V
 }
 
 public final class com/datadog/android/flags/FlagsClient$Builder {
@@ -33,6 +38,10 @@ public final class com/datadog/android/flags/FlagsClient$Companion {
 	public final fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public final fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
 	public static synthetic fun get$default (Lcom/datadog/android/flags/FlagsClient$Companion;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/flags/FlagsClient;
+}
+
+public final class com/datadog/android/flags/FlagsClient$DefaultImpls {
+	public static synthetic fun setEvaluationContext$default (Lcom/datadog/android/flags/FlagsClient;Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration {
