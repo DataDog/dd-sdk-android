@@ -68,6 +68,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
+    private val resourceResolver: ResourceResolver
     private var shouldRecord = false
 
     @Suppress("LongParameterList")
@@ -137,7 +138,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             logger = internalLogger
         )
 
-        val resourceResolver = ResourceResolver(
+        this.resourceResolver = ResourceResolver(
+            applicationContext = appContext,
             recordedDataQueueHandler = recordedDataQueueHandler,
             pathUtils = PathUtils(internalLogger, bitmapCachesManager),
             bitmapCachesManager = bitmapCachesManager,
@@ -222,6 +224,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sessionReplayLifecycleCallback: LifecycleCallback,
         viewOnDrawInterceptor: ViewOnDrawInterceptor,
         recordedDataQueueHandler: RecordedDataQueueHandler,
+        resourceResolver: ResourceResolver,
         uiHandler: Handler,
         internalLogger: InternalLogger
     ) {
@@ -234,6 +237,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.viewOnDrawInterceptor = viewOnDrawInterceptor
         this.windowCallbackInterceptor = windowCallbackInterceptor
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
+        this.resourceResolver = resourceResolver
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
     }
@@ -244,10 +248,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     override fun registerCallbacks() {
         appContext.registerActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
+        resourceResolver.registerCallbacks()
     }
 
     override fun unregisterCallbacks() {
         appContext.unregisterActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
+        resourceResolver.unregisterCallbacks()
     }
 
     override fun resumeRecorders() {

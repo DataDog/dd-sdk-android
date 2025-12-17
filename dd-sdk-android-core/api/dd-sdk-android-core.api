@@ -621,6 +621,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun deleteLastViewEvent ()V
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getAppStartTimeNs ()J
+	public abstract fun getAppUptimeNs ()J
 	public abstract fun getDatadogContext (Ljava/util/Set;)Lcom/datadog/android/api/context/DatadogContext;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getLastFatalAnrSent ()Ljava/lang/Long;

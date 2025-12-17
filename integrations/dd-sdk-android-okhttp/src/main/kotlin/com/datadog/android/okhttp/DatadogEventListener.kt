@@ -244,7 +244,7 @@ internal constructor(
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
             @Suppress("DEPRECATION")
-            val resourceId = call.request().buildResourceId(generateUuid = true)
+            val resourceId = call.request().buildResourceId(generateUuid = false)
             val sdkCore = sdkCoreReference.get()
             return if (sdkCore != null) {
                 DatadogEventListener(sdkCore, resourceId)
