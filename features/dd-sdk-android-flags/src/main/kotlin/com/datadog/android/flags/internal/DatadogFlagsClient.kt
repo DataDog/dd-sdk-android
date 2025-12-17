@@ -290,7 +290,7 @@ internal class DatadogFlagsClient(
 
                         featureSdkCore.internalLogger.log(
                             InternalLogger.Level.WARN,
-                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.USER,
                             { "Flag '$flagKey': $errorMessage - ${exception.message}" }
                         )
                     }
@@ -456,10 +456,10 @@ internal class DatadogFlagsClient(
             VariationType.OBJECT.value -> try {
                 JSONObject(flag.variationValue)
             } catch (exception: JSONException) {
-                val errorMessage = "Failed to parse value '${flag.variationValue}' as JSONObject - ${exception.message}"
+                val errorMessage = "Failed to parse value '${flag.variationValue}' as JSONObject"
                 featureSdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.USER,
                     { "Flag '$flagKey': $errorMessage" },
                     exception
                 )
@@ -471,7 +471,7 @@ internal class DatadogFlagsClient(
         if (value == null) {
             featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.USER,
                 { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" }
             )
 
