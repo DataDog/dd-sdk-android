@@ -20,4 +20,8 @@ data class TimeInfo(
     val serverTimeNs: Long,
     val serverTimeOffsetNs: Long,
     val serverTimeOffsetMs: Long
-)
+) {
+    internal companion object {
+        internal val EMPTY = TimeInfo(0, 0, 0, 0)
+    }
+}

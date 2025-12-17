@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
-import android.app.ActivityManager
 import android.app.Application
 import android.os.Build
 import android.os.Bundle
@@ -19,7 +18,6 @@ internal class RumAppStartupDetectorImpl(
     private val application: Application,
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
     private val appStartupTimeProviderNs: () -> Long,
-    private val processImportanceProvider: () -> Int,
     private val timeProviderNs: () -> Long,
     private val listener: RumAppStartupDetector.Listener
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
@@ -73,15 +71,12 @@ internal class RumAppStartupDetectorImpl(
         if (numberOfActivities == 1 && !isChangingConfigurations) {
             val processStartTimeNs = appStartupTimeProviderNs()
 
-            val processStartedInForeground =
-                processImportanceProvider() == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-
             val gapNs = nowNs - processStartTimeNs
             val hasSavedInstanceStateBundle = savedInstanceState != null
             val weakActivity = WeakReference(activity)
 
             val scenario = if (isFirstActivityForProcess) {
-                if (!processStartedInForeground || gapNs > START_GAP_THRESHOLD_NS) {
+                if (gapNs > START_GAP_THRESHOLD_NS) {
                     RumStartupScenario.WarmFirstActivity(
                         initialTimeNs = nowNs,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,

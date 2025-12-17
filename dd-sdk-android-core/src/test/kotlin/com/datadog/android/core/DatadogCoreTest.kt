@@ -1125,6 +1125,21 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M provide app uptime W appUptimeNs()`(
+        @LongForgery(min = 0L) fakeAppUptimeNs: Long
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.appUptimeNs) doReturn fakeAppUptimeNs
+
+        // When
+        val appStartTimeNs = testedCore.appUptimeNs
+
+        // Then
+        assertThat(appStartTimeNs).isEqualTo(fakeAppUptimeNs)
+    }
+
+    @Test
     fun `M return tracking consent W trackingConsent()`(
         @Forgery fakeTrackingConsent: TrackingConsent
     ) {

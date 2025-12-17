@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp
 
+import android.util.Base64
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -203,16 +204,16 @@ open class DatadogInterceptor internal constructor(
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
 
                 request.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it)
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it.fromBase64())
                 }
                 request.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it)
+                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it.fromBase64())
                 }
                 request.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_VARIABLES, it)
+                    put(RumAttributes.GRAPHQL_VARIABLES, it.fromBase64())
                 }
                 request.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_PAYLOAD, it)
+                    put(RumAttributes.GRAPHQL_PAYLOAD, it.fromBase64())
                 }
             }
         }
@@ -361,6 +362,15 @@ open class DatadogInterceptor internal constructor(
     private fun ResponseBody.contentLengthOrNull(): Long? {
         return contentLength().let {
             if (it < 0L) null else it
+        }
+    }
+
+    private fun String.fromBase64(): String? {
+        return try {
+            val decodedBytes = Base64.decode(this, Base64.NO_WRAP)
+            decodedBytes?.toString(Charsets.UTF_8)
+        } catch (_: IllegalArgumentException) {
+            null
         }
     }
 

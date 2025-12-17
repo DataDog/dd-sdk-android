@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp
 
+import android.util.Base64
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -367,10 +368,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload.toBase64())
         }
         stubChain(mockChain, 200)
 
@@ -382,13 +383,11 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         verify(mockChain).proceed(requestCaptor.capture())
         val cleanedRequest = requestCaptor.firstValue
 
-        // Verify GraphQL headers are removed
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
 
-        // Verify other headers are preserved
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
         assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
     }
@@ -404,10 +403,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload.toBase64())
         }
         stubChain(mockChain, statusCode)
 
@@ -424,7 +423,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(emptyMap())
                 )
 
-                // Capture the actual attributes passed to stopResource
                 val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
@@ -436,13 +434,11 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
                 val actualStopAttrs = stopAttrsCaptor.firstValue
 
-                // Verify GraphQL attributes are present
                 assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_NAME]).isEqualTo(fakeGraphQLName)
                 assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_TYPE]).isEqualTo(fakeGraphQLType)
                 assertThat(actualStopAttrs[RumAttributes.GRAPHQL_VARIABLES]).isEqualTo(fakeGraphQLVariables)
                 assertThat(actualStopAttrs[RumAttributes.GRAPHQL_PAYLOAD]).isEqualTo(fakeGraphQLPayload)
 
-                // Verify fakeAttributes are included
                 fakeAttributes.forEach { (key, value) ->
                     assertThat(actualStopAttrs[key]).isEqualTo(value)
                 }
@@ -450,6 +446,11 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 assertThat(firstValue).isEqualTo(secondValue)
             }
         }
+    }
+
+    private fun String.toBase64(): String {
+        val bytes = this.toByteArray(Charsets.UTF_8)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     @Test
@@ -1016,7 +1017,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
         }
         stubChain(mockChain, 200)
 
@@ -1044,8 +1045,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "")
-            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "")
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "".toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "".toBase64())
         }
         stubChain(mockChain, 200)
 

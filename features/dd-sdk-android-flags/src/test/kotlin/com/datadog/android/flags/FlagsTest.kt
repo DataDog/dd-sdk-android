@@ -12,7 +12,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.flags.FlagsClient.Companion.FLAGS_CLIENT_EXECUTOR_NAME
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -59,8 +59,7 @@ internal class FlagsTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.createSingleThreadExecutorService(FLAGS_CLIENT_EXECUTOR_NAME)) doReturn
-            mockExecutorService
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
 
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
         whenever(mockDatadogContext.site) doReturn DatadogSite.US1
