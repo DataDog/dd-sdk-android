@@ -11,7 +11,6 @@ package com.datadog.android.internal.time
  * The offsets are always 0.
  */
 class DefaultTimeProvider : TimeProvider {
-    override fun getDeviceTimestamp(): Long = System.currentTimeMillis()
 
     override fun getServerTimestamp(): Long = System.currentTimeMillis()
 

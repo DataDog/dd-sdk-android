@@ -8,7 +8,9 @@ package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
@@ -50,8 +52,9 @@ internal class EvaluationsManager(
      *
      * @param context The evaluation context to process. Must be non-null and contain
      * a valid targeting key.
+     * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
-    fun updateEvaluationsForContext(context: EvaluationContext) {
+    fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         flagStateManager.updateState(FlagsClientState.Reconciling)
 
         executorService.executeSafe(
@@ -76,6 +79,7 @@ internal class EvaluationsManager(
                 )
 
                 flagStateManager.updateState(FlagsClientState.Ready)
+                callback?.onSuccess()
             } else {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -83,11 +87,13 @@ internal class EvaluationsManager(
                     { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
 
+                val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
                 if (hadFlags) {
                     flagStateManager.updateState(FlagsClientState.Stale)
                 } else {
-                    flagStateManager.updateState(FlagsClientState.Error(Throwable(NETWORK_REQUEST_FAILED_MESSAGE)))
+                    flagStateManager.updateState(FlagsClientState.Error(throwable))
                 }
+                callback?.onFailure(throwable)
             }
         }
     }

@@ -110,6 +110,12 @@ internal class ResourceResolverTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    lateinit var mockAlpha8BitmapConverter: BitmapConverter
+
+    @Mock
+    lateinit var mockAlpha8ResourceCache: Alpha8ResourceCache
+
     private var fakeBitmapWidth: Int = 1
 
     private var fakeBitmapHeight: Int = 1
@@ -389,6 +395,7 @@ internal class ResourceResolverTest {
     fun `M use the same ThreadPoolExecutor W build()`() {
         // When
         val instance1 = ResourceResolver(
+            applicationContext = mockApplicationContext,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
@@ -398,6 +405,7 @@ internal class ResourceResolverTest {
             bitmapCachesManager = mockBitmapCachesManager
         )
         val instance2 = ResourceResolver(
+            applicationContext = mockApplicationContext,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
@@ -1027,6 +1035,7 @@ internal class ResourceResolverTest {
     }
 
     private fun createResourceResolver(): ResourceResolver = ResourceResolver(
+        applicationContext = mockApplicationContext,
         logger = mockLogger,
         pathUtils = mockPathUtils,
         threadPoolExecutor = mockExecutorService,
@@ -1034,7 +1043,9 @@ internal class ResourceResolverTest {
         webPImageCompression = mockWebPImageCompression,
         md5HashGenerator = mockMD5HashGenerator,
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
-        bitmapCachesManager = mockBitmapCachesManager
+        bitmapCachesManager = mockBitmapCachesManager,
+        alpha8BitmapConverter = mockAlpha8BitmapConverter,
+        alpha8ResourceCache = mockAlpha8ResourceCache
     )
 
     @Test
@@ -1147,4 +1158,110 @@ internal class ResourceResolverTest {
         // Then
         verify(mockDrawableCopier).copy(mockDrawable, mockResources)
     }
+
+    // region Alpha8 bitmap tests
+
+    @Test
+    fun `M return cached resourceId W resolveResourceIdFromBitmap { alpha8 bitmap, cache hit }`(
+        @StringForgery fakeResourceId: String,
+        @Mock mockAlpha8Bitmap: Bitmap,
+        @Mock mockCacheKey: Alpha8CacheKey
+    ) {
+        // Given
+        whenever(mockAlpha8Bitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Bitmap)).thenReturn(mockCacheKey)
+        whenever(mockAlpha8ResourceCache.get(mockCacheKey)).thenReturn(fakeResourceId)
+
+        // When
+        testedResourceResolver.resolveResourceIdFromBitmap(
+            bitmap = mockAlpha8Bitmap,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        verifyNoInteractions(mockAlpha8BitmapConverter)
+        verifyNoInteractions(mockWebPImageCompression)
+    }
+
+    @Test
+    fun `M convert and process W resolveResourceIdFromBitmap { alpha8 bitmap, cache miss }`(
+        @StringForgery fakeResourceId: String,
+        @Mock mockAlpha8Bitmap: Bitmap,
+        @Mock mockConvertedBitmap: Bitmap,
+        @Mock mockCacheKey: Alpha8CacheKey
+    ) {
+        // Given
+        whenever(mockAlpha8Bitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Bitmap)).thenReturn(mockCacheKey)
+        whenever(mockAlpha8ResourceCache.get(mockCacheKey)).thenReturn(null)
+        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Bitmap))
+            .thenReturn(mockConvertedBitmap)
+        whenever(mockWebPImageCompression.compressBitmap(mockConvertedBitmap))
+            .thenReturn(fakeImageCompressionByteArray)
+        whenever(mockMD5HashGenerator.generate(fakeImageCompressionByteArray))
+            .thenReturn(fakeResourceId)
+
+        // When
+        testedResourceResolver.resolveResourceIdFromBitmap(
+            bitmap = mockAlpha8Bitmap,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockAlpha8BitmapConverter).convertAlpha8BitmapToArgb8888(mockAlpha8Bitmap)
+        verify(mockWebPImageCompression).compressBitmap(mockConvertedBitmap)
+        verify(mockConvertedBitmap).recycle()
+        verify(mockAlpha8ResourceCache).put(mockCacheKey, fakeResourceId)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M fail W resolveResourceIdFromBitmap { alpha8 conversion fails }`(
+        @Mock mockAlpha8Bitmap: Bitmap,
+        @Mock mockCacheKey: Alpha8CacheKey
+    ) {
+        // Given
+        whenever(mockAlpha8Bitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Bitmap)).thenReturn(mockCacheKey)
+        whenever(mockAlpha8ResourceCache.get(mockCacheKey)).thenReturn(null)
+        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Bitmap))
+            .thenReturn(null)
+
+        // When
+        testedResourceResolver.resolveResourceIdFromBitmap(
+            bitmap = mockAlpha8Bitmap,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verifyNoInteractions(mockWebPImageCompression)
+    }
+
+    @Test
+    fun `M not use alpha8 cache W resolveResourceIdFromBitmap { non-alpha8 bitmap }`(
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given
+        whenever(mockBitmap.config).thenReturn(Bitmap.Config.ARGB_8888)
+        whenever(mockBitmap.isRecycled).thenReturn(false)
+        whenever(mockWebPImageCompression.compressBitmap(mockBitmap))
+            .thenReturn(fakeImageCompressionByteArray)
+        whenever(mockMD5HashGenerator.generate(fakeImageCompressionByteArray))
+            .thenReturn(fakeResourceId)
+
+        // When
+        testedResourceResolver.resolveResourceIdFromBitmap(
+            bitmap = mockBitmap,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verifyNoInteractions(mockAlpha8ResourceCache)
+        verifyNoInteractions(mockAlpha8BitmapConverter)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    // endregion
 }

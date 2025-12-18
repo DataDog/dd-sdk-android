@@ -155,7 +155,7 @@ internal class DatadogDataConstraintsTest {
 
     @Test
     fun `ignore reserved tag keys`(forge: Forge) {
-        val key = forge.anElementFrom("host", "device", "source", "service")
+        val key = forge.anElementFrom("host", "device", "source")
         val value = forge.aNumericalString()
         val invalidTag = "$key:$value"
 
@@ -172,7 +172,7 @@ internal class DatadogDataConstraintsTest {
 
     @Test
     fun `ignore reserved tag keys (workaround)`(forge: Forge) {
-        val key = forge.randomizeCase { anElementFrom("host", "device", "source", "service") }
+        val key = forge.randomizeCase { anElementFrom("host", "device", "source") }
         val value = forge.aNumericalString()
         val invalidTag = "$key:$value"
 

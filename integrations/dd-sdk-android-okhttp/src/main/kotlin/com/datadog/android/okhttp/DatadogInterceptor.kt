@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp
 
+import android.util.Base64
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -14,11 +15,12 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.rum.buildResourceId
+import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
+import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -74,7 +76,7 @@ open class DatadogInterceptor internal constructor(
     sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
-    internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
+    rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler<DatadogSpan>,
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
@@ -91,6 +93,12 @@ open class DatadogInterceptor internal constructor(
     localTracerFactory,
     globalTracerProvider
 ) {
+    internal val rumResourceAttributesProvider: RumResourceAttributesProvider =
+        rumResourceAttributesProvider as? NoOpRumResourceAttributesProvider
+            ?: RumResourceAttributesProviderCompatibilityAdapter(
+                delegate = rumResourceAttributesProvider,
+                sdkReference = sdkCoreReference
+            )
 
     // region Interceptor
 
@@ -103,6 +111,8 @@ open class DatadogInterceptor internal constructor(
             val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
+
+            @Suppress("DEPRECATION")
             val requestId = request.buildResourceId(generateUuid = true)
 
             (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
@@ -178,6 +188,7 @@ open class DatadogInterceptor internal constructor(
         span: DatadogSpan?,
         isSampled: Boolean
     ) {
+        @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
@@ -193,20 +204,21 @@ open class DatadogInterceptor internal constructor(
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
 
                 request.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it)
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it.fromBase64())
                 }
                 request.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it)
+                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it.fromBase64())
                 }
                 request.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_VARIABLES, it)
+                    put(RumAttributes.GRAPHQL_VARIABLES, it.fromBase64())
                 }
                 request.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_PAYLOAD, it)
+                    put(RumAttributes.GRAPHQL_PAYLOAD, it.fromBase64())
                 }
             }
         }
 
+        @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
@@ -261,9 +273,11 @@ open class DatadogInterceptor internal constructor(
         request: Request,
         throwable: Throwable
     ) {
+        @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
+        @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
             null,
@@ -348,6 +362,15 @@ open class DatadogInterceptor internal constructor(
     private fun ResponseBody.contentLengthOrNull(): Long? {
         return contentLength().let {
             if (it < 0L) null else it
+        }
+    }
+
+    private fun String.fromBase64(): String? {
+        return try {
+            val decodedBytes = Base64.decode(this, Base64.NO_WRAP)
+            decodedBytes?.toString(Charsets.UTF_8)
+        } catch (_: IllegalArgumentException) {
+            null
         }
     }
 

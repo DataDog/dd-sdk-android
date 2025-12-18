@@ -9,8 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.SdkReference
-import com.datadog.android.okhttp.DatadogEventListener.Factory
-import com.datadog.android.okhttp.internal.rum.buildResourceId
+import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
@@ -244,7 +243,8 @@ internal constructor(
 
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
-            val resourceId = call.request().buildResourceId(generateUuid = true)
+            @Suppress("DEPRECATION")
+            val resourceId = call.request().buildResourceId(generateUuid = false)
             val sdkCore = sdkCoreReference.get()
             return if (sdkCore != null) {
                 DatadogEventListener(sdkCore, resourceId)

@@ -20,6 +20,7 @@ import com.datadog.android.privacy.TrackingConsent
  * [Unified Service Tagging](https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging).
  * @property version the version of the application that data is generated from. Used for
  * [Unified Service Tagging](https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging).
+ * @property versionCode the version code of the application.
  * @property variant the name of the application variant (if applies).
  * @property source denotes the mobile application's platform, such as "ios" or "flutter" that
  * data is generated from. See: Datadog [Reserved Attributes](https://docs.datadoghq.com/logs/log_configuration/attributes_naming_convention/#reserved-attributes).
@@ -41,6 +42,7 @@ data class DatadogContext(
     val service: String,
     val env: String,
     val version: String,
+    val versionCode: Int,
     val variant: String,
     val source: String,
     val sdkVersion: String,

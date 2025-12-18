@@ -7,10 +7,11 @@
 package com.datadog.android.okhttp
 
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -189,7 +190,8 @@ internal class DatadogInterceptorBuilderTest {
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
-        assertThat(interceptor.rumResourceAttributesProvider).isSameAs(mockRumResourceAttributesProvider)
+        check(interceptor.rumResourceAttributesProvider is RumResourceAttributesProviderCompatibilityAdapter)
+        assertThat(interceptor.rumResourceAttributesProvider.delegate).isSameAs(mockRumResourceAttributesProvider)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)

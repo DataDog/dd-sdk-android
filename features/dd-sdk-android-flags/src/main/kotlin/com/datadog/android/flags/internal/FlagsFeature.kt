@@ -200,6 +200,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
             // Debug + gracefulMode disabled: Strict policy (crash if requested)
             else -> {
                 if (shouldCrashInStrict) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Intentional crash for strict mode
                     error(formattedMessage)
                 } else {
                     // For NoOpFlagsClient method calls (already past creation/retrieval)

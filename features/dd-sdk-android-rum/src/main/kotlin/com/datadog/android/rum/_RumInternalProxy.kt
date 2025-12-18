@@ -115,5 +115,12 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         ): Builder {
             return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
         }
+
+        fun setDisableJankStats(
+            builder: Builder,
+            disable: Boolean
+        ): Builder {
+            return builder.setDisableJankStats(disable)
+        }
     }
 }
