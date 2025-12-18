@@ -10,6 +10,7 @@ package com.datadog.android.internal.network
  * Headers used internally for intercepting GraphQL requests.
  * @param headerValue name of the header.
  */
+// TODO RUM-13454 - move these headers to [HttpSpec]
 enum class GraphQLHeaders(val headerValue: String) {
     DD_GRAPHQL_NAME_HEADER("_dd-custom-header-graph-ql-operation-name"),
     DD_GRAPHQL_VARIABLES_HEADER("_dd-custom-header-graph-ql-variables"),
