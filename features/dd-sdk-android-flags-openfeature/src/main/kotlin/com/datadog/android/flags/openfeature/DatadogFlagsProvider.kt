@@ -10,6 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
@@ -93,45 +94,51 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     /**
      * Initializes the provider with the given evaluation context.
      *
-     * Sets the initial evaluation context on the underlying [FlagsClient] and waits for
-     * the provider to reach a ready state. Per the OpenFeature spec, this method blocks
-     * until the provider is "ready" - where "ready" means a configuration has been set
-     * and flags have been loaded.
+     * Per the OpenFeature spec, this method blocks until the provider is "ready" - where
+     * "ready" means the underlying [FlagsClient] has reached a Ready or Error state.
+     *
+     * If an initial context is provided, it will be set on the [FlagsClient] before waiting.
+     * If no context is provided, the method still waits for the [FlagsClient] to reach
+     * a ready state (e.g., from a previous setEvaluationContext call or cached data).
      *
      * The method suspends until the FlagsClient reaches either:
-     * - [FlagsClientState.Ready]: Flags successfully loaded, resumes normally
-     * - [FlagsClientState.Error]: Initialization failed, throws exception
+     * - Ready: Flags successfully loaded, resumes normally
+     * - Error: Initialization failed, throws exception
      *
-     * @param initialContext The initial evaluation context to set
-     * @throws Exception if initialization fails (FlagsClientState.Error)
+     * @param initialContext The initial evaluation context to set (optional)
+     * @throws Exception if initialization fails
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
-        if (initialContext == null) return
-
-        // Trigger context setting first
-        flagsClient.setEvaluationContext(initialContext.toDatadogEvaluationContext())
-
-        // Then wait for Ready or Error state
         suspendCoroutine<Unit> { continuation ->
-            val listener = object : FlagsStateListener {
-                override fun onStateChanged(newState: FlagsClientState) {
-                    when (newState) {
-                        is FlagsClientState.Ready -> {
-                            flagsClient.state.removeListener(this)
-                            continuation.resume(Unit)
-                        }
-                        is FlagsClientState.Error -> {
-                            flagsClient.state.removeListener(this)
-                            continuation.resumeWithException(
-                                newState.error ?: Exception("Initialization failed")
-                            )
-                        }
-                        else -> {} // Still waiting (NotReady, Reconciling, Stale)
-                    }
+            val callback = object : EvaluationContextCallback {
+                override fun onSuccess() {
+                    continuation.resume(Unit)
+                }
+
+                override fun onFailure(error: Throwable) {
+                    continuation.resumeWithException(error)
                 }
             }
 
-            flagsClient.state.addListener(listener)
+            val datadogContext = initialContext?.toDatadogEvaluationContext()
+            if (datadogContext != null) {
+                flagsClient.setEvaluationContext(datadogContext, callback)
+            } else {
+                // No context provided - check if already ready
+                when (flagsClient.state.getCurrentState()) {
+                    is FlagsClientState.Ready -> continuation.resume(Unit)
+                    is FlagsClientState.Error -> continuation.resumeWithException(
+                        Exception("Provider not ready")
+                    )
+                    else -> {
+                        // Not ready yet - need to wait, but no context to set
+                        // This shouldn't happen in normal flow
+                        continuation.resumeWithException(
+                            Exception("Provider initialization requires a context")
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -142,11 +149,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * the provider is ready again or encounters an error. This allows the OpenFeature SDK
      * to emit PROVIDER_RECONCILING events while this method executes.
      *
-     * The method suspends while the FlagsClient fetches updated flags for the new context,
-     * and resumes when reaching a terminal state:
-     * - [FlagsClientState.Ready]: Flags updated successfully, resumes normally
-     * - [FlagsClientState.Stale]: Network failed but cached flags available, resumes normally
-     * - [FlagsClientState.Error]: Unrecoverable error, throws exception
+     * Uses the callback API to wait for completion without manual listener management.
      *
      * @param oldContext The previous evaluation context (unused)
      * @param newContext The new evaluation context to set
@@ -156,30 +159,18 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         oldContext: OpenFeatureEvaluationContext?,
         newContext: OpenFeatureEvaluationContext
     ) {
-        // Trigger context change first
-        setContext(newContext)
-
-        // Then wait for Ready, Stale, or Error state
         suspendCoroutine<Unit> { continuation ->
-            val listener = object : FlagsStateListener {
-                override fun onStateChanged(newState: FlagsClientState) {
-                    when (newState) {
-                        FlagsClientState.Ready, FlagsClientState.Stale -> {
-                            flagsClient.state.removeListener(this)
-                            continuation.resume(Unit)
-                        }
-                        is FlagsClientState.Error -> {
-                            flagsClient.state.removeListener(this)
-                            continuation.resumeWithException(
-                                newState.error ?: Exception("Context reconciliation failed")
-                            )
-                        }
-                        else -> {} // Still reconciling (Reconciling, NotReady)
-                    }
+            val callback = object : EvaluationContextCallback {
+                override fun onSuccess() {
+                    continuation.resume(Unit)
+                }
+
+                override fun onFailure(error: Throwable) {
+                    continuation.resumeWithException(error)
                 }
             }
 
-            flagsClient.state.addListener(listener)
+            flagsClient.setEvaluationContext(newContext.toDatadogEvaluationContext(), callback)
         }
     }
 
@@ -347,10 +338,6 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         awaitClose {
             flagsClient.state.removeListener(listener)
         }
-    }
-
-    private fun setContext(context: OpenFeatureEvaluationContext) {
-        flagsClient.setEvaluationContext(context.toDatadogEvaluationContext())
     }
 
     companion object {

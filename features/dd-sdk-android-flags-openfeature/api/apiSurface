@@ -11,5 +11,4 @@ class com.datadog.android.flags.openfeature.DatadogFlagsProvider : dev.openfeatu
   override fun shutdown()
   override fun observe(): kotlinx.coroutines.flow.Flow<dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents>
   companion object 
-    fun create(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): DatadogFlagsProvider
 fun com.datadog.android.flags.FlagsClient.asOpenFeatureProvider(): dev.openfeature.kotlin.sdk.FeatureProvider
