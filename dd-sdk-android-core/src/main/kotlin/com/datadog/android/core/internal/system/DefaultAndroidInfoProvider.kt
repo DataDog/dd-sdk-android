@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.system
 
+import android.app.ActivityManager
 import android.app.UiModeManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -127,10 +128,37 @@ internal class DefaultAndroidInfoProvider(
         }
     }
 
+    override val processorCount: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        Runtime.getRuntime().availableProcessors()
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    override val totalRam: Int? by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        try {
+            val activityManager = appContext.getSystemService(ActivityManager::class.java)
+            val info = ActivityManager.MemoryInfo()
+            activityManager.getMemoryInfo(info)
+            (info.totalMem / MB_IN_BYTES).toInt()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    override val isLowRamDevice: Boolean? by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        try {
+            val activityManager = appContext.getSystemService(ActivityManager::class.java)
+            activityManager.isLowRamDevice
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     companion object {
 
         const val FEATURE_GOOGLE_ANDROID_TV = "com.google.android.tv"
         const val MIN_TABLET_WIDTH_DP = 800
+        const val MB_IN_BYTES = 1048576L
 
         private fun resolveDeviceType(model: String, appContext: Context): DeviceType {
             return if (isTv(appContext)) {

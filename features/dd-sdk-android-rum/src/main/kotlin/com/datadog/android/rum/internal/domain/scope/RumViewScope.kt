@@ -395,7 +395,10 @@ internal open class RumViewScope(
                 timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                 batteryLevel = batteryInfo.batteryLevel,
                 powerSavingMode = batteryInfo.lowPowerMode,
-                brightnessLevel = displayInfo.screenBrightness
+                brightnessLevel = displayInfo.screenBrightness,
+                processorCount = datadogContext.deviceInfo.processorCount,
+                totalRam = datadogContext.deviceInfo.totalRam,
+                isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
             ),
             os = RumVitalOperationStepEvent.Os(
                 name = datadogContext.deviceInfo.osName,
@@ -788,7 +791,10 @@ internal open class RumViewScope(
                     timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                     batteryLevel = batteryInfo.batteryLevel,
                     powerSavingMode = batteryInfo.lowPowerMode,
-                    brightnessLevel = displayInfo.screenBrightness
+                    brightnessLevel = displayInfo.screenBrightness,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 context = ErrorEvent.Context(additionalProperties = errorCustomAttributes),
                 dd = ErrorEvent.Dd(
@@ -1329,7 +1335,10 @@ internal open class RumViewScope(
                     timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                     batteryLevel = batteryInfo.batteryLevel,
                     powerSavingMode = batteryInfo.lowPowerMode,
-                    brightnessLevel = displayInfo.screenBrightness
+                    brightnessLevel = displayInfo.screenBrightness,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 context = ViewEvent.Context(additionalProperties = viewCustomAttributes),
                 dd = ViewEvent.Dd(
@@ -1492,7 +1501,10 @@ internal open class RumViewScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 context = ActionEvent.Context(
                     additionalProperties = actionCustomAttributes
@@ -1618,7 +1630,10 @@ internal open class RumViewScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 context = LongTaskEvent.Context(additionalProperties = longTaskCustomAttributes),
                 dd = LongTaskEvent.Dd(

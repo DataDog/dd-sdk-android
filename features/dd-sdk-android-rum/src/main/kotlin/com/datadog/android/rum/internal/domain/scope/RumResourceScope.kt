@@ -338,7 +338,10 @@ internal class RumResourceScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture,
                     locales = datadogContext.deviceInfo.localeInfo.locales,
-                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 context = ResourceEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ResourceEvent.Dd(
@@ -498,7 +501,10 @@ internal class RumResourceScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 context = ErrorEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ErrorEvent.Dd(

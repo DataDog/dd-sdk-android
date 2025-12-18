@@ -34,7 +34,10 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
             name = deviceInfo.deviceName,
             model = deviceInfo.deviceModel,
             brand = deviceInfo.deviceBrand,
-            architecture = deviceInfo.architecture
+            architecture = deviceInfo.architecture,
+            processorCount = deviceInfo.processorCount,
+            totalRam = deviceInfo.totalRam,
+            isLowRamDevice = deviceInfo.isLowRamDevice
         )
     }
 

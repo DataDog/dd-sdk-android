@@ -20,6 +20,9 @@ package com.datadog.android.api.context
  * @property architecture The CPU architecture of the device.
  * @property numberOfDisplays The number of displays on the device.
  * @property localeInfo locale information on the device such as timezone and region settings.
+ * @property processorCount Number of available processors on the device.
+ * @property totalRam Total RAM available on the device in Megabytes.
+ * @property isLowRamDevice Whether the device is considered a low RAM device by the OS.
  */
 data class DeviceInfo(
     val deviceName: String,
@@ -32,5 +35,8 @@ data class DeviceInfo(
     val osVersion: String,
     val architecture: String,
     val numberOfDisplays: Int?,
-    val localeInfo: LocaleInfo
+    val localeInfo: LocaleInfo,
+    val processorCount: Int?,
+    val totalRam: Int?,
+    val isLowRamDevice: Boolean?
 )

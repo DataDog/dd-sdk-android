@@ -263,6 +263,21 @@
               "type": "string",
               "description": "The CPU architecture of the device that is reporting the error",
               "readOnly": true
+            },
+            "processor_count": {
+              "type" : "number",
+              "description": "Number of device processors",
+              "readOnly": true
+            },
+            "total_ram": {
+              "type" : "number",
+              "description": "Total RAM in megabytes",
+              "readOnly": true
+            },
+            "is_low_ram_device": {
+              "type": "boolean",
+              "description": "Whether the device is considered a low RAM device.",
+              "readOnly": true
             }
           }
         },

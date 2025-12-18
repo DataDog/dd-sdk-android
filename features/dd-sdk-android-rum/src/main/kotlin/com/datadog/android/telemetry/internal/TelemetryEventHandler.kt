@@ -225,7 +225,10 @@ internal class TelemetryEventHandler(
                 device = TelemetryDebugEvent.Device(
                     architecture = datadogContext.deviceInfo.architecture,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    model = datadogContext.deviceInfo.deviceModel
+                    model = datadogContext.deviceInfo.deviceModel,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 os = TelemetryDebugEvent.Os(
                     build = datadogContext.deviceInfo.deviceBuildId,
@@ -280,7 +283,10 @@ internal class TelemetryEventHandler(
                 device = TelemetryErrorEvent.Device(
                     architecture = datadogContext.deviceInfo.architecture,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    model = datadogContext.deviceInfo.deviceModel
+                    model = datadogContext.deviceInfo.deviceModel,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 os = TelemetryErrorEvent.Os(
                     build = datadogContext.deviceInfo.deviceBuildId,
@@ -352,7 +358,10 @@ internal class TelemetryEventHandler(
                 device = TelemetryConfigurationEvent.Device(
                     architecture = datadogContext.deviceInfo.architecture,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    model = datadogContext.deviceInfo.deviceModel
+                    model = datadogContext.deviceInfo.deviceModel,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 os = TelemetryConfigurationEvent.Os(
                     build = datadogContext.deviceInfo.deviceBuildId,
@@ -441,7 +450,10 @@ internal class TelemetryEventHandler(
                 device = TelemetryUsageEvent.Device(
                     architecture = datadogContext.deviceInfo.architecture,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    model = datadogContext.deviceInfo.deviceModel
+                    model = datadogContext.deviceInfo.deviceModel,
+                    processorCount = datadogContext.deviceInfo.processorCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRamDevice = datadogContext.deviceInfo.isLowRamDevice
                 ),
                 os = TelemetryUsageEvent.Os(
                     build = datadogContext.deviceInfo.deviceBuildId,
