@@ -128,7 +128,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                 when (flagsClient.state.getCurrentState()) {
                     is FlagsClientState.Ready -> continuation.resume(Unit)
                     is FlagsClientState.Error -> continuation.resumeWithException(
-                        Exception("Provider not ready")
+                        OpenFeatureError.ProviderFatalError("Provider not ready")
                     )
                     else -> {
                         // Not ready yet - need to wait, but no context to set
