@@ -18,12 +18,9 @@ source ./ci/scripts/list-secrets.sh
 get_secret() {
     local secret_name=$1
 
-    export VAULT_ADDR=$DD_VAULT_ADDR
-
-    if [ "$CI" = "true" ]; then
-        echo "Login as CI"
-        vault login -method=aws -no-print
-    else
+    if [ "$CI" = "false" ]; then
+        # K8s runners don't need to set VAULT_ADDR, they have VAULT_ADDR injected alongside the emissary sidecar container.
+        export VAULT_ADDR=$DD_VAULT_ADDR
         if vault token lookup &>/dev/null; then
             echo "Reading '$secret_name' secret in local env. You are already authenticated with 'vault'." >&2
         else

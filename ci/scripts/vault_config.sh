@@ -7,7 +7,7 @@
 #
 
 DD_VAULT_ADDR=https://vault.us1.ddbuild.io
-DD_ANDROID_SECRETS_PATH_PREFIX='kv/aws/arn:aws:iam::486234852809:role/ci-dd-sdk-android/'
+DD_ANDROID_SECRETS_PATH_PREFIX='kv/k8s/gitlab-runner/dd-sdk-android/'
 
 DD_ANDROID_SECRET__TEST_SECRET="test.secret"
 DD_ANDROID_SECRET__GRADLE_PROPERTIES="gradle.properties"
