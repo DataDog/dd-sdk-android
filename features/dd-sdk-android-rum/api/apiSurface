@@ -122,6 +122,7 @@ interface com.datadog.android.rum.RumMonitor
   fun startFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
   fun succeedFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
   fun failFeatureOperation(String, String? = null, com.datadog.android.rum.featureoperations.FailureReason, Map<String, Any?> = emptyMap())
+  fun reportAppFullyDisplayed()
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
 enum com.datadog.android.rum.RumPerformanceMetric
