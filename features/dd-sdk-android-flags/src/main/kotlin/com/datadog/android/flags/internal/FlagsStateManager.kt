@@ -13,13 +13,15 @@ import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Manages state transitions and notifications for a [com.datadog.android.flags.FlagsClient].
  *
  * This class handles state change notifications to registered listeners. All notification
  * methods are thread-safe and guarantee ordered delivery to listeners by using a
- * single-threaded executor service.
+ * single-threaded executor service and a fair ReentrantLock.
  *
  * The current state is stored and emitted to new listeners immediately upon registration,
  * ensuring every listener receives the current state.
@@ -34,10 +36,15 @@ internal class FlagsStateManager(
     private val internalLogger: InternalLogger
 ) : StateObservable {
     /**
-     * The current state of the client.
-     * Thread-safe: uses volatile for visibility across threads.
+     * Fair lock to ensure FIFO ordering of state mutations and listener operations.
+     * The fair parameter ensures that threads acquire the lock in the order they requested it.
      */
-    @Volatile
+    private val stateLock = ReentrantLock(true)
+
+    /**
+     * The current state of the client.
+     * Thread-safe: access is protected by stateLock.
+     */
     private var currentState: FlagsClientState = FlagsClientState.NotReady
 
     /**
@@ -45,7 +52,9 @@ internal class FlagsStateManager(
      *
      * @return The current [FlagsClientState].
      */
-    override fun getCurrentState(): FlagsClientState = currentState
+    override fun getCurrentState(): FlagsClientState = stateLock.withLock {
+        currentState
+    }
 
     /**
      * Updates the state and notifies all listeners.
@@ -56,8 +65,8 @@ internal class FlagsStateManager(
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
-        // lock the currentState until listener notifications are queued to prevent new listeners during state change.
-        synchronized(currentState) {
+        // Lock to ensure atomic state update and listener notification queueing
+        stateLock.withLock {
             currentState = newState
             subscription.notifyListeners {
                 executorService.executeSafe(
@@ -71,7 +80,7 @@ internal class FlagsStateManager(
     }
 
     override fun addListener(listener: FlagsStateListener) {
-        synchronized(currentState) {
+        stateLock.withLock {
             subscription.addListener(listener)
 
             val stateToEmit = currentState
@@ -85,7 +94,7 @@ internal class FlagsStateManager(
     }
 
     override fun removeListener(listener: FlagsStateListener) {
-        synchronized(currentState) {
+        stateLock.withLock {
             subscription.removeListener(listener)
         }
     }

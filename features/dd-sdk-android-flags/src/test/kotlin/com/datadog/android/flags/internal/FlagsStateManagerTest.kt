@@ -169,6 +169,7 @@ internal class FlagsStateManagerTest {
         )
 
         val executionOrder = mutableListOf<String>()
+        val executionOrderLock = Any()
 
         // Creates a listener that adds start/end markers to the execution order and calls the additional block.
         fun createListener(
@@ -178,7 +179,7 @@ internal class FlagsStateManagerTest {
         ): FlagsStateListener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
                 if (newState is FlagsClientState.Ready) {
-                    synchronized(executionOrder) {
+                    synchronized(executionOrderLock) {
                         executionOrder.add(name)
                         additionalBlock()
                         executionOrder.add("$name ended")
@@ -202,7 +203,7 @@ internal class FlagsStateManagerTest {
         managerWithRealExecutor.addListener(listener4)
 
         // When
-        synchronized(executionOrder) {
+        synchronized(executionOrderLock) {
             managerWithRealExecutor.updateState(FlagsClientState.Ready)
             executionOrder.add("updateState")
         }
@@ -215,7 +216,7 @@ internal class FlagsStateManagerTest {
         realExecutorService.awaitTermination(2, TimeUnit.SECONDS)
 
         // Then - all listeners should have been called in order, despite listener3 throwing
-        synchronized(executionOrder) {
+        synchronized(executionOrderLock) {
             assertThat(executionOrder).containsExactly(
                 "updateState",
                 "listener1",
@@ -227,6 +228,43 @@ internal class FlagsStateManagerTest {
                 "listener4 ended"
             )
         }
+    }
+
+    @Test
+    fun `M maintain FIFO ordering W concurrent operations on fair lock`() {
+        // Given
+        realExecutorService = Executors.newSingleThreadExecutor()
+        val managerWithRealExecutor = FlagsStateManager(
+            DDCoreSubscription.create(),
+            realExecutorService,
+            mockInternalLogger
+        )
+
+        val notificationCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val listeners = mutableListOf<FlagsStateListener>()
+
+        // When
+        repeat(10) {
+            val listener = object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    if (newState is FlagsClientState.Ready) {
+                        notificationCount.incrementAndGet()
+                    }
+                }
+            }
+            listeners.add(listener)
+            managerWithRealExecutor.addListener(listener)
+        }
+
+        // Trigger state change
+        managerWithRealExecutor.updateState(FlagsClientState.Ready)
+
+        realExecutorService.shutdown()
+        realExecutorService.awaitTermination(2, TimeUnit.SECONDS)
+
+        // Then
+        assertThat(notificationCount.get()).isEqualTo(10)
+        assertThat(managerWithRealExecutor.getCurrentState()).isEqualTo(FlagsClientState.Ready)
     }
 
     // endregion
