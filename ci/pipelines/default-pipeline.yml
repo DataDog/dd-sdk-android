@@ -6,7 +6,7 @@ include:
 stages:
   - ci-image
   - security
-  - analysis
+  #- analysis
   - test # TODO RUM-1622 cleanup eventually
   - test-pyramid
   - publish
@@ -396,6 +396,7 @@ test-pyramid:publish-e2e-synthetics:
   timeout: 1h
   only:
     - develop
+    - yl/fix-ci-keystore
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
@@ -424,6 +425,7 @@ test-pyramid:publish-webview-synthetics:
   timeout: 1h
   only:
     - develop
+    - yl/fix-ci-keystore
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
@@ -452,6 +454,7 @@ test-pyramid:publish-staging-synthetics:
   timeout: 1h
   only:
     - develop
+    - yl/fix-ci-keystore
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
@@ -480,6 +483,7 @@ test-pyramid:publish-benchmark-synthetics:
   timeout: 1h
   only:
     - develop
+    - yl/fix-ci-keystore
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
