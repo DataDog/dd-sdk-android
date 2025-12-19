@@ -13,7 +13,6 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
-import com.datadog.android.flags.openfeature.internal.adapters.convertValueToMap
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
@@ -203,18 +202,17 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             )
         }
 
-        @Suppress("UNCHECKED_CAST")
-        val mapDefault = (convertValueToMap(defaultValue) as? Map<String, Any?>) ?: emptyMap()
+        // Use sentinel to avoid unnecessary conversion of user's default value
+        val resolutionDetails = flagsClient.resolve(key, SENTINEL_DEFAULT_MAP)
 
-        val resolutionDetails = flagsClient.resolve(key, mapDefault)
-
-        val errorCode = resolutionDetails.errorCode
-        if (errorCode != null) {
+        // If we got the sentinel back (via reference equality), return the user's original default
+        // This happens when: flag not found, provider not ready, or any error occurs
+        if (resolutionDetails.value === SENTINEL_DEFAULT_MAP) {
             return ProviderEvaluation(
                 value = defaultValue,
                 variant = resolutionDetails.variant,
                 reason = resolutionDetails.reason?.name,
-                errorCode = errorCode.toOpenFeatureErrorCode(),
+                errorCode = resolutionDetails.errorCode?.toOpenFeatureErrorCode(),
                 errorMessage = resolutionDetails.errorMessage
             )
         }
@@ -302,6 +300,16 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         private const val ERROR_REASON = "ERROR"
         private const val INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE =
             "Invocation Context is not supported in Static-Paradigm clients"
+
+        /**
+         * Sentinel default value used to avoid unnecessary Value-to-Map conversion.
+         *
+         * When resolving structured flags, we pass this sentinel to the FlagsClient instead of
+         * converting the user's OpenFeature Value. If the FlagsClient returns this sentinel
+         * (via reference equality), we know no flag was found and can return the user's original
+         * default without any conversion overhead.
+         */
+        private val SENTINEL_DEFAULT_MAP: Map<String, Any?> = emptyMap()
 
         internal fun wrap(
             flagsClient: FlagsClient,
