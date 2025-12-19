@@ -85,7 +85,9 @@ internal class FlagsStateManager(
     }
 
     override fun removeListener(listener: FlagsStateListener) {
-        subscription.removeListener(listener)
+        synchronized(currentState) {
+            subscription.removeListener(listener)
+        }
     }
 
     companion object {
