@@ -537,6 +537,8 @@ datadog:
       - "java.util.concurrent.locks.ReadWriteLock.readLock()"
       - "java.util.concurrent.locks.ReadWriteLock.writeLock()"
       - "java.util.concurrent.locks.ReentrantReadWriteLock.constructor()"
+      - "java.util.concurrent.locks.ReentrantLock.constructor(kotlin.Boolean)"
+      - "java.util.concurrent.locks.ReentrantLock.withLock(kotlin.Function0)"
       # endregion
       # region Java I/O
       - "java.io.BufferedReader.readText()"
