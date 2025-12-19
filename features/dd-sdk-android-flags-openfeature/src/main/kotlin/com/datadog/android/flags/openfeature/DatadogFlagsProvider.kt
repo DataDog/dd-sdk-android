@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
@@ -80,10 +81,10 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
  * This provider is thread-safe and all methods can be safely called from any thread.
  * The underlying [FlagsClient] handles thread coordination.
  */
-class DatadogFlagsProvider private constructor(private val flagsClient: FlagsClient, sdkCore: SdkCore) :
+class DatadogFlagsProvider private constructor(private val flagsClient: FlagsClient, sdkCore: FeatureSdkCore) :
     FeatureProvider {
 
-    private val internalLogger: InternalLogger? = (sdkCore as? FeatureSdkCore)?.internalLogger
+    private val internalLogger: InternalLogger = sdkCore.internalLogger
 
     override val metadata: ProviderMetadata = object : ProviderMetadata {
         override val name: String = PROVIDER_NAME
@@ -94,51 +95,23 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     /**
      * Initializes the provider with the given evaluation context.
      *
-     * Per the OpenFeature spec, this method blocks until the provider is "ready" - where
-     * "ready" means the underlying [FlagsClient] has reached a Ready or Error state.
+     * Per the OpenFeature spec, this method blocks until the underlying [FlagsClient] has complete setting
+     * the initial evaluation context.
      *
-     * If an initial context is provided, it will be set on the [FlagsClient] before waiting.
-     * If no context is provided, the method still waits for the [FlagsClient] to reach
-     * a ready state (e.g., from a previous setEvaluationContext call or cached data).
+     * If an initial context is provided, it will be set on the [FlagsClient] before waiting, otherwise
+     * an empty context will be used in order to initialize the underlying [FlagsClient].
      *
-     * The method suspends until the FlagsClient reaches either:
-     * - Ready: Flags successfully loaded, resumes normally
-     * - Error: Initialization failed, throws exception
+     * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
      *
      * @param initialContext The initial evaluation context to set (optional)
-     * @throws Exception if initialization fails
+     * @throws OpenFeatureError.ProviderFatalError if initialization fails
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
-        suspendCoroutine<Unit> { continuation ->
-            val callback = object : EvaluationContextCallback {
-                override fun onSuccess() {
-                    continuation.resume(Unit)
-                }
-
-                override fun onFailure(error: Throwable) {
-                    continuation.resumeWithException(error)
-                }
-            }
-
-            val datadogContext = initialContext?.toDatadogEvaluationContext()
-            if (datadogContext != null) {
-                flagsClient.setEvaluationContext(datadogContext, callback)
-            } else {
-                // No context provided - check if already ready
-                when (flagsClient.state.getCurrentState()) {
-                    is FlagsClientState.Ready -> continuation.resume(Unit)
-                    is FlagsClientState.Error -> continuation.resumeWithException(
-                        OpenFeatureError.ProviderFatalError("Provider not ready")
-                    )
-                    else -> {
-                        // Not ready yet - need to wait, but no context to set
-                        // This shouldn't happen in normal flow
-                        continuation.resumeWithException(
-                            Exception("Provider initialization requires a context")
-                        )
-                    }
-                }
-            }
+        val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
+        try {
+            flagsClient.setEvaluationContextSuspend(datadogContext)
+        } catch (e: OpenFeatureError) {
+            throw OpenFeatureError.ProviderFatalError("Unable to initialize the provider: ${e.message}")
         }
     }
 
@@ -153,25 +126,13 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * @param oldContext The previous evaluation context (unused)
      * @param newContext The new evaluation context to set
-     * @throws Exception if an unrecoverable error occurs during context reconciliation
+     * @throws OpenFeatureError if the provider is unable to set the new context.
      */
     override suspend fun onContextSet(
         oldContext: OpenFeatureEvaluationContext?,
         newContext: OpenFeatureEvaluationContext
     ) {
-        suspendCoroutine<Unit> { continuation ->
-            val callback = object : EvaluationContextCallback {
-                override fun onSuccess() {
-                    continuation.resume(Unit)
-                }
-
-                override fun onFailure(error: Throwable) {
-                    continuation.resumeWithException(error)
-                }
-            }
-
-            flagsClient.setEvaluationContext(newContext.toDatadogEvaluationContext(), callback)
-        }
+        flagsClient.setEvaluationContextSuspend(newContext.toDatadogEvaluationContext())
     }
 
     override fun getBooleanEvaluation(
@@ -180,7 +141,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Boolean> {
         context?.let {
-            internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
@@ -195,7 +156,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<String> {
         context?.let {
-            internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
@@ -210,7 +171,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Int> {
         context?.let {
-            internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
@@ -225,7 +186,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Double> {
         context?.let {
-            internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
@@ -240,13 +201,14 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Value> {
         context?.let {
-            internalLogger?.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
             )
         }
 
+        @Suppress("UNCHECKED_CAST")
         val mapDefault = (convertValueToMap(defaultValue) as? Map<String, Any?>) ?: emptyMap()
 
         val resolutionDetails = flagsClient.resolve(key, mapDefault)
@@ -346,7 +308,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         private const val INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE =
             "Invocation Context is not supported in Static-Paradigm clients"
 
-        internal fun wrap(flagsClient: FlagsClient, sdkCore: SdkCore = Datadog.getInstance()): DatadogFlagsProvider =
+        internal fun wrap(flagsClient: FlagsClient, sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore): DatadogFlagsProvider =
             DatadogFlagsProvider(flagsClient, sdkCore)
     }
 }

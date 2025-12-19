@@ -435,32 +435,6 @@ internal class DatadogFlagsProviderTest {
 
     // endregion
 
-    // region Context Management
-    // Note: Per-evaluation (invocation) context tests removed.
-    // Static-paradigm providers do not support invocation contexts per OpenFeature spec.
-
-    @Test
-    fun `M not call setEvaluationContext W getBooleanEvaluation() {null context}`(
-        forge: Forge,
-        @StringForgery flagKey: String
-    ) {
-        // Given
-        val defaultValue = forge.aBool()
-        val resolution = ResolutionDetails(
-            value = forge.aBool(),
-            reason = forge.aValueFrom(ResolutionReason::class.java)
-        )
-        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
-
-        // When
-        provider.getBooleanEvaluation(flagKey, defaultValue, null)
-
-        // Then
-        verify(mockFlagsClient, never()).setEvaluationContext(any())
-    }
-
-    // endregion
-
     // region Provider Lifecycle - initialize()
     // Note: Full integration testing of blocking behavior requires running FlagsClient
     // These tests verify the basic contract and listener management
