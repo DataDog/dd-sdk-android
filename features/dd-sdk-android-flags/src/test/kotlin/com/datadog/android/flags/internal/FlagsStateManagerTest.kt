@@ -170,48 +170,31 @@ internal class FlagsStateManagerTest {
 
         val executionOrder = mutableListOf<String>()
 
-        val listener1 = object : FlagsStateListener {
+        // Creates a listener that adds start/end markers to the execution order and calls the additional block.
+        fun createListener(
+            name: String,
+            additionalBlock: () -> Unit = {
+            }
+        ): FlagsStateListener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
                 if (newState is FlagsClientState.Ready) {
                     synchronized(executionOrder) {
-                        executionOrder.add("listener1")
+                        executionOrder.add(name)
+                        additionalBlock()
+                        executionOrder.add("$name ended")
                     }
                 }
             }
         }
 
-        val listener2 = object : FlagsStateListener {
-            override fun onStateChanged(newState: FlagsClientState) {
-                if (newState is FlagsClientState.Ready) {
-                    synchronized(executionOrder) {
-                        executionOrder.add("listener2")
-                    }
-                    // Simulate a long-running listener
-                    Thread.sleep(5)
-                }
-            }
+        val listener1 = createListener("listener1")
+        val listener2 = createListener("listener2") {
+            Thread.sleep(5)
         }
-
-        val listener3 = object : FlagsStateListener {
-            override fun onStateChanged(newState: FlagsClientState) {
-                if (newState is FlagsClientState.Ready) {
-                    synchronized(executionOrder) {
-                        executionOrder.add("listener3")
-                    }
-                    throw RuntimeException("Listener 3 intentionally throws")
-                }
-            }
+        val listener3 = createListener("listener3") {
+            throw RuntimeException("Listener 3 intentionally throws")
         }
-
-        val listener4 = object : FlagsStateListener {
-            override fun onStateChanged(newState: FlagsClientState) {
-                if (newState is FlagsClientState.Ready) {
-                    synchronized(executionOrder) {
-                        executionOrder.add("listener4")
-                    }
-                }
-            }
-        }
+        val listener4 = createListener("listener4")
 
         managerWithRealExecutor.addListener(listener1)
         managerWithRealExecutor.addListener(listener2)
@@ -219,7 +202,10 @@ internal class FlagsStateManagerTest {
         managerWithRealExecutor.addListener(listener4)
 
         // When
-        managerWithRealExecutor.updateState(FlagsClientState.Ready)
+        synchronized(executionOrder) {
+            managerWithRealExecutor.updateState(FlagsClientState.Ready)
+            executionOrder.add("updateState")
+        }
 
         // Then - immediately check that state is correct (even while listeners are running)
         assertThat(managerWithRealExecutor.getCurrentState()).isEqualTo(FlagsClientState.Ready)
@@ -231,10 +217,14 @@ internal class FlagsStateManagerTest {
         // Then - all listeners should have been called in order, despite listener3 throwing
         synchronized(executionOrder) {
             assertThat(executionOrder).containsExactly(
+                "updateState",
                 "listener1",
+                "listener1 ended",
                 "listener2",
+                "listener2 ended",
                 "listener3",
-                "listener4"
+                "listener4",
+                "listener4 ended"
             )
         }
     }

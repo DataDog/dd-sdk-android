@@ -363,7 +363,7 @@ internal class EvaluationsManagerTest {
 
     @Test
     fun `M have state READY when callback invoked W updateEvaluationsForContext() { success }`() {
-        // Given - use a REAL FlagsStateManager to test actual behavior
+        // Given
         val realExecutor = Executors.newSingleThreadExecutor()
         val realStateManager = FlagsStateManager(
             DDCoreSubscription.create(),
@@ -371,7 +371,6 @@ internal class EvaluationsManagerTest {
             mockInternalLogger
         )
 
-        // Create EvaluationsManager with real state manager
         val evaluationsManagerWithRealState = EvaluationsManager(
             executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
@@ -389,7 +388,6 @@ internal class EvaluationsManagerTest {
 
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() {
-                // Capture the ACTUAL state at the moment the callback is invoked
                 stateWhenCallbackInvoked = realStateManager.getCurrentState()
             }
 
@@ -404,7 +402,7 @@ internal class EvaluationsManagerTest {
         // When
         evaluationsManagerWithRealState.updateEvaluationsForContext(publicContext, callback = callback)
 
-        // Then - verify the ACTUAL state was READY when the callback was invoked
+        // Then
         assertThat(stateWhenCallbackInvoked).isEqualTo(FlagsClientState.Ready)
 
         // Cleanup

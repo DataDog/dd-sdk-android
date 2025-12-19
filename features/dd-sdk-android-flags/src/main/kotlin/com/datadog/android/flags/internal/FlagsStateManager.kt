@@ -74,10 +74,7 @@ internal class FlagsStateManager(
         synchronized(currentState) {
             subscription.addListener(listener)
 
-            // Capture current state before submitting to executor to avoid race condition
             val stateToEmit = currentState
-
-            // Emit current state to new listener
             executorService.executeSafe(
                 operationName = NOTIFY_NEW_LISTENER_OPERATION_NAME,
                 internalLogger = internalLogger
