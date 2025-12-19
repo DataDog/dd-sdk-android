@@ -10,6 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,6 +29,8 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
 @ExtendWith(MockitoExtension::class)
@@ -44,6 +48,8 @@ internal class FlagsStateManagerTest {
 
     private lateinit var testedManager: FlagsStateManager
 
+    private lateinit var realExecutorService: ExecutorService
+
     @BeforeEach
     fun `set up`() {
         // Mock executor to run tasks synchronously for testing
@@ -57,6 +63,14 @@ internal class FlagsStateManagerTest {
             mockExecutorService,
             mockInternalLogger
         )
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        if (::realExecutorService.isInitialized && !realExecutorService.isShutdown) {
+            realExecutorService.shutdown()
+            realExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        }
     }
 
     // region updateState
@@ -136,6 +150,92 @@ internal class FlagsStateManagerTest {
             verify(mockListener).onStateChanged(FlagsClientState.NotReady) // Initial on add
             verify(mockListener).onStateChanged(FlagsClientState.Reconciling) // Transition
             verify(mockListener).onStateChanged(FlagsClientState.Ready) // Transition
+        }
+    }
+
+    @Test
+    fun `M notify all listeners in order W updateState() { even if one throws }`() {
+        // This test expresses the requirement that:
+        // 1. State is set
+        // 2. State change listeners are run in order, one at a time, without crashing
+        // 3. State is readable immediately after updateState is called
+
+        // Given - use a real executor to test actual async behavior
+        realExecutorService = Executors.newSingleThreadExecutor()
+        val managerWithRealExecutor = FlagsStateManager(
+            DDCoreSubscription.create(),
+            realExecutorService,
+            mockInternalLogger
+        )
+
+        val executionOrder = mutableListOf<String>()
+
+        val listener1 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    synchronized(executionOrder) {
+                        executionOrder.add("listener1")
+                    }
+                }
+            }
+        }
+
+        val listener2 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    synchronized(executionOrder) {
+                        executionOrder.add("listener2")
+                    }
+                    // Simulate a long-running listener
+                    Thread.sleep(5)
+                }
+            }
+        }
+
+        val listener3 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    synchronized(executionOrder) {
+                        executionOrder.add("listener3")
+                    }
+                    throw RuntimeException("Listener 3 intentionally throws")
+                }
+            }
+        }
+
+        val listener4 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    synchronized(executionOrder) {
+                        executionOrder.add("listener4")
+                    }
+                }
+            }
+        }
+
+        managerWithRealExecutor.addListener(listener1)
+        managerWithRealExecutor.addListener(listener2)
+        managerWithRealExecutor.addListener(listener3)
+        managerWithRealExecutor.addListener(listener4)
+
+        // When
+        managerWithRealExecutor.updateState(FlagsClientState.Ready)
+
+        // Then - immediately check that state is correct (even while listeners are running)
+        assertThat(managerWithRealExecutor.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+
+        // Wait for the executor to finish executing all its blocks
+        realExecutorService.shutdown()
+        realExecutorService.awaitTermination(2, TimeUnit.SECONDS)
+
+        // Then - all listeners should have been called in order, despite listener3 throwing
+        synchronized(executionOrder) {
+            assertThat(executionOrder).containsExactly(
+                "listener1",
+                "listener2",
+                "listener3",
+                "listener4"
+            )
         }
     }
 

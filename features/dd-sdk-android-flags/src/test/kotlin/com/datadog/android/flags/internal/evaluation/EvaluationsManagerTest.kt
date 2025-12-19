@@ -15,6 +15,7 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.internal.utils.DDCoreSubscription
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.mockwebserver.MockWebServer
@@ -22,6 +23,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -39,6 +41,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -292,7 +296,7 @@ internal class EvaluationsManagerTest {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val mockCallback = mock<EvaluationContextCallback>()
-        val jsonResponse = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+        val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
@@ -347,7 +351,7 @@ internal class EvaluationsManagerTest {
     fun `M not invoke callback W updateEvaluationsForContext() { callback is null }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val jsonResponse = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+        val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
@@ -357,5 +361,60 @@ internal class EvaluationsManagerTest {
         assertDoesNotThrow { evaluationsManager.updateEvaluationsForContext(publicContext, callback = null) }
     }
 
+    @Test
+    fun `M have state READY when callback invoked W updateEvaluationsForContext() { success }`() {
+        // Given - use a REAL FlagsStateManager to test actual behavior
+        val realExecutor = Executors.newSingleThreadExecutor()
+        val realStateManager = FlagsStateManager(
+            DDCoreSubscription.create(),
+            realExecutor,
+            mockInternalLogger
+        )
+
+        // Create EvaluationsManager with real state manager
+        val evaluationsManagerWithRealState = EvaluationsManager(
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = realStateManager
+        )
+
+        val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
+        val flagsMap = emptyMap<String, PrecomputedFlag>()
+
+        var stateWhenCallbackInvoked: FlagsClientState? = null
+
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() {
+                // Capture the ACTUAL state at the moment the callback is invoked
+                stateWhenCallbackInvoked = realStateManager.getCurrentState()
+            }
+
+            override fun onFailure(error: Throwable) {
+                fail<Unit>("onFailure should not be called in success case, but was called with: $error")
+            }
+        }
+
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
+        whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
+
+        // When
+        evaluationsManagerWithRealState.updateEvaluationsForContext(publicContext, callback = callback)
+
+        // Then - verify the ACTUAL state was READY when the callback was invoked
+        assertThat(stateWhenCallbackInvoked).isEqualTo(FlagsClientState.Ready)
+
+        // Cleanup
+        realExecutor.shutdown()
+        realExecutor.awaitTermination(1, TimeUnit.SECONDS)
+    }
+
     // endregion
+
+    companion object {
+        private const val EMPTY_FLAGS_RESPONSE_JSON = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+    }
 }

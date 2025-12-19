@@ -56,27 +56,34 @@ internal class FlagsStateManager(
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
-        executorService.executeSafe(
-            operationName = UPDATE_STATE_OPERATION_NAME,
-            internalLogger = internalLogger
-        ) {
+        // lock the currentState until listener notifications are queued to prevent new listeners during state change.
+        synchronized(currentState) {
             currentState = newState
             subscription.notifyListeners {
-                onStateChanged(newState)
+                executorService.executeSafe(
+                    operationName = UPDATE_STATE_OPERATION_NAME,
+                    internalLogger = internalLogger
+                ) {
+                    onStateChanged(newState)
+                }
             }
         }
     }
 
     override fun addListener(listener: FlagsStateListener) {
-        subscription.addListener(listener)
+        synchronized(currentState) {
+            subscription.addListener(listener)
 
-        // Emit current state to new listener
-        executorService.executeSafe(
-            operationName = NOTIFY_NEW_LISTENER_OPERATION_NAME,
-            internalLogger = internalLogger
-        ) {
-            val state = currentState
-            listener.onStateChanged(state)
+            // Capture current state before submitting to executor to avoid race condition
+            val stateToEmit = currentState
+
+            // Emit current state to new listener
+            executorService.executeSafe(
+                operationName = NOTIFY_NEW_LISTENER_OPERATION_NAME,
+                internalLogger = internalLogger
+            ) {
+                listener.onStateChanged(stateToEmit)
+            }
         }
     }
 
