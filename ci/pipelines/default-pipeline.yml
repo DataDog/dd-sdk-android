@@ -493,6 +493,7 @@ publish:release-all:
   only:
     - tags
     - develop
+    - tvaleev/feature/cronet-apm-snapshot
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m

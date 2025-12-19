@@ -157,7 +157,7 @@ class RumNetworkInstrumentation internal constructor(
         }
     }
 
-    companion object {
+    companion object Companion {
         internal const val ERROR_MSG_FORMAT = "%s request error %s %s"
         internal const val UNSUPPORTED_HTTP_METHOD =
             "Unsupported HTTP method %s reported by %s instrumentation, using GET instead"
