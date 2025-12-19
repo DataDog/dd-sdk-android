@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.openfeature.internal.adapters
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
@@ -21,35 +22,35 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 import java.math.BigDecimal
 
-@ExtendWith(ForgeExtension::class)
+@ExtendWith(ForgeExtension::class, MockitoExtension::class)
 @ForgeConfiguration(BaseConfigurator::class)
 internal class ValueConvertersTest {
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     // region convertToValue
 
     @Test
     fun `M return Value Null W convertToValue() {null input}`() {
         // When
-        val result = convertToValue(null)
+        val result = convertToValue(null, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(Value.Null)
     }
 
     @Test
-    fun `M convert JSONObject W convertToValue() {JSONObject input}`(
-        @StringForgery key: String,
-        @StringForgery value: String
-    ) {
+    fun `M convert Map W convertToValue() {Map input}`(@StringForgery key: String, @StringForgery value: String) {
         // Given
-        val jsonObject = JSONObject().apply {
-            put(key, value)
-        }
+        val map = mapOf(key to value)
 
         // When
-        val result = convertToValue(jsonObject)
+        val result = convertToValue(map, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Structure::class.java)
@@ -59,7 +60,42 @@ internal class ValueConvertersTest {
     }
 
     @Test
-    fun `M convert JSONArray W convertToValue() {JSONArray input}`(forge: Forge) {
+    fun `M convert List W convertToValue() {List input}`(forge: Forge) {
+        // Given
+        val item1 = forge.anAlphabeticalString()
+        val item2 = forge.anInt()
+        val list = listOf(item1, item2)
+
+        // When
+        val result = convertToValue(list, mockInternalLogger)
+
+        // Then
+        val resultList = checkNotNull(result.asList())
+        assertThat(resultList).hasSize(2)
+        assertThat((resultList[0] as Value.String).asString()).isEqualTo(item1)
+        assertThat((resultList[1] as Value.Integer).asInteger()).isEqualTo(item2)
+    }
+
+    @Test
+    fun `M convert JSONObject to String W convertToValue() {JSONObject input}`(
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        val jsonObject = JSONObject().apply {
+            put(key, value)
+        }
+
+        // When
+        val result = convertToValue(jsonObject, mockInternalLogger)
+
+        // Then - JSONObject is now treated as unexpected type and converted to string
+        assertThat(result).isInstanceOf(Value.String::class.java)
+        assertThat((result as Value.String).asString()).isEqualTo(jsonObject.toString())
+    }
+
+    @Test
+    fun `M convert JSONArray to String W convertToValue() {JSONArray input}`(forge: Forge) {
         // Given
         val item1 = forge.anAlphabeticalString()
         val item2 = forge.anInt()
@@ -69,26 +105,24 @@ internal class ValueConvertersTest {
         }
 
         // When
-        val result = convertToValue(jsonArray)
+        val result = convertToValue(jsonArray, mockInternalLogger)
 
-        // Then
-        val list = checkNotNull(result.asList())
-        assertThat(list).hasSize(2)
-        assertThat((list[0] as Value.String).asString()).isEqualTo(item1)
-        assertThat((list[1] as Value.Integer).asInteger()).isEqualTo(item2)
+        // Then - JSONArray is now treated as unexpected type and converted to string
+        assertThat(result).isInstanceOf(Value.String::class.java)
+        assertThat((result as Value.String).asString()).isEqualTo(jsonArray.toString())
     }
 
     // endregion
 
-    // region convertObjectToValue
+    // region convertMapToValue
 
     @Test
-    fun `M convert empty JSONObject W convertObjectToValue() {empty object}`() {
+    fun `M convert empty Map W convertMapToValue(, mockInternalLogger) {empty map}`() {
         // Given
-        val jsonObject = JSONObject()
+        val map = emptyMap<String, Any>()
 
         // When
-        val result = convertObjectToValue(jsonObject)
+        val result = convertMapToValue(map, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Structure::class.java)
@@ -97,7 +131,7 @@ internal class ValueConvertersTest {
     }
 
     @Test
-    fun `M convert simple JSONObject W convertObjectToValue() {primitive values}`(
+    fun `M convert simple Map W convertMapToValue(, mockInternalLogger) {primitive values}`(
         @StringForgery stringKey: String,
         @StringForgery stringValue: String,
         @IntForgery intValue: Int,
@@ -105,15 +139,15 @@ internal class ValueConvertersTest {
         @DoubleForgery doubleValue: Double
     ) {
         // Given
-        val jsonObject = JSONObject().apply {
-            put(stringKey, stringValue)
-            put("intKey", intValue)
-            put("boolKey", boolValue)
-            put("doubleKey", doubleValue)
-        }
+        val map = mapOf(
+            stringKey to stringValue,
+            "intKey" to intValue,
+            "boolKey" to boolValue,
+            "doubleKey" to doubleValue
+        )
 
         // When
-        val result = convertObjectToValue(jsonObject)
+        val result = convertMapToValue(map, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Structure::class.java)
@@ -127,23 +161,21 @@ internal class ValueConvertersTest {
     }
 
     @Test
-    fun `M convert nested JSONObject W convertObjectToValue() {nested structure}`(
+    fun `M convert nested Map W convertMapToValue(, mockInternalLogger) {nested structure}`(
         @StringForgery topKey: String,
         @StringForgery topValue: String,
         @StringForgery nestedKey: String,
         @StringForgery nestedValue: String
     ) {
         // Given
-        val nestedObject = JSONObject().apply {
-            put(nestedKey, nestedValue)
-        }
-        val jsonObject = JSONObject().apply {
-            put(topKey, topValue)
-            put("nested", nestedObject)
-        }
+        val nestedMap = mapOf(nestedKey to nestedValue)
+        val map = mapOf(
+            topKey to topValue,
+            "nested" to nestedMap
+        )
 
         // When
-        val result = convertObjectToValue(jsonObject)
+        val result = convertMapToValue(map, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Structure::class.java)
@@ -157,39 +189,37 @@ internal class ValueConvertersTest {
     }
 
     @Test
-    fun `M handle JSONArray in object W convertObjectToValue() {array value}`(forge: Forge) {
+    fun `M handle List in map W convertMapToValue(, mockInternalLogger) {list value}`(forge: Forge) {
         // Given
-        val arrayKey = forge.anAlphabeticalString()
-        val arrayItem = forge.anAlphabeticalString()
-        val jsonArray = JSONArray().apply { put(arrayItem) }
-        val jsonObject = JSONObject().apply {
-            put(arrayKey, jsonArray)
-        }
+        val listKey = forge.anAlphabeticalString()
+        val listItem = forge.anAlphabeticalString()
+        val list = listOf(listItem)
+        val map = mapOf(listKey to list)
 
         // When
-        val result = convertObjectToValue(jsonObject)
+        val result = convertMapToValue(map, mockInternalLogger)
 
         // Then
         val structure = result.asStructure()
         checkNotNull(structure)
-        assertThat(structure[arrayKey]).isInstanceOf(Value.List::class.java)
-        val list = (structure[arrayKey] as Value.List).asList()
-        checkNotNull(list)
-        assertThat(list).hasSize(1)
-        assertThat((list[0] as Value.String).asString()).isEqualTo(arrayItem)
+        assertThat(structure[listKey]).isInstanceOf(Value.List::class.java)
+        val resultList = (structure[listKey] as Value.List).asList()
+        checkNotNull(resultList)
+        assertThat(resultList).hasSize(1)
+        assertThat((resultList[0] as Value.String).asString()).isEqualTo(listItem)
     }
 
     // endregion
 
-    // region convertArrayToValue
+    // region convertListToValue
 
     @Test
-    fun `M convert empty JSONArray W convertArrayToValue() {empty array}`() {
+    fun `M convert empty List W convertListToValue(, mockInternalLogger) {empty list}`() {
         // Given
-        val jsonArray = JSONArray()
+        val list = emptyList<Any>()
 
         // When
-        val result = convertArrayToValue(jsonArray)
+        val result = convertListToValue(list, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.List::class.java)
@@ -197,105 +227,84 @@ internal class ValueConvertersTest {
     }
 
     @Test
-    fun `M convert JSONArray with primitives W convertArrayToValue() {mixed types}`(forge: Forge) {
+    fun `M convert List with primitives W convertListToValue(, mockInternalLogger) {mixed types}`(forge: Forge) {
         // Given
         val stringValue = forge.anAlphabeticalString()
         val intValue = forge.anInt()
         val boolValue = forge.aBool()
         val doubleValue = forge.aDouble()
-        val jsonArray = JSONArray().apply {
-            put(stringValue)
-            put(intValue)
-            put(boolValue)
-            put(doubleValue)
-        }
+        val list = listOf(stringValue, intValue, boolValue, doubleValue)
 
         // When
-        val result = convertArrayToValue(jsonArray)
+        val result = convertListToValue(list, mockInternalLogger)
 
         // Then
-        val list = checkNotNull(result.asList())
-        assertThat(list).hasSize(4)
-        assertThat((list[0] as Value.String).asString()).isEqualTo(stringValue)
-        assertThat((list[1] as Value.Integer).asInteger()).isEqualTo(intValue)
-        assertThat((list[2] as Value.Boolean).asBoolean()).isEqualTo(boolValue)
-        assertThat((list[3] as Value.Double).asDouble()).isEqualTo(doubleValue)
+        val resultList = checkNotNull(result.asList())
+        assertThat(resultList).hasSize(4)
+        assertThat((resultList[0] as Value.String).asString()).isEqualTo(stringValue)
+        assertThat((resultList[1] as Value.Integer).asInteger()).isEqualTo(intValue)
+        assertThat((resultList[2] as Value.Boolean).asBoolean()).isEqualTo(boolValue)
+        assertThat((resultList[3] as Value.Double).asDouble()).isEqualTo(doubleValue)
     }
 
     @Test
-    fun `M convert nested arrays W convertArrayToValue() {array of arrays}`(forge: Forge) {
+    fun `M convert nested lists W convertListToValue(, mockInternalLogger) {list of lists}`(forge: Forge) {
         // Given
         val innerValue = forge.anAlphabeticalString()
-        val innerArray = JSONArray().apply { put(innerValue) }
-        val outerArray = JSONArray().apply { put(innerArray) }
+        val innerList = listOf(innerValue)
+        val outerList = listOf(innerList)
 
         // When
-        val result = convertArrayToValue(outerArray)
+        val result = convertListToValue(outerList, mockInternalLogger)
 
         // Then
-        val list = checkNotNull(result.asList())
-        assertThat(list).hasSize(1)
-        assertThat(list[0]).isInstanceOf(Value.List::class.java)
-        val innerList = (list[0] as Value.List).asList()
-        checkNotNull(innerList)
-        assertThat(innerList).hasSize(1)
-        assertThat((innerList[0] as Value.String).asString()).isEqualTo(innerValue)
+        val resultList = checkNotNull(result.asList())
+        assertThat(resultList).hasSize(1)
+        assertThat(resultList[0]).isInstanceOf(Value.List::class.java)
+        val innerResultList = (resultList[0] as Value.List).asList()
+        checkNotNull(innerResultList)
+        assertThat(innerResultList).hasSize(1)
+        assertThat((innerResultList[0] as Value.String).asString()).isEqualTo(innerValue)
     }
 
     @Test
-    fun `M convert array with objects W convertArrayToValue() {array of objects}`(
+    fun `M convert list with maps W convertListToValue(, mockInternalLogger) {list of maps}`(
         @StringForgery key: String,
         @StringForgery value: String
     ) {
         // Given
-        val jsonObject = JSONObject().apply { put(key, value) }
-        val jsonArray = JSONArray().apply { put(jsonObject) }
+        val map = mapOf(key to value)
+        val list = listOf(map)
 
         // When
-        val result = convertArrayToValue(jsonArray)
+        val result = convertListToValue(list, mockInternalLogger)
 
         // Then
-        val list = checkNotNull(result.asList())
-        assertThat(list).hasSize(1)
-        assertThat(list[0]).isInstanceOf(Value.Structure::class.java)
-        val structure = (list[0] as Value.Structure).asStructure()
+        val resultList = checkNotNull(result.asList())
+        assertThat(resultList).hasSize(1)
+        assertThat(resultList[0]).isInstanceOf(Value.Structure::class.java)
+        val structure = (resultList[0] as Value.Structure).asStructure()
         checkNotNull(structure)
         assertThat((structure[key] as Value.String).asString()).isEqualTo(value)
     }
 
     @Test
-    fun `M convert JSONObject NULL to Value Null W convertArrayToValue() {array with JSONObject NULL}`(forge: Forge) {
+    fun `M convert null to Value Null W convertListToValue(, mockInternalLogger) {list with null}`(forge: Forge) {
         // Given
         val stringValue = forge.anAlphabeticalString()
-        val jsonArray = JSONArray().apply {
-            put(stringValue)
-            put(JSONObject.NULL)
-            put(stringValue)
-        }
+        val list = listOf(stringValue, null, stringValue)
 
         // When
-        val result = convertArrayToValue(jsonArray)
-
-        // Then - JSONObject.NULL is a sentinel object that should be converted to Value.Null
-        val list = checkNotNull(result.asList())
-        assertThat(list).hasSize(3)
-        assertThat(list[0]).isInstanceOf(Value.String::class.java)
-        assertThat((list[0] as Value.String).asString()).isEqualTo(stringValue)
-        assertThat(list[1]).isEqualTo(Value.Null)
-        assertThat(list[2]).isInstanceOf(Value.String::class.java)
-        assertThat((list[2] as Value.String).asString()).isEqualTo(stringValue)
-    }
-
-    @Test
-    fun `M convert JSONObject NULL to Value Null W convertToValue() {direct JSONObject NULL}`() {
-        // Given
-        val value = JSONObject.NULL
-
-        // When
-        val result = convertToValue(value)
+        val result = convertListToValue(list, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo(Value.Null)
+        val resultList = checkNotNull(result.asList())
+        assertThat(resultList).hasSize(3)
+        assertThat(resultList[0]).isInstanceOf(Value.String::class.java)
+        assertThat((resultList[0] as Value.String).asString()).isEqualTo(stringValue)
+        assertThat(resultList[1]).isEqualTo(Value.Null)
+        assertThat(resultList[2]).isInstanceOf(Value.String::class.java)
+        assertThat((resultList[2] as Value.String).asString()).isEqualTo(stringValue)
     }
 
     // endregion
@@ -305,7 +314,7 @@ internal class ValueConvertersTest {
     @Test
     fun `M convert String W convertToValue() {string input}`(@StringForgery stringValue: String) {
         // When
-        val result = convertToValue(stringValue)
+        val result = convertToValue(stringValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.String::class.java)
@@ -315,7 +324,7 @@ internal class ValueConvertersTest {
     @Test
     fun `M convert Boolean W convertToValue() {boolean input}`(@BoolForgery boolValue: Boolean) {
         // When
-        val result = convertToValue(boolValue)
+        val result = convertToValue(boolValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Boolean::class.java)
@@ -325,7 +334,7 @@ internal class ValueConvertersTest {
     @Test
     fun `M convert Int W convertToValue() {int input}`(@IntForgery intValue: Int) {
         // When
-        val result = convertToValue(intValue)
+        val result = convertToValue(intValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Integer::class.java)
@@ -338,7 +347,7 @@ internal class ValueConvertersTest {
         val longValue = forge.anInt().toLong()
 
         // When
-        val result = convertToValue(longValue)
+        val result = convertToValue(longValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Integer::class.java)
@@ -351,7 +360,7 @@ internal class ValueConvertersTest {
         val longValue = forge.aLong(min = Int.MAX_VALUE.toLong() + 1)
 
         // When
-        val result = convertToValue(longValue)
+        val result = convertToValue(longValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Double::class.java)
@@ -364,7 +373,7 @@ internal class ValueConvertersTest {
         val longValue = forge.aLong(max = Int.MIN_VALUE.toLong())
 
         // When
-        val result = convertToValue(longValue)
+        val result = convertToValue(longValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Double::class.java)
@@ -377,7 +386,7 @@ internal class ValueConvertersTest {
         val longValue = Int.MIN_VALUE.toLong()
 
         // When
-        val result = convertToValue(longValue)
+        val result = convertToValue(longValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Integer::class.java)
@@ -390,7 +399,7 @@ internal class ValueConvertersTest {
         val longValue = Int.MAX_VALUE.toLong()
 
         // When
-        val result = convertToValue(longValue)
+        val result = convertToValue(longValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Integer::class.java)
@@ -403,7 +412,7 @@ internal class ValueConvertersTest {
         val shortValue = forge.anInt(min = Short.MIN_VALUE.toInt(), max = Short.MAX_VALUE.toInt()).toShort()
 
         // When
-        val result = convertToValue(shortValue)
+        val result = convertToValue(shortValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Integer::class.java)
@@ -416,7 +425,7 @@ internal class ValueConvertersTest {
         val byteValue = forge.anInt(min = Byte.MIN_VALUE.toInt(), max = Byte.MAX_VALUE.toInt()).toByte()
 
         // When
-        val result = convertToValue(byteValue)
+        val result = convertToValue(byteValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Integer::class.java)
@@ -426,7 +435,7 @@ internal class ValueConvertersTest {
     @Test
     fun `M convert Float W convertToValue() {float input}`(@FloatForgery floatValue: Float) {
         // When
-        val result = convertToValue(floatValue)
+        val result = convertToValue(floatValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Double::class.java)
@@ -436,7 +445,7 @@ internal class ValueConvertersTest {
     @Test
     fun `M convert Double W convertToValue() {double input}`(@DoubleForgery doubleValue: Double) {
         // When
-        val result = convertToValue(doubleValue)
+        val result = convertToValue(doubleValue, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Double::class.java)
@@ -449,7 +458,7 @@ internal class ValueConvertersTest {
         val bigDecimal = BigDecimal.valueOf(forge.aDouble())
 
         // When
-        val result = convertToValue(bigDecimal)
+        val result = convertToValue(bigDecimal, mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.Double::class.java)
@@ -462,7 +471,7 @@ internal class ValueConvertersTest {
         val customObject = CustomTestObject(forge.anAlphabeticalString())
 
         // When
-        val result = convertToValue(customObject)
+        val result = convertToValue(customObject, mockInternalLogger)
 
         // Then - Converts to string via toString() and logs warning
         assertThat(result).isInstanceOf(Value.String::class.java)
@@ -476,14 +485,14 @@ internal class ValueConvertersTest {
 
     @Test
     fun `M handle deeply nested structures W convertToValue() {complex nesting}`(forge: Forge) {
-        // Given - Create a deeply nested structure: object -> array -> object -> value
+        // Given - Create a deeply nested structure: map -> list -> map -> value
         val deepValue = forge.anAlphabeticalString()
-        val level3 = JSONObject().apply { put("deepKey", deepValue) }
-        val level2 = JSONArray().apply { put(level3) }
-        val level1 = JSONObject().apply { put("arrayKey", level2) }
+        val level3 = mapOf("deepKey" to deepValue)
+        val level2 = listOf(level3)
+        val level1 = mapOf("arrayKey" to level2)
 
         // When
-        val result = convertToValue(level1)
+        val result = convertToValue(level1, mockInternalLogger)
 
         // Then
         val structure = result.asStructure()
@@ -498,17 +507,17 @@ internal class ValueConvertersTest {
     @Test
     fun `M handle special number values W convertToValue() {special doubles}`() {
         // When/Then - Infinity
-        val infinityResult = convertToValue(Double.POSITIVE_INFINITY)
+        val infinityResult = convertToValue(Double.POSITIVE_INFINITY, mockInternalLogger)
         assertThat(infinityResult).isInstanceOf(Value.Double::class.java)
         assertThat((infinityResult as Value.Double).asDouble()).isEqualTo(Double.POSITIVE_INFINITY)
 
         // When/Then - Negative Infinity
-        val negInfinityResult = convertToValue(Double.NEGATIVE_INFINITY)
+        val negInfinityResult = convertToValue(Double.NEGATIVE_INFINITY, mockInternalLogger)
         assertThat(negInfinityResult).isInstanceOf(Value.Double::class.java)
         assertThat((negInfinityResult as Value.Double).asDouble()).isEqualTo(Double.NEGATIVE_INFINITY)
 
         // When/Then - NaN
-        val nanResult = convertToValue(Double.NaN)
+        val nanResult = convertToValue(Double.NaN, mockInternalLogger)
         assertThat(nanResult).isInstanceOf(Value.Double::class.java)
         assertThat((nanResult as Value.Double).asDouble()).isNaN()
     }
@@ -516,7 +525,7 @@ internal class ValueConvertersTest {
     @Test
     fun `M handle empty string W convertToValue() {empty string}`() {
         // When
-        val result = convertToValue("")
+        val result = convertToValue("", mockInternalLogger)
 
         // Then
         assertThat(result).isInstanceOf(Value.String::class.java)
@@ -524,35 +533,29 @@ internal class ValueConvertersTest {
     }
 
     @Test
-    fun `M handle large array W convertArrayToValue() {many elements}`(forge: Forge) {
+    fun `M handle large list W convertListToValue(, mockInternalLogger) {many elements}`(forge: Forge) {
         // Given
-        val jsonArray = JSONArray()
-        repeat(100) {
-            jsonArray.put(forge.anInt())
-        }
+        val list = (1..100).map { forge.anInt() }
 
         // When
-        val result = convertArrayToValue(jsonArray)
+        val result = convertListToValue(list, mockInternalLogger)
 
         // Then
-        val list = checkNotNull(result.asList())
-        assertThat(list).hasSize(100)
-        list.forEach { value ->
+        val resultList = checkNotNull(result.asList())
+        assertThat(resultList).hasSize(100)
+        resultList.forEach { value ->
             assertThat(value).isInstanceOf(Value.Integer::class.java)
         }
     }
 
     @Test
-    fun `M handle large object W convertObjectToValue() {many keys}`(forge: Forge) {
+    fun `M handle large map W convertMapToValue(, mockInternalLogger) {many keys}`(forge: Forge) {
         // Given
-        val jsonObject = JSONObject()
         val keys = (1..100).map { "key$it" }
-        keys.forEach { key ->
-            jsonObject.put(key, forge.anInt())
-        }
+        val map = keys.associateWith { forge.anInt() }
 
         // When
-        val result = convertObjectToValue(jsonObject)
+        val result = convertMapToValue(map, mockInternalLogger)
 
         // Then
         val structure = result.asStructure()
@@ -565,71 +568,71 @@ internal class ValueConvertersTest {
 
     // endregion
 
-    // region convertValueToJson
+    // region convertValueToMap
 
     @Test
-    fun `M convert Value Integer to Int W convertValueToJson()`(forge: Forge) {
+    fun `M convert Value Integer to Int W convertValueToMap()`(forge: Forge) {
         // Given
         val intValue = forge.anInt()
         val value = Value.Integer(intValue)
 
         // When
-        val result = convertValueToJson(value)
+        val result = convertValueToMap(value)
 
         // Then
         assertThat(result).isEqualTo(intValue)
     }
 
     @Test
-    fun `M convert Value Double to Double W convertValueToJson()`(forge: Forge) {
+    fun `M convert Value Double to Double W convertValueToMap()`(forge: Forge) {
         // Given
         val doubleValue = forge.aDouble()
         val value = Value.Double(doubleValue)
 
         // When
-        val result = convertValueToJson(value)
+        val result = convertValueToMap(value)
 
         // Then
         assertThat(result).isEqualTo(doubleValue)
     }
 
     @Test
-    fun `M convert Value Boolean to Boolean W convertValueToJson()`(forge: Forge) {
+    fun `M convert Value Boolean to Boolean W convertValueToMap()`(forge: Forge) {
         // Given
         val boolValue = forge.aBool()
         val value = Value.Boolean(boolValue)
 
         // When
-        val result = convertValueToJson(value)
+        val result = convertValueToMap(value)
 
         // Then
         assertThat(result).isEqualTo(boolValue)
     }
 
     @Test
-    fun `M convert Value String to String W convertValueToJson()`(forge: Forge) {
+    fun `M convert Value String to String W convertValueToMap()`(forge: Forge) {
         // Given
         val stringValue = forge.anAlphabeticalString()
         val value = Value.String(stringValue)
 
         // When
-        val result = convertValueToJson(value)
+        val result = convertValueToMap(value)
 
         // Then
         assertThat(result).isEqualTo(stringValue)
     }
 
     @Test
-    fun `M convert Value Null to null W convertValueToJson()`() {
+    fun `M convert Value Null to null W convertValueToMap()`() {
         // When
-        val result = convertValueToJson(Value.Null)
+        val result = convertValueToMap(Value.Null)
 
         // Then
         assertThat(result).isNull()
     }
 
     @Test
-    fun `M convert Value Structure to JSONObject W convertValueToJson() {preserves types}`(forge: Forge) {
+    fun `M convert Value Structure to Map W convertValueToMap() {preserves types}`(forge: Forge) {
         // Given
         val intValue = forge.anInt()
         val stringValue = forge.anAlphabeticalString()
@@ -643,18 +646,18 @@ internal class ValueConvertersTest {
         )
 
         // When
-        val result = convertValueToJson(value)
+        val result = convertValueToMap(value)
 
         // Then
-        assertThat(result).isInstanceOf(JSONObject::class.java)
-        val jsonObject = result as JSONObject
-        assertThat(jsonObject.get("intField")).isEqualTo(intValue)
-        assertThat(jsonObject.get("stringField")).isEqualTo(stringValue)
-        assertThat(jsonObject.get("boolField")).isEqualTo(boolValue)
+        assertThat(result).isInstanceOf(Map::class.java)
+        val map = result as Map<*, *>
+        assertThat(map["intField"]).isEqualTo(intValue)
+        assertThat(map["stringField"]).isEqualTo(stringValue)
+        assertThat(map["boolField"]).isEqualTo(boolValue)
     }
 
     @Test
-    fun `M convert Value List to JSONArray W convertValueToJson() {preserves types}`(forge: Forge) {
+    fun `M convert Value List to List W convertValueToMap() {preserves types}`(forge: Forge) {
         // Given
         val intValue = forge.anInt()
         val stringValue = forge.anAlphabeticalString()
@@ -666,14 +669,14 @@ internal class ValueConvertersTest {
         )
 
         // When
-        val result = convertValueToJson(value)
+        val result = convertValueToMap(value)
 
         // Then
-        assertThat(result).isInstanceOf(JSONArray::class.java)
-        val jsonArray = result as JSONArray
-        assertThat(jsonArray.length()).isEqualTo(2)
-        assertThat(jsonArray.get(0)).isEqualTo(intValue)
-        assertThat(jsonArray.get(1)).isEqualTo(stringValue)
+        assertThat(result).isInstanceOf(List::class.java)
+        val list = result as List<*>
+        assertThat(list.size).isEqualTo(2)
+        assertThat(list[0]).isEqualTo(intValue)
+        assertThat(list[1]).isEqualTo(stringValue)
     }
 
     // endregion

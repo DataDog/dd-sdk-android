@@ -8,20 +8,18 @@ package com.datadog.android.flags.openfeature.internal.adapters
 
 import com.datadog.android.api.InternalLogger
 import dev.openfeature.kotlin.sdk.Value
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
 
 /**
- * Converts any value to an OpenFeature Value.
+ * Converts various value types to OpenFeature Value types.
  *
- * Handles structural types (objects, arrays) by delegating to specialized converters,
- * and primitive types through direct type matching.
+ * Supports conversion of:
+ * - Primitives (String, Boolean, Int, Double)
+ * - Map<*, *> → Value.Structure
+ * - List<*> → Value.List
+ * - null → Value.Null
  *
  * Long values are intelligently converted: within Int range they become Value.Integer,
  * outside that range they become Value.Double to prevent truncation.
- *
- * JSONObject.NULL (a sentinel object) is converted to Value.Null to preserve null semantics.
  *
  * Unexpected types are converted to strings via toString() with a warning logged.
  *
@@ -29,10 +27,10 @@ import org.json.JSONObject
  * @param internalLogger Logger for diagnostic messages (optional, for unexpected type warnings)
  * @return The converted OpenFeature Value
  */
-internal fun convertToValue(value: Any?, internalLogger: InternalLogger? = null): Value = when (value) {
-    null, JSONObject.NULL -> Value.Null
-    is JSONObject -> convertObjectToValue(value, internalLogger)
-    is JSONArray -> convertArrayToValue(value, internalLogger)
+internal fun convertToValue(value: Any?, internalLogger: InternalLogger): Value = when (value) {
+    null -> Value.Null
+    is Map<*, *> -> convertMapToValue(value, internalLogger)
+    is List<*> -> convertListToValue(value, internalLogger)
     is String -> Value.String(value)
     is Boolean -> Value.Boolean(value)
     is Int -> Value.Integer(value)
@@ -46,12 +44,12 @@ internal fun convertToValue(value: Any?, internalLogger: InternalLogger? = null)
     is Double -> Value.Double(value)
     is Number -> Value.Double(value.toDouble())
     else -> {
-        internalLogger?.log(
+        internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             {
                 "Unexpected type ${value.javaClass.name} converted to string via toString(). " +
-                    "Expected primitive types or JSON structures."
+                    "Expected primitive types or Kotlin collections (Map, List)."
             }
         )
         Value.String(value.toString())
@@ -59,90 +57,27 @@ internal fun convertToValue(value: Any?, internalLogger: InternalLogger? = null)
 }
 
 /**
- * Converts a JSONObject to Value.Structure by recursively converting all values.
+ * Converts a Kotlin Map to Value.Structure by recursively converting all values.
  *
- * @param jsonObject The JSONObject to convert
- * @param internalLogger Logger for diagnostic messages (optional)
+ * @param map The Map to convert
+ * @param internalLogger Logger for diagnostic messages
  * @return Value.Structure containing the converted values
  */
-internal fun convertObjectToValue(jsonObject: JSONObject, internalLogger: InternalLogger? = null): Value =
-    Value.Structure(
-        jsonObject.toMap(internalLogger).mapValues { (_, v) -> convertToValue(v, internalLogger) }
-    )
+internal fun convertMapToValue(map: Map<*, *>, internalLogger: InternalLogger): Value = Value.Structure(
+    map.mapKeys { (k, _) -> k.toString() }
+        .mapValues { (_, v) -> convertToValue(v, internalLogger) }
+)
 
 /**
- * Converts a JSONArray to Value.List by recursively converting all elements.
+ * Converts a Kotlin List to Value.List by recursively converting all elements.
  *
- * Elements that fail conversion are logged and skipped.
- *
- * @param jsonArray The JSONArray to convert
- * @param internalLogger Logger for diagnostic messages (optional)
+ * @param list The List to convert
+ * @param internalLogger Logger for diagnostic messages
  * @return Value.List containing the converted elements
  */
-@Suppress("UnsafeThirdPartyFunctionCall")
-internal fun convertArrayToValue(jsonArray: JSONArray, internalLogger: InternalLogger? = null): Value {
-    val list = mutableListOf<Value>()
-    for (i in 0 until jsonArray.length()) {
-        try {
-            // Safe: index i is within bounds (0 until jsonArray.length())
-            list.add(convertToValue(jsonArray.get(i), internalLogger))
-        } catch (e: JSONException) {
-            internalLogger?.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "Failed to convert array element at index $i" },
-                e
-            )
-            // Skip individual items that fail to convert
-        }
-    }
-    return Value.List(list)
-}
-
-/**
- * Converts an OpenFeature Value to a primitive type suitable for JSONObject.
- *
- * Preserves type information by converting to appropriate JSON primitives:
- * - Value.Integer → Int
- * - Value.Double → Double
- * - Value.Boolean → Boolean
- * - Value.String → String
- * - Value.Null → null
- * - Value.Instant → String (ISO-8601 format)
- * - Value.List → JSONArray (recursive)
- * - Value.Structure → JSONObject (recursive)
- *
- * Note: JSONArray.put() and JSONObject.put() can throw JSONException for non-finite
- * Double values (NaN, Infinity). These are suppressed as they represent valid OpenFeature
- * values that should be converted.
- */
-@Suppress("UnsafeThirdPartyFunctionCall")
-@OptIn(kotlin.time.ExperimentalTime::class)
-internal fun convertValueToJson(value: Value): Any? = when (value) {
-    is Value.Null -> null
-    is Value.Boolean -> value.asBoolean()
-    is Value.Integer -> value.asInteger()
-    is Value.Double -> value.asDouble()
-    is Value.String -> value.asString()
-    is Value.Instant -> value.asInstant()?.toString()
-    is Value.List -> {
-        val jsonArray = JSONArray()
-        value.asList()?.forEach { element ->
-            jsonArray.put(convertValueToJson(element))
-        }
-        jsonArray
-    }
-    is Value.Structure -> {
-        val jsonObject = JSONObject()
-        value.asStructure()?.forEach { (key, v) ->
-            val jsonValue = convertValueToJson(v)
-            if (jsonValue != null) {
-                jsonObject.put(key, jsonValue)
-            }
-        }
-        jsonObject
-    }
-}
+internal fun convertListToValue(list: List<*>, internalLogger: InternalLogger): Value = Value.List(
+    list.map { element -> convertToValue(element, internalLogger) }
+)
 
 /**
  * Converts an OpenFeature [Value] to a Kotlin Map/List structure.
@@ -164,14 +99,32 @@ internal fun convertValueToMap(value: Value): Any? = when (value) {
     is Value.Double -> value.asDouble()
     is Value.String -> value.asString()
     is Value.Instant -> value.asInstant()?.toString()
-    is Value.List -> {
-        value.asList()?.mapNotNull { element ->
-            convertValueToMap(element)
-        }
-    }
-    is Value.Structure -> {
-        value.asStructure()?.mapValues { (_, v) ->
-            convertValueToMap(v)
-        }?.filterValues { it != null }
-    }
+    is Value.List -> convertValueToList(value)
+    is Value.Structure -> convertValueToStructure(value)
 }
+
+/**
+ * Converts an OpenFeature Value.List to a Kotlin List.
+ *
+ * Recursively converts all elements using [convertValueToMap].
+ *
+ * @param value The Value.List to convert
+ * @return A Kotlin List with converted elements, or null if the list cannot be accessed
+ */
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun convertValueToList(value: Value.List): List<Any?>? =
+    value.asList()?.mapNotNull { element -> convertValueToMap(element) }
+
+/**
+ * Converts an OpenFeature Value.Structure to a Kotlin Map.
+ *
+ * Recursively converts all values using [convertValueToMap].
+ * Null values are filtered out from the resulting map.
+ *
+ * @param value The Value.Structure to convert
+ * @return A Kotlin Map with converted values, or null if the structure cannot be accessed
+ */
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun convertValueToStructure(value: Value.Structure): Map<String, Any?>? = value.asStructure()
+    ?.mapValues { (_, v) -> convertValueToMap(v) }
+    ?.filterValues { it != null }

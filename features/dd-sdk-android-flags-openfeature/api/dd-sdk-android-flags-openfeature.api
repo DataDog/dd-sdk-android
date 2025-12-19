@@ -1,6 +1,6 @@
 public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider : dev/openfeature/kotlin/sdk/FeatureProvider {
 	public static final field Companion Lcom/datadog/android/flags/openfeature/DatadogFlagsProvider$Companion;
-	public synthetic fun <init> (Lcom/datadog/android/flags/FlagsClient;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/datadog/android/flags/FlagsClient;Lcom/datadog/android/api/feature/FeatureSdkCore;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun getBooleanEvaluation (Ljava/lang/String;ZLdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
 	public fun getDoubleEvaluation (Ljava/lang/String;DLdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
 	public fun getHooks ()Ljava/util/List;

@@ -8,9 +8,7 @@ package com.datadog.android.flags.openfeature
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
@@ -29,9 +27,6 @@ import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
@@ -308,7 +303,9 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         private const val INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE =
             "Invocation Context is not supported in Static-Paradigm clients"
 
-        internal fun wrap(flagsClient: FlagsClient, sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore): DatadogFlagsProvider =
-            DatadogFlagsProvider(flagsClient, sdkCore)
+        internal fun wrap(
+            flagsClient: FlagsClient,
+            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
+        ): DatadogFlagsProvider = DatadogFlagsProvider(flagsClient, sdkCore)
     }
 }
