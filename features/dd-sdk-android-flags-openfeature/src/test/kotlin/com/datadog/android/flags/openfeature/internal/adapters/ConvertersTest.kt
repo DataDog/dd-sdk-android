@@ -6,7 +6,6 @@
 
 package com.datadog.android.flags.openfeature.internal.adapters
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
@@ -17,19 +16,14 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONArray
-import org.json.JSONObject
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
-@ExtendWith(ForgeExtension::class, MockitoExtension::class)
+@ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(BaseConfigurator::class)
 internal class ConvertersTest {
 

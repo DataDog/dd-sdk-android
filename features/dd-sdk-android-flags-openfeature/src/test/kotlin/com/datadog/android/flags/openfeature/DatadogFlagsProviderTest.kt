@@ -20,7 +20,6 @@ import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -44,7 +43,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -493,9 +491,9 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M return Flow W observe()`() {
         // When
-        val flow = provider.observe()
+        provider.observe()
 
-        // Then
+        // Then - Flow returned without error
         verify(mockStateObservable, never()).addListener(any()) // Listener not added until collection starts
     }
 
