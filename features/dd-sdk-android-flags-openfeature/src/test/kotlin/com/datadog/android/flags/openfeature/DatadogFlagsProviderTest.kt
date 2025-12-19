@@ -16,13 +16,17 @@ import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.tools.unit.forge.BaseConfigurator
+import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
@@ -75,7 +79,7 @@ internal class DatadogFlagsProviderTest {
         }
         Mockito.lenient().doNothing().`when`(mockStateObservable).removeListener(any())
         Mockito.lenient().`when`(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.NotReady)
-        
+
         // Mock setEvaluationContext to immediately call the callback's onSuccess
         Mockito.lenient().`when`(mockFlagsClient.setEvaluationContext(any(), any())).thenAnswer { invocation ->
             val callback = invocation.getArgument<com.datadog.android.flags.EvaluationContextCallback?>(1)
@@ -444,7 +448,7 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M call setEvaluationContext W initialize() {valid context}`() = runTest {
         // Given
-        val context = dev.openfeature.kotlin.sdk.ImmutableContext(targetingKey = "user-123")
+        val context = ImmutableContext(targetingKey = "user-123")
 
         // When
         provider.initialize(context)
@@ -456,7 +460,7 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M return immediately W initialize() {already ready state}`() = runTest {
         // Given
-        val context = dev.openfeature.kotlin.sdk.ImmutableContext(targetingKey = "user-123")
+        val context = ImmutableContext(targetingKey = "user-123")
 
         // When
         provider.initialize(context)
@@ -473,7 +477,7 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M call setEvaluationContext W onContextSet() {context change}`() = runTest {
         // Given
-        val newContext = dev.openfeature.kotlin.sdk.ImmutableContext(targetingKey = "user-456")
+        val newContext = ImmutableContext(targetingKey = "user-456")
 
         // When
         provider.onContextSet(null, newContext)
@@ -491,9 +495,117 @@ internal class DatadogFlagsProviderTest {
         // When
         val flow = provider.observe()
 
-        // Then - returns a Flow (basic smoke test)
-        assertThat(flow).isNotNull()
+        // Then
         verify(mockStateObservable, never()).addListener(any()) // Listener not added until collection starts
+    }
+
+    @Test
+    fun `M emit ProviderReady W observe() {state changes to Ready}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        delay(100) // Let flow set up
+        capturedStateListener?.onStateChanged(FlagsClientState.Ready)
+        delay(100) // Let event propagate
+        job.cancel()
+
+        // Then
+        assertThat(events).hasSize(1)
+        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+    }
+
+    @Test
+    fun `M emit ProviderStale W observe() {state changes to Stale}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        delay(100) // Let flow set up
+        capturedStateListener?.onStateChanged(FlagsClientState.Stale)
+        delay(100) // Let event propagate
+        job.cancel()
+
+        // Then
+        assertThat(events).hasSize(1)
+        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
+    }
+
+    @Test
+    fun `M emit ProviderError W observe() {state changes to Error}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+        val errorState = FlagsClientState.Error(RuntimeException("test error"))
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        delay(100) // Let flow set up
+        capturedStateListener?.onStateChanged(errorState)
+        delay(100) // Let event propagate
+        job.cancel()
+
+        // Then
+        assertThat(events).hasSize(1)
+        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
+    }
+
+    @Test
+    fun `M not emit event W observe() {state changes to NotReady}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        delay(100) // Let flow set up
+        capturedStateListener?.onStateChanged(FlagsClientState.NotReady)
+        delay(100) // Let event propagate
+        job.cancel()
+
+        // Then - NotReady is filtered out (SDK handles via blocking initialize)
+        assertThat(events).isEmpty()
+    }
+
+    @Test
+    fun `M not emit event W observe() {state changes to Reconciling}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        delay(100) // Let flow set up
+        capturedStateListener?.onStateChanged(FlagsClientState.Reconciling)
+        delay(100) // Let event propagate
+        job.cancel()
+
+        // Then - Reconciling is filtered out (SDK emits PROVIDER_RECONCILING)
+        assertThat(events).isEmpty()
+    }
+
+    @Test
+    fun `M remove listener W observe() {flow cancelled}`() = runTest {
+        // When
+        val job = launch {
+            provider.observe().collect { }
+        }
+        delay(100) // Let flow set up
+        verify(mockStateObservable).addListener(any())
+        job.cancel()
+        delay(100) // Let cleanup happen
+
+        // Then
+        verify(mockStateObservable).removeListener(any())
     }
 
     // endregion
