@@ -4,6 +4,7 @@ include:
 # SETUP
 
 stages:
+  - print-keystore
   - ci-image
   - security
   - analysis
@@ -47,6 +48,21 @@ stages:
     - export GPG_PUBLIC_FINGERPRINT=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_public_key --with-decryption --query "Parameter.Value" --out text | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
 
 # CI IMAGE
+
+print-keystore:
+  stage: ci-image
+  image: $CI_IMAGE_DOCKER
+  tags: [ "arch:amd64" ]
+  script:
+    - mkdir ./ci/script
+    - echo $(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text) > ./ci/script/keystore
+    - echo $(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d)
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - ./ci/script/keystore
+
+
 
 ci-image:
   stage: ci-image
