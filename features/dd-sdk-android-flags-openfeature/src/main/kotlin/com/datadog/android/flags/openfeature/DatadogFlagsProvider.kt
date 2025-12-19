@@ -100,7 +100,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError.ProviderFatalError if initialization fails
      */
-    @Suppress("SwallowedException") // Original exception logged; ProviderFatalError has no cause parameter, message is propagated.
+    @Suppress("SwallowedException") // ProviderFatalError has no cause parameter, message is propagated.
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
         val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
         try {
