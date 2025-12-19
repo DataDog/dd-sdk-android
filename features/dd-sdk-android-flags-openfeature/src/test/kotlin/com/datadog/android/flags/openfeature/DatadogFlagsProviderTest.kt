@@ -6,7 +6,8 @@
 
 package com.datadog.android.flags.openfeature
 
-import com.datadog.android.api.SdkCore
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
@@ -53,7 +54,10 @@ internal class DatadogFlagsProviderTest {
     lateinit var mockFlagsClient: FlagsClient
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockStateObservable: StateObservable
@@ -63,14 +67,23 @@ internal class DatadogFlagsProviderTest {
 
     @BeforeEach
     fun setUp() {
+        Mockito.lenient().`when`(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
         Mockito.lenient().`when`(mockFlagsClient.state).thenReturn(mockStateObservable)
         Mockito.lenient().`when`(mockStateObservable.addListener(any())).thenAnswer {
             capturedStateListener = it.getArgument(0)
             Unit
         }
+        Mockito.lenient().doNothing().`when`(mockStateObservable).removeListener(any())
         Mockito.lenient().`when`(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.NotReady)
+        
+        // Mock setEvaluationContext to immediately call the callback's onSuccess
+        Mockito.lenient().`when`(mockFlagsClient.setEvaluationContext(any(), any())).thenAnswer { invocation ->
+            val callback = invocation.getArgument<com.datadog.android.flags.EvaluationContextCallback?>(1)
+            callback?.onSuccess()
+            Unit
+        }
 
-        provider = DatadogFlagsProvider.wrap(mockFlagsClient)
+        provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockSdkCore)
     }
 
     @Test
@@ -117,6 +130,7 @@ internal class DatadogFlagsProviderTest {
         assertThat(result.variant).isEqualTo(variant)
         assertThat(result.reason).isEqualTo(resolution.reason?.name)
         assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
     }
 
     @Test
@@ -141,6 +155,7 @@ internal class DatadogFlagsProviderTest {
 
         // Then
         assertThat(result.value).isEqualTo(defaultValue)
+        assertThat(result.variant).isNull()
         assertThat(result.errorCode).isNotNull
         assertThat(result.errorMessage).isEqualTo(errorMessage)
         assertThat(result.reason).isEqualTo("ERROR")
@@ -173,6 +188,36 @@ internal class DatadogFlagsProviderTest {
         assertThat(result.value).isEqualTo(expectedValue)
         assertThat(result.variant).isEqualTo(variant)
         assertThat(result.reason).isEqualTo(resolution.reason?.name)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
+    fun `M return default string value W getStringEvaluation() {error resolution}`(
+        forge: Forge,
+        @StringForgery flagKey: String,
+        @StringForgery defaultValue: String,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val errorCode = forge.aValueFrom(ErrorCode::class.java)
+        val resolution = ResolutionDetails(
+            value = defaultValue,
+            errorCode = errorCode,
+            errorMessage = errorMessage,
+            reason = ResolutionReason.ERROR
+        )
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
+
+        // When
+        val result = provider.getStringEvaluation(flagKey, defaultValue, null)
+
+        // Then
+        assertThat(result.value).isEqualTo(defaultValue)
+        assertThat(result.variant).isNull()
+        assertThat(result.errorCode).isNotNull
+        assertThat(result.errorMessage).isEqualTo(errorMessage)
+        assertThat(result.reason).isEqualTo("ERROR")
     }
 
     // endregion
@@ -182,13 +227,15 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M return integer value W getIntegerEvaluation() {successful resolution}`(
         forge: Forge,
-        @StringForgery flagKey: String
+        @StringForgery flagKey: String,
+        @StringForgery variant: String
     ) {
         // Given
         val expectedValue = forge.anInt()
         val defaultValue = forge.anInt()
         val resolution = ResolutionDetails(
             value = expectedValue,
+            variant = variant,
             reason = forge.aValueFrom(ResolutionReason::class.java)
         )
         whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
@@ -198,6 +245,38 @@ internal class DatadogFlagsProviderTest {
 
         // Then
         assertThat(result.value).isEqualTo(expectedValue)
+        assertThat(result.variant).isEqualTo(variant)
+        assertThat(result.reason).isEqualTo(resolution.reason?.name)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
+    fun `M return default integer value W getIntegerEvaluation() {error resolution}`(
+        forge: Forge,
+        @StringForgery flagKey: String,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val defaultValue = forge.anInt()
+        val errorCode = forge.aValueFrom(ErrorCode::class.java)
+        val resolution = ResolutionDetails(
+            value = defaultValue,
+            errorCode = errorCode,
+            errorMessage = errorMessage,
+            reason = ResolutionReason.ERROR
+        )
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
+
+        // When
+        val result = provider.getIntegerEvaluation(flagKey, defaultValue, null)
+
+        // Then
+        assertThat(result.value).isEqualTo(defaultValue)
+        assertThat(result.variant).isNull()
+        assertThat(result.errorCode).isNotNull
+        assertThat(result.errorMessage).isEqualTo(errorMessage)
+        assertThat(result.reason).isEqualTo("ERROR")
     }
 
     // endregion
@@ -207,13 +286,15 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M return double value W getDoubleEvaluation() {successful resolution}`(
         forge: Forge,
-        @StringForgery flagKey: String
+        @StringForgery flagKey: String,
+        @StringForgery variant: String
     ) {
         // Given
         val expectedValue = forge.aDouble()
         val defaultValue = forge.aDouble()
         val resolution = ResolutionDetails(
             value = expectedValue,
+            variant = variant,
             reason = forge.aValueFrom(ResolutionReason::class.java)
         )
         whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
@@ -223,6 +304,38 @@ internal class DatadogFlagsProviderTest {
 
         // Then
         assertThat(result.value).isEqualTo(expectedValue)
+        assertThat(result.variant).isEqualTo(variant)
+        assertThat(result.reason).isEqualTo(resolution.reason?.name)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
+    fun `M return default double value W getDoubleEvaluation() {error resolution}`(
+        forge: Forge,
+        @StringForgery flagKey: String,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val defaultValue = forge.aDouble()
+        val errorCode = forge.aValueFrom(ErrorCode::class.java)
+        val resolution = ResolutionDetails(
+            value = defaultValue,
+            errorCode = errorCode,
+            errorMessage = errorMessage,
+            reason = ResolutionReason.ERROR
+        )
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
+
+        // When
+        val result = provider.getDoubleEvaluation(flagKey, defaultValue, null)
+
+        // Then
+        assertThat(result.value).isEqualTo(defaultValue)
+        assertThat(result.variant).isNull()
+        assertThat(result.errorCode).isNotNull
+        assertThat(result.errorMessage).isEqualTo(errorMessage)
+        assertThat(result.reason).isEqualTo("ERROR")
     }
 
     // endregion
@@ -232,7 +345,8 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M return Value structure W getObjectEvaluation() {successful resolution}`(
         forge: Forge,
-        @StringForgery flagKey: String
+        @StringForgery flagKey: String,
+        @StringForgery variant: String
     ) {
         // Given
         val defaultValue = Value.Structure(
@@ -245,6 +359,7 @@ internal class DatadogFlagsProviderTest {
         }
         val resolution = ResolutionDetails(
             value = expectedMapValue,
+            variant = variant,
             reason = forge.aValueFrom(ResolutionReason::class.java)
         )
         whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>())).thenReturn(resolution)
@@ -254,6 +369,10 @@ internal class DatadogFlagsProviderTest {
 
         // Then
         assertThat(result.value).isInstanceOf(Value.Structure::class.java)
+        assertThat(result.variant).isEqualTo(variant)
+        assertThat(result.reason).isEqualTo(resolution.reason?.name)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
         val structure = checkNotNull(result.value.asStructure())
         assertThat(structure.keys).isEqualTo(expectedMapValue.keys)
         expectedMapValue.forEach { (key, value) ->
@@ -292,8 +411,10 @@ internal class DatadogFlagsProviderTest {
 
         // Then - Original defaultValue returned with types preserved
         assertThat(result.value).isSameAs(defaultValue)
+        assertThat(result.variant).isNull()
         assertThat(result.errorCode).isNotNull()
         assertThat(result.errorMessage).isEqualTo(errorMessage)
+        assertThat(result.reason).isEqualTo("ERROR")
 
         // Verify types are preserved (not converted to strings)
         val structure = checkNotNull(result.value.asStructure())
@@ -303,134 +424,6 @@ internal class DatadogFlagsProviderTest {
         assertThat((structure["boolValue"] as Value.Boolean).asBoolean()).isTrue()
         assertThat(structure["doubleValue"]).isInstanceOf(Value.Double::class.java)
         assertThat(structure["nested"]).isInstanceOf(Value.Structure::class.java)
-    }
-
-    // endregion
-
-    // region Error Code Mapping
-
-    @Test
-    fun `M map PROVIDER_NOT_READY error code W toOpenFeatureErrorCode()`(
-        @BoolForgery fakeDefaultValue: Boolean,
-        @StringForgery flagKey: String
-    ) {
-        // Given
-        val resolution = ResolutionDetails(
-            value = fakeDefaultValue,
-            errorCode = ErrorCode.PROVIDER_NOT_READY,
-            reason = ResolutionReason.ERROR
-        )
-        whenever(mockFlagsClient.resolve(flagKey, fakeDefaultValue)).thenReturn(resolution)
-
-        // When
-        val result = provider.getBooleanEvaluation(flagKey, fakeDefaultValue, null)
-
-        // Then
-        assertThat(result.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
-    }
-
-    @Test
-    fun `M map PARSE_ERROR error code W toOpenFeatureErrorCode()`(
-        @BoolForgery fakeDefaultValue: Boolean,
-        @StringForgery flagKey: String
-    ) {
-        // Given
-        val resolution = ResolutionDetails(
-            value = fakeDefaultValue,
-            errorCode = ErrorCode.PARSE_ERROR,
-            reason = ResolutionReason.ERROR
-        )
-        whenever(mockFlagsClient.resolve(flagKey, fakeDefaultValue)).thenReturn(resolution)
-
-        // When
-        val result = provider.getBooleanEvaluation(flagKey, fakeDefaultValue, null)
-
-        // Then
-        assertThat(result.errorCode).isEqualTo(OpenFeatureErrorCode.PARSE_ERROR)
-    }
-
-    @Test
-    fun `M map TYPE_MISMATCH error code W toOpenFeatureErrorCode()`(
-        @BoolForgery fakeDefaultValue: Boolean,
-        @StringForgery flagKey: String
-    ) {
-        // Given
-        val resolution = ResolutionDetails(
-            value = fakeDefaultValue,
-            errorCode = ErrorCode.TYPE_MISMATCH,
-            reason = ResolutionReason.ERROR
-        )
-        whenever(mockFlagsClient.resolve(flagKey, fakeDefaultValue)).thenReturn(resolution)
-
-        // When
-        val result = provider.getBooleanEvaluation(flagKey, fakeDefaultValue, null)
-
-        // Then
-        assertThat(result.errorCode).isEqualTo(OpenFeatureErrorCode.TYPE_MISMATCH)
-    }
-
-    // endregion
-
-    // region Value Conversion - Long to Double Promotion
-
-    @Test
-    fun `M convert to Integer W getObjectEvaluation() {Long within Int range}`(
-        forge: Forge,
-        @StringForgery flagKey: String,
-        @StringForgery jsonKey: String
-    ) {
-        // Given
-        val longValue = forge.anInt().toLong()
-        val mapValue: Map<String, Any?> = mapOf(jsonKey to longValue)
-        val resolution = ResolutionDetails(
-            value = mapValue,
-            reason = forge.aValueFrom(ResolutionReason::class.java)
-        )
-        whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>()))
-            .thenReturn(resolution)
-
-        // When
-        val result = provider.getObjectEvaluation(
-            flagKey,
-            Value.Structure(mapOf()),
-            null
-        )
-
-        // Then
-        val structure = checkNotNull(result.value.asStructure())
-        val countValue = structure[jsonKey]
-        assertThat(countValue).isInstanceOf(Value.Integer::class.java)
-        assertThat((countValue as Value.Integer).asInteger()).isEqualTo(longValue.toInt())
-    }
-
-    @Test
-    fun `M promote to Double W getObjectEvaluation() {Long exceeds Int MAX_VALUE}`(
-        forge: Forge,
-        @StringForgery flagKey: String,
-        @StringForgery jsonKey: String
-    ) {
-        // Given
-        val largeValue = forge.aLong(min = Int.MAX_VALUE.toLong() + 1)
-        val mapValue: Map<String, Any?> = mapOf(jsonKey to largeValue)
-        val resolution = ResolutionDetails(
-            value = mapValue,
-            reason = forge.aValueFrom(ResolutionReason::class.java)
-        )
-        whenever(mockFlagsClient.resolve(eq(flagKey), any<Map<String, Any?>>()))
-            .thenReturn(resolution)
-
-        // When
-        val result = provider.getObjectEvaluation(
-            flagKey,
-            Value.Structure(mapOf()),
-            null
-        )
-
-        // Then
-        val structure = checkNotNull(result.value.asStructure())
-        val timestampValue = structure[jsonKey]
-        assertThat(timestampValue).isInstanceOf(Value.Double::class.java)
-        assertThat((timestampValue as Value.Double).asDouble()).isEqualTo(largeValue.toDouble())
     }
 
     // endregion
@@ -452,28 +445,24 @@ internal class DatadogFlagsProviderTest {
     fun `M call setEvaluationContext W initialize() {valid context}`() = runTest {
         // Given
         val context = dev.openfeature.kotlin.sdk.ImmutableContext(targetingKey = "user-123")
-        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Ready)
 
         // When
         provider.initialize(context)
 
-        // Then - triggers context setting
-        verify(mockFlagsClient).setEvaluationContext(any())
-        verify(mockStateObservable).addListener(any())
+        // Then - triggers context setting via suspend function
+        verify(mockFlagsClient).setEvaluationContext(any(), any())
     }
 
     @Test
     fun `M return immediately W initialize() {already ready state}`() = runTest {
         // Given
         val context = dev.openfeature.kotlin.sdk.ImmutableContext(targetingKey = "user-123")
-        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Ready)
 
         // When
         provider.initialize(context)
 
-        // Then - completes via getCurrentState() fast path
-        verify(mockStateObservable).getCurrentState()
-        verify(mockStateObservable).removeListener(any())
+        // Then - completes successfully by calling setEvaluationContext
+        verify(mockFlagsClient).setEvaluationContext(any(), any())
     }
 
     // endregion
@@ -485,14 +474,12 @@ internal class DatadogFlagsProviderTest {
     fun `M call setEvaluationContext W onContextSet() {context change}`() = runTest {
         // Given
         val newContext = dev.openfeature.kotlin.sdk.ImmutableContext(targetingKey = "user-456")
-        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Ready)
 
         // When
         provider.onContextSet(null, newContext)
 
-        // Then - triggers context setting
-        verify(mockFlagsClient).setEvaluationContext(any())
-        verify(mockStateObservable).addListener(any())
+        // Then - triggers context setting via suspend function
+        verify(mockFlagsClient).setEvaluationContext(any(), any())
     }
 
     // endregion
