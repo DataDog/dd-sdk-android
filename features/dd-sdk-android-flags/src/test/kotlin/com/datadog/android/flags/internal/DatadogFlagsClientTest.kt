@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
@@ -34,6 +35,7 @@ import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -871,7 +873,10 @@ internal class DatadogFlagsClientTest {
 
         // Then
         val contextCaptor = argumentCaptor<EvaluationContext>()
-        verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            contextCaptor.capture(),
+            anyOrNull()
+        )
 
         val capturedContext = contextCaptor.firstValue
         assertThat(capturedContext.targetingKey).isEqualTo(fakeTargetingKey)
@@ -894,7 +899,10 @@ internal class DatadogFlagsClientTest {
         // Then
         // Verify that blank targeting keys are allowed and processed
         val contextCaptor = argumentCaptor<EvaluationContext>()
-        verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            contextCaptor.capture(),
+            anyOrNull()
+        )
 
         val capturedContext = contextCaptor.firstValue
         assertThat(capturedContext.targetingKey).isEmpty()
@@ -917,6 +925,37 @@ internal class DatadogFlagsClientTest {
         // Then
         // Verify that the evaluations manager was called to process the context
         verify(mockEvaluationsManager).updateEvaluationsForContext(fakeContext)
+    }
+
+    @Test
+    fun `M delegate callback W setEvaluationContext() { with callback }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+        val mockCallback = mock<EvaluationContextCallback>()
+
+        // When
+        testedClient.setEvaluationContext(fakeContext, mockCallback)
+
+        // Then
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            fakeContext,
+            mockCallback
+        )
+    }
+
+    @Test
+    fun `M delegate with null callback W setEvaluationContext() { without callback }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+
+        // When
+        testedClient.setEvaluationContext(fakeContext)
+
+        // Then
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            fakeContext,
+            null
+        )
     }
 
     // endregion

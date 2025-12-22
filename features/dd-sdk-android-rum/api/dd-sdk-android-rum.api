@@ -16,6 +16,12 @@ public final class com/datadog/android/rum/GlobalRumMonitor {
 	public static synthetic fun isRegistered$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
 }
 
+public final class com/datadog/android/rum/NoOpRumResourceAttributesProvider : com/datadog/android/rum/RumResourceAttributesProvider {
+	public fun <init> ()V
+	public fun onProvideAttributes (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)Ljava/util/Map;
+	public fun onProvideAttributes (Lokhttp3/Request;Lokhttp3/Response;Ljava/lang/Throwable;)Ljava/util/Map;
+}
+
 public final class com/datadog/android/rum/Rum {
 	public static final field INSTANCE Lcom/datadog/android/rum/Rum;
 	public static final fun enable (Lcom/datadog/android/rum/RumConfiguration;)V
@@ -197,7 +203,12 @@ public final class com/datadog/android/rum/RumPerformanceMetric : java/lang/Enum
 }
 
 public abstract interface class com/datadog/android/rum/RumResourceAttributesProvider {
+	public abstract fun onProvideAttributes (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)Ljava/util/Map;
 	public abstract fun onProvideAttributes (Lokhttp3/Request;Lokhttp3/Response;Ljava/lang/Throwable;)Ljava/util/Map;
+}
+
+public final class com/datadog/android/rum/RumResourceAttributesProvider$DefaultImpls {
+	public static fun onProvideAttributes (Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)Ljava/util/Map;
 }
 
 public final class com/datadog/android/rum/RumResourceKind : java/lang/Enum {
@@ -384,6 +395,21 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 	public static synthetic fun stopResource$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
+}
+
+public final class com/datadog/android/rum/internal/net/RumResourceInstrumentation {
+	public static final field Companion Lcom/datadog/android/rum/internal/net/RumResourceInstrumentation$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
+	public final fun reportInstrumentationError (Ljava/lang/String;)V
+	public final fun sendTiming (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
+	public final fun sendWaitForResourceTimingEvent (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
+	public final fun startResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
+	public final fun stopResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)V
+	public final fun stopResourceWithError (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Throwable;)V
+}
+
+public final class com/datadog/android/rum/internal/net/RumResourceInstrumentation$Companion {
+	public final fun buildResourceId (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Z)Lcom/datadog/android/rum/resource/ResourceId;
 }
 
 public abstract interface class com/datadog/android/rum/metric/interactiontonextview/LastInteractionIdentifier {
