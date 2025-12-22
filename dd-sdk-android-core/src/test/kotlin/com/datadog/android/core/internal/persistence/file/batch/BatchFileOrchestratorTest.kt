@@ -1228,6 +1228,89 @@ internal class BatchFileOrchestratorTest {
 
     // endregion
 
+    // region FileObserver
+
+    @Test
+    fun `M add file to knownFiles W fileObserver receives CREATE event`() {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, fileName)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).contains(File(fakeRootDir, fileName))
+    }
+
+    @Test
+    fun `M add file to knownFiles W fileObserver receives MOVED_TO event`() {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.MOVED_TO, fileName)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).contains(File(fakeRootDir, fileName))
+    }
+
+    @Test
+    fun `M remove file from knownFiles W fileObserver receives DELETE event`() {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, fileName)
+
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.DELETE, fileName)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(File(fakeRootDir, fileName))
+    }
+
+    @Test
+    fun `M remove file from knownFiles W fileObserver receives MOVED_FROM event`() {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, fileName)
+
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.MOVED_FROM, fileName)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(File(fakeRootDir, fileName))
+    }
+
+    @Test
+    fun `M ignore event W fileObserver receives null name`() {
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, null)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).isEmpty()
+    }
+
+    @Test
+    fun `M ignore event W fileObserver receives empty name`() {
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, "")
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).isEmpty()
+    }
+
+    @Test
+    fun `M ignore event W fileObserver receives non-batch filename`(
+        @StringForgery nonNumericName: String
+    ) {
+        // When
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, nonNumericName)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).isEmpty()
+    }
+
+    // endregion
+
     companion object {
 
         private const val RECENT_DELAY_MS = 250L
