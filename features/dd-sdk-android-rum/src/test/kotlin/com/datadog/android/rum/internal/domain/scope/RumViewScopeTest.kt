@@ -3458,6 +3458,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -3540,6 +3541,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -3614,6 +3616,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -3688,6 +3691,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -3764,6 +3768,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -3842,6 +3847,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
@@ -3916,6 +3922,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -3975,6 +3982,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4054,6 +4062,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -4135,6 +4144,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -4275,6 +4285,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
@@ -4352,6 +4363,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4504,6 +4516,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4639,6 +4652,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4721,6 +4735,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4961,6 +4976,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -5018,6 +5034,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -5084,6 +5101,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -5152,6 +5170,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -7574,7 +7593,9 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName, flagValue)
+            assertThat(lastValue as ErrorEvent)
+                .hasErrorId()
+                .hasFeatureFlag(flagName, flagValue)
         }
     }
 
@@ -7747,9 +7768,11 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName1, flagValue1)
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName2, flagValue2)
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName3, flagValue3)
+            assertThat(lastValue as ErrorEvent)
+                .hasErrorId()
+                .hasFeatureFlag(flagName1, flagValue1)
+                .hasFeatureFlag(flagName2, flagValue2)
+                .hasFeatureFlag(flagName3, flagValue3)
         }
     }
 

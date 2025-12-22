@@ -174,6 +174,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -276,6 +277,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -378,6 +380,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasErrorSourceType(ErrorEvent.SourceType.NDK)
         }
     }
@@ -429,6 +432,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -525,6 +529,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasBuildId(fakeDatadogContext.appBuildId)
@@ -724,6 +729,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -815,6 +821,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -904,6 +911,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(

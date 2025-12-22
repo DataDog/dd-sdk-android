@@ -713,6 +713,7 @@ internal open class RumViewScope(
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
                 featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(
+                    id = UUID.randomUUID().toString(),
                     message = message,
                     source = event.source.toSchemaSource(),
                     stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
@@ -1449,6 +1450,7 @@ internal open class RumViewScope(
             LongTaskEvent(
                 date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                 longTask = LongTaskEvent.LongTask(
+                    id = UUID.randomUUID().toString(),
                     duration = event.durationNs,
                     isFrozenFrame = isFrozenFrame
                 ),
