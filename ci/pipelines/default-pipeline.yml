@@ -400,7 +400,7 @@ test-pyramid:publish-e2e-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__E2E_CONFIG_JSON > ./config/us1.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_API_KEY)
@@ -428,7 +428,7 @@ test-pyramid:publish-webview-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__WEBVIEW_CONFIG_JSON > ./config/us1.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_API_KEY)
@@ -456,7 +456,7 @@ test-pyramid:publish-staging-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__E2E_STAGING_CONFIG_JSON > ./config/staging.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_API_KEY)
@@ -484,7 +484,7 @@ test-pyramid:publish-benchmark-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE >  ./sample-benchmark.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d >  ./sample-benchmark.keystore
     - get_secret $DD_ANDROID_SECRET__BENCHMARK_CONFIG_JSON > ./config/benchmark.json
     - export BM_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export BM_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_API_KEY)
