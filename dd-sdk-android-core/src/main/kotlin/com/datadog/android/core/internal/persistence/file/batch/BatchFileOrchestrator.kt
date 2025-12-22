@@ -26,6 +26,7 @@ import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.roundToLong
@@ -51,8 +52,8 @@ internal class BatchFileOrchestrator(
     private var previousFile: File? = null
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
-    private val lastCleanupTimestamp: AtomicLong = AtomicLong(0L)
-    private var isFileObserverStarted: Boolean = false
+    private val lastCleanupTimestamp = AtomicLong(0L)
+    private var isFileObserverStarted = AtomicBoolean(false)
 
     private val knownFiles: MutableSet<File> = mutableSetOf()
 
@@ -218,14 +219,13 @@ internal class BatchFileOrchestrator(
 
     @Synchronized
     private fun startFileObserverIfNotStarted() {
-        if (!isFileObserverStarted) {
+        if (isFileObserverStarted.compareAndSet(false, true)) {
+            fileObserver.startWatching()
             synchronized(knownFiles) {
                 rootDir.listFilesSafe(internalLogger)
                     ?.filter { it.name.isBatchFileName }
                     ?.let { knownFiles.addAll(it) }
             }
-            fileObserver.startWatching()
-            isFileObserverStarted = true
         }
     }
 
