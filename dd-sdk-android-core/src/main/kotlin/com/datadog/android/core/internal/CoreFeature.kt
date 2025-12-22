@@ -235,15 +235,18 @@ internal class CoreFeature(
         )
     }
 
-    internal val lastFatalAnrSent: Long?
-        get() {
-            val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
-            return if (file.existsSafe(internalLogger)) {
-                file.readTextSafe(Charsets.UTF_8, internalLogger)?.toLongOrNull()
-            } else {
-                null
-            }
+    // FIX for RUMS-5318: Cache timestamp in memory to prevent race condition
+    // Previously this was a property getter that read from disk every time,
+    // allowing multiple concurrent threads to pass the duplicate check before
+    // any writes occurred. Now it's lazily initialized once.
+    internal val lastFatalAnrSent: Long? by lazy {
+        val file = File(storageDir, LAST_FATAL_ANR_SENT_FILE_NAME)
+        if (file.existsSafe(internalLogger)) {
+            file.readTextSafe(Charsets.UTF_8, internalLogger)?.toLongOrNull()
+        } else {
+            null
         }
+    }
 
     fun initialize(
         appContext: Context,

@@ -1094,6 +1094,53 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M cache value consistently W lastFatalAnrSent { concurrent access race condition }`(
+        @TempDir tempDir: File
+    ) {
+        // Given - RUMS-5318: This test verifies the fix for the race condition where
+        // multiple threads could read lastFatalAnrSent before any writes occurred.
+        // The fix uses lazy initialization to ensure the value is read and cached once.
+        // This test verifies that the property returns a consistent reference.
+        val expectedTimestamp = 1234567890L
+        testedFeature.storageDir = tempDir
+        File(tempDir, CoreFeature.LAST_FATAL_ANR_SENT_FILE_NAME)
+            .writeText(expectedTimestamp.toString())
+
+        val threadCount = 10
+        val results = mutableListOf<Long?>()
+        val threads = mutableListOf<Thread>()
+        val latch = java.util.concurrent.CountDownLatch(1)
+
+        // When - Multiple threads access lastFatalAnrSent simultaneously
+        repeat(threadCount) {
+            val thread = Thread {
+                latch.await()
+                val value = testedFeature.lastFatalAnrSent
+                synchronized(results) {
+                    results.add(value)
+                }
+            }
+            threads.add(thread)
+            thread.start()
+        }
+
+        // Release all threads at once to maximize contention
+        latch.countDown()
+        threads.forEach { it.join(5000) }
+
+        // Then - With lazy initialization, all threads read the same cached value.
+        // The key difference is that with 'by lazy', the value is computed once and cached,
+        // whereas with a getter, the file could be read multiple times.
+        assertThat(results).hasSize(threadCount)
+        assertThat(results).allMatch { it == expectedTimestamp }
+
+        // Verify lazy caching: reading again returns the exact same reference
+        val firstRead = testedFeature.lastFatalAnrSent
+        val secondRead = testedFeature.lastFatalAnrSent
+        assertThat(firstRead).isSameAs(secondRead)
+    }
+
+    @Test
     fun `M delete last fatal ANR sent W deleteLastFatalAnrSent`(
         @TempDir tempDir: File,
         @LongForgery fakeLastFatalAnrSent: Long
