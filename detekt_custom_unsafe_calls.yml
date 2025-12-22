@@ -52,6 +52,10 @@ datadog:
       - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
       # endregion
       # region Apollo Kotlin
+      # region Cronet
+      - "org.chromium.net.CronetEngine.Builder.addPublicKeyPins(kotlin.String?, kotlin.collections.MutableSet?, kotlin.Boolean, java.util.Date?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "org.chromium.net.CronetEngine.openConnection(java.net.URL?):java.io.IOException"
+      # endregion
       - "com.apollographql.apollo.api.Operation.variablesJson(com.apollographql.apollo.api.CustomScalarAdapters):java.io.IOException"
       # endregion
       # region Java File
@@ -122,6 +126,7 @@ datadog:
       - "java.util.concurrent.ScheduledThreadPoolExecutor.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ThreadPoolExecutor.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ThreadPoolExecutor.constructor(kotlin.Int, kotlin.Int, kotlin.Long, java.util.concurrent.TimeUnit, java.util.concurrent.BlockingQueue):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "java.util.concurrent.ThreadPoolExecutor.constructor(kotlin.Int, kotlin.Int, kotlin.Long, java.util.concurrent.TimeUnit?, java.util.concurrent.BlockingQueue?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.concurrent.locks.Lock.lock():java.lang.InterruptedException"
       - "java.util.concurrent.locks.Lock.tryLock(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException,java.lang.NullPointerException"
       - "java.util.concurrent.locks.Lock.unlock():java.lang.IllegalMonitorStateException"

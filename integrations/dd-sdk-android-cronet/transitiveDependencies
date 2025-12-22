@@ -1,0 +1,10 @@
+Dependencies List
+
+androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+org.chromium.net:cronet-api:141.7340.3                          :   77 Kb
+org.chromium.net:cronet-shared:141.7340.3                       :   92 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
+
+Total transitive dependencies size                              : 1964 Kb
+

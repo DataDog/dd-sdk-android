@@ -95,6 +95,20 @@ internal class NoOpFlagsClientTest {
         )
     }
 
+    @Test
+    fun `M invoke onSuccess W setEvaluationContext() { with callback }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+        val mockCallback = mock<EvaluationContextCallback>()
+
+        // When
+        testedClient.setEvaluationContext(fakeContext, callback = mockCallback)
+
+        // Then
+        // NoOp client follows graceful degradation pattern - succeeds silently
+        verify(mockCallback).onSuccess()
+    }
+
     // endregion
 
     // region resolveBooleanValue()

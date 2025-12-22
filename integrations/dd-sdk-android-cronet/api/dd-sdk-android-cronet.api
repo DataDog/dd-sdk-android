@@ -1,0 +1,76 @@
+public final class com/datadog/android/cronet/DatadogCronetEngine : org/chromium/net/CronetEngine {
+	public fun addRequestFinishedListener (Lorg/chromium/net/RequestFinishedInfo$Listener;)V
+	public fun addRttListener (Lorg/chromium/net/NetworkQualityRttListener;)V
+	public fun addThroughputListener (Lorg/chromium/net/NetworkQualityThroughputListener;)V
+	public fun bindToNetwork (J)V
+	public fun configureNetworkQualityEstimatorForTesting (ZZZ)V
+	public fun createURLStreamHandlerFactory ()Ljava/net/URLStreamHandlerFactory;
+	public fun getActiveRequestCount ()I
+	public fun getDownstreamThroughputKbps ()I
+	public fun getEffectiveConnectionType ()I
+	public fun getGlobalMetricsDeltas ()[B
+	public fun getHttpRttMs ()I
+	public fun getTransportRttMs ()I
+	public fun getVersionString ()Ljava/lang/String;
+	public fun newBidirectionalStreamBuilder (Ljava/lang/String;Lorg/chromium/net/BidirectionalStream$Callback;Ljava/util/concurrent/Executor;)Lorg/chromium/net/BidirectionalStream$Builder;
+	public fun newUrlRequestBuilder (Ljava/lang/String;Lorg/chromium/net/UrlRequest$Callback;Ljava/util/concurrent/Executor;)Lorg/chromium/net/UrlRequest$Builder;
+	public fun openConnection (Ljava/net/URL;)Ljava/net/URLConnection;
+	public fun removeRequestFinishedListener (Lorg/chromium/net/RequestFinishedInfo$Listener;)V
+	public fun removeRttListener (Lorg/chromium/net/NetworkQualityRttListener;)V
+	public fun removeThroughputListener (Lorg/chromium/net/NetworkQualityThroughputListener;)V
+	public fun shutdown ()V
+	public fun startNetLogToDisk (Ljava/lang/String;ZI)V
+	public fun startNetLogToFile (Ljava/lang/String;Z)V
+	public fun stopNetLog ()V
+}
+
+public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/chromium/net/CronetEngine$Builder {
+	public fun <init> (Landroid/content/Context;Lorg/chromium/net/CronetEngine$Builder;)V
+	public synthetic fun <init> (Landroid/content/Context;Lorg/chromium/net/CronetEngine$Builder;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun addPublicKeyPins (Ljava/lang/String;Ljava/util/Set;ZLjava/util/Date;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun addPublicKeyPins (Ljava/lang/String;Ljava/util/Set;ZLjava/util/Date;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun addQuicHint (Ljava/lang/String;II)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun addQuicHint (Ljava/lang/String;II)Lorg/chromium/net/CronetEngine$Builder;
+	public fun build ()Lorg/chromium/net/CronetEngine;
+	public fun enableBrotli (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enableBrotli (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public fun enableHttp2 (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enableHttp2 (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public fun enableHttpCache (IJ)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enableHttpCache (IJ)Lorg/chromium/net/CronetEngine$Builder;
+	public fun enableNetworkQualityEstimator (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enableNetworkQualityEstimator (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public fun enablePublicKeyPinningBypassForLocalTrustAnchors (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enablePublicKeyPinningBypassForLocalTrustAnchors (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public fun enableQuic (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enableQuic (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public fun enableSdch (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun enableSdch (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public fun getDefaultUserAgent ()Ljava/lang/String;
+	public fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions$Builder;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions$Builder;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setDnsOptions (Lorg/chromium/net/DnsOptions$Builder;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setDnsOptions (Lorg/chromium/net/DnsOptions$Builder;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setDnsOptions (Lorg/chromium/net/DnsOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setDnsOptions (Lorg/chromium/net/DnsOptions;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setLibraryLoader (Lorg/chromium/net/CronetEngine$Builder$LibraryLoader;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setLibraryLoader (Lorg/chromium/net/CronetEngine$Builder$LibraryLoader;)Lorg/chromium/net/CronetEngine$Builder;
+	public final fun setListenerExecutor (Ljava/util/concurrent/Executor;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public fun setProxyOptions (Lorg/chromium/net/ProxyOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setProxyOptions (Lorg/chromium/net/ProxyOptions;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setQuicOptions (Lorg/chromium/net/QuicOptions$Builder;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setQuicOptions (Lorg/chromium/net/QuicOptions$Builder;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setQuicOptions (Lorg/chromium/net/QuicOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setQuicOptions (Lorg/chromium/net/QuicOptions;)Lorg/chromium/net/CronetEngine$Builder;
+	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public fun setStoragePath (Ljava/lang/String;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setStoragePath (Ljava/lang/String;)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setThreadPriority (I)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setThreadPriority (I)Lorg/chromium/net/CronetEngine$Builder;
+	public fun setUserAgent (Ljava/lang/String;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public synthetic fun setUserAgent (Ljava/lang/String;)Lorg/chromium/net/CronetEngine$Builder;
+}
+
