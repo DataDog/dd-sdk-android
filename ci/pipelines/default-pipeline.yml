@@ -43,6 +43,7 @@ stages:
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
+    - !reference [.snippets, source-secrets]
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
     - export GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)
     - export GPG_PASSWORD=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)
