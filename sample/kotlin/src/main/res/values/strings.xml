@@ -198,6 +198,11 @@
     <string name="visible_password_label">Visible Password</string>
     <string name="default_password_label">Default password</string>
     <string name="title_otel_traces">OpenTelemetry Traces</string>
+    <string name="title_profiling">Profiling</string>
+    <string name="title_profiling_demo">Profiling Demo</string>
+    <string name="btn_profiling_1s">Profile 1 second</string>
+    <string name="btn_profiling_10s">Profile 10 seconds</string>
+    <string name="btn_profiling_60s">Profile 60 seconds</string>
     <string name="start_chained_contexts_test">Start Chained Contexts Test</string>
     <string name="start_async_operation">Start Async Operation</string>
     <string name="chained_contexts_test">Chained Otel Contexts Test</string>
