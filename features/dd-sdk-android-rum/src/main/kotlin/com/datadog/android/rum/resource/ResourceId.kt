@@ -23,6 +23,8 @@ class ResourceId(
     val uuid: String?
 ) {
 
+    val someOtherUUID: String = UUID.randomUUID().toString()
+
     override fun equals(other: Any?): Boolean {
         return if (other is ResourceId) {
             if (uuid.isNullOrBlank() || other.uuid.isNullOrBlank()) {

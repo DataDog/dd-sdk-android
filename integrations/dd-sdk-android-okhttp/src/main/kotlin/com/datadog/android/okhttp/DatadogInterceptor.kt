@@ -28,6 +28,7 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -40,6 +41,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.Locale
+import kotlin.collections.plus
 
 /**
  * Provides automatic RUM & APM integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -107,13 +109,14 @@ open class DatadogInterceptor internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
+        var requestId: ResourceId? = null
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
 
             @Suppress("DEPRECATION")
-            val requestId = request.buildResourceId(generateUuid = true)
+            requestId = request.buildResourceId(generateUuid = true)
 
             (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
         } else {
@@ -135,7 +138,46 @@ open class DatadogInterceptor internal constructor(
             originalChain = chain
         )
 
-        return super.intercept(localChain)
+        val response = super.intercept(localChain)
+
+
+        val kind = when (val mimeType = response.header(HEADER_CT)) {
+            null -> RumResourceKind.NATIVE
+            else -> RumResourceKind.fromMimeType(mimeType)
+        }
+
+        val attributes = if (!isSampled || span == null) {
+            emptyMap<String, Any?>()
+        } else {
+            buildMap {
+                put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
+                put(RumAttributes.SPAN_ID, span.context().spanId.toString())
+                put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
+
+                request.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it.fromBase64())
+                }
+                request.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it.fromBase64())
+                }
+                request.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_VARIABLES, it.fromBase64())
+                }
+                request.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_PAYLOAD, it.fromBase64())
+                }
+            }
+        }
+
+        (GlobalRumMonitor.get(sdkCore as FeatureSdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
+            requestId!!,
+            response.code,
+            getBodyLength(response, sdkCore.internalLogger),
+            kind,
+            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
+        )
+
+        return response
     }
 
     // endregion

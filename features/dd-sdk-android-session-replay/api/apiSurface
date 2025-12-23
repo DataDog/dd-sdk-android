@@ -483,6 +483,17 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vertical
+const val RECORD_TYPE_FULL_SNAPSHOT: Long
+const val RECORD_TYPE_INCREMENTAL_SNAPSHOT: Long
+const val RECORD_TYPE_META: Long
+const val RECORD_TYPE_FOCUS: Long
+const val RECORD_TYPE_VIEW_END: Long
+const val RECORD_TYPE_VISUAL_VIEWPORT: Long
+const val WIREFRAME_TYPE_SHAPE: String
+const val WIREFRAME_TYPE_TEXT: String
+const val WIREFRAME_TYPE_IMAGE: String
+const val WIREFRAME_TYPE_PLACEHOLDER: String
+const val WIREFRAME_TYPE_WEBVIEW: String
 data class com.datadog.android.sessionreplay.model.ResourceHashesEntry
   constructor(kotlin.Number, kotlin.collections.List<kotlin.String>)
   fun toJson(): com.google.gson.JsonElement
