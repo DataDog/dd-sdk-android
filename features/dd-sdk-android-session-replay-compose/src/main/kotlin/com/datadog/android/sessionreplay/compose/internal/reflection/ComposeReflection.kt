@@ -184,15 +184,13 @@ internal fun Field.getSafe(target: Any?): Any? {
         return null
     }
     return try {
+        @Suppress("UnsafeThirdPartyFunctionCall") // null is checked above so no npe possible
         get(target)
     } catch (e: IllegalAccessException) {
         logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_FIELD_NO_ACCESSIBLE, e)
         null
     } catch (e: IllegalArgumentException) {
         logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_INCOMPATIBLE_TYPE, e)
-        null
-    } catch (e: NullPointerException) {
-        logNullPointerException(name, LOG_TYPE_FIELD, e)
         null
     } catch (e: ExceptionInInitializerError) {
         logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_INITIALIZATION_ERROR, e)
