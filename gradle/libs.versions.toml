@@ -85,6 +85,7 @@ kotlinXmlBuilder = "1.9.3"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
 coilCompose = "2.1.0"
+coil3 = "3.0.4"
 fresco = "2.3.0"
 glide = "4.11.0"
 picasso = "2.8"
@@ -237,6 +238,9 @@ kotlinXmlBuilder = {module="org.redundent:kotlin-xml-builder", version.ref="kotl
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+coil3 = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
+coil3Compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil3NetworkOkHttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3" }
 
 frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }
 frescoOkHttp3 = { module = "com.facebook.fresco:imagepipeline-okhttp3", version.ref = "fresco" }

@@ -584,6 +584,7 @@ datadog:
       - "java.lang.ref.WeakReference.constructor(kotlin.Nothing?)"
       - "java.lang.ref.WeakReference.constructor(kotlin.String?)"
       - "java.lang.ref.WeakReference.get()"
+      - "java.lang.reflect.isStatic(kotlin.Int)"
       - "java.lang.reflect.Field.getSafe(kotlin.Any?)"
       - "java.lang.reflect.Field.accessible()"
       - "java.lang.StringBuilder.append(kotlin.Char)"

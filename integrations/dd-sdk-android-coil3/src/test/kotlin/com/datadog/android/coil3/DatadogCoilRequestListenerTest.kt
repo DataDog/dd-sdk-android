@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.coil
+package com.datadog.android.coil3
 
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.net.Uri
-import coil.request.ImageRequest
+import coil3.request.ErrorResult
+import coil3.request.ImageRequest
 import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -20,7 +19,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -62,6 +61,8 @@ internal class DatadogCoilRequestListenerTest {
 
     lateinit var mockRequest: ImageRequest
 
+    lateinit var mockErrorResult: ErrorResult
+
     @BeforeEach
     fun `set up`() {
         GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
@@ -86,9 +87,10 @@ internal class DatadogCoilRequestListenerTest {
         // GIVEN
         val fakePath = forge.aStringMatching("http://[a-z].[png|jpeg|gif]")
         mockRequest = mockImageRequest(fakePath)
+        mockErrorResult = mockErrorResult(fakeException)
 
         // WHEN
-        testable.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, mockErrorResult)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -98,7 +100,7 @@ internal class DatadogCoilRequestListenerTest {
             eq(fakeException),
             argumentCaptor.capture()
         )
-        Assertions.assertThat(argumentCaptor.firstValue).containsEntry(
+        assertThat(argumentCaptor.firstValue).containsEntry(
             DatadogCoilRequestListener.REQUEST_PATH_TAG,
             fakePath
         )
@@ -112,9 +114,10 @@ internal class DatadogCoilRequestListenerTest {
             whenever(it.path).thenReturn(fakePath)
         }
         mockRequest = mockImageRequest(mockUri)
+        mockErrorResult = mockErrorResult(fakeException)
 
         // WHEN
-        testable.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, mockErrorResult)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -124,7 +127,7 @@ internal class DatadogCoilRequestListenerTest {
             eq(fakeException),
             argumentCaptor.capture()
         )
-        Assertions.assertThat(argumentCaptor.firstValue).containsEntry(
+        assertThat(argumentCaptor.firstValue).containsEntry(
             DatadogCoilRequestListener.REQUEST_PATH_TAG,
             fakePath
         )
@@ -135,9 +138,10 @@ internal class DatadogCoilRequestListenerTest {
         // GIVEN
         val fakeHttpUrl = forgeImagePath(forge).toHttpUrl()
         mockRequest = mockImageRequest(fakeHttpUrl)
+        mockErrorResult = mockErrorResult(fakeException)
 
         // WHEN
-        testable.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, mockErrorResult)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -147,7 +151,7 @@ internal class DatadogCoilRequestListenerTest {
             eq(fakeException),
             argumentCaptor.capture()
         )
-        Assertions.assertThat(argumentCaptor.firstValue).containsEntry(
+        assertThat(argumentCaptor.firstValue).containsEntry(
             DatadogCoilRequestListener.REQUEST_PATH_TAG,
             fakeHttpUrl.toUrl().toString()
         )
@@ -158,9 +162,10 @@ internal class DatadogCoilRequestListenerTest {
         // GIVEN
         val fakeFile = File(forge.aStringMatching("[a-z]+/[a-z]+\\.(png|jpeg|gif)"))
         mockRequest = mockImageRequest(fakeFile)
+        mockErrorResult = mockErrorResult(fakeException)
 
         // WHEN
-        testable.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, mockErrorResult)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -170,20 +175,21 @@ internal class DatadogCoilRequestListenerTest {
             eq(fakeException),
             argumentCaptor.capture()
         )
-        Assertions.assertThat(argumentCaptor.firstValue).containsEntry(
+        assertThat(argumentCaptor.firstValue).containsEntry(
             DatadogCoilRequestListener.REQUEST_PATH_TAG,
             fakeFile.path
         )
     }
 
     @Test
-    fun `M send RUM error event W Drawable Request fails`() {
+    fun `M send RUM error event with empty attributes W unknown data type Request fails`() {
         // GIVEN
-        val mockDrawable: Drawable = mock()
-        mockRequest = mockImageRequest(mockDrawable)
+        val unknownData: Any = mock()
+        mockRequest = mockImageRequest(unknownData)
+        mockErrorResult = mockErrorResult(fakeException)
 
         // WHEN
-        testable.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, mockErrorResult)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -193,27 +199,7 @@ internal class DatadogCoilRequestListenerTest {
             eq(fakeException),
             argumentCaptor.capture()
         )
-        Assertions.assertThat(argumentCaptor.firstValue).isEmpty()
-    }
-
-    @Test
-    fun `M send RUM error event W Bitmap Request fails`() {
-        // GIVEN
-        val mockDrawable: Bitmap = mock()
-        mockRequest = mockImageRequest(mockDrawable)
-
-        // WHEN
-        testable.onError(mockRequest, fakeException)
-
-        // THEN
-        val argumentCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(mockRumMonitor).addError(
-            eq(DatadogCoilRequestListener.REQUEST_ERROR_MESSAGE),
-            eq(RumErrorSource.SOURCE),
-            eq(fakeException),
-            argumentCaptor.capture()
-        )
-        Assertions.assertThat(argumentCaptor.firstValue).isEmpty()
+        assertThat(argumentCaptor.firstValue).isEmpty()
     }
 
     // endregion
@@ -223,6 +209,12 @@ internal class DatadogCoilRequestListenerTest {
     private fun mockImageRequest(data: Any): ImageRequest {
         return mock {
             whenever(it.data).thenReturn(data)
+        }
+    }
+
+    private fun mockErrorResult(throwable: Throwable): ErrorResult {
+        return mock {
+            whenever(it.throwable).thenReturn(throwable)
         }
     }
 
