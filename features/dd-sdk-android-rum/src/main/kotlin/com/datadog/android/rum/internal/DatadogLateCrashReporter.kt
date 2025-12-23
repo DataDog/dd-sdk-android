@@ -29,6 +29,7 @@ import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 internal class DatadogLateCrashReporter(
@@ -256,6 +257,7 @@ internal class DatadogLateCrashReporter(
             ),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),
             error = ErrorEvent.Error(
+                id = UUID.randomUUID().toString(),
                 message = errorLogMessage,
                 source = ErrorEvent.ErrorSource.SOURCE,
                 stack = stacktrace,
