@@ -452,13 +452,13 @@ internal class RumConfigurationBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M build config with RUM OperationStep Vital eventMapper W setVitalOperationStepEventMapper() & build()`() {
+    fun `M build config W setVitalEventMapper() & build() {only vitalOperationStepEventMapper}`() {
         // Given
         val eventMapper: EventMapper<RumVitalOperationStepEvent> = mock()
 
         // When
         val rumConfiguration = testedBuilder
-            .setVitalOperationStepEventMapper(eventMapper)
+            .setVitalEventMapper(vitalOperationStepEventMapper = eventMapper)
             .build()
 
         // Then
@@ -471,19 +471,43 @@ internal class RumConfigurationBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M build config with RUM AppLaunch Vital eventMapper W setVitalAppLaunchEventMapper() & build()`() {
+    fun `M build config W setVitalEventMapper() & build() {only vitalAppLaunchEventMapper}`() {
         // Given
         val eventMapper: EventMapper<RumVitalAppLaunchEvent> = mock()
 
         // When
         val rumConfiguration = testedBuilder
-            .setVitalAppLaunchEventMapper(eventMapper)
+            .setVitalEventMapper(vitalAppLaunchEventMapper = eventMapper)
             .build()
 
         // Then
         assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 vitalAppLaunchEventMapper = eventMapper
+            )
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M build config W setVitalEventMapper() & build()`() {
+        // Given
+        val rumVitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent> = mock()
+        val rumVitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent> = mock()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setVitalEventMapper(
+                vitalOperationStepEventMapper = rumVitalOperationStepEventMapper,
+                vitalAppLaunchEventMapper = rumVitalAppLaunchEventMapper
+            )
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                vitalOperationStepEventMapper = rumVitalOperationStepEventMapper,
+                vitalAppLaunchEventMapper = rumVitalAppLaunchEventMapper
             )
         )
     }

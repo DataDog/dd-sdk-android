@@ -67,8 +67,6 @@ internal data class RumEventMapper(
             is RumVitalOperationStepEvent -> vitalOperationStepEventMapper.map(event)
             is RumVitalAppLaunchEvent -> vitalAppLaunchEventMapper.map(event)
             is TelemetryConfigurationEvent -> telemetryConfigurationMapper.map(event)
-            // TODO RUM-13103: add vitalAppLaunchEventMapper.
-            is RumVitalAppLaunchEvent,
             is TelemetryDebugEvent,
             is TelemetryUsageEvent,
             is TelemetryErrorEvent -> event

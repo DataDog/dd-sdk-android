@@ -135,14 +135,16 @@ internal class DatadogFeaturesInitializer @Inject constructor(
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            setVitalOperationStepEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            setVitalAppLaunchEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
+            setVitalEventMapper(
+                vitalOperationStepEventMapper = { event ->
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                    event
+                },
+                vitalAppLaunchEventMapper = { event ->
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                    event
+                }
+            )
             enableComposeActionTracking()
         }.build()
     }
