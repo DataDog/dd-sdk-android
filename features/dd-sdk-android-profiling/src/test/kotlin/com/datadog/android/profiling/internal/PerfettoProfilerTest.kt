@@ -30,6 +30,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -393,6 +394,44 @@ class PerfettoProfilerTest {
 
         callbackCaptor.firstValue.accept(mockResult)
         verifyNoInteractions(mockProfilerCallback)
+    }
+
+    @Test
+    fun `M not have the same stop signal W start&stop multiple times`() {
+        inOrder(mockService) {
+            // When
+            // First request
+            testedProfiler.start(mockContext, setOf(fakeInstanceName))
+            val stopSignalCaptor = argumentCaptor<CancellationSignal>()
+            testedProfiler.stop(fakeInstanceName)
+
+            verify(mockService).requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                stopSignalCaptor.capture(),
+                any(),
+                callbackCaptor.capture()
+            )
+            // Then
+            val successResult = mock<ProfilingResult> {
+                on { errorCode } doReturn ProfilingResult.ERROR_NONE
+                on { resultFilePath } doReturn fakePath
+            }
+            callbackCaptor.firstValue.accept(successResult)
+
+            // Second request
+            testedProfiler.start(mockContext, setOf(fakeInstanceName))
+            verify(mockService).requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                stopSignalCaptor.capture(),
+                any(),
+                callbackCaptor.capture()
+            )
+            assertThat(stopSignalCaptor.firstValue).isNotSameAs(stopSignalCaptor.secondValue)
+        }
     }
 
     private class StubTimeProvider : TimeProvider {

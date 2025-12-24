@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.CancellationSignal
 import android.os.ProfilingResult
 import androidx.annotation.RequiresApi
+import androidx.core.os.ProfilingRequest
 import androidx.core.os.StackSamplingRequestBuilder
 import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
@@ -38,10 +39,7 @@ internal class PerfettoProfiler(
     private val profilingExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 ) : Profiler {
 
-    private val requestBuilder: StackSamplingRequestBuilder
-
-    private val stopSignal = CancellationSignal()
-
+    private var stopSignal: CancellationSignal? = null
     private val resultCallback: Consumer<ProfilingResult>
 
     // This flag represents which instance of this class is working for.
@@ -55,12 +53,6 @@ internal class PerfettoProfiler(
     private val callbackMap: MutableMap<String, ProfilerCallback> = ConcurrentHashMap()
 
     init {
-        requestBuilder = StackSamplingRequestBuilder()
-            .setCancellationSignal(stopSignal)
-            .setTag(PROFILING_TAG_APPLICATION_LAUNCH)
-            .setSamplingFrequencyHz(PROFILING_SAMPLING_RATE)
-            .setBufferSizeKb(BUFFER_SIZE_KB)
-            .setDurationMs(PROFILING_MAX_DURATION_MS)
 
         resultCallback = Consumer<ProfilingResult> { result ->
             val endTime = timeProvider.getDeviceTimestamp()
@@ -80,6 +72,19 @@ internal class PerfettoProfiler(
         }
     }
 
+    private fun buildStackSamplingRequest(): ProfilingRequest {
+        return CancellationSignal().let {
+            this.stopSignal = it
+            StackSamplingRequestBuilder()
+                .setCancellationSignal(it)
+                .setTag(PROFILING_TAG_APPLICATION_LAUNCH)
+                .setSamplingFrequencyHz(PROFILING_SAMPLING_RATE)
+                .setBufferSizeKb(BUFFER_SIZE_KB)
+                .setDurationMs(PROFILING_MAX_DURATION_MS)
+                .build()
+        }
+    }
+
     private fun notifyAllCallbacks(result: PerfettoResult) {
         callbackMap.filter { runningInstances.get().contains(it.key) }.forEach { callback ->
             callback.value.onSuccess(result)
@@ -92,13 +97,19 @@ internal class PerfettoProfiler(
         if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             sendProfilingStartTelemetry()
             profilingStartTime = timeProvider.getDeviceTimestamp()
-            requestProfiling(appContext, requestBuilder.build(), profilingExecutor, resultCallback)
+            requestProfiling(
+                appContext,
+                buildStackSamplingRequest(),
+                profilingExecutor,
+                resultCallback
+            )
         }
     }
 
     override fun stop(sdkInstanceName: String) {
         if (runningInstances.get().contains(sdkInstanceName)) {
-            stopSignal.cancel()
+            stopSignal?.cancel()
+            stopSignal = null
         }
     }
 
