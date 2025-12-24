@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -33,6 +34,7 @@ import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.resource.ResourceId
 import java.net.MalformedURLException
 import java.net.URL
 import java.nio.ByteBuffer
@@ -135,6 +137,9 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
+        (event.key as? ResourceId)?.let {
+            Log.w("WAHAHA", "stopping ${it.someOtherUUID}")
+        }
         stopped = true
         resourceAttributes.putAll(event.attributes)
         kind = event.kind

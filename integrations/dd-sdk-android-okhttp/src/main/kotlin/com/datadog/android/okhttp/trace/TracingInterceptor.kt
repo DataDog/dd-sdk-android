@@ -22,6 +22,7 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.rum.resource.CallResourceId
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -117,6 +118,14 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
+        return doIntercept(chain = chain, chain.request(), resourceId = null)
+    }
+
+    protected fun doIntercept(
+        chain: Interceptor.Chain,
+        modifiedRequest: Request,
+        resourceId: CallResourceId?
+    ): Response {
         val sdkCore = sdkCoreReference.get()
         if (sdkCore == null) {
             val prefix = if (sdkInstanceName == null) {
@@ -129,20 +138,19 @@ internal constructor(
                 InternalLogger.Target.USER,
                 {
                     "$prefix for OkHttp instrumentation is not found, skipping" +
-                        " tracking of request with url=${chain.request().url}"
+                            " tracking of request with url=${modifiedRequest.url}"
                 }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
-            return chain.proceed(chain.request())
+            return chain.proceed(modifiedRequest)
         } else {
             val internalSdkCore = sdkCore as InternalSdkCore
             val tracer = resolveTracer(internalSdkCore)
-            val request = chain.request()
 
-            return if (tracer == null || !isRequestTraceable(internalSdkCore, request)) {
-                intercept(internalSdkCore, chain, request)
+            return if (tracer == null || !isRequestTraceable(internalSdkCore, modifiedRequest)) {
+                intercept(internalSdkCore, chain, modifiedRequest, resourceId)
             } else {
-                interceptAndTrace(internalSdkCore, chain, request, tracer)
+                interceptAndTrace(internalSdkCore, chain, modifiedRequest, tracer, resourceId)
             }
         }
     }
@@ -166,7 +174,8 @@ internal constructor(
         request: Request,
         span: DatadogSpan?,
         response: Response?,
-        throwable: Throwable?
+        throwable: Throwable?,
+        resourceId: CallResourceId?
     ) {
         if (span != null) {
             try {
@@ -221,7 +230,8 @@ internal constructor(
         sdkCore: InternalSdkCore,
         chain: Interceptor.Chain,
         request: Request,
-        tracer: DatadogTracer
+        tracer: DatadogTracer,
+        resourceId: CallResourceId?
     ): Response {
         val span = buildSpan(tracer, request)
         val isSampled = span.extractRumContext(rumContextPropagator, block = true).sample(request)
@@ -256,10 +266,10 @@ internal constructor(
 
         try {
             val response = chain.proceed(updatedRequest)
-            handleResponse(sdkCore, request, response, span, isSampled)
+            handleResponse(sdkCore, request, response, span, isSampled, resourceId)
             return response
         } catch (e: Throwable) {
-            handleThrowable(sdkCore, request, e, span, isSampled)
+            handleThrowable(sdkCore, request, e, span, isSampled, resourceId)
             throw e
         }
     }
@@ -268,14 +278,15 @@ internal constructor(
     private fun intercept(
         sdkCore: FeatureSdkCore,
         chain: Interceptor.Chain,
-        request: Request
+        request: Request,
+        resourceId: CallResourceId?
     ): Response {
         try {
             val response = chain.proceed(request)
-            onRequestIntercepted(sdkCore, request, null, response, null)
+            onRequestIntercepted(sdkCore, request, null, response, null, resourceId)
             return response
         } catch (e: Throwable) {
-            onRequestIntercepted(sdkCore, request, null, null, e)
+            onRequestIntercepted(sdkCore, request, null, null, e, resourceId)
             throw e
         }
     }
@@ -630,10 +641,11 @@ internal constructor(
         request: Request,
         response: Response,
         span: DatadogSpan,
-        isSampled: Boolean
+        isSampled: Boolean,
+        resourceId: CallResourceId?
     ) {
         if (!isSampled) {
-            onRequestIntercepted(sdkCore, request, null, response, null)
+            onRequestIntercepted(sdkCore, request, null, response, null, resourceId)
         } else {
             val statusCode = response.code
             span.setTag(Tags.KEY_HTTP_STATUS, statusCode)
@@ -643,7 +655,7 @@ internal constructor(
             if (statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
                 span.resourceName = RESOURCE_NAME_404
             }
-            onRequestIntercepted(sdkCore, request, span, response, null)
+            onRequestIntercepted(sdkCore, request, span, response, null, resourceId)
         }
         span.finishRumAware(isSampled)
     }
@@ -653,16 +665,17 @@ internal constructor(
         request: Request,
         throwable: Throwable,
         span: DatadogSpan,
-        isSampled: Boolean
+        isSampled: Boolean,
+        resourceId: CallResourceId?
     ) {
         if (!isSampled) {
-            onRequestIntercepted(sdkCore, request, null, null, throwable)
+            onRequestIntercepted(sdkCore, request, null, null, throwable, resourceId)
         } else {
             span.isError = true
             span.setTag(Tags.KEY_ERROR_MSG, throwable.message)
             span.setTag(Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
             span.setTag(Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
-            onRequestIntercepted(sdkCore, request, span, null, throwable)
+            onRequestIntercepted(sdkCore, request, span, null, throwable, resourceId)
         }
         span.finishRumAware(isSampled)
     }

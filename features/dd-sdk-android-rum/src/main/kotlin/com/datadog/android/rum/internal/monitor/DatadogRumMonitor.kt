@@ -64,6 +64,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.rum.resource.CallResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -307,6 +308,18 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun startResource(
+        key: CallResourceId,
+        method: RumResourceMethod,
+        url: String,
+        attributes: Map<String, Any?>
+    ) {
+        val eventTime = getEventTime(attributes)
+        handleEvent(
+            RumRawEvent.StartResource(key, url, method, attributes.toMap(), eventTime)
+        )
+    }
+
     override fun stopResource(
         key: ResourceId,
         statusCode: Int?,
@@ -327,8 +340,48 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun stopResource(
+        key: CallResourceId,
+        statusCode: Int?,
+        size: Long?,
+        kind: RumResourceKind,
+        attributes: Map<String, Any?>
+    ) {
+        val eventTime = getEventTime(attributes)
+        handleEvent(
+            RumRawEvent.StopResource(
+                key,
+                statusCode?.toLong(),
+                size,
+                kind,
+                attributes.toMap(),
+                eventTime
+            )
+        )
+    }
+
     override fun stopResourceWithError(
         key: ResourceId,
+        statusCode: Int?,
+        message: String,
+        source: RumErrorSource,
+        throwable: Throwable,
+        attributes: Map<String, Any?>
+    ) {
+        handleEvent(
+            RumRawEvent.StopResourceWithError(
+                key,
+                statusCode?.toLong(),
+                message,
+                source,
+                throwable,
+                attributes.toMap()
+            )
+        )
+    }
+
+    override fun stopResourceWithError(
+        key: CallResourceId,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,

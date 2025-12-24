@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.rum.resource.CallResourceId
 
 /**
  * FOR INTERNAL USAGE ONLY.
@@ -50,6 +51,14 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
         attributes: Map<String, Any?> = emptyMap()
     )
 
+    @InternalApi
+    fun startResource(
+        key: CallResourceId,
+        method: RumResourceMethod,
+        url: String,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
     /**
      * Stops a previously started Resource, linked with the [key] instance.
      * @param key the instance that represents the active view (usually your
@@ -65,6 +74,15 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
     @InternalApi
     fun stopResource(
         key: ResourceId,
+        statusCode: Int?,
+        size: Long?,
+        kind: RumResourceKind,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    @InternalApi
+    fun stopResource(
+        key: CallResourceId,
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
@@ -89,6 +107,16 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
     @InternalApi
     fun stopResourceWithError(
         key: ResourceId,
+        statusCode: Int?,
+        message: String,
+        source: RumErrorSource,
+        throwable: Throwable,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    @InternalApi
+    fun stopResourceWithError(
+        key: CallResourceId,
         statusCode: Int?,
         message: String,
         source: RumErrorSource,

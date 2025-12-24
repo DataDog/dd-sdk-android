@@ -37,6 +37,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.KClass
 
 /**
  * A no-op implementation of [SdkCore].
@@ -344,5 +345,6 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         override fun timeout(): Timeout {
             return Timeout.NONE
         }
+
     }
 }

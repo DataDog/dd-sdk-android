@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.resource
 
+import okhttp3.Call
 import java.util.UUID
 
 /**
@@ -23,6 +24,8 @@ class ResourceId(
     val uuid: String?
 ) {
 
+    val someOtherUUID: String = UUID.randomUUID().toString()
+
     override fun equals(other: Any?): Boolean {
         return if (other is ResourceId) {
             if (uuid.isNullOrBlank() || other.uuid.isNullOrBlank()) {
@@ -39,3 +42,7 @@ class ResourceId(
         return key.hashCode()
     }
 }
+
+data class CallResourceId(
+    val call: Call
+)

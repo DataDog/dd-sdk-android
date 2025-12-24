@@ -10,11 +10,11 @@ import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.datalist.DataSourceType
-import com.datadog.android.trace.GlobalDatadogTracer
-import com.datadog.android.trace.api.scope.DatadogScope
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 internal class DataRepository(
     private val remoteDataSource: RemoteDataSource,
@@ -23,28 +23,25 @@ internal class DataRepository(
 
     @Suppress("SimpleRedundantLet")
     fun getLogs(query: String): Flowable<List<Log>> {
-        var spanScope: DatadogScope? = null
-        return Single.concat(
-            localDataSource.fetchLogs(),
-            remoteDataSource.getLogs(query)
-                .map { it.data }
-                .doOnSuccess {
-                    localDataSource.persistLogs(it)
+//        var spanScope: Scope? = null
+        val listOfStuff = List(20) {
+            Single.timer(Random.nextLong(0, 1000), TimeUnit.MILLISECONDS)
+                .flatMap {
+                    getStuff(query)
                 }
-                .doOnSubscribe {
-                    val tracer = GlobalDatadogTracer.get()
-                    val span = tracer
-                        .buildSpan("Fetch recent logs")
-                        .start()
-                    spanScope = tracer.activateSpan(span)
-                }
-                .doFinally {
-                    GlobalDatadogTracer.get().activeSpan()?.let {
-                        it.finish()
-                    }
-                    spanScope?.close()
-                }
-        )
+                .toFlowable()
+        }
+
+//        val listOfStuff = List(20) {
+//            getStuff(query).toFlowable()
+//        }
+
+        return Flowable.merge(listOfStuff)
+    }
+
+    private fun getStuff(query: String): Single<List<Log>> {
+        return remoteDataSource.getLogs(query)
+            .map { it.data }
             .subscribeOn(Schedulers.io())
     }
 

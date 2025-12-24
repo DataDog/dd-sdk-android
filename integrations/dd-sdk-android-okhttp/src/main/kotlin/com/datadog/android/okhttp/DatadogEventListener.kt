@@ -9,11 +9,10 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.SdkReference
-import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
-import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.rum.resource.CallResourceId
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Handshake
@@ -46,8 +45,7 @@ import java.net.Proxy
  */
 class DatadogEventListener
 internal constructor(
-    internal val sdkCore: SdkCore,
-    internal val key: ResourceId
+    internal val sdkCore: SdkCore
 ) : EventListener() {
 
     private var callStart = 0L
@@ -72,14 +70,16 @@ internal constructor(
     /** @inheritdoc */
     override fun callStart(call: Call) {
         super.callStart(call)
-        sendWaitForResourceTimingEvent()
         callStart = sdkCore.time.deviceTimeNs
     }
 
     /** @inheritdoc */
     override fun dnsStart(call: Call, domainName: String) {
         super.dnsStart(call, domainName)
-        sendWaitForResourceTimingEvent()
+        call.getResourceId().let {
+            sendWaitForResourceTimingEvent(it)
+        }
+
         dnsStart = sdkCore.time.deviceTimeNs
     }
 
@@ -92,7 +92,9 @@ internal constructor(
     /** @inheritdoc */
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
         super.connectStart(call, inetSocketAddress, proxy)
-        sendWaitForResourceTimingEvent()
+        call.getResourceId().let {
+            sendWaitForResourceTimingEvent(it)
+        }
         connStart = sdkCore.time.deviceTimeNs
     }
 
@@ -110,7 +112,9 @@ internal constructor(
     /** @inheritdoc */
     override fun secureConnectStart(call: Call) {
         super.secureConnectStart(call)
-        sendWaitForResourceTimingEvent()
+        call.getResourceId().let {
+            sendWaitForResourceTimingEvent(it)
+        }
         sslStart = sdkCore.time.deviceTimeNs
     }
 
@@ -123,7 +127,9 @@ internal constructor(
     /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
-        sendWaitForResourceTimingEvent()
+        call.getResourceId().let {
+            sendWaitForResourceTimingEvent(it)
+        }
         headersStart = sdkCore.time.deviceTimeNs
     }
 
@@ -132,14 +138,18 @@ internal constructor(
         super.responseHeadersEnd(call, response)
         headersEnd = sdkCore.time.deviceTimeNs
         if (response.code >= HttpURLConnection.HTTP_BAD_REQUEST) {
-            sendTiming()
+            call.getResourceId().let {
+                sendTiming(it)
+            }
         }
     }
 
     /** @inheritdoc */
     override fun responseBodyStart(call: Call) {
         super.responseBodyStart(call)
-        sendWaitForResourceTimingEvent()
+        call.getResourceId().let {
+            sendWaitForResourceTimingEvent(it)
+        }
         bodyStart = sdkCore.time.deviceTimeNs
     }
 
@@ -152,26 +162,35 @@ internal constructor(
     /** @inheritdoc */
     override fun callEnd(call: Call) {
         super.callEnd(call)
-        sendTiming()
+        call.getResourceId().let {
+            sendTiming(it)
+        }
     }
 
     /** @inheritdoc */
     override fun callFailed(call: Call, ioe: IOException) {
         super.callFailed(call, ioe)
-        sendTiming()
+        call.getResourceId().let {
+            sendTiming(it)
+        }
     }
 
     // endregion
 
     // region Internal
 
-    private fun sendWaitForResourceTimingEvent() {
+    private fun sendWaitForResourceTimingEvent(key: CallResourceId) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.waitForResourceTiming(key)
     }
 
-    private fun sendTiming() {
+    private fun sendTiming(key: CallResourceId) {
         val timing = buildTiming()
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.addResourceTiming(key, timing)
+    }
+
+    private fun Call.getResourceId(): CallResourceId {
+        val result = CallResourceId(this)
+        return result
     }
 
     private fun buildTiming(): ResourceTiming {
@@ -243,11 +262,9 @@ internal constructor(
 
         /** @inheritdoc */
         override fun create(call: Call): EventListener {
-            @Suppress("DEPRECATION")
-            val resourceId = call.request().buildResourceId(generateUuid = false)
             val sdkCore = sdkCoreReference.get()
             return if (sdkCore != null) {
-                DatadogEventListener(sdkCore, resourceId)
+                DatadogEventListener(sdkCore)
             } else {
                 InternalLogger.UNBOUND.log(
                     InternalLogger.Level.INFO,

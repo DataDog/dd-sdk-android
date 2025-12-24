@@ -16,7 +16,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
-import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -28,6 +27,7 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.CallResourceId
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -40,6 +40,8 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.Locale
+import java.util.UUID
+import kotlin.collections.plus
 
 /**
  * Provides automatic RUM & APM integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -107,15 +109,23 @@ open class DatadogInterceptor internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
+        val internalLogger = (sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
+
+        val localChain = chainWithoutDDHeaders(
+            internalLogger = internalLogger,
+            originalChain = chain
+        )
+
         if (rumFeature != null) {
             val request = chain.request()
+            val requestId = CallResourceId(call = chain.call())
+
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
 
-            @Suppress("DEPRECATION")
-            val requestId = request.buildResourceId(generateUuid = true)
-
             (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
+
+            return doIntercept(chain = localChain, modifiedRequest = request, resourceId = requestId)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -127,15 +137,10 @@ open class DatadogInterceptor internal constructor(
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, prefix) }
             )
+
+            return doIntercept(chain = chain, modifiedRequest = chain.request(), resourceId = null)
         }
 
-        val internalLogger = (sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
-        val localChain = chainWithoutDDHeaders(
-            internalLogger = internalLogger,
-            originalChain = chain
-        )
-
-        return super.intercept(localChain)
     }
 
     // endregion
@@ -148,18 +153,20 @@ open class DatadogInterceptor internal constructor(
         request: Request,
         span: DatadogSpan?,
         response: Response?,
-        throwable: Throwable?
+        throwable: Throwable?,
+        resourceId: CallResourceId?
     ) {
-        super.onRequestIntercepted(sdkCore, request, span, response, throwable)
+        super.onRequestIntercepted(sdkCore, request, span, response, throwable, resourceId)
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-        if (rumFeature != null) {
+        if (rumFeature != null && resourceId != null) {
             if (response != null) {
-                handleResponse(sdkCore, request, response, span, span != null)
+                handleResponse(sdkCore, request, response, span, span != null, resourceId)
             } else {
                 handleThrowable(
                     sdkCore,
                     request,
-                    throwable ?: IllegalStateException(ERROR_NO_RESPONSE)
+                    throwable ?: IllegalStateException(ERROR_NO_RESPONSE),
+                    resourceId
                 )
             }
         }
@@ -186,10 +193,9 @@ open class DatadogInterceptor internal constructor(
         request: Request,
         response: Response,
         span: DatadogSpan?,
-        isSampled: Boolean
+        isSampled: Boolean,
+        resourceId: CallResourceId
     ) {
-        @Suppress("DEPRECATION")
-        val requestId = request.buildResourceId(generateUuid = false)
         val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
             null -> RumResourceKind.NATIVE
@@ -220,7 +226,7 @@ open class DatadogInterceptor internal constructor(
 
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
-            requestId,
+            resourceId,
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
             kind,
@@ -271,15 +277,14 @@ open class DatadogInterceptor internal constructor(
     private fun handleThrowable(
         sdkCore: SdkCore,
         request: Request,
-        throwable: Throwable
+        throwable: Throwable,
+        resourceId: CallResourceId
     ) {
-        @Suppress("DEPRECATION")
-        val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
-        @Suppress("DEPRECATION")
+
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
-            requestId,
+            resourceId,
             null,
             ERROR_MSG_FORMAT.format(Locale.US, method, url),
             RumErrorSource.NETWORK,

@@ -200,8 +200,11 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
   fun startResource(com.datadog.android.rum.resource.ResourceId, com.datadog.android.rum.RumResourceMethod, String, Map<String, Any?> = emptyMap())
+  fun startResource(com.datadog.android.rum.resource.CallResourceId, com.datadog.android.rum.RumResourceMethod, String, Map<String, Any?> = emptyMap())
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
+  fun stopResource(com.datadog.android.rum.resource.CallResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(com.datadog.android.rum.resource.CallResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
 class com.datadog.android.rum.internal.net.RumResourceInstrumentation
   constructor(String?, String, com.datadog.android.rum.RumResourceAttributesProvider)
@@ -238,8 +241,11 @@ fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 class com.datadog.android.rum.resource.ResourceId
   constructor(String, String?)
+  val someOtherUUID: String
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+data class com.datadog.android.rum.resource.CallResourceId
+  constructor(okhttp3.Call)
 class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
   constructor(java.io.InputStream, String, com.datadog.android.api.SdkCore = Datadog.getInstance())
   override fun read(): Int
