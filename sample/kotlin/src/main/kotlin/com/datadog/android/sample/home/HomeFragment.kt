@@ -58,6 +58,7 @@ internal class HomeFragment :
             R.id.navigation_crash -> R.id.fragment_crash
             R.id.navigation_traces -> R.id.fragment_trace
             R.id.navigation_otel_traces -> R.id.fragment_otel_traces
+            R.id.navigation_profiling -> R.id.fragment_profiling
             R.id.navigation_vitals -> R.id.fragment_vitals
             R.id.navigation_webview -> R.id.fragment_webview
             R.id.navigation_data_list -> R.id.fragment_data_list
