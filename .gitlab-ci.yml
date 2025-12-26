@@ -1,5 +1,5 @@
 variables:
-  CURRENT_CI_IMAGE: "21"
+  CURRENT_CI_IMAGE: "22"
   CI_IMAGE_DOCKER: registry.ddbuild.io/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -15,7 +15,7 @@ variables:
   EMULATOR_NAME: "android_emulator"
   ANDROID_ARCH: "arm64-v8a"
   ANDROID_API: "36"
-  ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
+  ANDROID_SDK_VERSION: "commandlinetools-mac-13114758_latest"
 
 include:
   - local: 'ci/pipelines/default-pipeline.yml'
