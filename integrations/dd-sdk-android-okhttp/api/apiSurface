@@ -17,7 +17,7 @@ class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.okhttp.trace.TracingInterceptor
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
+  override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?, com.datadog.android.rum.resource.ResourceId?)
   override fun canSendSpan(): Boolean
   override fun onSdkInstanceReady(com.datadog.android.core.InternalSdkCore)
   class Builder : BaseBuilder<DatadogInterceptor, Builder>
@@ -39,7 +39,9 @@ interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan, okhttp3.Response?, Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
+  protected fun doIntercept(okhttp3.Interceptor.Chain, com.datadog.android.rum.resource.ResourceId?): okhttp3.Response
+  protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?, com.datadog.android.rum.resource.ResourceId?)
+  DEPRECATED protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
   class Builder : BaseBuilder<TracingInterceptor, Builder>
     constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
     constructor(List<String>)

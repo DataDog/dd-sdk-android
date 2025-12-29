@@ -22,6 +22,7 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -117,6 +118,14 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
+        return doIntercept(chain = chain, resourceId = null)
+    }
+
+    @Suppress("UndocumentedPublicFunction")
+    protected fun doIntercept(
+        chain: Interceptor.Chain,
+        resourceId: ResourceId?
+    ): Response {
         val sdkCore = sdkCoreReference.get()
         if (sdkCore == null) {
             val prefix = if (sdkInstanceName == null) {
@@ -140,9 +149,9 @@ internal constructor(
             val request = chain.request()
 
             return if (tracer == null || !isRequestTraceable(internalSdkCore, request)) {
-                intercept(internalSdkCore, chain, request)
+                intercept(internalSdkCore, chain, request, resourceId)
             } else {
-                interceptAndTrace(internalSdkCore, chain, request, tracer)
+                interceptAndTrace(internalSdkCore, chain, request, tracer, resourceId)
             }
         }
     }
@@ -160,7 +169,34 @@ internal constructor(
      * @param span the [AgentSpan] created around the [Request] (or null if request is not traced)
      * @param response the [Request] response (or null if an error occurred)
      * @param throwable the error which occurred during the [Request] (or null)
+     * @param resourceId the id of started RUM resource (or null if RUM isn't enabled)
      */
+    protected open fun onRequestIntercepted(
+        sdkCore: FeatureSdkCore,
+        request: Request,
+        span: DatadogSpan?,
+        response: Response?,
+        throwable: Throwable?,
+        resourceId: ResourceId?
+    ) {
+        @Suppress("DEPRECATION")
+        onRequestIntercepted(sdkCore, request, span, response, throwable)
+    }
+
+    /**
+     * Called whenever a span was successfully created around an OkHttp [Request].
+     * The given [AgentSpan] can be updated (e.g.: add custom tags / baggage items) before it is
+     * finalized.
+     * @param sdkCore SDK instance to use.
+     * @param request the intercepted [Request]
+     * @param span the [AgentSpan] created around the [Request] (or null if request is not traced)
+     * @param response the [Request] response (or null if an error occurred)
+     * @param throwable the error which occurred during the [Request] (or null)
+     */
+    @Deprecated(
+        "This method is deprecated and will be removed in the future versions. " +
+            "Use onRequestIntercepted(FeatureSdkCore, Request, DatadogSpan?, Response?, Throwable?, ResourceId?)."
+    )
     protected open fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -221,7 +257,8 @@ internal constructor(
         sdkCore: InternalSdkCore,
         chain: Interceptor.Chain,
         request: Request,
-        tracer: DatadogTracer
+        tracer: DatadogTracer,
+        resourceId: ResourceId?
     ): Response {
         val span = buildSpan(tracer, request)
         val isSampled = span.extractRumContext(rumContextPropagator, block = true).sample(request)
@@ -256,10 +293,10 @@ internal constructor(
 
         try {
             val response = chain.proceed(updatedRequest)
-            handleResponse(sdkCore, request, response, span, isSampled)
+            handleResponse(sdkCore, request, response, span, isSampled, resourceId)
             return response
         } catch (e: Throwable) {
-            handleThrowable(sdkCore, request, e, span, isSampled)
+            handleThrowable(sdkCore, request, e, span, isSampled, resourceId)
             throw e
         }
     }
@@ -268,14 +305,15 @@ internal constructor(
     private fun intercept(
         sdkCore: FeatureSdkCore,
         chain: Interceptor.Chain,
-        request: Request
+        request: Request,
+        resourceId: ResourceId?
     ): Response {
         try {
             val response = chain.proceed(request)
-            onRequestIntercepted(sdkCore, request, null, response, null)
+            onRequestIntercepted(sdkCore, request, null, response, null, resourceId)
             return response
         } catch (e: Throwable) {
-            onRequestIntercepted(sdkCore, request, null, null, e)
+            onRequestIntercepted(sdkCore, request, null, null, e, resourceId)
             throw e
         }
     }
@@ -630,10 +668,11 @@ internal constructor(
         request: Request,
         response: Response,
         span: DatadogSpan,
-        isSampled: Boolean
+        isSampled: Boolean,
+        resourceId: ResourceId?
     ) {
         if (!isSampled) {
-            onRequestIntercepted(sdkCore, request, null, response, null)
+            onRequestIntercepted(sdkCore, request, null, response, null, resourceId)
         } else {
             val statusCode = response.code
             span.setTag(Tags.KEY_HTTP_STATUS, statusCode)
@@ -643,7 +682,7 @@ internal constructor(
             if (statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
                 span.resourceName = RESOURCE_NAME_404
             }
-            onRequestIntercepted(sdkCore, request, span, response, null)
+            onRequestIntercepted(sdkCore, request, span, response, null, resourceId)
         }
         span.finishRumAware(isSampled)
     }
@@ -653,16 +692,17 @@ internal constructor(
         request: Request,
         throwable: Throwable,
         span: DatadogSpan,
-        isSampled: Boolean
+        isSampled: Boolean,
+        resourceId: ResourceId?
     ) {
         if (!isSampled) {
-            onRequestIntercepted(sdkCore, request, null, null, throwable)
+            onRequestIntercepted(sdkCore, request, null, null, throwable, resourceId)
         } else {
             span.isError = true
             span.setTag(Tags.KEY_ERROR_MSG, throwable.message)
             span.setTag(Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
             span.setTag(Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
-            onRequestIntercepted(sdkCore, request, span, null, throwable)
+            onRequestIntercepted(sdkCore, request, span, null, throwable, resourceId)
         }
         span.finishRumAware(isSampled)
     }
