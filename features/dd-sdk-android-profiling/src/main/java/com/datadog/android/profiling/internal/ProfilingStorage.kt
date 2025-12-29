@@ -13,7 +13,7 @@ private const val KEY_PROFILING_ENABLED = "dd_profiling_enabled"
 
 internal object ProfilingStorage {
 
-    private var sharedPreferencesStorage: SharedPreferencesStorage? = null
+    internal var sharedPreferencesStorage: SharedPreferencesStorage? = null
 
     @JvmStatic
     internal fun addProfilingFlag(appContext: Context, sdkInstanceName: String) {
