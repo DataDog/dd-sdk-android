@@ -431,10 +431,7 @@ internal class RumFeature(
 
             TELEMETRY_SESSION_REPLAY_SKIP_FRAME -> addSessionReplaySkippedFrame()
             FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE -> {
-                (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
-                    it.stopKeepAliveCallback()
-                    it.drainExecutorService()
-                }
+                (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.drainExecutorService()
             }
 
             else -> {

@@ -226,7 +226,6 @@ internal open class RumViewScope(
             )
 
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, datadogContext, writeScope, writer)
-            is RumRawEvent.KeepAlive -> onKeepAlive(event, datadogContext, writeScope, writer)
 
             is RumRawEvent.StopSession -> onStopSession(event, datadogContext, writeScope, writer)
 
@@ -899,19 +898,6 @@ internal open class RumViewScope(
     }
 
     @WorkerThread
-    private fun onKeepAlive(
-        event: RumRawEvent.KeepAlive,
-        datadogContext: DatadogContext,
-        writeScope: EventWriteScope,
-        writer: DataWriter<Any>
-    ) {
-        delegateEventToChildren(event, datadogContext, writeScope, writer)
-        if (stopped) return
-
-        sendViewUpdate(event, datadogContext, writeScope, writer)
-    }
-
-    @WorkerThread
     private fun delegateEventToChildren(
         event: RumRawEvent,
         datadogContext: DatadogContext,
@@ -1111,7 +1097,7 @@ internal open class RumViewScope(
     }
 
     @Suppress("LongMethod", "ComplexMethod")
-    private fun sendViewUpdate(
+    internal fun sendViewUpdate(
         event: RumRawEvent,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,

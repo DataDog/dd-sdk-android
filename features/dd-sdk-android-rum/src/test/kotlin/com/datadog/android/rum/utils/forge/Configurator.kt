@@ -79,7 +79,6 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(AddFeatureFlagEvaluationForgeryFactory())
         forge.addFactory(AddFeatureFlagEvaluationsForgeryFactory())
         forge.addFactory(ErrorSentForgeryFactory())
-        forge.addFactory(KeepAliveForgeryFactory())
         forge.addFactory(LongTaskSentForgeryFactory())
     }
 }

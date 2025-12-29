@@ -21,7 +21,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
@@ -264,68 +263,6 @@ internal class RumViewScopeAttributePropagationTest {
     // region Propagate parent attributes in View Event
 
     @Test
-    fun `M send event with parent attributes W handleEvent(KeepAlive) on active view`() {
-        // Given
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeParentAttributes)
-        testedScope = newRumViewScope(initialAttributes = emptyMap())
-
-        // When
-        val result =
-            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .containsExactlyContextAttributes(expectedAttributes)
-        }
-        assertThat(result).isNotNull()
-    }
-
-    @Test
-    fun `M send event with both parent and view attributes W handleEvent(KeepAlive) on active view`() {
-        // Given
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeParentAttributes)
-        expectedAttributes.putAll(fakeViewAttributes)
-        testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
-
-        // When
-        val result =
-            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .containsExactlyContextAttributes(expectedAttributes)
-        }
-        assertThat(result).isNotNull()
-    }
-
-    @Test
-    fun `M send event with overridden parent attributes W handleEvent(KeepAlive) on active view`(
-        forge: Forge
-    ) {
-        // Given
-        val overriddenAttributes = fakeParentAttributes.map { it.key to forge.aString() }.toMap()
-        testedScope = newRumViewScope(initialAttributes = overriddenAttributes)
-
-        // When
-        val result =
-            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .containsExactlyContextAttributes(overriddenAttributes)
-        }
-        assertThat(result).isNotNull()
-    }
-
-    @Test
     fun `M send event with original parent attributes W handleEvent(StopView+ErrorSent) on active view`(
         @StringForgery fakeAttrKey: String,
         @StringForgery fakeAttrValue: String
@@ -360,7 +297,7 @@ internal class RumViewScopeAttributePropagationTest {
     }
 
     @Test
-    fun `M send event with added view attributes W handleEvent(AddViewAttributes+KeepAlive) on active view`() {
+    fun `M send event with added view attributes W handleEvent(AddViewAttributes+StopView) on active view`() {
         // Given
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeParentAttributes)
@@ -368,14 +305,19 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = emptyMap())
 
         // When
-        testedScope.handleEvent(
+        val result = testedScope.handleEvent(
             RumRawEvent.AddViewAttributes(fakeViewAttributes),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
-        val result =
-            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        testedScope.handleEvent(
+            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -387,7 +329,7 @@ internal class RumViewScopeAttributePropagationTest {
     }
 
     @Test
-    fun `M send event without removed view attributes W handleEvent(AddViewAttributes+KeepAlive) on active view`(
+    fun `M send event without removed view attributes W handleEvent(AddViewAttributes+StopView) on active view`(
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery()])
@@ -399,14 +341,19 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
 
         // When
-        testedScope.handleEvent(
+        val result = testedScope.handleEvent(
             RumRawEvent.RemoveViewAttributes(fakeViewAttributes.keys),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
-        val result =
-            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        testedScope.handleEvent(
+            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ViewEvent> {
