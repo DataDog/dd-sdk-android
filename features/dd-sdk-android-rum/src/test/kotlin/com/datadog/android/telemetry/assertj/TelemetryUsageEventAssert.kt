@@ -175,6 +175,10 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
                 assertThat(actualUsage)
                     .hasActionType(expected.actionType)
             }
+
+            is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
+                actual.telemetry.usage as TelemetryUsageEvent.Usage.TrackWebView
+            }
         }
     }
 

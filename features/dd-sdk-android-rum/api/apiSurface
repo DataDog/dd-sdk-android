@@ -3028,6 +3028,12 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
       companion object 
         fun fromJson(kotlin.String): AddViewLoadingTime
         fun fromJsonObject(com.google.gson.JsonObject): AddViewLoadingTime
+    class TrackWebView : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TrackWebView
+        fun fromJsonObject(com.google.gson.JsonObject): TrackWebView
     companion object 
       fun fromJson(kotlin.String): Usage
       fun fromJsonElement(com.google.gson.JsonElement): Usage

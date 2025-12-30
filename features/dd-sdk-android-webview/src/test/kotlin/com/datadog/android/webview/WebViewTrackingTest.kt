@@ -20,6 +20,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.DatadogEventBridge
@@ -152,6 +153,27 @@ internal class WebViewTrackingTest {
         verify(mockWebView).addJavascriptInterface(
             argThat { this is DatadogEventBridge },
             eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+    }
+
+    @Test
+    fun `M send telemetry W enable`(@Forgery fakeUrls: List<URL>) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
+
+        // Then
+        verify(mockInternalLogger).logApiUsage(
+            any(),
+            argThat { this() is InternalTelemetryEvent.ApiUsage.TrackWebView }
         )
     }
 
