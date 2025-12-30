@@ -1244,6 +1244,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1327,6 +1328,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1405,6 +1407,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -1503,6 +1506,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1604,6 +1608,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -1698,6 +1703,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1797,6 +1803,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -1878,6 +1885,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1961,6 +1969,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -2042,6 +2051,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2125,6 +2135,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -2210,6 +2221,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2298,6 +2310,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)

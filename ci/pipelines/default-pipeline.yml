@@ -43,6 +43,7 @@ stages:
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
+    - !reference [.snippets, source-secrets]
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
     - export GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)
     - export GPG_PASSWORD=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)
@@ -119,6 +120,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
     - ./gradlew :features:dd-sdk-android-profiling:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
+    - ./gradlew :integrations:dd-sdk-android-coil3:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-cronet:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
@@ -401,7 +403,7 @@ test-pyramid:publish-e2e-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__E2E_CONFIG_JSON > ./config/us1.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_API_KEY)
@@ -429,7 +431,7 @@ test-pyramid:publish-webview-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__WEBVIEW_CONFIG_JSON > ./config/us1.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_API_KEY)
@@ -457,7 +459,7 @@ test-pyramid:publish-staging-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__E2E_STAGING_CONFIG_JSON > ./config/staging.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_API_KEY)
@@ -485,7 +487,7 @@ test-pyramid:publish-benchmark-synthetics:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES > ./gradle.properties
-    - get_secret $DD_ANDROID_SECRET__KEYSTORE >  ./sample-benchmark.keystore
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d >  ./sample-benchmark.keystore
     - get_secret $DD_ANDROID_SECRET__BENCHMARK_CONFIG_JSON > ./config/benchmark.json
     - export BM_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export BM_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_API_KEY)
@@ -798,6 +800,23 @@ publish:release-coil:
     expire_in: 7 days
     paths:
       - integrations/dd-sdk-android-coil/verification-metadata.xml
+
+publish:release-coil3:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :integrations:dd-sdk-android-coil3:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - integrations/dd-sdk-android-coil3/verification-metadata.xml
 
 publish:release-compose:
   tags: [ "arch:amd64" ]
@@ -1134,6 +1153,7 @@ notify:merge-verification-metadata:
     - publish:release-webview
     - publish:release-profiling
     - publish:release-coil
+    - publish:release-coil3
     - publish:release-compose
     - publish:release-cronet
     - publish:release-fresco

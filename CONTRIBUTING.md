@@ -41,6 +41,7 @@ This project hosts the following modules:
   - `integrations/***`: a set of libraries integrating Datadog products in third party libraries:
     - `integrations/dd-sdk-android-apollo`: a lightweight library providing a bridge integration between Datadog SDK and [Apollo Kotlin](https://github.com/apollographql/apollo-kotlin)
     - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
+    - `integrations/dd-sdk-android-coil3`: a lightweight library providing a bridge integration between Datadog SDK and [Coil 3](https://coil-kt.github.io/coil/);
     - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);
     - `integrations/dd-sdk-android-fresco`: a lightweight library providing a bridge integration between Datadog SDK and [Fresco](https://frescolib.org/);
     - `integrations/dd-sdk-android-glide`: a lightweight library providing a bridge integration between Datadog SDK and [Glide](https://bumptech.github.io/glide/);
