@@ -29,6 +29,7 @@ import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -280,9 +281,20 @@ internal class DatadogLateCrashReporter(
         )
     }
 
+    @Suppress("ReturnCount")
     @RequiresApi(Build.VERSION_CODES.R)
     private fun readThreadsDump(anrExitInfo: ApplicationExitInfo): List<ThreadDump> {
-        val traceInputStream = anrExitInfo.traceInputStream
+        val traceInputStream = try {
+            anrExitInfo.traceInputStream
+        } catch (ioe: IOException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { OPEN_ANR_TRACE_ERROR },
+                ioe
+            )
+            return emptyList()
+        }
         if (traceInputStream == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -357,6 +369,7 @@ internal class DatadogLateCrashReporter(
                 " message, lastViewEvent) fields are either missing or have wrong type."
         internal const val MISSING_ANR_TRACE = "Last known exit reason has no trace information" +
             " attached, cannot report fatal ANR."
+        internal const val OPEN_ANR_TRACE_ERROR = "Cannot open trace for the last known exit reason."
 
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
     }

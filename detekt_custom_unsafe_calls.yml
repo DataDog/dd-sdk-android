@@ -3,6 +3,7 @@ datadog:
     knownThrowingCalls:
       # region Android
       - "android.app.ActivityManager.getHistoricalProcessExitReasons(kotlin.String?, kotlin.Int, kotlin.Int):java.lang.RuntimeException"
+      - "android.app.ApplicationExitInfo.getTraceInputStream():java.io.IOException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.AssetManager.open(kotlin.String):java.io.IOException"
