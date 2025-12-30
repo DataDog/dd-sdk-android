@@ -218,6 +218,7 @@ datadog:
       - "okhttp3.Request.Builder.post(okhttp3.RequestBody):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.method(kotlin.String, okhttp3.RequestBody?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.tag(java.lang.Class, com.datadog.android.okhttp.TraceContext?):java.lang.ClassCastException"
+      - "okhttp3.Request.Builder.tag(java.lang.Class, java.util.UUID?):java.lang.ClassCastException"
       - "okhttp3.Request.Builder.url(kotlin.String):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
       - "okhttp3.Interceptor.Chain.proceed(okhttp3.Request):java.io.IOException"

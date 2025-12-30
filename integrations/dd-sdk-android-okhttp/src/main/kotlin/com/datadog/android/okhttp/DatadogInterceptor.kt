@@ -39,6 +39,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
+import java.lang.ClassCastException
 import java.util.Locale
 import java.util.UUID
 
@@ -73,6 +74,7 @@ import java.util.UUID
  *         .build()
  * ```
  */
+@Suppress("TooManyFunctions")
 open class DatadogInterceptor internal constructor(
     sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
@@ -110,8 +112,8 @@ open class DatadogInterceptor internal constructor(
 
         val request = chain.request()
             .newBuilder()
-            .tag(UUID::class.java, UUID.randomUUID())
-            .build()
+            .safeAddUUIDTag(UUID.randomUUID())
+            .safeBuild() ?: chain.request()
 
         if (rumFeature != null) {
             val url = request.url.toString()
@@ -266,6 +268,22 @@ open class DatadogInterceptor internal constructor(
             }
         } else {
             originalChain
+        }
+    }
+
+    private fun Request.Builder.safeBuild(): Request? {
+        return try {
+            build()
+        } catch (_: IllegalStateException) {
+            null
+        }
+    }
+
+    private fun Request.Builder.safeAddUUIDTag(uuid: UUID): Request.Builder {
+        return try {
+            tag(UUID::class.java, uuid)
+        } catch (_: ClassCastException) {
+            this
         }
     }
 

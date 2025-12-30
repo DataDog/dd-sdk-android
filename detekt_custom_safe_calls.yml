@@ -1210,7 +1210,6 @@ datadog:
       - "okhttp3.Call.Factory(kotlin.Function1)"
       - "okhttp3.Request.Builder()"
       - "okhttp3.Request.Builder.addHeader(kotlin.String, kotlin.String)"
-      - "okhttp3.Request.Builder.build()"
       - "okhttp3.Request.Builder.constructor()"
       - "okhttp3.Request.Builder.header(kotlin.String, kotlin.String)"
       - "okhttp3.Request.Builder.headers(okhttp3.Headers)"
