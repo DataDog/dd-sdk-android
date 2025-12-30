@@ -165,6 +165,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-rx"))
     implementation(project(":integrations:dd-sdk-android-timber"))
     implementation(project(":integrations:dd-sdk-android-coil"))
+    implementation(project(":integrations:dd-sdk-android-coil3"))
     implementation(project(":integrations:dd-sdk-android-glide"))
     implementation(project(":integrations:dd-sdk-android-fresco"))
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
@@ -206,6 +207,9 @@ dependencies {
     // Image Loading Library
     implementation(libs.coil)
     implementation(libs.coilCompose)
+    implementation(libs.coil3)
+    implementation(libs.coil3Compose)
+    implementation(libs.coil3NetworkOkHttp)
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)

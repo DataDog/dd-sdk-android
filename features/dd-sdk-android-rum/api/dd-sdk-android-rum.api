@@ -114,7 +114,8 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun setVitalOperationStepEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public static synthetic fun setVitalEventMapper$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;ILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalsUpdateFrequency (Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackAnonymousUser (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackBackgroundEvents (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;

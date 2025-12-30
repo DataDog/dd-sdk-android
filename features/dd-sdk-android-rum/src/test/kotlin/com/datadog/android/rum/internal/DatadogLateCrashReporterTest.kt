@@ -38,6 +38,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,12 +53,15 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.io.IOException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -174,6 +178,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -276,6 +281,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -378,6 +384,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasErrorSourceType(ErrorEvent.SourceType.NDK)
         }
     }
@@ -429,6 +436,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -525,6 +533,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasBuildId(fakeDatadogContext.appBuildId)
@@ -724,6 +733,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -815,6 +825,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -904,6 +915,7 @@ internal class DatadogLateCrashReporterTest {
             verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasView(
@@ -1156,6 +1168,105 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         verifyNoInteractions(mockRumWriter)
+    }
+
+    @Test
+    fun `M not send anything W handleAnrCrash() { cannot open trace information, IOException }`(
+        @LongForgery(min = 1) fakeTimestamp: Long,
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEvent = viewEvent.copy(
+            date = System.currentTimeMillis() - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            )
+        )
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
+
+        val fakeException = IOException()
+        val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
+            whenever(traceInputStream) doThrow fakeException
+            whenever(timestamp) doReturn fakeTimestamp
+        }
+
+        // When
+        testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
+
+        // Then
+        verifyNoInteractions(mockRumWriter)
+
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                level = eq(InternalLogger.Level.ERROR),
+                target = eq(InternalLogger.Target.USER),
+                messageBuilder = capture(),
+                throwable = eq(fakeException),
+                onlyOnce = eq(false),
+                additionalProperties = isNull()
+            )
+            assertThat(firstValue()).isEqualTo(DatadogLateCrashReporter.OPEN_ANR_TRACE_ERROR)
+        }
+    }
+
+    @Test
+    fun `M not send anything W handleAnrCrash() { cannot open trace information, null }`(
+        @LongForgery(min = 1) fakeTimestamp: Long,
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEvent = viewEvent.copy(
+            date = System.currentTimeMillis() - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            )
+        )
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
+
+        val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
+            whenever(traceInputStream) doReturn null
+            whenever(timestamp) doReturn fakeTimestamp
+        }
+
+        // When
+        testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
+
+        // Then
+        verifyNoInteractions(mockRumWriter)
+
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                level = eq(InternalLogger.Level.WARN),
+                target = eq(InternalLogger.Target.USER),
+                messageBuilder = capture(),
+                throwable = eq(null),
+                onlyOnce = eq(false),
+                additionalProperties = isNull()
+            )
+            assertThat(firstValue()).isEqualTo(DatadogLateCrashReporter.MISSING_ANR_TRACE)
+        }
     }
 
     // endregion

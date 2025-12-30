@@ -437,6 +437,7 @@ internal class RumResourceScope(
                 buildId = datadogContext.appBuildId,
                 date = eventTimestamp,
                 error = ErrorEvent.Error(
+                    id = UUID.randomUUID().toString(),
                     message = message,
                     source = source.toSchemaSource(),
                     stack = stackTrace,

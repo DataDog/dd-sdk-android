@@ -36,7 +36,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@17a820bf2e43b47be2c72b39cc905417bc1ab6d0 # v3.28.6
+      uses: github/codeql-action/init@f47c8e6a9bd05ef3ee422fc8d8663be7fe4bdc61 # v3.31.9
       with:
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
@@ -49,7 +49,7 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3.5.0
       with:
-        gradle-version: 8.1.1
+        gradle-version: 8.11.1
 
     # Manually build the java bytecode
     - name: Execute Gradle build
@@ -57,6 +57,6 @@ jobs:
 
     # Perform the analysis
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@17a820bf2e43b47be2c72b39cc905417bc1ab6d0 # v3.28.6
+      uses: github/codeql-action/analyze@f47c8e6a9bd05ef3ee422fc8d8663be7fe4bdc61 # v3.31.9
       with:
         category: "/language:${{matrix.language}}"
