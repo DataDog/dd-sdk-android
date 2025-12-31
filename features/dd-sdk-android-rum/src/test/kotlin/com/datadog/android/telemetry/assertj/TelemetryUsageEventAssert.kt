@@ -166,7 +166,7 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
                 val actualUsage = actual.telemetry.usage as TelemetryUsageEvent.Usage.AddViewLoadingTime
                 assertThat(actualUsage)
                     .hasNoView(expected.noView)
-                    .hasOverwritten(actualUsage.overwritten)
+                    .hasOverwritten(expected.overwrite)
                     .hasNoActiveView(expected.noActiveView)
             }
 
@@ -177,7 +177,8 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
             }
 
             is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
-                actual.telemetry.usage as TelemetryUsageEvent.Usage.TrackWebView
+                assertThat(actual.telemetry.usage)
+                    .isInstanceOf(TelemetryUsageEvent.Usage.TrackWebView::class.java)
             }
         }
     }
