@@ -68,7 +68,7 @@ androidLint = "31.0.2"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.18.0"
+datadogPlugin = "1.21.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
