@@ -123,6 +123,8 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
         - START
         - SUCCEED
         - FAIL
+    class TrackWebView : ApiUsage
+      constructor(MutableMap<String, Any?> = mutableMapOf())
   object InterceptorInstantiated : InternalTelemetryEvent
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG

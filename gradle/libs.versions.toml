@@ -13,7 +13,7 @@ okHttp = "4.12.0"
 # Android
 adapterDelegates = "4.3.2"
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "8.9.1"
+androidToolsPlugin = "8.13.2"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCar = "1.4.0"
@@ -68,7 +68,7 @@ androidLint = "31.0.2"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.18.0"
+datadogPlugin = "1.21.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"

@@ -64,7 +64,7 @@ nexusPublishing {
     }
 }
 
-task<Delete>("clean") {
+tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
@@ -136,6 +136,8 @@ registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyL
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
 
+registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompilerMetadataChanges")
+
 registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
 /**
@@ -144,6 +146,7 @@ registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTra
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkDependencyLicencesAll")
     dependsOn("checkApiSurfaceChangesAll")
+    dependsOn("checkCompilerMetadataChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")
 }
 

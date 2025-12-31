@@ -195,6 +195,7 @@ internal class RecorderWindowCallback(
                 imagePrivacy = imagePrivacy
             )
         }
+        wrappedCallback.onWindowFocusChanged(hasFocus)
     }
 
     // endregion
