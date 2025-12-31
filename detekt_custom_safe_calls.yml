@@ -118,6 +118,7 @@ datadog:
       - "android.view.Window.Callback.dispatchKeyEvent(android.view.KeyEvent?)"
       - "android.view.Window.Callback.dispatchTouchEvent(android.view.MotionEvent?)"
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
+      - "android.view.Window.Callback.onWindowFocusChanged(kotlin.Boolean)"
       - "android.view.Window.peekDecorView()"
       - "android.view.inspector.WindowInspector.getGlobalWindowViews()"
       - "androidx.collection.LruCache.evictAll()"

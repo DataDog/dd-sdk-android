@@ -462,6 +462,18 @@ internal class RecorderWindowCallbackTest {
         verifyNoInteractions(mockViewOnDrawInterceptor)
     }
 
+    @Test
+    fun `M delegate to wrapped callback W window focus changed`(forge: Forge) {
+        // Given
+        val fakeHasFocus = forge.aBool()
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(fakeHasFocus)
+
+        // Then
+        verify(mockWrappedCallback).onWindowFocusChanged(fakeHasFocus)
+    }
+
     // endregion
 
     // region touchPrivacy
