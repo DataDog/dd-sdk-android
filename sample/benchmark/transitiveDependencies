@@ -38,7 +38,7 @@ androidx.core:core-ktx:1.12.0                                   :  169 Kb
 androidx.core:core:1.12.0                                       : 1291 Kb
 androidx.cursoradapter:cursoradapter:1.0.0                      :   10 Kb
 androidx.customview:customview:1.1.0                            :   32 Kb
-androidx.databinding:viewbinding:8.9.1                          : 1860 b 
+androidx.databinding:viewbinding:8.13.2                         : 1860 b 
 androidx.documentfile:documentfile:1.0.0                        :   10 Kb
 androidx.drawerlayout:drawerlayout:1.0.0                        :   31 Kb
 androidx.dynamicanimation:dynamicanimation:1.0.0                :   31 Kb
