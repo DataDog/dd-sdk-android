@@ -39,7 +39,6 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
-import java.lang.ClassCastException
 import java.util.Locale
 import java.util.UUID
 
@@ -112,7 +111,10 @@ open class DatadogInterceptor internal constructor(
 
         val request = chain.request()
             .newBuilder()
-            .safeAddUUIDTag(UUID.randomUUID())
+            .apply {
+                @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
+                tag(UUID::class.java, UUID.randomUUID())
+            }
             .safeBuild() ?: chain.request()
 
         if (rumFeature != null) {
@@ -276,14 +278,6 @@ open class DatadogInterceptor internal constructor(
             build()
         } catch (_: IllegalStateException) {
             null
-        }
-    }
-
-    private fun Request.Builder.safeAddUUIDTag(uuid: UUID): Request.Builder {
-        return try {
-            tag(UUID::class.java, uuid)
-        } catch (_: ClassCastException) {
-            this
         }
     }
 
