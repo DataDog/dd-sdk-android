@@ -21,13 +21,15 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * An entry point to Datadog Profiling feature.
  */
 object Profiling {
 
-    private var profiler: Profiler = NoOpProfiler()
+    internal var profiler: Profiler = NoOpProfiler()
+    internal val isProfilerInitialized = AtomicBoolean(false)
 
     /**
      * Enables the profiling feature.
@@ -44,6 +46,7 @@ object Profiling {
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val featureSdkCore = sdkCore as FeatureSdkCore
+        initializeProfiler()
         val profilingFeature = ProfilingFeature(
             sdkCore = featureSdkCore,
             configuration = configuration,
@@ -81,12 +84,18 @@ object Profiling {
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     internal fun start(context: Context, sdkInstanceNames: Set<String>) {
-        profiler = PerfettoProfiler(
-            timeProvider = DefaultTimeProvider(),
-            profilingExecutor = Executors.newSingleThreadExecutor()
-        ).apply {
-            this.start(context, sdkInstanceNames)
-        }
+        initializeProfiler()
+        profiler.start(context, sdkInstanceNames)
         ProfilingStorage.removeProfilingFlag(context, sdkInstanceNames)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private fun initializeProfiler() {
+        if (!isProfilerInitialized.getAndSet(true)) {
+            profiler = PerfettoProfiler(
+                timeProvider = DefaultTimeProvider(),
+                profilingExecutor = Executors.newSingleThreadExecutor()
+            )
+        }
     }
 }
