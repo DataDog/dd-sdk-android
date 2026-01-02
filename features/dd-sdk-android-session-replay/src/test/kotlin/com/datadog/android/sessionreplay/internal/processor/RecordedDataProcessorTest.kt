@@ -286,7 +286,7 @@ internal class RecordedDataProcessorTest {
         val fakeElapsedTimeAfterIntervalNs =
             fakeInitialElapsedTimeNs + RecordedDataProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS
 
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenReturn(
             fakeInitialElapsedTimeNs,
             fakeInitialElapsedTimeNs,
             fakeElapsedTimeAfterIntervalNs,

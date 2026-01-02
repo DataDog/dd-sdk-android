@@ -66,7 +66,7 @@ internal class BatchFileOrchestrator(
             var files = listBatchFiles()
             files = deleteObsoleteFiles(files)
             freeSpaceIfNeeded(files)
-            lastCleanupTimestamp = timeProvider.getDeviceTimestamp()
+            lastCleanupTimestamp = timeProvider.getDeviceTimestampMillis()
         }
 
         return getReusableWritableFile() ?: createNewFile()
@@ -81,7 +81,7 @@ internal class BatchFileOrchestrator(
         val files = listSortedBatchFiles().let {
             deleteObsoleteFiles(it)
         }
-        lastCleanupTimestamp = timeProvider.getDeviceTimestamp()
+        lastCleanupTimestamp = timeProvider.getDeviceTimestampMillis()
         pendingFiles.set(files.count())
 
         return files.firstOrNull {
@@ -204,7 +204,7 @@ internal class BatchFileOrchestrator(
     }
 
     private fun createNewFile(): File {
-        val newFileName = timeProvider.getDeviceTimestamp().toString()
+        val newFileName = timeProvider.getDeviceTimestampMillis().toString()
         val newFile = File(rootDir, newFileName)
         val closedFile = previousFile
         val closedFileLastAccessTimestamp = lastFileAccessTimestamp
@@ -219,7 +219,7 @@ internal class BatchFileOrchestrator(
         }
         previousFile = newFile
         previousFileItemCount = 1
-        lastFileAccessTimestamp = timeProvider.getDeviceTimestamp()
+        lastFileAccessTimestamp = timeProvider.getDeviceTimestampMillis()
         pendingFiles.incrementAndGet()
         return newFile
     }
@@ -246,7 +246,7 @@ internal class BatchFileOrchestrator(
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
             previousFileItemCount = lastKnownFileItemCount + 1
-            lastFileAccessTimestamp = timeProvider.getDeviceTimestamp()
+            lastFileAccessTimestamp = timeProvider.getDeviceTimestampMillis()
             lastFile
         } else {
             null
@@ -254,13 +254,13 @@ internal class BatchFileOrchestrator(
     }
 
     private fun isFileRecent(file: File, delayMs: Long): Boolean {
-        val now = timeProvider.getDeviceTimestamp()
+        val now = timeProvider.getDeviceTimestampMillis()
         val fileTimestamp = file.name.toLongOrNull() ?: 0L
         return fileTimestamp >= (now - delayMs)
     }
 
     private fun deleteObsoleteFiles(files: List<File>): List<File> {
-        val threshold = timeProvider.getDeviceTimestamp() - config.oldFileThreshold
+        val threshold = timeProvider.getDeviceTimestampMillis() - config.oldFileThreshold
         return files
             .mapNotNull {
                 val isOldFile = (it.name.toLongOrNull() ?: 0) < threshold
@@ -330,7 +330,7 @@ internal class BatchFileOrchestrator(
     }
 
     private fun canDoCleanup(): Boolean {
-        return timeProvider.getDeviceTimestamp() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
+        return timeProvider.getDeviceTimestampMillis() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
     }
 
     private val File.metadata: File

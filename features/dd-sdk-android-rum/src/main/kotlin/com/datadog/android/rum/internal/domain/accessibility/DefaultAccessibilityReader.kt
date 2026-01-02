@@ -99,7 +99,7 @@ internal class DefaultAccessibilityReader(
 
     @Synchronized
     override fun getState(): AccessibilityInfo {
-        val currentTime = timeProvider.getDeviceTimestamp()
+        val currentTime = timeProvider.getDeviceTimestampMillis()
         val shouldPoll = currentTime - lastPollTime.get() >= POLL_THRESHOLD
         if (shouldPoll) {
             lastPollTime.set(currentTime)

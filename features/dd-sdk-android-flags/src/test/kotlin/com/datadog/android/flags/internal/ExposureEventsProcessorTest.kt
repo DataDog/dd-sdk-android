@@ -85,7 +85,7 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimestamp
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
         testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
 
         // Then
@@ -240,7 +240,7 @@ internal class ExposureEventsProcessorTest {
 
         val fakeTimestamp1 = forge.aPositiveLong()
         val fakeTimestamp2 = forge.aPositiveLong()
-        whenever(mockTimeProvider.getDeviceTimestamp())
+        whenever(mockTimeProvider.getDeviceTimestampMillis())
             .thenReturn(fakeTimestamp1)
             .thenReturn(fakeTimestamp2)
 

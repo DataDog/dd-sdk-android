@@ -23,7 +23,7 @@ internal interface RumFirstDrawTimeReporter {
         fun create(sdkCore: InternalSdkCore): RumFirstDrawTimeReporter {
             return RumFirstDrawTimeReporterImpl(
                 internalLogger = sdkCore.internalLogger,
-                timeProviderNs = { sdkCore.timeProvider.getDeviceElapsedTimeNs() },
+                timeProviderNs = { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
                 windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
                 handler = Handler(Looper.getMainLooper())
             )

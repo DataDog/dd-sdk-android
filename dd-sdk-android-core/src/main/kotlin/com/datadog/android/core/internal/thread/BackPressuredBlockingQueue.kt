@@ -122,7 +122,7 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
     }
 
     private fun notifyThresholdReached() {
-        val dump = dumpQueue(timeProvider.getDeviceTimestamp())
+        val dump = dumpQueue(timeProvider.getDeviceTimestampMillis())
         val backPressureMap = buildMap {
             put("capacity", capacity)
             if (!dump.isNullOrEmpty()) {

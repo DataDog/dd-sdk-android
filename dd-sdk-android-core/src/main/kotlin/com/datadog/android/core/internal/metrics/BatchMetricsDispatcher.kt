@@ -90,7 +90,7 @@ internal class BatchMetricsDispatcher(
         numPendingBatches: Int
     ): Map<String, Any?>? {
         val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
-        val fileAgeInMillis = timeProvider.getDeviceTimestamp() - fileCreationTimestamp
+        val fileAgeInMillis = timeProvider.getDeviceTimestampMillis() - fileCreationTimestamp
         if (fileAgeInMillis < 0) {
             // the device time was manually modified or the time zone changed
             // we are dropping this metric to not skew our charts

@@ -13,7 +13,7 @@ package com.datadog.android.internal.time
  * Device timestamp and elapsed time are inherited from [BaseTimeProvider].
  */
 class DefaultTimeProvider : BaseTimeProvider() {
-    override fun getServerTimestamp(): Long = getDeviceTimestamp()
+    override fun getServerTimestampMillis(): Long = getDeviceTimestampMillis()
 
     override fun getServerOffsetNanos(): Long = 0L
 

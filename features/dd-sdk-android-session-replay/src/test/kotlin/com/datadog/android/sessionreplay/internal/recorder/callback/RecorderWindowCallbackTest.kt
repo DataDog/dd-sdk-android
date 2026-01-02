@@ -127,8 +127,8 @@ internal class RecorderWindowCallbackTest {
         whenever(mockRecordedDataQueueHandler.addTouchEventItem(any()))
             .thenReturn(fakeTouchEventRecordedDataQueueItem)
         whenever(mockContext.resources).thenReturn(mockResources)
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { fakeElapsedTimeNs }
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeTimestamp)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { fakeElapsedTimeNs }
         whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
         whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
             .thenReturn(true)

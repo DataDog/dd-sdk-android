@@ -25,11 +25,11 @@ class StubTimeProvider(
     var serverOffsetMs: Long = 0L
 ) : TimeProvider {
 
-    override fun getDeviceTimestamp(): Long = deviceTimestampMs
+    override fun getDeviceTimestampMillis(): Long = deviceTimestampMs
 
-    override fun getServerTimestamp(): Long = serverTimestampMs
+    override fun getServerTimestampMillis(): Long = serverTimestampMs
 
-    override fun getDeviceElapsedTimeNs(): Long = elapsedTimeNs
+    override fun getDeviceElapsedTimeNanos(): Long = elapsedTimeNs
 
     override fun getServerOffsetNanos(): Long = serverOffsetNs
 

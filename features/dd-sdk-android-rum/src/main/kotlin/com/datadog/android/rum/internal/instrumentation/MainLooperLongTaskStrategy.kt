@@ -78,7 +78,7 @@ internal class MainLooperLongTaskStrategy(internal val thresholdMs: Long) : Prin
     // region Internal
 
     private fun detectLongTask(message: String) {
-        val now = (sdkCore as FeatureSdkCore).timeProvider.getDeviceElapsedTimeNs()
+        val now = (sdkCore as FeatureSdkCore).timeProvider.getDeviceElapsedTimeNanos()
         if (message.startsWith(PREFIX_START)) {
             @Suppress("UnsafeThirdPartyFunctionCall") // substring can't throw IndexOutOfBounds
             target = message.substring(PREFIX_START_LENGTH)

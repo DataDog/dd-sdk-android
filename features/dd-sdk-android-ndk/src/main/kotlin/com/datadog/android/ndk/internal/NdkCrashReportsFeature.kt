@@ -64,8 +64,8 @@ internal class NdkCrashReportsFeature(
             )
             return
         }
-        val nowMs = sdkCore.timeProvider.getDeviceTimestamp()
-        val nowElapsedNs = sdkCore.timeProvider.getDeviceElapsedTimeNs()
+        val nowMs = sdkCore.timeProvider.getDeviceTimestampMillis()
+        val nowElapsedNs = sdkCore.timeProvider.getDeviceElapsedTimeNanos()
         val appStartTimestamp =
             TimeUnit.MILLISECONDS.toNanos(nowMs) - nowElapsedNs + sdkCore.appStartTimeNs
         registerSignalHandler(

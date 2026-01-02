@@ -81,7 +81,7 @@ internal class BatchMetricsDispatcherTest {
                 Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
             )
         )
-        whenever(mockTimeProvider.getDeviceTimestamp()).doReturn(fakeTimestamp)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeTimestamp)
         testedBatchMetricsDispatcher = BatchMetricsDispatcher(
             fakeFeatureName,
             fakeUploadConfiguration,

@@ -167,7 +167,7 @@ internal class DatadogLogHandlerTest {
         ) doReturn mockRumFeature
 
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimestamp
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
 
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,

@@ -17,18 +17,18 @@ interface TimeProvider {
      * Returns the current device timestamp in milliseconds.
      * This is implemented in [BaseTimeProvider] as [System.currentTimeMillis].
      */
-    fun getDeviceTimestamp(): Long
+    fun getDeviceTimestampMillis(): Long
 
     /**
      * Returns the current server timestamp in milliseconds.
      */
-    fun getServerTimestamp(): Long
+    fun getServerTimestampMillis(): Long
 
     /**
      * Returns the current device monotonic elapsed time in nanoseconds.
      * This is implemented in [BaseTimeProvider] as [System.nanoTime].
      */
-    fun getDeviceElapsedTimeNs(): Long
+    fun getDeviceElapsedTimeNanos(): Long
 
     /**
      * Returns the offset between the device and server time references in nanoseconds.
@@ -45,6 +45,6 @@ interface TimeProvider {
  * A base implementation of [TimeProvider] that provides the device time using system calls.
  */
 abstract class BaseTimeProvider : TimeProvider {
-    final override fun getDeviceTimestamp(): Long = System.currentTimeMillis()
-    final override fun getDeviceElapsedTimeNs(): Long = System.nanoTime()
+    final override fun getDeviceTimestampMillis(): Long = System.currentTimeMillis()
+    final override fun getDeviceElapsedTimeNanos(): Long = System.nanoTime()
 }

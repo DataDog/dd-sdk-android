@@ -326,7 +326,7 @@ internal class DatadogLateCrashReporter(
 
     private val ViewEvent.isWithinSessionAvailability: Boolean
         get() {
-            val now = sdkCore.timeProvider.getDeviceTimestamp()
+            val now = sdkCore.timeProvider.getDeviceTimestampMillis()
             val sessionsTimeDifference = now - this.date
             return sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
         }

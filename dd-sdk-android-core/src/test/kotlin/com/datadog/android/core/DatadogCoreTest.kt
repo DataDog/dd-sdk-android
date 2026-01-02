@@ -992,9 +992,9 @@ internal class DatadogCoreTest {
             fakeServerTimeOffsetMs
         )
         whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeServerTimeOffsetMs
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeDeviceTimestamp
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeDeviceTimestamp
         whenever(
-            mockTimeProvider.getServerTimestamp()
+            mockTimeProvider.getServerTimestampMillis()
         ) doReturn fakeDeviceTimestamp + fakeServerTimeOffsetMs
 
         // When

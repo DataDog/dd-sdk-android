@@ -45,7 +45,7 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // GIVEN
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeCurrentTimeNs
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeCurrentTimeNs
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val expectedStartTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         DdRumContentProvider.createTimeNs = expectedStartTimeNs
@@ -69,7 +69,7 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // GIVEN
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeCurrentTimeNs
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeCurrentTimeNs
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         DdRumContentProvider.createTimeNs = startTimeNs +
@@ -117,7 +117,7 @@ class DefaultAppStartTimeProviderTest {
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val fakeCurrentTimeNs = fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
 
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .doReturn(fakeCurrentTimeNs)
             .doReturn(fakeStartTimeNs + fakeUptimeNs)
 
@@ -144,7 +144,7 @@ class DefaultAppStartTimeProviderTest {
         val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
         val fakeCurrentTimeNs = fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
 
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .doReturn(fakeCurrentTimeNs)
             .doReturn(fakeStartTimeNs + 100L)
             .doReturn(fakeStartTimeNs + 200L)

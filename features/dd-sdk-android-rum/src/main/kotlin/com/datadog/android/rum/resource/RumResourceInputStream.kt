@@ -50,7 +50,7 @@ constructor(
     init {
         val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startResource(key, METHOD, url)
-        callStart = timeProvider.getDeviceElapsedTimeNs()
+        callStart = timeProvider.getDeviceElapsedTimeNanos()
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.waitForResourceTiming(key)
         }
@@ -60,36 +60,36 @@ constructor(
 
     /** @inheritdoc */
     override fun read(): Int {
-        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNs()
+        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNanos()
         return callWithErrorTracking(ERROR_READ) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read().also {
                 if (it >= 0) size++
-                lastByte = timeProvider.getDeviceElapsedTimeNs()
+                lastByte = timeProvider.getDeviceElapsedTimeNanos()
             }
         }
     }
 
     /** @inheritdoc */
     override fun read(b: ByteArray): Int {
-        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNs()
+        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNanos()
         return callWithErrorTracking(ERROR_READ) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read(b).also {
                 if (it >= 0) size += it
-                lastByte = timeProvider.getDeviceElapsedTimeNs()
+                lastByte = timeProvider.getDeviceElapsedTimeNanos()
             }
         }
     }
 
     /** @inheritdoc */
     override fun read(b: ByteArray, off: Int, len: Int): Int {
-        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNs()
+        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNanos()
         return callWithErrorTracking(ERROR_READ) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read(b, off, len).also {
                 if (it >= 0) size += it
-                lastByte = timeProvider.getDeviceElapsedTimeNs()
+                lastByte = timeProvider.getDeviceElapsedTimeNanos()
             }
         }
     }

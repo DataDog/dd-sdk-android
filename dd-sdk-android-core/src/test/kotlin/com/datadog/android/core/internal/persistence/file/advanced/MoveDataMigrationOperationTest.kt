@@ -64,7 +64,7 @@ internal class MoveDataMigrationOperationTest {
     @BeforeEach
     fun `set up`() {
         val currentTime = AtomicLong(fakeElapsedTimeNs)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer {
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
             currentTime.getAndAdd(RETRY_DELAY_NS)
         }
 
@@ -152,7 +152,7 @@ internal class MoveDataMigrationOperationTest {
     @Test
     fun `M retry with 500ms delay W run() {move fails once}`() {
         // Given
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false, true)
 
@@ -182,7 +182,7 @@ internal class MoveDataMigrationOperationTest {
     @Test
     fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false)
 

@@ -164,8 +164,8 @@ internal class RecordedDataProcessor(
     }
 
     private fun isTimeForFullSnapshot(): Boolean {
-        return if (timeProvider.getDeviceElapsedTimeNs() - lastSnapshotTimestamp >= FULL_SNAPSHOT_INTERVAL_IN_NS) {
-            lastSnapshotTimestamp = timeProvider.getDeviceElapsedTimeNs()
+        return if (timeProvider.getDeviceElapsedTimeNanos() - lastSnapshotTimestamp >= FULL_SNAPSHOT_INTERVAL_IN_NS) {
+            lastSnapshotTimestamp = timeProvider.getDeviceElapsedTimeNanos()
             true
         } else {
             false

@@ -19,9 +19,9 @@ internal class DDExecutionTimer(
             return action()
         }
 
-        val requestStartTime = timeProvider.getDeviceElapsedTimeNs()
+        val requestStartTime = timeProvider.getDeviceElapsedTimeNanos()
         val result = action()
-        val latencyInSeconds = (timeProvider.getDeviceElapsedTimeNs() - requestStartTime) / NANOSECONDS_IN_A_SECOND
+        val latencyInSeconds = (timeProvider.getDeviceElapsedTimeNanos() - requestStartTime) / NANOSECONDS_IN_A_SECOND
         responseLatencyReport(latencyInSeconds, track)
         return result
     }

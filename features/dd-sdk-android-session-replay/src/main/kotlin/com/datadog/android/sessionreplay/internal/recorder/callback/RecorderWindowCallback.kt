@@ -49,7 +49,7 @@ internal class RecorderWindowCallback(
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
-    private var lastPerformedFlushTimeInNs: Long = timeProvider.getDeviceElapsedTimeNs()
+    private var lastPerformedFlushTimeInNs: Long = timeProvider.getDeviceElapsedTimeNanos()
     private var shouldRecordMotion: Boolean = false
 
     // region Window.Callback
@@ -99,19 +99,19 @@ internal class RecorderWindowCallback(
         when (event.action.and(MotionEvent.ACTION_MASK)) {
             MotionEvent.ACTION_DOWN -> {
                 // reset the flush time to avoid flush in the next event
-                lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNs()
+                lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNanos()
                 updatePositions(event, MobileSegment.PointerEventType.DOWN)
                 // reset the on move update time in order to take into account the first move event
                 lastOnMoveUpdateTimeInNs = 0
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (timeProvider.getDeviceElapsedTimeNs() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
+                if (timeProvider.getDeviceElapsedTimeNanos() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
                     updatePositions(event, MobileSegment.PointerEventType.MOVE)
-                    lastOnMoveUpdateTimeInNs = timeProvider.getDeviceElapsedTimeNs()
+                    lastOnMoveUpdateTimeInNs = timeProvider.getDeviceElapsedTimeNanos()
                 }
                 // make sure we flush from time to time to avoid glitches in the player
-                if (timeProvider.getDeviceElapsedTimeNs() - lastPerformedFlushTimeInNs >=
+                if (timeProvider.getDeviceElapsedTimeNanos() - lastPerformedFlushTimeInNs >=
                     flushPositionBufferThresholdInNs
                 ) {
                     flushPositions()
@@ -133,7 +133,8 @@ internal class RecorderWindowCallback(
             val pointerAbsoluteY = motionEventUtils.getPointerAbsoluteY(event, pointerIndex)
             pointerInteractions.add(
                 MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                    timestamp = timeProvider.getDeviceTimestamp() + rumContextProvider.getRumContext().viewTimeOffsetMs,
+                    timestamp = timeProvider.getDeviceTimestampMillis() +
+                        rumContextProvider.getRumContext().viewTimeOffsetMs,
                     data = MobileSegment.MobileIncrementalData.PointerInteractionData(
                         pointerEventType = eventType,
                         pointerType = MobileSegment.PointerType.TOUCH,
@@ -161,7 +162,7 @@ internal class RecorderWindowCallback(
         }
 
         pointerInteractions.clear()
-        lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNs()
+        lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNanos()
     }
 
     private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {

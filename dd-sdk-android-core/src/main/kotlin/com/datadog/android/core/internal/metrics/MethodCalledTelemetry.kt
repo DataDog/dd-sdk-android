@@ -28,10 +28,10 @@ internal class MethodCalledTelemetry(
     internal val timeProvider: TimeProvider
 ) : PerformanceMetric {
 
-    internal val startTime: Long = timeProvider.getDeviceElapsedTimeNs()
+    internal val startTime: Long = timeProvider.getDeviceElapsedTimeNanos()
 
     override fun stopAndSend(isSuccessful: Boolean) {
-        val executionTime = timeProvider.getDeviceElapsedTimeNs() - startTime
+        val executionTime = timeProvider.getDeviceElapsedTimeNanos() - startTime
         val additionalProperties: MutableMap<String, Any> = mutableMapOf()
 
         additionalProperties[EXECUTION_TIME] = executionTime

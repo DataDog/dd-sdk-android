@@ -197,7 +197,7 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockSdkCore.getPersistenceExecutorService()) doReturn mockScheduledThreadExecutor
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
         val timeoutNs = DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS * 1_000_000L
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .thenReturn(fakeElapsedTimeNs)
             .thenReturn(fakeElapsedTimeNs + timeoutNs + 1)
         Thread.setDefaultUncaughtExceptionHandler(null)

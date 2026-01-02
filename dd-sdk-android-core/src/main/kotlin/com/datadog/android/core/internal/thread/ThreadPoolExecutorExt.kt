@@ -18,7 +18,7 @@ internal fun ThreadPoolExecutor.waitToIdle(
     internalLogger: InternalLogger,
     timeProvider: TimeProvider
 ): Boolean {
-    val startTime = timeProvider.getDeviceElapsedTimeNs()
+    val startTime = timeProvider.getDeviceElapsedTimeNanos()
     val timeoutInNs = TimeUnit.MILLISECONDS.toNanos(timeoutInMs)
     val sleepDurationInMs = timeoutInMs.coerceIn(0, MAX_SLEEP_DURATION_IN_MS)
     var interrupted: Boolean
@@ -27,7 +27,7 @@ internal fun ThreadPoolExecutor.waitToIdle(
             return true
         }
         interrupted = sleepSafe(sleepDurationInMs, internalLogger)
-    } while (((timeProvider.getDeviceElapsedTimeNs() - startTime) < timeoutInNs) && !interrupted)
+    } while (((timeProvider.getDeviceElapsedTimeNanos() - startTime) < timeoutInNs) && !interrupted)
 
     return isIdle()
 }

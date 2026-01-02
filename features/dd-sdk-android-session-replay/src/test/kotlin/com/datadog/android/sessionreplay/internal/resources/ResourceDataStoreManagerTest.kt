@@ -83,7 +83,7 @@ internal class ResourceDataStoreManagerTest {
 
         whenever(mockFeatureScope.dataStore).thenReturn(mockDataStoreHandler)
         whenever(mockFeatureSdkCore.timeProvider).thenReturn(mockTimeProvider)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(fakeCurrentTimeNs)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenReturn(fakeCurrentTimeNs)
 
         setRemoveDataSuccess()
     }

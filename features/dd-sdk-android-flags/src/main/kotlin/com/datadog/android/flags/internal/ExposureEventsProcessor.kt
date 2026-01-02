@@ -69,7 +69,7 @@ internal class ExposureEventsProcessor(
     }
 
     private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag): ExposureEvent {
-        val now = timeProvider.getDeviceTimestamp()
+        val now = timeProvider.getDeviceTimestampMillis()
         return ExposureEvent(
             timestamp = now,
             allocation = ExposureEvent.Identifier(data.allocationKey),

@@ -98,7 +98,7 @@ internal class DefaultAccessibilityReaderTest {
     fun setup() {
         whenever(mockContext.contentResolver) doReturn mockContentResolver
         whenever(mockResources.configuration) doReturn mockConfiguration
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeTimestamp
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
 
         setupDefaultMockBehavior()
 
@@ -781,7 +781,7 @@ internal class DefaultAccessibilityReaderTest {
 
         // When - Call after threshold exceeded
         val newTimestamp = fakeTimestamp + 1000
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn newTimestamp
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn newTimestamp
         testedReader.getState()
 
         // Then - lastPollTime should be updated to the new timestamp

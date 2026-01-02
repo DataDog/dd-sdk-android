@@ -45,7 +45,7 @@ internal class DatadogLogHandler(
             return
         }
 
-        val resolvedTimeStamp = timestamp ?: sdkCore.timeProvider.getDeviceTimestamp()
+        val resolvedTimeStamp = timestamp ?: sdkCore.timeProvider.getDeviceTimestampMillis()
         val combinedAttributes = mutableMapOf<String, Any?>()
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {
@@ -112,7 +112,7 @@ internal class DatadogLogHandler(
             return
         }
 
-        val resolvedTimeStamp = timestamp ?: sdkCore.timeProvider.getDeviceTimestamp()
+        val resolvedTimeStamp = timestamp ?: sdkCore.timeProvider.getDeviceTimestampMillis()
         val combinedAttributes = mutableMapOf<String, Any?>()
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null) {

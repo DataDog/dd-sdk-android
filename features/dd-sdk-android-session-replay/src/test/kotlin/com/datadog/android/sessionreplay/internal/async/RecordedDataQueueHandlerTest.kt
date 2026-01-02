@@ -135,7 +135,7 @@ internal class RecordedDataQueueHandlerTest {
         fakeNodeData = forge.aList { mock() }
 
         whenever(mockRateBasedSampler.sample(any())).thenReturn(true)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenReturn(fakeCurrentTimeNs)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenReturn(fakeCurrentTimeNs)
 
         testedHandler = RecordedDataQueueHandler(
             processor = mockProcessor,

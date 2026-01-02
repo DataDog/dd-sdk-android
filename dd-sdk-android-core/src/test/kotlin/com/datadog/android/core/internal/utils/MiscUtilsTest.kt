@@ -96,7 +96,7 @@ internal class MiscUtilsTest {
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
 
         // When
         val executionTime = measureNanoTime {
@@ -331,7 +331,7 @@ internal class MiscUtilsTest {
         get() = TimeUnit.SECONDS.toNanos(fakeDelaySeconds)
 
     private fun stubTimeProviderWithDelay() {
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer {
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
             fakeCurrentTimeNs += fakeDelayNs
             fakeCurrentTimeNs
         }

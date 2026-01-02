@@ -89,7 +89,7 @@ internal class WebViewNativeRumViewsCache(
     private fun purgeHistory() {
         var cursor = parentViewsHistoryQueue.peekLast()
         while (cursor != null) {
-            val timeSinceLastSnapshot = timeProvider.getDeviceTimestamp() - cursor.timestamp
+            val timeSinceLastSnapshot = timeProvider.getDeviceTimestampMillis() - cursor.timestamp
             if (timeSinceLastSnapshot > entriesTtlLimitInMs) {
                 parentViewsHistoryQueue.remove(cursor)
                 cursor = parentViewsHistoryQueue.peekLast()

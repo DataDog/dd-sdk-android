@@ -20,11 +20,11 @@ internal class FpsVitalReader(timeProvider: TimeProvider) : VitalReader {
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (lastFrameTime == 0L) {
-                lastFrameTime = timeProvider.getDeviceElapsedTimeNs()
+                lastFrameTime = timeProvider.getDeviceElapsedTimeNanos()
             }
 
             frameCount++
-            val currentFrameTime = timeProvider.getDeviceElapsedTimeNs()
+            val currentFrameTime = timeProvider.getDeviceElapsedTimeNanos()
             val elapsedTime: Long = currentFrameTime - lastFrameTime
 
             if (elapsedTime >= TimeUnit.MILLISECONDS.toNanos(intervalMs)) {

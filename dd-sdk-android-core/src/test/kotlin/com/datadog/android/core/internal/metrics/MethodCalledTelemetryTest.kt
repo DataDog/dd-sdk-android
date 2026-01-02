@@ -114,7 +114,7 @@ internal class MethodCalledTelemetryTest {
         whenever(mockDeviceInfo.osVersion).thenReturn(fakeOsVersion)
         whenever(mockDeviceInfo.deviceBuildId).thenReturn(fakeOsBuild)
 
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .thenReturn(fakeStartTimeNs)
             .thenReturn(fakeStartTimeNs + fakeElapsedTimeNs)
 

@@ -102,7 +102,7 @@ internal class RotatingDnsResolverTest {
         // When
         val result = testedDns.lookup(fakeHostname)
         val fakeExpiredTime = fakeElapsedTimeNs + TEST_TTL_MS.inWholeNanoseconds
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeExpiredTime
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeExpiredTime
         val result2 = testedDns.lookup(fakeHostname)
 
         // Then

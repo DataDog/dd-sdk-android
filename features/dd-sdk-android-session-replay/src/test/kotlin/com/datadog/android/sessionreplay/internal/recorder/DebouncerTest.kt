@@ -70,7 +70,7 @@ internal class DebouncerTest {
         whenever(mockTimeBank.updateAndCheck(any())).thenReturn(true)
         whenever(mockSdkCore.getFeature(RUM_FEATURE_NAME)).thenReturn(mockRumFeature)
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeInitialTimeNs
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeInitialTimeNs
         testedDebouncer = Debouncer(
             mockHandler,
             TEST_MAX_DELAY_THRESHOLD_IN_NS,
@@ -98,7 +98,7 @@ internal class DebouncerTest {
         testedDebouncer.debounce(fakeRunnable)
 
         val fakeExpiredTime = fakeInitialTimeNs + TEST_MAX_DELAY_THRESHOLD_IN_NS
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeExpiredTime
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeExpiredTime
         testedDebouncer.debounce(fakeSecondRunnable)
 
         // Then
@@ -122,7 +122,7 @@ internal class DebouncerTest {
         // When
         testedDebouncer.debounce(fakeRunnable)
         val fakeExpiredTime = fakeInitialTimeNs + TEST_MAX_DELAY_THRESHOLD_IN_NS
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeExpiredTime
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeExpiredTime
         testedDebouncer.debounce(fakeSecondRunnable)
 
         // Then
@@ -153,7 +153,7 @@ internal class DebouncerTest {
         val fakeSecondRunnable = TestRunnable()
         testedDebouncer.debounce(fakeRunnable)
         val fakeExpiredTime = fakeInitialTimeNs + TEST_MAX_DELAY_THRESHOLD_IN_NS
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()) doReturn fakeExpiredTime
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeExpiredTime
 
         // When
         testedDebouncer.debounce(fakeSecondRunnable)
@@ -179,7 +179,7 @@ internal class DebouncerTest {
         val delayInterval = (TEST_MAX_DELAY_THRESHOLD_IN_NS / fakeDelayedRunnables.size) - 1
         val fakeExecutedRunnable = TestRunnable()
         var currentTime = fakeInitialTimeNs
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { currentTime }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { currentTime }
 
         fakeDelayedRunnables.forEach {
             testedDebouncer.debounce(it)
@@ -215,7 +215,7 @@ internal class DebouncerTest {
         val delayInterval = (TEST_MAX_DELAY_THRESHOLD_IN_NS / fakeDelayedRunnablesPack1.size) - 1
         val fakeExecutedRunnable = TestRunnable()
         var currentTime = fakeInitialTimeNs
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { currentTime }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { currentTime }
 
         fakeDelayedRunnablesPack1.forEach {
             testedDebouncer.debounce(it)

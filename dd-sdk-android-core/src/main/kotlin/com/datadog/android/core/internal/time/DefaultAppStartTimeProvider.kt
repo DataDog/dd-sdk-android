@@ -26,7 +26,7 @@ internal class DefaultAppStartTimeProvider(
         when {
             buildSdkVersionProvider.version >= Build.VERSION_CODES.N -> {
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-                val result = timeProviderFactory().getDeviceElapsedTimeNs() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+                val result = timeProviderFactory().getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 
                 /**
                  * Occasionally [Process.getStartElapsedRealtime] returns buggy values. We filter them and fall back
@@ -43,7 +43,7 @@ internal class DefaultAppStartTimeProvider(
     }
 
     override val appUptimeNs: Long
-        get() = timeProviderFactory().getDeviceElapsedTimeNs() - appStartTimeNs
+        get() = timeProviderFactory().getDeviceElapsedTimeNanos() - appStartTimeNs
 
     companion object {
         internal val PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS = 10.seconds.inWholeNanoseconds

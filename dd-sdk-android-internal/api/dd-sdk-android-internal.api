@@ -296,23 +296,23 @@ public final class com/datadog/android/internal/thread/NamedRunnable : com/datad
 
 public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {
 	public fun <init> ()V
-	public final fun getDeviceElapsedTimeNs ()J
-	public final fun getDeviceTimestamp ()J
+	public final fun getDeviceElapsedTimeNanos ()J
+	public final fun getDeviceTimestampMillis ()J
 }
 
 public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/BaseTimeProvider {
 	public fun <init> ()V
 	public fun getServerOffsetMillis ()J
 	public fun getServerOffsetNanos ()J
-	public fun getServerTimestamp ()J
+	public fun getServerTimestampMillis ()J
 }
 
 public abstract interface class com/datadog/android/internal/time/TimeProvider {
-	public abstract fun getDeviceElapsedTimeNs ()J
-	public abstract fun getDeviceTimestamp ()J
+	public abstract fun getDeviceElapsedTimeNanos ()J
+	public abstract fun getDeviceTimestampMillis ()J
 	public abstract fun getServerOffsetMillis ()J
 	public abstract fun getServerOffsetNanos ()J
-	public abstract fun getServerTimestamp ()J
+	public abstract fun getServerTimestampMillis ()J
 }
 
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {

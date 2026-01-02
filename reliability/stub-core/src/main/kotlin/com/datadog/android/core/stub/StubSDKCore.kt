@@ -161,9 +161,9 @@ class StubSDKCore(
     override val internalLogger: InternalLogger = StubInternalLogger()
 
     override val timeProvider = object : TimeProvider {
-        override fun getDeviceTimestamp(): Long = 0L
-        override fun getServerTimestamp(): Long = 0L
-        override fun getDeviceElapsedTimeNs(): Long = 0L
+        override fun getDeviceTimestampMillis(): Long = 0L
+        override fun getServerTimestampMillis(): Long = 0L
+        override fun getDeviceElapsedTimeNanos(): Long = 0L
         override fun getServerOffsetNanos(): Long = 0L
         override fun getServerOffsetMillis(): Long = 0L
     }
@@ -196,7 +196,7 @@ class StubSDKCore(
     }
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
-        return StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestamp)
+        return StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestampMillis)
     }
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {

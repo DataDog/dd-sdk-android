@@ -46,7 +46,7 @@ internal class ThreadPoolExecutorExtTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs()).thenAnswer { System.nanoTime() }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
     }
 
     @Test

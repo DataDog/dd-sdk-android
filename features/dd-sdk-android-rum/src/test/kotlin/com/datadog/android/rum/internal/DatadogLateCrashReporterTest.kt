@@ -110,7 +110,7 @@ internal class DatadogLateCrashReporterTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeCurrentTimeMs
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeCurrentTimeMs
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 

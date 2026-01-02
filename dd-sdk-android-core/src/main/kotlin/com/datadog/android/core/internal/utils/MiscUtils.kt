@@ -40,9 +40,9 @@ internal inline fun retryWithDelay(
 ): Boolean {
     var retryCounter = 1
     var wasSuccessful = false
-    var loopTimeOrigin = timeProvider.getDeviceElapsedTimeNs() - loopsDelayInNanos
+    var loopTimeOrigin = timeProvider.getDeviceElapsedTimeNanos() - loopsDelayInNanos
     while (retryCounter <= times && !wasSuccessful) {
-        if ((timeProvider.getDeviceElapsedTimeNs() - loopTimeOrigin) >= loopsDelayInNanos) {
+        if ((timeProvider.getDeviceElapsedTimeNanos() - loopTimeOrigin) >= loopsDelayInNanos) {
             wasSuccessful = try {
                 block()
             } catch (e: Exception) {
@@ -57,7 +57,7 @@ internal inline fun retryWithDelay(
                 )
                 false
             }
-            loopTimeOrigin = timeProvider.getDeviceElapsedTimeNs()
+            loopTimeOrigin = timeProvider.getDeviceElapsedTimeNanos()
             retryCounter++
         }
     }

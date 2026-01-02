@@ -51,7 +51,11 @@ internal class RotatingDnsResolver(
         } else {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             val result = delegate.lookup(hostname)
-            knownHosts[hostname] = ResolvedHost(hostname, result.toMutableList(), timeProvider.getDeviceElapsedTimeNs())
+            knownHosts[hostname] = ResolvedHost(
+                hostname,
+                result.toMutableList(),
+                timeProvider.getDeviceElapsedTimeNanos()
+            )
             safeCopy(result)
         }
     }
@@ -67,7 +71,7 @@ internal class RotatingDnsResolver(
     }
 
     private fun isValid(knownHost: ResolvedHost): Boolean {
-        return knownHost.getAge(timeProvider.getDeviceElapsedTimeNs()) < ttl && knownHost.addresses.isNotEmpty()
+        return knownHost.getAge(timeProvider.getDeviceElapsedTimeNanos()) < ttl && knownHost.addresses.isNotEmpty()
     }
 
     // endregion

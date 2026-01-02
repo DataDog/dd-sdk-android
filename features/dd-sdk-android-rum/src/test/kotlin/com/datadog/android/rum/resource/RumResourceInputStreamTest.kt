@@ -672,7 +672,7 @@ internal class RumResourceInputStreamTest {
         val fakeFirstByteNs = fakeCallStartNs + fakeDownloadStartNs
         val fakeLastByteNs = fakeFirstByteNs + fakeDownloadDurationNs
 
-        whenever(mockTimeProvider.getDeviceElapsedTimeNs())
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .thenReturn(fakeCallStartNs)
             .thenReturn(fakeFirstByteNs)
             .thenReturn(fakeLastByteNs)

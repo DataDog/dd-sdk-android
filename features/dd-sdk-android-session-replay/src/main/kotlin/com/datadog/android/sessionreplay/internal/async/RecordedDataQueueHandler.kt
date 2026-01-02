@@ -56,7 +56,7 @@ internal class RecordedDataQueueHandler(
             recordedQueuedItemContext = rumContextData,
             identifier = identifier,
             resourceData = resourceData,
-            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNs(),
+            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos(),
             mimeType = mimeType
         )
 
@@ -74,7 +74,7 @@ internal class RecordedDataQueueHandler(
 
         val item = TouchEventRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
-            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNs(),
+            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos(),
             touchData = pointerInteractions
         )
 
@@ -91,7 +91,7 @@ internal class RecordedDataQueueHandler(
         val item = SnapshotRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
             systemInformation = systemInformation,
-            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNs()
+            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos()
         )
 
         insertIntoRecordedDataQueue(item)
@@ -133,7 +133,7 @@ internal class RecordedDataQueueHandler(
             val nextItem = recordedDataQueue.peek()
 
             if (nextItem != null) {
-                val nextItemAgeInNs = timeProvider.getDeviceElapsedTimeNs() - nextItem.creationTimestampInNs
+                val nextItemAgeInNs = timeProvider.getDeviceElapsedTimeNanos() - nextItem.creationTimestampInNs
                 if (!nextItem.isValid()) {
                     if (sampler.sample(Unit)) {
                         logInvalidQueueItemException(nextItem)

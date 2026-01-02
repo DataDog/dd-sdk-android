@@ -47,7 +47,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override val name: String = "no-op"
 
-    override val time: TimeInfo = with(timeProvider.getDeviceTimestamp()) {
+    override val time: TimeInfo = with(timeProvider.getDeviceTimestampMillis()) {
         TimeInfo.EMPTY.copy(
             deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(this),
             serverTimeNs = TimeUnit.MILLISECONDS.toNanos(this),

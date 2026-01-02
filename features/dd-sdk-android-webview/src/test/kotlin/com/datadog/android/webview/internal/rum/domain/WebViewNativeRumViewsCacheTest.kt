@@ -48,13 +48,13 @@ internal class WebViewNativeRumViewsCacheTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeIdGenerator = FakeIdGenerator(forge)
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeCurrentTimeMs)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeCurrentTimeMs)
         testedCache = WebViewNativeRumViewsCache(mockTimeProvider)
     }
 
     private fun nextTimestamp(): Long {
         fakeCurrentTimeMs++
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeCurrentTimeMs)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeCurrentTimeMs)
         return fakeCurrentTimeMs
     }
 
@@ -189,7 +189,7 @@ internal class WebViewNativeRumViewsCacheTest {
                 WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
             )
         }
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(oldEntriesTimestamp)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(oldEntriesTimestamp)
         fakeOldEntries.forEach { testedCache.addToCache(it) }
 
         // When
@@ -215,7 +215,7 @@ internal class WebViewNativeRumViewsCacheTest {
             )
         }
         // Simulate time passing: device time is beyond TTL for old entries
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(newEntriesTimestamp)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(newEntriesTimestamp)
         fakeNewEntries.forEach { testedCache.addToCache(it) }
 
         // Then

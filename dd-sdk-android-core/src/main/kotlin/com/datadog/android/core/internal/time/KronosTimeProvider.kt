@@ -22,15 +22,15 @@ internal class KronosTimeProvider(
     private val internalLogger: InternalLogger
 ) : BaseTimeProvider() {
 
-    override fun getServerTimestamp(): Long {
+    override fun getServerTimestampMillis(): Long {
         return clock.safeGetCurrentTimeMs()
-            .getOrElse { getDeviceTimestamp() }
+            .getOrElse { getDeviceTimestampMillis() }
     }
 
     override fun getServerOffsetMillis(): Long {
         return clock.safeGetCurrentTimeMs()
             .map { server ->
-                val device = getDeviceTimestamp()
+                val device = getDeviceTimestampMillis()
                 val delta = server - device
                 delta
             }

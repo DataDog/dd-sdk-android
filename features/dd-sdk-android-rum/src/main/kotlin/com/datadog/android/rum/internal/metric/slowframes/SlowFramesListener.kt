@@ -31,7 +31,7 @@ internal class DefaultSlowFramesListener(
     private var currentViewId: String? = null
 
     @Volatile
-    private var currentViewStartedTimestampNs: Long = timeProvider.getDeviceElapsedTimeNs()
+    private var currentViewStartedTimestampNs: Long = timeProvider.getDeviceElapsedTimeNanos()
 
     private val slowFramesRecords = ConcurrentHashMap<String, ViewUIPerformanceReport>()
 
