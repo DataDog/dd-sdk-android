@@ -69,6 +69,9 @@ fun Project.createJsonModelsGenerationTask(
         dependsOn(task)
     }
 
+    // need to add an explicit dependency, otherwise there is an error during publishing
+    // Task 'sourceReleaseJar' uses this output of task
+    // this task without declaring an explicit or implicit dependency
     tasks.withType(SourceJarTask::class.java).configureEach {
         dependsOn(task)
     }
