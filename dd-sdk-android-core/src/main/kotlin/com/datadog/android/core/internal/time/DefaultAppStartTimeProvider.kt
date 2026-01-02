@@ -6,11 +6,9 @@
 
 package com.datadog.android.core.internal.time
 
-import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
 import java.util.concurrent.TimeUnit
@@ -22,9 +20,8 @@ internal class DefaultAppStartTimeProvider(
 ) : AppStartTimeProvider {
 
     override val appStartTimeNs: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        @SuppressLint("NewApi")
         when {
-            buildSdkVersionProvider.version >= Build.VERSION_CODES.N -> {
+            buildSdkVersionProvider.isAtLeastN -> {
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 val result = timeProviderFactory().getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 

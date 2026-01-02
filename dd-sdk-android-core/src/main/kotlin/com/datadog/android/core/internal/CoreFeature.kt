@@ -72,6 +72,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
@@ -107,7 +108,8 @@ internal class CoreFeature(
     private val internalLogger: InternalLogger,
     private val appStartTimeProvider: AppStartTimeProvider,
     private val executorServiceFactory: FlushableExecutorService.Factory,
-    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
+    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) {
 
     /**
@@ -460,7 +462,7 @@ internal class CoreFeature(
 
     @WorkerThread
     private fun initializeClockSync(appContext: Context) {
-        val safeContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val safeContext = if (buildSdkVersionProvider.isAtLeastN) {
             getSafeContext(appContext)
         } else {
             appContext
@@ -530,7 +532,7 @@ internal class CoreFeature(
         return try {
             val packageName = appContext.packageName
             with(appContext.packageManager) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (buildSdkVersionProvider.isAtLeastTiramisu) {
                     getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
                 } else {
                     getPackageInfo(packageName, 0)
@@ -604,7 +606,7 @@ internal class CoreFeature(
     }
 
     private fun setupNetworkInfoProviders(appContext: Context) {
-        networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
             CallbackNetworkInfoProvider(internalLogger = internalLogger)
         } else {
             BroadcastReceiverNetworkInfoProvider()

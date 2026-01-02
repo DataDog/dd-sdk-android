@@ -163,6 +163,22 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
 }
 
+public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
+	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
+	public abstract fun getVersion ()I
+	public abstract fun isAtLeastN ()Z
+	public abstract fun isAtLeastO ()Z
+	public abstract fun isAtLeastP ()Z
+	public abstract fun isAtLeastQ ()Z
+	public abstract fun isAtLeastR ()Z
+	public abstract fun isAtLeastS ()Z
+	public abstract fun isAtLeastTiramisu ()Z
+}
+
+public final class com/datadog/android/internal/system/BuildSdkVersionProvider$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/internal/system/BuildSdkVersionProvider;
+}
+
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {
 }
 

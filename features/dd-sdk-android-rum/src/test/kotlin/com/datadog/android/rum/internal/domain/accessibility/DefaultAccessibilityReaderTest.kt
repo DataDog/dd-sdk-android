@@ -12,7 +12,6 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.database.ContentObserver
-import android.os.Build
 import android.os.Handler
 import android.provider.Settings
 import android.provider.Settings.Secure.ACCESSIBILITY_DISPLAY_INVERSION_ENABLED
@@ -23,8 +22,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader.Companion.CAPTIONING_ENABLED_KEY
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -50,8 +47,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -293,7 +289,6 @@ internal class DefaultAccessibilityReaderTest {
 
     // region Screen Pinning Tests
 
-    @TestTargetApi(Build.VERSION_CODES.M)
     @Test
     fun `M return true for screen pinning W getState { lock task mode is LOCKED }`() {
         // Given
@@ -309,7 +304,6 @@ internal class DefaultAccessibilityReaderTest {
         assertThat(isScreenPinningEnabled).isTrue()
     }
 
-    @TestTargetApi(Build.VERSION_CODES.M)
     @Test
     fun `M return true for screen pinning W getState { lock task mode is PINNED }`() {
         // Given
@@ -325,7 +319,6 @@ internal class DefaultAccessibilityReaderTest {
         assertThat(isScreenPinningEnabled).isTrue()
     }
 
-    @TestTargetApi(Build.VERSION_CODES.M)
     @Test
     fun `M return false for screen pinning W getState { lock task mode is NONE }`() {
         // Given

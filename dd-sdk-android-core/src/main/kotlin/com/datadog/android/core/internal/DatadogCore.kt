@@ -9,7 +9,6 @@ package com.datadog.android.core.internal
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
-import android.os.Build
 import android.util.Log
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
@@ -32,7 +31,6 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
@@ -41,6 +39,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
@@ -390,7 +389,7 @@ internal class DatadogCore(
     override fun writeLastViewEvent(data: ByteArray) {
         // we need to write it only if we are going to read ApplicationExitInfo (available on
         // API 30+) or if there is NDK crash tracking enabled
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.R ||
+        if (buildSdkVersionProvider.isAtLeastR ||
             features.containsKey(Feature.NDK_CRASH_REPORTS_FEATURE_NAME)
         ) {
             coreFeature.writeLastViewEvent(data)
