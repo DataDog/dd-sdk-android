@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.resource
 
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -45,10 +47,7 @@ import org.mockito.quality.Strictness
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
-import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit
 import kotlin.math.min
-import kotlin.system.measureNanoTime
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -64,6 +63,9 @@ internal class RumResourceInputStreamTest {
     @Mock
     lateinit var mockInputStream: InputStream
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @StringForgery
     lateinit var fakeUrl: String
 
@@ -72,6 +74,7 @@ internal class RumResourceInputStreamTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever((rumMonitor.mockSdkCore as FeatureSdkCore).timeProvider) doReturn mockTimeProvider
         testedInputStream = RumResourceInputStream(mockInputStream, fakeUrl, rumMonitor.mockSdkCore)
 
         // M start resource W init
@@ -658,24 +661,26 @@ internal class RumResourceInputStreamTest {
 
     @Test
     fun `M register resource with timing W read() + close() {bufferedReader}`(
-        @StringForgery content: String
+        @StringForgery content: String,
+        @LongForgery(min = 0L) fakeCallStartNs: Long,
+        @LongForgery(min = 0L) fakeDownloadStartNs: Long,
+        @LongForgery(min = 0L) fakeDownloadDurationNs: Long
     ) {
         // Given
         val contentBytes = content.toByteArray()
         val inputStream = contentBytes.inputStream()
+        val fakeFirstByteNs = fakeCallStartNs + fakeDownloadStartNs
+        val fakeLastByteNs = fakeFirstByteNs + fakeDownloadDurationNs
+
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
+            .thenReturn(fakeCallStartNs)
+            .thenReturn(fakeFirstByteNs)
+            .thenReturn(fakeLastByteNs)
+
         testedInputStream = RumResourceInputStream(inputStream, fakeUrl, rumMonitor.mockSdkCore)
-        Thread.sleep(500)
-        var download: Long
 
         // When
-        val result = testedInputStream.bufferedReader().use {
-            var text: String
-            download = measureNanoTime {
-                text = it.readText()
-            }
-            Thread.sleep(500)
-            text
-        }
+        val result = testedInputStream.bufferedReader().use { it.readText() }
 
         // Then
         assertThat(result).isEqualTo(content)
@@ -697,10 +702,8 @@ internal class RumResourceInputStreamTest {
                 assertThat(firstValue.dnsDuration).isEqualTo(0L)
                 assertThat(firstValue.sslDuration).isEqualTo(0L)
                 assertThat(firstValue.firstByteDuration).isEqualTo(0L)
-                assertThat(firstValue.downloadStart).isGreaterThan(
-                    TimeUnit.MILLISECONDS.toNanos(500)
-                )
-                assertThat(firstValue.downloadDuration).isLessThanOrEqualTo(download)
+                assertThat(firstValue.downloadStart).isEqualTo(fakeDownloadStartNs)
+                assertThat(firstValue.downloadDuration).isEqualTo(fakeDownloadDurationNs)
             }
             verify(rumMonitor.mockInstance).stopResource(
                 testedInputStream.key,

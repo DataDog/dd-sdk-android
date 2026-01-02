@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -76,10 +77,16 @@ internal class BatchFileOrchestratorTest {
     @Mock
     lateinit var mockPendingFiles: AtomicInteger
 
+    @LongForgery(min = 0L)
+    var fakeTimestamp: Long = 0L
+
+    lateinit var stubTimeProvider: StubTimeProvider
+
     @BeforeEach
     fun `set up`() {
         whenever(mockPendingFiles.decrementAndGet()).thenReturn(fakePendingBatches)
         whenever(mockPendingFiles.incrementAndGet()).thenReturn(fakePendingBatches)
+        stubTimeProvider = StubTimeProvider(deviceTimestampMs = fakeTimestamp)
         fakeRootDir = File(tempDir, fakeRootDirName)
         fakeRootDir.mkdirs()
         testedOrchestrator = BatchFileOrchestrator(
@@ -87,6 +94,7 @@ internal class BatchFileOrchestratorTest {
             config = TEST_PERSISTENCE_CONFIG,
             internalLogger = mockLogger,
             metricsDispatcher = mockMetricsDispatcher,
+            timeProvider = stubTimeProvider,
             pendingFiles = mockPendingFiles
         )
     }
@@ -109,10 +117,9 @@ internal class BatchFileOrchestratorTest {
     @Test
     fun `M send batch_closed metric W getWritableFile()`() {
         // Given
-        val lowerTimestamp = System.currentTimeMillis()
+        val fileCreationTimestamp = stubTimeProvider.deviceTimestampMs
         val oldFile = testedOrchestrator.getWritableFile()
-        val upperTimestamp = System.currentTimeMillis()
-        Thread.sleep(RECENT_DELAY_MS + 1)
+        stubTimeProvider.deviceTimestampMs += RECENT_DELAY_MS + 1
 
         // When
         testedOrchestrator.getWritableFile()
@@ -128,8 +135,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(fileArgumentCaptor.firstValue).isEqualTo(oldFile)
         metadataArgumentCaptor.firstValue.let {
             assertThat(it.eventsCount).isEqualTo(1L)
-            assertThat(it.lastTimeWasUsedInMs)
-                .isBetween(lowerTimestamp, upperTimestamp)
+            assertThat(it.lastTimeWasUsedInMs).isEqualTo(fileCreationTimestamp)
         }
         verifyNoMoreInteractions(mockMetricsDispatcher)
     }
@@ -145,7 +151,8 @@ internal class BatchFileOrchestratorTest {
             notADir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -172,7 +179,8 @@ internal class BatchFileOrchestratorTest {
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -200,7 +208,8 @@ internal class BatchFileOrchestratorTest {
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -235,30 +244,28 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val oldTimestamp = currentTime - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
-        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngTimestamp = currentTime - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, youngFile.name)
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(currentTime)
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
@@ -276,22 +283,21 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val oldTimestamp = currentTime - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
-        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngTimestamp = currentTime - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, youngFile.name)
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
         // let's add very old file after the previous cleanup call. If threshold is respected,
         // cleanup shouldn't be performed during the next getWritableFile call
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
@@ -304,8 +310,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(currentTime)
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
@@ -323,7 +328,8 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val oldTimestamp = currentTime - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
@@ -332,10 +338,8 @@ internal class BatchFileOrchestratorTest {
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
-        Thread.sleep(maxOf(CLEANUP_FREQUENCY_THRESHOLD_MS, RECENT_DELAY_MS) + 1)
+        stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, evenOlderFile.name)
@@ -346,8 +350,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(currentTime)
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(evenOlderFile).doesNotExist()
@@ -367,8 +370,7 @@ internal class BatchFileOrchestratorTest {
                 capture()
             )
             assertThat(firstValue.eventsCount).isEqualTo(1L)
-            assertThat(firstValue.lastTimeWasUsedInMs)
-                .isBetween(start, end)
+            assertThat(firstValue.lastTimeWasUsedInMs).isEqualTo(currentTime)
         }
         verifyNoMoreInteractions(mockMetricsDispatcher)
     }
@@ -377,19 +379,17 @@ internal class BatchFileOrchestratorTest {
     fun `M return new File W getWritableFile() {no available file}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val currentTime = stubTimeProvider.deviceTimestampMs
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(currentTime)
         verifyNoInteractions(mockMetricsDispatcher)
     }
 
@@ -403,7 +403,7 @@ internal class BatchFileOrchestratorTest {
         checkNotNull(previousFile)
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, previousFile.name)
         previousFile.writeText(previousData)
-        Thread.sleep(1)
+        stubTimeProvider.deviceTimestampMs += 1
 
         // When
         val result = testedOrchestrator.getWritableFile()
@@ -421,31 +421,27 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
         val previousFile = testedOrchestrator.getWritableFile()
-        val afterFileCreateTimestamp = System.currentTimeMillis()
 
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
-        Thread.sleep(RECENT_DELAY_MS + 1)
+        stubTimeProvider.deviceTimestampMs += RECENT_DELAY_MS + 1
+        val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(newFileTimestamp)
         assertThat(previousFile.readText()).isEqualTo(previousData)
         argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
-            assertThat(firstValue.lastTimeWasUsedInMs)
-                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.lastTimeWasUsedInMs).isEqualTo(fileCreateTimestamp)
             assertThat(firstValue.eventsCount).isEqualTo(1L)
         }
         verifyNoMoreInteractions(mockMetricsDispatcher)
@@ -457,22 +453,21 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = File(fakeRootDir, System.currentTimeMillis().toString())
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val previousFile = File(fakeRootDir, currentTime.toString())
         previousFile.writeText(previousData)
-        Thread.sleep(1)
+        stubTimeProvider.deviceTimestampMs += 1
+        val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(newFileTimestamp)
         assertThat(previousFile.readText()).isEqualTo(previousData)
         verifyNoInteractions(mockMetricsDispatcher)
     }
@@ -481,32 +476,28 @@ internal class BatchFileOrchestratorTest {
     fun `M return new File W getWritableFile() {previous file is deleted}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
         val previousFile = testedOrchestrator.getWritableFile()
-        val afterFileCreateTimestamp = System.currentTimeMillis()
         checkNotNull(previousFile)
         previousFile.createNewFile()
         previousFile.delete()
         testedOrchestrator.fileObserver.onEvent(FileObserver.DELETE, previousFile.name)
-        Thread.sleep(1)
+        stubTimeProvider.deviceTimestampMs += 1
+        val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(newFileTimestamp)
         assertThat(previousFile).doesNotExist()
         argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
-            assertThat(firstValue.lastTimeWasUsedInMs)
-                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.lastTimeWasUsedInMs).isEqualTo(fileCreateTimestamp)
             assertThat(firstValue.eventsCount).isEqualTo(1L)
         }
         verifyNoMoreInteractions(mockMetricsDispatcher)
@@ -518,30 +509,26 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
         val previousFile = testedOrchestrator.getWritableFile()
-        val afterFileCreateTimestamp = System.currentTimeMillis()
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
-        Thread.sleep(1)
+        stubTimeProvider.deviceTimestampMs += 1
+        val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val start = System.currentTimeMillis()
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(newFileTimestamp)
         assertThat(previousFile.readText()).isEqualTo(previousData)
         argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
-            assertThat(firstValue.lastTimeWasUsedInMs)
-                .isBetween(beforeFileCreateTimestamp, afterFileCreateTimestamp)
+            assertThat(firstValue.lastTimeWasUsedInMs).isEqualTo(fileCreateTimestamp)
             assertThat(firstValue.eventsCount).isEqualTo(1L)
         }
         verifyNoMoreInteractions(mockMetricsDispatcher)
@@ -553,7 +540,7 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val beforeFileCreateTimestamp = System.currentTimeMillis()
+        val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
         var previousFile = testedOrchestrator.getWritableFile()
 
         repeat(4) {
@@ -570,27 +557,26 @@ internal class BatchFileOrchestratorTest {
                 assumeTrue(file == previousFile)
                 file?.appendText(previousData[i])
             }
-            val afterLastFileUsageTimestamp = System.currentTimeMillis()
+            val lastFileUsageTimestamp = stubTimeProvider.deviceTimestampMs
 
             // When
-            val start = System.currentTimeMillis()
+            stubTimeProvider.deviceTimestampMs += 1
+            val newFileTimestamp = stubTimeProvider.deviceTimestampMs
             val nextFile = testedOrchestrator.getWritableFile()
-            val end = System.currentTimeMillis()
 
             // Then
             checkNotNull(nextFile)
             assertThat(nextFile)
                 .doesNotExist()
                 .hasParent(fakeRootDir)
-            assertThat(nextFile.name.toLong())
-                .isBetween(start, end)
+            assertThat(nextFile.name.toLong()).isEqualTo(newFileTimestamp)
             assertThat(currentFile.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
             argumentCaptor<BatchClosedMetadata> {
                 verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(currentFile), capture())
                 assertThat(firstValue.lastTimeWasUsedInMs)
-                    .isBetween(beforeFileCreateTimestamp, afterLastFileUsageTimestamp)
+                    .isBetween(fileCreateTimestamp, lastFileUsageTimestamp)
                 assertThat(firstValue.eventsCount).isEqualTo(MAX_ITEM_PER_BATCH.toLong())
             }
             previousFile = nextFile
@@ -614,22 +600,20 @@ internal class BatchFileOrchestratorTest {
             }
             file.writeText(previousData)
             files.add(file)
-            Thread.sleep(1)
+            stubTimeProvider.deviceTimestampMs += 1
         }
 
         // When
-        Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
-        val start = System.currentTimeMillis()
+        stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
+        val newFileTimestamp = stubTimeProvider.deviceTimestampMs
         val result = testedOrchestrator.getWritableFile()
-        val end = System.currentTimeMillis()
 
         // Then
         checkNotNull(result)
         assertThat(result)
             .doesNotExist()
             .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
+        assertThat(result.name.toLong()).isEqualTo(newFileTimestamp)
         assertThat(files.first()).doesNotExist()
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
@@ -658,7 +642,8 @@ internal class BatchFileOrchestratorTest {
             notADir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -684,7 +669,8 @@ internal class BatchFileOrchestratorTest {
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -711,7 +697,8 @@ internal class BatchFileOrchestratorTest {
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -732,14 +719,15 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val oldTimestamp = System.currentTimeMillis() - oldFileAge
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val oldTimestamp = currentTime - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
-        val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
+        val youngTimestamp = currentTime - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, youngFile.name)
@@ -782,7 +770,8 @@ internal class BatchFileOrchestratorTest {
     fun `M return file W getReadableFile() {existing old enough file}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val timestamp = currentTime - (RECENT_DELAY_MS * 2)
         val file = File(fakeRootDir, timestamp.toString())
         file.createNewFile()
         testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, file.name)
@@ -801,7 +790,8 @@ internal class BatchFileOrchestratorTest {
     fun `M return null W getReadableFile() {file is too recent}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val timestamp = currentTime - (RECENT_DELAY_MS / 2)
         val file = File(fakeRootDir, timestamp.toString())
         file.createNewFile()
 
@@ -816,7 +806,8 @@ internal class BatchFileOrchestratorTest {
     fun `M return null W getReadableFile() {file is in exclude list}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val timestamp = currentTime - (RECENT_DELAY_MS * 2)
         val file = File(fakeRootDir, timestamp.toString())
         file.createNewFile()
 
@@ -842,7 +833,8 @@ internal class BatchFileOrchestratorTest {
             notADir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -868,7 +860,8 @@ internal class BatchFileOrchestratorTest {
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -895,7 +888,8 @@ internal class BatchFileOrchestratorTest {
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -941,8 +935,9 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val old = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
-        val new = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val old = currentTime - (RECENT_DELAY_MS * 2)
+        val new = currentTime - (RECENT_DELAY_MS / 2)
         val expectedFiles = mutableListOf<File>()
         for (i in 1..count) {
             // create both non readable and non writable files
@@ -993,8 +988,9 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val old = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
-        val new = System.currentTimeMillis() - (RECENT_DELAY_MS / 2)
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val old = currentTime - (RECENT_DELAY_MS * 2)
+        val new = currentTime - (RECENT_DELAY_MS / 2)
         val expectedFiles = mutableListOf<File>()
         for (i in 1..count) {
             // create both non readable and non writable files
@@ -1046,7 +1042,8 @@ internal class BatchFileOrchestratorTest {
             notADir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -1072,7 +1069,8 @@ internal class BatchFileOrchestratorTest {
             corruptedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -1099,7 +1097,8 @@ internal class BatchFileOrchestratorTest {
             restrictedDir,
             TEST_PERSISTENCE_CONFIG,
             mockLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            stubTimeProvider
         )
 
         // When
@@ -1175,7 +1174,7 @@ internal class BatchFileOrchestratorTest {
     @Test
     fun `M return metadata file W getMetadataFile()`() {
         // Given
-        val fakeFileName = System.currentTimeMillis().toString()
+        val fakeFileName = stubTimeProvider.deviceTimestampMs.toString()
         val fakeFile = File(fakeRootDir.path, fakeFileName)
 
         // When
@@ -1191,7 +1190,7 @@ internal class BatchFileOrchestratorTest {
         @StringForgery fakeSuffix: String
     ) {
         // Given
-        val fakeFileName = System.currentTimeMillis().toString()
+        val fakeFileName = stubTimeProvider.deviceTimestampMs.toString()
         val fakeFile = File("${fakeRootDir.parent}$fakeSuffix", fakeFileName)
 
         // When

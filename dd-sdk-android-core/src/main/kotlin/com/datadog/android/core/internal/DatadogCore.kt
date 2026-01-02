@@ -42,6 +42,7 @@ import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import okhttp3.Call
@@ -101,7 +102,7 @@ internal class DatadogCore(
     /** @inheritDoc */
     override val time: TimeInfo
         get() {
-            return coreFeature.timeProvider.composeTimeInfo()
+            return timeProvider.composeTimeInfo()
         }
 
     /** @inheritDoc */
@@ -114,6 +115,10 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override val internalLogger: InternalLogger = internalLoggerProvider(this)
+
+    /** @inheritDoc */
+    override val timeProvider: TimeProvider
+        get() = coreFeature.timeProvider
 
     /** @inheritDoc */
     override var isDeveloperModeEnabled: Boolean = false
@@ -452,7 +457,7 @@ internal class DatadogCore(
             executorServiceFactory ?: CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY
         coreFeature = CoreFeature(
             internalLogger,
-            DefaultAppStartTimeProvider(),
+            DefaultAppStartTimeProvider(timeProviderFactory = { timeProvider }),
             flushableExecutorServiceFactory,
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )

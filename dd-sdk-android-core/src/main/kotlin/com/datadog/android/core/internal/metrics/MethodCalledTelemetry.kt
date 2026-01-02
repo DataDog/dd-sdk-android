@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
+import com.datadog.android.internal.time.TimeProvider
 
 /**
  * Performance metric to measure the execution time for a method.
@@ -17,18 +18,20 @@ import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
  * @param operationName the operation name
  * @param callerClass - the class calling the performance metric.
  * @param creationSampleRate - sampling frequency used to create the metric
- * @param startTime - the time when the metric is instantiated, to be used as the start point for the measurement.
+ * @param timeProvider - the provider for time measurements.
  */
 internal class MethodCalledTelemetry(
     internal val internalLogger: InternalLogger,
     internal val operationName: String,
     internal val callerClass: String,
     internal val creationSampleRate: Float,
-    internal val startTime: Long = System.nanoTime()
+    internal val timeProvider: TimeProvider
 ) : PerformanceMetric {
 
+    internal val startTime: Long = timeProvider.getDeviceElapsedTimeNanos()
+
     override fun stopAndSend(isSuccessful: Boolean) {
-        val executionTime = System.nanoTime() - startTime
+        val executionTime = timeProvider.getDeviceElapsedTimeNanos() - startTime
         val additionalProperties: MutableMap<String, Any> = mutableMapOf()
 
         additionalProperties[EXECUTION_TIME] = executionTime

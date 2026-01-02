@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import android.content.res.Configuration
 import androidx.annotation.WorkerThread
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
@@ -27,6 +28,7 @@ internal class RecordedDataProcessor(
     private val resourcesWriter: ResourcesWriter,
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
+    private val timeProvider: TimeProvider,
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
     private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
@@ -162,8 +164,8 @@ internal class RecordedDataProcessor(
     }
 
     private fun isTimeForFullSnapshot(): Boolean {
-        return if (System.nanoTime() - lastSnapshotTimestamp >= FULL_SNAPSHOT_INTERVAL_IN_NS) {
-            lastSnapshotTimestamp = System.nanoTime()
+        return if (timeProvider.getDeviceElapsedTimeNanos() - lastSnapshotTimestamp >= FULL_SNAPSHOT_INTERVAL_IN_NS) {
+            lastSnapshotTimestamp = timeProvider.getDeviceElapsedTimeNanos()
             true
         } else {
             false

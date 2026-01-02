@@ -20,12 +20,14 @@ import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader.Companion.CAPTIONING_ENABLED_KEY
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -84,12 +86,19 @@ internal class DefaultAccessibilityReaderTest {
     @Mock
     lateinit var mockHandler: Handler
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @LongForgery(min = 0L)
+    var fakeTimestamp: Long = 0L
+
     private lateinit var testedReader: DefaultAccessibilityReader
 
     @BeforeEach
     fun setup() {
         whenever(mockContext.contentResolver) doReturn mockContentResolver
         whenever(mockResources.configuration) doReturn mockConfiguration
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
 
         setupDefaultMockBehavior()
 
@@ -101,6 +110,7 @@ internal class DefaultAccessibilityReaderTest {
         return DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
+            timeProvider = mockTimeProvider,
             resources = mockResources,
             activityManager = mockActivityManager,
             accessibilityManager = mockAccessibilityManager,
@@ -157,6 +167,7 @@ internal class DefaultAccessibilityReaderTest {
         testedReader = DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
+            timeProvider = mockTimeProvider,
             resources = mockResources,
             activityManager = mockActivityManager,
             accessibilityManager = null,
@@ -336,6 +347,7 @@ internal class DefaultAccessibilityReaderTest {
         testedReader = DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
+            timeProvider = mockTimeProvider,
             resources = mockResources,
             activityManager = null,
             accessibilityManager = mockAccessibilityManager,
@@ -616,6 +628,7 @@ internal class DefaultAccessibilityReaderTest {
         testedReader = DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
+            timeProvider = mockTimeProvider,
             resources = mockResources,
             activityManager = mockActivityManager,
             accessibilityManager = null,
@@ -763,18 +776,17 @@ internal class DefaultAccessibilityReaderTest {
         val lastPollTimeField = testedReader.javaClass.getDeclaredField("lastPollTime")
         lastPollTimeField.isAccessible = true
         val lastPollTime = lastPollTimeField.get(testedReader) as AtomicLong
-        val oldTime = System.currentTimeMillis() - 31_000
+        val oldTime = fakeTimestamp - 31_000
         lastPollTime.set(oldTime)
 
         // When - Call after threshold exceeded
-        val currentTimeBefore = System.currentTimeMillis()
+        val newTimestamp = fakeTimestamp + 1000
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn newTimestamp
         testedReader.getState()
-        val currentTimeAfter = System.currentTimeMillis()
 
-        // Then - lastPollTime should be updated to current time (within reasonable range)
+        // Then - lastPollTime should be updated to the new timestamp
         val newPollTime = lastPollTime.get()
-        assertThat(newPollTime).isGreaterThanOrEqualTo(currentTimeBefore)
-        assertThat(newPollTime).isLessThanOrEqualTo(currentTimeAfter)
+        assertThat(newPollTime).isEqualTo(newTimestamp)
         assertThat(newPollTime).isGreaterThan(oldTime)
     }
 
