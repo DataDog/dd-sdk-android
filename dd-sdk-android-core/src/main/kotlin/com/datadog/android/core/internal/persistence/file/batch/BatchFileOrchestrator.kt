@@ -217,7 +217,6 @@ internal class BatchFileOrchestrator(
         created
     }
 
-    @Synchronized
     private fun startFileObserverIfNotStarted() {
         if (isFileObserverStarted.compareAndSet(false, true)) {
             fileObserver.startWatching()
