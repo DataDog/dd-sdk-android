@@ -15,11 +15,13 @@ import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager.Companion.DATASTORE_EXPIRATION_NS
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager.Companion.DATASTORE_HASHES_ENTRY_NAME
 import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -65,8 +67,14 @@ internal class ResourceDataStoreManagerTest {
     @Mock
     lateinit var mockDataStoreHandler: DataStoreHandler
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @StringForgery
     lateinit var fakeHash: String
+
+    @LongForgery(min = DATASTORE_EXPIRATION_NS + 1)
+    var fakeCurrentTimeNs: Long = 0L
 
     @BeforeEach
     fun setup() {
@@ -74,6 +82,8 @@ internal class ResourceDataStoreManagerTest {
             .thenReturn(mockFeatureScope)
 
         whenever(mockFeatureScope.dataStore).thenReturn(mockDataStoreHandler)
+        whenever(mockFeatureSdkCore.timeProvider).thenReturn(mockTimeProvider)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenReturn(fakeCurrentTimeNs)
 
         setRemoveDataSuccess()
     }
@@ -138,7 +148,7 @@ internal class ResourceDataStoreManagerTest {
         forge: Forge
     ) {
         // Given
-        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true, fakeCurrentTimeNs)
         setFetchDataSuccess(mockDataStoreContent)
 
         // When
@@ -190,7 +200,7 @@ internal class ResourceDataStoreManagerTest {
         forge: Forge
     ) {
         // Given
-        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true, fakeCurrentTimeNs)
         setFetchDataSuccess(mockDataStoreContent)
 
         // When
@@ -212,7 +222,7 @@ internal class ResourceDataStoreManagerTest {
         forge: Forge
     ) {
         // Given
-        val mockDataStoreContentEntry = generateDataStoreContent(forge, isExpired = false)
+        val mockDataStoreContentEntry = generateDataStoreContent(forge, isExpired = false, fakeCurrentTimeNs)
         setFetchDataSuccess(mockDataStoreContentEntry)
 
         // When
@@ -249,7 +259,7 @@ internal class ResourceDataStoreManagerTest {
         forge: Forge
     ) {
         // Given
-        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = false)
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = false, fakeCurrentTimeNs)
         setFetchDataSuccess(mockDataStoreContent)
 
         // When
@@ -284,7 +294,7 @@ internal class ResourceDataStoreManagerTest {
         forge: Forge
     ) {
         // Given
-        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true, fakeCurrentTimeNs)
         setFetchDataSuccess(mockDataStoreContent)
         setRemoveDataSuccess()
 
@@ -304,7 +314,7 @@ internal class ResourceDataStoreManagerTest {
         forge: Forge
     ) {
         // Given
-        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true)
+        val mockDataStoreContent = generateDataStoreContent(forge, isExpired = true, fakeCurrentTimeNs)
         setFetchDataSuccess(mockDataStoreContent)
         setRemoveDataFailure()
 
@@ -323,14 +333,15 @@ internal class ResourceDataStoreManagerTest {
 
     private fun generateDataStoreContent(
         forge: Forge,
-        isExpired: Boolean
+        isExpired: Boolean,
+        currentTime: Long
     ): DataStoreContent<ResourceHashesEntry> {
         val resourceHashes = forge.aList { aString() }.distinct()
         val fakeVersionCode = forge.anInt(min = 0)
         val entryTime = if (isExpired) {
-            System.nanoTime() - DATASTORE_EXPIRATION_NS
+            currentTime - DATASTORE_EXPIRATION_NS - 1
         } else {
-            System.nanoTime()
+            currentTime
         }
 
         val mockResourceHashesEntry: ResourceHashesEntry = mock {

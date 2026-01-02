@@ -423,6 +423,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
 	public abstract fun getFeatureContext (Ljava/lang/String;Z)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
+	public abstract fun getTimeProvider ()Lcom/datadog/android/internal/time/TimeProvider;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
 	public abstract fun removeContextUpdateReceiver (Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun removeEventReceiver (Ljava/lang/String;)V
@@ -1016,7 +1017,7 @@ public abstract interface class com/datadog/android/core/thread/FlushableExecuto
 }
 
 public abstract interface class com/datadog/android/core/thread/FlushableExecutorService$Factory {
-	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Ljava/lang/String;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/thread/FlushableExecutorService;
+	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Ljava/lang/String;Lcom/datadog/android/core/configuration/BackPressureStrategy;Lcom/datadog/android/internal/time/TimeProvider;)Lcom/datadog/android/core/thread/FlushableExecutorService;
 }
 
 public abstract interface class com/datadog/android/event/EventMapper {

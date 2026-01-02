@@ -348,19 +348,23 @@ internal class RumViewManagerScopeTest {
 
     @Test
     fun `M send gap message W handleEvent(StopView) + handleEvent(StartView)`(
-        @LongForgery(10, 30) fakeSleepMs: Long,
+        @LongForgery(10, 30) fakeGapMs: Long,
         forge: Forge
     ) {
         // Given
-        val firstViewEvent = forge.startViewEvent()
+        val baseTime = Time()
+        val firstViewEvent = forge.startViewEvent(eventTime = baseTime)
         testedScope.applicationDisplayed = true
         testedScope.handleEvent(firstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap())
+        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap(), baseTime)
         testedScope.handleEvent(stopFirstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When
-        Thread.sleep(fakeSleepMs)
-        val secondViewEvent = forge.startViewEvent()
+        val secondViewTime = Time(
+            baseTime.timestamp + fakeGapMs,
+            baseTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(fakeGapMs)
+        )
+        val secondViewEvent = forge.startViewEvent(eventTime = secondViewTime)
         testedScope.handleEvent(secondViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -376,9 +380,8 @@ internal class RumViewManagerScopeTest {
 
         assertThat(additionalPropertiesCaptor.firstValue).containsKey(RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS)
         val gapNs = additionalPropertiesCaptor.firstValue[RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS] as Long
-        val minNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs)
-        val maxNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs + 15)
-        assertThat(gapNs).isBetween(minNs, maxNs)
+        val expectedGapNs = TimeUnit.MILLISECONDS.toNanos(fakeGapMs)
+        assertThat(gapNs).isEqualTo(expectedGapNs)
         assertThat(messageBuilderCaptor.firstValue()).isEqualTo("[Mobile Metric] Gap between views")
     }
 
@@ -387,13 +390,17 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        val firstViewEvent = forge.startViewEvent()
+        val baseTime = Time()
+        val firstViewEvent = forge.startViewEvent(eventTime = baseTime)
         testedScope.applicationDisplayed = true
         testedScope.handleEvent(firstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When
-        Thread.sleep(15)
-        val secondViewEvent = forge.startViewEvent()
+        val secondViewTime = Time(
+            baseTime.timestamp + 15,
+            baseTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(15)
+        )
+        val secondViewEvent = forge.startViewEvent(eventTime = secondViewTime)
         testedScope.handleEvent(secondViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then

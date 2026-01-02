@@ -135,7 +135,7 @@ internal class CoreFeature(
             .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
-            .dns(RotatingDnsResolver()) // NPE cannot happen here
+            .dns(RotatingDnsResolver(timeProvider = timeProvider)) // NPE cannot happen here
             .build()
     }
 
@@ -327,7 +327,7 @@ internal class CoreFeature(
     }
 
     fun createExecutorService(executorContext: String): ExecutorService {
-        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy, timeProvider)
     }
 
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
@@ -652,7 +652,8 @@ internal class CoreFeature(
         persistenceExecutorService = executorServiceFactory.create(
             internalLogger = internalLogger,
             executorContext = "storage",
-            backPressureStrategy = backpressureStrategy
+            backPressureStrategy = backpressureStrategy,
+            timeProvider = timeProvider
         )
         val contextQueue = BackPressuredBlockingQueue<Runnable>(
             internalLogger,
@@ -662,7 +663,8 @@ internal class CoreFeature(
             // just notify when reached
             onItemDropped = {},
             onThresholdReached = {},
-            backpressureMitigation = null
+            backpressureMitigation = null,
+            timeProvider = timeProvider
         )
         @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are safe
         contextExecutorService = ThreadPoolExecutor(
@@ -753,8 +755,8 @@ internal class CoreFeature(
                 " process of your application."
 
         internal val DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY =
-            FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy ->
-                BackPressureExecutorService(logger, executorContext, backPressureStrategy)
+            FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy, timeProvider ->
+                BackPressureExecutorService(logger, executorContext, backPressureStrategy, timeProvider)
             }
 
         internal val DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY =
