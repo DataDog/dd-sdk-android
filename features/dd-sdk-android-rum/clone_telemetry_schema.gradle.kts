@@ -3,15 +3,13 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
+import com.datadog.gradle.utils.cloneRumEventsFormat
+import com.datadog.gradle.utils.createRumSchemaCloningTask
 
-tasks.register<GitCloneDependenciesTask>("cloneTelemetrySchema") {
-    extension.apply {
-        clone(
-            "https://github.com/DataDog/rum-events-format.git",
-            "schemas/telemetry",
-            destinationFolder = "src/main/json/telemetry",
-            ref = "master"
-        )
-    }
+createRumSchemaCloningTask("cloneTelemetrySchema") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/telemetry",
+        destinationFolder = "src/main/json/telemetry"
+    )
 }

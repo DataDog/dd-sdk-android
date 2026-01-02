@@ -3,50 +3,39 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
+import com.datadog.gradle.utils.cloneRumEventsFormat
+import com.datadog.gradle.utils.createRumSchemaCloningTask
 
-val eventFormatRepo = "https://github.com/DataDog/rum-events-format.git"
-val eventFormatVersion = "master"
-
-tasks.register<GitCloneDependenciesTask>("cloneSessionReplayRootSchemas") {
-    extension.apply {
-        clone(
-            eventFormatRepo,
-            "schemas/",
-            destinationFolder = "src/main/json/schemas",
-            excludedPrefixes = listOf(
-                "session-replay/",
-                "rum",
-                "mobile",
-                "telemetry",
-                "session-replay-schema",
-                "session-replay-browser-schema"
-            ),
-            ref = eventFormatVersion
+createRumSchemaCloningTask("cloneSessionReplayRootSchemas") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/",
+        destinationFolder = "src/main/json/schemas",
+        excludedPrefixes = listOf(
+            "session-replay/",
+            "rum",
+            "mobile",
+            "telemetry",
+            "session-replay-schema",
+            "session-replay-browser-schema"
         )
-    }
+    )
 }
 
-tasks.register<GitCloneDependenciesTask>("cloneSessionReplayMobileSchemas") {
-    extension.apply {
-        clone(
-            eventFormatRepo,
-            "schemas/session-replay/mobile",
-            destinationFolder = "src/main/json/schemas/session-replay/mobile",
-            ref = eventFormatVersion
-        )
-    }
+createRumSchemaCloningTask("cloneSessionReplayMobileSchemas") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/session-replay/mobile",
+        destinationFolder = "src/main/json/schemas/session-replay/mobile"
+    )
 }
 
-tasks.register<GitCloneDependenciesTask>("cloneSessionReplayCommonSchemas") {
-    extension.apply {
-        clone(
-            eventFormatRepo,
-            "schemas/session-replay/common",
-            destinationFolder = "src/main/json/schemas/session-replay/common",
-            ref = eventFormatVersion
-        )
-    }
+createRumSchemaCloningTask("cloneSessionReplayCommonSchemas") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/session-replay/common",
+        destinationFolder = "src/main/json/schemas/session-replay/common"
+    )
 }
 
 tasks.register("cloneSessionReplaySchemas") {

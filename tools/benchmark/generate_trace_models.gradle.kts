@@ -5,23 +5,16 @@
  */
 
 import com.android.build.gradle.tasks.SourceJarTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 val generateTraceModelsTaskName = "generateTraceModelsFromJson"
 
-tasks.register(
-    generateTraceModelsTaskName,
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
+createJsonModelsGenerationTask(generateTraceModelsTaskName) {
     inputDirPath = "src/main/json"
     targetPackageName = "com.datadog.benchmark.internal.model"
 }
 
 afterEvaluate {
-    tasks.withType(KotlinCompile::class.java).configureEach {
-        dependsOn(generateTraceModelsTaskName)
-    }
-
     // need to add an explicit dependency, otherwise there is an error during publishing
     // Task ':tools:benchmark:sourceReleaseJar' uses this output of task
     // ':tools:benchmark:generateTraceModelsFromJson' without

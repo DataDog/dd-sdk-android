@@ -5,30 +5,16 @@
  */
 
 import com.android.build.gradle.tasks.SourceJarTask
-import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 val generateSessionReplayModelsTaskName = "generateSessionReplayModels"
 
-tasks.register(
-    generateSessionReplayModelsTaskName,
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
+createJsonModelsGenerationTask(generateSessionReplayModelsTaskName) {
     inputDirPath = "src/main/json/schemas"
     targetPackageName = "com.datadog.android.sessionreplay.model"
 }
 
 afterEvaluate {
-    tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
-        ?.dependsOn(
-            generateSessionReplayModelsTaskName
-        )
-    tasks.withType(KotlinCompile::class.java) {
-        dependsOn(
-            generateSessionReplayModelsTaskName
-        )
-    }
-
     // need to add an explicit dependency, otherwise there is an error during publishing
     // Task ':features:dd-sdk-android-session-replay:sourceReleaseJar' uses this output of task
     // ':features:dd-sdk-android-session-replay:generateSessionReplayModelsFromJson' without

@@ -93,6 +93,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
+apply(from = "clone_common_schema.gradle.kts")
 apply(from = "generate_trace_models.gradle.kts")
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

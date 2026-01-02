@@ -4,15 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
-val generateRumModelsTaskName = "generateRumModelsFromJson"
-
-tasks.register(
-    generateRumModelsTaskName,
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
+createJsonModelsGenerationTask("generateRumModelsFromJson") {
     inputDirPath = "src/main/json/rum"
     targetPackageName = "com.datadog.android.rum.model"
     ignoredFiles = arrayOf(
@@ -34,12 +28,4 @@ tasks.register(
         "long_task-schema.json" to "LongTaskEvent",
         "vital-schema.json" to "VitalEvent"
     )
-}
-
-afterEvaluate {
-    tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
-        ?.dependsOn(generateRumModelsTaskName)
-    tasks.withType(KotlinCompile::class.java).configureEach {
-        dependsOn(generateRumModelsTaskName)
-    }
 }
