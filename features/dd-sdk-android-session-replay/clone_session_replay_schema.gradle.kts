@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 import com.datadog.gradle.utils.cloneRumEventsFormat
-import com.datadog.gradle.utils.createRumSchemaCloningTask
+import com.datadog.gradle.utils.createRumSchemaCloneTask
 
-createRumSchemaCloningTask("cloneSessionReplayRootSchemas") {
+createRumSchemaCloneTask("cloneSessionReplayRootSchemas") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/",
@@ -22,7 +22,7 @@ createRumSchemaCloningTask("cloneSessionReplayRootSchemas") {
     )
 }
 
-createRumSchemaCloningTask("cloneSessionReplayMobileSchemas") {
+createRumSchemaCloneTask("cloneSessionReplayMobileSchemas") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/session-replay/mobile",
@@ -30,7 +30,7 @@ createRumSchemaCloningTask("cloneSessionReplayMobileSchemas") {
     )
 }
 
-createRumSchemaCloningTask("cloneSessionReplayCommonSchemas") {
+createRumSchemaCloneTask("cloneSessionReplayCommonSchemas") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/session-replay/common",

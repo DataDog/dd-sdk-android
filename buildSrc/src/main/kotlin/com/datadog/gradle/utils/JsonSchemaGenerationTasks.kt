@@ -6,7 +6,8 @@
 
 package com.datadog.gradle.utils
 
-import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
+import com.android.build.gradle.tasks.SourceJarTask
+import com.datadog.gradle.plugin.apisurface.GenerateApiSurfaceTask
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesExtension
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
@@ -18,7 +19,7 @@ private const val RUM_EVENTS_FORMAT_REPO = "https://github.com/DataDog/rum-event
 private const val CLONE_ALL_RUM_SCHEMAS_TASK_NAME = "cloneAllRumSchemas"
 private const val GENERATE_ALL_JSON_MODELS_TASK_NAME = "generateAllJsonModels"
 
-fun Project.createRumSchemaCloningTask(
+fun Project.createRumSchemaCloneTask(
     taskName: String,
     action: GitCloneDependenciesExtension.() -> Unit
 ) {
@@ -60,11 +61,15 @@ fun Project.createJsonModelsGenerationTask(
 
     rootTask.dependsOn(task)
 
-    afterEvaluate {
-        tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
-            ?.dependsOn(taskName)
-        tasks.withType(KotlinCompile::class.java).configureEach {
-            dependsOn(taskName)
-        }
+    tasks.withType(GenerateApiSurfaceTask::class.java).configureEach {
+        dependsOn(task)
+    }
+
+    tasks.withType(KotlinCompile::class.java).configureEach {
+        dependsOn(task)
+    }
+
+    tasks.withType(SourceJarTask::class.java).configureEach {
+        dependsOn(task)
     }
 }

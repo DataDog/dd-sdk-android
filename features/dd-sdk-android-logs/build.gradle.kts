@@ -78,7 +78,6 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_common_schema.gradle.kts")
 apply(from = "generate_log_models.gradle.kts")
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()

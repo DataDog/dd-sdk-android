@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 import com.datadog.gradle.utils.cloneRumEventsFormat
-import com.datadog.gradle.utils.createRumSchemaCloningTask
+import com.datadog.gradle.utils.createRumSchemaCloneTask
 
-createRumSchemaCloningTask("cloneTelemetrySchema") {
+createRumSchemaCloneTask("cloneTelemetrySchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/telemetry",

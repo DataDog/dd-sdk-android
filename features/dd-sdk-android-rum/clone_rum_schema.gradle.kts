@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 import com.datadog.gradle.utils.cloneRumEventsFormat
-import com.datadog.gradle.utils.createRumSchemaCloningTask
+import com.datadog.gradle.utils.createRumSchemaCloneTask
 
-createRumSchemaCloningTask("cloneRumSchema") {
+createRumSchemaCloneTask("cloneRumSchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/rum",
