@@ -253,6 +253,9 @@ internal class RumResourceScope(
         val graphqlOperationType = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String
         val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
 
+        val graphqlErrors = (resourceAttributes.remove(RumAttributes.GRAPHQL_ERRORS) as? List<*>)
+            ?.mapNotNull { it as? ResourceEvent.Error }
+
         // The decision whether to send payloads is determined by a DatadogApolloInterceptor parameter
         val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
         val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
@@ -261,7 +264,8 @@ internal class RumResourceScope(
             operationType = graphqlOperationType,
             operationName = graphqlOperationName,
             variables = graphqlVariables,
-            payload = graphqlPayload
+            payload = graphqlPayload,
+            errors = graphqlErrors
         )
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
@@ -554,14 +558,17 @@ internal class RumResourceScope(
         operationType: String?,
         operationName: String?,
         variables: String?,
-        payload: String?
+        payload: String?,
+        errors: List<ResourceEvent.Error>?
     ): ResourceEvent.Graphql? {
         operationType?.toOperationType(sdkCore.internalLogger)?.let {
             return ResourceEvent.Graphql(
                 operationType = it,
                 operationName = operationName,
                 variables = variables,
-                payload = payload
+                payload = payload,
+                errorCount = errors?.takeIf { errors -> errors.isNotEmpty() }?.size?.toLong(),
+                errors = errors?.takeIf { errors -> errors.isNotEmpty() }
             )
         }
 
