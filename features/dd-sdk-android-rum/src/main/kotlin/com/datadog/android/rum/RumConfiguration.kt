@@ -349,9 +349,10 @@ data class RumConfiguration internal constructor(
          * Assigning a null value to this property will disable the [SlowFramesListener] and stop the computation of the
          * associated rates.
          *
+         * [SlowFramesConfiguration.DEFAULT] is going to be used by default.
+         *
          * @param slowFramesConfiguration The configuration to be applied to the [SlowFramesListener].
          */
-        @ExperimentalRumApi
         fun setSlowFramesConfiguration(
             slowFramesConfiguration: SlowFramesConfiguration?
         ): Builder {

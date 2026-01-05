@@ -119,7 +119,7 @@ internal class RumConfigurationBuilderTest {
             assertThat(lastInteractionIdentifier).isEqualTo(TimeBasedInteractionIdentifier())
             assertThat(composeActionTrackingStrategy)
                 .isInstanceOf(NoOpActionTrackingStrategy::class.java)
-            assertThat(slowFramesConfiguration).isNull()
+            assertThat(slowFramesConfiguration).isEqualTo(SlowFramesConfiguration.DEFAULT)
         }
     }
 
