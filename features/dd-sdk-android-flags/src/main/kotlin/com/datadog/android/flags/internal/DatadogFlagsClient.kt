@@ -21,9 +21,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
-import org.json.JSONException
 import org.json.JSONObject
-import java.util.Locale
 
 /**
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
