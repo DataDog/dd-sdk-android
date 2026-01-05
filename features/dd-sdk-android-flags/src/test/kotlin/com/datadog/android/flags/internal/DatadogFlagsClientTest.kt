@@ -1078,6 +1078,26 @@ internal class DatadogFlagsClientTest {
         )
     }
 
+    @Test
+    fun `M call evaluations manager W setEvaluationContext() { Empty Evaluation Context }`() {
+        // Given
+        val emptyContext = EvaluationContext.EMPTY
+
+        // When
+        testedClient.setEvaluationContext(emptyContext)
+
+        // Then
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            contextCaptor.capture(),
+            anyOrNull()
+        )
+
+        val capturedContext = contextCaptor.firstValue
+        assertThat(capturedContext.targetingKey).isEmpty()
+        assertThat(capturedContext.attributes).isEqualTo(emptyMap<String, String>())
+    }
+
     // endregion
 
     // region exposure event logging configuration
