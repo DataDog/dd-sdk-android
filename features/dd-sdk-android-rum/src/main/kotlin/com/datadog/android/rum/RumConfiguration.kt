@@ -227,7 +227,10 @@ data class RumConfiguration internal constructor(
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        @Deprecated(message = "Use setVitalOperationStepEventMapper instead")
+        @Deprecated(
+            message = "Use setVitalEventMapper(vitalOperationStepEventMapper, vitalAppLaunchEventMapper) instead.",
+            replaceWith = ReplaceWith(expression = "setVitalEventMapper(eventMapper, NoOpEventMapper())")
+        )
         fun setVitalEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
             @OptIn(ExperimentalRumApi::class)
             return setVitalEventMapper(vitalOperationStepEventMapper = eventMapper)
