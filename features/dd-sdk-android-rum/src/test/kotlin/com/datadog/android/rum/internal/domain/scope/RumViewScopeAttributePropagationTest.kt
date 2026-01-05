@@ -40,7 +40,6 @@ import com.datadog.android.rum.internal.metric.interactiontonextview.Interaction
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
@@ -536,81 +535,6 @@ internal class RumViewScopeAttributePropagationTest {
             assertThat(lastValue)
                 .containsExactlyContextAttributes(expectedAttributes)
         }
-        assertThat(result).isNotNull()
-    }
-
-    // endregion
-
-    // region Propagate parent attributes in Application Start Event
-
-    @Test
-    fun `M send event with parent attributes W handleEvent(ApplicationStarted) on active view`(
-        @LongForgery(0) fakeDuration: Long
-    ) {
-        // Given
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeParentAttributes)
-        testedScope = newRumViewScope(initialAttributes = emptyMap())
-        val fakeEvent = RumRawEvent.ApplicationStarted(Time(), fakeDuration)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .containsExactlyContextAttributes(expectedAttributes)
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNotNull()
-    }
-
-    @Test
-    fun `M send event with both parent and view attributes W handleEvent(ApplicationStarted) on active view`(
-        @LongForgery(0) fakeDuration: Long
-    ) {
-        // Given
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeParentAttributes)
-        expectedAttributes.putAll(fakeViewAttributes)
-        testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
-        val fakeEvent = RumRawEvent.ApplicationStarted(Time(), fakeDuration)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .containsExactlyContextAttributes(expectedAttributes)
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNotNull()
-    }
-
-    @Test
-    fun `M send event with overridden parent attributes W handleEvent(ApplicationStarted) on active view`(
-        @LongForgery(0) fakeDuration: Long,
-        forge: Forge
-    ) {
-        // Given
-        val overriddenAttributes = fakeParentAttributes.map { it.key to forge.aString() }.toMap()
-        val expectedAttributes = overriddenAttributes.toMutableMap()
-        testedScope = newRumViewScope(initialAttributes = overriddenAttributes)
-        val fakeEvent = RumRawEvent.ApplicationStarted(Time(), fakeDuration)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .containsExactlyContextAttributes(expectedAttributes)
-        }
-        verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNotNull()
     }
 

@@ -6,10 +6,10 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,15 +18,12 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
 import java.util.stream.Stream
 
 @ExtendWith(MockitoExtension::class)
@@ -36,26 +33,12 @@ internal class FlagsStateManagerTest {
     @Mock
     lateinit var mockListener: FlagsStateListener
 
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
-
-    @Mock
-    lateinit var mockInternalLogger: InternalLogger
-
     private lateinit var testedManager: FlagsStateManager
 
     @BeforeEach
     fun `set up`() {
-        // Mock executor to run tasks synchronously for testing
-        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
-            val runnable = invocation.getArgument<Runnable>(0)
-            runnable.run()
-        }
-
         testedManager = FlagsStateManager(
-            DDCoreSubscription.create(),
-            mockExecutorService,
-            mockInternalLogger
+            DDCoreSubscription.create()
         )
     }
 
@@ -137,6 +120,90 @@ internal class FlagsStateManagerTest {
             verify(mockListener).onStateChanged(FlagsClientState.Reconciling) // Transition
             verify(mockListener).onStateChanged(FlagsClientState.Ready) // Transition
         }
+    }
+
+    @Test
+    fun `M stop notifying subsequent listeners W updateState() { if listener throws }`() {
+        // This test expresses the requirement that:
+        // 1. State is set synchronously
+        // 2. Listeners are notified in order
+        // 3. If a listener throws an exception, subsequent listeners are NOT notified
+        // 4. State is readable after updateState is called (even if exception is thrown)
+
+        // Given
+        val executionOrder = mutableListOf<String>()
+
+        val listener1 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    executionOrder.add("listener1")
+                }
+            }
+        }
+
+        val listener2 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    executionOrder.add("listener2")
+                    throw RuntimeException("Listener 2 intentionally throws")
+                }
+            }
+        }
+
+        val listener3 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    executionOrder.add("listener3")
+                }
+            }
+        }
+
+        testedManager.addListener(listener1)
+        testedManager.addListener(listener2)
+        testedManager.addListener(listener3)
+
+        // When
+        try {
+            testedManager.updateState(FlagsClientState.Ready)
+        } catch (e: RuntimeException) {
+            // Expected exception from listener2
+        }
+
+        // Then - state is set despite exception
+        assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+
+        // Then - only listeners before the throwing listener were notified
+        assertThat(executionOrder).containsExactly(
+            "listener1",
+            "listener2"
+            // listener3 should NOT be in the list
+        )
+    }
+
+    @Test
+    fun `M notify all listeners W multiple listeners registered and state updated`() {
+        // Given
+        val notificationCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val listeners = mutableListOf<FlagsStateListener>()
+
+        repeat(10) {
+            val listener = object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    if (newState is FlagsClientState.Ready) {
+                        notificationCount.incrementAndGet()
+                    }
+                }
+            }
+            listeners.add(listener)
+            testedManager.addListener(listener)
+        }
+
+        // When
+        testedManager.updateState(FlagsClientState.Ready)
+
+        // Then
+        assertThat(notificationCount.get()).isEqualTo(10)
+        assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
     }
 
     // endregion

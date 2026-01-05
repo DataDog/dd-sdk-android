@@ -67,13 +67,12 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
         waitForPendingRUMEvents()
 
-        expectedEvents.add(ExpectedApplicationStartActionEvent())
         // ignore first view event for application launch, it will be reduced
 
         // Stop launch view
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 3
+                docVersion = 2
             )
         )
 
