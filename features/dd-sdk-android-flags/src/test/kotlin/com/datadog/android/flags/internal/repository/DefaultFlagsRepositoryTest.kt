@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.repository
 
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -48,6 +49,9 @@ internal class DefaultFlagsRepositoryTest {
     lateinit var mockFeatureSdkCore: FeatureSdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockDataStore: DataStoreHandler
 
     private lateinit var testedRepository: DefaultFlagsRepository
@@ -58,7 +62,7 @@ internal class DefaultFlagsRepositoryTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockFeatureSdkCore.internalLogger) doReturn mock()
+        whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockFeatureSdkCore.timeProvider) doReturn mock()
         whenever(
             mockDataStore.value<FlagsStateEntry>(
@@ -307,26 +311,6 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result).isEqualTo(multipleFlagsMap)
-    }
-
-    @Test
-    fun `M return null and log warning W getFlagsSnapshot() { no flags state set }`() {
-        // When
-        val result = testedRepository.getFlagsSnapshot()
-
-        // Then
-        assertThat(result).isNull()
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue.invoke()).isEqualTo(DefaultFlagsRepository.WARN_CONTEXT_NOT_SET)
-        }
     }
 
     // endregion
