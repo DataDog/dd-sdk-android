@@ -4,26 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
-val generateLogModelsTaskName = "generateLogModelsFromJson"
-
-tasks.register(
-    generateLogModelsTaskName,
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
+createJsonModelsGenerationTask("generateLogModelsFromJson") {
     inputDirPath = "src/main/json/log"
     ignoredFiles = arrayOf(
         "_common-schema.json"
     )
     targetPackageName = "com.datadog.android.log.model"
-}
-
-afterEvaluate {
-    tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
-        ?.dependsOn(generateLogModelsTaskName)
-    tasks.withType(KotlinCompile::class.java).configureEach {
-        dependsOn(generateLogModelsTaskName)
-    }
 }

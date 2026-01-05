@@ -4,23 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
-val generateFlagsModelsTaskName = "generateFlagsModelsFromJson"
-
-tasks.register(
-    generateFlagsModelsTaskName,
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
+createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
     inputDirPath = "src/main/json/flags"
     targetPackageName = "com.datadog.android.flags.model"
-}
-
-afterEvaluate {
-    tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
-        ?.dependsOn(generateFlagsModelsTaskName)
-    tasks.withType(KotlinCompile::class.java).configureEach {
-        dependsOn(generateFlagsModelsTaskName)
-    }
 }
