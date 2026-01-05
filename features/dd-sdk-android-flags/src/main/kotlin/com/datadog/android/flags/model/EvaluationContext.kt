@@ -42,4 +42,17 @@ data class EvaluationContext(
      * Example: `mapOf("email" to "user@example.com", "age" to "25", "premium" to "true")`
      */
     val attributes: Map<String, String> = emptyMap()
-)
+) {
+
+    companion object {
+        /**
+         * An empty evaluation context for global flags.
+         *
+         * Global flags are evaluated without user-specific context. This constant provides
+         * a standard empty context for such evaluations, supporting FFL-1675 requirements.
+         *
+         * Use this when you want to evaluate flags without any targeting or user attributes.
+         */
+        val EMPTY: EvaluationContext = EvaluationContext(targetingKey = "")
+    }
+}
