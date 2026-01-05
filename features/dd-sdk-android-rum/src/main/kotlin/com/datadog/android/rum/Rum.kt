@@ -18,9 +18,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 
 /**
@@ -115,6 +117,16 @@ object Rum {
             sessionSamplingRate = rumFeature.configuration.sampleRate
         )
 
+        val rumVitalAppLaunchEventHelper = RumVitalAppLaunchEventHelper(
+            rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
+            batteryInfoProvider = rumFeature.batteryInfoProvider,
+            displayInfoProvider = rumFeature.displayInfoProvider,
+            sampleRate = rumFeature.sampleRate,
+            internalLogger = sdkCore.internalLogger
+        )
+
+        val rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore = sdkCore)
+
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
@@ -145,7 +157,13 @@ object Rum {
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
-            rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore),
+            rumSessionScopeStartupManagerFactory = {
+                RumSessionScopeStartupManager.create(
+                    rumVitalAppLaunchEventHelper = rumVitalAppLaunchEventHelper,
+                    sdkCore = sdkCore,
+                    rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
+                )
+            },
             insightsCollector = rumFeature.insightsCollector
         )
     }

@@ -57,6 +57,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -213,8 +214,7 @@ internal class RumActionScopeAttributePropagationTest {
         expectedAttributes.putAll(fakeActionAttributes)
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS * 2)
-        testedScope.handleEvent(mockEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(mockEvent(TEST_INACTIVITY_MS * 2), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -228,10 +228,17 @@ internal class RumActionScopeAttributePropagationTest {
 
     // region Internal
 
-    private fun mockEvent(): RumRawEvent {
+    private fun mockEvent(timeOffset: Long = 0L): RumRawEvent {
         val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn Time()
+        whenever(event.eventTime) doReturn timeWithOffset(timeOffset)
         return event
+    }
+
+    private fun timeWithOffset(offsetMs: Long): Time {
+        return Time(
+            fakeEventTime.timestamp + offsetMs,
+            fakeEventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(offsetMs)
+        )
     }
 
     // endregion

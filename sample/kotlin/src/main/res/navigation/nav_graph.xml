@@ -52,6 +52,11 @@
         android:label="@string/title_picture"/>
 
     <fragment
+        android:id="@+id/fragment_cronet_image"
+        android:name="com.datadog.android.sample.cronet.CronetImageFragment"
+        android:label="@string/title_cronet_image"/>
+
+    <fragment
         android:id="@+id/fragment_user"
         android:name="com.datadog.android.sample.user.UserFragment"
         android:label="@string/title_user_info"/>

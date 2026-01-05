@@ -1,0 +1,51 @@
+class com.datadog.android.cronet.DatadogCronetEngine : org.chromium.net.CronetEngine
+  override fun newUrlRequestBuilder(String, org.chromium.net.UrlRequest.Callback, java.util.concurrent.Executor): org.chromium.net.UrlRequest.Builder
+  override fun getVersionString(): String?
+  override fun shutdown()
+  override fun startNetLogToFile(String?, Boolean)
+  override fun stopNetLog()
+  DEPRECATED override fun getGlobalMetricsDeltas(): ByteArray?
+  override fun openConnection(java.net.URL?): java.net.URLConnection?
+  override fun createURLStreamHandlerFactory(): java.net.URLStreamHandlerFactory?
+  override fun newBidirectionalStreamBuilder(String?, org.chromium.net.BidirectionalStream.Callback?, java.util.concurrent.Executor?): org.chromium.net.BidirectionalStream.Builder?
+  override fun getActiveRequestCount(): Int
+  override fun addRequestFinishedListener(org.chromium.net.RequestFinishedInfo.Listener?)
+  override fun removeRequestFinishedListener(org.chromium.net.RequestFinishedInfo.Listener?)
+  override fun getHttpRttMs(): Int
+  override fun getTransportRttMs(): Int
+  override fun getDownstreamThroughputKbps(): Int
+  override fun startNetLogToDisk(String?, Boolean, Int)
+  override fun bindToNetwork(Long)
+  override fun getEffectiveConnectionType(): Int
+  override fun configureNetworkQualityEstimatorForTesting(Boolean, Boolean, Boolean)
+  override fun addRttListener(org.chromium.net.NetworkQualityRttListener?)
+  override fun removeRttListener(org.chromium.net.NetworkQualityRttListener?)
+  override fun addThroughputListener(org.chromium.net.NetworkQualityThroughputListener?)
+  override fun removeThroughputListener(org.chromium.net.NetworkQualityThroughputListener?)
+  class Builder : org.chromium.net.CronetEngine.Builder
+    constructor(android.content.Context, org.chromium.net.CronetEngine.Builder = CronetEngine.Builder(context))
+    fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
+    fun setSdkInstanceName(String)
+    fun setListenerExecutor(java.util.concurrent.Executor)
+    override fun getDefaultUserAgent(): String
+    override fun enableQuic(Boolean)
+    override fun setStoragePath(String?)
+    override fun setUserAgent(String?)
+    override fun setLibraryLoader(LibraryLoader?)
+    override fun enableHttp2(Boolean)
+    DEPRECATED override fun enableSdch(Boolean)
+    override fun enableBrotli(Boolean)
+    override fun enableHttpCache(Int, Long)
+    override fun addQuicHint(String?, Int, Int)
+    override fun addPublicKeyPins(String?, Set<ByteArray?>?, Boolean, java.util.Date?)
+    override fun enablePublicKeyPinningBypassForLocalTrustAnchors(Boolean)
+    DEPRECATED override fun setThreadPriority(Int)
+    override fun enableNetworkQualityEstimator(Boolean)
+    override fun setQuicOptions(org.chromium.net.QuicOptions?)
+    override fun setQuicOptions(org.chromium.net.QuicOptions.Builder?)
+    override fun setDnsOptions(org.chromium.net.DnsOptions?)
+    override fun setDnsOptions(org.chromium.net.DnsOptions.Builder?)
+    override fun setConnectionMigrationOptions(org.chromium.net.ConnectionMigrationOptions?)
+    override fun setConnectionMigrationOptions(org.chromium.net.ConnectionMigrationOptions.Builder)
+    override fun setProxyOptions(org.chromium.net.ProxyOptions?)
+    override fun build(): org.chromium.net.CronetEngine

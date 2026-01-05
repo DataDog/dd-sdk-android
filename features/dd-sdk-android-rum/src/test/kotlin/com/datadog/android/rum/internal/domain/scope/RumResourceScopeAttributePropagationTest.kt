@@ -62,6 +62,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -266,8 +267,12 @@ internal class RumResourceScopeAttributePropagationTest {
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            event.copy(eventTime = timeWithOffset(RESOURCE_DURATION_MS)),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -275,6 +280,17 @@ internal class RumResourceScopeAttributePropagationTest {
             assertThat(lastValue)
                 .containsExactlyContextAttributes(expectedAttributes)
         }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun timeWithOffset(offsetMs: Long): Time {
+        return Time(
+            fakeEventTime.timestamp + offsetMs,
+            fakeEventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(offsetMs)
+        )
     }
 
     // endregion

@@ -11,29 +11,17 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
-internal open class ObservableLinkedBlockingQueue<E : Any> : LinkedBlockingQueue<E> {
-
-    private val currentTimeProvider: () -> Long
-
-    constructor(
-        currentTimeProvider: () -> Long = { System.currentTimeMillis() }
-    ) : this(Int.MAX_VALUE, currentTimeProvider)
-
-    constructor(
-        capacity: Int,
-        currentTimeProvider: () -> Long = { System.currentTimeMillis() }
-    ) : super(capacity) {
-        this.currentTimeProvider = currentTimeProvider
-    }
+internal open class ObservableLinkedBlockingQueue<E : Any>(
+    capacity: Int = Int.MAX_VALUE
+) : LinkedBlockingQueue<E>(capacity) {
 
     private val lastDumpTimestamp: AtomicLong = AtomicLong(0)
 
-    fun dumpQueue(): Map<String, Int>? {
-        val currentTime = currentTimeProvider.invoke()
+    fun dumpQueue(currentTimestamp: Long): Map<String, Int>? {
         val last = lastDumpTimestamp.get()
-        val timeSinceLastDump = currentTime - last
+        val timeSinceLastDump = currentTimestamp - last
         return if (timeSinceLastDump > DUMPING_TIME_INTERVAL_IN_MS) {
-            if (lastDumpTimestamp.compareAndSet(last, currentTime)) {
+            if (lastDumpTimestamp.compareAndSet(last, currentTimestamp)) {
                 buildDumpMap()
             } else {
                 null

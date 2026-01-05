@@ -13,7 +13,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
-import android.os.Build
 import android.os.Process
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -36,6 +35,7 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
@@ -45,9 +45,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
@@ -68,7 +66,6 @@ import okhttp3.TlsVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -105,7 +102,6 @@ import kotlin.experimental.xor
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -129,6 +125,9 @@ internal class CoreFeatureTest {
     @Mock
     lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @Forgery
     lateinit var fakeConfig: Configuration
 
@@ -147,8 +146,9 @@ internal class CoreFeatureTest {
         testedFeature = CoreFeature(
             mockInternalLogger,
             mockAppStartTimeProvider,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
-            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService },
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
@@ -213,7 +213,6 @@ internal class CoreFeatureTest {
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize`() {
         // When
         testedFeature.initialize(
@@ -236,9 +235,10 @@ internal class CoreFeatureTest {
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    @TestTargetApi(Build.VERSION_CODES.N)
-    @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize {N}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
+
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -336,8 +336,10 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
     fun `M initializes app info W initialize() { TIRAMISU }`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn true
+
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -437,9 +439,9 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
     fun `M initializes app info W initialize() {unknown package name, TIRAMISU}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn true
         whenever(
             appContext.mockPackageManager.getPackageInfo(
                 appContext.fakePackageName,

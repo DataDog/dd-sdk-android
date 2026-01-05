@@ -1,7 +1,10 @@
+interface com.datadog.android.flags.EvaluationContextCallback
+  fun onSuccess()
+  fun onFailure(Throwable)
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
-  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext)
+  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveDoubleValue(String, Double): Double

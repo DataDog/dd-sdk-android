@@ -28,13 +28,13 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -105,6 +105,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -134,7 +135,8 @@ internal class RumFeature(
     internal val configuration: Configuration,
     private val lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
         DatadogLateCrashReporter(it)
-    }
+    },
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
@@ -188,7 +190,8 @@ internal class RumFeature(
         if (configuration.collectAccessibility) {
             accessibilityReader = DefaultAccessibilityReader(
                 internalLogger = sdkCore.internalLogger,
-                applicationContext = appContext
+                applicationContext = appContext,
+                timeProvider = sdkCore.timeProvider
             )
             accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
@@ -230,6 +233,7 @@ internal class RumFeature(
                 configuration.touchTargetExtraAttributesProviders.toTypedArray(),
                 configuration.interactionPredicate,
                 composeActionTrackingStrategy = configuration.composeActionTrackingStrategy,
+                buildSdkVersionProvider,
                 sdkCore.internalLogger
             )
         } else {
@@ -292,7 +296,8 @@ internal class RumFeature(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
                 ),
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                timeProvider = sdkCore.timeProvider
             )
         } else {
             sdkCore.internalLogger.log(
@@ -383,6 +388,7 @@ internal class RumFeature(
                     actionEventMapper = configuration.actionEventMapper,
                     longTaskEventMapper = configuration.longTaskEventMapper,
                     vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
+                    vitalAppLaunchEventMapper = configuration.vitalAppLaunchEventMapper,
                     telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
                     internalLogger = sdkCore.internalLogger
                 ),
@@ -697,15 +703,17 @@ internal class RumFeature(
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     val activity = scenario.activity.get() ?: return
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+
+                    rumMonitor.sendAppStartEvent(scenario)
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = timestampNs - scenario.initialTimeNs
+                                durationNs = timestampNs - scenario.initialTime.nanoTime
                             )
-                            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
-                                ?.sendTTIDEvent(info)
+                            rumMonitor.sendTTIDEvent(info)
                         }
                     }
 
@@ -736,6 +744,7 @@ internal class RumFeature(
         val actionEventMapper: EventMapper<ActionEvent>,
         val longTaskEventMapper: EventMapper<LongTaskEvent>,
         val vitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent>,
+        val vitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent>,
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
@@ -781,15 +790,14 @@ internal class RumFeature(
             touchTargetExtraAttributesProviders = emptyList(),
             interactionPredicate = NoOpInteractionPredicate(),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-            longTaskTrackingStrategy = MainLooperLongTaskStrategy(
-                DEFAULT_LONG_TASK_THRESHOLD_MS
-            ),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             viewEventMapper = NoOpEventMapper(),
             errorEventMapper = NoOpEventMapper(),
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),
             longTaskEventMapper = NoOpEventMapper(),
             vitalOperationStepEventMapper = NoOpEventMapper(),
+            vitalAppLaunchEventMapper = NoOpEventMapper(),
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,
@@ -843,6 +851,7 @@ internal class RumFeature(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
+            buildSdkVersionProvider: BuildSdkVersionProvider,
             internalLogger: InternalLogger
         ): UserActionTrackingStrategy {
             val gesturesTracker =
@@ -852,7 +861,7 @@ internal class RumFeature(
                     composeActionTrackingStrategy = composeActionTrackingStrategy,
                     internalLogger = internalLogger
                 )
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return if (buildSdkVersionProvider.isAtLeastQ) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
             } else {
                 UserActionTrackingStrategyLegacy(gesturesTracker)
@@ -878,7 +887,7 @@ internal class RumFeature(
         internal fun isTrackNonFatalAnrsEnabledByDefault(
             buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
         ): Boolean {
-            return buildSdkVersionProvider.version < Build.VERSION_CODES.R
+            return !buildSdkVersionProvider.isAtLeastR
         }
     }
 }

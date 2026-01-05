@@ -29,6 +29,7 @@
     <string name="title_gdpr">GDPR</string>
     <string name="title_clear_all_data">Clear All Data</string>
     <string name="title_compose">Jetpack Compose</string>
+    <string name="title_cronet_image">Cronet Integration</string>
     <string name="title_textviews">TextViews</string>
     <string name="title_buttons">Buttons</string>
     <string name="title_imageviews">ImageViews</string>
@@ -85,6 +86,7 @@
     <string name="group_data_source">Data Source</string>
 
     <string name="choice_coil">Coil</string>
+    <string name="choice_coil3">Coil 3</string>
     <string name="choice_fresco">Fresco</string>
     <string name="choice_glide">Glide</string>
     <string name="choice_picasso">Picasso</string>
@@ -123,6 +125,8 @@
     <string name="hint_account_age">Age</string>
 
     <string name="load_picture">Load picture</string>
+    <string name="cronet_load_button">Load</string>
+    <string name="cronet_image_description">Image loaded with Cronet</string>
     <string name="widget_description">Datadog Sample Widget</string>
     <string name="add_widget">Add widget</string>
     <string name="legacy_toolbar_title">Legacy toolbar</string>

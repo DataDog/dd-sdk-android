@@ -30,6 +30,29 @@ enum com.datadog.android.internal.network.GraphQLHeaders
   - DD_GRAPHQL_VARIABLES_HEADER
   - DD_GRAPHQL_TYPE_HEADER
   - DD_GRAPHQL_PAYLOAD_HEADER
+object com.datadog.android.internal.network.HttpSpec
+  object Method
+    const val GET: String
+    const val POST: String
+    const val PATCH: String
+    const val PUT: String
+    const val HEAD: String
+    const val DELETE: String
+    const val TRACE: String
+    const val OPTIONS: String
+    const val CONNECT: String
+    fun values()
+  object Headers
+    const val CONTENT_TYPE: String
+    const val CONTENT_LENGTH: String
+    const val WEBSOCKET_ACCEPT_HEADER: String
+  object ContentType
+    const val TEXT_PLAIN: String
+    const val TEXT_EVENT_STREAM: String
+    const val APPLICATION_GRPC: String
+    const val APPLICATION_GRPC_PROTO: String
+    const val APPLICATION_GRPC_JSON: String
+    fun isStream(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
@@ -53,7 +76,18 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkSdkUploads)
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
-  fun createExecutionTimer(String): ExecutionTimer
+  fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
+interface com.datadog.android.internal.system.BuildSdkVersionProvider
+  val version: Int
+  val isAtLeastN: Boolean
+  val isAtLeastO: Boolean
+  val isAtLeastP: Boolean
+  val isAtLeastQ: Boolean
+  val isAtLeastR: Boolean
+  val isAtLeastS: Boolean
+  val isAtLeastTiramisu: Boolean
+  companion object 
+    val DEFAULT: BuildSdkVersionProvider
 sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
   sealed class Log : InternalTelemetryEvent
     constructor(String, Map<String, Any?>?)
@@ -77,6 +111,8 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
         - START
         - SUCCEED
         - FAIL
+    class TrackWebView : ApiUsage
+      constructor(MutableMap<String, Any?> = mutableMapOf())
   object InterceptorInstantiated : InternalTelemetryEvent
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
@@ -91,15 +127,19 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
-class com.datadog.android.internal.time.DefaultTimeProvider : TimeProvider
-  override fun getServerTimestamp(): Long
+class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
+  override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long
   override fun getServerOffsetMillis(): Long
 interface com.datadog.android.internal.time.TimeProvider
-  fun getDeviceTimestamp(): Long
-  fun getServerTimestamp(): Long
+  fun getDeviceTimestampMillis(): Long
+  fun getServerTimestampMillis(): Long
+  fun getDeviceElapsedTimeNanos(): Long
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
+abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
+  override fun getDeviceTimestampMillis(): Long
+  override fun getDeviceElapsedTimeNanos(): Long
 fun ByteArray.toHexString(): String
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)
@@ -135,6 +175,6 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
   companion object 
     var processImportance: Int
-    val createTimeNs: Long
+    var createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

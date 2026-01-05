@@ -11,12 +11,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
@@ -67,6 +67,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.util.Locale
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -113,11 +114,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
         fakeAttributes = forge.exhaustiveAttributes()
+        @Suppress("DEPRECATION")
         whenever(
             mockRumAttributesProvider.onProvideAttributes(
-                any(),
-                anyOrNull(),
-                anyOrNull()
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
             )
         ) doReturn fakeAttributes
         whenever(mockTraceSampler.getSampleRate()) doReturn fakeTracingSampleRate
@@ -136,6 +138,24 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+    }
+
+    @Test
+    fun `M call chain proceed with a different Request that contains UUID tag W intercept()`() {
+        // Given
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+
+        val request = requestCaptor.firstValue
+
+        assertThat(request).isNotSameAs(fakeRequest)
+        assertThat(requestCaptor.firstValue.tag(UUID::class.java)).isNotNull
     }
 
     @Test
@@ -222,6 +242,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -265,6 +286,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -306,6 +328,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -351,6 +374,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -443,6 +467,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 }
 
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -495,6 +520,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
 
@@ -541,6 +567,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -591,6 +618,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -640,6 +668,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -688,6 +717,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -735,6 +765,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -797,6 +828,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -857,6 +889,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -899,6 +932,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -939,6 +973,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }
@@ -975,6 +1010,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(fakeAttributes)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
     }

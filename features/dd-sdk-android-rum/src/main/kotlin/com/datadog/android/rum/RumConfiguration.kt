@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
@@ -23,6 +24,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -229,18 +231,27 @@ data class RumConfiguration internal constructor(
         @Deprecated(message = "Use setVitalOperationStepEventMapper instead")
         fun setVitalEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
             @OptIn(ExperimentalRumApi::class)
-            return setVitalOperationStepEventMapper(eventMapper)
+            return setVitalEventMapper(vitalOperationStepEventMapper = eventMapper)
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent]. You can use this interface implementation
-         * to modify the [RumVitalOperationStepEvent] attributes before serialisation.
+         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent] and the
+         * RUM [RumVitalAppLaunchEvent]. You can use this interface implementation
+         * to modify the [RumVitalOperationStepEvent] attributes and the [RumVitalAppLaunchEvent]
+         * attributes before serialisation.
          *
-         * @param eventMapper the [EventMapper] implementation.
+         * @param vitalOperationStepEventMapper the [EventMapper] implementation for [RumVitalOperationStepEvent]
+         * @param vitalAppLaunchEventMapper the [EventMapper] implementation for [RumVitalAppLaunchEvent]
          */
         @ExperimentalRumApi
-        fun setVitalOperationStepEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
-            rumConfig = rumConfig.copy(vitalOperationStepEventMapper = eventMapper)
+        fun setVitalEventMapper(
+            vitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent> = NoOpEventMapper(),
+            vitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent> = NoOpEventMapper()
+        ): Builder {
+            rumConfig = rumConfig.copy(
+                vitalOperationStepEventMapper = vitalOperationStepEventMapper,
+                vitalAppLaunchEventMapper = vitalAppLaunchEventMapper
+            )
             return this
         }
 

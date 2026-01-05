@@ -7,16 +7,17 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
-import android.os.Build
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import java.io.ByteArrayOutputStream
 
 /**
  * Handle webp image compression.
  */
 internal class WebPImageCompression(
-    private val logger: InternalLogger
+    private val logger: InternalLogger,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ImageCompression {
 
     @WorkerThread
@@ -46,7 +47,7 @@ internal class WebPImageCompression(
     }
 
     private fun getImageCompressionFormat(): Bitmap.CompressFormat =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (buildSdkVersionProvider.isAtLeastR) {
             Bitmap.CompressFormat.WEBP_LOSSY
         } else {
             @Suppress("DEPRECATION")

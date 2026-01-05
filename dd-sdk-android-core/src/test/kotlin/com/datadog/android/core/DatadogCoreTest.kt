@@ -7,7 +7,6 @@
 package com.datadog.android.core
 
 import android.app.Application
-import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
@@ -25,10 +24,10 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
-import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
@@ -45,7 +44,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -53,7 +51,6 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.AssertionFailureBuilder
 import org.junit.jupiter.api.BeforeEach
@@ -151,7 +148,7 @@ internal class DatadogCoreTest {
             fakeInstanceId,
             fakeInstanceName,
             internalLoggerProvider = { mockInternalLogger },
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         ).apply {
             initialize(fakeConfiguration)
@@ -993,9 +990,9 @@ internal class DatadogCoreTest {
             fakeServerTimeOffsetMs
         )
         whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeServerTimeOffsetMs
-        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeDeviceTimestamp
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeDeviceTimestamp
         whenever(
-            mockTimeProvider.getServerTimestamp()
+            mockTimeProvider.getServerTimestampMillis()
         ) doReturn fakeDeviceTimestamp + fakeServerTimeOffsetMs
 
         // When
@@ -1015,22 +1012,28 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M provide time info without correction W time() {NoOpTimeProvider}`() {
+    fun `M provide time info without correction W time() {NoOpTimeProvider}`(
+        @LongForgery(min = 0L) fakeDeviceTimestampMs: Long,
+        @LongForgery(min = 0L) fakeServerTimestampMs: Long
+    ) {
         // Given
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
-        whenever(testedCore.coreFeature.timeProvider) doReturn DefaultTimeProvider()
+        val stubTimeProvider = StubTimeProvider(
+            deviceTimestampMs = fakeDeviceTimestampMs,
+            serverTimestampMs = fakeServerTimestampMs
+        )
+        whenever(testedCore.coreFeature.timeProvider) doReturn stubTimeProvider
 
         // When
         val time = testedCore.time
 
         // Then
-        // We do keep a margin of 1ms delay as this test can sometimes be flaky.
-        // the DatadogCore.time implementation computes server and device time independently and it can sometimes
-        // happen that those computations land on successive ms, leading to a 1second offset
-        assertThat(time.deviceTimeNs).isCloseTo(time.serverTimeNs, Offset.offset(msToNs))
-        assertThat(time.serverTimeOffsetMs).isLessThanOrEqualTo(1)
-        assertThat(time.serverTimeOffsetNs).isLessThanOrEqualTo(msToNs)
+        val expectedOffsetMs = fakeServerTimestampMs - fakeDeviceTimestampMs
+        assertThat(time.deviceTimeNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeDeviceTimestampMs))
+        assertThat(time.serverTimeNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeServerTimestampMs))
+        assertThat(time.serverTimeOffsetMs).isEqualTo(expectedOffsetMs)
+        assertThat(time.serverTimeOffsetNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(expectedOffsetMs))
     }
 
     @Test
@@ -1205,12 +1208,11 @@ internal class DatadogCoreTest {
 
     @Test
     fun `M persist the event W writeLastViewEvent(){ R+ }`(
-        @StringForgery viewEvent: String,
-        @IntForgery(min = Build.VERSION_CODES.R) fakeSdkVersion: Int
+        @StringForgery viewEvent: String
     ) {
         // Given
         val fakeViewEvent = viewEvent.toByteArray()
-        whenever(mockBuildSdkVersionProvider.version) doReturn fakeSdkVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn true
         val mockCoreFeature = mock<CoreFeature>()
         testedCore.coreFeature = mockCoreFeature
 
@@ -1223,12 +1225,11 @@ internal class DatadogCoreTest {
 
     @Test
     fun `M log info when writing last view event W writeLastViewEvent(){ below R and no NDK feature }`(
-        @StringForgery viewEvent: String,
-        @IntForgery(min = 1, max = Build.VERSION_CODES.R) fakeSdkVersion: Int
+        @StringForgery viewEvent: String
     ) {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
-        whenever(mockBuildSdkVersionProvider.version) doReturn fakeSdkVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn false
         testedCore.coreFeature = mockCoreFeature
         reset(mockInternalLogger)
 
@@ -1508,9 +1509,6 @@ internal class DatadogCoreTest {
     }
 
     companion object {
-
-        val msToNs = TimeUnit.MILLISECONDS.toNanos(1)
-        val secondsToNs = TimeUnit.SECONDS.toNanos(1)
 
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 

@@ -10,6 +10,7 @@
 
     <string name="activity_logs_end_to_end">Logs (End to End)</string>
     <string name="activity_traces_end_to_end">Traces (End to End)</string>
+    <string name="activity_app_launch">App Launch (End to End)</string>
     <string name="activity_logs_profiling">Logs (Profiling)</string>
     <string name="button1">Button1</string>
     <string name="rum_gestures_tracking_end_to_end">Rum Gestures (End to End)</string>

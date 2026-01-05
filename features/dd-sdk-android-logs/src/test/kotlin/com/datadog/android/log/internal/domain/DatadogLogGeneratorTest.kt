@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
@@ -30,9 +31,16 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
+import java.util.Locale
 import java.util.UUID
 
 @Extensions(
@@ -44,6 +52,9 @@ import java.util.UUID
 internal class DatadogLogGeneratorTest {
 
     lateinit var testedLogGenerator: DatadogLogGenerator
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
@@ -121,7 +132,8 @@ internal class DatadogLogGeneratorTest {
         )
 
         testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName
+            fakeServiceName,
+            mockInternalLogger
         )
     }
 
@@ -188,7 +200,7 @@ internal class DatadogLogGeneratorTest {
     @Test
     fun `M add the service name from Datadog context W creating the Log { no service name }`() {
         // WHEN
-        testedLogGenerator = DatadogLogGenerator()
+        testedLogGenerator = DatadogLogGenerator(internalLogger = mockInternalLogger)
         val log = testedLogGenerator.generateLog(
             fakeLevel,
             fakeLogMessage,
@@ -691,7 +703,8 @@ internal class DatadogLogGeneratorTest {
     fun `M not add the networkInfo W creating Log {networkInfoProvider is null}`() {
         // GIVEN
         testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName
+            fakeServiceName,
+            mockInternalLogger
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -717,7 +730,8 @@ internal class DatadogLogGeneratorTest {
     ) {
         // GIVEN
         testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName
+            fakeServiceName,
+            mockInternalLogger
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -736,6 +750,60 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         assertThat(log).hasNetworkInfo(fakeCustomNetworkInfo)
+    }
+
+    // region tags
+
+    @Test
+    fun `M log warning and drop W user tag matches reserved`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeUserReservedTags = DatadogLogGenerator.RESERVED_TAG_KEYS
+            .map { "$it:${forge.anAlphabeticalString()}" }
+
+        // When
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags + fakeUserReservedTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // Then
+        val deserializedTags = log.ddtags.split(",")
+        assertThat(deserializedTags)
+            .contains("${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}")
+            .contains("${LogAttributes.VARIANT}:${fakeDatadogContext.variant}")
+            .contains("${LogAttributes.ENV}:${fakeDatadogContext.env}")
+            .contains("${LogAttributes.SERVICE}:$fakeServiceName")
+
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(DatadogLogGenerator.RESERVED_TAG_KEYS.size))
+                .log(
+                    level = eq(InternalLogger.Level.WARN),
+                    target = eq(InternalLogger.Target.USER),
+                    messageBuilder = capture(),
+                    throwable = isNull(),
+                    onlyOnce = eq(true),
+                    additionalProperties = isNull()
+                )
+
+            val messages = allValues.map { it() }
+            val expectedMessages = fakeUserReservedTags.map {
+                DatadogLogGenerator.RESERVED_TAG_DROPPED_WARNING.format(
+                    Locale.US,
+                    it
+                )
+            }
+            assertThat(messages).isEqualTo(expectedMessages)
+        }
     }
 
     @Test
@@ -785,7 +853,7 @@ internal class DatadogLogGeneratorTest {
         val expectedTags = fakeTags +
             "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
             "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}" +
-            "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
+            "${LogAttributes.SERVICE}:$fakeServiceName"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
@@ -836,7 +904,7 @@ internal class DatadogLogGeneratorTest {
         val expectedTags = fakeTags +
             "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
             "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}" +
-            "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
+            "${LogAttributes.SERVICE}:$fakeServiceName"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
@@ -887,12 +955,37 @@ internal class DatadogLogGeneratorTest {
         val expectedTags = fakeTags +
             "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
             "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
-            "${LogAttributes.SERVICE}:${fakeDatadogContext.service}"
+            "${LogAttributes.SERVICE}:$fakeServiceName"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
     @Test
     fun `M add the serviceTag W not empty`() {
+        // When
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // Then
+        val deserializedTags = log.ddtags.split(",")
+        assertThat(deserializedTags)
+            .contains("${LogAttributes.SERVICE}:$fakeServiceName")
+    }
+
+    @Test
+    fun `M add the serviceTag W not empty { custom service name not provided }`() {
+        // Given
+        testedLogGenerator = DatadogLogGenerator(internalLogger = mockInternalLogger)
+
         // When
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -916,6 +1009,7 @@ internal class DatadogLogGeneratorTest {
     @Test
     fun `M not add the serviceTag W empty`() {
         // Given
+        testedLogGenerator = DatadogLogGenerator(internalLogger = mockInternalLogger)
         fakeDatadogContext = fakeDatadogContext.copy(
             service = ""
         )
@@ -961,6 +1055,8 @@ internal class DatadogLogGeneratorTest {
         // THEN
         assertThat(log).hasDeviceArchitecture(fakeDatadogContext.deviceInfo.architecture)
     }
+
+    // endregion
 
     @Test
     fun `M bundle the trace information W required`() {

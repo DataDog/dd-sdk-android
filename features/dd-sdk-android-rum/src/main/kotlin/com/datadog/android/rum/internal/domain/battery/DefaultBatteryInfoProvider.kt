@@ -34,12 +34,12 @@ internal class DefaultBatteryInfoProvider(
 
     @Volatile
     @FloatRange(0.0, 1.0)
-    var batteryLevel: Float? = null
+    private var batteryLevel: Float? = null
 
     @Volatile
-    var lowPowerMode: Boolean? = null
+    private var lowPowerMode: Boolean? = null
 
-    private var lastTimeBatteryLevelChecked = AtomicLong(systemClockWrapper.elapsedRealTime())
+    private val lastTimeBatteryLevelChecked = AtomicLong(systemClockWrapper.elapsedRealTime())
 
     private val powerSaveModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -107,11 +107,12 @@ internal class DefaultBatteryInfoProvider(
 
         return batteryLevel?.let {
             // if there was a problem retrieving the capacity
-            val retrievalFailureCode = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                Integer.MIN_VALUE
-            } else {
-                0
-            }
+            val retrievalFailureCode =
+                if (applicationContext.applicationInfo.targetSdkVersion >= Build.VERSION_CODES.P) {
+                    Integer.MIN_VALUE
+                } else {
+                    0
+                }
 
             if (it == retrievalFailureCode) return@let null
 

@@ -6,6 +6,7 @@
 package com.datadog.android.rum.internal.metric.slowframes
 
 import androidx.metrics.performance.FrameData
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
@@ -50,9 +52,6 @@ internal class DefaultSlowFramesListenerTest {
 
     @Mock
     lateinit var mockMetricDispatcher: UISlownessMetricDispatcher
-
-    @Mock
-    private lateinit var mockInsightsCollector: InsightsCollector
 
     private lateinit var testedListener: DefaultSlowFramesListener
 
@@ -236,9 +235,10 @@ internal class DefaultSlowFramesListenerTest {
             minViewLifetimeThresholdNs = 0
         ),
         metricDispatcher: UISlownessMetricDispatcher = mockMetricDispatcher,
-        insightsCollector: InsightsCollector = mockInsightsCollector
+        insightsCollector: InsightsCollector = mock(),
+        timeProvider: TimeProvider = mock()
     ): DefaultSlowFramesListener {
-        return DefaultSlowFramesListener(configuration, metricDispatcher, insightsCollector)
+        return DefaultSlowFramesListener(configuration, metricDispatcher, insightsCollector, timeProvider)
     }
 
     @Test

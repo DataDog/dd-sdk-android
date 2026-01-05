@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 import com.datadog.android.rum.utils.forge.Configurator
@@ -87,7 +88,7 @@ class RumFirstDrawTimeReporterTest {
         weakActivity = WeakReference(activity)
 
         scenario = RumStartupScenario.Cold(
-            initialTimeNs = 0,
+            initialTime = Time(0, 0),
             hasSavedInstanceStateBundle = true,
             activity = weakActivity,
             appStartActivityOnCreateGapNs = 0.seconds.inWholeNanoseconds

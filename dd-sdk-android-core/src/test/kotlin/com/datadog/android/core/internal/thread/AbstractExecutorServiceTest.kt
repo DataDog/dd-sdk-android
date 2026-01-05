@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.thread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CancellationException
@@ -66,7 +68,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
             mockOnItemDropped,
             fakeBackPressureMitigation
         )
-        testedExecutor = createTestedExecutorService(forge, fakeBackpressureStrategy)
+        testedExecutor = createTestedExecutorService(forge, fakeBackpressureStrategy, mock())
     }
 
     @AfterEach
@@ -74,7 +76,11 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
         testedExecutor.shutdownNow()
     }
 
-    abstract fun createTestedExecutorService(forge: Forge, backPressureStrategy: BackPressureStrategy): T
+    abstract fun createTestedExecutorService(
+        forge: Forge,
+        backPressureStrategy: BackPressureStrategy,
+        timeProvider: TimeProvider
+    ): T
 
     // region execute
 

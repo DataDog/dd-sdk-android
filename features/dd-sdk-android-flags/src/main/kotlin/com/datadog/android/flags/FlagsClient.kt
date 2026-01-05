@@ -67,9 +67,13 @@ interface FlagsClient {
      * The context is used to determine which flag values to return based on user targeting
      * rules. This method triggers a background fetch of updated flag evaluations.
      *
+     * This method returns immediately without blocking. The actual context update and flag
+     * fetching happen asynchronously on a background thread.
+     *
      * @param context The [EvaluationContext] containing targeting key and attributes.
+     * @param callback Optional callback to notify when the operation completes or fails.
      */
-    fun setEvaluationContext(context: EvaluationContext)
+    fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback? = null)
 
     /**
      * Resolves a boolean flag value.

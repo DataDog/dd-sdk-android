@@ -191,6 +191,7 @@ internal class RumApplicationScopeAttributePropagationTest {
         }
 
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.timeProvider) doReturn mock()
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -211,7 +212,7 @@ internal class RumApplicationScopeAttributePropagationTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector
         )
     }

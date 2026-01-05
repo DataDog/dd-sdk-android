@@ -163,6 +163,7 @@ internal class RumApplicationScopeTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn viewUIPerformanceReport
         whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
@@ -187,7 +188,7 @@ internal class RumApplicationScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector
         )
     }

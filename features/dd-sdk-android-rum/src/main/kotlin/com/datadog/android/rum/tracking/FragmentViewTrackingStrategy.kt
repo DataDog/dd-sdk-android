@@ -6,16 +6,14 @@
 
 package com.datadog.android.rum.tracking
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.os.Build
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.attributes.enrichWithConstantAttribute
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
@@ -32,7 +30,6 @@ import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
  * the AndroidX Compat Library.
  */
 @Suppress("DEPRECATION")
-@SuppressLint("NewApi")
 class FragmentViewTrackingStrategy
 internal constructor(
     internal val trackArguments: Boolean,
@@ -97,7 +94,7 @@ internal constructor(
             }
             val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
             if (
-                buildSdkVersionProvider.version >= Build.VERSION_CODES.O &&
+                buildSdkVersionProvider.isAtLeastO &&
                 rumFeature != null && rumMonitor != null
             ) {
                 OreoFragmentLifecycleCallbacks(
