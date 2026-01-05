@@ -13,11 +13,10 @@ import android.app.Dialog
 import android.app.DialogFragment
 import android.app.Fragment
 import android.app.FragmentManager
-import android.os.Build
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
@@ -106,7 +105,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
         whenever(mockActivity.window).thenReturn(mockWindow)
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.BASE
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn false
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
@@ -327,7 +326,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will register the callback to fragment manager on O`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.O
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
 
         // When
         testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
@@ -342,7 +341,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will unregister the callback from fragment manager on O`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.O
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
 
         // When
         testedLifecycleCallbacks.unregister(mockActivity)
@@ -354,7 +353,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will do nothing when calling register on M`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.M
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn false
 
         // When
         testedLifecycleCallbacks.register(mockActivity, mockSdkCore)
@@ -366,7 +365,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Test
     fun `it will do nothing when calling unregister on M`() {
         // Given
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.M
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn false
 
         // When
         testedLifecycleCallbacks.unregister(mockActivity)

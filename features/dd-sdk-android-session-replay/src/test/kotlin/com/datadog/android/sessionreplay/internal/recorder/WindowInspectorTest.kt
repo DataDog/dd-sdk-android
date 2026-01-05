@@ -6,12 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
-import android.os.Build
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -22,6 +20,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -29,8 +28,7 @@ import java.lang.reflect.Field
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -39,9 +37,15 @@ internal class WindowInspectorTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @TestTargetApi(Build.VERSION_CODES.Q)
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @Test
     fun `M return emptyList W getGlobalWindowViews { null WM instance}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastQ) doReturn true
+
+        // When + Then
         assertThat(WindowInspector.getGlobalWindowViews(mockInternalLogger)).isEmpty()
     }
 
