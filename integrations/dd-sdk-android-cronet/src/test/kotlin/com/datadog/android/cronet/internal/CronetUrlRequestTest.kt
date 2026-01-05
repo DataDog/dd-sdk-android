@@ -6,9 +6,10 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.tests.elmyr.anUrlString
+import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -39,19 +40,16 @@ import java.util.concurrent.Executor
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DatadogUrlRequestTest {
+internal class CronetUrlRequestTest {
 
     @Mock
     lateinit var mockBuiltRequest: UrlRequest
 
     @Mock
-    lateinit var mockRumNetworkInstrumentation: RumNetworkInstrumentation
-
-    @Mock
     lateinit var mockEngine: DatadogCronetEngine
 
     @Mock
-    lateinit var mockCallback: DatadogRequestCallback
+    lateinit var mockCallback: CronetRequestCallback
 
     @Mock
     lateinit var mockExecutor: Executor
@@ -59,28 +57,35 @@ internal class DatadogUrlRequestTest {
     @Mock
     lateinit var mockDelegateBuilder: UrlRequest.Builder
 
-    lateinit var testedRequest: DatadogUrlRequest
+    @Mock
+    lateinit var mockRequestInfoBuilder: HttpRequestInfoBuilder
+
+    @Mock
+    lateinit var mockRequestTracingState: RequestTracingState
+
+    lateinit var testedRequest: CronetUrlRequest
 
     @BeforeEach
     fun setup(forge: Forge) {
-        whenever(mockEngine.rumNetworkInstrumentation) doReturn mockRumNetworkInstrumentation
         whenever(mockEngine.apmNetworkInstrumentation) doReturn null
         whenever(mockEngine.newDelegateUrlRequestBuilder(any(), any(), any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.setHttpMethod(any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.addHeader(any(), any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.addRequestAnnotation(any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.build()) doReturn mockBuiltRequest
+        whenever(mockRequestTracingState.tracedRequestInfoBuilder) doReturn mockRequestInfoBuilder
+        whenever(mockCallback.onRequestStarted(any())) doReturn mockRequestTracingState
 
-        val requestContext = DatadogCronetRequestContext(
-            url = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+"),
+        val requestContext = CronetRequestContext(
+            url = forge.anUrlString(),
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(forge.anElementFrom(HttpSpec.Method.values())) }
 
-        testedRequest = DatadogUrlRequest(
-            requestContext = requestContext,
-            cronetInstrumentationStateHolder = mockCallback
+        testedRequest = CronetUrlRequest(
+            initialRequestInfo = requestContext.asCronetRequestInfo(),
+            requestCallback = mockCallback
         )
     }
 
@@ -158,24 +163,13 @@ internal class DatadogUrlRequestTest {
     }
 
     @Test
-    fun `M startResource W start()`() {
+    fun `M call onRequestStarted W start()`() {
         // When
         testedRequest.start()
 
         // Then
-        verify(mockRumNetworkInstrumentation).startResource(any<CronetHttpRequestInfo>())
+        verify(mockCallback).onRequestStarted(any<CronetHttpRequestInfo>())
     }
-
-    @Test
-    fun `M sendWaitForResourceTimingEvent W start()`() {
-        // When
-        testedRequest.start()
-
-        // Then
-        verify(mockRumNetworkInstrumentation).sendWaitForResourceTimingEvent(any<CronetHttpRequestInfo>())
-    }
-
-    // region Edge cases: methods called before start()
 
     @Test
     fun `M do nothing W cancel() { before start }`() {
@@ -228,6 +222,4 @@ internal class DatadogUrlRequestTest {
         assertThat(result).isFalse()
         verifyNoInteractions(mockBuiltRequest)
     }
-
-    // endregion
 }

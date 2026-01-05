@@ -111,12 +111,14 @@ object DatadogTracingToolkit {
      * Creates an [ApmNetworkInstrumentation] instance from the provided configuration.
      *
      * @param name the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
+     * @param canSendSpan whether APM span sending is enabled for this instrumentation instance.
      * @param configuration the configuration containing tracing settings such as traced hosts,
      *        sample rate, trace context injection behavior, and tracing scope.
      * @return a new [ApmNetworkInstrumentation] instance configured with the provided settings.
      */
     fun createApmNetworkInstrumentation(
         name: String,
+        canSendSpan: Boolean,
         configuration: ApmNetworkInstrumentationConfiguration
-    ): ApmNetworkInstrumentation = configuration.createInstrumentation(name)
+    ) = configuration.createInstrumentation(name, canSendSpan)
 }

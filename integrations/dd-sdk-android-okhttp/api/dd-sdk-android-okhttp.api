@@ -45,6 +45,8 @@ public final class com/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder 
 	public synthetic fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 	public fun replaceHeader (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public synthetic fun setMethod (Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public fun setMethod (Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 	public synthetic fun setUrl (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public fun setUrl (Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 }

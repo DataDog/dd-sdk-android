@@ -6,8 +6,8 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -39,9 +39,9 @@ internal class CronetHttpRequestInfoModifierTest {
     lateinit var mockEngine: DatadogCronetEngine
 
     @Mock
-    lateinit var mockCallback: DatadogRequestCallback
+    lateinit var mockCallback: CronetRequestCallback
 
-    @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
+    @StringForgery(regex = URL_FORGERY_PATTERN)
     lateinit var fakeUrl: String
 
     private lateinit var fakeRequestInfo: CronetHttpRequestInfo
@@ -49,10 +49,10 @@ internal class CronetHttpRequestInfoModifierTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(forge.anElementFrom(HttpSpec.Method.values())) }
         fakeRequestInfo = CronetHttpRequestInfo(requestContext)
@@ -61,7 +61,7 @@ internal class CronetHttpRequestInfoModifierTest {
 
     @Test
     fun `M update url W setUrl()`(
-        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") newUrl: String
+        @StringForgery(regex = URL_FORGERY_PATTERN) newUrl: String
     ) {
         // When
         testedRequestInfoBuilder.setUrl(newUrl)
@@ -202,6 +202,19 @@ internal class CronetHttpRequestInfoModifierTest {
 
         // Then
         assertThat(result.method).isEqualTo(fakeRequestInfo.method)
+    }
+
+    @Test
+    fun `M update method W setMethod()`(forge: Forge) {
+        // Given
+        val newMethod = forge.anElementFrom(HttpSpec.Method.values().filter { it != fakeRequestInfo.method })
+
+        // When
+        val result = testedRequestInfoBuilder.setMethod(newMethod)
+            .build()
+
+        // Then
+        assertThat(result.method).isEqualTo(newMethod)
     }
 
     @Test

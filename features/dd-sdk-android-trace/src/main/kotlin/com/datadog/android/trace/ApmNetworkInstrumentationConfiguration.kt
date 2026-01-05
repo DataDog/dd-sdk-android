@@ -17,31 +17,28 @@ import com.datadog.android.trace.internal.net.TracerProvider
 
 /**
  * Configuration that allows to configure APM tracing for network requests.
- *
- * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
- * be automatically tracked by this interceptor. If registering a [GlobalDatadogTracer], the tracer must be
- * configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
- * header types configured for network tracking.
  */
 @Suppress("TooManyFunctions")
-class ApmNetworkInstrumentationConfiguration(
-    internal val tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>
-) {
-    internal var traceOrigin: String? = null
-    internal var redacted404ResourceName = true
-    internal var sdkInstanceName: String? = null
-
-    internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-    internal var traceContextInjection = TraceContextInjection.SAMPLED
-    internal var tracedRequestListener: NetworkTracedRequestListener = NoOpNetworkTracedRequestListener()
-    internal var traceSampler: Sampler<DatadogSpan> =
-        DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracer.getOrNull() }
+data class ApmNetworkInstrumentationConfiguration(
+    internal val tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
+    internal var traceOrigin: String? = null,
+    internal var redacted404ResourceName: Boolean = true,
+    internal var sdkInstanceName: String? = null,
+    internal var localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer = DEFAULT_LOCAL_TRACER_FACTORY,
+    internal var traceContextInjection: TraceContextInjection = TraceContextInjection.SAMPLED,
+    internal var tracedRequestListener: NetworkTracedRequestListener = NoOpNetworkTracedRequestListener(),
+    internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE),
+    internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracer.getOrNull() },
     internal var networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
+) {
 
-    constructor(
-        tracedHosts: List<String>
-    ) : this(
+    /**
+     * Creates a configuration with a list of traced hosts using default header types
+     * ([TracingHeaderType.DATADOG] and [TracingHeaderType.TRACECONTEXT]).
+     *
+     * @param tracedHosts a list of hosts to trace.
+     */
+    constructor(tracedHosts: List<String>) : this(
         tracedHosts.associateWith {
             setOf(
                 TracingHeaderType.DATADOG,
@@ -56,6 +53,13 @@ class ApmNetworkInstrumentationConfiguration(
      */
     fun setTraceOrigin(traceOrigin: String) = apply {
         this.traceOrigin = traceOrigin
+    }
+
+    /**
+     * Returns the origin of the trace, or null if not set.
+     */
+    fun getTraceOrigin(): String? {
+        return traceOrigin
     }
 
     /**
@@ -97,7 +101,7 @@ class ApmNetworkInstrumentationConfiguration(
     }
 
     /**
-     * Set the trace context injection behavior for this interceptor in the intercepted requests.
+     * Set the trace context injection behavior for the intercepted requests.
      * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
      * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
      * will be propagated in the intercepted requests no matter if the span created around the request
@@ -127,7 +131,7 @@ class ApmNetworkInstrumentationConfiguration(
      * This controls how detailed the tracing will be:
      * - [ApmNetworkTracingScope.ALL]: Traces both application-level requests and internal
      *   network operations (redirects, retries). This is the default.
-     * - [ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY]: Only traces the top-level
+     * - [ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS]: Only traces the top-level
      *   application request, while still maintaining RUM-APM linking capabilities.
      *
      * @param networkTracingScope the tracing scope to use
@@ -151,7 +155,8 @@ class ApmNetworkInstrumentationConfiguration(
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
 
         internal fun ApmNetworkInstrumentationConfiguration.createInstrumentation(
-            instrumentationName: String
+            instrumentationName: String,
+            canSendSpan: Boolean
         ): ApmNetworkInstrumentation {
             val localFirstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(
                 resolveHosts(tracedHostsWithHeaderType)
@@ -160,6 +165,7 @@ class ApmNetworkInstrumentationConfiguration(
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
             return ApmNetworkInstrumentation(
+                canSendSpan = canSendSpan,
                 traceOrigin = traceOrigin,
                 traceSampler = traceSampler,
                 tracerProvider = tracerProvider,

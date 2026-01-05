@@ -66,6 +66,14 @@ interface HttpRequestInfoBuilder {
     fun <T> addTag(type: Class<in T>, tag: T?): HttpRequestInfoBuilder
 
     /**
+     * Sets the HTTP method for this request.
+     * @param method the HTTP method to set (e.g., "GET", "POST").
+     * @param body the optional request body, typically used with POST, PUT, or PATCH methods.
+     * @return this modifier for chaining.
+     */
+    fun setMethod(method: String, body: HttpRequestBody? = null): HttpRequestInfoBuilder
+
+    /**
      * Builds and returns the modified [com.datadog.android.api.instrumentation.network.HttpRequestInfo].
      * @return the resulting [com.datadog.android.api.instrumentation.network.HttpRequestInfo] with all modifications applied.
      */

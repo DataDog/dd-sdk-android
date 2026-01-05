@@ -6,6 +6,7 @@
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
@@ -66,6 +67,11 @@ class OkHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : Ht
             requestBuilder.addHeader(key, value)
         }
     }
+
+    override fun setMethod(
+        method: String,
+        body: HttpRequestBody?
+    ) = apply { requestBuilder.method(method, (body as? OkHttpRequestBody)?.body) }
 
     override fun removeHeader(key: String) = apply { requestBuilder.removeHeader(key) }
 

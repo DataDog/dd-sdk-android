@@ -7,8 +7,8 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.RequestInfoAssert
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.tests.elmyr.anUrlString
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -36,7 +36,7 @@ import java.util.concurrent.Executor
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DatadogUrlRequestBuilderTest {
+internal class CronetUrlRequestBuilderTest {
 
     @Mock
     lateinit var mockRequest: UrlRequest
@@ -48,28 +48,28 @@ internal class DatadogUrlRequestBuilderTest {
     lateinit var mockEngine: DatadogCronetEngine
 
     @Mock
-    lateinit var mockCallback: DatadogRequestCallback
+    lateinit var mockCallback: CronetRequestCallback
 
     @Mock
     lateinit var mockExecutor: Executor
 
     lateinit var fakeUrl: String
 
-    lateinit var requestContext: DatadogCronetRequestContext
+    lateinit var requestContext: CronetRequestContext
 
-    lateinit var testedBuilder: DatadogUrlRequestBuilder
+    lateinit var testedBuilder: CronetUrlRequestBuilder
 
     @BeforeEach
     fun setup(forge: Forge) {
-        fakeUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+")
-        requestContext = DatadogCronetRequestContext(
+        fakeUrl = forge.anUrlString()
+        requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         )
-        testedBuilder = DatadogUrlRequestBuilder(
-            cronetInstrumentationStateHolder = mockCallback,
+        testedBuilder = CronetUrlRequestBuilder(
+            requestCallback = mockCallback,
             requestContext = requestContext
         )
 
@@ -84,7 +84,7 @@ internal class DatadogUrlRequestBuilderTest {
         testedBuilder.setHttpMethod(method)
 
         // Then
-        val requestInfo = requestContext.buildRequestInfo()
+        val requestInfo = requestContext.asCronetRequestInfo()
         assertThat(requestInfo.method).isEqualTo(method)
     }
 
@@ -97,7 +97,7 @@ internal class DatadogUrlRequestBuilderTest {
         testedBuilder.addHeader(header, value)
 
         // Then
-        val requestInfo = requestContext.buildRequestInfo()
+        val requestInfo = requestContext.asCronetRequestInfo()
         assertThat(requestInfo.headers[header]).contains(value)
     }
 
@@ -107,7 +107,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -119,16 +119,16 @@ internal class DatadogUrlRequestBuilderTest {
         // When
         testedBuilder.setHttpMethod(HttpSpec.Method.POST)
             .addHeader(key, value)
-            .addHeader(HttpSpec.Headers.CONTENT_TYPE, HttpSpec.ContentType.APPLICATION_GRPC_JSON)
+            .addHeader(HttpSpec.Header.CONTENT_TYPE, HttpSpec.ContentType.APPLICATION_GRPC_JSON)
             .addRequestAnnotation(tag)
 
-        val requestInfo = requestContext.buildRequestInfo()
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // Then
         RequestInfoAssert.assertThat(requestInfo)
             .hasUrl(fakeUrl)
             .hasHeader(key, value)
-            .hasHeader(HttpSpec.Headers.CONTENT_TYPE, HttpSpec.ContentType.APPLICATION_GRPC_JSON)
+            .hasHeader(HttpSpec.Header.CONTENT_TYPE, HttpSpec.ContentType.APPLICATION_GRPC_JSON)
             .hasContentType(HttpSpec.ContentType.APPLICATION_GRPC_JSON)
             .hasTag(String::class.java, tag)
             .hasMethod(HttpSpec.Method.POST)
@@ -143,7 +143,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -157,7 +157,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -167,7 +167,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -177,7 +177,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -190,7 +190,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -202,7 +202,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -214,7 +214,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -226,7 +226,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -239,7 +239,7 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 
     @Test
@@ -256,6 +256,6 @@ internal class DatadogUrlRequestBuilderTest {
         val result = testedBuilder.build()
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequest::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequest::class.java)
     }
 }

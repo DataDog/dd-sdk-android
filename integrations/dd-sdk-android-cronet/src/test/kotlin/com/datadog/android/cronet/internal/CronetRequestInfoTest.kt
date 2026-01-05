@@ -6,8 +6,8 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -36,7 +36,7 @@ import java.util.concurrent.Executor
 @ForgeConfiguration(Configurator::class)
 internal class CronetRequestInfoTest {
 
-    @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
+    @StringForgery(regex = URL_FORGERY_PATTERN)
     lateinit var fakeUrl: String
     lateinit var fakeMethod: String
     lateinit var fakeHeaders: MutableMap<String, List<String>>
@@ -48,7 +48,7 @@ internal class CronetRequestInfoTest {
     lateinit var mockEngine: DatadogCronetEngine
 
     @Mock
-    lateinit var mockCallback: DatadogRequestCallback
+    lateinit var mockCallback: CronetRequestCallback
 
     @Mock
     lateinit var mockUploadDataProvider: UploadDataProvider
@@ -62,10 +62,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return url W url property`() {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         val requestInfo = CronetHttpRequestInfo(requestContext)
@@ -80,10 +80,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return method W method property`() {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         val requestInfo = CronetHttpRequestInfo(requestContext)
@@ -98,10 +98,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return headers W headers property`() {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         fakeHeaders.forEach { (key, values) ->
@@ -132,10 +132,10 @@ internal class CronetRequestInfoTest {
         val fakeFloat = forge.aFloat()
         val fakeDouble = forge.aDouble()
 
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.setTag(String::class.java, fakeString)
@@ -165,13 +165,13 @@ internal class CronetRequestInfoTest {
         @StringForgery fakeContentType: String
     ) {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        requestContext.addHeader(HttpSpec.Headers.CONTENT_TYPE, fakeContentType)
+        requestContext.addHeader(HttpSpec.Header.CONTENT_TYPE, fakeContentType)
         val requestInfo = CronetHttpRequestInfo(requestContext)
 
         // When
@@ -184,10 +184,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W contentType property { no content type header }`() {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         val requestInfo = CronetHttpRequestInfo(requestContext)
@@ -202,10 +202,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W tag() { annotation type does not match }`(forge: Forge) {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.setTag(String::class.java, forge.aString())
@@ -223,10 +223,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W tag() { no annotations }`() {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         val requestInfo = CronetHttpRequestInfo(requestContext)
@@ -244,10 +244,10 @@ internal class CronetRequestInfoTest {
     ) {
         // Given
         whenever(mockUploadDataProvider.length).thenReturn(fakeLength)
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
@@ -266,13 +266,13 @@ internal class CronetRequestInfoTest {
     ) {
         // Given
         whenever(mockUploadDataProvider.length).thenReturn(fakeLength)
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        requestContext.addHeader(HttpSpec.Headers.CONTENT_LENGTH, fakeLength.toString())
+        requestContext.addHeader(HttpSpec.Header.CONTENT_LENGTH, fakeLength.toString())
         requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
         val requestInfo = CronetHttpRequestInfo(requestContext)
 
@@ -287,10 +287,10 @@ internal class CronetRequestInfoTest {
     fun `M return null W contentLength() { upload data provider length is unknown }`() {
         // Given
         whenever(mockUploadDataProvider.length).thenReturn(-1L)
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
@@ -306,10 +306,10 @@ internal class CronetRequestInfoTest {
     @Test
     fun `M return null W contentLength() { no upload data provider }`() {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         val requestInfo = CronetHttpRequestInfo(requestContext)

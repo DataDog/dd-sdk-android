@@ -13,7 +13,7 @@ import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.tag
 import com.datadog.android.core.SdkReference
-import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -119,11 +119,11 @@ class RumNetworkInstrumentation internal constructor(
      * Reports an instrumentation error to the internal logger.
      * @param message the error message to report
      */
-    fun reportInstrumentationError(message: String) = ifRumEnabled { sdkCore ->
+    fun reportInstrumentationError(message: () -> String) = ifRumEnabled { sdkCore ->
         sdkCore.internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            { "Unable to instrument RUM resource: $message" }
+            { "Unable to instrument RUM resource: ${message()}" }
         )
     }
 
@@ -193,26 +193,25 @@ class RumNetworkInstrumentation internal constructor(
         private fun HttpRequestInfo.toRumResourceMethod(
             networkInstrumentationName: String,
             internalLogger: InternalLogger
-        ) =
-            when (method) {
-                HttpSpec.Method.GET -> RumResourceMethod.GET
-                HttpSpec.Method.PUT -> RumResourceMethod.PUT
-                HttpSpec.Method.PATCH -> RumResourceMethod.PATCH
-                HttpSpec.Method.HEAD -> RumResourceMethod.HEAD
-                HttpSpec.Method.DELETE -> RumResourceMethod.DELETE
-                HttpSpec.Method.POST -> RumResourceMethod.POST
-                HttpSpec.Method.TRACE -> RumResourceMethod.TRACE
-                HttpSpec.Method.OPTIONS -> RumResourceMethod.OPTIONS
-                HttpSpec.Method.CONNECT -> RumResourceMethod.CONNECT
-                else -> {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                        { UNSUPPORTED_HTTP_METHOD.format(Locale.US, method, networkInstrumentationName) }
-                    )
-                    RumResourceMethod.GET
-                }
+        ) = when (method.uppercase(Locale.US)) {
+            HttpSpec.Method.GET -> RumResourceMethod.GET
+            HttpSpec.Method.PUT -> RumResourceMethod.PUT
+            HttpSpec.Method.PATCH -> RumResourceMethod.PATCH
+            HttpSpec.Method.HEAD -> RumResourceMethod.HEAD
+            HttpSpec.Method.DELETE -> RumResourceMethod.DELETE
+            HttpSpec.Method.POST -> RumResourceMethod.POST
+            HttpSpec.Method.TRACE -> RumResourceMethod.TRACE
+            HttpSpec.Method.OPTIONS -> RumResourceMethod.OPTIONS
+            HttpSpec.Method.CONNECT -> RumResourceMethod.CONNECT
+            else -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { UNSUPPORTED_HTTP_METHOD.format(Locale.US, method, networkInstrumentationName) }
+                )
+                RumResourceMethod.GET
             }
+        }
 
         private fun HttpResponseInfo.getRumResourceKind() =
             when (val mimeType = contentType) {
@@ -222,7 +221,7 @@ class RumNetworkInstrumentation internal constructor(
 
         private fun HttpResponseInfo.getBodyLength(): Long? {
             val isStream = HttpSpec.ContentType.isStream(contentType)
-            val isWebSocket = !headers[HttpSpec.Headers.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()
+            val isWebSocket = !headers[HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()
             return if (isStream || isWebSocket) null else contentLength
         }
 

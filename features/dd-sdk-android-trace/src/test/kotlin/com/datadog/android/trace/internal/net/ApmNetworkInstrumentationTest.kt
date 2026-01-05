@@ -32,6 +32,7 @@ import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -187,6 +188,7 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockPropagationHelper.extractSamplingDecision(any())) doReturn null
 
         testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = true,
             sdkInstanceName = null,
             traceOrigin = null,
             tracerProvider = mockTracerProvider,
@@ -196,7 +198,7 @@ internal class ApmNetworkInstrumentationTest {
             tracedRequestListener = mockNetworkTracedRequestListener,
             localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
             networkingLibraryName = fakeNetworkInstrumentationName,
-            networkTracingScope = ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
         )
     }
 
@@ -264,9 +266,10 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M return RequestTraceState with span W onRequest() {APPLICATION_LEVEL_REQUESTS_ONLY scope}`() {
+    fun `M return RequestTraceState with span W onRequest() {EXCLUDE_INTERNAL_REDIRECTS scope}`() {
         // Given
         testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = true,
             sdkInstanceName = null,
             traceOrigin = null,
             tracerProvider = mockTracerProvider,
@@ -276,7 +279,7 @@ internal class ApmNetworkInstrumentationTest {
             tracedRequestListener = mockNetworkTracedRequestListener,
             localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
             networkingLibraryName = fakeNetworkInstrumentationName,
-            networkTracingScope = ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
         )
 
         DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
@@ -385,8 +388,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -409,8 +412,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -433,8 +436,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -454,8 +457,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockResponseInfo.statusCode) doReturn HttpURLConnection.HTTP_NOT_FOUND
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -474,6 +477,7 @@ internal class ApmNetworkInstrumentationTest {
     fun `M not redact 404 resource name W onResponseSucceeded() {404 status code, redaction disabled}`() {
         // Given
         testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = true,
             sdkInstanceName = null,
             traceOrigin = null,
             tracerProvider = mockTracerProvider,
@@ -483,13 +487,13 @@ internal class ApmNetworkInstrumentationTest {
             tracedRequestListener = mockNetworkTracedRequestListener,
             localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
             networkingLibraryName = fakeNetworkInstrumentationName,
-            networkTracingScope = ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
         )
 
         whenever(mockResponseInfo.statusCode) doReturn HttpURLConnection.HTTP_NOT_FOUND
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -511,8 +515,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -533,14 +537,14 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M not call traced request listener W onResponseSucceeded() {not sampled}`(
+    fun `M call traced request listener W onResponseSucceeded() {not sampled}`(
         @IntForgery(min = 200, max = 299) fakeStatusCode: Int
     ) {
         // Given
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -551,7 +555,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
             // Then
-            verifyNoInteractions(mockNetworkTracedRequestListener)
+            verify(mockNetworkTracedRequestListener).onRequestIntercepted(
+                mockRequestInfo,
+                mockSpan,
+                mockResponseInfo,
+                null
+            )
         }
     }
 
@@ -563,8 +572,8 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -587,8 +596,8 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -612,8 +621,8 @@ internal class ApmNetworkInstrumentationTest {
         @Forgery fakeThrowable: Throwable
     ) {
         // Given
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -635,8 +644,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         val fakeThrowable = IOException(fakeErrorMessage)
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -658,8 +667,8 @@ internal class ApmNetworkInstrumentationTest {
         @Forgery fakeThrowable: Throwable
     ) {
         // Given
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -681,12 +690,12 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M not call traced request listener W onResponseFailed() {not sampled}`(
+    fun `M call traced request listener W onResponseFailed() {not sampled}`(
         @Forgery fakeThrowable: Throwable
     ) {
         // Given
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -697,7 +706,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
             // Then
-            verifyNoInteractions(mockNetworkTracedRequestListener)
+            verify(mockNetworkTracedRequestListener).onRequestIntercepted(
+                mockRequestInfo,
+                mockSpan,
+                null,
+                fakeThrowable
+            )
         }
     }
 
@@ -706,8 +720,8 @@ internal class ApmNetworkInstrumentationTest {
         @Forgery fakeThrowable: Throwable
     ) {
         // Given
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -732,8 +746,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -755,8 +769,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -768,6 +782,281 @@ internal class ApmNetworkInstrumentationTest {
 
             // Then
             verify(mockSpan).drop()
+        }
+    }
+
+    // endregion
+
+    // region canSendSpan - EXCLUDE_INTERNAL_REDIRECTS
+
+    @Test
+    fun `M drop span W onResponseSucceeded() {APP_LEVEL, canSendSpan=false, RUM enabled, sampled}`(
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given
+        testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = false,
+            sdkInstanceName = null,
+            traceOrigin = null,
+            tracerProvider = mockTracerProvider,
+            redacted404ResourceName = true,
+            traceSampler = mockTraceSampler,
+            injectionType = TraceContextInjection.ALL,
+            tracedRequestListener = mockNetworkTracedRequestListener,
+            localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
+            networkingLibraryName = fakeNetworkInstrumentationName,
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
+        )
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then
+            verify(mockSpan).drop()
+            verify(mockSpan, never()).finish()
+        }
+    }
+
+    @Test
+    fun `M finish span W onResponseSucceeded() {APP_LEVEL, canSendSpan=true, RUM enabled, sampled}`(
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given - canSendSpan=true is set in setUp
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then
+            verify(mockSpan).finish()
+            verify(mockSpan, never()).drop()
+        }
+    }
+
+    @Test
+    fun `M drop span W onResponseSucceeded() {APP_LEVEL, canSendSpan=false, RUM disabled, sampled}`(
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given
+        testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = false,
+            sdkInstanceName = null,
+            traceOrigin = null,
+            tracerProvider = mockTracerProvider,
+            redacted404ResourceName = true,
+            traceSampler = mockTraceSampler,
+            injectionType = TraceContextInjection.ALL,
+            tracedRequestListener = mockNetworkTracedRequestListener,
+            localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
+            networkingLibraryName = fakeNetworkInstrumentationName,
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
+        )
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then
+            verify(mockSpan).drop()
+            verify(mockSpan, never()).finish()
+        }
+    }
+
+    @Test
+    fun `M drop span W onResponseFailed() {APP_LEVEL, canSendSpan=false, RUM enabled, sampled}`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = false,
+            sdkInstanceName = null,
+            traceOrigin = null,
+            tracerProvider = mockTracerProvider,
+            redacted404ResourceName = true,
+            traceSampler = mockTraceSampler,
+            injectionType = TraceContextInjection.ALL,
+            tracedRequestListener = mockNetworkTracedRequestListener,
+            localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
+            networkingLibraryName = fakeNetworkInstrumentationName,
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
+        )
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then
+            verify(mockSpan).drop()
+            verify(mockSpan, never()).finish()
+        }
+    }
+
+    @Test
+    fun `M finish span W onResponseFailed() {APP_LEVEL, canSendSpan=true, RUM enabled, sampled}`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given - canSendSpan=true is set in setUp
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then
+            verify(mockSpan).finish()
+            verify(mockSpan, never()).drop()
+        }
+    }
+
+    @Test
+    fun `M drop span W onResponseFailed() {APP_LEVEL, canSendSpan=false, RUM disabled, sampled}`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = false,
+            sdkInstanceName = null,
+            traceOrigin = null,
+            tracerProvider = mockTracerProvider,
+            redacted404ResourceName = true,
+            traceSampler = mockTraceSampler,
+            injectionType = TraceContextInjection.ALL,
+            tracedRequestListener = mockNetworkTracedRequestListener,
+            localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
+            networkingLibraryName = fakeNetworkInstrumentationName,
+            networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
+        )
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then
+            verify(mockSpan).drop()
+            verify(mockSpan, never()).finish()
+        }
+    }
+
+    // endregion
+
+    // region canSendSpan - ALL
+
+    @Test
+    fun `M drop span W onResponseSucceeded() {ALL, canSendSpan=false, RUM enabled, sampled}`(
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given
+        testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = false,
+            sdkInstanceName = null,
+            traceOrigin = null,
+            tracerProvider = mockTracerProvider,
+            redacted404ResourceName = true,
+            traceSampler = mockTraceSampler,
+            injectionType = TraceContextInjection.ALL,
+            tracedRequestListener = mockNetworkTracedRequestListener,
+            localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
+            networkingLibraryName = fakeNetworkInstrumentationName,
+            networkTracingScope = ApmNetworkTracingScope.ALL
+        )
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then
+            verify(mockSpan).drop()
+            verify(mockSpan, never()).finish()
+        }
+    }
+
+    @Test
+    fun `M drop span W onResponseFailed() {ALL, canSendSpan=false, RUM enabled, sampled}`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        testedInstrumentation = ApmNetworkInstrumentation(
+            canSendSpan = false,
+            sdkInstanceName = null,
+            traceOrigin = null,
+            tracerProvider = mockTracerProvider,
+            redacted404ResourceName = true,
+            traceSampler = mockTraceSampler,
+            injectionType = TraceContextInjection.ALL,
+            tracedRequestListener = mockNetworkTracedRequestListener,
+            localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
+            networkingLibraryName = fakeNetworkInstrumentationName,
+            networkTracingScope = ApmNetworkTracingScope.ALL
+        )
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then
+            verify(mockSpan).drop()
+            verify(mockSpan, never()).finish()
         }
     }
 
@@ -802,8 +1091,8 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
         datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -826,8 +1115,8 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
         datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -849,8 +1138,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -872,8 +1161,8 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
 
-        val traceState = RequestTraceState(
-            requestBuilder = mockRequestBuilder,
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -886,6 +1175,96 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             verify(mockSpan).drop()
         }
+    }
+
+    @Test
+    fun `M call traced request listener W onResponseSucceeded() { sdkCore not registered, sampled }`(
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then
+            verify(mockNetworkTracedRequestListener).onRequestIntercepted(
+                mockRequestInfo,
+                mockSpan,
+                mockResponseInfo,
+                null
+            )
+        }
+    }
+
+    @Test
+    fun `M call traced request listener W onResponseFailed() { sdkCore not registered, sampled }`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
+
+        val traceState = RequestTracingState(
+            tracedRequestInfoBuilder = mockRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then
+            verify(mockNetworkTracedRequestListener).onRequestIntercepted(
+                mockRequestInfo,
+                mockSpan,
+                null,
+                fakeThrowable
+            )
+        }
+    }
+
+    // endregion
+
+    // region reportInstrumentationError
+
+    @Test
+    fun `M log warning to maintainer W reportInstrumentationError() {sdkCore registered}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // When
+        testedInstrumentation.reportInstrumentationError { fakeMessage }
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            fakeMessage
+        )
+    }
+
+    @Test
+    fun `M not log W reportInstrumentationError() {sdkCore not registered}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
+
+        // When
+        testedInstrumentation.reportInstrumentationError { fakeMessage }
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // endregion
@@ -922,7 +1301,35 @@ internal class ApmNetworkInstrumentationTest {
 
     // endregion
 
-    companion object Companion {
+    // region properties and utility methods
+
+    @Test
+    fun `M return sample rate W sampleRate`() {
+        // When / Then
+        assertThat(testedInstrumentation.sampleRate).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M return local header types W localHeaderTypes`() {
+        // When / Then
+        assertThat(testedInstrumentation.localHeaderTypes).isEqualTo(setOf(TracingHeaderType.DATADOG))
+    }
+
+    @Test
+    fun `M delegate to propagation helper W removeTracingHeaders()`() {
+        // Given
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.removeTracingHeaders(mockRequestBuilder)
+
+            // Then
+            verify(mockPropagationHelper).removeAllTracingHeaders(mockRequestBuilder)
+        }
+    }
+
+    // endregion
+
+    companion object {
         private val datadogRegistryField = Datadog::class.java.getDeclaredField("registry").apply {
             isAccessible = true
         }

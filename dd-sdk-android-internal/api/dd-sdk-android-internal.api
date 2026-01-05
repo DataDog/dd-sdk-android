@@ -133,6 +133,69 @@ public final class com/datadog/android/internal/network/GraphQLHeaders : java/la
 	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
 }
 
+public final class com/datadog/android/internal/network/HttpSpec {
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec;
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$ContentType {
+	public static final field APPLICATION_GRPC Ljava/lang/String;
+	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
+	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
+	public static final field APPLICATION_JSON Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$ContentType;
+	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
+	public static final field TEXT_PLAIN Ljava/lang/String;
+	public final fun isStream (Ljava/lang/String;)Z
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$Header {
+	public static final field CONTENT_LENGTH Ljava/lang/String;
+	public static final field CONTENT_TYPE Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$Header;
+	public static final field LOCATION Ljava/lang/String;
+	public static final field RETRY_AFTER Ljava/lang/String;
+	public static final field WEBSOCKET_ACCEPT_HEADER Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$Method {
+	public static final field CONNECT Ljava/lang/String;
+	public static final field DELETE Ljava/lang/String;
+	public static final field GET Ljava/lang/String;
+	public static final field HEAD Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$Method;
+	public static final field OPTIONS Ljava/lang/String;
+	public static final field PATCH Ljava/lang/String;
+	public static final field POST Ljava/lang/String;
+	public static final field PUT Ljava/lang/String;
+	public static final field TRACE Ljava/lang/String;
+	public final fun isMethodWithBody (Ljava/lang/String;)Z
+	public final fun redirectAllowed (Ljava/lang/String;)Z
+	public final fun values ()Ljava/util/List;
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$StatusCode {
+	public static final field BAD_GATEWAY I
+	public static final field BAD_REQUEST I
+	public static final field FORBIDDEN I
+	public static final field FOUND I
+	public static final field GATEWAY_TIMEOUT I
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$StatusCode;
+	public static final field INTERNAL_ERROR I
+	public static final field METHOD_NOT_ALLOWED I
+	public static final field MOVED_PERMANENTLY I
+	public static final field NOT_FOUND I
+	public static final field OK I
+	public static final field PERMANENT_REDIRECT I
+	public static final field REQUEST_TIMEOUT I
+	public static final field SEE_OTHER I
+	public static final field SERVICE_UNAVAILABLE I
+	public static final field TEMPORARY_REDIRECT I
+	public static final field TOO_MANY_REQUESTS I
+	public static final field UNAUTHORIZED I
+	public final fun clientErrors ()Ljava/util/List;
+	public final fun serverErrors ()Ljava/util/List;
+}
+
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
 	public abstract fun add (JLjava/util/Map;)V
 }

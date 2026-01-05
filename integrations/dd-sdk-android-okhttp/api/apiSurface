@@ -30,6 +30,7 @@ class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog
   constructor(okhttp3.Request.Builder)
   override fun setUrl(String)
   override fun addHeader(String, String)
+  override fun setMethod(String, com.datadog.android.api.instrumentation.network.HttpRequestBody?)
   override fun removeHeader(String)
   override fun <T> addTag(Class<T>, T?)
   override fun build(): com.datadog.android.api.instrumentation.network.HttpRequestInfo

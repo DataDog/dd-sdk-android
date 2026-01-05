@@ -5,12 +5,9 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation.Companion.buildResourceId
-import com.datadog.android.trace.internal.ApmNetworkInstrumentation
-import com.datadog.android.trace.internal.net.RequestTraceState
+import com.datadog.android.trace.internal.net.RequestTracingState
 import org.chromium.net.RequestFinishedInfo
 import org.chromium.net.UploadDataProvider
 import org.chromium.net.UrlRequest
@@ -18,11 +15,11 @@ import java.nio.ByteBuffer
 import java.util.concurrent.Executor
 
 @Suppress("TooManyFunctions")
-internal class DatadogCronetRequestContext internal constructor(
+internal class CronetRequestContext internal constructor(
     internal var url: String,
     private val executor: Executor,
     private val engine: DatadogCronetEngine,
-    private val datadogRequestCallback: DatadogRequestCallback,
+    private val requestCallback: CronetRequestCallback,
     private val requestParams: CronetRequestParams = CronetRequestParams(),
     private val additionalAnnotations: MutableList<Any> = mutableListOf()
 ) {
@@ -34,12 +31,6 @@ internal class DatadogCronetRequestContext internal constructor(
 
     internal val headers: Map<String, List<String>>
         get() = requestParams.headers.toMap()
-
-    internal val apmNetworkInstrumentation: ApmNetworkInstrumentation?
-        get() = engine.apmNetworkInstrumentation
-
-    internal val rumNetworkInstrumentation: RumNetworkInstrumentation?
-        get() = engine.rumNetworkInstrumentation
 
     internal val annotations: List<Any>
         get() = additionalAnnotations.toList()
@@ -121,27 +112,29 @@ internal class DatadogCronetRequestContext internal constructor(
         requestParams.method = method
     }
 
-    internal fun copy() = DatadogCronetRequestContext(
+    internal fun copy() = CronetRequestContext(
         url = url,
         engine = engine,
         executor = executor,
         requestParams = requestParams.deepCopy(),
-        datadogRequestCallback = datadogRequestCallback,
+        requestCallback = requestCallback,
         additionalAnnotations = additionalAnnotations.toMutableList()
     )
 
-    internal fun buildCronetRequest(requestInfo: CronetHttpRequestInfo, tracingState: RequestTraceState?): UrlRequest =
-        engine.newDelegateUrlRequestBuilder(url, datadogRequestCallback, executor)
-            .applyRequestParams(requestParams)
-            .applyAnnotations(annotations)
-            .also {
-                it.addRequestAnnotation(requestInfo)
-                it.addRequestAnnotation(buildResourceId(requestInfo, generateUuid = true))
-                if (tracingState != null) it.addRequestAnnotation(tracingState)
-            }
-            .build()
+    internal fun asCronetRequest(
+        requestInfo: CronetHttpRequestInfo,
+        distributedTracingState: RequestTracingState?
+    ): UrlRequest = engine.newDelegateUrlRequestBuilder(url, requestCallback, executor)
+        .applyRequestParams(requestParams)
+        .applyAnnotations(annotations)
+        .also {
+            it.addRequestAnnotation(requestInfo)
+            it.addRequestAnnotation(buildResourceId(requestInfo, generateUuid = true))
+            if (distributedTracingState != null) it.addRequestAnnotation(distributedTracingState)
+        }
+        .build()
 
-    internal fun buildRequestInfo() = CronetHttpRequestInfo(this)
+    internal fun asCronetRequestInfo() = CronetHttpRequestInfo(this)
 }
 
 private fun UrlRequest.Builder.applyRequestParams(params: CronetRequestParams) = apply {
@@ -179,6 +172,7 @@ internal data class CronetRequestParams(
 ) {
 
     fun deepCopy() = copy(
+        rawCompressionDictionary = rawCompressionDictionary?.deepCopy(),
         headers = headers.mapValues { it.value.toMutableList() }.toMutableMap()
     )
 
@@ -211,6 +205,12 @@ internal data class CronetRequestParams(
             result = 31 * result + (dictionaryId?.hashCode() ?: 0)
             return result
         }
+
+        fun deepCopy() = RawCompressionDictionary(
+            dictionarySha256Hash?.copyOf(),
+            dictionary?.duplicate(),
+            dictionaryId
+        )
     }
 }
 
