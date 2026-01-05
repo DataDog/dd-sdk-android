@@ -433,7 +433,7 @@ internal class DatadogFlagsClient(
     /**
      * Retrieves a snapshot of all flag assignments.
      *
-     * Supposed to be used by internal Datadog packages to get flags state snapshot for a given evaluation context.
+     * Explicitly for use by the Datadog React Native SDK to get flags state snapshot for a given evaluation context.
      *
      * @return A map of flag key to an unparsed flag, or an empty map if no flags are available or the client is not ready.
      */
@@ -451,37 +451,39 @@ internal class DatadogFlagsClient(
     }
 
     private fun parseFlagValueString(flagKey: String, flag: UnparsedFlag): Any {
-        val value: Any? = when (flag.variationType) {
-            VariationType.BOOLEAN.value -> flag.variationValue.lowercase(Locale.US).toBooleanStrictOrNull()
-            VariationType.STRING.value -> flag.variationValue
-            VariationType.INTEGER.value -> flag.variationValue.toIntOrNull()
-            VariationType.NUMBER.value, VariationType.FLOAT.value -> flag.variationValue.toDoubleOrNull()
-            VariationType.OBJECT.value -> try {
-                JSONObject(flag.variationValue)
-            } catch (exception: JSONException) {
-                val errorMessage = "Failed to parse value '${flag.variationValue}' as JSONObject"
-                featureSdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { "Flag '$flagKey': $errorMessage" },
-                    exception
-                )
-                flag.variationValue
-            }
-            else -> null
+        val variationTypeToKClass = mapOf(
+            VariationType.BOOLEAN.value to Boolean::class,
+            VariationType.STRING.value to String::class,
+            VariationType.INTEGER.value to Int::class,
+            VariationType.NUMBER.value to Double::class,
+            VariationType.FLOAT.value to Double::class,
+            VariationType.OBJECT.value to JSONObject::class
+        )
+
+        var kClass = variationTypeToKClass[flag.variationType]
+
+        if (kClass == null) {
+            featureSdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Flag '$flagKey': Unknown variation type '${flag.variationType}'" }
+            )
+            // Parse raw value as a string to not lose information.
+            kClass = String::class
         }
 
-        if (value == null) {
+        val conversionResult = FlagValueConverter.convert(flag.variationValue, flag.variationType, kClass)
+        val flagValue = conversionResult.getOrElse {
             featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" }
             )
-
-            return flag.variationValue
+            // Pass raw value as a string to not lose information.
+            flag.variationValue
         }
 
-        return value
+        return flagValue
     }
 
     // endregion
