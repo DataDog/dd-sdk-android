@@ -86,7 +86,6 @@ public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 }
 
 public final class com/datadog/android/flags/model/EvaluationContext {
-	public static final field Companion Lcom/datadog/android/flags/model/EvaluationContext$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -98,10 +97,6 @@ public final class com/datadog/android/flags/model/EvaluationContext {
 	public final fun getTargetingKey ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/flags/model/EvaluationContext$Companion {
-	public final fun getEMPTY ()Lcom/datadog/android/flags/model/EvaluationContext;
 }
 
 public final class com/datadog/android/flags/model/ExposureEvent {
