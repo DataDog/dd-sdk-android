@@ -10,12 +10,14 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.sdk.integration.network.models.TestRequest
 import com.datadog.android.sdk.integration.network.rules.NetworkInstrumentationTestRule
+import com.datadog.android.sdk.integration.network.utils.ExecutionResultComparisonAssert.Companion.EXPECTED_OKHTTP_CLIENTS
 import com.datadog.android.sdk.integration.network.utils.ExecutionResultComparisonAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.network.utils.NetworkTestConfig
 import com.datadog.android.sdk.integration.network.utils.NetworkTestConfig.ALLOWED_METHODS
 import com.datadog.android.sdk.integration.network.utils.NetworkTestConfig.asyncTest
 import com.datadog.android.sdk.integration.network.wrappers.CompositeHttpClientWrapper
 import com.datadog.android.sdk.integration.network.wrappers.cronet.CronetClientWrapper
+import com.datadog.android.sdk.integration.network.wrappers.okhttp.InstrumentedOkHttpClientWrapper
 import com.datadog.android.sdk.integration.network.wrappers.okhttp.OkHttpClientWrapper
 import com.datadog.android.sdk.rules.Repeat
 import com.datadog.android.sdk.rules.RepeatedTestRunner
@@ -33,6 +35,7 @@ import org.junit.runner.RunWith
  *
  * Currently supported clients:
  * - OkHttp (with TracingInterceptor as Network Interceptor)
+ * - InstrumentedOkHttp (with configureDatadogInstrumentation new API)
  * - Cronet (with DatadogCronetEngine.enableNetworkTracing)
  *
  * To add a new client:
@@ -45,24 +48,33 @@ internal class NetworkInstrumentationComparisonTest {
     @get:Rule
     val networkRule = NetworkInstrumentationTestRule()
 
-    private lateinit var compositeClient: CompositeHttpClientWrapper
+    private lateinit var allClients: CompositeHttpClientWrapper
+    private lateinit var okHttpOnlyClients: CompositeHttpClientWrapper
 
     @Before
     fun setUp() {
-        compositeClient = CompositeHttpClientWrapper(
+        allClients = CompositeHttpClientWrapper(
             listOf(
                 OkHttpClientWrapper(baseUrl = networkRule.baseUrl),
+                InstrumentedOkHttpClientWrapper(baseUrl = networkRule.baseUrl),
                 CronetClientWrapper(
                     context = InstrumentationRegistry.getInstrumentation().targetContext,
                     baseUrl = networkRule.baseUrl
                 )
             )
         )
+        okHttpOnlyClients = CompositeHttpClientWrapper(
+            listOf(
+                OkHttpClientWrapper(baseUrl = networkRule.baseUrl),
+                InstrumentedOkHttpClientWrapper(baseUrl = networkRule.baseUrl)
+            )
+        )
     }
 
     @After
     fun tearDown() {
-        compositeClient.shutdown()
+        allClients.shutdown()
+        okHttpOnlyClients.shutdown()
     }
 
     @Test
@@ -77,7 +89,7 @@ internal class NetworkInstrumentationComparisonTest {
         )
 
         // When
-        val results = compositeClient.execute(request)
+        val results = allClients.execute(request)
 
         // Then
         assertThat(results, request)
@@ -106,7 +118,7 @@ internal class NetworkInstrumentationComparisonTest {
         )
 
         // When
-        val results = compositeClient.execute(request)
+        val results = allClients.execute(request)
 
         // Then
         assertThat(results, request)
@@ -131,7 +143,7 @@ internal class NetworkInstrumentationComparisonTest {
         )
 
         // When
-        val results = compositeClient.execute(request)
+        val results = allClients.execute(request)
 
         // Then
         assertThat(results, request)
@@ -157,7 +169,7 @@ internal class NetworkInstrumentationComparisonTest {
         )
 
         // When
-        val results = compositeClient.execute(request)
+        val results = allClients.execute(request)
 
         // Then
         assertThat(results, request)
@@ -182,12 +194,37 @@ internal class NetworkInstrumentationComparisonTest {
         )
 
         // When
-        val results = compositeClient.execute(request)
+        val results = allClients.execute(request)
 
         // Then
         assertThat(results, request)
             .haveSameSpanCount()
             .haveExpectedClients()
+            .haveSameSpanStructure()
+            .haveSameStatusCode()
+            .haveRequestUrl(url)
+            .haveRequestMethod(method)
+    }
+
+    @Test
+    @Repeat(10)
+    fun executionResultsMustBeSimilarWhen_rateLimited_okhttp_comparison() = asyncTest {
+        // Given
+        val method = HttpSpec.Method.GET
+        val url = NetworkTestConfig.Endpoint.retry(method)
+        val request = TestRequest(
+            url = url,
+            method = method,
+            body = NetworkTestConfig.Body.forMethod(method)
+        )
+
+        // When
+        val results = okHttpOnlyClients.execute(request)
+
+        // Then
+        assertThat(results)
+            .haveSameSpanCount()
+            .haveExpectedClients(EXPECTED_OKHTTP_CLIENTS)
             .haveSameSpanStructure()
             .haveSameStatusCode()
             .haveRequestUrl(url)

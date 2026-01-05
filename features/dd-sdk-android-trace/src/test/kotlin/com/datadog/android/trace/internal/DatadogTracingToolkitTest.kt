@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge

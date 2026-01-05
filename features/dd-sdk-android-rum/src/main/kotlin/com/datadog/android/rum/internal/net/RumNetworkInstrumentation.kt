@@ -49,8 +49,8 @@ class RumNetworkInstrumentation internal constructor(
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 ) {
-
-    internal val sdkCoreReference = SdkReference(sdkInstanceName) {
+    /** Reference to the SDK core instance. */
+    val sdkCoreReference = SdkReference(sdkInstanceName) {
         it.networkMonitor?.apply {
             notifyInterceptorInstantiated()
             reportNetworkingLibraryType(libraryType)

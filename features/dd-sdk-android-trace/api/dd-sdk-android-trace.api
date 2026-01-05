@@ -9,6 +9,8 @@ public final class com/datadog/android/trace/ApmNetworkInstrumentationConfigurat
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceContextInjection (Lcom/datadog/android/trace/TraceContextInjection;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceOrigin (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceOrigin (Ljava/lang/String;Z)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public static synthetic fun setTraceOrigin$default (Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceSampleRate (F)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceScope (Lcom/datadog/android/trace/ApmNetworkTracingScope;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;

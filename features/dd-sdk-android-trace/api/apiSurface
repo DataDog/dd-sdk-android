@@ -1,7 +1,7 @@
 class com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
   constructor(List<String>)
   constructor(Map<String, Set<TracingHeaderType>>)
-  fun setTraceOrigin(String)
+  fun setTraceOrigin(String, Boolean = true)
   fun getTraceOrigin(): String?
   fun setSdkInstanceName(String)
   fun setTracedRequestListener(NetworkTracedRequestListener)

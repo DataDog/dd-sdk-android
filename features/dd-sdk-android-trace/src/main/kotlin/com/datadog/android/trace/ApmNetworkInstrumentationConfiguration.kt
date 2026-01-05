@@ -81,9 +81,13 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      * Set the origin of the trace.
      * @param traceOrigin the origin of the trace.
      */
-    fun setTraceOrigin(traceOrigin: String) = apply {
-        this.traceOrigin = traceOrigin
+    @JvmOverloads
+    fun setTraceOrigin(traceOrigin: String, replace: Boolean = true) = apply {
+        if (replace || this.traceOrigin == null) {
+            this.traceOrigin = traceOrigin
+        }
     }
+
 
     /**
      * Returns the origin of the trace, or null if not set.

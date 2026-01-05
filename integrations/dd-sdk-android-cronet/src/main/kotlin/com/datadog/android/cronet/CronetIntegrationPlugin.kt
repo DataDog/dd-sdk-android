@@ -93,7 +93,7 @@ class CronetIntegrationPlugin internal constructor(
                         CRONET_NETWORK_INSTRUMENTATION_NAME,
                         configuration
                             .setHeaderPropagationOnly()
-                            .setTraceOriginIfNull(ORIGIN_RUM)
+                            .setTraceOrigin(ORIGIN_RUM, replace = false)
                             .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
                     )
                 }
@@ -132,12 +132,5 @@ class CronetIntegrationPlugin internal constructor(
             TimeUnit.SECONDS,
             SynchronousQueue()
         )
-
-        private fun ApmNetworkInstrumentationConfiguration.setTraceOriginIfNull(origin: String) =
-            if (getTraceOrigin() == null) {
-                setTraceOrigin(origin)
-            } else {
-                this
-            }
     }
 }

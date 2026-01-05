@@ -28,9 +28,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.ndk.NdkCrashReports
-import com.datadog.android.okhttp.DatadogEventListener
-import com.datadog.android.okhttp.DatadogInterceptor
-import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.okhttp.configureDatadogInstrumentation
 import com.datadog.android.profiling.Profiling
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
@@ -38,6 +36,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
@@ -58,7 +57,9 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
@@ -97,30 +98,12 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
+    @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(
-            DatadogInterceptor.Builder(tracedHosts)
-                .trackResourceHeaders(
-                    ResourceHeadersExtractor.Builder()
-                        .captureHeaders(
-                            "accept-ranges",
-                            "cache-control",
-                            "content-disposition",
-                            "server",
-                            "user-agent",
-                            "via",
-                            "x-cache-hits",
-                            "x-served-by"
-                        )
-                        .build()
-                )
-                .build()
+        .configureDatadogInstrumentation(
+            rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+            apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
         )
-        .addNetworkInterceptor(
-            TracingInterceptor.Builder(tracedHosts)
-                .build()
-        )
-        .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 
     private val retrofitClient = Retrofit.Builder()
