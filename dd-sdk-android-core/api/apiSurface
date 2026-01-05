@@ -53,6 +53,7 @@ interface com.datadog.android.api.InternalLogger
   fun logApiUsage(Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
   companion object 
     val UNBOUND: InternalLogger
+fun InternalLogger.logToUser(InternalLogger.Level, Boolean = false, () -> String)
 interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
@@ -158,12 +159,21 @@ interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val contentType: String?
   val method: String
   fun contentLength(): Long?
+interface com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+  fun setUrl(String): HttpRequestInfoBuilder
+  fun addHeader(String, String): HttpRequestInfoBuilder
+  fun removeHeader(String): HttpRequestInfoBuilder
+  fun replaceHeader(String, String): HttpRequestInfoBuilder
+  fun <T> addTag(Class<T>, T?): HttpRequestInfoBuilder
+  fun build(): HttpRequestInfo
 interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
   val statusCode: Int
   val headers: Map<String, List<String>>
   val contentType: String?
   val contentLength: Long?
+interface com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
+  fun newBuilder(): HttpRequestInfoBuilder
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext

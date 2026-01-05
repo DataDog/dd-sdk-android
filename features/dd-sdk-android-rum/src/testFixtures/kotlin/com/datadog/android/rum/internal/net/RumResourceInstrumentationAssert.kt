@@ -28,7 +28,7 @@ class RumResourceInstrumentationAssert private constructor(actual: RumResourceIn
         Assertions.assertThat(actual.rumResourceAttributesProvider).isEqualTo(expected)
     }
 
-    companion object Companion {
+    companion object {
         fun assertThat(instrumentation: RumResourceInstrumentation): RumResourceInstrumentationAssert {
             return RumResourceInstrumentationAssert(instrumentation)
         }

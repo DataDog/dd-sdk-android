@@ -7,6 +7,9 @@ package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import okhttp3.Request
 import okio.IOException
@@ -25,7 +28,10 @@ internal fun Request.buildResourceId(generateUuid: Boolean) =
         generateUuid = generateUuid
     )
 
-internal class OkHttpHttpRequestInfo(internal val request: Request) : HttpRequestInfo, ExtendedRequestInfo {
+internal class OkHttpHttpRequestInfo(internal val request: Request) :
+    HttpRequestInfo,
+    ExtendedRequestInfo,
+    MutableHttpRequestInfo {
 
     override val method: String get() = request.method
     override val url: String get() = request.url.toString()
@@ -37,4 +43,33 @@ internal class OkHttpHttpRequestInfo(internal val request: Request) : HttpReques
     } catch (@Suppress("SwallowedException") _: IOException) {
         null
     }
+
+    override fun newBuilder() = OkHttpHttpRequestInfoBuilder(request.newBuilder())
+}
+
+/**
+ * For internal usage only.
+ *
+ * [HttpRequestInfoBuilder] implementation for OkHttp requests.
+ * Allows modifying request properties such as URL, headers, and tags.
+ *
+ * @param requestBuilder the OkHttp request builder to modify.
+ */
+@InternalApi
+@Suppress("UnsafeThirdPartyFunctionCall") // OkHttp builder methods are safe
+class OkHttpHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : HttpRequestInfoBuilder {
+
+    override fun setUrl(url: String) = apply { requestBuilder.url(url) }
+
+    override fun addHeader(key: String, vararg values: String) = apply {
+        values.forEach { value ->
+            requestBuilder.addHeader(key, value)
+        }
+    }
+
+    override fun removeHeader(key: String) = apply { requestBuilder.removeHeader(key) }
+
+    override fun <T> addTag(type: Class<in T>, tag: T?) = apply { requestBuilder.tag(type, tag) }
+
+    override fun build(): HttpRequestInfo = OkHttpHttpRequestInfo(requestBuilder.build())
 }

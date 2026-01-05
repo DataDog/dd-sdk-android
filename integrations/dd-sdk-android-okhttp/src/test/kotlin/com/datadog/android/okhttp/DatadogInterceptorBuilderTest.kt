@@ -8,11 +8,12 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
-import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.trace.DeterministicTraceSampler
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
