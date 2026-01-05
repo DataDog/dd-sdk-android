@@ -25,6 +25,11 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
     constructor(List<String>)
     override fun build(): DatadogInterceptor
     fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
+fun okhttp3.OkHttpClient.Builder.configureDatadogInstrumentation(com.datadog.android.trace.ApmNetworkInstrumentationConfiguration? = null, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration? = null)
+class com.datadog.android.okhttp.OkHttpIntegrationPlugin
+  fun eventListener(okhttp3.EventListener)
+  fun eventListenerFactory(okhttp3.EventListener.Factory)
+  fun build(): okhttp3.OkHttpClient
 typealias TraceContextInjection = com.datadog.android.trace.TraceContextInjection
 class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
   constructor(okhttp3.Request.Builder)

@@ -43,7 +43,8 @@ class RumNetworkInstrumentation internal constructor(
     internal val networkInstrumentationName: String,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider
 ) {
-    private val sdkCoreReference = SdkReference(sdkInstanceName) {
+    /** Reference to the SDK core instance. */
+    val sdkCoreReference: SdkReference = SdkReference(sdkInstanceName) {
         it.networkMonitor?.notifyInterceptorInstantiated()
     }
 

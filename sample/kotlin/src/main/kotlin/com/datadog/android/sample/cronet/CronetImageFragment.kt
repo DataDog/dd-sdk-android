@@ -70,7 +70,7 @@ internal class CronetImageFragment : Fragment() {
             .configureDatadogInstrumentation(
                 rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
                 apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
-                    .setHeaderPropagationOnly()
+                .setHeaderPropagationOnly()
             )
             .build()
     }
