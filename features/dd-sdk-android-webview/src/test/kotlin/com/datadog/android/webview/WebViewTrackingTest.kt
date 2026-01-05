@@ -125,6 +125,7 @@ internal class WebViewTrackingTest {
             mockReplayFeatureScope.unwrap<StorageBackedFeature>()
         ) doReturn mockReplayFeature
         whenever(mockCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore.timeProvider) doReturn mock()
 
         whenever(mockRumFeature.requestFactory) doReturn mockRumRequestFactory
         whenever(mockLogsFeature.requestFactory) doReturn mockLogsRequestFactory

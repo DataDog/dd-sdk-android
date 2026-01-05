@@ -8,6 +8,7 @@ package com.datadog.android.core.thread
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.lint.InternalApi
 import java.util.concurrent.ExecutorService
 
@@ -36,12 +37,14 @@ interface FlushableExecutorService : ExecutorService {
          * @param internalLogger the internal logger
          * @param executorContext Context to be used for logging and naming threads running on this executor.
          * @param backPressureStrategy the strategy to handle back-pressure
+         * @param timeProvider - the provider for time measurements.
          * @return the instance
          */
         fun create(
             internalLogger: InternalLogger,
             executorContext: String,
-            backPressureStrategy: BackPressureStrategy
+            backPressureStrategy: BackPressureStrategy,
+            timeProvider: TimeProvider
         ): FlushableExecutorService
     }
 }

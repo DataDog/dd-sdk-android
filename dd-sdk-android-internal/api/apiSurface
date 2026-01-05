@@ -99,7 +99,7 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkSdkUploads)
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
-  fun createExecutionTimer(String): ExecutionTimer
+  fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
 sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
   sealed class Log : InternalTelemetryEvent
     constructor(String, Map<String, Any?>?)
@@ -139,15 +139,19 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
-class com.datadog.android.internal.time.DefaultTimeProvider : TimeProvider
-  override fun getServerTimestamp(): Long
+class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
+  override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long
   override fun getServerOffsetMillis(): Long
 interface com.datadog.android.internal.time.TimeProvider
-  fun getDeviceTimestamp(): Long
-  fun getServerTimestamp(): Long
+  fun getDeviceTimestampMillis(): Long
+  fun getServerTimestampMillis(): Long
+  fun getDeviceElapsedTimeNanos(): Long
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
+abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
+  override fun getDeviceTimestampMillis(): Long
+  override fun getDeviceElapsedTimeNanos(): Long
 fun ByteArray.toHexString(): String
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)

@@ -150,6 +150,7 @@ internal class RumFeatureTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
         val mockContentResolver = mock<ContentResolver>()
@@ -812,6 +813,7 @@ internal class RumFeatureTest {
         verify(mockLongTaskTrackingStrategy).unregister(appContext.mockInstance)
     }
 
+    @Test
     fun `M clean up all RUM context update receivers W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -822,7 +824,7 @@ internal class RumFeatureTest {
 
         // Then
         rumContextUpdateReceivers.forEach {
-            verify(mockSdkCore.removeContextUpdateReceiver(it))
+            verify(mockSdkCore).removeContextUpdateReceiver(it)
         }
         assertThat(testedFeature.rumContextUpdateReceivers).isEmpty()
     }

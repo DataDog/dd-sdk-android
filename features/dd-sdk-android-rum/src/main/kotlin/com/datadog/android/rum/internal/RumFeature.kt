@@ -186,7 +186,8 @@ internal class RumFeature(
         if (configuration.collectAccessibility) {
             accessibilityReader = DefaultAccessibilityReader(
                 internalLogger = sdkCore.internalLogger,
-                applicationContext = appContext
+                applicationContext = appContext,
+                timeProvider = sdkCore.timeProvider
             )
             accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
@@ -288,7 +289,8 @@ internal class RumFeature(
                 metricDispatcher = DefaultUISlownessMetricDispatcher(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
-                )
+                ),
+                sdkCore.timeProvider
             )
         } else {
             sdkCore.internalLogger.log(
@@ -782,9 +784,7 @@ internal class RumFeature(
             touchTargetExtraAttributesProviders = emptyList(),
             interactionPredicate = NoOpInteractionPredicate(),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-            longTaskTrackingStrategy = MainLooperLongTaskStrategy(
-                DEFAULT_LONG_TASK_THRESHOLD_MS
-            ),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             viewEventMapper = NoOpEventMapper(),
             errorEventMapper = NoOpEventMapper(),
             resourceEventMapper = NoOpEventMapper(),

@@ -190,7 +190,7 @@ public abstract interface class com/datadog/android/internal/profiler/ExecutionT
 
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
-	public final fun createExecutionTimer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/ExecutionTimer;
+	public final fun createExecutionTimer (Ljava/lang/String;Lcom/datadog/android/internal/time/TimeProvider;)Lcom/datadog/android/internal/profiler/ExecutionTimer;
 	public final fun getBenchmarkSdkUploads ()Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;
 	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
@@ -328,23 +328,25 @@ public final class com/datadog/android/internal/thread/NamedRunnable : com/datad
 	public fun run ()V
 }
 
-public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/TimeProvider {
+public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {
 	public fun <init> ()V
-	public fun getDeviceTimestamp ()J
+	public final fun getDeviceElapsedTimeNanos ()J
+	public final fun getDeviceTimestampMillis ()J
+}
+
+public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/BaseTimeProvider {
+	public fun <init> ()V
 	public fun getServerOffsetMillis ()J
 	public fun getServerOffsetNanos ()J
-	public fun getServerTimestamp ()J
+	public fun getServerTimestampMillis ()J
 }
 
 public abstract interface class com/datadog/android/internal/time/TimeProvider {
-	public abstract fun getDeviceTimestamp ()J
+	public abstract fun getDeviceElapsedTimeNanos ()J
+	public abstract fun getDeviceTimestampMillis ()J
 	public abstract fun getServerOffsetMillis ()J
 	public abstract fun getServerOffsetNanos ()J
-	public abstract fun getServerTimestamp ()J
-}
-
-public final class com/datadog/android/internal/time/TimeProvider$DefaultImpls {
-	public static fun getDeviceTimestamp (Lcom/datadog/android/internal/time/TimeProvider;)J
+	public abstract fun getServerTimestampMillis ()J
 }
 
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {

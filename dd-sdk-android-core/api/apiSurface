@@ -133,6 +133,7 @@ fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class
 fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
+  val timeProvider: com.datadog.android.internal.time.TimeProvider
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
@@ -406,7 +407,7 @@ interface com.datadog.android.core.sampling.Sampler<T: Any>
 interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
   fun drainTo(MutableCollection<Runnable>)
   interface Factory
-    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
+    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy, com.datadog.android.internal.time.TimeProvider): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
