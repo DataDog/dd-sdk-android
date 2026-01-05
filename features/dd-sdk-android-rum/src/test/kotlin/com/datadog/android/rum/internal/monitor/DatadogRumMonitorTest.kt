@@ -226,6 +226,7 @@ internal class DatadogRumMonitorTest {
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
         whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
@@ -269,7 +270,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -300,7 +301,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
 
         // When
@@ -373,7 +374,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -415,7 +416,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2032,7 +2033,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
 
         // When
@@ -2071,7 +2072,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
 
         // When
@@ -2111,7 +2112,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2283,7 +2284,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -2516,7 +2517,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M return empty map W addAttribute() + removeAttribtue() + getAttributes()`(
+    fun `M return empty map W addAttribute() + removeAttribute() + getAttributes()`(
         @StringForgery key: String,
         @StringForgery value: String
     ) {

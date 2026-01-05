@@ -75,7 +75,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
     fun setLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
     DEPRECATED fun setVitalEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.RumVitalOperationStepEvent>): Builder
-    fun setVitalOperationStepEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.RumVitalOperationStepEvent>): Builder
+    fun setVitalEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.RumVitalOperationStepEvent> = NoOpEventMapper(), com.datadog.android.event.EventMapper<com.datadog.android.rum.model.RumVitalAppLaunchEvent> = NoOpEventMapper()): Builder
     fun trackBackgroundEvents(Boolean): Builder
     fun trackFrustrations(Boolean): Builder
     fun setVitalsUpdateFrequency(com.datadog.android.rum.configuration.VitalsUpdateFrequency): Builder
@@ -122,6 +122,7 @@ interface com.datadog.android.rum.RumMonitor
   fun startFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
   fun succeedFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
   fun failFeatureOperation(String, String? = null, com.datadog.android.rum.featureoperations.FailureReason, Map<String, Any?> = emptyMap())
+  fun reportAppFullyDisplayed()
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
 enum com.datadog.android.rum.RumPerformanceMetric
@@ -129,7 +130,8 @@ enum com.datadog.android.rum.RumPerformanceMetric
   - FLUTTER_RASTER_TIME
   - JS_FRAME_TIME
 interface com.datadog.android.rum.RumResourceAttributesProvider
-  fun onProvideAttributes(okhttp3.Request, okhttp3.Response?, Throwable?): Map<String, Any?>
+  DEPRECATED fun onProvideAttributes(okhttp3.Request, okhttp3.Response?, Throwable?): Map<String, Any?>
+  fun onProvideAttributes(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo?, Throwable?): Map<String, Any?>
 enum com.datadog.android.rum.RumResourceKind
   constructor(String)
   - BEACON
@@ -201,6 +203,16 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+class com.datadog.android.rum.internal.net.RumResourceInstrumentation
+  constructor(String?, String, com.datadog.android.rum.RumResourceAttributesProvider)
+  fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
+  fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
+  fun startResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
+  fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo)
+  fun stopResourceWithError(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Throwable)
+  fun reportInstrumentationError(String)
+  companion object 
+    fun buildResourceId(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Boolean): com.datadog.android.rum.resource.ResourceId
 interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
   fun validate(PreviousViewLastInteractionContext): Boolean
 data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
@@ -3016,6 +3028,12 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
       companion object 
         fun fromJson(kotlin.String): AddViewLoadingTime
         fun fromJsonObject(com.google.gson.JsonObject): AddViewLoadingTime
+    class TrackWebView : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): TrackWebView
+        fun fromJsonObject(com.google.gson.JsonObject): TrackWebView
     companion object 
       fun fromJson(kotlin.String): Usage
       fun fromJsonElement(com.google.gson.JsonElement): Usage

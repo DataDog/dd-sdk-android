@@ -2000,75 +2000,6 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event with synthetics info W handleEvent(ApplicationStarted) on active view`(
-        @LongForgery(0) duration: Long,
-        @StringForgery fakeTestId: String,
-        @StringForgery fakeResultId: String,
-        forge: Forge
-    ) {
-        // Given
-        val eventTime = Time()
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
-        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
-        whenever(rumMonitorConfiguration.mockInstance.getAttributes()) doReturn attributes
-        fakeParentContext = fakeParentContext.copy(
-            syntheticsTestId = fakeTestId,
-            syntheticsResultId = fakeResultId
-        )
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasNonNullId()
-                    hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
-                    hasNoTarget()
-                    hasDuration(duration)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasLongTaskCount(0)
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasAccountInfo(fakeDatadogContext.accountInfo)
-                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.SYNTHETICS)
-                    hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasStartReason(fakeParentContext.sessionStartReason)
-                    hasReplay(false)
-                    hasSource(fakeSourceActionEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasBuildVersion(fakeDatadogContext.versionCode)
-                    hasBuildId(fakeDatadogContext.appBuildId)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
     fun `M send event W handleEvent(ErrorSent) on stopped view`(
         @LongForgery(1L, 500_000_000L) durationNs: Long
     ) {
@@ -2481,133 +2412,6 @@ internal class RumViewScopeTest {
         verifyNoInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending)
-    }
-
-    @Test
-    fun `M close the scope W handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
-        @LongForgery(0) duration: Long,
-        @IntForgery(0) frustrationCount: Int,
-        @Forgery actionType: ActionEvent.ActionEventActionType,
-        @LongForgery(0) actionEventTimestamp: Long
-    ) {
-        // Given
-        testedScope.stopped = true
-        val eventTime = Time()
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
-        val fakeActionSent =
-            RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
-
-        // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val result = testedScope.handleEvent(fakeActionSent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<Any> {
-            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue as ActionEvent)
-                .apply {
-                    hasNonNullId()
-                    hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
-                    hasNoTarget()
-                    hasDuration(duration)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasLongTaskCount(0)
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasAccountInfo(fakeDatadogContext.accountInfo)
-                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
-                    hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
-                    hasReplay(false)
-                    hasSource(fakeSourceActionEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasBuildVersion(fakeDatadogContext.versionCode)
-                    hasBuildId(fakeDatadogContext.appBuildId)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M close the scope W handleEvent(ActionDropped) on stopped view { ApplicationStarted }`(
-        @LongForgery(0) duration: Long
-    ) {
-        // Given
-        testedScope.stopped = true
-        val eventTime = Time()
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
-        val fakeActionSent = RumRawEvent.ActionDropped(testedScope.viewId)
-
-        // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val result = testedScope.handleEvent(fakeActionSent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasNonNullId()
-                    hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
-                    hasNoTarget()
-                    hasDuration(duration)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasLongTaskCount(0)
-                    hasUserInfo(fakeDatadogContext.userInfo)
-                    hasAccountInfo(fakeDatadogContext.accountInfo)
-                    hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
-                    hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
-                    hasReplay(false)
-                    hasSource(fakeSourceActionEvent)
-                    hasDeviceInfo(
-                        fakeDatadogContext.deviceInfo.deviceName,
-                        fakeDatadogContext.deviceInfo.deviceModel,
-                        fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
-                    )
-                    hasOsInfo(
-                        fakeDatadogContext.deviceInfo.osName,
-                        fakeDatadogContext.deviceInfo.osVersion,
-                        fakeDatadogContext.deviceInfo.osMajorVersion
-                    )
-                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                    hasServiceName(fakeDatadogContext.service)
-                    hasVersion(fakeDatadogContext.version)
-                    hasBuildVersion(fakeDatadogContext.versionCode)
-                    hasBuildId(fakeDatadogContext.appBuildId)
-                    hasSampleRate(fakeSampleRate)
-                }
-        }
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isNull()
     }
 
     @Test
@@ -3271,22 +3075,6 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M wait for pending W handleEvent(ApplicationStarted) on active view`(
-        @LongForgery(0) duration: Long
-    ) {
-        // Given
-        val eventTime = Time()
-        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, duration)
-        testedScope.activeActionScope = null
-        testedScope.pendingActionCount = 0
-
-        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        assertThat(testedScope.pendingActionCount).isEqualTo(1)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
     fun `M decrease pending Action W handleEvent(ActionDropped) on active view`(
         @LongForgery(1) pending: Long
     ) {
@@ -3670,6 +3458,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -3752,6 +3541,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -3826,6 +3616,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -3900,6 +3691,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -3976,6 +3768,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -4054,6 +3847,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
@@ -4128,6 +3922,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -4187,6 +3982,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4266,6 +4062,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -4347,6 +4144,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasErrorSource(source)
@@ -4487,6 +4285,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
                     hasErrorSource(source)
@@ -4564,6 +4363,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4716,6 +4516,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4851,6 +4652,7 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue as ErrorEvent)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -4933,6 +4735,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasErrorId()
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
                     hasErrorSource(source)
@@ -5173,6 +4976,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -5230,6 +5034,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -5296,6 +5101,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -5364,6 +5170,7 @@ internal class RumViewScopeTest {
 
             assertThat(firstValue)
                 .apply {
+                    hasLongTaskId()
                     hasTimestamp(
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
@@ -7786,7 +7593,9 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName, flagValue)
+            assertThat(lastValue as ErrorEvent)
+                .hasErrorId()
+                .hasFeatureFlag(flagName, flagValue)
         }
     }
 
@@ -7959,9 +7768,11 @@ internal class RumViewScopeTest {
         // THEN
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName1, flagValue1)
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName2, flagValue2)
-            assertThat(lastValue as ErrorEvent).hasFeatureFlag(flagName3, flagValue3)
+            assertThat(lastValue as ErrorEvent)
+                .hasErrorId()
+                .hasFeatureFlag(flagName1, flagValue1)
+                .hasFeatureFlag(flagName2, flagValue2)
+                .hasFeatureFlag(flagName3, flagValue3)
         }
     }
 
@@ -8179,80 +7990,6 @@ internal class RumViewScopeTest {
         // Then
         verify(rumMonitorConfiguration.mockInstance as AdvancedRumMonitor, never())
             .eventDropped(testedScope.viewId, StorageEvent.Error())
-    }
-
-    @Test
-    fun `M notify about success W handleEvent(ApplicationStarted) { write succeeded }`(
-        forge: Forge
-    ) {
-        // Given
-        testedScope.activeActionScope = mockActionScope
-        val applicationStartupNanos = forge.aPositiveLong()
-        fakeEvent = RumRawEvent.ApplicationStarted(
-            eventTime = Time(),
-            applicationStartupNanos = applicationStartupNanos
-        )
-
-        // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        verify(rumMonitorConfiguration.mockInstance as AdvancedRumMonitor)
-            .eventSent(
-                testedScope.viewId,
-                StorageEvent.Action(0, ActionEvent.ActionEventActionType.APPLICATION_START, applicationStartupNanos)
-            )
-    }
-
-    @Test
-    fun `M notify about error W handleEvent(ApplicationStarted) { write failed }`(
-        forge: Forge
-    ) {
-        // Given
-        testedScope.activeActionScope = mockActionScope
-        val applicationStartupNanos = forge.aPositiveLong()
-        fakeEvent = RumRawEvent.ApplicationStarted(
-            eventTime = Time(),
-            applicationStartupNanos = applicationStartupNanos
-        )
-
-        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT))) doReturn false
-
-        // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        verify(rumMonitorConfiguration.mockInstance as AdvancedRumMonitor)
-            .eventDropped(
-                testedScope.viewId,
-                StorageEvent.Action(0, ActionEvent.ActionEventActionType.APPLICATION_START, applicationStartupNanos)
-            )
-    }
-
-    @Test
-    fun `M notify about error W handleEvent(ApplicationStarted) { write throws }`(
-        forge: Forge
-    ) {
-        // Given
-        testedScope.activeActionScope = mockActionScope
-        val applicationStartupNanos = forge.aPositiveLong()
-        fakeEvent = RumRawEvent.ApplicationStarted(
-            eventTime = Time(),
-            applicationStartupNanos = applicationStartupNanos
-        )
-        whenever(
-            mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT))
-        ) doThrow forge.anException()
-
-        // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        verify(rumMonitorConfiguration.mockInstance as AdvancedRumMonitor)
-            .eventDropped(
-                testedScope.viewId,
-                StorageEvent.Action(0, ActionEvent.ActionEventActionType.APPLICATION_START, applicationStartupNanos)
-            )
     }
 
     @Test
@@ -8882,7 +8619,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -8957,7 +8694,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9029,7 +8766,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9104,7 +8841,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9177,7 +8914,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(
@@ -9254,7 +8991,7 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.deviceName,
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                     fakeDatadogContext.deviceInfo.architecture
                 )
                 .hasOsInfo(

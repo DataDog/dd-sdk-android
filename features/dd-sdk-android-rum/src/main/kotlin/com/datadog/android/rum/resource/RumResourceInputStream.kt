@@ -8,6 +8,8 @@ package com.datadog.android.rum.resource
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -43,10 +45,12 @@ constructor(
     private var firstByte: Long = 0L
     private var lastByte: Long = 0L
 
+    private val timeProvider: TimeProvider = (sdkCore as FeatureSdkCore).timeProvider
+
     init {
         val rumMonitor = GlobalRumMonitor.get(sdkCore)
         rumMonitor.startResource(key, METHOD, url)
-        callStart = System.nanoTime()
+        callStart = timeProvider.getDeviceElapsedTimeNanos()
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.waitForResourceTiming(key)
         }
@@ -56,36 +60,36 @@ constructor(
 
     /** @inheritdoc */
     override fun read(): Int {
-        if (firstByte == 0L) firstByte = System.nanoTime()
+        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNanos()
         return callWithErrorTracking(ERROR_READ) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read().also {
                 if (it >= 0) size++
-                lastByte = System.nanoTime()
+                lastByte = timeProvider.getDeviceElapsedTimeNanos()
             }
         }
     }
 
     /** @inheritdoc */
     override fun read(b: ByteArray): Int {
-        if (firstByte == 0L) firstByte = System.nanoTime()
+        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNanos()
         return callWithErrorTracking(ERROR_READ) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read(b).also {
                 if (it >= 0) size += it
-                lastByte = System.nanoTime()
+                lastByte = timeProvider.getDeviceElapsedTimeNanos()
             }
         }
     }
 
     /** @inheritdoc */
     override fun read(b: ByteArray, off: Int, len: Int): Int {
-        if (firstByte == 0L) firstByte = System.nanoTime()
+        if (firstByte == 0L) firstByte = timeProvider.getDeviceElapsedTimeNanos()
         return callWithErrorTracking(ERROR_READ) {
             @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read(b, off, len).also {
                 if (it >= 0) size += it
-                lastByte = System.nanoTime()
+                lastByte = timeProvider.getDeviceElapsedTimeNanos()
             }
         }
     }

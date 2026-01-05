@@ -65,7 +65,7 @@ internal class RecordedQueuedItemContextHandlerTest {
     fun `M return RumContextData W createRumContextData { valid rum context }`(
         @LongForgery(min = 1) fakeTime: Long
     ) {
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTime)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeTime)
 
         // When
         val rumContextData = testedHandler.createRumContextData()

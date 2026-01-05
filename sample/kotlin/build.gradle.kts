@@ -164,10 +164,12 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-rx"))
     implementation(project(":integrations:dd-sdk-android-timber"))
     implementation(project(":integrations:dd-sdk-android-coil"))
+    implementation(project(":integrations:dd-sdk-android-coil3"))
     implementation(project(":integrations:dd-sdk-android-glide"))
     implementation(project(":integrations:dd-sdk-android-fresco"))
     implementation(project(":integrations:dd-sdk-android-sqldelight"))
     implementation(project(":integrations:dd-sdk-android-compose"))
+    implementation(project(":integrations:dd-sdk-android-cronet"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
     implementation(project(":tools:benchmark"))
@@ -182,6 +184,7 @@ dependencies {
 
     // Android dependencies
     implementation(libs.androidXMultidex)
+    implementation(libs.cronetPlayServices)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
@@ -203,6 +206,9 @@ dependencies {
     // Image Loading Library
     implementation(libs.coil)
     implementation(libs.coilCompose)
+    implementation(libs.coil3)
+    implementation(libs.coil3Compose)
+    implementation(libs.coil3NetworkOkHttp)
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)

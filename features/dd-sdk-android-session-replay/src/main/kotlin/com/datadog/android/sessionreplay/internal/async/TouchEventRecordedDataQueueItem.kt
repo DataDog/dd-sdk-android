@@ -11,8 +11,9 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal class TouchEventRecordedDataQueueItem(
     recordedQueuedItemContext: RecordedQueuedItemContext,
+    creationTimestampInNs: Long,
     internal val touchData: List<MobileSegment.MobileRecord> = emptyList()
-) : RecordedDataQueueItem(recordedQueuedItemContext) {
+) : RecordedDataQueueItem(recordedQueuedItemContext, creationTimestampInNs) {
 
     override fun isValid(): Boolean {
         return touchData.isNotEmpty()

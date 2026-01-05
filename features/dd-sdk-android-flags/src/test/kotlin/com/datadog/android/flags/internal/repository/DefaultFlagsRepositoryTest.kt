@@ -6,7 +6,6 @@
 
 package com.datadog.android.flags.internal.repository
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
@@ -31,6 +30,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -50,9 +50,6 @@ internal class DefaultFlagsRepositoryTest {
     @Mock
     lateinit var mockDataStore: DataStoreHandler
 
-    @Mock
-    lateinit var mockInternalLogger: InternalLogger
-
     private lateinit var testedRepository: DefaultFlagsRepository
 
     private lateinit var testContext: EvaluationContext
@@ -61,7 +58,8 @@ internal class DefaultFlagsRepositoryTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockFeatureSdkCore.internalLogger) doReturn mock()
+        whenever(mockFeatureSdkCore.timeProvider) doReturn mock()
         whenever(
             mockDataStore.value<FlagsStateEntry>(
                 key = any(),

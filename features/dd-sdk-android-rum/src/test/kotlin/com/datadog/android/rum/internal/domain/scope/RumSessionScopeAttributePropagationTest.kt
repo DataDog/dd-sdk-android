@@ -158,6 +158,7 @@ internal class RumSessionScopeAttributePropagationTest {
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes.toMutableMap()
 
         whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
@@ -182,7 +183,7 @@ internal class RumSessionScopeAttributePropagationTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock()
         )
     }
 

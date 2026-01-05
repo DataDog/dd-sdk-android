@@ -1,17 +1,19 @@
 [versions]
 # Commons
+apollo = "4.3.3"
+cronetApi = "141.7340.3"
+cronetPlayServices = "18.1.1"
+gson = "2.10.1"
 kotlin = "2.0.21"
 kotlinSP = "2.0.21-1.0.28"
-apollo = "4.3.3"
-gson = "2.10.1"
-okHttp = "4.12.0"
 kronosNTP = "0.0.1-alpha11"
 kotlinxSerialization = "1.6.3"
+okHttp = "4.12.0"
 
 # Android
 adapterDelegates = "4.3.2"
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "8.9.1"
+androidToolsPlugin = "8.13.2"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCar = "1.4.0"
@@ -66,7 +68,7 @@ androidLint = "31.0.2"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.18.0"
+datadogPlugin = "1.21.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
@@ -83,6 +85,7 @@ kotlinXmlBuilder = "1.9.3"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
 coilCompose = "2.1.0"
+coil3 = "3.0.4"
 fresco = "2.3.0"
 glide = "4.11.0"
 picasso = "2.8"
@@ -132,6 +135,8 @@ kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin"
 kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 okHttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
+cronetApi = { module = "org.chromium.net:cronet-api", version.ref = "cronetApi" }
+cronetPlayServices = { module = "com.google.android.gms:play-services-cronet", version.ref = "cronetPlayServices" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNTP" }
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
@@ -233,6 +238,9 @@ kotlinXmlBuilder = {module="org.redundent:kotlin-xml-builder", version.ref="kotl
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+coil3 = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
+coil3Compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil3NetworkOkHttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3" }
 
 frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }
 frescoOkHttp3 = { module = "com.facebook.fresco:imagepipeline-okhttp3", version.ref = "fresco" }

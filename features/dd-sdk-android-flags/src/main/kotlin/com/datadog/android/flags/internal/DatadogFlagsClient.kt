@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
@@ -70,9 +71,11 @@ internal class DatadogFlagsClient(
      *
      * @param context The evaluation context containing targeting key and attributes.
      * Must contain a valid targeting key; invalid contexts are logged and ignored.
+     * @param callback Optional callback to notify when the operation completes or fails.
+     * Invoked on a background executor thread after the state transition.
      */
-    override fun setEvaluationContext(context: EvaluationContext) {
-        evaluationsManager.updateEvaluationsForContext(context)
+    override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
+        evaluationsManager.updateEvaluationsForContext(context, callback)
     }
 
     /**

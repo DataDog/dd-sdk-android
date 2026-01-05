@@ -103,6 +103,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -185,7 +186,8 @@ internal class RumFeature(
         if (configuration.collectAccessibility) {
             accessibilityReader = DefaultAccessibilityReader(
                 internalLogger = sdkCore.internalLogger,
-                applicationContext = appContext
+                applicationContext = appContext,
+                timeProvider = sdkCore.timeProvider
             )
             accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
@@ -287,7 +289,8 @@ internal class RumFeature(
                 metricDispatcher = DefaultUISlownessMetricDispatcher(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
-                )
+                ),
+                sdkCore.timeProvider
             )
         } else {
             sdkCore.internalLogger.log(
@@ -378,6 +381,7 @@ internal class RumFeature(
                     actionEventMapper = configuration.actionEventMapper,
                     longTaskEventMapper = configuration.longTaskEventMapper,
                     vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
+                    vitalAppLaunchEventMapper = configuration.vitalAppLaunchEventMapper,
                     telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
                     internalLogger = sdkCore.internalLogger
                 ),
@@ -692,15 +696,17 @@ internal class RumFeature(
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     val activity = scenario.activity.get() ?: return
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+
+                    rumMonitor.sendAppStartEvent(scenario)
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = timestampNs - scenario.initialTimeNs
+                                durationNs = timestampNs - scenario.initialTime.nanoTime
                             )
-                            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
-                                ?.sendTTIDEvent(info)
+                            rumMonitor.sendTTIDEvent(info)
                         }
                     }
 
@@ -731,6 +737,7 @@ internal class RumFeature(
         val actionEventMapper: EventMapper<ActionEvent>,
         val longTaskEventMapper: EventMapper<LongTaskEvent>,
         val vitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent>,
+        val vitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent>,
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
@@ -775,15 +782,14 @@ internal class RumFeature(
             touchTargetExtraAttributesProviders = emptyList(),
             interactionPredicate = NoOpInteractionPredicate(),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-            longTaskTrackingStrategy = MainLooperLongTaskStrategy(
-                DEFAULT_LONG_TASK_THRESHOLD_MS
-            ),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             viewEventMapper = NoOpEventMapper(),
             errorEventMapper = NoOpEventMapper(),
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),
             longTaskEventMapper = NoOpEventMapper(),
             vitalOperationStepEventMapper = NoOpEventMapper(),
+            vitalAppLaunchEventMapper = NoOpEventMapper(),
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,

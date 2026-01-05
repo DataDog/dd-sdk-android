@@ -50,6 +50,7 @@ import,com.benasher44,MIT,"Copyright (c) 2019 Ben Asher"
 import,com.github.bumptech.glide,"BSD 3-Clause","Copyright 2014 Google, Inc. All rights reserved, Copyright (c) 2013. Bump Technologies Inc. All Rights Reserved."
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."
+import,com.google.android.gms,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
 import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
@@ -62,6 +63,7 @@ import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
 import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
+import,io.coil-kt.coil3,Apache-2.0,Copyright 2021 Coil Contributors
 import,io.opentelemetry,Apache-2.0,Copyright 2019 The OpenTelemetry Authors
 import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.opentracing.contrib,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
@@ -70,6 +72,8 @@ import,io.reactivex.rxjava3.android,Apache-2.0,Copyright 2015 The RxAndroid auth
 import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
+import,org.chromium.net,Apache-2.0,"Copyright 2015 The Chromium Authors"
+import,org.jetbrains.skiko,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.reactivestreams,CC0,Copyright 2014 Reactive Streams
 import(test),androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.concurrent,Apache-2.0,Copyright 2018 The Android Open Source Project

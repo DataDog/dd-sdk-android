@@ -15,11 +15,12 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.rum.buildResourceId
+import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
+import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -39,6 +40,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.Locale
+import java.util.UUID
 
 /**
  * Provides automatic RUM & APM integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -71,11 +73,12 @@ import java.util.Locale
  *         .build()
  * ```
  */
+@Suppress("TooManyFunctions")
 open class DatadogInterceptor internal constructor(
     sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
-    internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
+    rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler<DatadogSpan>,
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
@@ -92,6 +95,12 @@ open class DatadogInterceptor internal constructor(
     localTracerFactory,
     globalTracerProvider
 ) {
+    internal val rumResourceAttributesProvider: RumResourceAttributesProvider =
+        rumResourceAttributesProvider as? NoOpRumResourceAttributesProvider
+            ?: RumResourceAttributesProviderCompatibilityAdapter(
+                delegate = rumResourceAttributesProvider,
+                sdkReference = sdkCoreReference
+            )
 
     // region Interceptor
 
@@ -100,11 +109,20 @@ open class DatadogInterceptor internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
+        val request = chain.request()
+            .newBuilder()
+            .apply {
+                @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
+                tag(UUID::class.java, UUID.randomUUID())
+            }
+            .safeBuild() ?: chain.request()
+
         if (rumFeature != null) {
-            val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
-            val requestId = request.buildResourceId(generateUuid = true)
+
+            @Suppress("DEPRECATION")
+            val requestId = request.buildResourceId(generateUuid = false)
 
             (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
         } else {
@@ -126,7 +144,7 @@ open class DatadogInterceptor internal constructor(
             originalChain = chain
         )
 
-        return super.intercept(localChain)
+        return doIntercept(localChain, request)
     }
 
     // endregion
@@ -179,6 +197,7 @@ open class DatadogInterceptor internal constructor(
         span: DatadogSpan?,
         isSampled: Boolean
     ) {
+        @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val statusCode = response.code
         val kind = when (val mimeType = response.header(HEADER_CT)) {
@@ -208,6 +227,7 @@ open class DatadogInterceptor internal constructor(
             }
         }
 
+        @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
@@ -253,6 +273,14 @@ open class DatadogInterceptor internal constructor(
         }
     }
 
+    private fun Request.Builder.safeBuild(): Request? {
+        return try {
+            build()
+        } catch (_: IllegalStateException) {
+            null
+        }
+    }
+
     private fun removeGraphQLHeaders(requestBuilder: Request.Builder) {
         GraphQLHeaders.values().forEach { requestBuilder.removeHeader(it.headerValue) }
     }
@@ -262,9 +290,11 @@ open class DatadogInterceptor internal constructor(
         request: Request,
         throwable: Throwable
     ) {
+        @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
+        @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
             null,
