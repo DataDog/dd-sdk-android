@@ -60,7 +60,7 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector = insightsCollector
+    insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID

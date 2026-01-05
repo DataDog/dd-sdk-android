@@ -103,7 +103,7 @@ interface InsightsCollector {
  * Listener for data updates from the [InsightsCollector].
  */
 @InternalApi
-interface InsightsUpdatesListener {
+fun interface InsightsUpdatesListener {
 
     /**
      * Called when the data has been updated.
