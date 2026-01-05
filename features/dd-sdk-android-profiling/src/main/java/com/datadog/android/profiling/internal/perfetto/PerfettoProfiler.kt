@@ -55,7 +55,7 @@ internal class PerfettoProfiler(
     init {
 
         resultCallback = Consumer<ProfilingResult> { result ->
-            val endTime = timeProvider.getDeviceTimestamp()
+            val endTime = timeProvider.getDeviceTimestampMillis()
             val duration = endTime - profilingStartTime
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 result.resultFilePath?.let {
@@ -96,7 +96,7 @@ internal class PerfettoProfiler(
         // profiling will be launched when no instance is currently running profiling.
         if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             sendProfilingStartTelemetry()
-            profilingStartTime = timeProvider.getDeviceTimestamp()
+            profilingStartTime = timeProvider.getDeviceTimestampMillis()
             requestProfiling(
                 appContext,
                 buildStackSamplingRequest(),

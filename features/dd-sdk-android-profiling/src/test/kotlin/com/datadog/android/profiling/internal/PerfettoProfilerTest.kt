@@ -439,7 +439,7 @@ class PerfettoProfilerTest {
         var endTime: Long = 0L
         private var queryIncrement: Int = 0
 
-        override fun getDeviceTimestamp(): Long {
+        override fun getDeviceTimestampMillis(): Long {
             return if (queryIncrement++ == 0) {
                 startTime
             } else {
@@ -447,7 +447,9 @@ class PerfettoProfilerTest {
             }
         }
 
-        override fun getServerTimestamp(): Long = 0L
+        override fun getServerTimestampMillis(): Long = 0L
+
+        override fun getDeviceElapsedTimeNanos(): Long = 0L
 
         override fun getServerOffsetNanos(): Long = 0L
 
