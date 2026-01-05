@@ -16,9 +16,11 @@ import android.os.BatteryManager
 import android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY
 import android.os.Build
 import android.os.PowerManager
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -55,12 +57,13 @@ internal class DefaultBatteryInfoProviderTest {
     lateinit var mockPowerManager: PowerManager
 
     @Mock
-    lateinit var mockSystemClockWrapper: SystemClockWrapper
+    lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     lateinit var mockBatteryManager: BatteryManager
 
-    private val testSuiteStartTime = System.currentTimeMillis()
+    @LongForgery(min = 0L)
+    private var fakeStartTimeMs: Long = 0L
 
     private val shortPollingInterval = 200
 
@@ -70,7 +73,7 @@ internal class DefaultBatteryInfoProviderTest {
             targetSdkVersion = 0
         }
         whenever(mockApplicationContext.contentResolver) doReturn mockContentResolver
-        whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn fakeStartTimeMs
         whenever(mockPowerManager.isPowerSaveMode) doReturn false
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
         initializeBatteryManager()
@@ -167,12 +170,12 @@ internal class DefaultBatteryInfoProviderTest {
 
         // nothing changes because we are within polling interval
         assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
-        whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime + shortPollingInterval / 2
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn fakeStartTimeMs + shortPollingInterval / 2
         assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
 
         // Then
         // after polling interval level should change
-        whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime + shortPollingInterval
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn fakeStartTimeMs + shortPollingInterval
         val batteryInfo = testedProvider.getState()
         assertThat(batteryInfo.batteryLevel).isEqualTo(0.75f)
     }
@@ -229,10 +232,10 @@ internal class DefaultBatteryInfoProviderTest {
     ) {
         testedProvider = DefaultBatteryInfoProvider(
             applicationContext = mockApplicationContext,
+            timeProvider = mockTimeProvider,
             batteryLevelPollInterval = shortPollingInterval,
             powerManager = powerManager,
-            batteryManager = batteryManager,
-            systemClockWrapper = mockSystemClockWrapper
+            batteryManager = batteryManager
         )
     }
 }

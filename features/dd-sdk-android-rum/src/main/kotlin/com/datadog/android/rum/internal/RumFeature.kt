@@ -216,7 +216,8 @@ internal class RumFeature(
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
         batteryInfoProvider = DefaultBatteryInfoProvider(
-            applicationContext = appContext
+            applicationContext = appContext,
+            timeProvider = sdkCore.timeProvider
         )
         displayInfoProvider = DefaultDisplayInfoProvider(
             applicationContext = appContext,

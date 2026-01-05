@@ -6,13 +6,17 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.test.TestConfig
 import io.gitlab.arturbosch.detekt.test.assertThat
 import io.gitlab.arturbosch.detekt.test.lint
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(ForgeExtension::class)
 class PreferTimeProviderTest {
 
     lateinit var config: Config
@@ -22,15 +26,16 @@ class PreferTimeProviderTest {
         config = TestConfig()
     }
 
-    // region System.nanoTime
+    // region prohibited methods
 
     @Test
-    fun `detects System nanoTime usage`() {
+    fun `detects prohibited time method usage`(forge: Forge) {
+        val methodCall = forge.anElementFrom(PreferTimeProvider.PROHIBITED_TIME_METHODS)
         val code =
             """
             class Foo {
-                fun bar(): Long {
-                    return System.nanoTime()
+                fun bar(): Any {
+                    return $methodCall
                 }
             }
             """.trimIndent()
@@ -40,75 +45,13 @@ class PreferTimeProviderTest {
     }
 
     @Test
-    fun `detects System nanoTime usage in variable`() {
-        val code =
-            """
-            class Foo {
-                fun bar() {
-                    val startTime = System.nanoTime()
-                    doSomething()
-                    val elapsed = System.nanoTime() - startTime
-                }
-
-                fun doSomething() {}
-            }
-            """.trimIndent()
-
-        val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(2)
-    }
-
-    // endregion
-
-    // region System.currentTimeMillis
-
-    @Test
-    fun `detects System currentTimeMillis usage`() {
+    fun `detects kotlin time function usage`(forge: Forge) {
+        val functionCall = forge.anElementFrom(PreferTimeProvider.KOTLIN_TIME_FUNCTIONS)
         val code =
             """
             class Foo {
                 fun bar(): Long {
-                    return System.currentTimeMillis()
-                }
-            }
-            """.trimIndent()
-
-        val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(1)
-    }
-
-    @Test
-    fun `detects System currentTimeMillis usage in variable`() {
-        val code =
-            """
-            class Foo {
-                fun bar() {
-                    val startTime = System.currentTimeMillis()
-                    doSomething()
-                    val elapsed = System.currentTimeMillis() - startTime
-                }
-
-                fun doSomething() {}
-            }
-            """.trimIndent()
-
-        val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(2)
-    }
-
-    // endregion
-
-    // region measureTimeMillis
-
-    @Test
-    fun `detects measureTimeMillis usage`() {
-        val code =
-            """
-            import kotlin.system.measureTimeMillis
-
-            class Foo {
-                fun bar(): Long {
-                    return measureTimeMillis {
+                    return $functionCall {
                         doSomething()
                     }
                 }
@@ -121,21 +64,16 @@ class PreferTimeProviderTest {
         assertThat(findings).hasSize(1)
     }
 
-    // endregion
-
-    // region measureNanoTime
-
     @Test
-    fun `detects measureNanoTime usage`() {
+    fun `detects multiple usages of same method`(forge: Forge) {
+        val methodCall = forge.anElementFrom(PreferTimeProvider.PROHIBITED_TIME_METHODS)
         val code =
             """
-            import kotlin.system.measureNanoTime
-
             class Foo {
-                fun bar(): Long {
-                    return measureNanoTime {
-                        doSomething()
-                    }
+                fun bar() {
+                    val startTime = $methodCall
+                    doSomething()
+                    val elapsed = $methodCall - startTime
                 }
 
                 fun doSomething() {}
@@ -143,62 +81,7 @@ class PreferTimeProviderTest {
             """.trimIndent()
 
         val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(1)
-    }
-
-    // endregion
-
-    // region Clock and Instant
-
-    @Test
-    fun `detects Clock systemUTC usage`() {
-        val code =
-            """
-            import java.time.Clock
-
-            class Foo {
-                fun bar(): Clock {
-                    return Clock.systemUTC()
-                }
-            }
-            """.trimIndent()
-
-        val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(1)
-    }
-
-    @Test
-    fun `detects Clock systemDefaultZone usage`() {
-        val code =
-            """
-            import java.time.Clock
-
-            class Foo {
-                fun bar(): Clock {
-                    return Clock.systemDefaultZone()
-                }
-            }
-            """.trimIndent()
-
-        val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(1)
-    }
-
-    @Test
-    fun `detects Instant now usage`() {
-        val code =
-            """
-            import java.time.Instant
-
-            class Foo {
-                fun bar(): Instant {
-                    return Instant.now()
-                }
-            }
-            """.trimIndent()
-
-        val findings = PreferTimeProvider(config).lint(code)
-        assertThat(findings).hasSize(1)
+        assertThat(findings).hasSize(2)
     }
 
     // endregion

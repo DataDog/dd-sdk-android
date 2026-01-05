@@ -91,24 +91,27 @@ class PreferTimeProvider(
         return allowedFiles.any { it.matches(currentFileName) }
     }
 
-    companion object {
-        private val DEFAULT_ALLOWED_FILES = listOf(
-            ".*TimeProvider.*",
+    internal companion object {
+        internal val DEFAULT_ALLOWED_FILES = listOf(
+            ".*DdRumContentProvider.*",
             ".*Time\\.kt",
-            ".*DdRumContentProvider.*"
+            ".*TimeProvider.*"
         )
 
-        private val KOTLIN_TIME_FUNCTIONS = setOf(
-            "measureTimeMillis",
-            "measureNanoTime"
+        internal val KOTLIN_TIME_FUNCTIONS = setOf(
+            "measureNanoTime",
+            "measureTimeMillis"
         )
 
-        private val PROHIBITED_TIME_METHODS = listOf(
-            "System.nanoTime()",
-            "System.currentTimeMillis()",
-            "Clock.systemUTC()",
+        internal val PROHIBITED_TIME_METHODS = listOf(
             "Clock.systemDefaultZone()",
-            "Instant.now()"
+            "Clock.systemUTC()",
+            "Instant.now()",
+            "System.currentTimeMillis()",
+            "System.nanoTime()",
+            "SystemClock.elapsedRealtime()",
+            "SystemClock.elapsedRealtimeNanos()",
+            "SystemClock.uptimeMillis()"
         )
     }
 }
