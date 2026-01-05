@@ -82,11 +82,37 @@ object Profiling {
         }
     }
 
+    /**
+     * Start profiling with given SDK instances names.
+     *
+     * @param context application context
+     * @param sdkInstanceNames the set of the SDK instances name
+     */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     internal fun start(context: Context, sdkInstanceNames: Set<String>) {
         initializeProfiler()
         profiler.start(context, sdkInstanceNames)
         ProfilingStorage.removeProfilingFlag(context, sdkInstanceNames)
+    }
+
+    /**
+     * Start profiling for a given SDK instance.
+     *
+     * @param context application context
+     * @param sdkCore SDK instance to start profiling with. If not provided, default SDK instance.
+     */
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun start(context: Context, sdkCore: SdkCore = Datadog.getInstance()) {
+        start(context, setOf(sdkCore.name))
+    }
+
+    /**
+     * Stop profiling for a given SDK instance.
+     *
+     * @param sdkCore SDK instance to stop profiling. If not provided, default SDK instance.
+     */
+    fun stop(sdkCore: SdkCore = Datadog.getInstance()) {
+        profiler.stop(sdkCore.name)
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)

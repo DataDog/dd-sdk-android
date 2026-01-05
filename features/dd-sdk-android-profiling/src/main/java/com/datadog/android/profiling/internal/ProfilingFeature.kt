@@ -45,7 +45,7 @@ internal class ProfilingFeature(
         get() = FeatureStorageConfiguration.Companion.DEFAULT
 
     override val name: String
-        get() = Feature.Companion.PROFILING_FEATURE_NAME
+        get() = Feature.PROFILING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
@@ -58,7 +58,7 @@ internal class ProfilingFeature(
         }
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context.put(PROFILER_IS_RUNNING, profiler.isRunning(sdkCore.name))
+            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
         dataWriter = createDataWriter(sdkCore)
     }

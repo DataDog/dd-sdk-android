@@ -13,6 +13,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.NoOpProfiler
+import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -145,6 +147,50 @@ class ProfilingTest {
         assertThat(firstProfiler).isNotInstanceOf(NoOpProfiler::class.java)
         assertThat(secondProfiler).isNotInstanceOf(NoOpProfiler::class.java)
         assertThat(firstProfiler).isSameAs(secondProfiler)
+    }
+
+    @Test
+    fun `M start profiler W call Profiling start(with instance names)`() {
+        // Given
+        val sdkInstanceNames = setOf(fakeInstanceName)
+        val mockProfiler = mock<Profiler>()
+        Profiling.profiler = mockProfiler
+        Profiling.isProfilerInitialized.set(true)
+
+        // When
+        Profiling.start(mockContext, sdkInstanceNames)
+
+        // Then
+        verify(mockProfiler).start(mockContext, sdkInstanceNames)
+    }
+
+    @Test
+    fun `M start profiler W call Profiling start(with sdk core)`() {
+        // Given
+        val mockProfiler = mock<Profiler>()
+        Profiling.profiler = mockProfiler
+        Profiling.isProfilerInitialized.set(true)
+
+        // When
+        Profiling.start(mockContext, mockSdkCore)
+
+        // Then
+        verify(mockProfiler).start(mockContext, setOf(fakeInstanceName))
+    }
+
+    @Test
+    fun `M stop profiler W call Profiling stop`() {
+        // Given
+        val mockProfiler = mock<Profiler>()
+        Profiling.profiler = mockProfiler
+        Profiling.isProfilerInitialized.set(true)
+
+        // When
+        Profiling.start(mockContext, mockSdkCore)
+        Profiling.stop(mockSdkCore)
+
+        // Then
+        verify(mockProfiler).stop(fakeInstanceName)
     }
 
     private fun resetProfilerField() {

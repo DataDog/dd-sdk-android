@@ -6,6 +6,8 @@
 
 package com.datadog.android.sample.profiling
 
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,7 +16,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
+import com.datadog.android.profiling.Profiling
 import com.datadog.android.sample.R
 
 @Suppress("MagicNumber")
@@ -54,20 +59,27 @@ internal class ProfilingFragment : Fragment() {
         progressBar60s = view.findViewById(R.id.progress_bar_60s)
 
         // Set click listeners
-        button1s.setOnClickListener {
-            startProfiling(duration = 1, progressBar = progressBar1s)
-        }
-
-        button10s.setOnClickListener {
-            startProfiling(duration = 10, progressBar = progressBar10s)
-        }
-
-        button60s.setOnClickListener {
-            startProfiling(duration = 60, progressBar = progressBar60s)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            button1s.setOnClickListener {
+                startProfiling(requireContext(), duration = 1, progressBar = progressBar1s)
+            }
+            button10s.setOnClickListener {
+                startProfiling(requireContext(), duration = 10, progressBar = progressBar10s)
+            }
+            button60s.setOnClickListener {
+                startProfiling(requireContext(), duration = 60, progressBar = progressBar60s)
+            }
+        } else {
+            Toast.makeText(
+                requireContext(),
+                "Profiling is only working for API 35 and above",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
-    private fun startProfiling(duration: Int, progressBar: ProgressBar) {
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private fun startProfiling(context: Context, duration: Int, progressBar: ProgressBar) {
         // Cancel any ongoing profiling
         currentProfilingRunnable?.let { handler.removeCallbacks(it) }
 
@@ -80,7 +92,7 @@ internal class ProfilingFragment : Fragment() {
         // Start heavy CPU work for profiling
         heavyCPUWork.start()
 
-        // TODO RUM-13509: start custom profiling here.
+        Profiling.start(context)
 
         // Track progress
         val startTime = System.currentTimeMillis()
@@ -104,7 +116,7 @@ internal class ProfilingFragment : Fragment() {
                     // Stop heavy CPU work
                     heavyCPUWork.stop()
 
-                    // TODO RUM-13509: stop custom profiling here.
+                    Profiling.stop()
 
                     // Re-enable all buttons
                     setAllButtonsEnabled(true)
