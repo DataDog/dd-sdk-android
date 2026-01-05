@@ -6,12 +6,10 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreSubscription
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -20,17 +18,12 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
 @ExtendWith(MockitoExtension::class)
@@ -40,37 +33,13 @@ internal class FlagsStateManagerTest {
     @Mock
     lateinit var mockListener: FlagsStateListener
 
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
-
-    @Mock
-    lateinit var mockInternalLogger: InternalLogger
-
     private lateinit var testedManager: FlagsStateManager
-
-    private lateinit var realExecutorService: ExecutorService
 
     @BeforeEach
     fun `set up`() {
-        // Mock executor to run tasks synchronously for testing
-        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
-            val runnable = invocation.getArgument<Runnable>(0)
-            runnable.run()
-        }
-
         testedManager = FlagsStateManager(
-            DDCoreSubscription.create(),
-            mockExecutorService,
-            mockInternalLogger
+            DDCoreSubscription.create()
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        if (::realExecutorService.isInitialized && !realExecutorService.isShutdown) {
-            realExecutorService.shutdown()
-            realExecutorService.awaitTermination(1, TimeUnit.SECONDS)
-        }
     }
 
     // region updateState
@@ -154,96 +123,69 @@ internal class FlagsStateManagerTest {
     }
 
     @Test
-    fun `M notify all listeners in order W updateState() { even if one throws }`() {
+    fun `M stop notifying subsequent listeners W updateState() { if listener throws }`() {
         // This test expresses the requirement that:
-        // 1. State is set
-        // 2. State change listeners are run in order, one at a time, without crashing
-        // 3. State is readable immediately after updateState is called
+        // 1. State is set synchronously
+        // 2. Listeners are notified in order
+        // 3. If a listener throws an exception, subsequent listeners are NOT notified
+        // 4. State is readable after updateState is called (even if exception is thrown)
 
-        // Given - use a real executor to test actual async behavior
-        realExecutorService = Executors.newSingleThreadExecutor()
-        val managerWithRealExecutor = FlagsStateManager(
-            DDCoreSubscription.create(),
-            realExecutorService,
-            mockInternalLogger
-        )
-
+        // Given
         val executionOrder = mutableListOf<String>()
-        val executionOrderLock = Any()
 
-        // Creates a listener that adds start/end markers to the execution order and calls the additional block.
-        fun createListener(
-            name: String,
-            additionalBlock: () -> Unit = {
-            }
-        ): FlagsStateListener = object : FlagsStateListener {
+        val listener1 = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
                 if (newState is FlagsClientState.Ready) {
-                    synchronized(executionOrderLock) {
-                        executionOrder.add(name)
-                        additionalBlock()
-                        executionOrder.add("$name ended")
-                    }
+                    executionOrder.add("listener1")
                 }
             }
         }
 
-        val listener1 = createListener("listener1")
-        val listener2 = createListener("listener2") {
-            Thread.sleep(5)
+        val listener2 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    executionOrder.add("listener2")
+                    throw RuntimeException("Listener 2 intentionally throws")
+                }
+            }
         }
-        val listener3 = createListener("listener3") {
-            throw RuntimeException("Listener 3 intentionally throws")
-        }
-        val listener4 = createListener("listener4")
 
-        managerWithRealExecutor.addListener(listener1)
-        managerWithRealExecutor.addListener(listener2)
-        managerWithRealExecutor.addListener(listener3)
-        managerWithRealExecutor.addListener(listener4)
+        val listener3 = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Ready) {
+                    executionOrder.add("listener3")
+                }
+            }
+        }
+
+        testedManager.addListener(listener1)
+        testedManager.addListener(listener2)
+        testedManager.addListener(listener3)
 
         // When
-        synchronized(executionOrderLock) {
-            managerWithRealExecutor.updateState(FlagsClientState.Ready)
-            executionOrder.add("updateState")
+        try {
+            testedManager.updateState(FlagsClientState.Ready)
+        } catch (e: RuntimeException) {
+            // Expected exception from listener2
         }
 
-        // Then - immediately check that state is correct (even while listeners are running)
-        assertThat(managerWithRealExecutor.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        // Then - state is set despite exception
+        assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
 
-        // Wait for the executor to finish executing all its blocks
-        realExecutorService.shutdown()
-        realExecutorService.awaitTermination(2, TimeUnit.SECONDS)
-
-        // Then - all listeners should have been called in order, despite listener3 throwing
-        synchronized(executionOrderLock) {
-            assertThat(executionOrder).containsExactly(
-                "updateState",
-                "listener1",
-                "listener1 ended",
-                "listener2",
-                "listener2 ended",
-                "listener3",
-                "listener4",
-                "listener4 ended"
-            )
-        }
+        // Then - only listeners before the throwing listener were notified
+        assertThat(executionOrder).containsExactly(
+            "listener1",
+            "listener2"
+            // listener3 should NOT be in the list
+        )
     }
 
     @Test
-    fun `M maintain FIFO ordering W concurrent operations on fair lock`() {
+    fun `M notify all listeners W multiple listeners registered and state updated`() {
         // Given
-        realExecutorService = Executors.newSingleThreadExecutor()
-        val managerWithRealExecutor = FlagsStateManager(
-            DDCoreSubscription.create(),
-            realExecutorService,
-            mockInternalLogger
-        )
-
         val notificationCount = java.util.concurrent.atomic.AtomicInteger(0)
         val listeners = mutableListOf<FlagsStateListener>()
 
-        // When
         repeat(10) {
             val listener = object : FlagsStateListener {
                 override fun onStateChanged(newState: FlagsClientState) {
@@ -253,18 +195,15 @@ internal class FlagsStateManagerTest {
                 }
             }
             listeners.add(listener)
-            managerWithRealExecutor.addListener(listener)
+            testedManager.addListener(listener)
         }
 
-        // Trigger state change
-        managerWithRealExecutor.updateState(FlagsClientState.Ready)
-
-        realExecutorService.shutdown()
-        realExecutorService.awaitTermination(2, TimeUnit.SECONDS)
+        // When
+        testedManager.updateState(FlagsClientState.Ready)
 
         // Then
         assertThat(notificationCount.get()).isEqualTo(10)
-        assertThat(managerWithRealExecutor.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
     }
 
     // endregion
