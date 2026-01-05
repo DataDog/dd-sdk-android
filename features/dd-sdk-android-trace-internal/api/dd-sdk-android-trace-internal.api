@@ -3056,6 +3056,18 @@ public abstract class com/datadog/trace/core/monitor/HealthMetrics : java/lang/A
 	public fun summary ()Ljava/lang/String;
 }
 
+public class com/datadog/trace/core/propagation/B3HttpCodec {
+	public static final field B3_KEY Ljava/lang/String;
+	public static final field SAMPLING_PRIORITY_KEY Ljava/lang/String;
+	public static final field SPAN_ID_KEY Ljava/lang/String;
+	public static final field TRACE_ID_KEY Ljava/lang/String;
+	public static fun newCombinedInjector (Z)Lcom/datadog/trace/core/propagation/HttpCodec$Injector;
+	public static fun newMultiExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
+	public static fun newMultiInjector (Z)Lcom/datadog/trace/core/propagation/HttpCodec$Injector;
+	public static fun newSingleExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
+	public static fun newSingleInjector (Z)Lcom/datadog/trace/core/propagation/HttpCodec$Injector;
+}
+
 public class com/datadog/trace/core/propagation/B3TraceId : com/datadog/trace/api/DDTraceId {
 	protected final field delegate Lcom/datadog/trace/api/DDTraceId;
 	protected final field original Ljava/lang/String;
@@ -3122,6 +3134,16 @@ public class com/datadog/trace/core/propagation/CorePropagation : com/datadog/tr
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;)V
 	public fun inject (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$Setter;Lcom/datadog/trace/api/TracePropagationStyle;)V
+}
+
+public class com/datadog/trace/core/propagation/DatadogHttpCodec {
+	public static final field DATADOG_TAGS_KEY Ljava/lang/String;
+	public static final field ORIGIN_KEY Ljava/lang/String;
+	public static final field SAMPLING_PRIORITY_KEY Ljava/lang/String;
+	public static final field SPAN_ID_KEY Ljava/lang/String;
+	public static final field TRACE_ID_KEY Ljava/lang/String;
+	public static fun newExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
+	public static fun newInjector (Ljava/util/Map;)Lcom/datadog/trace/core/propagation/HttpCodec$Injector;
 }
 
 public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/trace/bootstrap/instrumentation/api/TagContext {
@@ -3213,6 +3235,14 @@ public class com/datadog/trace/core/propagation/TagContextExtractor : com/datado
 	public fun <init> (Lcom/datadog/android/trace/internal/compat/function/Supplier;Lcom/datadog/trace/core/propagation/ContextInterpreter$Factory;)V
 	public fun cleanup ()V
 	public fun extract (Ljava/lang/Object;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$ContextVisitor;)Lcom/datadog/trace/bootstrap/instrumentation/api/TagContext;
+}
+
+public class com/datadog/trace/core/propagation/W3CHttpCodec {
+	public static final field BAGGAGE_KEY Ljava/lang/String;
+	public static final field TRACE_PARENT_KEY Ljava/lang/String;
+	public static final field TRACE_STATE_KEY Ljava/lang/String;
+	public static fun newExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
+	public static fun newInjector (Ljava/util/Map;)Lcom/datadog/trace/core/propagation/HttpCodec$Injector;
 }
 
 public class com/datadog/trace/core/propagation/ptags/PTagsFactory : com/datadog/trace/core/propagation/PropagationTags$Factory {

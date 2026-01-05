@@ -40,6 +40,7 @@ public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/
 	public synthetic fun enableHttpCache (IJ)Lorg/chromium/net/CronetEngine$Builder;
 	public fun enableNetworkQualityEstimator (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun enableNetworkQualityEstimator (Z)Lorg/chromium/net/CronetEngine$Builder;
+	public final fun enableNetworkTracing (Lcom/datadog/android/trace/NetworkTracingInstrumentationConfiguration;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public fun enablePublicKeyPinningBypassForLocalTrustAnchors (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun enablePublicKeyPinningBypassForLocalTrustAnchors (Z)Lorg/chromium/net/CronetEngine$Builder;
 	public fun enableQuic (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
@@ -51,6 +52,7 @@ public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/
 	public synthetic fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions$Builder;)Lorg/chromium/net/CronetEngine$Builder;
 	public fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun setConnectionMigrationOptions (Lorg/chromium/net/ConnectionMigrationOptions;)Lorg/chromium/net/CronetEngine$Builder;
+	public final fun setCustomRumInstrumentation (Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public fun setDnsOptions (Lorg/chromium/net/DnsOptions$Builder;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun setDnsOptions (Lorg/chromium/net/DnsOptions$Builder;)Lorg/chromium/net/CronetEngine$Builder;
 	public fun setDnsOptions (Lorg/chromium/net/DnsOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
@@ -64,8 +66,6 @@ public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/
 	public synthetic fun setQuicOptions (Lorg/chromium/net/QuicOptions$Builder;)Lorg/chromium/net/CronetEngine$Builder;
 	public fun setQuicOptions (Lorg/chromium/net/QuicOptions;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun setQuicOptions (Lorg/chromium/net/QuicOptions;)Lorg/chromium/net/CronetEngine$Builder;
-	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
-	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public fun setStoragePath (Ljava/lang/String;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun setStoragePath (Ljava/lang/String;)Lorg/chromium/net/CronetEngine$Builder;
 	public fun setThreadPriority (I)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;

@@ -15,6 +15,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.api.logToUser
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
@@ -950,15 +951,6 @@ internal class DatadogRumMonitor(
 
         internal const val FO_ERROR_INVALID_OPERATION_KEY =
             "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
-
-        private fun InternalLogger.logToUser(
-            level: InternalLogger.Level,
-            messageProvider: () -> String
-        ) = log(
-            level = level,
-            target = InternalLogger.Target.USER,
-            messageBuilder = messageProvider
-        )
 
         private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)

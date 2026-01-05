@@ -178,6 +178,10 @@ class com.datadog.android.rum._RumInternalProxy
     fun setRumSessionTypeOverride(com.datadog.android.rum.RumConfiguration.Builder, RumSessionType): com.datadog.android.rum.RumConfiguration.Builder
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
+    fun com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration?.build(String): com.datadog.android.rum.internal.net.RumResourceInstrumentation?
+class com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
+  fun setSdkInstanceName(String)
+  fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
@@ -224,11 +228,12 @@ class com.datadog.android.rum.internal.net.RumResourceInstrumentation
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun startResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
-  fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo)
+  fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Throwable)
   fun reportInstrumentationError(String)
   companion object 
     fun buildResourceId(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Boolean): com.datadog.android.rum.resource.ResourceId
+    fun Configuration()
 interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
   fun validate(PreviousViewLastInteractionContext): Boolean
 data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
