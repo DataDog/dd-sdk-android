@@ -24,6 +24,9 @@ import kotlin.coroutines.suspendCoroutine
  * @throws [OpenFeatureError.GeneralError] if setting the context fails or times out.
  */
 internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {
+    // Subsequent invocation of any resume function will produce
+    // an IllegalStateException, but we are safe here
+    @Suppress("UnsafeThirdPartyFunctionCall")
     suspendCoroutine<Unit> { continuation ->
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() {
