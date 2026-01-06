@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.internal.repository
 
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -27,12 +27,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
