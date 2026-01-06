@@ -13,17 +13,16 @@ import android.app.ApplicationExitInfo
 import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
-import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -64,8 +63,6 @@ import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
@@ -117,8 +114,7 @@ import java.util.function.Predicate
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -150,6 +146,7 @@ internal class RumFeatureTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
         val mockContentResolver = mock<ContentResolver>()
@@ -545,7 +542,6 @@ internal class RumFeatureTest {
             .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.Q)
     @Test
     fun `M build config with gestures enabled W initialize() {Android Q}`(
         @IntForgery(0, 10) attributesCount: Int
@@ -558,11 +554,15 @@ internal class RumFeatureTest {
             userActionTracking = true,
             touchTargetExtraAttributesProviders = mockProviders.toList()
         )
+        val mockBuildSdkVersionProvider = mock<BuildSdkVersionProvider>()
+        whenever(mockBuildSdkVersionProvider.isAtLeastQ) doReturn true
+
         testedFeature = RumFeature(
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
-            lateCrashReporterFactory = { mockLateCrashReporter }
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            mockBuildSdkVersionProvider
         )
 
         // When
@@ -812,6 +812,7 @@ internal class RumFeatureTest {
         verify(mockLongTaskTrackingStrategy).unregister(appContext.mockInstance)
     }
 
+    @Test
     fun `M clean up all RUM context update receivers W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -822,7 +823,7 @@ internal class RumFeatureTest {
 
         // Then
         rumContextUpdateReceivers.forEach {
-            verify(mockSdkCore.removeContextUpdateReceiver(it))
+            verify(mockSdkCore).removeContextUpdateReceiver(it)
         }
         assertThat(testedFeature.rumContextUpdateReceivers).isEmpty()
     }
@@ -1274,12 +1275,10 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M return true W isTrackNonFatalAnrsEnabledByDefault() { Android Q and below }`(
-        @IntForgery(min = 1, max = Build.VERSION_CODES.R) fakeBuildSdkVersion: Int
-    ) {
+    fun `M return true W isTrackNonFatalAnrsEnabledByDefault() { Android Q and below }`() {
         // Given
         val mockBuildSdkVersionProvider = mock<BuildSdkVersionProvider>()
-        whenever(mockBuildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn false
 
         // When
         val isEnabled = RumFeature.isTrackNonFatalAnrsEnabledByDefault(mockBuildSdkVersionProvider)
@@ -1289,12 +1288,10 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M return false W isTrackNonFatalAnrsEnabledByDefault() { Android R and above }`(
-        @IntForgery(min = Build.VERSION_CODES.R) fakeBuildSdkVersion: Int
-    ) {
+    fun `M return false W isTrackNonFatalAnrsEnabledByDefault() { Android R and above }`() {
         // Given
         val mockBuildSdkVersionProvider = mock<BuildSdkVersionProvider>()
-        whenever(mockBuildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn true
 
         // When
         val isEnabled = RumFeature.isTrackNonFatalAnrsEnabledByDefault(mockBuildSdkVersionProvider)

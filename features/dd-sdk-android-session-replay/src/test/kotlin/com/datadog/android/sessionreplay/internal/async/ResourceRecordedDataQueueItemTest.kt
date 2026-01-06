@@ -33,7 +33,8 @@ internal class ResourceRecordedDataQueueItemTest {
         val testedRecordedDataQueueItem = ResourceRecordedDataQueueItem(
             recordedQueuedItemContext = fakeResourceRecordedDataQueueItem.recordedQueuedItemContext,
             identifier = fakeResourceRecordedDataQueueItem.identifier,
-            resourceData = ByteArray(0)
+            resourceData = ByteArray(0),
+            creationTimestampInNs = fakeResourceRecordedDataQueueItem.creationTimestampInNs
         )
 
         // Then

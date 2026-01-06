@@ -8,9 +8,8 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.app.Application
-import android.os.Build
 import android.os.Bundle
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -53,7 +52,8 @@ internal class RumAppStartupDetectorImplTest {
     @Mock
     private lateinit var listener: RumAppStartupDetector.Listener
 
-    private var fakeBuildSdkVersion: Int = 0
+    @BoolForgery
+    private var fakeIsAtLeastQ: Boolean = false
 
     @Mock
     private lateinit var buildSdkVersionProvider: BuildSdkVersionProvider
@@ -64,11 +64,7 @@ internal class RumAppStartupDetectorImplTest {
     private var currentTime: Duration = 0.nanoseconds
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeBuildSdkVersion = forge.anInt(
-            min = System.getProperty("RUM_MIN_SDK")!!.toInt(),
-            max = System.getProperty("RUM_TARGET_SDK")!!.toInt() + 1
-        )
+    fun `set up`() {
         whenever(activity.isChangingConfigurations) doReturn false
     }
 
@@ -422,7 +418,7 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     private fun createDetector(): RumAppStartupDetectorImpl {
-        whenever(buildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
+        whenever(buildSdkVersionProvider.isAtLeastQ) doReturn fakeIsAtLeastQ
 
         val detector = RumAppStartupDetectorImpl(
             application = application,
@@ -453,7 +449,7 @@ internal class RumAppStartupDetectorImplTest {
         } else {
             null
         }
-        if (fakeBuildSdkVersion >= Build.VERSION_CODES.Q) {
+        if (fakeIsAtLeastQ) {
             detector.onActivityPreCreated(activity, bundle)
         } else {
             detector.onActivityCreated(activity, bundle)

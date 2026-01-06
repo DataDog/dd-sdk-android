@@ -130,8 +130,8 @@ class OtelTracerProvider internal constructor(
          */
         fun build(): TracerProvider {
             return executeIfJavaFunctionPackageExists(
-                sdkCore.internalLogger,
-                TracerProvider.noop()
+                internalLogger = sdkCore.internalLogger,
+                defaultActionReturnValue = TracerProvider.noop()
             ) {
                 val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
                 val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
@@ -258,8 +258,8 @@ class OtelTracerProvider internal constructor(
             // Later on maybe we should consider a method
             // DatdogOpenTelemetry.initialize() to be called in the Application#onCreate class.
             executeIfJavaFunctionPackageExists(
-                null,
-                null
+                internalLogger = null,
+                defaultActionReturnValue = null
             ) {
                 // suppressing the lint warning as we call this safely on Android 23 and below
                 @Suppress("NewApi")

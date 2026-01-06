@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.thread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -18,13 +19,14 @@ import java.util.concurrent.TimeUnit
 internal class BackPressureExecutorService(
     val logger: InternalLogger,
     executorContext: String,
-    backpressureStrategy: BackPressureStrategy
+    backpressureStrategy: BackPressureStrategy,
+    timeProvider: TimeProvider
 ) : ThreadPoolExecutor(
     CORE_POOL_SIZE,
     CORE_POOL_SIZE,
     THREAD_POOL_MAX_KEEP_ALIVE_MS,
     TimeUnit.MILLISECONDS,
-    BackPressuredBlockingQueue(logger, executorContext, backpressureStrategy),
+    BackPressuredBlockingQueue(logger, executorContext, backpressureStrategy, timeProvider),
     DatadogThreadFactory(executorContext)
 ),
     FlushableExecutorService {

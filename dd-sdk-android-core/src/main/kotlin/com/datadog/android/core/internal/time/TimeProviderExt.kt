@@ -10,8 +10,8 @@ import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.TimeUnit
 
 internal fun TimeProvider.composeTimeInfo(): TimeInfo {
-    val deviceTimeMs = getDeviceTimestamp()
-    val serverTimeMs = getServerTimestamp()
+    val deviceTimeMs = getDeviceTimestampMillis()
+    val serverTimeMs = getServerTimestampMillis()
     return TimeInfo(
         deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
         serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),

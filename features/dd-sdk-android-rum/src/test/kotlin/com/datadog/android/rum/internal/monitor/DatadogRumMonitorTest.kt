@@ -226,6 +226,7 @@ internal class DatadogRumMonitorTest {
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
         whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
@@ -2524,7 +2525,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M return empty map W addAttribute() + removeAttribtue() + getAttributes()`(
+    fun `M return empty map W addAttribute() + removeAttribute() + getAttributes()`(
         @StringForgery key: String,
         @StringForgery value: String
     ) {

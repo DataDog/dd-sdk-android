@@ -133,6 +133,7 @@ fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class
 fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
+  val timeProvider: com.datadog.android.internal.time.TimeProvider
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
@@ -339,10 +340,6 @@ fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
-interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
-  val version: Int
-  companion object 
-    val DEFAULT: BuildSdkVersionProvider
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
@@ -406,7 +403,7 @@ interface com.datadog.android.core.sampling.Sampler<T: Any>
 interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
   fun drainTo(MutableCollection<Runnable>)
   interface Factory
-    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
+    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy, com.datadog.android.internal.time.TimeProvider): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
