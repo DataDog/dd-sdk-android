@@ -451,7 +451,7 @@ internal class NoOpFlagsClientTest {
         val state = testedClient.state.getCurrentState()
 
         // Then
-        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(state).isEqualTo(FlagsClientState.NotReady)
     }
 
     @Test
@@ -478,6 +478,26 @@ internal class NoOpFlagsClientTest {
         // Then
         // No exception should be thrown, method should be no-op
         verifyNoInteractions(mockListener)
+    }
+
+    // endregion
+
+    // region resolveStructureValue() - Map overload
+
+    @Test
+    fun `M return default map W resolveStructureValue() {map default}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = mapOf(
+            "key1" to forge.anAlphabeticalString(),
+            "key2" to forge.anInt()
+        )
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     // endregion
