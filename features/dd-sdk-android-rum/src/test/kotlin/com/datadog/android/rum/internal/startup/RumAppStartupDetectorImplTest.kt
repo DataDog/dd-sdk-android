@@ -112,7 +112,7 @@ internal class RumAppStartupDetectorImplTest {
     ) {
         val detector = createDetector()
 
-        currentTime += 6.seconds
+        currentTime += 11.seconds
         triggerBeforeCreated(
             forge = forge,
             detector = detector,
@@ -128,7 +128,7 @@ internal class RumAppStartupDetectorImplTest {
                 ),
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                 activity = activity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 6.seconds.inWholeNanoseconds
+                appStartActivityOnCreateGapNs = 11.seconds.inWholeNanoseconds
             )
         )
         verifyNoMoreInteractions(listener)

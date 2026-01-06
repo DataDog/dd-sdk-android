@@ -110,6 +110,6 @@ internal class RumAppStartupDetectorImpl(
     }
 
     companion object {
-        private val START_GAP_THRESHOLD_NS = 5.seconds.inWholeNanoseconds
+        private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
     }
 }

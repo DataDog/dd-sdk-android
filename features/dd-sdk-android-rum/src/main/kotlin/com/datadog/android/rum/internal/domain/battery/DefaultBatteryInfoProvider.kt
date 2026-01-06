@@ -18,18 +18,19 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
 import androidx.annotation.FloatRange
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
 internal class DefaultBatteryInfoProvider(
     private val applicationContext: Context,
+    private val timeProvider: TimeProvider,
     private val powerManager: PowerManager? =
         applicationContext.getSystemService(POWER_SERVICE) as? PowerManager,
     private val batteryManager: BatteryManager? = applicationContext.getSystemService(
         BATTERY_SERVICE
     ) as? BatteryManager,
-    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS,
-    private val systemClockWrapper: SystemClockWrapper = SystemClockWrapper() // this wrapper is needed for unit tests
+    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS
 ) : InfoProvider<BatteryInfo> {
 
     @Volatile
@@ -39,7 +40,7 @@ internal class DefaultBatteryInfoProvider(
     @Volatile
     private var lowPowerMode: Boolean? = null
 
-    private val lastTimeBatteryLevelChecked = AtomicLong(systemClockWrapper.elapsedRealTime())
+    private val lastTimeBatteryLevelChecked = AtomicLong(timeProvider.getDeviceElapsedRealtimeMillis())
 
     private val powerSaveModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -60,7 +61,7 @@ internal class DefaultBatteryInfoProvider(
         // while we could register a receiver for battery level,
         // it fires far too often (multiple times per second)
         // so it seems better to only poll battery charge state once in a period of time
-        val now = systemClockWrapper.elapsedRealTime()
+        val now = timeProvider.getDeviceElapsedRealtimeMillis()
         if (now - batteryLevelPollInterval >= lastTimeBatteryLevelChecked.get()) {
             lastTimeBatteryLevelChecked.set(now)
 
