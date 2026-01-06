@@ -207,6 +207,86 @@ internal class FlagsStateManagerTest {
         assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
     }
 
+    @Test
+    fun `M block updateState calls W addListener() with slow listener notification`() {
+        // Given
+        val stateOld = FlagsClientState.NotReady
+        val stateNew = FlagsClientState.Ready
+
+        val receivedStates = mutableListOf<Pair<FlagsClientState, Long>>()
+        val addListenerStarted = java.util.concurrent.CountDownLatch(1)
+        val addListenerSlowCallbackStarted = java.util.concurrent.CountDownLatch(1)
+        val updateStateCanProceed = java.util.concurrent.CountDownLatch(1)
+
+        // Listener that is slow to process the initial state notification
+        val slowListener = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                synchronized(receivedStates) {
+                    receivedStates.add(newState to System.nanoTime())
+                }
+
+                // If this is the first notification (from addListener), be slow
+                if (newState == stateOld) {
+                    addListenerSlowCallbackStarted.countDown()
+                    // Hold up the read lock by sleeping
+                    Thread.sleep(10)
+                    updateStateCanProceed.countDown()
+                }
+            }
+        }
+
+        // When - demonstrate that slow listener in addListener blocks updateState
+        val addListenerThread = Thread {
+            addListenerStarted.countDown()
+            // This will:
+            // 1. Acquire read lock
+            // 2. Read currentState (NotReady)
+            // 3. Call listener.onStateChanged(NotReady) - SLOW (sleeps 10ms)
+            // 4. Add listener to subscription
+            // 5. Release read lock
+            testedManager.addListener(slowListener)
+        }
+
+        val updateStateThread = Thread {
+            // Wait for addListener to start its slow callback
+            addListenerSlowCallbackStarted.await()
+            // Try to update state - this will BLOCK waiting for write lock
+            // because addListener is still holding the read lock
+            testedManager.updateState(stateNew)
+        }
+
+        // Start all threads
+        addListenerThread.start()
+        addListenerStarted.await() // Ensure addListener starts first
+        updateStateThread.start()
+
+        // Wait for all threads to complete
+        addListenerThread.join(5000)
+        updateStateThread.join(5000)
+
+        // Then - verify the order of operations
+        synchronized(receivedStates) {
+            // Listener should have received all states in order
+            assertThat(receivedStates.map { it.first }).containsExactly(
+                stateOld, // From addListener's initial notification (slow)
+                stateNew // From first updateState (blocked until addListener completes)
+            )
+
+            // Verify timing: the slow addListener callback completed before updateState calls
+            val oldStateTime = receivedStates[0].second
+            val newStateTime = receivedStates[1].second
+
+            // updateState calls should have been delayed by at least the sleep time
+            assertThat(newStateTime - oldStateTime).isGreaterThan(10_000_000) // ~10ms in nanoseconds
+
+            // The states should be received in chronological order
+            assertThat(oldStateTime).isLessThan(newStateTime)
+        }
+
+        // Verify final state
+        assertThat(testedManager.getCurrentState()).isEqualTo(stateNew)
+    }
+
     // endregion
 
     companion object {
