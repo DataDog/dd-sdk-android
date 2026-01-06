@@ -481,24 +481,4 @@ internal class NoOpFlagsClientTest {
     }
 
     // endregion
-
-    // region resolveStructureValue() - Map overload
-
-    @Test
-    fun `M return default map W resolveStructureValue() {map default}`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = mapOf(
-            "key1" to forge.anAlphabeticalString(),
-            "key2" to forge.anInt()
-        )
-
-        // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
-    }
-
-    // endregion
 }
