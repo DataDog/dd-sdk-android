@@ -8,7 +8,7 @@ import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 createJsonModelsGenerationTask("generateLogModelsFromJson") {
     inputDirPath = "src/main/json/log"
-    ignoredFiles = arrayOf(
+    ignoredFiles = listOf(
         "_common-schema.json"
     )
     targetPackageName = "com.datadog.android.log.model"

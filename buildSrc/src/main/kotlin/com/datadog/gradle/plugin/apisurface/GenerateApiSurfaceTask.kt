@@ -7,20 +7,24 @@
 package com.datadog.gradle.plugin.apisurface
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Input
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-open class GenerateApiSurfaceTask : DefaultTask() {
-    @get:Input
-    lateinit var srcDirPath: String
+abstract class GenerateApiSurfaceTask : DefaultTask() {
+    @get:InputDirectory
+    abstract val srcDir: DirectoryProperty
 
-    @get:Input
-    lateinit var genDirPath: String
+    @get:InputFiles
+    abstract val genDir: ConfigurableFileCollection
 
     @get: OutputFile
-    lateinit var surfaceFile: File
+    abstract val surfaceFile: RegularFileProperty
 
     private lateinit var visitor: KotlinFileVisitor
 
@@ -34,10 +38,12 @@ open class GenerateApiSurfaceTask : DefaultTask() {
     @TaskAction
     fun applyTask() {
         visitor = KotlinFileVisitor()
-        visitDirectoryRecursively(File(srcDirPath))
-        visitDirectoryRecursively(File(genDirPath))
+        visitDirectoryRecursively(srcDir.get().asFile)
+        genDir.forEach {
+            visitDirectoryRecursively(it)
+        }
 
-        surfaceFile.printWriter().use {
+        surfaceFile.get().asFile.printWriter().use {
             it.print(visitor.description.toString())
         }
     }
@@ -62,7 +68,7 @@ open class GenerateApiSurfaceTask : DefaultTask() {
                 visitor.visitFile(file)
             }
         } else {
-            System.err.println("${file.path} is not readable")
+            logger.error("${file.path} is not readable")
         }
     }
 

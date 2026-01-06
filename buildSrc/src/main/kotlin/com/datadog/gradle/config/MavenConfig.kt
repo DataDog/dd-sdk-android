@@ -10,6 +10,7 @@ import com.android.build.gradle.LibraryExtension
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.plugins.signing.SigningExtension
 
@@ -42,12 +43,12 @@ fun Project.publishingConfig(
         val publishingExtension = extensions.findByType(PublishingExtension::class)
         val signingExtension = extensions.findByType(SigningExtension::class)
         if (publishingExtension == null || signingExtension == null) {
-            System.err.println("Missing publishing or signing extension for $projectName")
+            logger.error("Missing publishing or signing extension for $projectName")
             return@afterEvaluate
         }
 
         publishingExtension.apply {
-            publications.create(MavenConfig.PUBLICATION, MavenPublication::class.java) {
+            publications.create<MavenPublication>(MavenConfig.PUBLICATION) {
                 from(components.getByName("release"))
 
                 groupId = MavenConfig.GROUP_ID

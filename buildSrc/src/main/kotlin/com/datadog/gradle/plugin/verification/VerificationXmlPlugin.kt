@@ -9,26 +9,27 @@ package com.datadog.gradle.plugin.verification
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.register
 
 class VerificationXmlPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        val genTask = target.tasks.register(TASK_GEN_VERIFICATION_XML, GenerateVerificationXmlTask::class.java)
+        val genTask = target.tasks
+            .register<GenerateVerificationXmlTask>(TASK_GEN_VERIFICATION_XML)
 
-        target.afterEvaluate {
-            genTask.dependsOn("bundleReleaseAar")
-            genTask.dependsOn("javaDocReleaseJar")
-            genTask.dependsOn("sourceReleaseJar")
-            genTask.dependsOn("generatePomFileForReleasePublication")
-            genTask.dependsOn("generateMetadataFileForReleasePublication")
-            genTask.dependsOn("signReleasePublication")
+        genTask.dependsOn("bundleReleaseAar")
+        genTask.dependsOn("javaDocReleaseJar")
+        genTask.dependsOn("sourceReleaseJar")
+        genTask.dependsOn("generatePomFileForReleasePublication")
+        genTask.dependsOn("generateMetadataFileForReleasePublication")
+        genTask.dependsOn("signReleasePublication")
 
-            getTasksByName("publishToSonatype", false).forEach {
-                it.dependsOn(genTask)
-            }
-            getTasksByName("publishToMavenLocal", false).forEach {
-                it.dependsOn(genTask)
-            }
+        target.tasks.named { it == "publishToSonatype" }.configureEach {
+            dependsOn(genTask)
+        }
+
+        target.tasks.named { it == "publishToMavenLocal" }.configureEach {
+            dependsOn(genTask)
         }
     }
 
