@@ -458,24 +458,15 @@ internal class DatadogFlagsClient(
             VariationType.OBJECT.value to JSONObject::class
         )
 
-        var kClass = variationTypeToKClass[flag.variationType]
-
-        if (kClass == null) {
-            featureSdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "Flag '$flagKey': Unknown variation type '${flag.variationType}'" }
-            )
-            // Parse raw value as a string to not lose information.
-            kClass = String::class
-        }
+        val kClass = variationTypeToKClass[flag.variationType] ?: String::class
 
         val conversionResult = FlagValueConverter.convert(flag.variationValue, flag.variationType, kClass)
-        val flagValue = conversionResult.getOrElse {
+        val flagValue = conversionResult.getOrElse { exception ->
             featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" }
+                { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" },
+                exception
             )
             // Pass raw value as a string to not lose information.
             flag.variationValue

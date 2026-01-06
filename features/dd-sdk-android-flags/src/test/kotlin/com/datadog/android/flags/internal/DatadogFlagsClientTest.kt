@@ -1588,15 +1588,16 @@ internal class DatadogFlagsClientTest {
         argumentCaptor<() -> String> {
             verify(mockInternalLogger).log(
                 eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.MAINTAINER),
+                eq(InternalLogger.Target.USER),
                 capture(),
-                eq(null),
+                anyOrNull(),
                 eq(false),
                 eq(null)
             )
-            val message = lastValue.invoke()
+
+            val message = firstValue.invoke()
             assertThat(message).contains("Flag '$fakeFlagKey'")
-            assertThat(message).contains("Failed to parse value '$invalidJson' as JSONObject")
+            assertThat(message).contains("Failed to parse value '$invalidJson' as 'object'")
         }
     }
 
@@ -1632,13 +1633,13 @@ internal class DatadogFlagsClientTest {
         argumentCaptor<() -> String> {
             verify(mockInternalLogger).log(
                 eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.MAINTAINER),
+                eq(InternalLogger.Target.USER),
                 capture(),
-                eq(null),
+                anyOrNull(),
                 eq(false),
                 eq(null)
             )
-            val message = lastValue.invoke()
+            val message = firstValue.invoke()
             assertThat(message).contains("Flag '$fakeFlagKey'")
             assertThat(message).contains("Failed to parse value '$fakeValue' as '$unknownType'")
         }
