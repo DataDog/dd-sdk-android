@@ -1,9 +1,24 @@
-public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider {
+public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider : dev/openfeature/kotlin/sdk/FeatureProvider {
 	public static final field Companion Lcom/datadog/android/flags/openfeature/DatadogFlagsProvider$Companion;
-	public fun <init> ()V
-	public final fun helloWorld ()Ljava/lang/String;
+	public synthetic fun <init> (Lcom/datadog/android/flags/FlagsClient;Lcom/datadog/android/api/feature/FeatureSdkCore;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getBooleanEvaluation (Ljava/lang/String;ZLdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
+	public fun getDoubleEvaluation (Ljava/lang/String;DLdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
+	public fun getHooks ()Ljava/util/List;
+	public fun getIntegerEvaluation (Ljava/lang/String;ILdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
+	public fun getMetadata ()Ldev/openfeature/kotlin/sdk/ProviderMetadata;
+	public fun getObjectEvaluation (Ljava/lang/String;Ldev/openfeature/kotlin/sdk/Value;Ldev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
+	public fun getStringEvaluation (Ljava/lang/String;Ljava/lang/String;Ldev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
+	public fun initialize (Ldev/openfeature/kotlin/sdk/EvaluationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun observe ()Lkotlinx/coroutines/flow/Flow;
+	public fun onContextSet (Ldev/openfeature/kotlin/sdk/EvaluationContext;Ldev/openfeature/kotlin/sdk/EvaluationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun shutdown ()V
+	public fun track (Ljava/lang/String;Ldev/openfeature/kotlin/sdk/EvaluationContext;Ldev/openfeature/kotlin/sdk/TrackingEventDetails;)V
 }
 
 public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider$Companion {
+}
+
+public final class com/datadog/android/flags/openfeature/FlagsClientExtKt {
+	public static final fun asOpenFeatureProvider (Lcom/datadog/android/flags/FlagsClient;)Ldev/openfeature/kotlin/sdk/FeatureProvider;
 }
 
