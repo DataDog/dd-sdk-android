@@ -872,8 +872,8 @@ internal class DatadogFlagsClientTest {
         )
 
         val capturedContext = contextCaptor.firstValue
-        assertThat(capturedContext.targetingKey).isEmpty()
-        assertThat(capturedContext.attributes).isEqualTo(emptyMap<String, String>())
+        assertThat(capturedContext).isEqualTo(EvaluationContext.EMPTY)
+        assertThat(capturedContext.attributes).isEmpty()
     }
 
     @Test
