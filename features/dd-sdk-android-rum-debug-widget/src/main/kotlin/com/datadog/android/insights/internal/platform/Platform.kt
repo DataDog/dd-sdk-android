@@ -15,5 +15,6 @@ internal class Platform {
     fun getNativeHeapAllocatedSize(): Long =
         Debug.getNativeHeapAllocatedSize()
 
+    @Suppress("PreferTimeProvider")
     fun nanoTime(): Long = System.nanoTime()
 }
