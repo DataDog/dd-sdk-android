@@ -52,6 +52,7 @@ dependencies {
     api(libs.openFeatureKotlinSdk)
 
     implementation(libs.kotlin)
+    implementation(libs.coroutinesCore)
     implementation(libs.androidXAnnotation)
 
     testImplementation(project(":tools:unit")) {
@@ -64,6 +65,7 @@ dependencies {
     }
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    testImplementation(libs.coroutinesTest)
     unmock(libs.robolectric)
 }
 

@@ -13,7 +13,7 @@ okHttp = "4.12.0"
 # Android
 adapterDelegates = "4.3.2"
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "8.13.2"
+androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCar = "1.4.0"
@@ -68,7 +68,7 @@ androidLint = "31.0.2"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.21.0"
+datadogPlugin = "1.18.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
@@ -85,7 +85,6 @@ kotlinXmlBuilder = "1.9.3"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
 coilCompose = "2.1.0"
-coil3 = "3.0.4"
 fresco = "2.3.0"
 glide = "4.11.0"
 picasso = "2.8"
@@ -99,6 +98,7 @@ navigation3 = "1.0.0-alpha01"
 kotlinxSerializationCore = "1.8.1"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
 openFeature = "0.6.2"
+coil3 = "3.0.4"
 
 # Local Server
 ktor = "2.3.13"
@@ -260,6 +260,7 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 openFeatureKotlinSdk = { module = "dev.openfeature:kotlin-sdk", version.ref = "openFeature" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
 exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
