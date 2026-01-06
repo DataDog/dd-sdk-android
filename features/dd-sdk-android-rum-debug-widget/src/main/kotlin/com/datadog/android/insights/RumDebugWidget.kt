@@ -16,14 +16,14 @@ import com.datadog.android.rum._RumInternalProxy
 /**
  * Enables the RUM Debug Widget for the given [application].
  *
- * By default, the widget is only enabled in debug builds (when the application is debuggable).
- * To enable it in release builds (e.g., for local testing), set [allowInRelease] to `true` and
- * add the `dd-sdk-android-rum-debug-widget` module as `implementation` (not `debugImplementation`)
- * in your `build.gradle` file.
+ * By default, the widget only shows in debug builds (when the application is debuggable).
+ * In release builds, this call is a no-op unless [allowInRelease] is set to `true`.
+ *
+ * **Important:** Remember to remove this module before shipping to production.
  *
  * @param application The application where to enable the RUM Debug Widget.
- * @param allowInRelease Set to `true` to enable the widget in release builds. Defaults to `false`
- * to prevent accidental exposure in production.
+ * @param allowInRelease Set to `true` to enable the widget in release builds (e.g., for local
+ * testing). Defaults to `false` to prevent accidental exposure in production.
  * @return The same [RumConfiguration.Builder] instance.
  */
 fun RumConfiguration.Builder.enableRumDebugWidget(

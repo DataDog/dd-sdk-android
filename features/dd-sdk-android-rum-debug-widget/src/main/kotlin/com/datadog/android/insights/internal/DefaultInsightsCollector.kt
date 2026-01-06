@@ -43,8 +43,9 @@ internal class DefaultInsightsCollector internal constructor(
         platform = Platform()
     )
 
+    private val lock = Any()
     private var events = EvictingQueue<TimelineEvent>(maxSize)
-    internal val eventsState: List<TimelineEvent> get() = events.toList()
+    internal val eventsState: List<TimelineEvent> get() = synchronized(lock) { events.toList() }
     private val updatesListeners = CopyOnWriteArraySet<InsightsUpdatesListener>()
     private val ticksProducer = Runnable {
         registerEvent(TimelineEvent.Tick)
@@ -70,8 +71,10 @@ internal class DefaultInsightsCollector internal constructor(
 
     override var maxSize: Int = maxSize
         set(value) {
-            field = value
-            events = EvictingQueue(value)
+            synchronized(lock) {
+                field = value
+                events = EvictingQueue(value)
+            }
         }
 
     override var updateIntervalMs: Long = updateIntervalMs
@@ -129,11 +132,15 @@ internal class DefaultInsightsCollector internal constructor(
     }
 
     private fun clear() = withListenersUpdate {
-        events.clear()
+        synchronized(lock) {
+            events.clear()
+        }
     }
 
     private fun registerEvent(event: TimelineEvent) = withListenersUpdate {
-        events += event
+        synchronized(lock) {
+            events += event
+        }
     }
 
     private fun withListenersUpdate(block: () -> Unit) {

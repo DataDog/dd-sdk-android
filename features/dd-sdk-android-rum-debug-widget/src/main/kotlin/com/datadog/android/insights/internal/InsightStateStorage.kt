@@ -10,12 +10,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-internal class InsightStateStorage private constructor(
-    private val sharedPreferences: SharedPreferences
-) {
-
-    constructor(context: Context) : this(
-        context.applicationContext.getSharedPreferences(INSIGHT_PREFERENCES, Context.MODE_PRIVATE)
+internal class InsightStateStorage(context: Context) {
+    private val sharedPreferences: SharedPreferences = context.applicationContext.getSharedPreferences(
+        INSIGHT_PREFERENCES,
+        Context.MODE_PRIVATE
     )
 
     @Suppress("UnsafeThirdPartyFunctionCall") // safe because there is a putFloat call for each getFloat
