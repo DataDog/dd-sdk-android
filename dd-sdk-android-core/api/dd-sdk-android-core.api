@@ -872,15 +872,6 @@ public final class com/datadog/android/core/internal/persistence/file/FileExtKt 
 	public static synthetic fun readTextSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/lang/String;
 }
 
-public abstract interface class com/datadog/android/core/internal/system/BuildSdkVersionProvider {
-	public static final field Companion Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider$Companion;
-	public abstract fun getVersion ()I
-}
-
-public final class com/datadog/android/core/internal/system/BuildSdkVersionProvider$Companion {
-	public final fun getDEFAULT ()Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider;
-}
-
 public final class com/datadog/android/core/internal/utils/ByteArrayExtKt {
 	public static final fun join (Ljava/util/Collection;[B[B[BLcom/datadog/android/api/InternalLogger;)[B
 	public static synthetic fun join$default (Ljava/util/Collection;[B[B[BLcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)[B
