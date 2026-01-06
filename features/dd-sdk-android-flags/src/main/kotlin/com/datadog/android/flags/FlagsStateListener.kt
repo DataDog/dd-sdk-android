@@ -18,6 +18,16 @@ interface FlagsStateListener {
     /**
      * Called when the state of the [FlagsClient] changes.
      *
+     * **Important:** This method is called synchronously while holding internal locks.
+     * Implementations should be fast and non-blocking. If you need to perform long-running
+     * operations (network calls, database queries, heavy computation), dispatch them to a
+     * background thread.
+     *
+     * **Exception handling:** Exceptions thrown from this method will propagate to the caller
+     * and may crash the application if not caught. Subsequent listeners will not be notified
+     * if an exception is thrown. Always catch and handle exceptions within your implementation
+     * to prevent crashes and ensure other listeners are notified.
+     *
      * @param newState The new state of the client. If the state is [FlagsClientState.Error],
      *                 the error details are contained within the state object itself.
      */

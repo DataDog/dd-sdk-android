@@ -106,6 +106,7 @@ datadog:
       - "android.view.Window.Callback.dispatchKeyEvent(android.view.KeyEvent?)"
       - "android.view.Window.Callback.dispatchTouchEvent(android.view.MotionEvent?)"
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
+      - "android.view.Window.Callback.onWindowFocusChanged(kotlin.Boolean)"
       - "android.view.Window.peekDecorView()"
       - "android.view.inspector.WindowInspector.getGlobalWindowViews()"
       - "androidx.collection.LruCache.evictAll()"
@@ -536,6 +537,9 @@ datadog:
       - "java.util.concurrent.locks.ReadWriteLock.readLock()"
       - "java.util.concurrent.locks.ReadWriteLock.writeLock()"
       - "java.util.concurrent.locks.ReentrantReadWriteLock.constructor()"
+      - "java.util.concurrent.locks.ReentrantReadWriteLock.constructor(kotlin.Boolean)"
+      - "java.util.concurrent.locks.ReentrantReadWriteLock.read(kotlin.Function0)"
+      - "java.util.concurrent.locks.ReentrantReadWriteLock.write(kotlin.Function0)"
       # endregion
       # region Java I/O
       - "java.io.BufferedReader.readText()"
@@ -584,6 +588,7 @@ datadog:
       - "java.lang.ref.WeakReference.constructor(kotlin.Nothing?)"
       - "java.lang.ref.WeakReference.constructor(kotlin.String?)"
       - "java.lang.ref.WeakReference.get()"
+      - "java.lang.reflect.isStatic(kotlin.Int)"
       - "java.lang.reflect.Field.getSafe(kotlin.Any?)"
       - "java.lang.reflect.Field.accessible()"
       - "java.lang.StringBuilder.append(kotlin.Char)"
@@ -930,6 +935,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ErrorEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.LongTaskEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ResourceEvent.Interface)"
+      - "kotlin.collections.listOf(com.datadog.android.rum.model.RumVitalAppLaunchEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.RumVitalOperationStepEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ViewEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.MapperTypeWrapper)"

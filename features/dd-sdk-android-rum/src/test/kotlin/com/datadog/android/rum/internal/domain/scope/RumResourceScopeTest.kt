@@ -272,8 +272,8 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -344,8 +344,8 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -433,8 +433,8 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -512,8 +512,8 @@ internal class RumResourceScopeTest {
         attributes[RumAttributes.RULE_PSR] = fakeRulePsr
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -585,8 +585,8 @@ internal class RumResourceScopeTest {
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -678,8 +678,8 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -744,8 +744,8 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -808,8 +808,8 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -863,8 +863,8 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -883,8 +883,8 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, null, size, kind, emptyMap())
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, null, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -930,8 +930,8 @@ internal class RumResourceScopeTest {
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1004,8 +1004,8 @@ internal class RumResourceScopeTest {
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1078,8 +1078,8 @@ internal class RumResourceScopeTest {
         // When
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1154,8 +1154,8 @@ internal class RumResourceScopeTest {
         // When
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1232,11 +1232,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1244,6 +1244,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1315,11 +1316,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1327,6 +1328,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1393,11 +1395,11 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1405,6 +1407,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -1471,7 +1474,8 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -1495,7 +1499,6 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1503,6 +1506,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1577,7 +1581,8 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
         testedScope = RumResourceScope(
             parentScope = mockParentScope,
@@ -1596,7 +1601,6 @@ internal class RumResourceScopeTest {
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1604,6 +1608,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -1686,11 +1691,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1698,6 +1703,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1785,11 +1791,11 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1797,6 +1803,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -1866,11 +1873,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1878,6 +1885,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1949,11 +1957,11 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1961,6 +1969,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -2029,12 +2038,12 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2042,6 +2051,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2112,12 +2122,12 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2125,6 +2135,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -2198,11 +2209,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            errorAttributes
+            errorAttributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2210,6 +2221,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2286,11 +2298,11 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            errorAttributes
+            errorAttributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2298,6 +2310,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
                     hasStackTrace(stackTrace)
@@ -2356,9 +2369,15 @@ internal class RumResourceScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
-        mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(
+            "not_the_$fakeKey",
+            statusCode,
+            size,
+            kind,
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
+        )
 
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -2382,10 +2401,10 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            emptyMap()
+            emptyMap(),
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -2412,10 +2431,10 @@ internal class RumResourceScopeTest {
             source,
             stackTrace,
             errorType,
-            emptyMap()
+            emptyMap(),
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
-        Thread.sleep(RESOURCE_DURATION_MS)
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -2441,8 +2460,8 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
         val resultWaitForTiming =
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
@@ -2469,8 +2488,8 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
         val resultWaitForTiming =
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
@@ -2540,8 +2559,8 @@ internal class RumResourceScopeTest {
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
@@ -2612,8 +2631,7 @@ internal class RumResourceScopeTest {
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
+        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing, timeWithOffset(RESOURCE_DURATION_MS))
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
@@ -3383,8 +3401,8 @@ internal class RumResourceScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3407,8 +3425,8 @@ internal class RumResourceScopeTest {
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3433,8 +3451,8 @@ internal class RumResourceScopeTest {
         ) doThrow forge.anException()
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3461,11 +3479,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3493,11 +3511,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3527,11 +3545,11 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
-            attributes
+            attributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
         )
 
         // When
-        Thread.sleep(RESOURCE_DURATION_MS)
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3550,6 +3568,13 @@ internal class RumResourceScopeTest {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
+    }
+
+    private fun timeWithOffset(offsetMs: Long): Time {
+        return Time(
+            fakeEventTime.timestamp + offsetMs,
+            fakeEventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(offsetMs)
+        )
     }
 
     private fun resolveExpectedTimestamp(): Long {

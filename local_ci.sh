@@ -106,6 +106,7 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf features/dd-sdk-android-trace-otel/build/
   rm -rf features/dd-sdk-android-webview/build/
   rm -rf integrations/dd-sdk-android-coil/build/
+  rm -rf integrations/dd-sdk-android-coil3/build/
   rm -rf integrations/dd-sdk-android-compose/build/
   rm -rf integrations/dd-sdk-android-cronet/build/
   rm -rf integrations/dd-sdk-android-fresco/build/

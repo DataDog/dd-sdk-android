@@ -1,0 +1,21 @@
+Dependencies List
+
+androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+androidx.arch.core:core-common:2.2.0                            :   11 Kb
+androidx.lifecycle:lifecycle-common-jvm:2.8.7                   :   55 Kb
+androidx.lifecycle:lifecycle-runtime-android:2.8.7              :   80 Kb
+com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
+com.squareup.okio:okio-jvm:3.9.1                                :  363 Kb
+io.coil-kt.coil3:coil-android:3.0.4                             :    9 Kb
+io.coil-kt.coil3:coil-core-android:3.0.4                        :  439 Kb
+io.coil-kt.coil3:coil-network-core-android:3.0.4                :   58 Kb
+io.coil-kt.coil3:coil-network-okhttp-jvm:3.0.4                  :   19 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21                  :  963 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21                  :  968 b 
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0          :   18 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0         : 1429 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
+
+Total transitive dependencies size                              :    4 Mb
+
