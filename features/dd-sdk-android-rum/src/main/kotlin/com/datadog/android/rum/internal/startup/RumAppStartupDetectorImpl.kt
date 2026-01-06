@@ -8,9 +8,8 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.app.Application
-import android.os.Build
 import android.os.Bundle
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.seconds
@@ -32,13 +31,13 @@ internal class RumAppStartupDetectorImpl(
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.Q) {
+        if (buildSdkVersionProvider.isAtLeastQ) {
             onBeforeActivityCreated(activity, savedInstanceState)
         }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (buildSdkVersionProvider.version < Build.VERSION_CODES.Q) {
+        if (!buildSdkVersionProvider.isAtLeastQ) {
             onBeforeActivityCreated(activity, savedInstanceState)
         }
     }
@@ -111,6 +110,6 @@ internal class RumAppStartupDetectorImpl(
     }
 
     companion object {
-        private val START_GAP_THRESHOLD_NS = 5.seconds.inWholeNanoseconds
+        private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
     }
 }

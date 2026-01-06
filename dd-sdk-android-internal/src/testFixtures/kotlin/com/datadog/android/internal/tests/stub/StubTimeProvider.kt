@@ -11,18 +11,20 @@ import com.datadog.android.internal.time.TimeProvider
 /**
  * A stub implementation of [TimeProvider] for testing purposes.
  *
- * @property elapsedTimeNs The monotonic elapsed time in nanoseconds. Defaults to `0`.
  * @property deviceTimestampMs The device timestamp in milliseconds. Defaults to `0`.
  * @property serverTimestampMs The server timestamp in milliseconds. Defaults to `0`.
+ * @property elapsedTimeNs The monotonic elapsed time in nanoseconds. Defaults to `0`.
  * @property serverOffsetNs The server time offset in nanoseconds. Defaults to `0`.
  * @property serverOffsetMs The server time offset in milliseconds. Defaults to `0`.
+ * @property elapsedRealtimeMs The elapsed realtime in milliseconds (includes time in sleep). Defaults to `0`.
  */
 class StubTimeProvider(
-    var elapsedTimeNs: Long = 0L,
     var deviceTimestampMs: Long = 0L,
     var serverTimestampMs: Long = 0L,
+    var elapsedTimeNs: Long = 0L,
     var serverOffsetNs: Long = 0L,
-    var serverOffsetMs: Long = 0L
+    var serverOffsetMs: Long = 0L,
+    var elapsedRealtimeMs: Long = 0L
 ) : TimeProvider {
 
     override fun getDeviceTimestampMillis(): Long = deviceTimestampMs
@@ -34,4 +36,6 @@ class StubTimeProvider(
     override fun getServerOffsetNanos(): Long = serverOffsetNs
 
     override fun getServerOffsetMillis(): Long = serverOffsetMs
+
+    override fun getDeviceElapsedRealtimeMillis(): Long = elapsedRealtimeMs
 }

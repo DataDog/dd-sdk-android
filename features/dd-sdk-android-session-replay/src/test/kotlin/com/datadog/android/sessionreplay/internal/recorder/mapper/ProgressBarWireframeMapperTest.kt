@@ -2,8 +2,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
 import android.graphics.Rect
-import android.os.Build
 import android.widget.ProgressBar
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -12,8 +12,6 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.AbstractWireframeMapperTest
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -36,8 +34,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -77,6 +74,9 @@ internal class ProgressBarWireframeMapperTest :
     @Mock
     lateinit var mockThumbBounds: Rect
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     lateinit var expectedActiveTrackWireframe: MobileSegment.Wireframe
     lateinit var expectedNonActiveTrackWireframe: MobileSegment.Wireframe
 
@@ -87,7 +87,8 @@ internal class ProgressBarWireframeMapperTest :
             mockColorStringFormatter,
             mockViewBoundsResolver,
             mockDrawableToColorMapper,
-            showProgressWhenMaskUserInput = true
+            showProgressWhenMaskUserInput = true,
+            mockBuildSdkVersionProvider
         )
     }
 
@@ -117,9 +118,9 @@ internal class ProgressBarWireframeMapperTest :
     // region Android O+, determinate
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {determinate, invalid track id, Android 0+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
@@ -138,9 +139,9 @@ internal class ProgressBarWireframeMapperTest :
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {determinate, invalid non active track id, Android 0+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
@@ -159,9 +160,9 @@ internal class ProgressBarWireframeMapperTest :
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {determinate, privacy=ALLOW, Android 0+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
 
@@ -180,9 +181,9 @@ internal class ProgressBarWireframeMapperTest :
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {determinate, privacy=MASK, Android 0+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
         prepareMockProgressBar(isIndeterminate = false)
 
@@ -200,9 +201,9 @@ internal class ProgressBarWireframeMapperTest :
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {determinate, privacy=MASK_USER_INPUT, Android 0+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
         prepareMockProgressBar(isIndeterminate = false)
 

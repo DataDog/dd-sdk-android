@@ -7,10 +7,10 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.view.View
 import android.view.inspector.WindowInspector
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import java.lang.NullPointerException
 import java.lang.reflect.Field
 
@@ -36,9 +36,12 @@ internal object WindowInspector {
     }
 
     @SuppressWarnings("TooGenericExceptionCaught")
-    fun getGlobalWindowViews(internalLogger: InternalLogger): List<View> {
+    fun getGlobalWindowViews(
+        internalLogger: InternalLogger,
+        buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    ): List<View> {
         return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (buildSdkVersionProvider.isAtLeastQ) {
                 // this can throw also maybe but we don't know what type exactly. In order to be
                 // safe as this function is being called on the MainThread every time we want to
                 // take a snapshot we will catch all the `Throwable`s in a single catch block.

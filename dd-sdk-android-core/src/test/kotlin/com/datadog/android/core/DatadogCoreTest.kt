@@ -7,7 +7,6 @@
 package com.datadog.android.core
 
 import android.app.Application
-import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
@@ -25,9 +24,9 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.ndk.internal.NdkCrashHandler
@@ -45,7 +44,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -1210,12 +1208,11 @@ internal class DatadogCoreTest {
 
     @Test
     fun `M persist the event W writeLastViewEvent(){ R+ }`(
-        @StringForgery viewEvent: String,
-        @IntForgery(min = Build.VERSION_CODES.R) fakeSdkVersion: Int
+        @StringForgery viewEvent: String
     ) {
         // Given
         val fakeViewEvent = viewEvent.toByteArray()
-        whenever(mockBuildSdkVersionProvider.version) doReturn fakeSdkVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn true
         val mockCoreFeature = mock<CoreFeature>()
         testedCore.coreFeature = mockCoreFeature
 
@@ -1228,12 +1225,11 @@ internal class DatadogCoreTest {
 
     @Test
     fun `M log info when writing last view event W writeLastViewEvent(){ below R and no NDK feature }`(
-        @StringForgery viewEvent: String,
-        @IntForgery(min = 1, max = Build.VERSION_CODES.R) fakeSdkVersion: Int
+        @StringForgery viewEvent: String
     ) {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
-        whenever(mockBuildSdkVersionProvider.version) doReturn fakeSdkVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn false
         testedCore.coreFeature = mockCoreFeature
         reset(mockInternalLogger)
 
