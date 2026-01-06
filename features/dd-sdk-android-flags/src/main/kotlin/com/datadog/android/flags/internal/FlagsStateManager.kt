@@ -19,7 +19,7 @@ import kotlin.concurrent.write
  *
  * This class handles state change notifications to registered listeners. All notification
  * methods are thread-safe and guarantee ordered delivery to listeners by using a
- * fair ReentrantReadWriteLock.
+ * fair [ReentrantReadWriteLock].
  *
  * The current state is stored and emitted to new listeners immediately upon registration,
  * ensuring every listener receives the current state.
@@ -41,7 +41,7 @@ internal class FlagsStateManager(private val subscription: DDCoreSubscription<Fl
 
     /**
      * The current state of the client.
-     * Thread-safe: access is protected by stateLock.
+     * Thread-safe: access is protected by [stateLock].
      */
     private var currentState: FlagsClientState = FlagsClientState.NotReady
 
