@@ -24,6 +24,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
@@ -214,9 +215,9 @@ internal class FlagsStateManagerTest {
         val stateNew = FlagsClientState.Ready
 
         val receivedStates = mutableListOf<Pair<FlagsClientState, Long>>()
-        val addListenerStarted = java.util.concurrent.CountDownLatch(1)
-        val addListenerSlowCallbackStarted = java.util.concurrent.CountDownLatch(1)
-        val updateStateCanProceed = java.util.concurrent.CountDownLatch(1)
+        val addListenerStarted = CountDownLatch(1)
+        val addListenerSlowCallbackStarted = CountDownLatch(1)
+        val updateStateCanProceed = CountDownLatch(1)
 
         // Listener that is slow to process the initial state notification
         val slowListener = object : FlagsStateListener {
