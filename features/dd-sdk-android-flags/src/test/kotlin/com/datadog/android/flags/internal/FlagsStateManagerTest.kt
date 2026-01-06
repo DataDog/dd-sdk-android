@@ -125,12 +125,6 @@ internal class FlagsStateManagerTest {
 
     @Test
     fun `M stop notifying subsequent listeners W updateState() { if listener throws }`() {
-        // This test expresses the requirement that:
-        // 1. State is set synchronously
-        // 2. Listeners are notified in order
-        // 3. If a listener throws an exception, subsequent listeners are NOT notified
-        // 4. State is readable after updateState is called (even if exception is thrown)
-
         // Given
         val executionOrder = mutableListOf<String>()
 
@@ -163,15 +157,21 @@ internal class FlagsStateManagerTest {
         testedManager.addListener(listener2)
         testedManager.addListener(listener3)
 
+        var bubbledException: RuntimeException? = null
+
         // When
         try {
             testedManager.updateState(FlagsClientState.Ready)
         } catch (e: RuntimeException) {
             // Expected exception from listener2
+            bubbledException = e
         }
 
         // Then - state is set despite exception
         assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+
+        // Then - exception was bubbled up
+        assertThat(bubbledException).isNotNull()
 
         // Then - only listeners before the throwing listener were notified
         assertThat(executionOrder).containsExactly(
