@@ -35,6 +35,8 @@ internal fun convertToValue(value: Any?, internalLogger: InternalLogger): Value 
     is Boolean -> Value.Boolean(value)
     is Int -> Value.Integer(value)
     is Long -> when {
+        // Safe: toInt() only called after explicit range check ensures value fits in Int range
+        @Suppress("UnsafeThirdPartyFunctionCall")
         value in Int.MIN_VALUE..Int.MAX_VALUE -> Value.Integer(value.toInt())
         else -> Value.Double(value.toDouble())
     }

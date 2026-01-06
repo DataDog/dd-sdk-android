@@ -1237,6 +1237,15 @@ datadog:
       - "org.json.JSONObject.length()"
       - "org.json.JSONObject.opt(kotlin.String?)"
       # endregion
+      # region OpenFeature
+      - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
+      - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
+      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?)"
+      - "dev.openfeature.kotlin.sdk.Value.Boolean.constructor(kotlin.Boolean)"
+      - "dev.openfeature.kotlin.sdk.Value.Double.constructor(kotlin.Double)"
+      - "dev.openfeature.kotlin.sdk.Value.Integer.constructor(kotlin.Int)"
+      - "dev.openfeature.kotlin.sdk.Value.String.constructor(kotlin.String)"
+      # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.Span.getInvalid()"
       - "io.opentelemetry.api.trace.TracerBuilder.build()"
