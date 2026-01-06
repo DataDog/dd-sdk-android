@@ -19,7 +19,6 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
     Deserializer<String, FlagsStateEntry> {
 
     override fun deserialize(model: String): FlagsStateEntry? = try {
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
         val json = JSONObject(model)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
