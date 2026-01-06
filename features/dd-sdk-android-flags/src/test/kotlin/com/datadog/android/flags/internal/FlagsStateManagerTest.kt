@@ -24,6 +24,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
 @ExtendWith(MockitoExtension::class)
@@ -183,7 +184,7 @@ internal class FlagsStateManagerTest {
     @Test
     fun `M notify all listeners W multiple listeners registered and state updated`() {
         // Given
-        val notificationCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val notificationCount = AtomicInteger(0)
         val listeners = mutableListOf<FlagsStateListener>()
 
         repeat(10) {
