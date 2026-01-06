@@ -1228,14 +1228,19 @@ datadog:
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json
+      - "org.json.JSONArray.get(kotlin.Int)"
       - "org.json.JSONArray.length()"
+      - "org.json.JSONArray.put(kotlin.Any?)"
       - "org.json.JSONArray.toJsonArray()"
       - "org.json.JSONObject.constructor()"
+      - "org.json.JSONObject.constructor(kotlin.String)"
+      - "org.json.JSONObject.get(kotlin.String)"
       - "org.json.JSONObject.keys()"
-      - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
-      - "org.json.JSONObject.toJsonObject()"
       - "org.json.JSONObject.length()"
       - "org.json.JSONObject.opt(kotlin.String?)"
+      - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
+      - "org.json.JSONObject.put(kotlin.String, kotlin.Any?)"
+      - "org.json.JSONObject.toJsonObject()"
       # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.Span.getInvalid()"
