@@ -55,7 +55,7 @@ internal class BatchFileOrchestrator(
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
     private val lastCleanupTimestamp = AtomicLong(0L)
-    private var isFileObserverStarted = AtomicBoolean(false)
+    private val isFileObserverStarted = AtomicBoolean(false)
 
     private val knownFiles: MutableSet<File> = mutableSetOf()
 
