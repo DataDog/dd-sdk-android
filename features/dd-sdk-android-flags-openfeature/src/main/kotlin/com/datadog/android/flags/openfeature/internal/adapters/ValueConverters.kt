@@ -63,7 +63,7 @@ internal fun convertToValue(value: Any?, internalLogger: InternalLogger): Value 
  * @param internalLogger Logger for diagnostic messages
  * @return [Value.Structure] containing the converted values
  */
-internal fun convertMapToValue(map: Map<*, *>, internalLogger: InternalLogger): Value = Value.Structure(
+private fun convertMapToValue(map: Map<*, *>, internalLogger: InternalLogger): Value = Value.Structure(
     map.mapKeys { (k, _) -> k.toString() }
         .mapValues { (_, v) -> convertToValue(v, internalLogger) }
 )
@@ -75,6 +75,6 @@ internal fun convertMapToValue(map: Map<*, *>, internalLogger: InternalLogger): 
  * @param internalLogger Logger for diagnostic messages
  * @return [Value.List] containing the converted elements
  */
-internal fun convertListToValue(list: List<*>, internalLogger: InternalLogger): Value = Value.List(
+private fun convertListToValue(list: List<*>, internalLogger: InternalLogger): Value = Value.List(
     list.map { element -> convertToValue(element, internalLogger) }
 )
