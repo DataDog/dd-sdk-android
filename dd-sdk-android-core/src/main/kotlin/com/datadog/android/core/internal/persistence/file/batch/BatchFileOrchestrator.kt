@@ -259,6 +259,10 @@ internal class BatchFileOrchestrator(
         val files = listBatchFiles()
         val lastFile = files.latestBatchFile ?: return null
 
+        if (!lastFile.existsSafe(internalLogger)) {
+            return null
+        }
+
         val lastKnownFile = previousFile
         val lastKnownFileItemCount = previousFileItemCount
         if (lastKnownFile != lastFile) {
