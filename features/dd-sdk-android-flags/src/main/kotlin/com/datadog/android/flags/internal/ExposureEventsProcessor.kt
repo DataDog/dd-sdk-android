@@ -13,8 +13,10 @@ import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.time.TimeProvider
 
-internal class ExposureEventsProcessor(private val writer: RecordWriter, private val timeProvider: TimeProvider) :
-    EventsProcessor {
+internal class ExposureEventsProcessor(
+    private val writer: RecordWriter,
+    private val timeProvider: TimeProvider
+) : EventsProcessor {
 
     private data class CacheKey(
         val targetingKey: String,
