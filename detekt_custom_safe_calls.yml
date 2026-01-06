@@ -1232,10 +1232,10 @@ datadog:
       - "org.json.JSONArray.toJsonArray()"
       - "org.json.JSONObject.constructor()"
       - "org.json.JSONObject.keys()"
-      - "org.json.JSONObject.length()"
-      - "org.json.JSONObject.opt(kotlin.String?)"
       - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
       - "org.json.JSONObject.toJsonObject()"
+      - "org.json.JSONObject.length()"
+      - "org.json.JSONObject.opt(kotlin.String?)"
       # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.Span.getInvalid()"
