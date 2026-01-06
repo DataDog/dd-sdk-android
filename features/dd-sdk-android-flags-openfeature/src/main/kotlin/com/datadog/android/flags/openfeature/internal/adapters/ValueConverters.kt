@@ -10,22 +10,22 @@ import com.datadog.android.api.InternalLogger
 import dev.openfeature.kotlin.sdk.Value
 
 /**
- * Converts various value types to OpenFeature Value types.
+ * Converts various value types to OpenFeature [Value] types.
  *
  * Supports conversion of:
- * - Primitives (String, Boolean, Int, Double)
- * - Map<*, *> → Value.Structure
- * - List<*> → Value.List
- * - null → Value.Null
+ * - Primitives ([String], [Boolean], [Int], [Double])
+ * - [Map<*, *>] → [Value.Structure]
+ * - [List<*>] → [Value.List]
+ * - null → [Value.Null]
  *
- * Long values are intelligently converted: within Int range they become Value.Integer,
- * outside that range they become Value.Double to prevent truncation.
+ * Long values are intelligently converted: within Int range they become [Value.Integer],
+ * outside that range they become [Value.Double] to prevent truncation.
  *
- * Unexpected types are converted to strings via toString() with a warning logged.
+ * Unexpected types are converted to strings via [toString()] with a warning logged.
  *
- * @param value The value to convert to an OpenFeature Value
+ * @param value The value to convert to an OpenFeature [Value]
  * @param internalLogger Logger for diagnostic messages (optional, for unexpected type warnings)
- * @return The converted OpenFeature Value
+ * @return The converted OpenFeature [Value]
  */
 internal fun convertToValue(value: Any?, internalLogger: InternalLogger): Value = when (value) {
     null -> Value.Null
@@ -57,11 +57,11 @@ internal fun convertToValue(value: Any?, internalLogger: InternalLogger): Value 
 }
 
 /**
- * Converts a Kotlin Map to Value.Structure by recursively converting all values.
+ * Converts a Kotlin [Map] to [Value.Structure] by recursively converting all values.
  *
  * @param map The Map to convert
  * @param internalLogger Logger for diagnostic messages
- * @return Value.Structure containing the converted values
+ * @return [Value.Structure] containing the converted values
  */
 internal fun convertMapToValue(map: Map<*, *>, internalLogger: InternalLogger): Value = Value.Structure(
     map.mapKeys { (k, _) -> k.toString() }
@@ -69,11 +69,11 @@ internal fun convertMapToValue(map: Map<*, *>, internalLogger: InternalLogger): 
 )
 
 /**
- * Converts a Kotlin List to Value.List by recursively converting all elements.
+ * Converts a Kotlin [List] to [Value.List] by recursively converting all elements.
  *
  * @param list The List to convert
  * @param internalLogger Logger for diagnostic messages
- * @return Value.List containing the converted elements
+ * @return [Value.List] containing the converted elements
  */
 internal fun convertListToValue(list: List<*>, internalLogger: InternalLogger): Value = Value.List(
     list.map { element -> convertToValue(element, internalLogger) }
