@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
-import android.os.Build
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 
 /**
  * Generates a lightweight signature (hash) for a bitmap that can be used as a cache key.
@@ -25,7 +25,9 @@ internal interface BitmapSignatureGenerator {
     fun generateSignature(bitmap: Bitmap): Long?
 }
 
-internal class DefaultBitmapSignatureGenerator : BitmapSignatureGenerator {
+internal class DefaultBitmapSignatureGenerator(
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+) : BitmapSignatureGenerator {
 
     override fun generateSignature(bitmap: Bitmap): Long? {
         return if (isValidBitmap(bitmap)) {
@@ -37,7 +39,7 @@ internal class DefaultBitmapSignatureGenerator : BitmapSignatureGenerator {
 
     private fun isValidBitmap(bitmap: Bitmap): Boolean {
         // HARDWARE bitmaps don't support getPixel() - they exist only in GPU memory
-        val isHardwareBitmap = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+        val isHardwareBitmap = buildSdkVersionProvider.isAtLeastO &&
             bitmap.config == Config.HARDWARE
         return !bitmap.isRecycled &&
             bitmap.width > 0 &&

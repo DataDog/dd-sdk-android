@@ -11,13 +11,12 @@ import android.content.BroadcastReceiver
 import android.content.ContentResolver
 import android.content.Context
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.os.BatteryManager
 import android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY
 import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -39,8 +38,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -68,6 +66,9 @@ internal class DefaultBatteryInfoProviderTest {
 
     @BeforeEach
     fun setup() {
+        whenever(mockApplicationContext.applicationInfo) doReturn ApplicationInfo().apply {
+            targetSdkVersion = 0
+        }
         whenever(mockApplicationContext.contentResolver) doReturn mockContentResolver
         whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime
         whenever(mockPowerManager.isPowerSaveMode) doReturn false
@@ -78,12 +79,16 @@ internal class DefaultBatteryInfoProviderTest {
     // region getBatteryState
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q) // needed or battery level 0 causes flakiness with retrieval code
     fun `M return complete battery info W getBatteryState() { all services available }`(
         @BoolForgery fakeLowPowerMode: Boolean,
-        @IntForgery(0, 100) fakeBatteryLevel: Int
+        @IntForgery(0, 100) fakeBatteryLevel: Int,
+        @IntForgery(min = Build.VERSION_CODES.P) fakeTargetSdk: Int
     ) {
         // Given
+        // needed or battery level 0 causes flakiness with retrieval code
+        whenever(mockApplicationContext.applicationInfo) doReturn ApplicationInfo().apply {
+            targetSdkVersion = fakeTargetSdk
+        }
         whenever(mockPowerManager.isPowerSaveMode) doReturn fakeLowPowerMode
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn fakeBatteryLevel
         initializeBatteryManager()
@@ -177,9 +182,13 @@ internal class DefaultBatteryInfoProviderTest {
     // region Error Handling Tests
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
-    fun `M return null battery level W getBatteryLevel() { Integer MIN_VALUE }`() {
+    fun `M return null battery level W getBatteryLevel() { Integer MIN_VALUE }`(
+        @IntForgery(min = Build.VERSION_CODES.P) fakeTargetSdk: Int
+    ) {
         // Given
+        whenever(mockApplicationContext.applicationInfo) doReturn ApplicationInfo().apply {
+            targetSdkVersion = fakeTargetSdk
+        }
         whenever(mockPowerManager.isPowerSaveMode) doReturn false
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn Integer.MIN_VALUE
         initializeBatteryManager()
@@ -193,9 +202,13 @@ internal class DefaultBatteryInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.P)
-    fun `M return null battery level W getBatteryLevel() { zero - on old api }`() {
+    fun `M return null battery level W getBatteryLevel() { zero - on old api }`(
+        @IntForgery(max = Build.VERSION_CODES.P) fakeTargetSdk: Int
+    ) {
         // Given
+        whenever(mockApplicationContext.applicationInfo) doReturn ApplicationInfo().apply {
+            targetSdkVersion = fakeTargetSdk
+        }
         whenever(mockPowerManager.isPowerSaveMode) doReturn false
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 0
         initializeBatteryManager()

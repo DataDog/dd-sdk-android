@@ -3,8 +3,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.content.res.ColorStateList
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.widget.SeekBar
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -13,8 +13,6 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.AbstractWireframeMapperTest
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.PARTIALLY_OPAQUE_ALPHA_VALUE
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -38,8 +36,7 @@ import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
@@ -98,6 +95,9 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     @Mock
     lateinit var mockThumbBounds: Rect
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     lateinit var expectedActiveTrackWireframe: MobileSegment.Wireframe
     lateinit var expectedNonActiveTrackWireframe: MobileSegment.Wireframe
     lateinit var expectedThumbWireframe: MobileSegment.Wireframe
@@ -109,16 +109,17 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
             mockViewIdentifierResolver,
             mockColorStringFormatter,
             mockViewBoundsResolver,
-            mockDrawableToColorMapper
+            mockDrawableToColorMapper,
+            mockBuildSdkVersionProvider
         )
     }
 
     // region Android O+ (allows setting a min progress value)
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {invalid thumb id, Android O+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.THUMB_KEY_NAME, null)
@@ -138,9 +139,9 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {invalid active track id, Android O+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.ACTIVE_TRACK_KEY_NAME, null)
@@ -160,9 +161,9 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return partial wireframes W map {invalid non active track id, Android O+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
         mockChildUniqueIdentifier(SeekBarWireframeMapper.NON_ACTIVE_TRACK_KEY_NAME, null)
@@ -182,9 +183,9 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {privacy=ALLOW, Android O+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
         prepareMockSeekBar()
 
@@ -204,9 +205,9 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {privacy=MASK, Android O+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
         prepareMockSeekBar()
 
@@ -224,9 +225,9 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `M return wireframes W map {privacy=MASK_USER_INPUT, Android O+}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
         withTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
         prepareMockSeekBar()
 
