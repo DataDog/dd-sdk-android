@@ -449,15 +449,6 @@ internal class DatadogFlagsClient(
     }
 
     private fun parseFlagValueString(flagKey: String, flag: UnparsedFlag): Any {
-        val variationTypeToKClass = mapOf(
-            VariationType.BOOLEAN.value to Boolean::class,
-            VariationType.STRING.value to String::class,
-            VariationType.INTEGER.value to Int::class,
-            VariationType.NUMBER.value to Double::class,
-            VariationType.FLOAT.value to Double::class,
-            VariationType.OBJECT.value to JSONObject::class
-        )
-
         val kClass = variationTypeToKClass[flag.variationType] ?: String::class
 
         val conversionResult = FlagValueConverter.convert(flag.variationValue, flag.variationType, kClass)
@@ -476,4 +467,15 @@ internal class DatadogFlagsClient(
     }
 
     // endregion
+
+    companion object {
+        private val variationTypeToKClass = mapOf(
+            VariationType.BOOLEAN.value to Boolean::class,
+            VariationType.STRING.value to String::class,
+            VariationType.INTEGER.value to Int::class,
+            VariationType.NUMBER.value to Double::class,
+            VariationType.FLOAT.value to Double::class,
+            VariationType.OBJECT.value to JSONObject::class
+        )
+    }
 }
