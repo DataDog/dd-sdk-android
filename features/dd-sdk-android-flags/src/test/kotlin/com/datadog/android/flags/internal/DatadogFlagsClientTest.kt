@@ -38,6 +38,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -855,6 +856,25 @@ internal class DatadogFlagsClientTest {
     // endregion
 
     // region setEvaluationContext()
+
+    @Test
+    fun `M call evaluations manager W setEvaluationContext() { Empty Evaluation Context }`() {
+        // Given
+        val emptyContext = EvaluationContext.EMPTY
+
+        // When
+        testedClient.setEvaluationContext(emptyContext)
+
+        // Then
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            contextCaptor.capture(),
+            isNull()
+        )
+
+        val capturedContext = contextCaptor.firstValue
+        assertThat(capturedContext).isEqualTo(EvaluationContext.EMPTY)
+    }
 
     @Test
     fun `M call evaluations manager W setEvaluationContext() { valid targeting key and attributes }`(forge: Forge) {
