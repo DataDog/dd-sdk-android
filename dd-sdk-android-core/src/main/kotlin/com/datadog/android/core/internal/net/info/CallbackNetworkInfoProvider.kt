@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.net.info
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -15,7 +14,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 
 @RequiresApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
@@ -154,9 +153,8 @@ internal class CallbackNetworkInfoProvider(
         }
     }
 
-    @SuppressLint("NewApi")
     private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
-        return if (buildSdkVersionProvider.version >= Build.VERSION_CODES.Q &&
+        return if (buildSdkVersionProvider.isAtLeastQ &&
             networkCapabilities.signalStrength != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         ) {
             networkCapabilities.signalStrength.toLong()

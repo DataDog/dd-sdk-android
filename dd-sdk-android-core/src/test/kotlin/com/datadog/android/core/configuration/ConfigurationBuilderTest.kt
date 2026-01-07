@@ -13,7 +13,6 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
@@ -39,7 +38,6 @@ import java.net.URL
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings

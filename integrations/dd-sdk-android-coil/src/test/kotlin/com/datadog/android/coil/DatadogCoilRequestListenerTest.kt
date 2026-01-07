@@ -49,7 +49,7 @@ import kotlin.reflect.jvm.isAccessible
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class DatadogCoilRequestListenerTest {
 
-    lateinit var underTest: DatadogCoilRequestListener
+    private lateinit var testable: DatadogCoilRequestListener
 
     @Mock
     lateinit var mockRumMonitor: RumMonitor
@@ -68,7 +68,7 @@ internal class DatadogCoilRequestListenerTest {
             isAccessible = true
             call(GlobalRumMonitor::class.objectInstance, mockRumMonitor, mockSdkCore)
         }
-        underTest = DatadogCoilRequestListener(mockSdkCore)
+        testable = DatadogCoilRequestListener(mockSdkCore)
     }
 
     @AfterEach
@@ -88,7 +88,7 @@ internal class DatadogCoilRequestListenerTest {
         mockRequest = mockImageRequest(fakePath)
 
         // WHEN
-        underTest.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, fakeException)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -114,7 +114,7 @@ internal class DatadogCoilRequestListenerTest {
         mockRequest = mockImageRequest(mockUri)
 
         // WHEN
-        underTest.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, fakeException)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -137,7 +137,7 @@ internal class DatadogCoilRequestListenerTest {
         mockRequest = mockImageRequest(fakeHttpUrl)
 
         // WHEN
-        underTest.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, fakeException)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -160,7 +160,7 @@ internal class DatadogCoilRequestListenerTest {
         mockRequest = mockImageRequest(fakeFile)
 
         // WHEN
-        underTest.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, fakeException)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -183,7 +183,7 @@ internal class DatadogCoilRequestListenerTest {
         mockRequest = mockImageRequest(mockDrawable)
 
         // WHEN
-        underTest.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, fakeException)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()
@@ -203,7 +203,7 @@ internal class DatadogCoilRequestListenerTest {
         mockRequest = mockImageRequest(mockDrawable)
 
         // WHEN
-        underTest.onError(mockRequest, fakeException)
+        testable.onError(mockRequest, fakeException)
 
         // THEN
         val argumentCaptor = argumentCaptor<Map<String, Any?>>()

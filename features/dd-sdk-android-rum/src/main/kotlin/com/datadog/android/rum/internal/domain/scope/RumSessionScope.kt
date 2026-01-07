@@ -22,9 +22,10 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -58,14 +59,15 @@ internal class RumSessionScope(
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
-    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
     private var startReason: StartReason = StartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
-    private val sessionStartNs = AtomicLong(System.nanoTime())
+    private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedTimeNanos())
 
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -73,7 +75,7 @@ internal class RumSessionScope(
 
     private val noOpWriter = NoOpDataWriter<Any>()
 
-    private var appStartIndex: Int = 0
+    private var rumSessionScopeStartupManager: RumSessionScopeStartupManager? = null
 
     @Suppress("LongParameterList")
     internal var childScope: RumViewManagerScope? = RumViewManagerScope(
@@ -95,7 +97,8 @@ internal class RumSessionScope(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider
+        displayInfoProvider = displayInfoProvider,
+        insightsCollector
     )
 
     internal val activeView: RumViewScope?
@@ -153,14 +156,36 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
+        val rumContext = activeView?.getRumContext() ?: getRumContext()
+
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
                 if (sessionState == State.TRACKED) {
-                    rumAppStartupTelemetryReporter.reportTTID(
-                        info = event.info,
-                        indexInSession = appStartIndex
+                    rumSessionScopeStartupManager?.onTTIDEvent(
+                        event = event,
+                        datadogContext = datadogContext,
+                        writeScope = writeScope,
+                        writer = actualWriter,
+                        rumContext = rumContext,
+                        customAttributes = getCustomAttributes()
                     )
-                    appStartIndex++
+                }
+            }
+            is RumRawEvent.AppStartEvent -> {
+                if (sessionState == State.TRACKED) {
+                    rumSessionScopeStartupManager?.onAppStartEvent(event = event)
+                }
+            }
+            is RumRawEvent.AppStartTTFDEvent -> {
+                if (sessionState == State.TRACKED) {
+                    rumSessionScopeStartupManager?.onTTFDEvent(
+                        event = event,
+                        datadogContext = datadogContext,
+                        writeScope = writeScope,
+                        writer = actualWriter,
+                        rumContext = rumContext,
+                        customAttributes = getCustomAttributes()
+                    )
                 }
             }
             is RumRawEvent.SdkInit -> {}
@@ -206,7 +231,7 @@ internal class RumSessionScope(
 
     @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {
-        val nanoTime = System.nanoTime()
+        val nanoTime = sdkCore.timeProvider.getDeviceElapsedTimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID
 
         val timeSinceLastInteractionNs = nanoTime - lastUserInteractionNs.get()
@@ -256,7 +281,7 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(time.nanoTime)
-        appStartIndex = 0
+        rumSessionScopeStartupManager = rumSessionScopeStartupManagerFactory()
         childScope?.renewViewScopes(time)
         if (keepSession) {
             sessionEndedMetricDispatcher.startMetric(

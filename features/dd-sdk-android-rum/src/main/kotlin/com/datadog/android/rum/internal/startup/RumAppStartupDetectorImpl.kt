@@ -8,17 +8,17 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.app.Application
-import android.os.Build
 import android.os.Bundle
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.internal.domain.Time
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.seconds
 
 internal class RumAppStartupDetectorImpl(
     private val application: Application,
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
-    private val appStartupTimeProviderNs: () -> Long,
-    private val timeProviderNs: () -> Long,
+    private val appStartupTimeProvider: () -> Time,
+    private val timeProvider: () -> Time,
     private val listener: RumAppStartupDetector.Listener
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
@@ -31,13 +31,13 @@ internal class RumAppStartupDetectorImpl(
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.Q) {
+        if (buildSdkVersionProvider.isAtLeastQ) {
             onBeforeActivityCreated(activity, savedInstanceState)
         }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (buildSdkVersionProvider.version < Build.VERSION_CODES.Q) {
+        if (!buildSdkVersionProvider.isAtLeastQ) {
             onBeforeActivityCreated(activity, savedInstanceState)
         }
     }
@@ -66,36 +66,36 @@ internal class RumAppStartupDetectorImpl(
 
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         numberOfActivities++
-        val nowNs = timeProviderNs()
+        val now = timeProvider()
 
         if (numberOfActivities == 1 && !isChangingConfigurations) {
-            val processStartTimeNs = appStartupTimeProviderNs()
+            val processStartTime = appStartupTimeProvider()
 
-            val gapNs = nowNs - processStartTimeNs
+            val gapNs = now.nanoTime - processStartTime.nanoTime
             val hasSavedInstanceStateBundle = savedInstanceState != null
             val weakActivity = WeakReference(activity)
 
             val scenario = if (isFirstActivityForProcess) {
                 if (gapNs > START_GAP_THRESHOLD_NS) {
                     RumStartupScenario.WarmFirstActivity(
-                        initialTimeNs = nowNs,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                         activity = weakActivity,
-                        appStartActivityOnCreateGapNs = gapNs
+                        appStartActivityOnCreateGapNs = gapNs,
+                        initialTime = now
                     )
                 } else {
                     RumStartupScenario.Cold(
-                        initialTimeNs = processStartTimeNs,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                         activity = weakActivity,
-                        appStartActivityOnCreateGapNs = gapNs
+                        appStartActivityOnCreateGapNs = gapNs,
+                        initialTime = processStartTime
                     )
                 }
             } else {
                 RumStartupScenario.WarmAfterActivityDestroyed(
-                    initialTimeNs = nowNs,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = weakActivity
+                    activity = weakActivity,
+                    initialTime = now
                 )
             }
 
@@ -110,6 +110,6 @@ internal class RumAppStartupDetectorImpl(
     }
 
     companion object {
-        private val START_GAP_THRESHOLD_NS = 5.seconds.inWholeNanoseconds
+        private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
     }
 }

@@ -27,6 +27,17 @@
           "description": "Whether the loading time was overwritten"
         }
       }
+    },
+    {
+      "required": ["feature"],
+      "title": "TrackWebView",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "trackWebView API",
+          "const": "trackWebView"
+        }
+      }
     }
   ]
 }

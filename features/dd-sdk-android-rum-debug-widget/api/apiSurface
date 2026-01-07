@@ -1,0 +1,1 @@
+fun com.datadog.android.rum.RumConfiguration.Builder.enableRumDebugWidget(android.app.Application, Boolean = false): com.datadog.android.rum.RumConfiguration.Builder

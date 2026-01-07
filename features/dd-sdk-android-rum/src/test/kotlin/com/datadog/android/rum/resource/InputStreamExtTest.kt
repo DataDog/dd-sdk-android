@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.resource
 
-import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -17,7 +17,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.InputStream
 
@@ -37,7 +39,8 @@ class InputStreamExtTest {
     ) {
         // Given
         val mockIS: InputStream = mock()
-        val mockSdkCore: SdkCore = mock()
+        val mockSdkCore: FeatureSdkCore = mock()
+        whenever(mockSdkCore.timeProvider) doReturn mock()
 
         // When
         val result = mockIS.asRumResource(url, mockSdkCore)

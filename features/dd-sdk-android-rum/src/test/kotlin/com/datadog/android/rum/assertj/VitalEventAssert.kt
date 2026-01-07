@@ -10,7 +10,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
-import com.datadog.android.rum.internal.domain.scope.toVitalSessionPrecondition
+import com.datadog.android.rum.internal.domain.scope.toVitalOperationStepSessionPrecondition
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType
 import org.assertj.core.api.AbstractObjectAssert
@@ -55,7 +55,7 @@ internal class VitalEventAssert(
                 "Expected event to have a session sessionPrecondition of ${reason.name} " +
                     "but was ${actual.dd.session?.sessionPrecondition}"
             )
-            .isEqualTo(reason.toVitalSessionPrecondition())
+            .isEqualTo(reason.toVitalOperationStepSessionPrecondition())
     }
 
     fun hasSampleRate(sampleRate: Float?) = apply {
@@ -82,12 +82,28 @@ internal class VitalEventAssert(
             ).isEqualTo(expected)
     }
 
+    fun hasNoSessionReplay() = apply {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have null hasReplay but it was ${actual.session.hasReplay}"
+            )
+            .isNull()
+    }
+
     fun hasSessionReplay(hasReplay: Boolean) = apply {
         assertThat(actual.session.hasReplay)
             .overridingErrorMessage(
                 "Expected event data to have hasReplay $hasReplay but was ${actual.session.hasReplay}"
             )
             .isEqualTo(hasReplay)
+    }
+
+    fun hasNullView() = apply {
+        assertThat(actual.view)
+            .overridingErrorMessage(
+                "Expected event data to have view equal to null"
+            )
+            .isNull()
     }
 
     fun hasViewId(expectedId: String) = apply {

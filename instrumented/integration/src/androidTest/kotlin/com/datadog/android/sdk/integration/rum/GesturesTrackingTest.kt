@@ -75,9 +75,8 @@ internal abstract class GesturesTrackingTest :
         activity: GesturesTrackingPlaygroundActivity
     ): List<ExpectedEvent> {
         return listOf(
-            ExpectedApplicationStartActionEvent(),
             // ignore first view event for application launch, it will be reduced
-            ExpectedApplicationLaunchViewEvent(docVersion = 3),
+            ExpectedApplicationLaunchViewEvent(docVersion = 2),
             // ignore first view event, it will be reduced
             ExpectedGestureEvent(
                 Gesture.TAP,

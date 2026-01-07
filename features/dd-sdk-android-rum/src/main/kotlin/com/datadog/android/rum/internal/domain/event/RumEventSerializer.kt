@@ -16,6 +16,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -24,6 +25,7 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.google.gson.JsonObject
 
+@Suppress("TooManyFunctions")
 internal class RumEventSerializer(
     private val internalLogger: InternalLogger,
     private val dataConstraints: DataConstraints = DatadogDataConstraints(internalLogger)
@@ -49,7 +51,10 @@ internal class RumEventSerializer(
                 serializeLongTaskEvent(model)
             }
             is RumVitalOperationStepEvent -> {
-                serializeVitalEvent(model)
+                serializeVitalOperationStepEvent(model)
+            }
+            is RumVitalAppLaunchEvent -> {
+                serializeVitalAppLaunchEvent(model)
             }
             is TelemetryDebugEvent -> {
                 model.toJson().toString()
@@ -205,7 +210,31 @@ internal class RumEventSerializer(
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
     }
 
-    private fun serializeVitalEvent(model: RumVitalOperationStepEvent): String {
+    private fun serializeVitalOperationStepEvent(model: RumVitalOperationStepEvent): String {
+        val sanitizedUser = model.usr?.copy(
+            additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedContext = model.context?.copy(
+            additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedModel = model.copy(
+            usr = sanitizedUser,
+            account = sanitizedAccount,
+            context = sanitizedContext
+        )
+        return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
+    }
+
+    private fun serializeVitalAppLaunchEvent(model: RumVitalAppLaunchEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
                 .safeMapValuesToJson(internalLogger)

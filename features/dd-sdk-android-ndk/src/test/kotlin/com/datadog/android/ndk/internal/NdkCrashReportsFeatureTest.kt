@@ -50,6 +50,7 @@ class NdkCrashReportsFeatureTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         testedFeature = NdkCrashReportsFeature(mockSdkCore)
     }
 
@@ -100,7 +101,7 @@ class NdkCrashReportsFeatureTest {
 
     @ParameterizedTest
     @EnumSource(TrackingConsent::class)
-    fun `M do nothing  W register { nativeLibrary not loaded }`(
+    fun `M do nothing W register { nativeLibrary not loaded }`(
         trackingConsent: TrackingConsent
     ) {
         // GIVEN

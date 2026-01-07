@@ -10,12 +10,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.internal.thread.NamedExecutionUnit
+import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.TimeUnit
 
 /**
- * [LinkedBlockingQueue] that supports backpressure handling via the chosen backpressure mitigation strategy.
+ * [java.util.concurrent.LinkedBlockingQueue] that supports backpressure handling via the chosen backpressure mitigation strategy.
  *
- * This queue may be either bounded or unbounded by specifying capacity. See docs of [LinkedBlockingQueue] for more
+ * This queue may be either bounded or unbounded by specifying capacity. See docs of [java.util.concurrent.LinkedBlockingQueue] for more
  * details.
  *
  * If queue is unbounded, there is still a possibility to be notified if certain size threshold is reached.
@@ -29,11 +30,13 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
     private val onThresholdReached: () -> Unit
     private val onItemDropped: (Any) -> Unit
     private val backpressureMitigation: BackPressureMitigation?
+    private val timeProvider: TimeProvider
 
     constructor(
         logger: InternalLogger,
         executorContext: String,
-        backPressureStrategy: BackPressureStrategy
+        backPressureStrategy: BackPressureStrategy,
+        timeProvider: TimeProvider
     ) : this(
         logger,
         executorContext,
@@ -41,7 +44,8 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
         backPressureStrategy.capacity,
         backPressureStrategy.onThresholdReached,
         backPressureStrategy.onItemDropped,
-        backPressureStrategy.backpressureMitigation
+        backPressureStrategy.backpressureMitigation,
+        timeProvider
     )
 
     constructor(
@@ -51,7 +55,8 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
         capacity: Int,
         onThresholdReached: () -> Unit,
         onItemDropped: (Any) -> Unit,
-        backpressureMitigation: BackPressureMitigation?
+        backpressureMitigation: BackPressureMitigation?,
+        timeProvider: TimeProvider
     ) : super(capacity) {
         this.logger = logger
         this.executorContext = executorContext
@@ -60,6 +65,7 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
         this.onThresholdReached = onThresholdReached
         this.onItemDropped = onItemDropped
         this.backpressureMitigation = backpressureMitigation
+        this.timeProvider = timeProvider
     }
 
     override fun offer(e: E): Boolean {
@@ -116,7 +122,7 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
     }
 
     private fun notifyThresholdReached() {
-        val dump = dumpQueue()
+        val dump = dumpQueue(timeProvider.getDeviceTimestampMillis())
         val backPressureMap = buildMap {
             put("capacity", capacity)
             if (!dump.isNullOrEmpty()) {

@@ -52,4 +52,23 @@ internal class TimeTest {
             offset(2L)
         )
     }
+
+    @Test
+    fun `M convert nanoTime to Time W asTimeNs()`(
+        @LongForgery(1000000000000, 2000000000000) nanoTime: Long
+    ) {
+        val startMs = System.currentTimeMillis()
+        val startNs = System.nanoTime()
+        val time = nanoTime.asTimeNs()
+        val endNs = System.nanoTime()
+        val endMs = System.currentTimeMillis()
+
+        assertThat(time.nanoTime).isEqualTo(nanoTime)
+        val nanoOffset = time.nanoTime - ((startNs + endNs) / 2)
+        val milliOffset = time.timestamp - ((startMs + endMs) / 2)
+        assertThat(TimeUnit.NANOSECONDS.toMillis(nanoOffset)).isCloseTo(
+            milliOffset,
+            offset(2L)
+        )
+    }
 }
