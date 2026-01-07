@@ -7,6 +7,7 @@
 package com.datadog.gradle.utils
 
 import com.android.build.gradle.tasks.SourceJarTask
+import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.apisurface.GenerateApiSurfaceTask
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesExtension
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
@@ -14,6 +15,8 @@ import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
+import java.nio.file.Paths
 
 private const val RUM_EVENTS_FORMAT_REPO = "https://github.com/DataDog/rum-events-format.git"
 private const val CLONE_ALL_RUM_SCHEMAS_TASK_NAME = "cloneAllRumSchemas"
@@ -54,25 +57,44 @@ fun Project.createJsonModelsGenerationTask(
     action: GenerateJsonSchemaTask.() -> Unit
 ) {
     val task = tasks.register<GenerateJsonSchemaTask>(taskName) {
+        inputNameMapping.convention(emptyMap())
+        ignoredFiles.convention(emptyList())
+        inputDirPath.convention("")
+        targetPackageName.convention("")
+
         action()
+
+        val rootPath = Paths.get("generated", "json2kotlin", "main", "kotlin")
+        val rootGenDirectory = layout.buildDirectory
+            .dir(rootPath.toString())
+            .get()
+            .asFile
+        destinationGenDirectoryPath.set(rootGenDirectory.absolutePath)
+        val outputPackageDir = File(
+            rootGenDirectory,
+            targetPackageName.get().replace(".", File.separator)
+        ).apply {
+            if (!exists()) mkdirs()
+        }
+        destinationPackageDirectory.set(outputPackageDir)
     }
 
     val rootTask = rootProject.tasks.maybeCreate(GENERATE_ALL_JSON_MODELS_TASK_NAME)
 
     rootTask.dependsOn(task)
 
-    tasks.withType(GenerateApiSurfaceTask::class.java).configureEach {
+    taskConfig<GenerateApiSurfaceTask> {
         dependsOn(task)
     }
 
-    tasks.withType(KotlinCompile::class.java).configureEach {
+    taskConfig<KotlinCompile> {
         dependsOn(task)
     }
 
     // need to add an explicit dependency, otherwise there is an error during publishing
     // Task 'sourceReleaseJar' uses this output of task
     // this task without declaring an explicit or implicit dependency
-    tasks.withType(SourceJarTask::class.java).configureEach {
+    taskConfig<SourceJarTask> {
         dependsOn(task)
     }
 }
