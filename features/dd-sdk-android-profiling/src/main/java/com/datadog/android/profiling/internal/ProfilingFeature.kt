@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
-    configuration: ProfilingConfiguration,
+    private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
 ) : StorageBackedFeature, FeatureEventReceiver {
 
@@ -46,7 +46,7 @@ internal class ProfilingFeature(
     )
 
     override val storageConfiguration: FeatureStorageConfiguration
-        get() = FeatureStorageConfiguration.Companion.DEFAULT
+        get() = FeatureStorageConfiguration.DEFAULT
 
     override val name: String
         get() = Feature.PROFILING_FEATURE_NAME
@@ -65,6 +65,7 @@ internal class ProfilingFeature(
                 }
             }
         }
+        setMinimumSampleRate(appContext, configuration.sampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
@@ -100,6 +101,15 @@ internal class ProfilingFeature(
             InternalLogger.Target.USER,
             { "Profiling stopped with TTID=${event.durationNs}" }
         )
+    }
+
+    private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
+        val oldValue = ProfilingStorage.getSampleRate(appContext)
+        // if old value doesn't exist (we use negative default value in case of absence) or
+        // the value is bigger than the sample rate, we update the sample rate.
+        if (oldValue !in 0f..sampleRate) {
+            ProfilingStorage.setSampleRate(appContext, configuration.sampleRate)
+        }
     }
 
     private fun tryWriteProfilingEvent() {

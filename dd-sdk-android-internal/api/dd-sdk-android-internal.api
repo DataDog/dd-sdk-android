@@ -57,10 +57,12 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 public abstract interface class com/datadog/android/internal/data/PreferencesStorage {
 	public abstract fun clear ()V
 	public abstract fun getBoolean (Ljava/lang/String;Z)Z
+	public abstract fun getFloat (Ljava/lang/String;F)F
 	public abstract fun getInt (Ljava/lang/String;I)I
 	public abstract fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun getStringSet (Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;
 	public abstract fun putBoolean (Ljava/lang/String;Z)V
+	public abstract fun putFloat (Ljava/lang/String;F)V
 	public abstract fun putInt (Ljava/lang/String;I)V
 	public abstract fun putString (Ljava/lang/String;Ljava/lang/String;)V
 	public abstract fun putStringSet (Ljava/lang/String;Ljava/util/Set;)V
@@ -69,6 +71,7 @@ public abstract interface class com/datadog/android/internal/data/PreferencesSto
 
 public final class com/datadog/android/internal/data/PreferencesStorage$DefaultImpls {
 	public static synthetic fun getBoolean$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;ZILjava/lang/Object;)Z
+	public static synthetic fun getFloat$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;FILjava/lang/Object;)F
 	public static synthetic fun getInt$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;IILjava/lang/Object;)I
 	public static synthetic fun getString$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
 	public static synthetic fun getStringSet$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/Set;
@@ -78,10 +81,12 @@ public final class com/datadog/android/internal/data/SharedPreferencesStorage : 
 	public fun <init> (Landroid/content/Context;)V
 	public fun clear ()V
 	public fun getBoolean (Ljava/lang/String;Z)Z
+	public fun getFloat (Ljava/lang/String;F)F
 	public fun getInt (Ljava/lang/String;I)I
 	public fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public fun getStringSet (Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;
 	public fun putBoolean (Ljava/lang/String;Z)V
+	public fun putFloat (Ljava/lang/String;F)V
 	public fun putInt (Ljava/lang/String;I)V
 	public fun putString (Ljava/lang/String;Ljava/lang/String;)V
 	public fun putStringSet (Ljava/lang/String;Ljava/util/Set;)V

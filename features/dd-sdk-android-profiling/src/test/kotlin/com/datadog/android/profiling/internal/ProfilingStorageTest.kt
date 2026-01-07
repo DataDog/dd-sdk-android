@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.content.SharedPreferences
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -46,6 +47,9 @@ internal class ProfilingStorageTest {
     @StringForgery
     lateinit var fakeInstanceName: String
 
+    @FloatForgery(min = 0f, max = 100f)
+    var fakeSampleRate: Float = 0f
+
     private val otherInstanceName: String
         get() = "$fakeInstanceName.suffix"
 
@@ -59,6 +63,8 @@ internal class ProfilingStorageTest {
         whenever(mockPrefs.edit()) doReturn mockEditor
         whenever(mockEditor.remove(any())) doReturn mockEditor
         whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putFloat(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
         whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
     }
@@ -172,6 +178,40 @@ internal class ProfilingStorageTest {
             setOf(fakeInstanceName, otherInstanceName)
         )
         verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M set sample rate W setSampleRate()`() {
+        // When
+        ProfilingStorage.setSampleRate(mockContext, fakeSampleRate)
+
+        // Then
+        verify(mockEditor).putFloat("dd_profiling_sample_rate", fakeSampleRate)
+        verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M get sample rate W getSampleRate() {rate is set}`() {
+        // Given
+        whenever(mockPrefs.getFloat("dd_profiling_sample_rate", -1f)) doReturn fakeSampleRate
+
+        // When
+        val actualSampleRate = ProfilingStorage.getSampleRate(mockContext)
+
+        // Then
+        assertThat(actualSampleRate).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M get default sample rate W getSampleRate() {rate is not set}`() {
+        // Given
+        whenever(mockPrefs.getFloat("dd_profiling_sample_rate", 0f)) doReturn 0f
+
+        // When
+        val actualSampleRate = ProfilingStorage.getSampleRate(mockContext)
+
+        // Then
+        assertThat(actualSampleRate).isEqualTo(0f)
     }
 
     companion object {
