@@ -70,11 +70,16 @@ fun Project.androidLibraryConfig() {
             checkReleaseBuilds = false
             checkGeneratedSources = true
             ignoreTestSources = true
-            disable.addAll(
-                listOf(
-                    "UseKtx" // https://googlesamples.github.io/android-custom-lint-rules/checks/UseKtx.md.html
-                )
+            val disabledChecks = listOf(
+                // https://googlesamples.github.io/android-custom-lint-rules/checks/AndroidGradlePluginVersion.md.html
+                "AndroidGradlePluginVersion",
+                // https://googlesamples.github.io/android-custom-lint-rules/checks/GradleDependency.md.html
+                "GradleDependency",
+                // https://googlesamples.github.io/android-custom-lint-rules/checks/Aligned16KB.md.html
+                "Aligned16KB",
+                "UseKtx" // https://googlesamples.github.io/android-custom-lint-rules/checks/UseKtx.md.html
             )
+            disable.addAll(disabledChecks)
         }
 
         packaging {

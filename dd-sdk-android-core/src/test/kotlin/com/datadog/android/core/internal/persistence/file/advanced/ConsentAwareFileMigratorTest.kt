@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.privacy.TrackingConsent
@@ -23,6 +22,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -48,14 +48,12 @@ internal class ConsentAwareFileMigratorTest {
     @Mock
     lateinit var mockFileMover: FileMover
 
-    @Mock
-    lateinit var mockInternalLogger: InternalLogger
-
     @BeforeEach
     fun `set up`() {
         testedMigrator = ConsentAwareFileMigrator(
             mockFileMover,
-            mockInternalLogger
+            mock(),
+            mock()
         )
     }
 

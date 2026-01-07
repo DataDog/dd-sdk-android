@@ -423,6 +423,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
 	public abstract fun getFeatureContext (Ljava/lang/String;Z)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
+	public abstract fun getTimeProvider ()Lcom/datadog/android/internal/time/TimeProvider;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
 	public abstract fun removeContextUpdateReceiver (Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun removeEventReceiver (Ljava/lang/String;)V
@@ -871,15 +872,6 @@ public final class com/datadog/android/core/internal/persistence/file/FileExtKt 
 	public static synthetic fun readTextSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/lang/String;
 }
 
-public abstract interface class com/datadog/android/core/internal/system/BuildSdkVersionProvider {
-	public static final field Companion Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider$Companion;
-	public abstract fun getVersion ()I
-}
-
-public final class com/datadog/android/core/internal/system/BuildSdkVersionProvider$Companion {
-	public final fun getDEFAULT ()Lcom/datadog/android/core/internal/system/BuildSdkVersionProvider;
-}
-
 public final class com/datadog/android/core/internal/utils/ByteArrayExtKt {
 	public static final fun join (Ljava/util/Collection;[B[B[BLcom/datadog/android/api/InternalLogger;)[B
 	public static synthetic fun join$default (Ljava/util/Collection;[B[B[BLcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)[B
@@ -1016,7 +1008,7 @@ public abstract interface class com/datadog/android/core/thread/FlushableExecuto
 }
 
 public abstract interface class com/datadog/android/core/thread/FlushableExecutorService$Factory {
-	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Ljava/lang/String;Lcom/datadog/android/core/configuration/BackPressureStrategy;)Lcom/datadog/android/core/thread/FlushableExecutorService;
+	public abstract fun create (Lcom/datadog/android/api/InternalLogger;Ljava/lang/String;Lcom/datadog/android/core/configuration/BackPressureStrategy;Lcom/datadog/android/internal/time/TimeProvider;)Lcom/datadog/android/core/thread/FlushableExecutorService;
 }
 
 public abstract interface class com/datadog/android/event/EventMapper {

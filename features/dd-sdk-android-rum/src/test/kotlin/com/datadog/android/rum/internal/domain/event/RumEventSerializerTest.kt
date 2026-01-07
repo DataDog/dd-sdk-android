@@ -14,6 +14,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -556,7 +557,7 @@ internal class RumEventSerializerTest {
     }
 
     @RepeatedTest(8)
-    fun `M serialize RUM event W serialize() with VitalEvent`(
+    fun `M serialize RUM event W serialize() with VitalOperationStepEvent`(
         @Forgery event: RumVitalOperationStepEvent
     ) {
         val serialized = testedSerializer.serialize(event)
@@ -593,6 +594,88 @@ internal class RumEventSerializerTest {
                 event.dd.browserSdkVersion?.let { hasField("browser_sdk_version", it) }
             }
             .hasNullableField("service", event.service)
+
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                device.architecture?.let { hasField("architecture", it) }
+                device.brand?.let { hasField("brand", it) }
+                device.model?.let { hasField("model", it) }
+            }
+        }
+
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @RepeatedTest(8)
+    fun `M serialize RUM event W serialize() with VitalAppLaunchEvent`(
+        @Forgery event: RumVitalAppLaunchEvent
+    ) {
+        val serialized = testedSerializer.serialize(event)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+
+        assertThat(jsonObject)
+            .hasField("type", "vital")
+            .hasField("date", event.date)
+            .hasField("vital") {
+                val vital = event.vital
+                hasField("type", vital.type)
+                vital.name?.let { hasField("name", it) }
+                vital.description?.let { hasField("description", it) }
+                hasField("app_launch_metric", vital.appLaunchMetric.toJson())
+                hasField("duration", vital.duration)
+                vital.hasSavedInstanceStateBundle?.let { hasField("has_saved_instance_state_bundle", it) }
+                vital.isPrewarmed?.let { hasField("is_prewarmed", it) }
+                vital.startupType?.let { hasField("startup_type", it.toJson()) }
+            }
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.lowercase(Locale.US))
+                event.session.hasReplay?.let { hasField("has_replay", it) }
+            }
+            .hasField("_dd") {
+                event.dd.browserSdkVersion?.let { hasField("browser_sdk_version", it) }
+            }
+            .hasNullableField("service", event.service)
+
+        event.view?.let {
+            assertThat(jsonObject).hasField("view") {
+                val view = checkNotNull(event.view)
+                hasField("id", view.id)
+                hasField("url", view.url)
+                view.referrer?.let { hasField("referrer", it) }
+                view.name?.let { hasField("name", it) }
+            }
+        }
 
         event.device?.let { device ->
             assertThat(jsonObject).hasField("device") {

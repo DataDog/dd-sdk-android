@@ -37,7 +37,7 @@ internal class NoOpFlagsClient(
 ) : FlagsClient {
 
     override val state: StateObservable = object : StateObservable {
-        override fun getCurrentState(): FlagsClientState = FlagsClientState.Error(null)
+        override fun getCurrentState(): FlagsClientState = FlagsClientState.NotReady
         override fun addListener(listener: FlagsStateListener) = Unit
         override fun removeListener(listener: FlagsStateListener) = Unit
     }

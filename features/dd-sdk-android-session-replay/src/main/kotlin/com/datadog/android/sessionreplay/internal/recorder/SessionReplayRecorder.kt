@@ -101,7 +101,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             resourceDataStoreManager,
             resourcesWriter,
             recordWriter,
-            MutationResolver(internalLogger)
+            MutationResolver(internalLogger),
+            timeProvider
         )
 
         this.appContext = appContext
@@ -116,7 +117,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             executorService = sdkCore.createSingleThreadExecutorService(
                 "sr-event-processing"
             ),
-            recordedDataQueue = ConcurrentLinkedQueue()
+            recordedDataQueue = ConcurrentLinkedQueue(),
+            timeProvider = timeProvider
         )
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver

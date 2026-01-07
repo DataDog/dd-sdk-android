@@ -451,7 +451,7 @@ internal class NoOpFlagsClientTest {
         val state = testedClient.state.getCurrentState()
 
         // Then
-        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(state).isEqualTo(FlagsClientState.NotReady)
     }
 
     @Test

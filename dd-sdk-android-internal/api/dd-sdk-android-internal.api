@@ -77,6 +77,41 @@ public final class com/datadog/android/internal/network/GraphQLHeaders : java/la
 	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
 }
 
+public final class com/datadog/android/internal/network/HttpSpec {
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec;
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$ContentType {
+	public static final field APPLICATION_GRPC Ljava/lang/String;
+	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
+	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$ContentType;
+	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
+	public static final field TEXT_PLAIN Ljava/lang/String;
+	public final fun isStream (Ljava/lang/String;)Z
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$Headers {
+	public static final field CONTENT_LENGTH Ljava/lang/String;
+	public static final field CONTENT_TYPE Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$Headers;
+	public static final field WEBSOCKET_ACCEPT_HEADER Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$Method {
+	public static final field CONNECT Ljava/lang/String;
+	public static final field DELETE Ljava/lang/String;
+	public static final field GET Ljava/lang/String;
+	public static final field HEAD Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$Method;
+	public static final field OPTIONS Ljava/lang/String;
+	public static final field PATCH Ljava/lang/String;
+	public static final field POST Ljava/lang/String;
+	public static final field PUT Ljava/lang/String;
+	public static final field TRACE Ljava/lang/String;
+	public final fun values ()Ljava/util/List;
+}
+
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
 	public abstract fun add (JLjava/util/Map;)V
 }
@@ -121,11 +156,27 @@ public abstract interface class com/datadog/android/internal/profiler/ExecutionT
 
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
-	public final fun createExecutionTimer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/ExecutionTimer;
+	public final fun createExecutionTimer (Ljava/lang/String;Lcom/datadog/android/internal/time/TimeProvider;)Lcom/datadog/android/internal/profiler/ExecutionTimer;
 	public final fun getBenchmarkSdkUploads ()Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;
 	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
+}
+
+public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
+	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
+	public abstract fun getVersion ()I
+	public abstract fun isAtLeastN ()Z
+	public abstract fun isAtLeastO ()Z
+	public abstract fun isAtLeastP ()Z
+	public abstract fun isAtLeastQ ()Z
+	public abstract fun isAtLeastR ()Z
+	public abstract fun isAtLeastS ()Z
+	public abstract fun isAtLeastTiramisu ()Z
+}
+
+public final class com/datadog/android/internal/system/BuildSdkVersionProvider$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/internal/system/BuildSdkVersionProvider;
 }
 
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {
@@ -157,6 +208,12 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public final fun getNoActiveView ()Z
 	public final fun getNoView ()Z
 	public final fun getOverwrite ()Z
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$TrackWebView : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage {
+	public fun <init> ()V
+	public fun <init> (Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Configuration : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
@@ -253,23 +310,27 @@ public final class com/datadog/android/internal/thread/NamedRunnable : com/datad
 	public fun run ()V
 }
 
-public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/TimeProvider {
+public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {
 	public fun <init> ()V
-	public fun getDeviceTimestamp ()J
+	public final fun getDeviceElapsedRealtimeMillis ()J
+	public final fun getDeviceElapsedTimeNanos ()J
+	public final fun getDeviceTimestampMillis ()J
+}
+
+public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/BaseTimeProvider {
+	public fun <init> ()V
 	public fun getServerOffsetMillis ()J
 	public fun getServerOffsetNanos ()J
-	public fun getServerTimestamp ()J
+	public fun getServerTimestampMillis ()J
 }
 
 public abstract interface class com/datadog/android/internal/time/TimeProvider {
-	public abstract fun getDeviceTimestamp ()J
+	public abstract fun getDeviceElapsedRealtimeMillis ()J
+	public abstract fun getDeviceElapsedTimeNanos ()J
+	public abstract fun getDeviceTimestampMillis ()J
 	public abstract fun getServerOffsetMillis ()J
 	public abstract fun getServerOffsetNanos ()J
-	public abstract fun getServerTimestamp ()J
-}
-
-public final class com/datadog/android/internal/time/TimeProvider$DefaultImpls {
-	public static fun getDeviceTimestamp (Lcom/datadog/android/internal/time/TimeProvider;)J
+	public abstract fun getServerTimestampMillis ()J
 }
 
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {

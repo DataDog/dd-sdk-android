@@ -21,6 +21,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -33,11 +34,11 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
+import com.datadog.android.sample.picture.Coil3ImageLoader
 import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
@@ -137,6 +138,7 @@ class SampleApplication : Application() {
 
     private fun initializeImageLoaders() {
         CoilImageLoader.initialize(this, okHttpClient)
+        Coil3ImageLoader.initialize(this, okHttpClient)
         PicassoImageLoader.initialize(this, okHttpClient)
         FrescoImageLoader.initialize(this, okHttpClient)
     }
@@ -304,7 +306,7 @@ class SampleApplication : Application() {
             .trackUserInteractions()
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
-            .setSlowFramesConfiguration(SlowFramesConfiguration.DEFAULT)
+            .enableRumDebugWidget(this)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
@@ -325,10 +327,16 @@ class SampleApplication : Application() {
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setVitalOperationStepEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
+            .setVitalEventMapper(
+                vitalOperationStepEventMapper = { event ->
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                    event
+                },
+                vitalAppLaunchEventMapper = { event ->
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                    event
+                }
+            )
             .trackBackgroundEvents(true)
             .trackAnonymousUser(true)
             .enableComposeActionTracking()

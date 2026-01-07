@@ -10,14 +10,15 @@ import android.content.ComponentCallbacks2
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
-import android.os.Build
 import androidx.annotation.VisibleForTesting
 import androidx.collection.LruCache
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("TooManyFunctions")
 internal class BitmapPool(
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val bitmapPoolHelper: BitmapPoolHelper = BitmapPoolHelper(),
     private val cacheUtils: CacheUtils<String, Bitmap> = CacheUtils(),
     @get:VisibleForTesting internal val bitmapsBySize: HashMap<String, HashSet<Bitmap>> = HashMap(),
@@ -146,7 +147,7 @@ internal class BitmapPool(
             cache.put(cacheKey, bitmap)
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (buildSdkVersionProvider.isAtLeastN) {
             bitmapPoolHelper.safeCall {
                 @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
                 bitmapsBySize.putIfAbsent(key, HashSet())
