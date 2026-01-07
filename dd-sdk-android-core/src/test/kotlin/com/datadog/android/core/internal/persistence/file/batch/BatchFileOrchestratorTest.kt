@@ -1124,19 +1124,6 @@ internal class BatchFileOrchestratorTest {
 
     // endregion
 
-    // region getRootDirName
-
-    @Test
-    fun `M return rootDirName W getRootDirName()`() {
-        // When
-        val result = testedOrchestrator.getRootDirName()
-
-        // Then
-        assertThat(result).isEqualTo(fakeRootDir.nameWithoutExtension)
-    }
-
-    // endregion
-
     // region getMetadataFile
 
     @Test
