@@ -9,6 +9,7 @@ package com.datadog.gradle.plugin.transdeps
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
@@ -17,7 +18,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-open class GenerateTransitiveDependenciesTask : DefaultTask() {
+abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @get:Input
     var humanReadableSize: Boolean = true
@@ -27,11 +28,10 @@ open class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    val libsVersionCatalog: File
-        get() = project.rootProject.layout.projectDirectory.file("gradle/libs.versions.toml").asFile
+    abstract val libsVersionCatalog: RegularFileProperty
 
     @get: OutputFile
-    lateinit var dependenciesFile: File
+    abstract val dependenciesFile: RegularFileProperty
 
     init {
         group = "datadog"
@@ -42,16 +42,17 @@ open class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-        dependenciesFile.writeText("Dependencies List\n\n")
+        val outputFile = dependenciesFile.get().asFile
+        outputFile.writeText("Dependencies List\n\n")
         val implementation = project.configurations.getByName("releaseCompileClasspath")
-        listConfigurationDependencies(implementation)
+        listConfigurationDependencies(outputFile, implementation)
     }
 
     // endregion
 
     // region Internal
 
-    private fun listConfigurationDependencies(configuration: Configuration) {
+    private fun listConfigurationDependencies(outputFile: File, configuration: Configuration) {
         check(configuration.isCanBeResolved) { "$configuration cannot be resolved" }
 
         val sortedArtifacts = if (sortByName) {
@@ -68,10 +69,10 @@ open class GenerateTransitiveDependenciesTask : DefaultTask() {
         var sum = 0L
         sortedArtifacts.forEach {
             sum += it.length()
-            dependenciesFile.appendText(getDependencyFileDescription(it))
+            outputFile.appendText(getDependencyFileDescription(it))
         }
 
-        dependenciesFile.appendText("\n${TOTAL.padEnd(PADDING)}:${size(sum)}\n\n")
+        outputFile.appendText("\n${TOTAL.padEnd(PADDING)}:${size(sum)}\n\n")
     }
 
     private fun getDependencyFileDescription(it: File): String {
