@@ -28,6 +28,7 @@ internal class ProxyForgeFactory : ForgeryFactory<Proxy> {
             @Deprecated("Deprecated in Java")
             override fun onBeforeTunnelRequest() = emptyList<Map.Entry<String, String>>()
 
+            @Deprecated("Deprecated in Java")
             override fun onTunnelHeadersReceived(
                 responseHeaders: List<Map.Entry<String, String>>,
                 statusCode: Int
