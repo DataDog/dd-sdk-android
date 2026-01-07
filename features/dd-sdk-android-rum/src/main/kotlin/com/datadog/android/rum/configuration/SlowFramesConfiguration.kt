@@ -6,7 +6,7 @@
 package com.datadog.android.rum.configuration
 
 /**
- * The [SlowFramesListener] provides various statistics to assist in identifying UI performance issues:
+ * The [com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener] provides various statistics to assist in identifying UI performance issues:
  *
  * - slowFrames: A list of records containing the timestamp and duration of frames where users experience
  *   jank frames within the given view.

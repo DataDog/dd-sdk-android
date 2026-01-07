@@ -21,6 +21,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -305,6 +306,7 @@ class SampleApplication : Application() {
             .trackUserInteractions()
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
+            .enableRumDebugWidget(this)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event

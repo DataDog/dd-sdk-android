@@ -26,6 +26,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -152,6 +153,9 @@ internal class RumResourceScopeTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         val isValidSource = forge.aBool()
@@ -222,7 +226,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
     }
 
@@ -424,7 +429,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -674,7 +680,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -925,7 +932,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -1495,7 +1503,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -1597,7 +1606,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -1677,7 +1687,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -1776,7 +1787,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -3558,6 +3570,31 @@ internal class RumResourceScopeTest {
                 fakeParentContext.viewId.orEmpty(),
                 StorageEvent.Error(testedScope.resourceId, mockEvent.eventTime.nanoTime)
             )
+    }
+
+    // endregion
+
+    // region InsightsCollector
+
+    @Test
+    fun `M call onNetworkRequest() W handleEvent()`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+
+        // Wait to ensure duration > 0
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockInsightsCollector).onNetworkRequest(any(), any())
     }
 
     // endregion
