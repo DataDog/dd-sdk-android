@@ -165,19 +165,16 @@ internal class DefaultBatteryInfoProviderTest {
 
     @Test
     fun `M update battery level W getState() { after polling interval }`() {
-        // When
+        // Given
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 75
+        assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.75f)
 
-        // nothing changes because we are within polling interval
-        assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
-        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn fakeStartTimeMs + shortPollingInterval / 2
-        assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
+        // When
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn fakeStartTimeMs + shortPollingInterval
 
         // Then
-        // after polling interval level should change
-        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn fakeStartTimeMs + shortPollingInterval
-        val batteryInfo = testedProvider.getState()
-        assertThat(batteryInfo.batteryLevel).isEqualTo(0.75f)
+        assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
     }
 
     // endregion

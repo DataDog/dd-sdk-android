@@ -40,7 +40,7 @@ internal class DefaultBatteryInfoProvider(
     @Volatile
     private var lowPowerMode: Boolean? = null
 
-    private val lastTimeBatteryLevelChecked = AtomicLong(timeProvider.getDeviceElapsedRealtimeMillis())
+    private val lastTimeBatteryLevelChecked = AtomicLong(Long.MIN_VALUE)
 
     private val powerSaveModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -53,7 +53,6 @@ internal class DefaultBatteryInfoProvider(
 
     init {
         registerReceivers()
-        buildInitialState()
     }
 
     @Synchronized
@@ -70,7 +69,10 @@ internal class DefaultBatteryInfoProvider(
             }
         }
 
-        // construct current state from the latest values
+        if (lowPowerMode == null) {
+            lowPowerMode = resolveLowPowerMode()
+        }
+
         return BatteryInfo(
             batteryLevel = batteryLevel,
             lowPowerMode = lowPowerMode
@@ -87,11 +89,6 @@ internal class DefaultBatteryInfoProvider(
         } catch (_: IllegalArgumentException) {
             // ignore - receiver was not previously registered or already unregistered
         }
-    }
-
-    private fun buildInitialState() {
-        lowPowerMode = resolveLowPowerMode()
-        batteryLevel = resolveBatteryLevel()
     }
 
     private fun registerReceivers() {
