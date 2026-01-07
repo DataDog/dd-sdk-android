@@ -7,10 +7,10 @@
 package com.datadog.android.flags.internal
 
 import androidx.collection.LruCache
-import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
+import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.time.TimeProvider
 
 internal class ExposureEventsProcessor(
@@ -42,7 +42,7 @@ internal class ExposureEventsProcessor(
         }
     }
 
-    override fun processEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag) {
+    override fun processEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag) {
         val cacheKey = CacheKey(
             targetingKey = context.targetingKey,
             flagName = flagName,
@@ -68,7 +68,7 @@ internal class ExposureEventsProcessor(
         }
     }
 
-    private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag): ExposureEvent {
+    private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag): ExposureEvent {
         val now = timeProvider.getDeviceTimestampMillis()
         return ExposureEvent(
             timestamp = now,
