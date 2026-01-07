@@ -804,7 +804,7 @@ internal class RumFeature(
             composeActionTrackingStrategy = NoOpActionTrackingStrategy(),
             additionalConfig = emptyMap(),
             trackAnonymousUser = true,
-            slowFramesConfiguration = null,
+            slowFramesConfiguration = SlowFramesConfiguration.DEFAULT,
             rumSessionTypeOverride = null,
             collectAccessibility = false,
             disableJankStats = false
