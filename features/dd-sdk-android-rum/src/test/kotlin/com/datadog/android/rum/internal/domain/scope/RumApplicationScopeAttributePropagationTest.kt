@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -126,6 +127,9 @@ internal class RumApplicationScopeAttributePropagationTest {
     lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 
     @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
 
     lateinit var fakeEventTime: Time
@@ -187,6 +191,7 @@ internal class RumApplicationScopeAttributePropagationTest {
         }
 
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.timeProvider) doReturn mock()
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -207,7 +212,8 @@ internal class RumApplicationScopeAttributePropagationTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
     }
 

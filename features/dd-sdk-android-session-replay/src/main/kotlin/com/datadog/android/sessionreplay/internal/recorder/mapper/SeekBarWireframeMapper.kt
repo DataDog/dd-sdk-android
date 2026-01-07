@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.widget.SeekBar
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -25,13 +26,15 @@ internal open class SeekBarWireframeMapper(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
-    drawableToColorMapper: DrawableToColorMapper
+    drawableToColorMapper: DrawableToColorMapper,
+    buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ProgressBarWireframeMapper<SeekBar>(
     viewIdentifierResolver = viewIdentifierResolver,
     colorStringFormatter = colorStringFormatter,
     viewBoundsResolver = viewBoundsResolver,
     drawableToColorMapper = drawableToColorMapper,
-    showProgressWhenMaskUserInput = false
+    showProgressWhenMaskUserInput = false,
+    buildSdkVersionProvider
 ) {
 
     override fun mapDeterminate(

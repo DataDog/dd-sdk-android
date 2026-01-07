@@ -54,7 +54,7 @@ internal interface DatadogModule {
 
         @Provides
         @Singleton
-        fun provideDatadogMeter(config: BenchmarkConfig): DatadogBaseMeter {
+        fun provideDatadogMeter(config: BenchmarkConfig, sdkCore: SdkCore): DatadogBaseMeter {
             val exporterConfig = DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
                 .setApplicationId(BuildConfig.APPLICATION_ID)
                 .setApplicationName(BENCHMARK_APPLICATION_NAME)
@@ -67,7 +67,10 @@ internal interface DatadogModule {
             return if (config.scenario == SyntheticsScenario.Upload) {
                 DatadogSdkMeter.create(exporterConfig)
             } else {
-                DatadogVitalsMeter.create(exporterConfig)
+                DatadogVitalsMeter.create(
+                    exporterConfig,
+                    sdkCore
+                )
             }
         }
 

@@ -379,7 +379,6 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
-        internal const val FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME = "flags-state-notifications"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -390,9 +389,6 @@ interface FlagsClient {
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
-            )
-            val stateNotificationExecutorService = featureSdkCore.createSingleThreadExecutorService(
-                executorContext = FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME
             )
 
             val datadogContext = (featureSdkCore as InternalSdkCore).getDatadogContext()
@@ -445,9 +441,7 @@ interface FlagsClient {
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
                 val flagStateManager = FlagsStateManager(
-                    DDCoreSubscription.create(),
-                    stateNotificationExecutorService,
-                    featureSdkCore.internalLogger
+                    DDCoreSubscription.create()
                 )
 
                 val evaluationsManager = EvaluationsManager(

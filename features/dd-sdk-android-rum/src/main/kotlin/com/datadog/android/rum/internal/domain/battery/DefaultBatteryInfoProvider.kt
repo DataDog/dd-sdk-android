@@ -18,28 +18,29 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
 import androidx.annotation.FloatRange
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
 internal class DefaultBatteryInfoProvider(
     private val applicationContext: Context,
+    private val timeProvider: TimeProvider,
     private val powerManager: PowerManager? =
         applicationContext.getSystemService(POWER_SERVICE) as? PowerManager,
     private val batteryManager: BatteryManager? = applicationContext.getSystemService(
         BATTERY_SERVICE
     ) as? BatteryManager,
-    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS,
-    private val systemClockWrapper: SystemClockWrapper = SystemClockWrapper() // this wrapper is needed for unit tests
+    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS
 ) : InfoProvider<BatteryInfo> {
 
     @Volatile
     @FloatRange(0.0, 1.0)
-    var batteryLevel: Float? = null
+    private var batteryLevel: Float? = null
 
     @Volatile
-    var lowPowerMode: Boolean? = null
+    private var lowPowerMode: Boolean? = null
 
-    private var lastTimeBatteryLevelChecked = AtomicLong(systemClockWrapper.elapsedRealTime())
+    private val lastTimeBatteryLevelChecked = AtomicLong(Long.MIN_VALUE)
 
     private val powerSaveModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -52,7 +53,6 @@ internal class DefaultBatteryInfoProvider(
 
     init {
         registerReceivers()
-        buildInitialState()
     }
 
     @Synchronized
@@ -60,7 +60,7 @@ internal class DefaultBatteryInfoProvider(
         // while we could register a receiver for battery level,
         // it fires far too often (multiple times per second)
         // so it seems better to only poll battery charge state once in a period of time
-        val now = systemClockWrapper.elapsedRealTime()
+        val now = timeProvider.getDeviceElapsedRealtimeMillis()
         if (now - batteryLevelPollInterval >= lastTimeBatteryLevelChecked.get()) {
             lastTimeBatteryLevelChecked.set(now)
 
@@ -69,7 +69,10 @@ internal class DefaultBatteryInfoProvider(
             }
         }
 
-        // construct current state from the latest values
+        if (lowPowerMode == null) {
+            lowPowerMode = resolveLowPowerMode()
+        }
+
         return BatteryInfo(
             batteryLevel = batteryLevel,
             lowPowerMode = lowPowerMode
@@ -88,11 +91,6 @@ internal class DefaultBatteryInfoProvider(
         }
     }
 
-    private fun buildInitialState() {
-        lowPowerMode = resolveLowPowerMode()
-        batteryLevel = resolveBatteryLevel()
-    }
-
     private fun registerReceivers() {
         val powerSaveFilter = IntentFilter(ACTION_POWER_SAVE_MODE_CHANGED)
         applicationContext.registerReceiver(powerSaveModeReceiver, powerSaveFilter)
@@ -107,11 +105,12 @@ internal class DefaultBatteryInfoProvider(
 
         return batteryLevel?.let {
             // if there was a problem retrieving the capacity
-            val retrievalFailureCode = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                Integer.MIN_VALUE
-            } else {
-                0
-            }
+            val retrievalFailureCode =
+                if (applicationContext.applicationInfo.targetSdkVersion >= Build.VERSION_CODES.P) {
+                    Integer.MIN_VALUE
+                } else {
+                    0
+                }
 
             if (it == retrievalFailureCode) return@let null
 

@@ -33,6 +33,7 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         val sentActionEvents = LinkedList<JsonObject>()
         val sentResourceEvents = LinkedList<JsonObject>()
         val sentLaunchEvents = LinkedList<JsonObject>()
+        val sentVitalAppLaunchEvents = LinkedList<JsonObject>()
         handledRequests
             .filter { it.url?.isRumUrl() ?: false }
             .forEach { request ->
@@ -53,17 +54,20 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                                 sentActionEvents += it
                             } else if (it.isResourceEvent) {
                                 sentResourceEvents += it
+                            } else if (it.isVitalAppLaunchEvent) {
+                                sentVitalAppLaunchEvents += it
                             }
                         }
                 }
             }
         val launchEventPredicate = { event: ExpectedEvent ->
-            event is ExpectedApplicationLaunchViewEvent || event is ExpectedApplicationStartActionEvent
+            event is ExpectedApplicationLaunchViewEvent
         }
         val expectedLaunchEvents = expectedEvents.filter(launchEventPredicate)
         val expectedViewEvents = expectedEvents.filterIsInstance<ExpectedViewEvent>()
         val expectedActionEvents = expectedEvents.filterIsInstance<ExpectedGestureEvent>()
         val expectedResourceEvents = expectedEvents.filterIsInstance<ExpectedResourceEvent>()
+        val expectedVitalAppLaunchEvents = expectedEvents.filterIsInstance<ExpectedVitalAppLaunchEvent>()
         if (expectedLaunchEvents.isNotEmpty()) {
             sentLaunchEvents
                 .reduceViewEvents()
@@ -79,6 +83,9 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         }
         if (expectedResourceEvents.isNotEmpty()) {
             sentResourceEvents.verifyEventMatches(expectedResourceEvents)
+        }
+        if (expectedVitalAppLaunchEvents.isNotEmpty()) {
+            sentVitalAppLaunchEvents.verifyEventMatches(expectedVitalAppLaunchEvents)
         }
     }
 
@@ -113,6 +120,10 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
     private val JsonObject.isTelemetryEvent
         get() = get("type")?.asString == "telemetry"
+
+    private val JsonObject.isVitalAppLaunchEvent
+        get() = (get("type")?.asString == "vital") &&
+            (get("vital")?.asJsonObject?.get("type")?.asString == "app_launch")
 
     // two methods below are expected to be called only on view events
     private val JsonObject.viewId

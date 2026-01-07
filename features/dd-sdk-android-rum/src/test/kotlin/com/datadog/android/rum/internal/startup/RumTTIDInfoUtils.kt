@@ -7,28 +7,30 @@
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
+import com.datadog.android.rum.internal.domain.Time
 import fr.xgouchet.elmyr.Forge
 import java.lang.ref.WeakReference
 
 internal fun Forge.testRumStartupScenarios(weakActivity: WeakReference<Activity>): List<RumStartupScenario> {
     val initialTimeNanos = aLong(min = 0, max = 1000000)
+    val initialTime = Time(timestamp = initialTimeNanos / 1000000, nanoTime = initialTimeNanos)
     val hasSavedInstanceStateBundle = aBool()
 
     return listOf(
         RumStartupScenario.Cold(
-            initialTimeNs = initialTimeNanos,
+            initialTime = initialTime,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
             activity = weakActivity,
             appStartActivityOnCreateGapNs = aLong(min = 0, max = 10000)
         ),
         RumStartupScenario.WarmFirstActivity(
-            initialTimeNs = initialTimeNanos,
+            initialTime = initialTime,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
             activity = weakActivity,
             appStartActivityOnCreateGapNs = aLong(min = 0, max = 10000)
         ),
         RumStartupScenario.WarmAfterActivityDestroyed(
-            initialTimeNs = initialTimeNanos,
+            initialTime = initialTime,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
             activity = weakActivity
         )

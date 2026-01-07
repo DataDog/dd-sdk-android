@@ -23,7 +23,7 @@ import androidx.annotation.RequiresApi
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
@@ -35,7 +35,7 @@ internal class FrameStatesAggregator(
     internal val frameStateListeners: List<FrameStateListener>,
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
-    private var buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
@@ -137,13 +137,12 @@ internal class FrameStatesAggregator(
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
     }
 
-    @SuppressLint("NewApi")
     @MainThread
     override fun onActivityDestroyed(activity: Activity) {
         if (activeActivities[activity.window].isNullOrEmpty()) {
             activeWindowsListener.remove(activity.window)
             activeActivities.remove(activity.window)
-            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
+            if (buildSdkVersionProvider.isAtLeastS) {
                 unregisterMetricListener(activity.window)
             }
         }
@@ -202,10 +201,9 @@ internal class FrameStatesAggregator(
         }
     }
 
-    @SuppressLint("NewApi")
     @MainThread
     private fun trackWindowMetrics(isKnownWindow: Boolean, window: Window, activity: Activity) {
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S && !isKnownWindow) {
+        if (buildSdkVersionProvider.isAtLeastS && !isKnownWindow) {
             registerMetricListener(window)
         } else if (display == null && buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
             // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
@@ -305,7 +303,7 @@ internal class FrameStatesAggregator(
     @RequiresApi(Build.VERSION_CODES.N)
     private fun FrameMetricsData.update(frameMetrics: FrameMetrics, dropCountSinceLastInvocation: Int) = apply {
         displayRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.N) {
+        if (buildSdkVersionProvider.isAtLeastN) {
             droppedFrames = dropCountSinceLastInvocation
             unknownDelayDuration = frameMetrics.getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION)
             inputHandlingDuration = frameMetrics.getMetric(FrameMetrics.INPUT_HANDLING_DURATION)
@@ -319,12 +317,12 @@ internal class FrameStatesAggregator(
             firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == IS_FIRST_DRAW_FRAME
         }
         @SuppressLint("InlinedApi")
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.isAtLeastO) {
             intendedVsyncTimestamp = frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP)
             vsyncTimestamp = frameMetrics.getMetric(FrameMetrics.VSYNC_TIMESTAMP)
         }
         @SuppressLint("InlinedApi")
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
+        if (buildSdkVersionProvider.isAtLeastS) {
             gpuDuration = frameMetrics.getMetric(FrameMetrics.GPU_DURATION)
             deadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)
         }

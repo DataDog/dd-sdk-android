@@ -9,6 +9,7 @@ package com.datadog.gradle.config
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.withType
 
 inline fun <reified T : Any> Project.extensionConfig(
     crossinline configure: T.() -> Unit
@@ -20,7 +21,5 @@ inline fun <reified T : Any> Project.extensionConfig(
 inline fun <reified T : Task> Project.taskConfig(
     crossinline configure: T.() -> Unit
 ) {
-    project.afterEvaluate {
-        tasks.withType(T::class.java).configureEach { configure() }
-    }
+    tasks.withType<T>().configureEach { configure() }
 }

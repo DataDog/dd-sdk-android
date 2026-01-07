@@ -8,15 +8,17 @@ package com.datadog.gradle.plugin.gitclone
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.register
 
 class GitCloneDependenciesPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
         val extension = target.extensions
-            .create(EXT_NAME, GitCloneDependenciesExtension::class.java)
+            .create<GitCloneDependenciesExtension>(EXT_NAME)
 
         target.tasks
-            .register(TASK_NAME, GitCloneDependenciesTask::class.java) {
+            .register<GitCloneDependenciesTask>(TASK_NAME) {
                 this.extension = extension
             }
     }

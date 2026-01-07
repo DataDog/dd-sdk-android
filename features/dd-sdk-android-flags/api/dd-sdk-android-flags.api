@@ -76,6 +76,12 @@ public abstract interface class com/datadog/android/flags/StateObservable {
 	public abstract fun removeListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 }
 
+public final class com/datadog/android/flags/_FlagsInternalProxy {
+	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
+	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
+	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
+}
+
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 	public static final field FLAG_NOT_FOUND Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PARSE_ERROR Lcom/datadog/android/flags/model/ErrorCode;
@@ -86,6 +92,7 @@ public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 }
 
 public final class com/datadog/android/flags/model/EvaluationContext {
+	public static final field Companion Lcom/datadog/android/flags/model/EvaluationContext$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -97,6 +104,10 @@ public final class com/datadog/android/flags/model/EvaluationContext {
 	public final fun getTargetingKey ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/flags/model/EvaluationContext$Companion {
+	public final fun getEMPTY ()Lcom/datadog/android/flags/model/EvaluationContext;
 }
 
 public final class com/datadog/android/flags/model/ExposureEvent {
@@ -253,5 +264,15 @@ public final class com/datadog/android/flags/model/ResolutionReason : java/lang/
 	public static final field TARGETING_MATCH Lcom/datadog/android/flags/model/ResolutionReason;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/model/ResolutionReason;
 	public static fun values ()[Lcom/datadog/android/flags/model/ResolutionReason;
+}
+
+public abstract interface class com/datadog/android/flags/model/UnparsedFlag {
+	public abstract fun getAllocationKey ()Ljava/lang/String;
+	public abstract fun getDoLog ()Z
+	public abstract fun getExtraLogging ()Lorg/json/JSONObject;
+	public abstract fun getReason ()Ljava/lang/String;
+	public abstract fun getVariationKey ()Ljava/lang/String;
+	public abstract fun getVariationType ()Ljava/lang/String;
+	public abstract fun getVariationValue ()Ljava/lang/String;
 }
 
