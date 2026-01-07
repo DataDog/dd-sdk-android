@@ -24,6 +24,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import java.math.BigDecimal
 
 @ExtendWith(ForgeExtension::class, MockitoExtension::class)
@@ -278,10 +281,16 @@ internal class ValueConvertersTest {
         // When
         val result = convertToValue(customObject, mockInternalLogger)
 
-        // Then - Converts to string via toString() and logs warning
+        // Then - Converts to string via toString()
         assertThat(result).isInstanceOf(Value.String::class.java)
         assertThat((result as Value.String).asString()).isEqualTo(customObject.toString())
-        // Note: Warning logged to Android Log: "Unexpected type CustomTestObject converted to string"
+
+        // Verify warning was logged
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any()
+        )
     }
 
     // endregion
