@@ -1087,8 +1087,10 @@ datadog:
       - "kotlin.Long.toFloat()"
       - "kotlin.Long.toULong()"
       - "kotlin.LongArray.constructor(kotlin.Int)"
+      - "kotlin.Number.toDouble()"
       - "kotlin.Number.toFloat()"
       - "kotlin.Number.toLong()"
+      - "kotlin.Short.toInt()"
       - "kotlin.Short.toUShort()"
       - "kotlin.ULong.toLong()"
       - "kotlin.String.lowercase()"
@@ -1292,6 +1294,16 @@ datadog:
       - "org.json.JSONObject.toJsonObject()"
       - "org.json.JSONObject.length()"
       - "org.json.JSONObject.opt(kotlin.String?)"
+      # endregion
+      # region OpenFeature
+      - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
+      - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
+      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?)"
+      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?, dev.openfeature.kotlin.sdk.EvaluationMetadata)"
+      - "dev.openfeature.kotlin.sdk.Value.Boolean.constructor(kotlin.Boolean)"
+      - "dev.openfeature.kotlin.sdk.Value.Double.constructor(kotlin.Double)"
+      - "dev.openfeature.kotlin.sdk.Value.Integer.constructor(kotlin.Int)"
+      - "dev.openfeature.kotlin.sdk.Value.String.constructor(kotlin.String)"
       # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.Span.getInvalid()"
