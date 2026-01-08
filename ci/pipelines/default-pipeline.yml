@@ -108,6 +108,7 @@ analysis:detekt-custom:
     - ./gradlew :dd-sdk-android-core:customDetektRules
     - ./gradlew :dd-sdk-android-internal:customDetektRules
     - ./gradlew :features:dd-sdk-android-flags:customDetektRules
+    - ./gradlew :features:dd-sdk-android-flags-openfeature:customDetektRules
     - ./gradlew :features:dd-sdk-android-logs:customDetektRules
     - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
     - ./gradlew :features:dd-sdk-android-rum:customDetektRules
@@ -119,7 +120,6 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
-    - ./gradlew :features:dd-sdk-android-flags-openfeature:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil3:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
