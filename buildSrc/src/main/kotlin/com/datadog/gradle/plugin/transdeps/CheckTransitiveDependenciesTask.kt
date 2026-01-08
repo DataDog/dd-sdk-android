@@ -7,21 +7,20 @@
 package com.datadog.gradle.plugin.transdeps
 
 import com.datadog.gradle.plugin.CheckGeneratedFileTask
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
-import java.io.File
 import javax.inject.Inject
 
-open class CheckTransitiveDependenciesTask @Inject constructor(
+abstract class CheckTransitiveDependenciesTask @Inject constructor(
     execOperations: ExecOperations
 ) : CheckGeneratedFileTask(
     genTaskName = TransitiveDependenciesPlugin.TASK_GEN_TRANSITIVE_DEPS,
     execOperations
 ) {
-
-    @InputFile
-    lateinit var dependenciesFile: File
+    @get:InputFile
+    abstract val dependenciesFile: RegularFileProperty
 
     init {
         group = "datadog"
@@ -32,11 +31,8 @@ open class CheckTransitiveDependenciesTask @Inject constructor(
 
     @TaskAction
     fun applyTask() {
-        verifyGeneratedFileExists(dependenciesFile)
+        verifyGeneratedFileExists(dependenciesFile.get().asFile)
     }
-
-    @InputFile
-    fun getInputFile() = dependenciesFile
 
     // endregion
 }

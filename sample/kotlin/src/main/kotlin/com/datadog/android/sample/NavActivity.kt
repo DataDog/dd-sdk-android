@@ -19,9 +19,12 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
 import timber.log.Timber
+import kotlin.random.Random
 
 @Suppress("UndocumentedPublicProperty", "UndocumentedPublicClass")
 class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
@@ -61,6 +64,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
         val tracking = Preferences.defaultPreferences(this).getTrackingConsent()
         updateTrackingConsentLabel(tracking)
+        reportTTFD()
     }
 
     override fun onPause() {
@@ -130,6 +134,15 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     private fun updateTrackingConsentLabel(trackingConsent: TrackingConsent) {
         appInfoView.text = "${BuildConfig.FLAVOR} / Tracking: $trackingConsent"
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Suppress("MagicNumber")
+    private fun reportTTFD() {
+        rootView.postDelayed({
+            Toast.makeText(this, "App fully displayed", Toast.LENGTH_SHORT).show()
+            GlobalRumMonitor.get().reportAppFullyDisplayed()
+        }, Random.nextLong(3000, 5000))
     }
 
     // endregion

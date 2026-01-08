@@ -6,25 +6,24 @@
 
 package com.datadog.android.core.internal.time
 
-import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Process
-import android.os.SystemClock
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 internal class DefaultAppStartTimeProvider(
+    private val timeProviderFactory: () -> TimeProvider,
     buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : AppStartTimeProvider {
 
     override val appStartTimeNs: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        @SuppressLint("NewApi")
         when {
-            buildSdkVersionProvider.version >= Build.VERSION_CODES.N -> {
-                val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-                val result = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+            buildSdkVersionProvider.isAtLeastN -> {
+                val timeProvider = timeProviderFactory()
+                val diffMs = timeProvider.getDeviceElapsedRealtimeMillis() - Process.getStartElapsedRealtime()
+                val result = timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 
                 /**
                  * Occasionally [Process.getStartElapsedRealtime] returns buggy values. We filter them and fall back
@@ -41,7 +40,7 @@ internal class DefaultAppStartTimeProvider(
     }
 
     override val appUptimeNs: Long
-        get() = System.nanoTime() - appStartTimeNs
+        get() = timeProviderFactory().getDeviceElapsedTimeNanos() - appStartTimeNs
 
     companion object {
         internal val PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS = 10.seconds.inWholeNanoseconds

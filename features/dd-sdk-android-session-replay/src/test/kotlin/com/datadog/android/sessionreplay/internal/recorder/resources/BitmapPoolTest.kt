@@ -7,11 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
-import android.os.Build
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -29,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -40,8 +39,7 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -53,6 +51,9 @@ internal class BitmapPoolTest {
 
     @Mock
     lateinit var mockCacheUtils: CacheUtils<String, Bitmap>
+
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Spy
     lateinit var spyBitmapPoolHelper: BitmapPoolHelper
@@ -76,6 +77,7 @@ internal class BitmapPoolTest {
         }.`when`(spyBitmapPoolHelper).safeCall<Any>(any())
 
         testedCache = BitmapPool(
+            buildSdkVersionProvider = mockBuildSdkVersionProvider,
             bitmapPoolHelper = spyBitmapPoolHelper,
             cacheUtils = mockCacheUtils
         )
@@ -170,9 +172,9 @@ internal class BitmapPoolTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.N)
-    fun `M add to pool W put() { and bitmap not in pool, api N }`() {
+    fun `M add to pool W put() { and bitmap not in pool, api N+ }`() {
         // When
+        whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
         testedCache.put(mockBitmap)
         val actual = testedCache.getBitmapByProperties(width, height, mockConfig)
 

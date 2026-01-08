@@ -7,11 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
-import android.os.Build
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -24,14 +22,14 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -42,19 +40,22 @@ internal class WebPImageCompressionTest {
     lateinit var mockBitmap: Bitmap
 
     @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
+    @Mock
     lateinit var logger: InternalLogger
 
     @BeforeEach
     fun setup() {
-        testedImageCompression = WebPImageCompression(logger)
+        testedImageCompression = WebPImageCompression(logger, mockBuildSdkVersionProvider)
     }
 
     // region compressBitmapToStream
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.R)
-    fun `M call with webp_lossy W compressBitmapToStream() { api is R or gt }`() {
+    fun `M call with webp_lossy W compressBitmapToStream() { api is R+ }`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn true
         val captor = argumentCaptor<Bitmap.CompressFormat>()
 
         // When
@@ -71,9 +72,9 @@ internal class WebPImageCompressionTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
-    fun `M call with webp W compressBitmapToStream() { api lt R }`() {
+    fun `M call with webp W compressBitmapToStream() { api below R }`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastR) doReturn false
         val captor = argumentCaptor<Bitmap.CompressFormat>()
 
         // When

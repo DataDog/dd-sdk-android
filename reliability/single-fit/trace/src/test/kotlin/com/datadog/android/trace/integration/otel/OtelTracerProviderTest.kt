@@ -312,7 +312,7 @@ internal class OtelTracerProviderTest {
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
         var leastSignificantParentSpanTraceId: String
-        var mostSignficantParentSpanTraceId: String
+        var mostSignificantParentSpanTraceId: String
         var parentSpanId: String
         var spanId: String
         var fullChildDuration: Long
@@ -321,7 +321,7 @@ internal class OtelTracerProviderTest {
         val fullParentSpanDuration = measureNanoTime {
             val parenSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
             leastSignificantParentSpanTraceId = parenSpan.leastSignificant64BitsTraceIdAsHex()
-            mostSignficantParentSpanTraceId = parenSpan.mostSignificant64BitsTraceIdAsHex()
+            mostSignificantParentSpanTraceId = parenSpan.mostSignificant64BitsTraceIdAsHex()
             parentSpanId = parenSpan.spanIdAsHex()
             fullChildDuration = measureNanoTime {
                 val span = tracer
@@ -346,7 +346,7 @@ internal class OtelTracerProviderTest {
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantParentSpanTraceId)
-                hasMostSignificant64BitsTraceId(mostSignficantParentSpanTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantParentSpanTraceId)
                 hasValidMostSignificant64BitsTraceId()
                 hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(parentSpanId)
@@ -363,7 +363,7 @@ internal class OtelTracerProviderTest {
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantParentSpanTraceId)
-                hasMostSignificant64BitsTraceId(mostSignficantParentSpanTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantParentSpanTraceId)
                 hasSpanId(spanId)
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasVersion(stubSdkCore.getDatadogContext().version)

@@ -22,7 +22,6 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -86,7 +85,7 @@ internal class DefaultRecorderProvider(
             touchPrivacyManager = touchPrivacyManager,
             textAndInputPrivacy = textAndInputPrivacy,
             recordWriter = recordWriter,
-            timeProvider = DefaultTimeProvider(),
+            timeProvider = sdkCore.timeProvider,
             mappers = customMappers + builtInMappers(),
             customOptionSelectorDetectors = customOptionSelectorDetectors,
             customDrawableMappers = customDrawableMappers,

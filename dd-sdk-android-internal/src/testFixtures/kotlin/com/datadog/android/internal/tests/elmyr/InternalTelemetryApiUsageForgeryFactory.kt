@@ -13,11 +13,22 @@ import fr.xgouchet.elmyr.ForgeryFactory
 class InternalTelemetryApiUsageForgeryFactory : ForgeryFactory<InternalTelemetryEvent.ApiUsage> {
 
     override fun getForgery(forge: Forge): InternalTelemetryEvent.ApiUsage {
-        return InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
-            overwrite = forge.aBool(),
-            noView = forge.aBool(),
-            noActiveView = forge.aBool(),
-            additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+        return forge.anElementFrom(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                overwrite = forge.aBool(),
+                noView = forge.aBool(),
+                noActiveView = forge.aBool(),
+                additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+            ),
+            InternalTelemetryEvent.ApiUsage.AddOperationStepVital(
+                actionType = forge.aValueFrom(
+                    InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType::class.java
+                ),
+                additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+            ),
+            InternalTelemetryEvent.ApiUsage.TrackWebView(
+                additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+            )
         )
     }
 }

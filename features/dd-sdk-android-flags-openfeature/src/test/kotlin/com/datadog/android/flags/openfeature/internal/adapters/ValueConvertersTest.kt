@@ -24,6 +24,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import java.math.BigDecimal
 
 @ExtendWith(ForgeExtension::class, MockitoExtension::class)
@@ -110,201 +113,6 @@ internal class ValueConvertersTest {
         // Then - JSONArray is now treated as unexpected type and converted to string
         assertThat(result).isInstanceOf(Value.String::class.java)
         assertThat((result as Value.String).asString()).isEqualTo(jsonArray.toString())
-    }
-
-    // endregion
-
-    // region convertMapToValue
-
-    @Test
-    fun `M convert empty Map W convertMapToValue(, mockInternalLogger) {empty map}`() {
-        // Given
-        val map = emptyMap<String, Any>()
-
-        // When
-        val result = convertMapToValue(map, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Structure::class.java)
-        val structure = result.asStructure()
-        assertThat(structure).isEmpty()
-    }
-
-    @Test
-    fun `M convert simple Map W convertMapToValue(, mockInternalLogger) {primitive values}`(
-        @StringForgery stringKey: String,
-        @StringForgery stringValue: String,
-        @IntForgery intValue: Int,
-        @BoolForgery boolValue: Boolean,
-        @DoubleForgery doubleValue: Double
-    ) {
-        // Given
-        val map = mapOf(
-            stringKey to stringValue,
-            "intKey" to intValue,
-            "boolKey" to boolValue,
-            "doubleKey" to doubleValue
-        )
-
-        // When
-        val result = convertMapToValue(map, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Structure::class.java)
-        val structure = result.asStructure()
-        assertThat(structure).hasSize(4)
-        checkNotNull(structure)
-        assertThat((structure[stringKey] as Value.String).asString()).isEqualTo(stringValue)
-        assertThat((structure["intKey"] as Value.Integer).asInteger()).isEqualTo(intValue)
-        assertThat((structure["boolKey"] as Value.Boolean).asBoolean()).isEqualTo(boolValue)
-        assertThat((structure["doubleKey"] as Value.Double).asDouble()).isEqualTo(doubleValue)
-    }
-
-    @Test
-    fun `M convert nested Map W convertMapToValue(, mockInternalLogger) {nested structure}`(
-        @StringForgery topKey: String,
-        @StringForgery topValue: String,
-        @StringForgery nestedKey: String,
-        @StringForgery nestedValue: String
-    ) {
-        // Given
-        val nestedMap = mapOf(nestedKey to nestedValue)
-        val map = mapOf(
-            topKey to topValue,
-            "nested" to nestedMap
-        )
-
-        // When
-        val result = convertMapToValue(map, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Structure::class.java)
-        val structure = result.asStructure()
-        checkNotNull(structure)
-        assertThat(structure[topKey]).isInstanceOf(Value.String::class.java)
-        assertThat(structure["nested"]).isInstanceOf(Value.Structure::class.java)
-        val nested = (structure["nested"] as Value.Structure).asStructure()
-        checkNotNull(nested)
-        assertThat((nested[nestedKey] as Value.String).asString()).isEqualTo(nestedValue)
-    }
-
-    @Test
-    fun `M handle List in map W convertMapToValue(, mockInternalLogger) {list value}`(forge: Forge) {
-        // Given
-        val listKey = forge.anAlphabeticalString()
-        val listItem = forge.anAlphabeticalString()
-        val list = listOf(listItem)
-        val map = mapOf(listKey to list)
-
-        // When
-        val result = convertMapToValue(map, mockInternalLogger)
-
-        // Then
-        val structure = result.asStructure()
-        checkNotNull(structure)
-        assertThat(structure[listKey]).isInstanceOf(Value.List::class.java)
-        val resultList = (structure[listKey] as Value.List).asList()
-        checkNotNull(resultList)
-        assertThat(resultList).hasSize(1)
-        assertThat((resultList[0] as Value.String).asString()).isEqualTo(listItem)
-    }
-
-    // endregion
-
-    // region convertListToValue
-
-    @Test
-    fun `M convert empty List W convertListToValue(, mockInternalLogger) {empty list}`() {
-        // Given
-        val list = emptyList<Any>()
-
-        // When
-        val result = convertListToValue(list, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.List::class.java)
-        assertThat(checkNotNull(result.asList())).isEmpty()
-    }
-
-    @Test
-    fun `M convert List with primitives W convertListToValue(, mockInternalLogger) {mixed types}`(forge: Forge) {
-        // Given
-        val stringValue = forge.anAlphabeticalString()
-        val intValue = forge.anInt()
-        val boolValue = forge.aBool()
-        val doubleValue = forge.aDouble()
-        val list = listOf(stringValue, intValue, boolValue, doubleValue)
-
-        // When
-        val result = convertListToValue(list, mockInternalLogger)
-
-        // Then
-        val resultList = checkNotNull(result.asList())
-        assertThat(resultList).hasSize(4)
-        assertThat((resultList[0] as Value.String).asString()).isEqualTo(stringValue)
-        assertThat((resultList[1] as Value.Integer).asInteger()).isEqualTo(intValue)
-        assertThat((resultList[2] as Value.Boolean).asBoolean()).isEqualTo(boolValue)
-        assertThat((resultList[3] as Value.Double).asDouble()).isEqualTo(doubleValue)
-    }
-
-    @Test
-    fun `M convert nested lists W convertListToValue(, mockInternalLogger) {list of lists}`(forge: Forge) {
-        // Given
-        val innerValue = forge.anAlphabeticalString()
-        val innerList = listOf(innerValue)
-        val outerList = listOf(innerList)
-
-        // When
-        val result = convertListToValue(outerList, mockInternalLogger)
-
-        // Then
-        val resultList = checkNotNull(result.asList())
-        assertThat(resultList).hasSize(1)
-        assertThat(resultList[0]).isInstanceOf(Value.List::class.java)
-        val innerResultList = (resultList[0] as Value.List).asList()
-        checkNotNull(innerResultList)
-        assertThat(innerResultList).hasSize(1)
-        assertThat((innerResultList[0] as Value.String).asString()).isEqualTo(innerValue)
-    }
-
-    @Test
-    fun `M convert list with maps W convertListToValue(, mockInternalLogger) {list of maps}`(
-        @StringForgery key: String,
-        @StringForgery value: String
-    ) {
-        // Given
-        val map = mapOf(key to value)
-        val list = listOf(map)
-
-        // When
-        val result = convertListToValue(list, mockInternalLogger)
-
-        // Then
-        val resultList = checkNotNull(result.asList())
-        assertThat(resultList).hasSize(1)
-        assertThat(resultList[0]).isInstanceOf(Value.Structure::class.java)
-        val structure = (resultList[0] as Value.Structure).asStructure()
-        checkNotNull(structure)
-        assertThat((structure[key] as Value.String).asString()).isEqualTo(value)
-    }
-
-    @Test
-    fun `M convert null to Value Null W convertListToValue(, mockInternalLogger) {list with null}`(forge: Forge) {
-        // Given
-        val stringValue = forge.anAlphabeticalString()
-        val list = listOf(stringValue, null, stringValue)
-
-        // When
-        val result = convertListToValue(list, mockInternalLogger)
-
-        // Then
-        val resultList = checkNotNull(result.asList())
-        assertThat(resultList).hasSize(3)
-        assertThat(resultList[0]).isInstanceOf(Value.String::class.java)
-        assertThat((resultList[0] as Value.String).asString()).isEqualTo(stringValue)
-        assertThat(resultList[1]).isEqualTo(Value.Null)
-        assertThat(resultList[2]).isInstanceOf(Value.String::class.java)
-        assertThat((resultList[2] as Value.String).asString()).isEqualTo(stringValue)
     }
 
     // endregion
@@ -476,7 +284,21 @@ internal class ValueConvertersTest {
         // Then - Converts to string via toString() and logs warning
         assertThat(result).isInstanceOf(Value.String::class.java)
         assertThat((result as Value.String).asString()).isEqualTo(customObject.toString())
-        // Note: Warning logged to Android Log: "Unexpected type CustomTestObject converted to string"
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Unexpected type")
+            assertThat(message).contains("CustomTestObject")
+        }
     }
 
     // endregion
@@ -530,40 +352,6 @@ internal class ValueConvertersTest {
         // Then
         assertThat(result).isInstanceOf(Value.String::class.java)
         assertThat((result as Value.String).asString()).isEmpty()
-    }
-
-    @Test
-    fun `M handle large list W convertListToValue(, mockInternalLogger) {many elements}`(forge: Forge) {
-        // Given
-        val list = (1..100).map { forge.anInt() }
-
-        // When
-        val result = convertListToValue(list, mockInternalLogger)
-
-        // Then
-        val resultList = checkNotNull(result.asList())
-        assertThat(resultList).hasSize(100)
-        resultList.forEach { value ->
-            assertThat(value).isInstanceOf(Value.Integer::class.java)
-        }
-    }
-
-    @Test
-    fun `M handle large map W convertMapToValue(, mockInternalLogger) {many keys}`(forge: Forge) {
-        // Given
-        val keys = (1..100).map { "key$it" }
-        val map = keys.associateWith { forge.anInt() }
-
-        // When
-        val result = convertMapToValue(map, mockInternalLogger)
-
-        // Then
-        val structure = result.asStructure()
-        checkNotNull(structure)
-        assertThat(structure).hasSize(100)
-        keys.forEach { key ->
-            assertThat(structure[key]).isInstanceOf(Value.Integer::class.java)
-        }
     }
 
     // endregion

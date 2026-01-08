@@ -56,10 +56,6 @@ internal class SingleFileOrchestrator(
         return null
     }
 
-    override fun getRootDirName(): String? {
-        return file.parentFile?.nameWithoutExtension
-    }
-
     // single file orchestrator has a single file, so this is essentially a noop implementation
     override fun decrementAndGetPendingFilesCount(): Int {
         return 0

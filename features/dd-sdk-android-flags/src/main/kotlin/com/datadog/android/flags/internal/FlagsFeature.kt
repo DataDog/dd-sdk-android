@@ -106,7 +106,10 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
         isInitialized = true
         sdkCore.setContextUpdateReceiver(this)
         dataWriter = createDataWriter()
-        processor = ExposureEventsProcessor(dataWriter)
+        processor = ExposureEventsProcessor(
+            writer = dataWriter,
+            timeProvider = sdkCore.timeProvider
+        )
     }
 
     override fun onStop() {

@@ -46,9 +46,10 @@ data class EvaluationContext(
 
     companion object {
         /**
-         * Creates an empty evaluation context.
+         * An evaluation context with no targeting key and no attributes.
          *
-         * This context is used for "no-context" evaluations or "global flags".
+         * Use this when you want to evaluate flags without any targeting or user attributes.
+         * This constant provides a standard empty context for such evaluations.
          */
         val EMPTY: EvaluationContext = EvaluationContext(targetingKey = "")
     }

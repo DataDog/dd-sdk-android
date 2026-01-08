@@ -55,9 +55,11 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
+import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -96,7 +98,8 @@ internal class DatadogRumMonitor(
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    insightsCollector: InsightsCollector
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -118,7 +121,8 @@ internal class DatadogRumMonitor(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
+        rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
+        insightsCollector = insightsCollector
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -441,6 +445,13 @@ internal class DatadogRumMonitor(
         )
     }
 
+    @ExperimentalRumApi
+    override fun reportAppFullyDisplayed() {
+        handleEvent(
+            RumRawEvent.AppStartTTFDEvent()
+        )
+    }
+
     // endregion
 
     // region RumMonitor/Attributes
@@ -657,6 +668,14 @@ internal class DatadogRumMonitor(
         handleEvent(
             RumRawEvent.AppStartTTIDEvent(
                 info = info
+            )
+        )
+    }
+
+    override fun sendAppStartEvent(scenario: RumStartupScenario) {
+        handleEvent(
+            RumRawEvent.AppStartEvent(
+                scenario = scenario
             )
         )
     }

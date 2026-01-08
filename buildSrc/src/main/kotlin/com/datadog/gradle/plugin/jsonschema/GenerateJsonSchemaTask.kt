@@ -9,6 +9,10 @@ package com.datadog.gradle.plugin.jsonschema
 import com.datadog.gradle.plugin.jsonschema.generator.FileGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
@@ -17,7 +21,6 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.nio.file.Paths
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
 
@@ -27,7 +30,7 @@ import java.nio.file.Paths
  * It will read source JsonSchema files and generate the relevant Kotlin data classes.
  */
 @CacheableTask
-open class GenerateJsonSchemaTask : DefaultTask() {
+abstract class GenerateJsonSchemaTask : DefaultTask() {
 
     init {
         group = "datadog"
@@ -57,41 +60,40 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     /**
      * The directory from which to read the files json schema files.
      */
-    @Input
-    var inputDirPath: String = ""
+    @get:Input
+    abstract val inputDirPath: Property<String>
 
     /**
      * The package name where to generate the models based on the schema files.
      * (E.g.: `com.example.model`).
      */
-    @Input
-    var targetPackageName: String = ""
+    @get:Input
+    abstract val targetPackageName: Property<String>
 
     /**
      * The list of schema files to be ignored.
      */
-    @Input
-    var ignoredFiles: Array<String> = emptyArray()
+    @get:Input
+    abstract val ignoredFiles: ListProperty<String>
 
     /**
      * The mapping of the schema file to the generated model name. Mostly used for merged
      * schemas.
      */
-    @Input
-    var inputNameMapping: Map<String, String> = emptyMap()
+    @get:Input
+    abstract val inputNameMapping: MapProperty<String, String>
+
+    /**
+     * The directory to package-agnostic directory write the generated files.
+     */
+    @get:Input
+    abstract val destinationGenDirectoryPath: Property<String>
 
     /**
      * The [OutputDirectory] (`src/main/kotlin/{out_package}`).
      */
-    @OutputDirectory
-    fun getOutputPackage(): File {
-        val topDir = getOutputDir()
-        val outputPackageDir = File(
-            topDir.absolutePath + File.separator +
-                targetPackageName.replace('.', File.separatorChar)
-        )
-        return outputPackageDir
-    }
+    @get:OutputDirectory
+    abstract val destinationPackageDirectory: DirectoryProperty
 
     // endregion
 
@@ -103,16 +105,16 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     @TaskAction
     fun performTask() {
         val inputDir = getInputDir()
-        val outputDir = getOutputDir()
+        val outputDir = File(destinationGenDirectoryPath.get())
         val files = getInputFiles()
             .filter {
-                it.name !in ignoredFiles && it.parentFile == inputDir
+                it.name !in ignoredFiles.get() && it.parentFile == inputDir
             }
 
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
-        val reader = JsonSchemaReader(inputNameMapping, logger)
-        val generator = FileGenerator(outputDir, targetPackageName, logger)
+        val reader = JsonSchemaReader(inputNameMapping.get(), logger)
+        val generator = FileGenerator(outputDir, targetPackageName.get(), logger)
         files.forEach {
             val type = reader.readSchema(it)
             generator.generate(type)
@@ -120,18 +122,7 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     }
 
     private fun getInputDir(): File {
-        return File("${project.projectDir.path}${File.separator}$inputDirPath")
-    }
-
-    private fun getOutputDir(): File {
-        val json2kotlinDir = project.layout.buildDirectory
-            .dir(Paths.get("generated", "json2kotlin").toString())
-            .get()
-            .asFile
-        val mainDir = File(json2kotlinDir, "main")
-        val file = File(mainDir, "kotlin")
-        if (!file.exists()) file.mkdirs()
-        return file
+        return File("${project.projectDir.path}${File.separator}${inputDirPath.get()}")
     }
 
     // endregion
