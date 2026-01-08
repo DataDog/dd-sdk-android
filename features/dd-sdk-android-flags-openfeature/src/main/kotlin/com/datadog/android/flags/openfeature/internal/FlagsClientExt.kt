@@ -32,7 +32,9 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
 
             override fun onFailure(error: Throwable) {
                 continuation.resumeWithException(
-                    OpenFeatureError.GeneralError(error.message ?: "")
+                    OpenFeatureError.GeneralError(
+                        error.message ?: "Unknown error: ${error::class.simpleName}"
+                    )
                 )
             }
         }

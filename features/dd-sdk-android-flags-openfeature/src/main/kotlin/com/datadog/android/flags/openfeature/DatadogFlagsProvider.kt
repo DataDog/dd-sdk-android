@@ -101,7 +101,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError.ProviderFatalError if initialization fails
      */
-    @Suppress("SwallowedException") // ProviderFatalError has no cause parameter, message is propagated.
+    @Suppress("SwallowedException") // Message is propagated but detekt still considers it a swallowed exception.
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
         val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
         try {
@@ -114,6 +114,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                 { "Provider initialization failed: ${e.message}" },
                 e
             )
+
             throw OpenFeatureError.ProviderFatalError("Unable to initialize the provider: ${e.message}")
         }
     }
@@ -282,6 +283,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * @return Flow of provider state change events
      */
+    // Safe: We properly call awaitClose to cleanup listener, satisfying callbackFlow requirements
+    @Suppress("UnsafeThirdPartyFunctionCall")
     override fun observe(): Flow<OpenFeatureProviderEvents> = callbackFlow {
         val listener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
@@ -294,6 +297,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                         error = OpenFeatureError.ProviderFatalError()
                     )
                 }
+                // Safe: trySend returns ChannelResult, never throws exceptions
+                @Suppress("UnsafeThirdPartyFunctionCall")
                 providerEvent?.let { trySend(it) }
             }
         }

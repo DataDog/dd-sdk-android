@@ -11,7 +11,6 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -110,7 +109,7 @@ internal class FlagsClientExtTest {
             }
         }
             .isInstanceOf(OpenFeatureError.GeneralError::class.java)
-            .hasMessage("")
+            .hasMessage("Unknown error: RuntimeException")
     }
 
     @Test

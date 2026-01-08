@@ -1207,7 +1207,6 @@ datadog:
       - "kotlinx.coroutines.CoroutineScope.async(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.CoroutineScope.launch(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.channels.ProducerScope.trySend(dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents)"
-      - "kotlinx.coroutines.flow.callbackFlow(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
       - "kotlinx.coroutines.flow.FlowCollector(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.flow(kotlin.coroutines.SuspendFunction1)"
