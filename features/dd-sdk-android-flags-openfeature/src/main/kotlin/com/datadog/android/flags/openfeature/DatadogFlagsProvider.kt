@@ -111,7 +111,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                { "Provider initialization failed: ${e.message}" },
+                { "Provider initialization failed" },
                 e
             )
 
@@ -124,7 +124,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * Per the OpenFeature spec, this method performs blocking work and suspends until
      * the provider is ready again or encounters an error. This allows the OpenFeature SDK
-     * to emit PROVIDER_RECONCILING events while this method executes.
+     * to emit [PROVIDER_RECONCILING] events while this method executes.
      *
      * Uses the callback API to wait for completion without manual listener management.
      *
@@ -272,8 +272,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
      *
      * **SDK emits** (not from provider):
-     * - PROVIDER_RECONCILING: SDK emits while [onContextSet] is executing
-     * - PROVIDER_CONTEXT_CHANGED: SDK emits when [onContextSet] completes
+     * - [PROVIDER_RECONCILING]: SDK emits while [onContextSet] is executing
+     * - [PROVIDER_CONTEXT_CHANGED]: SDK emits when [onContextSet] completes
      *
      * **Filtered** (not emitted):
      * - [FlagsClientState.NotReady]: Pre-initialization state, [initialize] blocks

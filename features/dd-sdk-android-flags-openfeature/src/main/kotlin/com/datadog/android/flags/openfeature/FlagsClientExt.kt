@@ -57,11 +57,11 @@ fun FlagsClient.asOpenFeatureProvider(): FeatureProvider = DatadogFlagsProvider.
 /**
  * Extension function to convert callback-based setEvaluationContext to suspend function.
  *
- * Wraps the callback API in a suspendCoroutine, converting success/failure callbacks
- * to resume/resumeWithException.
+ * Wraps the callback API in a [suspendCoroutine], converting success/failure callbacks
+ * to [resume]/[resumeWithException].
  *
  * @param context The evaluation context to set
- * @throws OpenFeatureError.GeneralError if setting the context fails or times out.
+ * @throws [OpenFeatureError.GeneralError] if setting the context fails or times out.
  */
 @Suppress("PackageNameVisibility") // Extension function, internal for implementation hiding
 internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {

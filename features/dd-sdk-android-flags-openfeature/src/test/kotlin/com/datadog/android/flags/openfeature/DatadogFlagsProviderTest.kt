@@ -612,7 +612,7 @@ internal class DatadogFlagsProviderTest {
 
     @Test
     fun `M not throw exception W shutdown()`() {
-        assertThatCode { provider.shutdown() }.doesNotThrowAnyException()
+        assertDoesNotThrow { provider.shutdown() }
     }
 
     // endregion
