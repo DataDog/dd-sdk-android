@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
-import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 /**
  * OpenFeature [FeatureProvider] implementation backed by Datadog Feature Flags.
@@ -142,76 +141,32 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     override fun getBooleanEvaluation(
         key: String,
         defaultValue: Boolean,
-        context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Boolean> {
-        context?.let {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
-            )
-        }
-        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
-    }
+        _context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Boolean> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getStringEvaluation(
         key: String,
         defaultValue: String,
-        context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<String> {
-        context?.let {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
-            )
-        }
-        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
-    }
+        _context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<String> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getIntegerEvaluation(
         key: String,
         defaultValue: Int,
-        context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Int> {
-        context?.let {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
-            )
-        }
-        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
-    }
+        _context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Int> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getDoubleEvaluation(
         key: String,
         defaultValue: Double,
-        context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Double> {
-        context?.let {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
-            )
-        }
-        return flagsClient.resolve(key, defaultValue).toProviderEvaluation()
-    }
+        _context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Double> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getObjectEvaluation(
         key: String,
         defaultValue: Value,
-        context: OpenFeatureEvaluationContext?
+        _context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Value> {
-        context?.let {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE }
-            )
-        }
-
         // Use sentinel to avoid unnecessary conversion of user's default value
         val resolutionDetails = flagsClient.resolve(key, SENTINEL_DEFAULT_MAP)
 
@@ -227,33 +182,17 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             )
         }
 
-        return try {
-            val resultValue = Value.Structure(
-                resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
-            )
+        val resultValue = Value.Structure(
+            resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
+        )
 
-            ProviderEvaluation(
-                value = resultValue,
-                variant = resolutionDetails.variant,
-                reason = resolutionDetails.reason?.name,
-                errorCode = null,
-                errorMessage = null
-            )
-        } catch (e: ClassCastException) {
-            ProviderEvaluation(
-                value = defaultValue,
-                reason = ERROR_REASON,
-                errorCode = OpenFeatureErrorCode.TYPE_MISMATCH,
-                errorMessage = "Type mismatch during value conversion: ${e.message}"
-            )
-        } catch (e: IllegalStateException) {
-            ProviderEvaluation(
-                value = defaultValue,
-                reason = ERROR_REASON,
-                errorCode = OpenFeatureErrorCode.GENERAL,
-                errorMessage = "Invalid value state: ${e.message}"
-            )
-        }
+        return ProviderEvaluation(
+            value = resultValue,
+            variant = resolutionDetails.variant,
+            reason = resolutionDetails.reason?.name,
+            errorCode = null,
+            errorMessage = null
+        )
     }
 
     override fun shutdown() {
@@ -313,9 +252,6 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
     companion object {
         private const val PROVIDER_NAME = "Datadog Feature Flags Provider"
-        private const val ERROR_REASON = "ERROR"
-        private const val INVOCATION_CONTEXT_NOT_SUPPORTED_MESSAGE =
-            "Invocation Context is not supported in Static-Paradigm clients"
 
         /**
          * Sentinel default value used to avoid unnecessary Value-to-Map conversion.
