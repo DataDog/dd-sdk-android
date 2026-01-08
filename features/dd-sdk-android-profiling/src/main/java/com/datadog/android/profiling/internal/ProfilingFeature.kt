@@ -20,6 +20,7 @@ import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.rum.TTIDEvent
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class ProfilingFeature(
@@ -30,15 +31,18 @@ internal class ProfilingFeature(
 
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
+    @Volatile
     private var ttidEvent: TTIDEvent? = null
 
+    @Volatile
     private var perfettoResult: PerfettoResult? = null
 
-    internal lateinit var appContext: Context
+    private val isTtidProfileSent: AtomicBoolean = AtomicBoolean(false)
+
+    private lateinit var appContext: Context
 
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
-        configuration.customEndpointUrl,
-        sdkCore.internalLogger
+        configuration.customEndpointUrl
     )
 
     override val storageConfiguration: FeatureStorageConfiguration
@@ -54,9 +58,15 @@ internal class ProfilingFeature(
             registerProfilingCallback(sdkCore.name) { result ->
                 perfettoResult = result
                 tryWriteProfilingEvent()
+                // if profiler stopped before TTID event, still update the status: in such case TTID profiling
+                // is incomplete
+                sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+                    context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+                }
             }
         }
         sdkCore.setEventReceiver(name, this)
+        // TODO RUM-13678: we need to update context from the actual profiler start call, not from here
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
@@ -102,10 +112,12 @@ internal class ProfilingFeature(
     private fun tryWriteProfilingEvent() {
         val perfettoResult = perfettoResult ?: return
         val ttidEvent = ttidEvent ?: return
-        dataWriter.write(
-            profilingResult = perfettoResult,
-            ttidEvent = ttidEvent
-        )
+        if (!isTtidProfileSent.getAndSet(true)) {
+            dataWriter.write(
+                profilingResult = perfettoResult,
+                ttidEvent = ttidEvent
+            )
+        }
     }
 
     private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
@@ -114,7 +126,7 @@ internal class ProfilingFeature(
 
     companion object {
         private const val UNSUPPORTED_EVENT_TYPE =
-            "Profiling feature receive an event of unsupported type=%s."
+            "Profiling feature received an event of unsupported type=%s."
         private const val PROFILER_IS_RUNNING = "profiler_is_running"
     }
 }

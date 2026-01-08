@@ -11,6 +11,7 @@ import android.content.SharedPreferences
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
@@ -22,12 +23,12 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -35,6 +36,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -97,6 +99,11 @@ class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
     }
 
+    @AfterEach
+    fun `tear down`() {
+        ProfilingStorage.sharedPreferencesStorage = null
+    }
+
     @Test
     fun `M allow 18h storage W init()`() {
         // When
@@ -142,35 +149,47 @@ class ProfilingFeatureTest {
             isNull()
         )
         assertThat(argumentCaptor.firstValue.invoke())
-            .isEqualTo("Profiling feature receive an event of unsupported type=${String::class.java.canonicalName}.")
+            .isEqualTo("Profiling feature received an event of unsupported type=${String::class.java.canonicalName}.")
         verify(mockProfiler, never()).stop(fakeInstanceName)
     }
 
     @Test
-    fun `M add profiling flag W profileNextAppStartup {enable = true}`() {
-        Mockito.mockStatic(ProfilingStorage::class.java).use { mockedStatic ->
+    fun `M add profiling flag W profileNextAppStartup {enable = true}`(
+        @StringForgery fakeAnotherInstanceName: String
+    ) {
+        // Given
+        val mockStorage = mock<SharedPreferencesStorage>()
+        whenever(mockStorage.getStringSet(ProfilingStorage.KEY_PROFILING_ENABLED)) doReturn setOf(
+            fakeAnotherInstanceName
+        )
+        ProfilingStorage.sharedPreferencesStorage = mockStorage
 
-            // When
-            testedFeature.profileNextAppStartup(true)
+        // When
+        testedFeature.profileNextAppStartup(true)
 
-            // Then
-            mockedStatic.verify {
-                ProfilingStorage.addProfilingFlag(mockContext, fakeInstanceName)
-            }
-        }
+        // Then
+        verify(mockStorage).putStringSet(
+            ProfilingStorage.KEY_PROFILING_ENABLED,
+            setOf(fakeInstanceName, fakeAnotherInstanceName)
+        )
     }
 
     @Test
     fun `M remove profiling flag W profileNextAppStartup {enable = false}`() {
-        Mockito.mockStatic(ProfilingStorage::class.java).use { mockedStatic ->
+        // Given
+        val mockStorage = mock<SharedPreferencesStorage>()
+        whenever(mockStorage.getStringSet(ProfilingStorage.KEY_PROFILING_ENABLED)) doReturn setOf(
+            fakeInstanceName
+        )
+        ProfilingStorage.sharedPreferencesStorage = mockStorage
 
-            // When
-            testedFeature.profileNextAppStartup(false)
+        // When
+        testedFeature.profileNextAppStartup(false)
 
-            // Then
-            mockedStatic.verify {
-                ProfilingStorage.removeProfilingFlag(mockContext, setOf(fakeInstanceName))
-            }
-        }
+        // Then
+        verify(mockStorage).putStringSet(
+            ProfilingStorage.KEY_PROFILING_ENABLED,
+            emptySet()
+        )
     }
 }

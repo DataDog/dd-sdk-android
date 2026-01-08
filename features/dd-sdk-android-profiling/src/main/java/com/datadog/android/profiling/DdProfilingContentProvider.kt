@@ -38,9 +38,8 @@ class DdProfilingContentProvider : ContentProvider() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private fun isProcessFromLauncher(): Boolean {
         val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-        return manager?.getHistoricalProcessStartReasons(0)?.any { info ->
-            info.reason == ApplicationStartInfo.START_REASON_LAUNCHER
-        } ?: false
+        return manager?.getHistoricalProcessStartReasons(1)
+            ?.firstOrNull()?.reason == ApplicationStartInfo.START_REASON_LAUNCHER
     }
 
     override fun query(
