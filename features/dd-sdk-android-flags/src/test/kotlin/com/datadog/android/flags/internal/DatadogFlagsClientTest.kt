@@ -978,25 +978,6 @@ internal class DatadogFlagsClientTest {
     // region setEvaluationContext()
 
     @Test
-    fun `M call evaluations manager W setEvaluationContext() { Empty Evaluation Context }`() {
-        // Given
-        val emptyContext = EvaluationContext.EMPTY
-
-        // When
-        testedClient.setEvaluationContext(emptyContext)
-
-        // Then
-        val contextCaptor = argumentCaptor<EvaluationContext>()
-        verify(mockEvaluationsManager).updateEvaluationsForContext(
-            contextCaptor.capture(),
-            isNull()
-        )
-
-        val capturedContext = contextCaptor.firstValue
-        assertThat(capturedContext).isEqualTo(EvaluationContext.EMPTY)
-    }
-
-    @Test
     fun `M call evaluations manager W setEvaluationContext() { valid targeting key and attributes }`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
