@@ -1206,8 +1206,6 @@ datadog:
       # region Kotlin Coroutines
       - "kotlinx.coroutines.CoroutineScope.async(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.CoroutineScope.launch(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
-      - "kotlinx.coroutines.channels.ProducerScope.trySend(dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents)"
-      - "kotlinx.coroutines.flow.callbackFlow(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
       - "kotlinx.coroutines.flow.FlowCollector(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.flow(kotlin.coroutines.SuspendFunction1)"
@@ -1331,17 +1329,4 @@ datadog:
       # endregion
       # region SQLDelight
       - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
-      # endregion
-      # region OpenFeature SDK
-      - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
-      - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
-      - "dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError.constructor(dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError)"
-      - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.GeneralError.constructor(kotlin.String)"
-      - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.ProviderFatalError.constructor()"
-      - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.ProviderFatalError.constructor(kotlin.String)"
-      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?)"
-      - "dev.openfeature.kotlin.sdk.Value.Boolean.constructor(kotlin.Boolean)"
-      - "dev.openfeature.kotlin.sdk.Value.Double.constructor(kotlin.Double)"
-      - "dev.openfeature.kotlin.sdk.Value.Integer.constructor(kotlin.Int)"
-      - "dev.openfeature.kotlin.sdk.Value.String.constructor(kotlin.String)"
       # endregion
