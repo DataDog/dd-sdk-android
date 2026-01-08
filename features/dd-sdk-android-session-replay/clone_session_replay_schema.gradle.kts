@@ -12,6 +12,7 @@ createRumSchemaCloneTask("cloneSessionReplayRootSchemas") {
         subFolder = "schemas/",
         destinationFolder = "src/main/json/schemas",
         excludedPrefixes = listOf(
+            "profiling",
             "session-replay/",
             "rum",
             "mobile",
