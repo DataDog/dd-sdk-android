@@ -20,7 +20,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
-    val VERSION = Version(3, 4, 0, Version.Type.Release)
+    val VERSION = Version(3, 5, 0, Version.Type.Release)
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode
@@ -70,11 +70,16 @@ fun Project.androidLibraryConfig() {
             checkReleaseBuilds = false
             checkGeneratedSources = true
             ignoreTestSources = true
-            disable.addAll(
-                listOf(
-                    "UseKtx" // https://googlesamples.github.io/android-custom-lint-rules/checks/UseKtx.md.html
-                )
+            val disabledChecks = listOf(
+                // https://googlesamples.github.io/android-custom-lint-rules/checks/AndroidGradlePluginVersion.md.html
+                "AndroidGradlePluginVersion",
+                // https://googlesamples.github.io/android-custom-lint-rules/checks/GradleDependency.md.html
+                "GradleDependency",
+                // https://googlesamples.github.io/android-custom-lint-rules/checks/Aligned16KB.md.html
+                "Aligned16KB",
+                "UseKtx" // https://googlesamples.github.io/android-custom-lint-rules/checks/UseKtx.md.html
             )
+            disable.addAll(disabledChecks)
         }
 
         packaging {

@@ -13,6 +13,9 @@ internal data class Time(
     val nanoTime: Long = System.nanoTime()
 )
 
+/**
+ * Convert a value obtained from [System.currentTimeMillis] to [Time].
+ */
 internal fun Long.asTime(): Time {
     // Because nanoTime only measures the nanoseconds since the beginning
     // of the current JVM lifetime, we need to approximate the nanotime we want.
@@ -21,4 +24,13 @@ internal fun Long.asTime(): Time {
     val now = Time()
     val offset = this - now.timestamp
     return Time(this, TimeUnit.MILLISECONDS.toNanos(offset) + now.nanoTime)
+}
+
+/**
+ * Convert a value obtained from [System.nanoTime] to [Time].
+ */
+internal fun Long.asTimeNs(): Time {
+    val now = Time()
+    val offset = this - now.nanoTime
+    return Time(TimeUnit.NANOSECONDS.toMillis(offset) + now.timestamp, this)
 }

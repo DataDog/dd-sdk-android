@@ -67,9 +67,13 @@ interface FlagsClient {
      * The context is used to determine which flag values to return based on user targeting
      * rules. This method triggers a background fetch of updated flag evaluations.
      *
+     * This method returns immediately without blocking. The actual context update and flag
+     * fetching happen asynchronously on a background thread.
+     *
      * @param context The [EvaluationContext] containing targeting key and attributes.
+     * @param callback Optional callback to notify when the operation completes or fails.
      */
-    fun setEvaluationContext(context: EvaluationContext)
+    fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback? = null)
 
     /**
      * Resolves a boolean flag value.
@@ -359,7 +363,6 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
-        internal const val FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME = "flags-state-notifications"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -370,9 +373,6 @@ interface FlagsClient {
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
-            )
-            val stateNotificationExecutorService = featureSdkCore.createSingleThreadExecutorService(
-                executorContext = FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME
             )
 
             val datadogContext = (featureSdkCore as InternalSdkCore).getDatadogContext()
@@ -425,9 +425,7 @@ interface FlagsClient {
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
                 val flagStateManager = FlagsStateManager(
-                    DDCoreSubscription.create(),
-                    stateNotificationExecutorService,
-                    featureSdkCore.internalLogger
+                    DDCoreSubscription.create()
                 )
 
                 val evaluationsManager = EvaluationsManager(

@@ -1,7 +1,10 @@
+interface com.datadog.android.flags.EvaluationContextCallback
+  fun onSuccess()
+  fun onFailure(Throwable)
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
-  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext)
+  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveDoubleValue(String, Double): Double
@@ -29,6 +32,10 @@ interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
   fun removeListener(FlagsStateListener)
+class com.datadog.android.flags._FlagsInternalProxy
+  constructor(FlagsClient)
+  fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>
+  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
@@ -51,6 +58,14 @@ enum com.datadog.android.flags.model.ResolutionReason
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR
+interface com.datadog.android.flags.model.UnparsedFlag
+  val variationType: String
+  val variationValue: String
+  val doLog: Boolean
+  val allocationKey: String
+  val variationKey: String
+  val extraLogging: org.json.JSONObject
+  val reason: String
 data class com.datadog.android.flags.model.ExposureEvent
   constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject)
   fun toJson(): com.google.gson.JsonElement

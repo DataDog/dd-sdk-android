@@ -19,6 +19,8 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import okhttp3.Call
@@ -45,8 +47,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override val name: String = "no-op"
 
-    override val time: TimeInfo = with(System.currentTimeMillis()) {
-        TimeInfo(
+    override val time: TimeInfo = with(timeProvider.getDeviceTimestampMillis()) {
+        TimeInfo.EMPTY.copy(
             deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(this),
             serverTimeNs = TimeUnit.MILLISECONDS.toNanos(this),
             serverTimeOffsetNs = 0L,
@@ -59,6 +61,9 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override val internalLogger: InternalLogger
         get() = SdkInternalLogger(this)
+
+    override val timeProvider: TimeProvider
+        get() = DefaultTimeProvider()
 
     // region InternalSdkCore
 
@@ -77,6 +82,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override val lastFatalAnrSent: Long?
         get() = null
     override val appStartTimeNs: Long
+        get() = 0
+    override val appUptimeNs: Long
         get() = 0
 
     // endregion

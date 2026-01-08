@@ -16,6 +16,12 @@ public final class com/datadog/android/rum/GlobalRumMonitor {
 	public static synthetic fun isRegistered$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
 }
 
+public final class com/datadog/android/rum/NoOpRumResourceAttributesProvider : com/datadog/android/rum/RumResourceAttributesProvider {
+	public fun <init> ()V
+	public fun onProvideAttributes (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)Ljava/util/Map;
+	public fun onProvideAttributes (Lokhttp3/Request;Lokhttp3/Response;Ljava/lang/Throwable;)Ljava/util/Map;
+}
+
 public final class com/datadog/android/rum/Rum {
 	public static final field INSTANCE Lcom/datadog/android/rum/Rum;
 	public static final fun enable (Lcom/datadog/android/rum/RumConfiguration;)V
@@ -108,7 +114,8 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun setVitalOperationStepEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public static synthetic fun setVitalEventMapper$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;ILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalsUpdateFrequency (Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackAnonymousUser (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackBackgroundEvents (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -156,6 +163,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun getDebug ()Z
 	public abstract fun removeAttribute (Ljava/lang/String;)V
 	public abstract fun removeViewAttributes (Ljava/util/Collection;)V
+	public abstract fun reportAppFullyDisplayed ()V
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startFeatureOperation (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
@@ -196,7 +204,12 @@ public final class com/datadog/android/rum/RumPerformanceMetric : java/lang/Enum
 }
 
 public abstract interface class com/datadog/android/rum/RumResourceAttributesProvider {
+	public abstract fun onProvideAttributes (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)Ljava/util/Map;
 	public abstract fun onProvideAttributes (Lokhttp3/Request;Lokhttp3/Response;Ljava/lang/Throwable;)Ljava/util/Map;
+}
+
+public final class com/datadog/android/rum/RumResourceAttributesProvider$DefaultImpls {
+	public static fun onProvideAttributes (Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)Ljava/util/Map;
 }
 
 public final class com/datadog/android/rum/RumResourceKind : java/lang/Enum {
@@ -261,6 +274,7 @@ public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setInsightsCollector (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }
@@ -368,6 +382,27 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
 }
 
+public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public abstract fun addUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+	public abstract fun getMaxSize ()I
+	public abstract fun getUpdateIntervalMs ()J
+	public abstract fun onAction ()V
+	public abstract fun onCpuVital (Ljava/lang/Double;)V
+	public abstract fun onLongTask (JJ)V
+	public abstract fun onMemoryVital (Ljava/lang/Double;)V
+	public abstract fun onNetworkRequest (JJ)V
+	public abstract fun onNewView (Ljava/lang/String;)V
+	public abstract fun onSlowFrame (JJ)V
+	public abstract fun onSlowFrameRate (Ljava/lang/Double;)V
+	public abstract fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+	public abstract fun setMaxSize (I)V
+	public abstract fun setUpdateIntervalMs (J)V
+}
+
+public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
+	public abstract fun onDataUpdated ()V
+}
+
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {
 	public abstract fun addResourceTiming (Ljava/lang/Object;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public abstract fun notifyInterceptorInstantiated ()V
@@ -383,6 +418,21 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 	public static synthetic fun stopResource$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
+}
+
+public final class com/datadog/android/rum/internal/net/RumResourceInstrumentation {
+	public static final field Companion Lcom/datadog/android/rum/internal/net/RumResourceInstrumentation$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
+	public final fun reportInstrumentationError (Ljava/lang/String;)V
+	public final fun sendTiming (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
+	public final fun sendWaitForResourceTimingEvent (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
+	public final fun startResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
+	public final fun stopResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)V
+	public final fun stopResourceWithError (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Throwable;)V
+}
+
+public final class com/datadog/android/rum/internal/net/RumResourceInstrumentation$Companion {
+	public final fun buildResourceId (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Z)Lcom/datadog/android/rum/resource/ResourceId;
 }
 
 public abstract interface class com/datadog/android/rum/metric/interactiontonextview/LastInteractionIdentifier {
@@ -9744,6 +9794,20 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage
 public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$StopSession$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$StopSession;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$StopSession;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView : com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage {
+	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView$Companion;
+	public fun <init> ()V
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView;
+	public final fun getFeature ()Ljava/lang/String;
+	public fun toJson ()Lcom/google/gson/JsonElement;
+}
+
+public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Usage$TrackWebView;
 }
 
 public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$View {

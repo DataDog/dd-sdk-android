@@ -12,6 +12,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -66,7 +67,10 @@ internal class RumEventMapperTest {
     lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
 
     @Mock
-    lateinit var mockVitalOperationStepEvent: EventMapper<RumVitalOperationStepEvent>
+    lateinit var mockVitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent>
+
+    @Mock
+    lateinit var mockVitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent>
 
     @Mock
     lateinit var mockTelemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>
@@ -84,7 +88,8 @@ internal class RumEventMapperTest {
             resourceEventMapper = mockResourceEventMapper,
             errorEventMapper = mockErrorEventMapper,
             longTaskEventMapper = mockLongTaskEventMapper,
-            vitalOperationStepEventMapper = mockVitalOperationStepEvent,
+            vitalOperationStepEventMapper = mockVitalOperationStepEventMapper,
+            vitalAppLaunchEventMapper = mockVitalAppLaunchEventMapper,
             telemetryConfigurationMapper = mockTelemetryConfigurationMapper,
             internalLogger = mockInternalLogger
         )
@@ -178,10 +183,24 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M map the bundled event W map { VitalEvent }`(forge: Forge) {
+    fun `M map the bundled event W map { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
         val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
-        whenever(mockVitalOperationStepEvent.map(fakeRumEvent)).thenReturn(fakeRumEvent)
+        whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent)).thenReturn(fakeRumEvent)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNotNull
+        assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
+    }
+
+    @Test
+    fun `M map the bundled event W map { VitalAppLaunchEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent)).thenReturn(fakeRumEvent)
 
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
@@ -407,10 +426,10 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns null object { VitalEvent }`(forge: Forge) {
+    fun `M return null event W map returns null object { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
         val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
-        whenever(mockVitalOperationStepEvent.map(fakeRumEvent))
+        whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent))
             .thenReturn(null)
 
         // WHEN
@@ -423,6 +442,25 @@ internal class RumEventMapperTest {
             InternalLogger.Target.USER,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
+        )
+    }
+
+    @Test
+    fun `M return null event W map returns null object { VitalAppLaunchEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent))
+            .thenReturn(null)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -531,10 +569,10 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns different object { VitalEvent }`(forge: Forge) {
+    fun `M return null event W map returns different object { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
         val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
-        whenever(mockVitalOperationStepEvent.map(fakeRumEvent))
+        whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent))
             .thenReturn(forge.getForgery())
 
         // WHEN
@@ -547,6 +585,25 @@ internal class RumEventMapperTest {
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
+        )
+    }
+
+    @Test
+    fun `M return null event W map returns different object { VitalAppLaunchEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent))
+            .thenReturn(forge.getForgery())
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -654,10 +711,10 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns a copy { VitalEvent }`(forge: Forge) {
+    fun `M return null event W map returns a copy { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
         val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
-        whenever(mockVitalOperationStepEvent.map(fakeRumEvent))
+        whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent))
             .thenReturn(fakeRumEvent.copy())
 
         // WHEN
@@ -670,6 +727,25 @@ internal class RumEventMapperTest {
             InternalLogger.Target.USER,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
+        )
+    }
+
+    @Test
+    fun `M return null event W map returns a copy { VitalAppLaunchEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent))
+            .thenReturn(fakeRumEvent.copy())
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
     }
 }

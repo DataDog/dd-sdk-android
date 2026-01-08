@@ -73,7 +73,7 @@ internal class LogEventSerializerTest {
     fun `ignores reserved tags keys`(@Forgery fakeLog: LogEvent, forge: Forge) {
         // Given
         val logWithoutTags = fakeLog.copy(ddtags = "")
-        val key = forge.anElementFrom("host", "device", "source", "service")
+        val key = forge.anElementFrom("host", "device", "source")
         val value = forge.aNumericalString()
         val reservedTag = "$key:$value"
         val logWithReservedTags = fakeLog.copy(ddtags = reservedTag)

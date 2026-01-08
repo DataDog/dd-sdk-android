@@ -187,7 +187,7 @@ interface InternalLogger {
 
         /**
          * Logger for the cases when SDK instance is not yet available. Try to use the logger
-         * provided by [FeatureSdkCore.internalLogger] instead if possible.
+         * provided by [com.datadog.android.api.feature.FeatureSdkCore.internalLogger] instead if possible.
          */
         val UNBOUND: InternalLogger = SdkInternalLogger(null)
     }

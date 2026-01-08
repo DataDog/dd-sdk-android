@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp
 
-import com.datadog.android.okhttp.internal.rum.buildResourceId
+import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -66,6 +66,7 @@ internal class DatadogEventListenerFactoryTest {
 
         // Then
         check(result is DatadogEventListener)
+        @Suppress("DEPRECATION")
         assertThat(result.key).isEqualTo(fakeRequest.buildResourceId(false))
     }
 

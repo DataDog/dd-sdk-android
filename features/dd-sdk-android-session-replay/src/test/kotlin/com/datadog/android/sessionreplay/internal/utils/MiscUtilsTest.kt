@@ -12,13 +12,13 @@ import android.content.res.Resources
 import android.content.res.Resources.Theme
 import android.graphics.Point
 import android.graphics.Rect
-import android.os.Build
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.Display
 import android.view.WindowManager
 import android.view.WindowMetrics
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils.DESERIALIZE_JSON_ERROR
@@ -27,8 +27,6 @@ import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.verifyLog
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import fr.xgouchet.elmyr.Forge
@@ -51,7 +49,6 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -154,7 +151,6 @@ internal class MiscUtilsTest {
         )
     }
 
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `M resolve system information W resolveSystemInformation{ R and above }`(forge: Forge) {
         // Given
@@ -183,9 +179,12 @@ internal class MiscUtilsTest {
             whenever(it.currentWindowMetrics).thenReturn(mockWindowMetrics)
         }
         val mockContext: Context = mockContext(mockWindowManager, mockResources, mockTheme)
+        val mockBuildSdkVersionProvider = mock<BuildSdkVersionProvider> {
+            whenever(it.isAtLeastR).thenReturn(true)
+        }
 
         // When
-        val systemInformation = MiscUtils.resolveSystemInformation(mockContext)
+        val systemInformation = MiscUtils.resolveSystemInformation(mockContext, mockBuildSdkVersionProvider)
 
         // Then
         assertThat(systemInformation).isEqualTo(

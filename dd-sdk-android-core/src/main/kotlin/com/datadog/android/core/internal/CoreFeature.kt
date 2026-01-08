@@ -72,6 +72,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
@@ -107,7 +108,8 @@ internal class CoreFeature(
     private val internalLogger: InternalLogger,
     private val appStartTimeProvider: AppStartTimeProvider,
     private val executorServiceFactory: FlushableExecutorService.Factory,
-    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
+    private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) {
 
     /**
@@ -135,7 +137,7 @@ internal class CoreFeature(
             .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
-            .dns(RotatingDnsResolver()) // NPE cannot happen here
+            .dns(RotatingDnsResolver(timeProvider = timeProvider)) // NPE cannot happen here
             .build()
     }
 
@@ -209,6 +211,9 @@ internal class CoreFeature(
 
     internal val appStartTimeNs: Long
         get() = appStartTimeProvider.appStartTimeNs
+
+    internal val appUptimeNs: Long
+        get() = appStartTimeProvider.appUptimeNs
 
     // lazy here on purpose: we need to read it only once, even if it is used in different features
     @get:WorkerThread
@@ -324,7 +329,7 @@ internal class CoreFeature(
     }
 
     fun createExecutorService(executorContext: String): ExecutorService {
-        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy, timeProvider)
     }
 
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
@@ -457,7 +462,7 @@ internal class CoreFeature(
 
     @WorkerThread
     private fun initializeClockSync(appContext: Context) {
-        val safeContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val safeContext = if (buildSdkVersionProvider.isAtLeastN) {
             getSafeContext(appContext)
         } else {
             appContext
@@ -527,7 +532,7 @@ internal class CoreFeature(
         return try {
             val packageName = appContext.packageName
             with(appContext.packageManager) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (buildSdkVersionProvider.isAtLeastTiramisu) {
                     getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
                 } else {
                     getPackageInfo(packageName, 0)
@@ -601,7 +606,7 @@ internal class CoreFeature(
     }
 
     private fun setupNetworkInfoProviders(appContext: Context) {
-        networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
             CallbackNetworkInfoProvider(internalLogger = internalLogger)
         } else {
             BroadcastReceiverNetworkInfoProvider()
@@ -649,7 +654,8 @@ internal class CoreFeature(
         persistenceExecutorService = executorServiceFactory.create(
             internalLogger = internalLogger,
             executorContext = "storage",
-            backPressureStrategy = backpressureStrategy
+            backPressureStrategy = backpressureStrategy,
+            timeProvider = timeProvider
         )
         val contextQueue = BackPressuredBlockingQueue<Runnable>(
             internalLogger,
@@ -659,7 +665,8 @@ internal class CoreFeature(
             // just notify when reached
             onItemDropped = {},
             onThresholdReached = {},
-            backpressureMitigation = null
+            backpressureMitigation = null,
+            timeProvider = timeProvider
         )
         @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are safe
         contextExecutorService = ThreadPoolExecutor(
@@ -750,8 +757,8 @@ internal class CoreFeature(
                 " process of your application."
 
         internal val DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY =
-            FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy ->
-                BackPressureExecutorService(logger, executorContext, backPressureStrategy)
+            FlushableExecutorService.Factory { logger, executorContext, backPressureStrategy, timeProvider ->
+                BackPressureExecutorService(logger, executorContext, backPressureStrategy, timeProvider)
             }
 
         internal val DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY =

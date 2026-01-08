@@ -8,16 +8,19 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONObject
 
 /**
@@ -66,9 +69,11 @@ internal class DatadogFlagsClient(
      *
      * @param context The evaluation context containing targeting key and attributes.
      * Must contain a valid targeting key; invalid contexts are logged and ignored.
+     * @param callback Optional callback to notify when the operation completes or fails.
+     * Invoked on a background executor thread after the state transition.
      */
-    override fun setEvaluationContext(context: EvaluationContext) {
-        evaluationsManager.updateEvaluationsForContext(context)
+    override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
+        evaluationsManager.updateEvaluationsForContext(context, callback)
     }
 
     /**
@@ -173,7 +178,7 @@ internal class DatadogFlagsClient(
     private fun <T : Any> resolveValue(flagKey: String, defaultValue: T): T =
         resolveTracked(readAndParseAssignment(flagKey, defaultValue))
 
-    private fun writeExposureEvent(name: String, data: PrecomputedFlag, context: EvaluationContext) {
+    private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
         processor.processEvent(
             flagName = name,
             context = context,
@@ -286,7 +291,7 @@ internal class DatadogFlagsClient(
 
                         featureSdkCore.internalLogger.log(
                             InternalLogger.Level.WARN,
-                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.USER,
                             { "Flag '$flagKey': $errorMessage - ${exception.message}" }
                         )
                     }
@@ -400,15 +405,77 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        if (resolution.flag.doLog) {
+        trackResolution(resolution.flagKey, resolution.flag, resolution.value, resolution.context)
+    }
+
+    private fun <T : Any> trackResolution(
+        flagKey: String,
+        flag: UnparsedFlag,
+        flagValue: T,
+        context: EvaluationContext
+    ) {
+        if (flag.doLog) {
             if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(resolution.flagKey, resolution.flag, resolution.context)
+                writeExposureEvent(flagKey, flag, context)
             }
             if (flagsConfiguration.rumIntegrationEnabled) {
-                logEvaluation(resolution.flagKey, resolution.value)
+                logEvaluation(flagKey, flagValue)
             }
         }
     }
 
     // endregion
+
+    // region Internal APIs exposed through _FlagsInternalProxy
+
+    /**
+     * Retrieves a snapshot of all flag assignments.
+     *
+     * Explicitly for use by the Datadog React Native SDK to get flags state snapshot for a given evaluation context.
+     *
+     * @return A map of flag key to an unparsed flag, or an empty map if no flags are available or the client is not ready.
+     */
+    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = flagsRepository.getFlagsSnapshot()
+
+    /**
+     * Tracks the evaluation of a flag from an exact flags state snapshot.
+     *
+     * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
+     */
+    internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        val flagValue = parseFlagValueString(flagKey, flag)
+
+        trackResolution(flagKey, flag, flagValue, context)
+    }
+
+    private fun parseFlagValueString(flagKey: String, flag: UnparsedFlag): Any {
+        val kClass = variationTypeToKClass[flag.variationType] ?: String::class
+
+        val conversionResult = FlagValueConverter.convert(flag.variationValue, flag.variationType, kClass)
+        val flagValue = conversionResult.getOrElse { exception ->
+            featureSdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" },
+                exception
+            )
+            // Pass raw value as a string to not lose information.
+            flag.variationValue
+        }
+
+        return flagValue
+    }
+
+    // endregion
+
+    companion object {
+        private val variationTypeToKClass = mapOf(
+            VariationType.BOOLEAN.value to Boolean::class,
+            VariationType.STRING.value to String::class,
+            VariationType.INTEGER.value to Int::class,
+            VariationType.NUMBER.value to Double::class,
+            VariationType.FLOAT.value to Double::class,
+            VariationType.OBJECT.value to JSONObject::class
+        )
+    }
 }

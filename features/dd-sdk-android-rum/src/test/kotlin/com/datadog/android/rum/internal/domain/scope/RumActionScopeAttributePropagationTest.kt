@@ -23,6 +23,7 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -56,6 +57,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -141,6 +143,9 @@ internal class RumActionScopeAttributePropagationTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
@@ -179,7 +184,8 @@ internal class RumActionScopeAttributePropagationTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = true,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
     }
 
@@ -208,8 +214,7 @@ internal class RumActionScopeAttributePropagationTest {
         expectedAttributes.putAll(fakeActionAttributes)
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS * 2)
-        testedScope.handleEvent(mockEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(mockEvent(TEST_INACTIVITY_MS * 2), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -223,10 +228,17 @@ internal class RumActionScopeAttributePropagationTest {
 
     // region Internal
 
-    private fun mockEvent(): RumRawEvent {
+    private fun mockEvent(timeOffset: Long = 0L): RumRawEvent {
         val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn Time()
+        whenever(event.eventTime) doReturn timeWithOffset(timeOffset)
         return event
+    }
+
+    private fun timeWithOffset(offsetMs: Long): Time {
+        return Time(
+            fakeEventTime.timestamp + offsetMs,
+            fakeEventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(offsetMs)
+        )
     }
 
     // endregion

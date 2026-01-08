@@ -9,7 +9,7 @@ package com.datadog.android.rum.resource
 import android.content.Context
 import android.content.res.AssetManager
 import android.content.res.Resources
-import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -45,7 +45,7 @@ class ContextExtTest {
     lateinit var mockContext: Context
 
     @Mock
-    lateinit var mockSdkCore: SdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockAssetManager: AssetManager
@@ -57,6 +57,8 @@ class ContextExtTest {
     fun `set up`() {
         whenever(mockContext.assets) doReturn mockAssetManager
         whenever(mockContext.resources) doReturn mockResources
+
+        whenever(mockSdkCore.timeProvider) doReturn mock()
     }
 
     @Test

@@ -44,7 +44,7 @@ internal class LogsFeature(
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
     private val initialized = AtomicBoolean(false)
     internal var packageName = ""
-    private val logGenerator = DatadogLogGenerator()
+    private val logGenerator = DatadogLogGenerator(internalLogger = sdkCore.internalLogger)
     private val attributes = ConcurrentHashMap<String, Any?>()
 
     // region Context Information (attributes)

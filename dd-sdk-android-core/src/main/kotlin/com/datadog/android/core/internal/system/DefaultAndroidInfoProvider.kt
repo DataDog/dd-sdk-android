@@ -15,6 +15,7 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import android.view.Display
 import com.datadog.android.api.context.DeviceType
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import java.util.Locale
 import java.util.TimeZone
 
@@ -23,7 +24,8 @@ internal class DefaultAndroidInfoProvider(
     rawDeviceBrand: String,
     rawDeviceModel: String,
     rawDeviceId: String,
-    rawOsVersion: String
+    rawOsVersion: String,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : AndroidInfoProvider {
 
     constructor(appContext: Context) : this(
@@ -55,7 +57,7 @@ internal class DefaultAndroidInfoProvider(
         val resources = appContext.resources
         val languageList = mutableListOf<String>()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (buildSdkVersionProvider.isAtLeastN) {
             val locales = resources.configuration.locales
             val localesSize = locales.size()
 
@@ -76,7 +78,7 @@ internal class DefaultAndroidInfoProvider(
 
     override val currentLocale: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val resources = appContext.resources
-        val currentLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val currentLocale = if (buildSdkVersionProvider.isAtLeastN) {
             resources.configuration.locales[0]?.toLanguageTag()
         } else {
             @Suppress("DEPRECATION")

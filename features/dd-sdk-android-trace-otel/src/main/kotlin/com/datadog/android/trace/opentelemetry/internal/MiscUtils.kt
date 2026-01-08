@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import android.os.Build
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 
 internal const val NEEDS_DESUGARING_ERROR_MESSAGE =
     "Trying to use OpenTelemetry SDK support for Android 23 and below. " +
@@ -15,11 +15,12 @@ internal const val NEEDS_DESUGARING_ERROR_MESSAGE =
         "in your compileOptions"
 
 internal fun <T : Any?> executeIfJavaFunctionPackageExists(
+    buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     internalLogger: InternalLogger? = null,
     defaultActionReturnValue: T,
     action: () -> T
 ): T {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    if (buildSdkVersionProvider.isAtLeastN) {
         return action()
     } else {
         return try {
