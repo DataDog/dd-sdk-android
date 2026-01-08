@@ -141,31 +141,31 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     override fun getBooleanEvaluation(
         key: String,
         defaultValue: Boolean,
-        _context: OpenFeatureEvaluationContext?
+        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Boolean> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getStringEvaluation(
         key: String,
         defaultValue: String,
-        _context: OpenFeatureEvaluationContext?
+        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<String> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getIntegerEvaluation(
         key: String,
         defaultValue: Int,
-        _context: OpenFeatureEvaluationContext?
+        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Int> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getDoubleEvaluation(
         key: String,
         defaultValue: Double,
-        _context: OpenFeatureEvaluationContext?
+        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Double> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getObjectEvaluation(
         key: String,
         defaultValue: Value,
-        _context: OpenFeatureEvaluationContext?
+        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Value> {
         // Use sentinel to avoid unnecessary conversion of user's default value
         val resolutionDetails = flagsClient.resolve(key, SENTINEL_DEFAULT_MAP)
