@@ -170,7 +170,6 @@ class SampleApplication : Application() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             Profiling.enable()
-            Profiling.profileNextAppStartup(enable = true)
         }
     }
 
