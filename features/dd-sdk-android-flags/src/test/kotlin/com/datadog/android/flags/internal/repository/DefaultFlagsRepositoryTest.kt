@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
@@ -45,6 +46,9 @@ internal class DefaultFlagsRepositoryTest {
     lateinit var mockFeatureSdkCore: FeatureSdkCore
 
     @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
     lateinit var mockDataStore: DataStoreHandler
 
     private lateinit var testedRepository: DefaultFlagsRepository
@@ -55,7 +59,7 @@ internal class DefaultFlagsRepositoryTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockFeatureSdkCore.internalLogger) doReturn mock()
+        whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockFeatureSdkCore.timeProvider) doReturn mock()
         whenever(
             mockDataStore.value<FlagsStateEntry>(
@@ -288,6 +292,22 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(result).isFalse
         assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+    }
+
+    // endregion
+
+    // region getFlagsSnapshot
+
+    @Test
+    fun `M return flags map W getFlagsSnapshot() { flags state set }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        // When
+        val result = testedRepository.getFlagsSnapshot()
+
+        // Then
+        assertThat(result).isEqualTo(multipleFlagsMap)
     }
 
     // endregion

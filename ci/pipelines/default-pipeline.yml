@@ -111,6 +111,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-logs:customDetektRules
     - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
     - ./gradlew :features:dd-sdk-android-rum:customDetektRules
+    - ./gradlew :features:dd-sdk-android-rum-debug-widget:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-compose:customDetektRules
@@ -662,6 +663,23 @@ publish:release-rum:
     paths:
       - features/dd-sdk-android-rum/verification-metadata.xml
 
+publish:release-rum-debug-widget:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :features:dd-sdk-android-rum-debug-widget:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - features/dd-sdk-android-rum-debug-widget/verification-metadata.xml
+
 publish:release-ndk:
   tags: [ "arch:amd64" ]
   only:
@@ -1146,6 +1164,7 @@ notify:merge-verification-metadata:
     - publish:release-trace-otel
     - publish:release-logs
     - publish:release-rum
+    - publish:release-rum-debug-widget
     - publish:release-ndk
     - publish:release-session-replay
     - publish:release-session-replay-material

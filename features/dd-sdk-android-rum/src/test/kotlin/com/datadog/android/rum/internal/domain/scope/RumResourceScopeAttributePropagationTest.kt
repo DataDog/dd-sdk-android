@@ -25,6 +25,7 @@ import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ErrorEvent
@@ -155,6 +156,9 @@ internal class RumResourceScopeAttributePropagationTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
@@ -193,7 +197,8 @@ internal class RumResourceScopeAttributePropagationTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
     }
 

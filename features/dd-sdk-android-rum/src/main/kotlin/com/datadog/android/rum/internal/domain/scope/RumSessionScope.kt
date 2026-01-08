@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
@@ -58,7 +59,8 @@ internal class RumSessionScope(
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
-    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -95,7 +97,8 @@ internal class RumSessionScope(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider
+        displayInfoProvider = displayInfoProvider,
+        insightsCollector
     )
 
     internal val activeView: RumViewScope?

@@ -55,6 +55,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
@@ -97,7 +98,8 @@ internal class DatadogRumMonitor(
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    insightsCollector: InsightsCollector
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -119,7 +121,8 @@ internal class DatadogRumMonitor(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
+        rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
+        insightsCollector = insightsCollector
     )
 
     internal val keepAliveRunnable = Runnable {

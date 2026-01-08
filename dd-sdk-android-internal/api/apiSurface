@@ -160,9 +160,11 @@ interface com.datadog.android.internal.time.TimeProvider
   fun getDeviceElapsedTimeNanos(): Long
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
+  fun getDeviceElapsedRealtimeMillis(): Long
 abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
   override fun getDeviceTimestampMillis(): Long
   override fun getDeviceElapsedTimeNanos(): Long
+  override fun getDeviceElapsedRealtimeMillis(): Long
 fun ByteArray.toHexString(): String
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)

@@ -25,6 +25,7 @@ import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapsh
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -100,6 +101,9 @@ internal class RumApplicationScopeTest {
 
     @Mock
     lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
@@ -184,7 +188,8 @@ internal class RumApplicationScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
     }
 

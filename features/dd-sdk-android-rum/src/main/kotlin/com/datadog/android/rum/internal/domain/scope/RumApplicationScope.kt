@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
@@ -52,7 +53,8 @@ internal class RumApplicationScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    private val insightsCollector: InsightsCollector
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -81,7 +83,8 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
+            rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
+            insightsCollector = insightsCollector
         )
     )
 
@@ -202,7 +205,8 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
+            rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
+            insightsCollector = insightsCollector
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

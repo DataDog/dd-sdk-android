@@ -9,6 +9,7 @@ package com.datadog.tools.detekt
 import com.datadog.tools.detekt.rules.sdk.CheckInternal
 import com.datadog.tools.detekt.rules.sdk.InvalidStringFormat
 import com.datadog.tools.detekt.rules.sdk.PackageNameVisibility
+import com.datadog.tools.detekt.rules.sdk.PreferTimeProvider
 import com.datadog.tools.detekt.rules.sdk.RequireInternal
 import com.datadog.tools.detekt.rules.sdk.ThreadSafety
 import com.datadog.tools.detekt.rules.sdk.ThrowingInternalException
@@ -33,6 +34,7 @@ class DatadogProvider : RuleSetProvider {
                 CheckInternal(),
                 InvalidStringFormat(),
                 PackageNameVisibility(config),
+                PreferTimeProvider(config),
                 RequireInternal(),
                 ThreadSafety(config),
                 ThrowingInternalException(),

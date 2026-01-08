@@ -6,6 +6,8 @@
 
 package com.datadog.android.internal.time
 
+import android.os.SystemClock
+
 // there is no NoOpImplementation on purpose, we don't want to have 0 values for the
 // case when this instance is used.
 /**
@@ -39,6 +41,12 @@ interface TimeProvider {
      * Returns the offset between the device and server time references in milliseconds.
      */
     fun getServerOffsetMillis(): Long
+
+    /**
+     * Returns the time since boot in milliseconds, including time spent in sleep.
+     * This is implemented in [BaseTimeProvider] as [SystemClock.elapsedRealtime].
+     */
+    fun getDeviceElapsedRealtimeMillis(): Long
 }
 
 /**
@@ -47,4 +55,5 @@ interface TimeProvider {
 abstract class BaseTimeProvider : TimeProvider {
     final override fun getDeviceTimestampMillis(): Long = System.currentTimeMillis()
     final override fun getDeviceElapsedTimeNanos(): Long = System.nanoTime()
+    final override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
 }

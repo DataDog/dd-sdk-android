@@ -32,6 +32,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -87,7 +88,8 @@ internal open class RumViewScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>
+    private val displayInfoProvider: InfoProvider<DisplayInfo>,
+    private val insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -143,6 +145,7 @@ internal open class RumViewScope(
                 initialTickCount = info.maxValue
             } else {
                 cpuTicks = info.maxValue - initialTickCount
+                insightsCollector.onCpuVital(cpuTicks)
             }
         }
     }
@@ -151,6 +154,7 @@ internal open class RumViewScope(
     internal var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastMemoryInfo = info
+            insightsCollector.onMemoryVital(lastMemoryInfo?.meanValue)
         }
     }
 
@@ -181,6 +185,7 @@ internal open class RumViewScope(
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
         slowFramesListener?.onViewCreated(viewId, startedNanos)
+        insightsCollector.onNewView(key.url)
     }
 
     // region RumScope
@@ -464,7 +469,8 @@ internal open class RumViewScope(
             rumSessionTypeOverride = rumSessionTypeOverride,
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider
+            displayInfoProvider = displayInfoProvider,
+            insightsCollector = insightsCollector
         )
     }
 
@@ -597,7 +603,8 @@ internal open class RumViewScope(
                     featuresContextResolver = featuresContextResolver,
                     trackFrustrations = trackFrustrations,
                     sampleRate = sampleRate,
-                    rumSessionTypeOverride = rumSessionTypeOverride
+                    rumSessionTypeOverride = rumSessionTypeOverride,
+                    insightsCollector = insightsCollector
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
@@ -620,7 +627,8 @@ internal open class RumViewScope(
             featuresContextResolver = featuresContextResolver,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
-            rumSessionTypeOverride = rumSessionTypeOverride
+            rumSessionTypeOverride = rumSessionTypeOverride,
+            insightsCollector = insightsCollector
         )
         pendingActionCount++
     }
@@ -644,7 +652,8 @@ internal open class RumViewScope(
             featuresContextResolver = featuresContextResolver,
             sampleRate = sampleRate,
             networkSettledMetricResolver = networkSettledMetricResolver,
-            rumSessionTypeOverride = rumSessionTypeOverride
+            rumSessionTypeOverride = rumSessionTypeOverride,
+            insightsCollector = insightsCollector
         )
         pendingResourceCount++
     }
@@ -1178,6 +1187,7 @@ internal open class RumViewScope(
         // that will happen when isViewComplete == true
         val freezeRate = if (viewComplete) uiSlownessReport?.freezeFramesRate(stoppedNanos) else null
         val slowFramesRate = if (viewComplete) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
+        insightsCollector.onSlowFrameRate(uiSlownessReport?.slowFramesRate(stoppedNanos))
 
         if (viewComplete && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(
@@ -1414,7 +1424,7 @@ internal open class RumViewScope(
     ) {
         delegateEventToChildren(event, datadogContext, writeScope, writer)
         if (stopped) return
-
+        insightsCollector.onLongTask(event.eventTime.nanoTime, event.durationNs)
         val rumContext = getRumContext()
         val longTaskCustomAttributes = getCustomAttributes().toMutableMap().apply {
             put(RumAttributes.LONG_TASK_TARGET, event.target)
@@ -1643,7 +1653,8 @@ internal open class RumViewScope(
             rumSessionTypeOverride: RumSessionType?,
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
-            displayInfoProvider: InfoProvider<DisplayInfo>
+            displayInfoProvider: InfoProvider<DisplayInfo>,
+            insightsCollector: InsightsCollector
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1679,7 +1690,8 @@ internal open class RumViewScope(
                 rumSessionTypeOverride = rumSessionTypeOverride,
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider
+                displayInfoProvider = displayInfoProvider,
+                insightsCollector = insightsCollector
             )
         }
 
