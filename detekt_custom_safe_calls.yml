@@ -603,7 +603,6 @@ datadog:
       - "java.lang.Class.hashCode()"
       - "java.lang.Class.isInstance(kotlin.Any?)"
       - "java.lang.Class.getDeclaredFieldSafe(kotlin.String)"
-      - "java.lang.Exception.constructor(kotlin.String?)"
       - "java.lang.IllegalArgumentException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String?)"
@@ -1207,9 +1206,7 @@ datadog:
       # region Kotlin Coroutines
       - "kotlinx.coroutines.CoroutineScope.async(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.CoroutineScope.launch(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
-      - "kotlinx.coroutines.channels.ProducerScope.awaitClose(kotlin.Function0)"
       - "kotlinx.coroutines.channels.ProducerScope.trySend(dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents)"
-      - "kotlinx.coroutines.channels.ProducerScope.trySend(kotlin.Any)"
       - "kotlinx.coroutines.flow.callbackFlow(kotlin.coroutines.SuspendFunction1)"
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
       - "kotlinx.coroutines.flow.FlowCollector(kotlin.coroutines.SuspendFunction1)"
@@ -1291,19 +1288,14 @@ datadog:
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json
-      - "org.json.JSONArray.get(kotlin.Int)"
       - "org.json.JSONArray.length()"
-      - "org.json.JSONArray.put(kotlin.Any?)"
       - "org.json.JSONArray.toJsonArray()"
       - "org.json.JSONObject.constructor()"
-      - "org.json.JSONObject.constructor(kotlin.String)"
-      - "org.json.JSONObject.get(kotlin.String)"
       - "org.json.JSONObject.keys()"
+      - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
+      - "org.json.JSONObject.toJsonObject()"
       - "org.json.JSONObject.length()"
       - "org.json.JSONObject.opt(kotlin.String?)"
-      - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
-      - "org.json.JSONObject.put(kotlin.String, kotlin.Any?)"
-      - "org.json.JSONObject.toJsonObject()"
       # endregion
       # region OpenFeature
       - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
@@ -1340,17 +1332,14 @@ datadog:
       # region SQLDelight
       - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
       # endregion
-      # region Kronos
-      - "com.lyft.kronos.KronosClock.shutdown()"
-      # endregion
       # region OpenFeature SDK
       - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
       - "dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError.constructor(dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError)"
+      - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.GeneralError.constructor(kotlin.String)"
       - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.ProviderFatalError.constructor()"
       - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.ProviderFatalError.constructor(kotlin.String)"
-      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(dev.openfeature.kotlin.sdk.Value, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?, dev.openfeature.kotlin.sdk.EvaluationMetadata)"
-      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?, dev.openfeature.kotlin.sdk.EvaluationMetadata)"
+      - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?)"
       - "dev.openfeature.kotlin.sdk.Value.Boolean.constructor(kotlin.Boolean)"
       - "dev.openfeature.kotlin.sdk.Value.Double.constructor(kotlin.Double)"
       - "dev.openfeature.kotlin.sdk.Value.Integer.constructor(kotlin.Int)"

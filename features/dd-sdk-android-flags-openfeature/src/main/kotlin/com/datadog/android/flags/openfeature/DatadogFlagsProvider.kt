@@ -298,6 +298,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         }
 
         flagsClient.state.addListener(listener)
+        // Safe: awaitClose throws CancellationException on cancellation, which is expected coroutine behavior
+        @Suppress("UnsafeThirdPartyFunctionCall")
         awaitClose {
             flagsClient.state.removeListener(listener)
         }
