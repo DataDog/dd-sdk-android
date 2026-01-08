@@ -9,6 +9,7 @@ import androidx.metrics.performance.FrameData
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -234,9 +235,10 @@ internal class DefaultSlowFramesListenerTest {
             minViewLifetimeThresholdNs = 0
         ),
         metricDispatcher: UISlownessMetricDispatcher = mockMetricDispatcher,
+        insightsCollector: InsightsCollector = mock(),
         timeProvider: TimeProvider = mock()
     ): DefaultSlowFramesListener {
-        return DefaultSlowFramesListener(configuration, metricDispatcher, timeProvider)
+        return DefaultSlowFramesListener(configuration, metricDispatcher, insightsCollector, timeProvider)
     }
 
     @Test

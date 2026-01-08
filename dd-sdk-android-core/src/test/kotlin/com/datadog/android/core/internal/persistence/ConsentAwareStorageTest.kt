@@ -120,8 +120,6 @@ internal class ConsentAwareStorageTest {
     fun `set up`() {
         whenever(mockPendingOrchestrator.getRootDir()) doReturn File(mockPendingRootParentFile, fakeRootDirName)
         whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
-        whenever(mockPendingOrchestrator.getRootDirName()) doReturn fakeRootDirName
-        whenever(mockGrantedOrchestrator.getRootDirName()) doReturn fakeRootDirName
         whenever((mockGrantedOrchestrator).decrementAndGetPendingFilesCount())
             .thenReturn(fakePendingBatches - 1)
         whenever((mockPendingOrchestrator).decrementAndGetPendingFilesCount())

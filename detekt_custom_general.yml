@@ -90,6 +90,17 @@ datadog:
     - '**/reliability/**'
     - '**/sample/**'
     - '**/tools/**'
+  PackageNameVisibility:
+    active: true
+    withBreakingChanges: true
+    ignoredAnnotations:
+      - "com.datadog.android.lint.InternalApi"
+  PreferTimeProvider:
+    active: true
+    allowedFiles:
+      - '.*TimeProvider.*'
+      - '.*Time\.kt'
+      - '.*DdRumContentProvider.*'
   ThreadSafety:
     active: true
     workerThreadSwitchingCalls:
@@ -105,11 +116,6 @@ datadog:
     deprecatedPrefixes:
       - "RUMM"
       - "REPLAY"
-  PackageNameVisibility:
-    active: true
-    withBreakingChanges: true
-    ignoredAnnotations:
-      - "com.datadog.android.lint.InternalApi"
   UnsafeThirdPartyFunctionCall:
     active: true
     internalPackagePrefix: 'com.datadog'

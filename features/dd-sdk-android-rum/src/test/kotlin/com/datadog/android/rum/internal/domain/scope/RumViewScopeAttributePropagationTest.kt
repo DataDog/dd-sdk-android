@@ -32,6 +32,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
@@ -106,6 +107,9 @@ internal class RumViewScopeAttributePropagationTest {
 
     @Mock
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
+
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -647,7 +651,8 @@ internal class RumViewScopeAttributePropagationTest {
         rumSessionType: RumSessionType? = fakeRumSessionType,
         accessibilitySnapshotManager: AccessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider: InfoProvider<BatteryInfo> = mockBatteryInfoProvider,
-        displayInfoProvider: InfoProvider<DisplayInfo> = mockDisplayInfoProvider
+        displayInfoProvider: InfoProvider<DisplayInfo> = mockDisplayInfoProvider,
+        insightsCollector: InsightsCollector = mockInsightsCollector
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -671,7 +676,8 @@ internal class RumViewScopeAttributePropagationTest {
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumSessionTypeOverride = rumSessionType
+        rumSessionTypeOverride = rumSessionType,
+        insightsCollector = insightsCollector
     )
 
     // endregion

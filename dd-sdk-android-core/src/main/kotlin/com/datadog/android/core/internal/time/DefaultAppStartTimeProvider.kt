@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.time
 
 import android.os.Process
-import android.os.SystemClock
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
@@ -22,8 +21,9 @@ internal class DefaultAppStartTimeProvider(
     override val appStartTimeNs: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
         when {
             buildSdkVersionProvider.isAtLeastN -> {
-                val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
-                val result = timeProviderFactory().getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+                val timeProvider = timeProviderFactory()
+                val diffMs = timeProvider.getDeviceElapsedRealtimeMillis() - Process.getStartElapsedRealtime()
+                val result = timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
 
                 /**
                  * Occasionally [Process.getStartElapsedRealtime] returns buggy values. We filter them and fall back

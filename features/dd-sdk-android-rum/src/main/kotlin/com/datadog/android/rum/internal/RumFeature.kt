@@ -67,6 +67,8 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.metric.slowframes.DefaultSlowFramesListener
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -172,6 +174,7 @@ internal class RumFeature(
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
+    internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     private var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -195,6 +198,7 @@ internal class RumFeature(
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
+        insightsCollector = configuration.insightsCollector
 
         dataWriter = createDataWriter(
             configuration,
@@ -216,7 +220,8 @@ internal class RumFeature(
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
         batteryInfoProvider = DefaultBatteryInfoProvider(
-            applicationContext = appContext
+            applicationContext = appContext,
+            timeProvider = sdkCore.timeProvider
         )
         displayInfoProvider = DefaultDisplayInfoProvider(
             applicationContext = appContext,
@@ -292,7 +297,8 @@ internal class RumFeature(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
                 ),
-                sdkCore.timeProvider
+                insightsCollector = insightsCollector,
+                timeProvider = sdkCore.timeProvider
             )
         } else {
             sdkCore.internalLogger.log(
@@ -756,7 +762,8 @@ internal class RumFeature(
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
-        val disableJankStats: Boolean
+        val disableJankStats: Boolean,
+        val insightsCollector: InsightsCollector
     )
 
     internal companion object {
@@ -805,10 +812,11 @@ internal class RumFeature(
             composeActionTrackingStrategy = NoOpActionTrackingStrategy(),
             additionalConfig = emptyMap(),
             trackAnonymousUser = true,
-            slowFramesConfiguration = null,
+            slowFramesConfiguration = SlowFramesConfiguration.DEFAULT,
             rumSessionTypeOverride = null,
             collectAccessibility = false,
-            disableJankStats = false
+            disableJankStats = false,
+            insightsCollector = NoOpInsightsCollector()
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

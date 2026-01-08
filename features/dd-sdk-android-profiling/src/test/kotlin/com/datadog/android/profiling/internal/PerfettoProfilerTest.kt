@@ -454,5 +454,7 @@ class PerfettoProfilerTest {
         override fun getServerOffsetNanos(): Long = 0L
 
         override fun getServerOffsetMillis(): Long = 0L
+
+        override fun getDeviceElapsedRealtimeMillis(): Long = 0L
     }
 }

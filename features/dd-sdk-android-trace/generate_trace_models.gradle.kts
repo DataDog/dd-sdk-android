@@ -8,7 +8,7 @@ import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 createJsonModelsGenerationTask("generateTraceModelsFromJson") {
     inputDirPath = "src/main/json/trace"
-    ignoredFiles = arrayOf(
+    ignoredFiles = listOf(
         "_common-schema.json"
     )
     targetPackageName = "com.datadog.android.trace.model"

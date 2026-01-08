@@ -21,6 +21,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
@@ -122,6 +123,9 @@ internal class RumContinuousActionScopeTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
@@ -167,7 +171,8 @@ internal class RumContinuousActionScopeTest {
             maxDurationMs = TEST_MAX_DURATION_MS,
             trackFrustrations = true,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
     }
 
@@ -1861,7 +1866,8 @@ internal class RumContinuousActionScopeTest {
             maxDurationMs = TEST_MAX_DURATION_MS,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap(), fakeEventTime)
@@ -1962,7 +1968,8 @@ internal class RumContinuousActionScopeTest {
             maxDurationMs = TEST_MAX_DURATION_MS,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap(), fakeEventTime)

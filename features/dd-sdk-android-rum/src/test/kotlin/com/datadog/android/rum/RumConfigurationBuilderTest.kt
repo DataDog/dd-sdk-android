@@ -16,6 +16,8 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
@@ -119,7 +121,7 @@ internal class RumConfigurationBuilderTest {
             assertThat(lastInteractionIdentifier).isEqualTo(TimeBasedInteractionIdentifier())
             assertThat(composeActionTrackingStrategy)
                 .isInstanceOf(NoOpActionTrackingStrategy::class.java)
-            assertThat(slowFramesConfiguration).isNull()
+            assertThat(slowFramesConfiguration).isEqualTo(SlowFramesConfiguration.DEFAULT)
         }
     }
 
@@ -711,5 +713,30 @@ internal class RumConfigurationBuilderTest {
                 collectAccessibility = true
             )
         )
+    }
+
+    @Test
+    fun `M set DefaultInsightsCollector W setInsightsCollector()`() {
+        // Given
+        val mockInsightsCollector: InsightsCollector = mock()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setInsightsCollector(mockInsightsCollector)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.insightsCollector)
+            .isSameAs(mockInsightsCollector)
+    }
+
+    @Test
+    fun `M use NoOpInsightsCollector W build() { default configuration }`() {
+        // When
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.insightsCollector)
+            .isInstanceOf(NoOpInsightsCollector::class.java)
     }
 }
