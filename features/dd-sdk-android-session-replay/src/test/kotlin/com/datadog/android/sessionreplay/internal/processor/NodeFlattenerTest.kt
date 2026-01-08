@@ -15,7 +15,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -136,49 +135,40 @@ internal class NodeFlattenerTest {
     }
 
     @Test
-    fun `M not have ConcurrentModificationException W modifying nodes concurrently`(forge: Forge) {
-        // Given
-        val maxWidth = forge.aLong(2, 1000)
-        val maxHeight = forge.aLong(2, 1000)
-        val wireframeSize = forge.anInt(min = 10, max = 100)
-        val expectedList: MutableList<MobileSegment.Wireframe> =
-            Array<MobileSegment.Wireframe>(wireframeSize) {
-                // just to avoid collisions we will add the wireframes manually
-                val width = forge.aLong(min = 1, max = maxWidth)
-                val height = forge.aLong(min = 1, max = maxHeight)
-                val x = it * maxWidth
-                val y = it * maxHeight
-                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
-                    .copy(width = width, height = height, x = x, y = y)
-            }.toMutableList()
-        val fakeSnapshot = generateFlattenNodeFromList(expectedList)
+    fun `M not have ConcurrentModificationException W wireframes list modified during iteration`(forge: Forge) {
+        // Given - a mutable list that will be modified during the map operation
+        val wireframes = forge.aList(size = 10) {
+            getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+        }.toMutableList()
 
-        // When
-        val thread = Thread {
-            repeat(forge.anInt(1, wireframeSize - 1)) {
-                expectedList.removeAt(0)
+        // Use a copy for the Node so we can modify wireframes without affecting iteration
+        val wireframesCopy = wireframes.toMutableList()
+
+        val fakeSnapshot = Node(
+            wireframes = wireframesCopy,
+            children = emptyList(),
+            parents = emptyList()
+        )
+
+        // Setup mock to modify the COPY (which is what Node holds) during iteration
+        // This tests that flattenNode's .toList() creates its own snapshot
+        var callCount = 0
+        whenever(mockWireframeUtils.resolveWireframeClip(any(), any())).thenAnswer {
+            callCount++
+            if (callCount == 2 && wireframesCopy.size > 1) {
+                wireframesCopy.removeAt(wireframesCopy.size - 1)
             }
+            null
         }
 
-        // Then
-        assertDoesNotThrow {
-            thread.start()
-            testedNodeFlattener.flattenNode(fakeSnapshot)
-            thread.join()
-        }
+        // When/Then - with .toList(), flattenNode iterates on its own copy
+        val result = testedNodeFlattener.flattenNode(fakeSnapshot)
+        assertThat(result).hasSize(10)
     }
 
     // endregion
 
     // region Internals
-
-    private fun generateFlattenNodeFromList(list: List<MobileSegment.Wireframe>): Node {
-        return Node(
-            wireframes = list,
-            children = emptyList(),
-            parents = emptyList()
-        )
-    }
 
     private fun generateTreeFromList(list: List<MobileSegment.Wireframe>): Node {
         val mutableList = list.toMutableList()
