@@ -16,6 +16,7 @@ import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
+import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
 import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
