@@ -6,7 +6,6 @@
 
 package com.datadog.android.profiling.internal
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestExecutionContext
@@ -17,13 +16,14 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
+import java.io.IOException
 import java.util.UUID
 
 internal class ProfilingRequestFactory(
-    internal val customEndpointUrl: String?,
-    private val internalLogger: InternalLogger
+    internal val customEndpointUrl: String?
 ) : RequestFactory {
 
+    @Throws(IOException::class)
     override fun create(
         context: DatadogContext,
         executionContext: RequestExecutionContext,
@@ -78,21 +78,11 @@ internal class ProfilingRequestFactory(
         return multipartBodyBuilder.build()
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Caught in the caller
     private fun extractByteArrayFromBody(body: RequestBody): ByteArray {
-        try {
-            val buffer = Buffer()
-            body.writeTo(buffer)
-            return buffer.readByteArray()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            // we want to catch all the possible exceptions to avoid crashing the app
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to read the request body" },
-                e
-            )
-            return ByteArray(0)
-        }
+        val buffer = Buffer()
+        body.writeTo(buffer)
+        return buffer.readByteArray()
     }
 
     companion object {

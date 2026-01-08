@@ -6,7 +6,6 @@
 
 package com.datadog.android.profiling.internal
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -38,9 +36,6 @@ class ProfilingRequestFactoryTest {
     @StringForgery
     private lateinit var fakeEndpoint: String
 
-    @Mock
-    private lateinit var mockInternalLogger: InternalLogger
-
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -49,8 +44,7 @@ class ProfilingRequestFactoryTest {
     @BeforeEach
     fun `set up`() {
         testedFactory = ProfilingRequestFactory(
-            customEndpointUrl = null,
-            internalLogger = mockInternalLogger
+            customEndpointUrl = null
         )
     }
 
@@ -96,8 +90,7 @@ class ProfilingRequestFactoryTest {
     ) {
         // Given
         testedFactory = ProfilingRequestFactory(
-            customEndpointUrl = fakeEndpoint,
-            internalLogger = mockInternalLogger
+            customEndpointUrl = fakeEndpoint
         )
         val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 

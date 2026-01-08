@@ -45,6 +45,7 @@ internal class PerfettoProfiler(
     // This flag represents which instance of this class is working for.
     private val runningInstances: AtomicReference<Set<String>> = AtomicReference(emptySet())
 
+    @Volatile
     private var profilingStartTime = 0L
 
     override var internalLogger: InternalLogger? = null
@@ -58,6 +59,7 @@ internal class PerfettoProfiler(
             val endTime = timeProvider.getDeviceTimestampMillis()
             val duration = endTime - profilingStartTime
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
+                // TODO RUM-13679: need to delete the file after it is no longer needed
                 result.resultFilePath?.let {
                     notifyAllCallbacks(
                         PerfettoResult(
@@ -108,6 +110,9 @@ internal class PerfettoProfiler(
 
     override fun stop(sdkInstanceName: String) {
         if (runningInstances.get().contains(sdkInstanceName)) {
+            // note: if we call this while another request is being built, stopSignal will be
+            // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
+            // starting another request.
             stopSignal?.cancel()
             stopSignal = null
         }
