@@ -126,6 +126,11 @@ object RumAttributes {
      */
     const val GRAPHQL_VARIABLES: String = "_dd.graphql.variables"
 
+    /**
+     * JSON representation of GraphQL errors (String).
+     */
+    const val GRAPHQL_ERRORS: String = "_dd.graphql.errors"
+
     // endregion
 
     // region Error

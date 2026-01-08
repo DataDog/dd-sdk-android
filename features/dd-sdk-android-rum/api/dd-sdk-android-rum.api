@@ -62,6 +62,7 @@ public final class com/datadog/android/rum/RumAttributes {
 	public static final field ERROR_RESOURCE_STATUS_CODE Ljava/lang/String;
 	public static final field ERROR_RESOURCE_URL Ljava/lang/String;
 	public static final field FLUTTER_FIRST_BUILD_COMPLETE Ljava/lang/String;
+	public static final field GRAPHQL_ERRORS Ljava/lang/String;
 	public static final field GRAPHQL_OPERATION_NAME Ljava/lang/String;
 	public static final field GRAPHQL_OPERATION_TYPE Ljava/lang/String;
 	public static final field GRAPHQL_PAYLOAD Ljava/lang/String;
