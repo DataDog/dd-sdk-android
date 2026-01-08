@@ -11,7 +11,6 @@ import android.content.SharedPreferences
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
@@ -36,7 +35,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -151,45 +149,5 @@ class ProfilingFeatureTest {
         assertThat(argumentCaptor.firstValue.invoke())
             .isEqualTo("Profiling feature received an event of unsupported type=${String::class.java.canonicalName}.")
         verify(mockProfiler, never()).stop(fakeInstanceName)
-    }
-
-    @Test
-    fun `M add profiling flag W profileNextAppStartup {enable = true}`(
-        @StringForgery fakeAnotherInstanceName: String
-    ) {
-        // Given
-        val mockStorage = mock<SharedPreferencesStorage>()
-        whenever(mockStorage.getStringSet(ProfilingStorage.KEY_PROFILING_ENABLED)) doReturn setOf(
-            fakeAnotherInstanceName
-        )
-        ProfilingStorage.sharedPreferencesStorage = mockStorage
-
-        // When
-        testedFeature.profileNextAppStartup(true)
-
-        // Then
-        verify(mockStorage).putStringSet(
-            ProfilingStorage.KEY_PROFILING_ENABLED,
-            setOf(fakeInstanceName, fakeAnotherInstanceName)
-        )
-    }
-
-    @Test
-    fun `M remove profiling flag W profileNextAppStartup {enable = false}`() {
-        // Given
-        val mockStorage = mock<SharedPreferencesStorage>()
-        whenever(mockStorage.getStringSet(ProfilingStorage.KEY_PROFILING_ENABLED)) doReturn setOf(
-            fakeInstanceName
-        )
-        ProfilingStorage.sharedPreferencesStorage = mockStorage
-
-        // When
-        testedFeature.profileNextAppStartup(false)
-
-        // Then
-        verify(mockStorage).putStringSet(
-            ProfilingStorage.KEY_PROFILING_ENABLED,
-            emptySet()
-        )
     }
 }

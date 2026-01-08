@@ -65,6 +65,8 @@ internal class ProfilingFeature(
                 }
             }
         }
+        // Set the profiling flag in SharedPreferences to profile for the next app launch
+        ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         // TODO RUM-13678: we need to update context from the actual profiler start call, not from here
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
@@ -98,15 +100,6 @@ internal class ProfilingFeature(
             InternalLogger.Target.USER,
             { "Profiling stopped with TTID=${event.durationNs}" }
         )
-    }
-
-    internal fun profileNextAppStartup(enable: Boolean) {
-        // Set the profiling flag in SharedPreferences to profile for the next app launch
-        if (enable) {
-            ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
-        } else {
-            ProfilingStorage.removeProfilingFlag(appContext, setOf(sdkCore.name))
-        }
     }
 
     private fun tryWriteProfilingEvent() {
