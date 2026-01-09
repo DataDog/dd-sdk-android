@@ -105,6 +105,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
         try {
             flagsClient.setEvaluationContextSuspend(datadogContext)
+        } catch (e: OpenFeatureError.ProviderFatalError) {
+            throw e
         } catch (e: OpenFeatureError) {
             // Upgrade to a fatal error since the provider failed to initialize.
             throw OpenFeatureError.ProviderFatalError("Unable to initialize the provider: ${e.message}")
@@ -236,7 +238,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         }
 
         flagsClient.state.addListener(listener)
-        // Safe: awaitClose throws CancellationException on cancellation, which is expected coroutine behavior
+        // Safe: awaitClose runs cleanup then allows CancellationException to propagate naturally
         @Suppress("UnsafeThirdPartyFunctionCall")
         awaitClose {
             flagsClient.state.removeListener(listener)
