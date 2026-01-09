@@ -64,6 +64,10 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.opentelemetry.api.GlobalOpenTelemetry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
@@ -166,6 +170,25 @@ class SampleApplication : Application() {
         initializeFlags()
 
         GlobalRumMonitor.get().debug = true
+
+        GlobalScope.launch {
+            val rumMonitor = GlobalRumMonitor.get()
+            repeat(50) {
+                delay(1000)
+                launch(Dispatchers.IO) {
+                    rumMonitor.startView(
+                        key = it,
+                        name = "view_$it"
+                    )
+                }
+
+                launch(Dispatchers.IO) {
+                    rumMonitor.stopView(
+                        key = it
+                    )
+                }
+            }
+        }
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
@@ -296,11 +319,7 @@ class SampleApplication : Application() {
                 }
             }
             .useViewTrackingStrategy(
-                NavigationViewTrackingStrategy(
-                    R.id.nav_host_fragment,
-                    true,
-                    SampleNavigationPredicate()
-                )
+                null
             )
             .setTelemetrySampleRate(100f)
             .trackUserInteractions()
