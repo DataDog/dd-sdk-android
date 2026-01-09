@@ -12,7 +12,18 @@ import com.datadog.tools.annotation.NoOpImplementation
  * Interface to define the preference storage.
  */
 @NoOpImplementation
+@Suppress("TooManyFunctions")
 interface PreferencesStorage {
+
+    /**
+     * Put a float value in the storage.
+     */
+    fun putFloat(key: String, value: Float)
+
+    /**
+     * Get a float value from the storage.
+     */
+    fun getFloat(key: String, defaultValue: Float = 0f): Float
 
     /**
      * Put an integer value in the storage.

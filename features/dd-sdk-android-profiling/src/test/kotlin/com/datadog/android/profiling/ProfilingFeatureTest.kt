@@ -11,6 +11,7 @@ import android.content.SharedPreferences
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
@@ -73,6 +74,9 @@ class ProfilingFeatureTest {
     private lateinit var mockSharedPreferences: SharedPreferences
 
     @Mock
+    private lateinit var mockSharedPreferencesStorage: SharedPreferencesStorage
+
+    @Mock
     private lateinit var mockEditor: SharedPreferences.Editor
 
     @Forgery
@@ -93,8 +97,9 @@ class ProfilingFeatureTest {
         whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
         whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
+        whenever(mockEditor.putFloat(any(), any())) doReturn mockEditor
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
-        testedFeature.onInitialize(mockContext)
+        ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
     }
 
     @AfterEach
@@ -118,6 +123,59 @@ class ProfilingFeatureTest {
 
         // Then
         assertThat(testedFeature.requestFactory).isInstanceOf(ProfilingRequestFactory::class.java)
+    }
+
+    @Test
+    fun `M set Profiling sample rate W initialize {sample rate not exists}()`() {
+        // Given
+        whenever(
+            mockSharedPreferencesStorage
+                .getFloat("dd_profiling_sample_rate", -1f)
+        ) doReturn (-1f)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockSharedPreferencesStorage).putFloat(
+            "dd_profiling_sample_rate",
+            fakeConfiguration.sampleRate
+        )
+    }
+
+    @Test
+    fun `M not set Profiling sample rate W initialize() {smaller sample rate exists}`() {
+        // Given
+        whenever(
+            mockSharedPreferencesStorage
+                .getFloat("dd_profiling_sample_rate", -1f)
+        ) doReturn fakeConfiguration.sampleRate - 1f
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockSharedPreferencesStorage, never()).putFloat(
+            "dd_profiling_sample_rate",
+            fakeConfiguration.sampleRate
+        )
+    }
+
+    @Test
+    fun `M set Profiling sample rate W initialize() {bigger sample rate exists}`() {
+        whenever(
+            mockSharedPreferencesStorage.getFloat("dd_profiling_sample_rate", -1f)
+        ) doReturn fakeConfiguration.sampleRate + 1f
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        // Since the existing value was higher, it should be updated to the configuration value
+        verify(mockSharedPreferencesStorage).putFloat(
+            "dd_profiling_sample_rate",
+            fakeConfiguration.sampleRate
+        )
     }
 
     @Test

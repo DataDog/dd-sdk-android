@@ -7,6 +7,7 @@
 package com.datadog.android.profiling.internal
 
 import com.datadog.android.profiling.ProfilingConfiguration
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -20,12 +21,13 @@ import org.junit.jupiter.api.extension.Extensions
 internal class ProfilingConfigurationTest {
 
     @Test
-    fun `M hold null custom endpoint by default W build()`() {
+    fun `M hold default values W build()`() {
         // When
         val config = ProfilingConfiguration.Builder().build()
 
         // Then
         assertThat(config.customEndpointUrl).isNull()
+        assertThat(config.sampleRate).isEqualTo(100f)
     }
 
     @Test
@@ -42,17 +44,36 @@ internal class ProfilingConfigurationTest {
     }
 
     @Test
+    fun `M hold provided sample rate W setSampleRate()`(
+        @FloatForgery(min = 0f, max = 100f) sampleRate: Float
+    ) {
+        // When
+        val config = ProfilingConfiguration.Builder()
+            .setSampleRate(sampleRate)
+            .build()
+
+        // Then
+        assertThat(config.sampleRate).isEqualTo(sampleRate)
+    }
+
+    @Test
     fun `M support copy semantics W data class copy()`(
-        @StringForgery(regex = "https://[a-z]+\\.[a-z]+(/[a-z]+)*") endpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.[a-z]+(/[a-z]+)*") endpoint: String,
+        @FloatForgery(min = 0f, max = 100f) sampleRate: Float
     ) {
         // Given
         val original = ProfilingConfiguration.Builder().build()
 
         // When
-        val modified = original.copy(customEndpointUrl = endpoint)
+        val modified = original.copy(
+            customEndpointUrl = endpoint,
+            sampleRate = sampleRate
+        )
 
         // Then
         assertThat(original.customEndpointUrl).isNull()
+        assertThat(original.sampleRate).isEqualTo(100f)
         assertThat(modified.customEndpointUrl).isEqualTo(endpoint)
+        assertThat(modified.sampleRate).isEqualTo(sampleRate)
     }
 }

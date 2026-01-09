@@ -9,12 +9,29 @@ package com.datadog.android.profiling.internal
 import android.content.Context
 import com.datadog.android.internal.data.SharedPreferencesStorage
 
+private const val KEY_PROFILING_ENABLED = "dd_profiling_enabled"
+
 internal object ProfilingStorage {
 
     internal const val KEY_PROFILING_ENABLED = "dd_profiling_enabled"
+    internal const val KEY_PROFILING_SAMPLE_RATE = "dd_profiling_sample_rate"
 
     @Volatile
     internal var sharedPreferencesStorage: SharedPreferencesStorage? = null
+
+    internal fun setSampleRate(appContext: Context, sampleRate: Float) {
+        getStorage(appContext).apply {
+            putFloat(KEY_PROFILING_SAMPLE_RATE, sampleRate)
+        }
+    }
+
+    internal fun getSampleRate(appContext: Context): Float {
+        return getStorage(appContext).getFloat(KEY_PROFILING_SAMPLE_RATE, -1f)
+    }
+
+    internal fun removeSampleRate(appContext: Context) {
+        return getStorage(appContext).remove(KEY_PROFILING_SAMPLE_RATE)
+    }
 
     @JvmStatic
     internal fun addProfilingFlag(appContext: Context, sdkInstanceName: String) {

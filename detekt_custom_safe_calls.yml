@@ -43,6 +43,7 @@ datadog:
       - "android.content.SharedPreferences.edit()"
       - "android.content.SharedPreferences.Editor.clear()"
       - "android.content.SharedPreferences.Editor.putBoolean(kotlin.String?, kotlin.Boolean)"
+      - "android.content.SharedPreferences.Editor.putFloat(kotlin.String?, kotlin.Float)"
       - "android.content.SharedPreferences.Editor.putInt(kotlin.String?, kotlin.Int)"
       - "android.content.SharedPreferences.Editor.putString(kotlin.String?, kotlin.String?)"
       - "android.content.SharedPreferences.Editor.putStringSet(kotlin.String?, kotlin.collections.MutableSet?)"
