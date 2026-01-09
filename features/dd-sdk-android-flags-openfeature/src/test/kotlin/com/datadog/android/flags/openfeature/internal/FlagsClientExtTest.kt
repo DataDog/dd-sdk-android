@@ -89,6 +89,30 @@ internal class FlagsClientExtTest {
     }
 
     @Test
+    fun `M throw OpenFeatureError GeneralError W setEvaluationContextSuspend() {callback onFailure without message}`(
+        @StringForgery targetingKey: String,
+    ) {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        val error = RuntimeException(null as String?)
+
+        doAnswer { invocation ->
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            callback.onFailure(error)
+            Unit
+        }.whenever(mockFlagsClient).setEvaluationContext(any(), any())
+
+        // When/Then
+        assertThatThrownBy {
+            runBlocking {
+                mockFlagsClient.setEvaluationContextSuspend(context)
+            }
+        }
+            .isInstanceOf(OpenFeatureError.GeneralError::class.java)
+            .hasMessage("Unknown error: RuntimeException")
+    }
+
+    @Test
     fun `M throw OpenFeatureError GeneralError with empty message W setEvaluationContextSuspend()`(
         @StringForgery targetingKey: String
     ) {
