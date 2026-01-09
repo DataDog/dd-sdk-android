@@ -90,7 +90,7 @@ internal class FlagsClientExtTest {
 
     @Test
     fun `M throw OpenFeatureError GeneralError W setEvaluationContextSuspend() {callback onFailure without message}`(
-        @StringForgery targetingKey: String,
+        @StringForgery targetingKey: String
     ) {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)

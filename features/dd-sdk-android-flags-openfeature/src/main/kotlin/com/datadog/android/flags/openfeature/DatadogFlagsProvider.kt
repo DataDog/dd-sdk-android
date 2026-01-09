@@ -106,14 +106,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         try {
             flagsClient.setEvaluationContextSuspend(datadogContext)
         } catch (e: OpenFeatureError) {
-            // Log original exception before wrapping (ProviderFatalError doesn't accept cause)
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Provider initialization failed" },
-                e
-            )
-
+            // Upgrade to a fatal error since the provider failed to initialize.
             throw OpenFeatureError.ProviderFatalError("Unable to initialize the provider: ${e.message}")
         }
     }
