@@ -2,8 +2,11 @@ Dependencies List
 
 androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
 dev.openfeature:kotlin-sdk-android:0.6.2                        :  118 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.1.21                       : 1683 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3         : 1514 Kb
 org.jetbrains:annotations:23.0.0                                :   28 Kb
 
-Total transitive dependencies size                              : 1889 Kb
+Total transitive dependencies size                              :    3 Mb
 

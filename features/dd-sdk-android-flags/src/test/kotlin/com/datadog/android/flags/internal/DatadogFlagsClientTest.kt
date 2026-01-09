@@ -978,25 +978,6 @@ internal class DatadogFlagsClientTest {
     // region setEvaluationContext()
 
     @Test
-    fun `M call evaluations manager W setEvaluationContext() { Empty Evaluation Context }`() {
-        // Given
-        val emptyContext = EvaluationContext.EMPTY
-
-        // When
-        testedClient.setEvaluationContext(emptyContext)
-
-        // Then
-        val contextCaptor = argumentCaptor<EvaluationContext>()
-        verify(mockEvaluationsManager).updateEvaluationsForContext(
-            contextCaptor.capture(),
-            isNull()
-        )
-
-        val capturedContext = contextCaptor.firstValue
-        assertThat(capturedContext).isEqualTo(EvaluationContext.EMPTY)
-    }
-
-    @Test
     fun `M call evaluations manager W setEvaluationContext() { valid targeting key and attributes }`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
@@ -1047,6 +1028,26 @@ internal class DatadogFlagsClientTest {
         val capturedContext = contextCaptor.firstValue
         assertThat(capturedContext.targetingKey).isEmpty()
         assertThat(capturedContext.attributes).isEqualTo(fakeAttributes)
+    }
+
+    @Test
+    fun `M call evaluations manager W setEvaluationContext() { Empty Evaluation Context }`() {
+        // Given
+        val emptyContext = EvaluationContext.EMPTY
+
+        // When
+        testedClient.setEvaluationContext(emptyContext)
+
+        // Then
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            contextCaptor.capture(),
+            anyOrNull()
+        )
+
+        val capturedContext = contextCaptor.firstValue
+        assertThat(capturedContext.targetingKey).isEmpty()
+        assertThat(capturedContext.attributes).isEqualTo(emptyMap<String, String>())
     }
 
     @Test

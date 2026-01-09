@@ -260,6 +260,7 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 openFeatureKotlinSdk = { module = "dev.openfeature:kotlin-sdk", version.ref = "openFeature" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
 exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
