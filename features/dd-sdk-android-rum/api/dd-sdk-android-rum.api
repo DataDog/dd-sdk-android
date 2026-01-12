@@ -274,6 +274,7 @@ public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setInsightsCollector (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }
@@ -379,6 +380,27 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 	public fun <init> ()V
 	public fun onFling (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
 	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
+}
+
+public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public abstract fun addUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+	public abstract fun getMaxSize ()I
+	public abstract fun getUpdateIntervalMs ()J
+	public abstract fun onAction ()V
+	public abstract fun onCpuVital (Ljava/lang/Double;)V
+	public abstract fun onLongTask (JJ)V
+	public abstract fun onMemoryVital (Ljava/lang/Double;)V
+	public abstract fun onNetworkRequest (JJ)V
+	public abstract fun onNewView (Ljava/lang/String;)V
+	public abstract fun onSlowFrame (JJ)V
+	public abstract fun onSlowFrameRate (Ljava/lang/Double;)V
+	public abstract fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+	public abstract fun setMaxSize (I)V
+	public abstract fun setUpdateIntervalMs (J)V
+}
+
+public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
+	public abstract fun onDataUpdated ()V
 }
 
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {

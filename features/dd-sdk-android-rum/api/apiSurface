@@ -177,6 +177,7 @@ class com.datadog.android.rum._RumInternalProxy
     fun setComposeActionTrackingStrategy(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.tracking.ActionTrackingStrategy): com.datadog.android.rum.RumConfiguration.Builder
     fun setRumSessionTypeOverride(com.datadog.android.rum.RumConfiguration.Builder, RumSessionType): com.datadog.android.rum.RumConfiguration.Builder
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
+    fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
@@ -195,6 +196,21 @@ enum com.datadog.android.rum.featureoperations.FailureReason
   - OTHER
 data class com.datadog.android.rum.internal.domain.event.ResourceTiming
   constructor(Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L)
+interface com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+  var maxSize: Int
+  var updateIntervalMs: Long
+  fun addUpdateListener(InsightsUpdatesListener)
+  fun removeUpdateListener(InsightsUpdatesListener)
+  fun onNewView(String)
+  fun onAction()
+  fun onLongTask(Long, Long)
+  fun onSlowFrame(Long, Long)
+  fun onNetworkRequest(Long, Long)
+  fun onCpuVital(Double?)
+  fun onMemoryVital(Double?)
+  fun onSlowFrameRate(Double?)
+interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
+  fun onDataUpdated()
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor
   fun waitForResourceTiming(Any)
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)

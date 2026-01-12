@@ -61,11 +61,6 @@ internal interface FileOrchestrator {
     fun getMetadataFile(file: File): File?
 
     /**
-     * @return the name of the root directory of this orchestrator or null if the root directory does not exist.
-     */
-    fun getRootDirName(): String?
-
-    /**
      * @return the number of pending files in the orchestrator, after decrementing by 1.
      */
     fun decrementAndGetPendingFilesCount(): Int

@@ -11,6 +11,7 @@ import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
@@ -24,6 +25,7 @@ internal interface SlowFramesListener : FrameStateListener {
 internal class DefaultSlowFramesListener(
     internal val configuration: SlowFramesConfiguration,
     internal val metricDispatcher: UISlownessMetricDispatcher,
+    internal val insightsCollector: InsightsCollector,
     timeProvider: TimeProvider
 ) : SlowFramesListener {
 
@@ -108,6 +110,7 @@ internal class DefaultSlowFramesListener(
                         frameStartedTimestampNs,
                         frameDurationNs
                     )
+                    insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
                 }
             } else {
                 // It's a continuous slow frame – increasing duration
@@ -115,6 +118,7 @@ internal class DefaultSlowFramesListener(
                     previousSlowFrameRecord.durationNs + frameDurationNs,
                     configuration.maxSlowFrameThresholdNs - 1
                 )
+                insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
             }
         }
     }

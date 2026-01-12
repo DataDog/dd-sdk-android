@@ -137,10 +137,6 @@ internal class BatchFileOrchestrator(
         return rootDir
     }
 
-    override fun getRootDirName(): String {
-        return rootDir.nameWithoutExtension
-    }
-
     @WorkerThread
     override fun getMetadataFile(file: File): File? {
         if (file.parent != rootDir.path) {
