@@ -15,6 +15,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.profiling.internal.ProfilingStorage
 
 /**
@@ -28,11 +29,20 @@ class DdProfilingContentProvider : ContentProvider() {
             context?.let {
                 val instanceNames = ProfilingStorage.getProfilingEnabledInstanceNames(it)
                 if (instanceNames.isNotEmpty() && isProcessFromLauncher()) {
-                    Profiling.start(it, instanceNames)
+                    sampleProfiling(it, instanceNames)
                 }
             }
         }
         return true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private fun sampleProfiling(context: Context, instanceNames: Set<String>) {
+        val sampleRate = ProfilingStorage.getSampleRate(context)
+        if (RateBasedSampler<Unit>(sampleRate).sample(Unit)) {
+            Profiling.start(context, instanceNames)
+        }
+        ProfilingStorage.removeSampleRate(context)
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)

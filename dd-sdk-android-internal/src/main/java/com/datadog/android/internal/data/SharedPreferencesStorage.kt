@@ -18,6 +18,18 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
     private val prefs: SharedPreferences =
         appContext.getSharedPreferences(DATADOG_PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
 
+    override fun putFloat(key: String, value: Float) {
+        prefs.edit().putFloat(key, value).apply()
+    }
+
+    override fun getFloat(key: String, defaultValue: Float): Float {
+        return runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.getFloat(key, defaultValue)
+        } ?: defaultValue
+    }
+
     override fun putInt(key: String, value: Int) {
         prefs.edit().putInt(key, value).apply()
     }

@@ -13,8 +13,12 @@ import fr.xgouchet.elmyr.ForgeryFactory
 class ProfilingConfigurationForgeryFactory :
     ForgeryFactory<ProfilingConfiguration> {
     override fun getForgery(forge: Forge): ProfilingConfiguration {
-        return ProfilingConfiguration.Builder().useCustomEndpoint(
-            endpoint = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
-        ).build()
+        return ProfilingConfiguration.Builder()
+            .setSampleRate(
+                sampleRate = forge.aFloat(min = 1f, max = 100f)
+            )
+            .useCustomEndpoint(
+                endpoint = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
+            ).build()
     }
 }
