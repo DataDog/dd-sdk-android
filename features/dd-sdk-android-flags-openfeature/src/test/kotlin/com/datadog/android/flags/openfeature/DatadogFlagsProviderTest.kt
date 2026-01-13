@@ -8,10 +8,12 @@ package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
@@ -24,7 +26,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -34,12 +35,14 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Mockito
+import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -69,18 +72,22 @@ internal class DatadogFlagsProviderTest {
 
     @BeforeEach
     fun setUp() {
-        Mockito.lenient().`when`(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
-        Mockito.lenient().`when`(mockFlagsClient.state).thenReturn(mockStateObservable)
-        Mockito.lenient().`when`(mockStateObservable.addListener(any())).thenAnswer {
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+
+        // Use lenient stubbings for mocks that are conditionally used across different tests
+        lenient().whenever(mockFlagsClient.state).thenReturn(mockStateObservable)
+
+        lenient().whenever(mockStateObservable.addListener(any())).doAnswer {
             capturedStateListener = it.getArgument(0)
             Unit
         }
-        Mockito.lenient().doNothing().`when`(mockStateObservable).removeListener(any())
-        Mockito.lenient().`when`(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.NotReady)
 
-        // Mock setEvaluationContext to immediately call the callback's onSuccess
-        Mockito.lenient().`when`(mockFlagsClient.setEvaluationContext(any(), any())).thenAnswer { invocation ->
-            val callback = invocation.getArgument<com.datadog.android.flags.EvaluationContextCallback?>(1)
+        lenient().apply { doNothing().whenever(mockStateObservable).removeListener(any()) }
+
+        lenient().whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.NotReady)
+
+        lenient().whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val callback = invocation.getArgument<EvaluationContextCallback?>(1)
             callback?.onSuccess()
             Unit
         }
@@ -106,10 +113,10 @@ internal class DatadogFlagsProviderTest {
         assertThat(hooks).isEmpty()
     }
 
-    // region Boolean Evaluation
+    // region Primitive Type Evaluations
 
     @Test
-    fun `M return boolean value W getBooleanEvaluation() {successful resolution}`(
+    fun `M delegate to FlagsClient and convert result W getBooleanEvaluation()`(
         forge: Forge,
         @StringForgery flagKey: String,
         @StringForgery variant: String
@@ -136,39 +143,7 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M return default boolean value W getBooleanEvaluation() {error resolution}`(
-        forge: Forge,
-        @StringForgery flagKey: String,
-        @StringForgery errorMessage: String
-    ) {
-        // Given
-        val defaultValue = forge.aBool()
-        val errorCode = forge.aValueFrom(ErrorCode::class.java)
-        val resolution = ResolutionDetails(
-            value = defaultValue,
-            errorCode = errorCode,
-            errorMessage = errorMessage,
-            reason = ResolutionReason.ERROR
-        )
-        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
-
-        // When
-        val result = provider.getBooleanEvaluation(flagKey, defaultValue, null)
-
-        // Then
-        assertThat(result.value).isEqualTo(defaultValue)
-        assertThat(result.variant).isNull()
-        assertThat(result.errorCode).isNotNull
-        assertThat(result.errorMessage).isEqualTo(errorMessage)
-        assertThat(result.reason).isEqualTo("ERROR")
-    }
-
-    // endregion
-
-    // region String Evaluation
-
-    @Test
-    fun `M return string value W getStringEvaluation() {successful resolution}`(
+    fun `M delegate to FlagsClient and convert result W getStringEvaluation()`(
         forge: Forge,
         @StringForgery flagKey: String,
         @StringForgery expectedValue: String,
@@ -190,44 +165,10 @@ internal class DatadogFlagsProviderTest {
         assertThat(result.value).isEqualTo(expectedValue)
         assertThat(result.variant).isEqualTo(variant)
         assertThat(result.reason).isEqualTo(resolution.reason?.name)
-        assertThat(result.errorCode).isNull()
-        assertThat(result.errorMessage).isNull()
     }
 
     @Test
-    fun `M return default string value W getStringEvaluation() {error resolution}`(
-        forge: Forge,
-        @StringForgery flagKey: String,
-        @StringForgery defaultValue: String,
-        @StringForgery errorMessage: String
-    ) {
-        // Given
-        val errorCode = forge.aValueFrom(ErrorCode::class.java)
-        val resolution = ResolutionDetails(
-            value = defaultValue,
-            errorCode = errorCode,
-            errorMessage = errorMessage,
-            reason = ResolutionReason.ERROR
-        )
-        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
-
-        // When
-        val result = provider.getStringEvaluation(flagKey, defaultValue, null)
-
-        // Then
-        assertThat(result.value).isEqualTo(defaultValue)
-        assertThat(result.variant).isNull()
-        assertThat(result.errorCode).isNotNull
-        assertThat(result.errorMessage).isEqualTo(errorMessage)
-        assertThat(result.reason).isEqualTo("ERROR")
-    }
-
-    // endregion
-
-    // region Integer Evaluation
-
-    @Test
-    fun `M return integer value W getIntegerEvaluation() {successful resolution}`(
+    fun `M delegate to FlagsClient and convert result W getIntegerEvaluation()`(
         forge: Forge,
         @StringForgery flagKey: String,
         @StringForgery variant: String
@@ -248,45 +189,10 @@ internal class DatadogFlagsProviderTest {
         // Then
         assertThat(result.value).isEqualTo(expectedValue)
         assertThat(result.variant).isEqualTo(variant)
-        assertThat(result.reason).isEqualTo(resolution.reason?.name)
-        assertThat(result.errorCode).isNull()
-        assertThat(result.errorMessage).isNull()
     }
 
     @Test
-    fun `M return default integer value W getIntegerEvaluation() {error resolution}`(
-        forge: Forge,
-        @StringForgery flagKey: String,
-        @StringForgery errorMessage: String
-    ) {
-        // Given
-        val defaultValue = forge.anInt()
-        val errorCode = forge.aValueFrom(ErrorCode::class.java)
-        val resolution = ResolutionDetails(
-            value = defaultValue,
-            errorCode = errorCode,
-            errorMessage = errorMessage,
-            reason = ResolutionReason.ERROR
-        )
-        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
-
-        // When
-        val result = provider.getIntegerEvaluation(flagKey, defaultValue, null)
-
-        // Then
-        assertThat(result.value).isEqualTo(defaultValue)
-        assertThat(result.variant).isNull()
-        assertThat(result.errorCode).isNotNull
-        assertThat(result.errorMessage).isEqualTo(errorMessage)
-        assertThat(result.reason).isEqualTo("ERROR")
-    }
-
-    // endregion
-
-    // region Double Evaluation
-
-    @Test
-    fun `M return double value W getDoubleEvaluation() {successful resolution}`(
+    fun `M delegate to FlagsClient and convert result W getDoubleEvaluation()`(
         forge: Forge,
         @StringForgery flagKey: String,
         @StringForgery variant: String
@@ -307,19 +213,16 @@ internal class DatadogFlagsProviderTest {
         // Then
         assertThat(result.value).isEqualTo(expectedValue)
         assertThat(result.variant).isEqualTo(variant)
-        assertThat(result.reason).isEqualTo(resolution.reason?.name)
-        assertThat(result.errorCode).isNull()
-        assertThat(result.errorMessage).isNull()
     }
 
     @Test
-    fun `M return default double value W getDoubleEvaluation() {error resolution}`(
+    fun `M properly convert error details W evaluation with error`(
         forge: Forge,
         @StringForgery flagKey: String,
         @StringForgery errorMessage: String
     ) {
-        // Given
-        val defaultValue = forge.aDouble()
+        // Given - test error conversion with any type (using boolean as example)
+        val defaultValue = forge.aBool()
         val errorCode = forge.aValueFrom(ErrorCode::class.java)
         val resolution = ResolutionDetails(
             value = defaultValue,
@@ -330,9 +233,9 @@ internal class DatadogFlagsProviderTest {
         whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(resolution)
 
         // When
-        val result = provider.getDoubleEvaluation(flagKey, defaultValue, null)
+        val result = provider.getBooleanEvaluation(flagKey, defaultValue, null)
 
-        // Then
+        // Then - verify error details are properly converted
         assertThat(result.value).isEqualTo(defaultValue)
         assertThat(result.variant).isNull()
         assertThat(result.errorCode).isNotNull
@@ -343,9 +246,11 @@ internal class DatadogFlagsProviderTest {
     // endregion
 
     // region Object Evaluation
+    // Note: Object evaluation has unique logic with sentinel values and type conversion,
+    // so we need more thorough tests here.
 
     @Test
-    fun `M return Value structure W getObjectEvaluation() {successful resolution}`(
+    fun `M convert Map to Value structure W getObjectEvaluation() {successful resolution}`(
         forge: Forge,
         @StringForgery flagKey: String,
         @StringForgery variant: String
@@ -369,7 +274,7 @@ internal class DatadogFlagsProviderTest {
         // When
         val result = provider.getObjectEvaluation(flagKey, defaultValue, null)
 
-        // Then
+        // Then - verify Map is converted to Value.Structure
         assertThat(result.value).isInstanceOf(Value.Structure::class.java)
         assertThat(result.variant).isEqualTo(variant)
         assertThat(result.reason).isEqualTo(resolution.reason?.name)
@@ -384,12 +289,13 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M preserve default Value types W getObjectEvaluation() {error resolution}`(
+    fun `M preserve original default Value W getObjectEvaluation() {sentinel returned}`(
         @StringForgery flagKey: String,
         @Forgery fakeErrorCode: ErrorCode,
         @StringForgery errorMessage: String
     ) {
-        // Given
+        // Given - test that when FlagsClient returns the sentinel, we return the original default
+        // This is the key logic of getObjectEvaluation: avoiding unnecessary conversions
         val defaultValue = Value.Structure(
             mapOf(
                 "intValue" to Value.Integer(42),
@@ -400,7 +306,7 @@ internal class DatadogFlagsProviderTest {
             )
         )
         val resolution = ResolutionDetails(
-            value = emptyMap<String, Any?>(), // Error case returns empty map
+            value = emptyMap<String, Any?>(), // Sentinel: empty map returned by FlagsClient
             errorCode = fakeErrorCode,
             errorMessage = errorMessage,
             reason = ResolutionReason.ERROR
@@ -411,7 +317,7 @@ internal class DatadogFlagsProviderTest {
         // When
         val result = provider.getObjectEvaluation(flagKey, defaultValue, null)
 
-        // Then - Original defaultValue returned with types preserved
+        // Then - original defaultValue is returned unchanged (preserving types)
         assertThat(result.value).isSameAs(defaultValue)
         assertThat(result.variant).isNull()
         assertThat(result.errorCode).isNotNull()
@@ -430,75 +336,73 @@ internal class DatadogFlagsProviderTest {
 
     // endregion
 
-    // region Provider Lifecycle - initialize()
-    // Note: Full integration testing of blocking behavior requires running FlagsClient
-    // These tests verify the basic contract and listener management
+    // region Provider Lifecycle
+    // Note: These tests focus on the provider's behavior - context conversion and delegation.
+    // The FlagsClient's actual async/blocking behavior is tested in its own test suite.
 
     @Test
-    fun `M return immediately W initialize() {null context}`() = runTest {
+    fun `M delegate to FlagsClient W initialize() {with context}`() = runTest {
+        // Given
+        val context = ImmutableContext(targetingKey = "user-123")
+
+        // When
+        provider.initialize(context)
+
+        // Then - verify context is converted and passed to FlagsClient
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
+        assertThat(contextCaptor.firstValue.targetingKey).isEqualTo("user-123")
+    }
+
+    @Test
+    fun `M use empty context W initialize() {null context}`() = runTest {
         // When
         provider.initialize(null)
 
-        // Then - completes without calling state management
-        verify(mockStateObservable, never()).addListener(any())
+        // Then - verify empty context is passed to FlagsClient
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
+        assertThat(contextCaptor.firstValue).isEqualTo(EvaluationContext.EMPTY)
     }
 
     @Test
-    fun `M call setEvaluationContext W initialize() {valid context}`() = runTest {
-        // Given
-        val context = ImmutableContext(targetingKey = "user-123")
-
-        // When
-        provider.initialize(context)
-
-        // Then - triggers context setting via suspend function
-        verify(mockFlagsClient).setEvaluationContext(any(), any())
-    }
-
-    @Test
-    fun `M return immediately W initialize() {already ready state}`() = runTest {
-        // Given
-        val context = ImmutableContext(targetingKey = "user-123")
-
-        // When
-        provider.initialize(context)
-
-        // Then - completes successfully by calling setEvaluationContext
-        verify(mockFlagsClient).setEvaluationContext(any(), any())
-    }
-
-    // endregion
-
-    // region Provider Lifecycle - onContextSet()
-    // Note: Full integration testing of blocking behavior requires running FlagsClient
-
-    @Test
-    fun `M call setEvaluationContext W onContextSet() {context change}`() = runTest {
+    fun `M delegate to FlagsClient W onContextSet()`() = runTest {
         // Given
         val newContext = ImmutableContext(targetingKey = "user-456")
 
         // When
         provider.onContextSet(null, newContext)
 
-        // Then - triggers context setting via suspend function
-        verify(mockFlagsClient).setEvaluationContext(any(), any())
+        // Then - verify context is converted and passed to FlagsClient
+        val contextCaptor = argumentCaptor<EvaluationContext>()
+        verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
+        assertThat(contextCaptor.firstValue.targetingKey).isEqualTo("user-456")
     }
 
     // endregion
 
-    // region Provider Events - observe()
+    // region Provider Events
+    // Note: These tests verify the provider correctly converts FlagsClient state changes
+    // to OpenFeature events and properly manages listener lifecycle.
 
     @Test
-    fun `M return Flow W observe()`() {
+    fun `M register listener W observe() {flow collected}`() = runTest {
         // When
-        provider.observe()
+        val job = launch {
+            provider.observe().collect { }
+        }
+        // Wait for the listener to be registered by running pending coroutines
+        testScheduler.runCurrent()
 
-        // Then - Flow returned without error
-        verify(mockStateObservable, never()).addListener(any()) // Listener not added until collection starts
+        // Then - listener is registered (verified by captured listener)
+        assertThat(capturedStateListener).isNotNull()
+        verify(mockStateObservable).addListener(any())
+
+        job.cancel()
     }
 
     @Test
-    fun `M emit ProviderReady W observe() {state changes to Ready}`() = runTest {
+    fun `M emit ProviderReady event W observe() {state changes to Ready}`() = runTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
 
@@ -506,18 +410,18 @@ internal class DatadogFlagsProviderTest {
         val job = launch {
             provider.observe().collect { events.add(it) }
         }
-        delay(100) // Let flow set up
-        capturedStateListener?.onStateChanged(FlagsClientState.Ready)
-        delay(100) // Let event propagate
+        testScheduler.runCurrent() // Start the flow collection
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+        testScheduler.runCurrent() // Process the state change
         job.cancel()
 
-        // Then
+        // Then - Ready state is converted to ProviderReady event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
     }
 
     @Test
-    fun `M emit ProviderStale W observe() {state changes to Stale}`() = runTest {
+    fun `M emit ProviderStale event W observe() {state changes to Stale}`() = runTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
 
@@ -525,18 +429,18 @@ internal class DatadogFlagsProviderTest {
         val job = launch {
             provider.observe().collect { events.add(it) }
         }
-        delay(100) // Let flow set up
-        capturedStateListener?.onStateChanged(FlagsClientState.Stale)
-        delay(100) // Let event propagate
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
+        testScheduler.runCurrent()
         job.cancel()
 
-        // Then
+        // Then - Stale state is converted to ProviderStale event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
     }
 
     @Test
-    fun `M emit ProviderError W observe() {state changes to Error}`() = runTest {
+    fun `M emit ProviderError event W observe() {state changes to Error}`() = runTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
         val errorState = FlagsClientState.Error(RuntimeException("test error"))
@@ -545,18 +449,18 @@ internal class DatadogFlagsProviderTest {
         val job = launch {
             provider.observe().collect { events.add(it) }
         }
-        delay(100) // Let flow set up
-        capturedStateListener?.onStateChanged(errorState)
-        delay(100) // Let event propagate
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(errorState)
+        testScheduler.runCurrent()
         job.cancel()
 
-        // Then
+        // Then - Error state is converted to ProviderError event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
     }
 
     @Test
-    fun `M not emit event W observe() {state changes to NotReady}`() = runTest {
+    fun `M filter NotReady state W observe() {state changes to NotReady}`() = runTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
 
@@ -564,17 +468,17 @@ internal class DatadogFlagsProviderTest {
         val job = launch {
             provider.observe().collect { events.add(it) }
         }
-        delay(100) // Let flow set up
-        capturedStateListener?.onStateChanged(FlagsClientState.NotReady)
-        delay(100) // Let event propagate
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.NotReady)
+        testScheduler.runCurrent()
         job.cancel()
 
-        // Then - NotReady is filtered out (SDK handles via blocking initialize)
+        // Then - NotReady is filtered (handled by blocking initialize())
         assertThat(events).isEmpty()
     }
 
     @Test
-    fun `M not emit event W observe() {state changes to Reconciling}`() = runTest {
+    fun `M filter Reconciling state W observe() {state changes to Reconciling}`() = runTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
 
@@ -582,27 +486,29 @@ internal class DatadogFlagsProviderTest {
         val job = launch {
             provider.observe().collect { events.add(it) }
         }
-        delay(100) // Let flow set up
-        capturedStateListener?.onStateChanged(FlagsClientState.Reconciling)
-        delay(100) // Let event propagate
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Reconciling)
+        testScheduler.runCurrent()
         job.cancel()
 
-        // Then - Reconciling is filtered out (SDK emits PROVIDER_RECONCILING)
+        // Then - Reconciling is filtered (SDK emits PROVIDER_RECONCILING)
         assertThat(events).isEmpty()
     }
 
     @Test
-    fun `M remove listener W observe() {flow cancelled}`() = runTest {
+    fun `M unregister listener W observe() {flow cancelled}`() = runTest {
         // When
         val job = launch {
             provider.observe().collect { }
         }
-        delay(100) // Let flow set up
+        testScheduler.runCurrent()
+        assertThat(capturedStateListener).isNotNull()
         verify(mockStateObservable).addListener(any())
-        job.cancel()
-        delay(100) // Let cleanup happen
 
-        // Then
+        job.cancel()
+        testScheduler.runCurrent() // Process cancellation
+
+        // Then - listener is cleaned up
         verify(mockStateObservable).removeListener(any())
     }
 

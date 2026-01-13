@@ -48,19 +48,21 @@ internal class FlagsClientExtTest {
     ) = runTest {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
-        val callbackCaptor = argumentCaptor<EvaluationContextCallback>()
+        val contextCaptor = argumentCaptor<EvaluationContext>()
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onSuccess()
             Unit
-        }.whenever(mockFlagsClient).setEvaluationContext(any(), callbackCaptor.capture())
+        }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
-        // When/Then - should complete without throwing
+        // When
         mockFlagsClient.setEvaluationContextSuspend(context)
 
-        // Verify the correct context was passed
-        verify(mockFlagsClient).setEvaluationContext(any(), any())
+        // Then - verify the correct context was passed
+        verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
+        assertThat(contextCaptor.firstValue).isEqualTo(context)
+        assertThat(contextCaptor.firstValue.targetingKey).isEqualTo(targetingKey)
     }
 
     @Test
@@ -70,13 +72,14 @@ internal class FlagsClientExtTest {
     ) {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
+        val contextCaptor = argumentCaptor<EvaluationContext>()
         val error = RuntimeException(errorMessage)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
             Unit
-        }.whenever(mockFlagsClient).setEvaluationContext(any(), any())
+        }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When/Then
         assertThatThrownBy {
@@ -86,6 +89,9 @@ internal class FlagsClientExtTest {
         }
             .isInstanceOf(OpenFeatureError.GeneralError::class.java)
             .hasMessage(errorMessage)
+
+        // Verify the correct context was passed
+        assertThat(contextCaptor.firstValue).isEqualTo(context)
     }
 
     @Test
@@ -94,13 +100,14 @@ internal class FlagsClientExtTest {
     ) {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
+        val contextCaptor = argumentCaptor<EvaluationContext>()
         val error = RuntimeException(null as String?)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
             Unit
-        }.whenever(mockFlagsClient).setEvaluationContext(any(), any())
+        }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When/Then
         assertThatThrownBy {
@@ -110,6 +117,9 @@ internal class FlagsClientExtTest {
         }
             .isInstanceOf(OpenFeatureError.GeneralError::class.java)
             .hasMessage("Unknown error: RuntimeException")
+
+        // Verify the correct context was passed
+        assertThat(contextCaptor.firstValue).isEqualTo(context)
     }
 
     @Test
@@ -118,13 +128,14 @@ internal class FlagsClientExtTest {
     ) {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
+        val contextCaptor = argumentCaptor<EvaluationContext>()
         val error = RuntimeException(null as String?)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
             Unit
-        }.whenever(mockFlagsClient).setEvaluationContext(any(), any())
+        }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When/Then
         assertThatThrownBy {
@@ -134,6 +145,9 @@ internal class FlagsClientExtTest {
         }
             .isInstanceOf(OpenFeatureError.GeneralError::class.java)
             .hasMessage("Unknown error: RuntimeException")
+
+        // Verify the correct context was passed
+        assertThat(contextCaptor.firstValue).isEqualTo(context)
     }
 
     @Test
@@ -143,13 +157,14 @@ internal class FlagsClientExtTest {
     ) {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
+        val contextCaptor = argumentCaptor<EvaluationContext>()
         val error = IllegalStateException(errorMessage)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
             Unit
-        }.whenever(mockFlagsClient).setEvaluationContext(any(), any())
+        }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When/Then
         assertThatThrownBy {
@@ -159,6 +174,9 @@ internal class FlagsClientExtTest {
         }
             .isInstanceOf(OpenFeatureError.GeneralError::class.java)
             .hasMessage(errorMessage)
+
+        // Verify the correct context was passed
+        assertThat(contextCaptor.firstValue).isEqualTo(context)
     }
 
     @Test
@@ -189,8 +207,9 @@ internal class FlagsClientExtTest {
         // When
         mockFlagsClient.setEvaluationContextSuspend(context)
 
-        // Then
-        verify(mockFlagsClient).setEvaluationContext(any(), any())
+        // Then - verify the correct context and attributes were passed
+        verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
+        assertThat(contextCaptor.firstValue).isEqualTo(context)
         assertThat(contextCaptor.firstValue.targetingKey).isEqualTo(targetingKey)
         assertThat(contextCaptor.firstValue.attributes).isEqualTo(attributes)
     }
