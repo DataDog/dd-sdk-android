@@ -98,19 +98,11 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
      *
      * @param initialContext The initial evaluation context to set (optional)
-     * @throws OpenFeatureError.ProviderFatalError if initialization fails
+     * @throws OpenFeatureError if initialization fails
      */
-    @Suppress("SwallowedException") // Message is propagated but detekt still considers it a swallowed exception.
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
         val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
-        try {
-            flagsClient.setEvaluationContextSuspend(datadogContext)
-        } catch (e: OpenFeatureError.ProviderFatalError) {
-            throw e
-        } catch (e: OpenFeatureError) {
-            // Upgrade to a fatal error since the provider failed to initialize.
-            throw OpenFeatureError.ProviderFatalError("Unable to initialize the provider: ${e.message}")
-        }
+        flagsClient.setEvaluationContextSuspend(datadogContext)
     }
 
     /**
