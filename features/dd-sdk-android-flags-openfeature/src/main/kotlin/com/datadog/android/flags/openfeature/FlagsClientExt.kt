@@ -6,14 +6,8 @@
 
 package com.datadog.android.flags.openfeature
 
-import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
-import com.datadog.android.flags.model.EvaluationContext
 import dev.openfeature.kotlin.sdk.FeatureProvider
-import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Creates an OpenFeature [FeatureProvider] from this [FlagsClient].
@@ -53,32 +47,3 @@ import kotlin.coroutines.suspendCoroutine
  * @see FlagsClient.Builder for configuring the underlying flags client
  */
 fun FlagsClient.asOpenFeatureProvider(): FeatureProvider = DatadogFlagsProvider.wrap(this)
-
-/**
- * Extension function to convert callback-based setEvaluationContext to suspend function.
- *
- * Wraps the callback API in a [suspendCoroutine], converting success/failure callbacks
- * to [resume]/[resumeWithException].
- *
- * @param context The evaluation context to set
- * @throws [OpenFeatureError.GeneralError] if setting the context fails or times out.
- */
-@Suppress("PackageNameVisibility") // Extension function, internal for implementation hiding
-internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {
-    suspendCoroutine<Unit> { continuation ->
-        val callback = object : EvaluationContextCallback {
-            override fun onSuccess() {
-                continuation.resume(Unit)
-            }
-
-            override fun onFailure(error: Throwable) {
-                continuation.resumeWithException(
-                    OpenFeatureError.GeneralError(error.message ?: "Unknown error: ${error::class.simpleName}")
-                )
-            }
-        }
-
-        // setEvaluationContext is guaranteed to return within the configured timeout.
-        setEvaluationContext(context, callback)
-    }
-}

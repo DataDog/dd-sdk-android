@@ -223,8 +223,6 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                         error = OpenFeatureError.ProviderFatalError()
                     )
                 }
-                // Safe: trySend returns ChannelResult, never throws exceptions
-                @Suppress("UnsafeThirdPartyFunctionCall")
                 providerEvent?.let { trySend(it) }
             }
         }
@@ -243,8 +241,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         /**
          * Sentinel default value used to avoid unnecessary Value-to-Map conversion.
          *
-         * When resolving structured flags, we pass this sentinel to the FlagsClient instead of
-         * converting the user's OpenFeature Value. If the FlagsClient returns this sentinel
+         * When resolving structured flags, we pass this sentinel to the [FlagsClient] instead of
+         * converting the user's OpenFeature [Value]. If the [FlagsClient] returns this sentinel
          * (via reference equality), we know no flag was found and can return the user's original
          * default without any conversion overhead.
          */

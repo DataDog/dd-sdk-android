@@ -15,7 +15,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * Extension function to convert callback-based setEvaluationContext to suspend function.
+ * Extension function to convert callback-based [setEvaluationContext] to suspend function.
  *
  * Wraps the callback API in a suspendCoroutine, converting success/failure callbacks
  * to resume/resumeWithException.
