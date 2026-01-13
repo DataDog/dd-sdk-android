@@ -105,34 +105,7 @@ analysis:detekt-custom:
     - ./gradlew :tools:detekt:jar --stacktrace
     - ./gradlew printDetektClasspath --stacktrace
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
-    - ./gradlew :dd-sdk-android-core:customDetektRules
-    - ./gradlew :dd-sdk-android-internal:customDetektRules
-    - ./gradlew :features:dd-sdk-android-flags:customDetektRules
-    - ./gradlew :features:dd-sdk-android-logs:customDetektRules
-    - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
-    - ./gradlew :features:dd-sdk-android-rum:customDetektRules
-    - ./gradlew :features:dd-sdk-android-rum-debug-widget:customDetektRules
-    - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
-    - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
-    - ./gradlew :features:dd-sdk-android-session-replay-compose:customDetektRules
-    - ./gradlew :features:dd-sdk-android-trace-internal:customDetektRules
-    - ./gradlew :features:dd-sdk-android-trace:customDetektRules
-    - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
-    - ./gradlew :features:dd-sdk-android-webview:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-coil3:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-cronet:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-glide:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-okhttp:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-rx:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-sqldelight:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-timber:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-tv:customDetektRules
+    - ./gradlew customDetektRules
 
 
 # TODO RUM-1622 cleanup this section
