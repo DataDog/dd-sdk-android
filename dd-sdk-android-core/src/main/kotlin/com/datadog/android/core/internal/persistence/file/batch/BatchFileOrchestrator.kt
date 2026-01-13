@@ -11,6 +11,7 @@ import android.os.FileObserver.CREATE
 import android.os.FileObserver.DELETE
 import android.os.FileObserver.MOVED_FROM
 import android.os.FileObserver.MOVED_TO
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
@@ -68,12 +69,14 @@ internal class BatchFileOrchestrator(
                     MOVED_TO, CREATE -> {
                         synchronized(knownFiles) {
                             knownFiles.add(file)
+                            Log.w("WAHAHA", "adding ${file.name}")
                         }
                     }
 
                     MOVED_FROM, DELETE -> {
                         synchronized(knownFiles) {
                             knownFiles.remove(file)
+                            Log.w("WAHAHA", "removing ${file.name}")
                         }
                     }
                 }

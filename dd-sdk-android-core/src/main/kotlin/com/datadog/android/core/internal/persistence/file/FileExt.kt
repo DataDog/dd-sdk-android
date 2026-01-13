@@ -7,6 +7,7 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
 import java.io.File
@@ -74,6 +75,7 @@ fun File.canReadSafe(internalLogger: InternalLogger): Boolean {
 }
 
 internal fun File.deleteSafe(internalLogger: InternalLogger): Boolean {
+    Log.w("WAHAHA", "deleteSafe $name")
     return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         delete()

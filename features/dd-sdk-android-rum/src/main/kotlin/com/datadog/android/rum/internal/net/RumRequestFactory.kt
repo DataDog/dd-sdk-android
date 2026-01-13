@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.net
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
@@ -32,6 +33,9 @@ internal class RumRequestFactory(
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request {
+        if (batchData.isEmpty()) {
+            Log.w("WAHAHA", "empty")
+        }
         val requestId = UUID.randomUUID().toString()
         val body = viewEventFilter.filterOutRedundantViewEvents(batchData)
             .map { it.data }

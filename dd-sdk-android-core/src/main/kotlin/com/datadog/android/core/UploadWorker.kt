@@ -7,6 +7,7 @@
 package com.datadog.android.core
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.WorkerThread
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -90,6 +91,7 @@ class UploadWorker(
 
         @WorkerThread
         override fun run() {
+            Log.w("WAHAHA", "UploadNextBatchTask run")
             // context is unique for each batch query instead of using the same one for all the
             // batches which will be uploaded, because it can change by the time the upload
             // of the next batch is requested.
@@ -98,6 +100,7 @@ class UploadWorker(
             val storage = feature.storage
             val uploader = feature.uploader
             val nextBatchData = storage.readNextBatch()
+            Log.w("WAHAHA", "val nextBatchData = storage.readNextBatch() ${nextBatchData?.id}")
             if (nextBatchData != null) {
                 val uploadStatus = consumeBatch(
                     nextBatchData.id,

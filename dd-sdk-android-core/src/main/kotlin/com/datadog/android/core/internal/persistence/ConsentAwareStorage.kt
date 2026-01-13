@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence
 
+import android.util.Log
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
@@ -90,6 +91,10 @@ internal class ConsentAwareStorage(
         }
         val batchData = batchEventsReaderWriter.readData(batchFile)
 
+        if (batchData.isEmpty()) {
+            Log.w("WAHAHA", "${batchId.id} batchData.isEmpty()" )
+        }
+
         return BatchData(id = batchId, data = batchData, metadata = batchMetadata)
     }
 
@@ -100,6 +105,7 @@ internal class ConsentAwareStorage(
         removalReason: RemovalReason,
         deleteBatch: Boolean
     ) {
+        Log.w("WAHAHA", "confirmBatchRead ${batchId.id}")
         val batch = synchronized(lockedReadBatches) {
             lockedReadBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
@@ -162,6 +168,7 @@ internal class ConsentAwareStorage(
 
     @WorkerThread
     private fun deleteBatchFile(batchFile: File, reason: RemovalReason) {
+        Log.w("WAHAHA", "deleteBatchFile ${batchFile.name}")
         val fileSizeBeforeDeletion = batchFile.lengthSafe(internalLogger)
 
         val result = fileMover.delete(batchFile)

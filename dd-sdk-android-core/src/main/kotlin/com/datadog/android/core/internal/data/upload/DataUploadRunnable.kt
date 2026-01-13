@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -41,6 +42,7 @@ internal class DataUploadRunnable(
 
     @WorkerThread
     override fun run() {
+        Log.w("WAHAHA", "DataUploadRunnable.run")
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
         if (isNetworkAvailable() && isSystemReady()) {
@@ -76,6 +78,7 @@ internal class DataUploadRunnable(
     @WorkerThread
     @Suppress("UnsafeThirdPartyFunctionCall") // called inside a dedicated executor
     private fun handleNextBatch(context: DatadogContext): UploadStatus? {
+        Log.w("WAHAHA", "DataUploadRunnable.handleNextBatch")
         var uploadStatus: UploadStatus? = null
         val nextBatchData = storage.readNextBatch()
         if (nextBatchData != null) {
@@ -120,6 +123,7 @@ internal class DataUploadRunnable(
         batch: List<RawBatchEvent>,
         batchMeta: ByteArray?
     ): UploadStatus {
+        Log.w("WAHAHA", "DataUploadRunnable.consumeBatch ${batchId.id}")
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
 
         if (status is UploadStatus.Success) {

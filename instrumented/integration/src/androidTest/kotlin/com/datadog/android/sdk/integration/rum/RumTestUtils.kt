@@ -12,6 +12,7 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions
+import java.lang.ClassCastException
 
 internal const val TARGET_CLASS_NAME = "action.target.classname"
 internal const val TARGET_RESOURCE_ID = "action.target.resource_id"
@@ -20,7 +21,14 @@ internal const val CONTEXT_KEY = "context"
 
 internal fun rumPayloadToJsonList(payload: String): List<JsonObject> {
     return payload.split(Regex("\n"))
-        .map { JsonParser.parseString(it) as JsonObject }
+        .map {
+            try {
+                JsonParser.parseString(it) as JsonObject
+            } catch (ex: ClassCastException) {
+                throw ex
+            }
+
+        }
 }
 
 internal fun List<JsonObject>.verifyEventMatches(
