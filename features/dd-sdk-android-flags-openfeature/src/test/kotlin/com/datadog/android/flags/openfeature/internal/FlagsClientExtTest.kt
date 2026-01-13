@@ -62,7 +62,6 @@ internal class FlagsClientExtTest {
         // Then - verify the correct context was passed
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
-        assertThat(contextCaptor.firstValue.targetingKey).isEqualTo(targetingKey)
     }
 
     @Test
@@ -210,7 +209,5 @@ internal class FlagsClientExtTest {
         // Then - verify the correct context and attributes were passed
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
-        assertThat(contextCaptor.firstValue.targetingKey).isEqualTo(targetingKey)
-        assertThat(contextCaptor.firstValue.attributes).isEqualTo(attributes)
     }
 }
