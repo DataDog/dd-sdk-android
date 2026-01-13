@@ -108,6 +108,7 @@ analysis:detekt-custom:
     - ./gradlew :dd-sdk-android-core:customDetektRules
     - ./gradlew :dd-sdk-android-internal:customDetektRules
     - ./gradlew :features:dd-sdk-android-flags:customDetektRules
+    - ./gradlew :features:dd-sdk-android-flags-openfeature:customDetektRules
     - ./gradlew :features:dd-sdk-android-logs:customDetektRules
     - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
     - ./gradlew :features:dd-sdk-android-rum:customDetektRules
@@ -119,7 +120,6 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
-    - ./gradlew :features:dd-sdk-android-flags-openfeature:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil3:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
@@ -559,6 +559,23 @@ publish:release-flags:
     expire_in: 7 days
     paths:
       - features/dd-sdk-android-flags/verification-metadata.xml
+
+publish:release-flags-openfeature:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :features:dd-sdk-android-flags-openfeature:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - features/dd-sdk-android-flags-openfeature/verification-metadata.xml
 
 publish:release-trace-api:
   tags: [ "arch:amd64" ]
@@ -1170,6 +1187,7 @@ notify:merge-verification-metadata:
     - publish:release-okhttp-otel
     - publish:release-benchmark
     - publish:release-flags
+    - publish:release-flags-openfeature
   script:
     - python3 ./ci/scripts/merge_verification_metadata.py
   artifacts:

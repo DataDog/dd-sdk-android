@@ -446,7 +446,7 @@ internal class NoOpFlagsClientTest {
     // region State Management
 
     @Test
-    fun `M return error state W state_getCurrentState()`() {
+    fun `M return not ready state W state_getCurrentState()`() {
         // When
         val state = testedClient.state.getCurrentState()
 
