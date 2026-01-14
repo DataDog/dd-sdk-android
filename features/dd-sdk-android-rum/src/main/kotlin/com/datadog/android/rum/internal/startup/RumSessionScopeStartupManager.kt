@@ -15,7 +15,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -217,7 +217,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 hasReplay = null,
                 rumContext = rumContext,
                 durationNs = durationNs,
-                appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTFD,
+                appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
                 scenario = scenario
             )
         }.submit()
@@ -256,7 +256,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 hasReplay = null,
                 rumContext = rumContext,
                 durationNs = durationNs,
-                appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTID,
+                appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTID,
                 scenario = event.info.scenario
             )
         }.submit()

@@ -6,12 +6,12 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class VitalAppLaunchPropertiesAssert(actual: RumVitalAppLaunchEvent.Vital) :
-    AbstractObjectAssert<VitalAppLaunchPropertiesAssert, RumVitalAppLaunchEvent.Vital>(
+internal class VitalAppLaunchPropertiesAssert(actual: VitalAppLaunchEvent.Vital) :
+    AbstractObjectAssert<VitalAppLaunchPropertiesAssert, VitalAppLaunchEvent.Vital>(
         actual,
         VitalAppLaunchPropertiesAssert::class.java
     ) {
@@ -28,7 +28,7 @@ internal class VitalAppLaunchPropertiesAssert(actual: RumVitalAppLaunchEvent.Vit
         ).isEqualTo(expected)
     }
 
-    fun hasAppLaunchMetric(expected: RumVitalAppLaunchEvent.AppLaunchMetric) = apply {
+    fun hasAppLaunchMetric(expected: VitalAppLaunchEvent.AppLaunchMetric) = apply {
         assertThat(actual.appLaunchMetric).overridingErrorMessage(
             "Expected event data to have appLaunchMetric $expected but was ${actual.appLaunchMetric}"
         ).isEqualTo(expected)
@@ -40,7 +40,7 @@ internal class VitalAppLaunchPropertiesAssert(actual: RumVitalAppLaunchEvent.Vit
         ).isEqualTo(expected)
     }
 
-    fun hasStartupType(expected: RumVitalAppLaunchEvent.StartupType?) = apply {
+    fun hasStartupType(expected: VitalAppLaunchEvent.StartupType?) = apply {
         assertThat(actual.startupType).overridingErrorMessage(
             "Expected event data to have startupType $expected but was ${actual.startupType}"
         ).isEqualTo(expected)
@@ -61,7 +61,7 @@ internal class VitalAppLaunchPropertiesAssert(actual: RumVitalAppLaunchEvent.Vit
 
     companion object {
         internal fun assertThat(
-            actual: RumVitalAppLaunchEvent.Vital
+            actual: VitalAppLaunchEvent.Vital
         ): VitalAppLaunchPropertiesAssert = VitalAppLaunchPropertiesAssert(actual)
     }
 }
