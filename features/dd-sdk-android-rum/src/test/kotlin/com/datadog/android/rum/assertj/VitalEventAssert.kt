@@ -11,14 +11,14 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toVitalOperationStepSessionPrecondition
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType
+import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent.VitalOperationStepEventSessionType
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
 internal class VitalEventAssert(
-    actual: RumVitalOperationStepEvent
-) : AbstractObjectAssert<VitalEventAssert, RumVitalOperationStepEvent>(
+    actual: VitalOperationStepEvent
+) : AbstractObjectAssert<VitalEventAssert, VitalOperationStepEvent>(
     actual,
     VitalEventAssert::class.java
 ) {
@@ -75,7 +75,7 @@ internal class VitalEventAssert(
             .isEqualTo(expected)
     }
 
-    fun hasSessionType(expected: RumVitalOperationStepEventSessionType) = apply {
+    fun hasSessionType(expected: VitalOperationStepEventSessionType) = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage(
                 "Expected event to have session.type:$expected but was ${actual.session.type}"
@@ -152,7 +152,7 @@ internal class VitalEventAssert(
             ).isEqualTo(resultId)
     }
 
-    fun hasSource(source: RumVitalOperationStepEvent.RumVitalOperationStepEventSource?) = apply {
+    fun hasSource(source: VitalOperationStepEvent.VitalOperationStepEventSource?) = apply {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +
@@ -224,7 +224,7 @@ internal class VitalEventAssert(
         name: String,
         model: String,
         brand: String,
-        type: RumVitalOperationStepEvent.DeviceType,
+        type: VitalOperationStepEvent.DeviceType,
         architecture: String
     ) = apply {
         assertThat(actual.device?.name)
@@ -280,23 +280,23 @@ internal class VitalEventAssert(
 
     fun hasConnectivityInfo(expected: NetworkInfo?) = apply {
         val expectedStatus = if (expected?.isConnected() == true) {
-            RumVitalOperationStepEvent.Status.CONNECTED
+            VitalOperationStepEvent.Status.CONNECTED
         } else {
-            RumVitalOperationStepEvent.Status.NOT_CONNECTED
+            VitalOperationStepEvent.Status.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
-            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(RumVitalOperationStepEvent.Interface.ETHERNET)
-            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(RumVitalOperationStepEvent.Interface.WIFI)
-            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(RumVitalOperationStepEvent.Interface.WIMAX)
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(RumVitalOperationStepEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalOperationStepEvent.Interface.ETHERNET)
+            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalOperationStepEvent.Interface.WIFI)
+            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalOperationStepEvent.Interface.WIMAX)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalOperationStepEvent.Interface.BLUETOOTH)
             NetworkInfo.Connectivity.NETWORK_2G,
             NetworkInfo.Connectivity.NETWORK_3G,
             NetworkInfo.Connectivity.NETWORK_4G,
             NetworkInfo.Connectivity.NETWORK_5G,
             NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(RumVitalOperationStepEvent.Interface.CELLULAR)
+            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalOperationStepEvent.Interface.CELLULAR)
 
-            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(RumVitalOperationStepEvent.Interface.OTHER)
+            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalOperationStepEvent.Interface.OTHER)
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
             null -> null
         }
@@ -378,6 +378,6 @@ internal class VitalEventAssert(
     }
 
     companion object {
-        internal fun assertThat(actual: RumVitalOperationStepEvent): VitalEventAssert = VitalEventAssert(actual)
+        internal fun assertThat(actual: VitalOperationStepEvent): VitalEventAssert = VitalEventAssert(actual)
     }
 }

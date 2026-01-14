@@ -27,9 +27,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -456,7 +456,7 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M build config W setVitalEventMapper() & build() {only vitalOperationStepEventMapper}`() {
         // Given
-        val eventMapper: EventMapper<RumVitalOperationStepEvent> = mock()
+        val eventMapper: EventMapper<VitalOperationStepEvent> = mock()
 
         // When
         val rumConfiguration = testedBuilder
@@ -475,7 +475,7 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M build config W setVitalEventMapper() & build() {only vitalAppLaunchEventMapper}`() {
         // Given
-        val eventMapper: EventMapper<RumVitalAppLaunchEvent> = mock()
+        val eventMapper: EventMapper<VitalAppLaunchEvent> = mock()
 
         // When
         val rumConfiguration = testedBuilder
@@ -494,8 +494,8 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M build config W setVitalEventMapper() & build()`() {
         // Given
-        val rumVitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent> = mock()
-        val rumVitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent> = mock()
+        val rumVitalAppLaunchEventMapper: EventMapper<VitalAppLaunchEvent> = mock()
+        val rumVitalOperationStepEventMapper: EventMapper<VitalOperationStepEvent> = mock()
 
         // When
         val rumConfiguration = testedBuilder

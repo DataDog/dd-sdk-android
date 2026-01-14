@@ -30,8 +30,8 @@ import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSchemaType
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchStartupType
 import com.datadog.android.rum.internal.toVitalAppLaunch
 import com.datadog.android.rum.internal.utils.buildDDTagsString
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -122,7 +122,7 @@ internal class RumSessionScopeStartupManagerTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
-    private var fakeVitalSource: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? = null
+    private var fakeVitalSource: VitalAppLaunchEvent.VitalAppLaunchEventSource? = null
 
     @FloatForgery(min = 0f, max = 100f)
     private var fakeSampleRate: Float = 0f
@@ -160,7 +160,7 @@ internal class RumSessionScopeStartupManagerTest {
         }
 
         fakeVitalSource = if (isValidSource) {
-            RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.fromJson(fakeSource)
+            VitalAppLaunchEvent.VitalAppLaunchEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -229,7 +229,7 @@ internal class RumSessionScopeStartupManagerTest {
         // Then
         verify(mockRumAppStartupTelemetryReporter).reportTTID(info, 0)
 
-        argumentCaptor<RumVitalAppLaunchEvent> {
+        argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             verifyTTID(value = lastValue, info = info)
         }
@@ -289,7 +289,7 @@ internal class RumSessionScopeStartupManagerTest {
         // Then
         inOrder(mockWriter, mockRumAppStartupTelemetryReporter) {
             verify(mockRumAppStartupTelemetryReporter).reportTTID(eq(info1), eq(0))
-            argumentCaptor<RumVitalAppLaunchEvent> {
+            argumentCaptor<VitalAppLaunchEvent> {
                 verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
                 verifyTTID(value = lastValue, info = info1)
             }
@@ -336,7 +336,7 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         // Then
-        argumentCaptor<RumVitalAppLaunchEvent> {
+        argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
             verifyTTID(value = firstValue, info = info)
@@ -420,7 +420,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         // Then
         inOrder(mockWriter) {
-            argumentCaptor<RumVitalAppLaunchEvent> {
+            argumentCaptor<VitalAppLaunchEvent> {
                 verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
                 verifyTTID(value = firstValue, info = info1)
                 verifyTTFD(
@@ -533,7 +533,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         // Then
         inOrder(mockWriter) {
-            argumentCaptor<RumVitalAppLaunchEvent> {
+            argumentCaptor<VitalAppLaunchEvent> {
                 verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
                 verifyTTID(value = firstValue, info = info)
 
@@ -633,7 +633,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         // Then
         inOrder(mockWriter) {
-            argumentCaptor<RumVitalAppLaunchEvent> {
+            argumentCaptor<VitalAppLaunchEvent> {
                 verify(mockWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
                 verifyTTID(value = firstValue, info = info)
             }
@@ -651,7 +651,7 @@ internal class RumSessionScopeStartupManagerTest {
         )
     }
 
-    private fun verifyTTID(value: RumVitalAppLaunchEvent, info: RumTTIDInfo) {
+    private fun verifyTTID(value: VitalAppLaunchEvent, info: RumTTIDInfo) {
         VitalAppLaunchEventAssert.assertThat(value).apply {
             hasDate(info.scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
             hasApplicationId(rumContext.applicationId)
@@ -661,7 +661,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
             hasSessionType(
-                fakeRumSessionType?.toVitalAppLaunch() ?: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
+                fakeRumSessionType?.toVitalAppLaunch() ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
 
@@ -695,7 +695,7 @@ internal class RumSessionScopeStartupManagerTest {
         assertThat(vital).apply {
             hasName("time_to_initial_display")
             hasDescription(null)
-            hasAppLaunchMetric(RumVitalAppLaunchEvent.AppLaunchMetric.TTID)
+            hasAppLaunchMetric(VitalAppLaunchEvent.AppLaunchMetric.TTID)
             hasDuration(info.durationNs)
             hasStartupType(info.scenario.toVitalAppLaunchStartupType())
             hasPrewarmed(null)
@@ -703,7 +703,7 @@ internal class RumSessionScopeStartupManagerTest {
         }
     }
 
-    private fun verifyTTFD(value: RumVitalAppLaunchEvent, scenario: RumStartupScenario, durationNs: Long) {
+    private fun verifyTTFD(value: VitalAppLaunchEvent, scenario: RumStartupScenario, durationNs: Long) {
         VitalAppLaunchEventAssert.assertThat(value).apply {
             hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
             hasApplicationId(rumContext.applicationId)
@@ -713,7 +713,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
             hasSessionType(
-                fakeRumSessionType?.toVitalAppLaunch() ?: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
+                fakeRumSessionType?.toVitalAppLaunch() ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
 
@@ -747,7 +747,7 @@ internal class RumSessionScopeStartupManagerTest {
         assertThat(vital).apply {
             hasName("time_to_full_display")
             hasDescription(null)
-            hasAppLaunchMetric(RumVitalAppLaunchEvent.AppLaunchMetric.TTFD)
+            hasAppLaunchMetric(VitalAppLaunchEvent.AppLaunchMetric.TTFD)
             hasDuration(durationNs)
             hasStartupType(scenario.toVitalAppLaunchStartupType())
             hasPrewarmed(null)

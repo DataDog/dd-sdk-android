@@ -16,9 +16,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -50,10 +50,10 @@ internal class RumEventSerializer(
             is LongTaskEvent -> {
                 serializeLongTaskEvent(model)
             }
-            is RumVitalOperationStepEvent -> {
+            is VitalOperationStepEvent -> {
                 serializeVitalOperationStepEvent(model)
             }
-            is RumVitalAppLaunchEvent -> {
+            is VitalAppLaunchEvent -> {
                 serializeVitalAppLaunchEvent(model)
             }
             is TelemetryDebugEvent -> {
@@ -210,7 +210,7 @@ internal class RumEventSerializer(
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
     }
 
-    private fun serializeVitalOperationStepEvent(model: RumVitalOperationStepEvent): String {
+    private fun serializeVitalOperationStepEvent(model: VitalOperationStepEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
@@ -234,7 +234,7 @@ internal class RumEventSerializer(
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
     }
 
-    private fun serializeVitalAppLaunchEvent(model: RumVitalAppLaunchEvent): String {
+    private fun serializeVitalAppLaunchEvent(model: VitalAppLaunchEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
