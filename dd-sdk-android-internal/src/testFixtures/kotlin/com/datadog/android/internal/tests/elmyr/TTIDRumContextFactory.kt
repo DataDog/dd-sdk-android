@@ -6,14 +6,13 @@
 
 package com.datadog.android.internal.tests.elmyr
 
-import com.datadog.android.rum.TTIDEvent
+import com.datadog.android.internal.profiling.TTIDRumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class TTIDEventFactory : ForgeryFactory<TTIDEvent> {
-    override fun getForgery(forge: Forge): TTIDEvent {
-        return TTIDEvent(
-            durationNs = forge.aLong(),
+class TTIDRumContextFactory : ForgeryFactory<TTIDRumContext> {
+    override fun getForgery(forge: Forge): TTIDRumContext {
+        return TTIDRumContext(
             applicationId = forge.anAlphabeticalString(),
             sessionId = forge.anAlphabeticalString(),
             vitalId = forge.anAlphabeticalString(),

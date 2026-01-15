@@ -22,17 +22,19 @@ data class ProfilingConfiguration internal constructor(
     class Builder {
 
         private var customEndpointUrl: String? = null
-        private var sampleRate: Float = DEFAULT_SAMPLE_RATE
+        private var applicationLaunchSampleRate: Float = DEFAULT_APPLICATION_LAUNCH_SAMPLE_RATE
 
         /**
-         * Sets the sampling rate for profiling.
+         * Sets the sampling rate for Application Launch profiling. It will be applied on the next application launch.
          *
-         * @param sampleRate The sampling rate, expressed as a percentage between 0 and 100 (inclusive).
-         * A value of 0 disables profiling entirely. A value of 100 enables profiling for all eligible
-         * requests, subject to rate limiting enforced by [android.os.ProfilingManager].
+         * @param sampleRate The sample rate, expressed as a percentage between 0 and 100 (inclusive).
+         * A value of 0 disables Application Launch profiling entirely. A value of 100 enables Application Launch
+         * profiling for all eligible requests, subject to rate limiting enforced by [android.os.ProfilingManager],
+         * see [profiling limitations doc](https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected).
+         * Default value is 15%. Effective rate for the ingested profiles is also a subject to RUM session sample rate.
          */
-        fun setSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
-            this.sampleRate = sampleRate
+        fun setApplicationLaunchSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
+            this.applicationLaunchSampleRate = sampleRate
             return this
         }
 
@@ -51,14 +53,14 @@ data class ProfilingConfiguration internal constructor(
         fun build(): ProfilingConfiguration {
             return ProfilingConfiguration(
                 customEndpointUrl = customEndpointUrl,
-                sampleRate = sampleRate
+                sampleRate = applicationLaunchSampleRate
             )
         }
     }
 
     companion object {
 
-        private const val DEFAULT_SAMPLE_RATE = 100f
+        private const val DEFAULT_APPLICATION_LAUNCH_SAMPLE_RATE = 15f
 
         /**
          * A default configuration for the Profiling feature.

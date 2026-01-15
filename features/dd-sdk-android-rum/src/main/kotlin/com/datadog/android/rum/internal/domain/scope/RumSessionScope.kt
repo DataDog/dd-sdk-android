@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -168,6 +169,11 @@ internal class RumSessionScope(
                         writer = actualWriter,
                         rumContext = rumContext,
                         customAttributes = getCustomAttributes()
+                    )
+                } else {
+                    // can refactor in the future by moving session state check into RumSessionScopeStartupManager
+                    sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                        ProfilerStopEvent.TTID()
                     )
                 }
             }

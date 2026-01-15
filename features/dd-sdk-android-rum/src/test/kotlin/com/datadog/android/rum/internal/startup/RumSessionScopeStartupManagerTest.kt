@@ -12,10 +12,13 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
@@ -245,6 +248,55 @@ internal class RumSessionScopeStartupManagerTest {
         }
 
         verifyNoMoreInteractions(mockWriter, mockRumAppStartupTelemetryReporter)
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M stop profiler W onTTIDEvent`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val event = RumRawEvent.AppStartTTIDEvent(
+            info = info
+        )
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(
+            mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        ) doReturn mockProfilingFeatureScope
+
+        // When
+        manager.onAppStartEvent(mock())
+
+        manager.onTTIDEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<RumVitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            verify(mockProfilingFeatureScope).sendEvent(
+                ProfilerStopEvent.TTID(
+                    TTIDRumContext(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId,
+                        vitalId = lastValue.vital.id,
+                        viewId = rumContext.viewId,
+                        viewName = rumContext.viewName
+                    )
+                )
+            )
+        }
     }
 
     @ParameterizedTest

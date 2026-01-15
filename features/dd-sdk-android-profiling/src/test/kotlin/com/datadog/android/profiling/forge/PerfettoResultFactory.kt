@@ -15,6 +15,7 @@ internal class PerfettoResultFactory : ForgeryFactory<PerfettoResult> {
         return PerfettoResult(
             start = forge.aLong(),
             end = forge.aLong(),
+            tag = forge.aString(),
             resultFilePath = forge.anAlphabeticalString()
         )
     }

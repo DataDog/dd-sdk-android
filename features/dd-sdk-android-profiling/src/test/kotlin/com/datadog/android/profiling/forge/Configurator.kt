@@ -6,7 +6,8 @@
 
 package com.datadog.android.profiling.forge
 
-import com.datadog.android.internal.tests.elmyr.TTIDEventFactory
+import com.datadog.android.internal.tests.elmyr.ProfilerStopEventTTIDFactory
+import com.datadog.android.internal.tests.elmyr.TTIDRumContextFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -18,6 +19,7 @@ class Configurator : BaseConfigurator() {
         forge.useCoreFactories()
         forge.addFactory(ProfilingConfigurationForgeryFactory())
         forge.addFactory(PerfettoResultFactory())
-        forge.addFactory(TTIDEventFactory())
+        forge.addFactory(ProfilerStopEventTTIDFactory())
+        forge.addFactory(TTIDRumContextFactory())
     }
 }

@@ -104,6 +104,11 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
+sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
+  data class TTID : ProfilerStopEvent
+    constructor(TTIDRumContext? = null)
+data class com.datadog.android.internal.profiling.TTIDRumContext
+  constructor(String, String, String, String?, String?)
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
@@ -206,7 +211,5 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   companion object 
     var processImportance: Int
     var createTimeNs: Long
-data class com.datadog.android.rum.TTIDEvent
-  constructor(Long, String, String, String, String?, String?)
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

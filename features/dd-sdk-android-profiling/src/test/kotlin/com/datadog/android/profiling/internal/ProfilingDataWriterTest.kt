@@ -15,12 +15,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
-import com.datadog.android.rum.TTIDEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -101,7 +101,7 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M write the result in a batch W write`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTIDEvent: TTIDEvent
+        @Forgery fakeTTIDRumContext: TTIDRumContext
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
@@ -110,7 +110,7 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidEvent = fakeTTIDEvent
+            ttidRumContext = fakeTTIDRumContext
         )
 
         // Then
@@ -125,7 +125,9 @@ internal class ProfilingDataWriterTest {
             "service:${fakeDatadogContext.service}",
             "env:${fakeDatadogContext.env}",
             "version:${fakeDatadogContext.version}",
-            "sdk_version:${fakeDatadogContext.sdkVersion}"
+            "sdk_version:${fakeDatadogContext.sdkVersion}",
+            "profiler_version:${fakeDatadogContext.sdkVersion}",
+            "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}"
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
@@ -139,13 +141,13 @@ internal class ProfilingDataWriterTest {
             .hasRuntime("android")
             .hasVersion("4")
             .hasTags(expectedTagList)
-            .hasApplicationId(fakeTTIDEvent.applicationId)
-            .hasSessionId(fakeTTIDEvent.sessionId)
-            .hasVitalId(fakeTTIDEvent.vitalId)
+            .hasApplicationId(fakeTTIDRumContext.applicationId)
+            .hasSessionId(fakeTTIDRumContext.sessionId)
+            .hasVitalId(fakeTTIDRumContext.vitalId)
             .apply {
-                if (fakeTTIDEvent.viewId != null && fakeTTIDEvent.viewName != null) {
-                    hasViewId(fakeTTIDEvent.viewId)
-                    hasViewName(fakeTTIDEvent.viewName)
+                if (fakeTTIDRumContext.viewId != null && fakeTTIDRumContext.viewName != null) {
+                    hasViewId(fakeTTIDRumContext.viewId)
+                    hasViewName(fakeTTIDRumContext.viewName)
                 } else {
                     hasViewId(null)
                     hasViewName(null)
@@ -160,7 +162,7 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W write {can't read perfetto File}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTIDEvent: TTIDEvent
+        @Forgery fakeTTIDRumContext: TTIDRumContext
     ) {
         // Given
         // Don't create the tmp file so it can't be found
@@ -168,7 +170,7 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult,
-            ttidEvent = fakeTTIDEvent
+            ttidRumContext = fakeTTIDRumContext
         )
 
         // Then
@@ -178,7 +180,7 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W file is empty`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTIDEvent: TTIDEvent
+        @Forgery fakeTTIDRumContext: TTIDRumContext
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
@@ -187,7 +189,7 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidEvent = fakeTTIDEvent
+            ttidRumContext = fakeTTIDRumContext
         )
 
         // Then

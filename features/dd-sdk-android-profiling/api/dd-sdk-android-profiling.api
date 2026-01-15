@@ -32,7 +32,7 @@ public final class com/datadog/android/profiling/ProfilingConfiguration {
 public final class com/datadog/android/profiling/ProfilingConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/profiling/ProfilingConfiguration;
-	public final fun setSampleRate (F)Lcom/datadog/android/profiling/ProfilingConfiguration$Builder;
+	public final fun setApplicationLaunchSampleRate (F)Lcom/datadog/android/profiling/ProfilingConfiguration$Builder;
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/profiling/ProfilingConfiguration$Builder;
 }
 
