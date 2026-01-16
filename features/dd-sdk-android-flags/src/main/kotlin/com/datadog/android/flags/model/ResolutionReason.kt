@@ -14,6 +14,11 @@ package com.datadog.android.flags.model
  */
 enum class ResolutionReason {
     /**
+     * The resolved value is a static value configured for the flag.
+     */
+    STATIC,
+
+    /**
      * The resolved value is the default value for the flag.
      */
     DEFAULT,

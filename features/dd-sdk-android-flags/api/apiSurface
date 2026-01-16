@@ -55,6 +55,7 @@ sealed class com.datadog.android.flags.model.FlagsClientState
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason
+  - STATIC
   - DEFAULT
   - TARGETING_MATCH
   - RULE_MATCH
