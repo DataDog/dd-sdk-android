@@ -14,12 +14,14 @@ package com.datadog.android.flags.model
  */
 enum class ResolutionReason {
     /**
-     * The resolved value is a static value configured for the flag.
+     * No targeting rules matched; the fallthrough/default allocation was used.
+     * This is the value configured in the flag's default variation when no rules apply.
      */
     STATIC,
 
     /**
-     * The resolved value is the default value for the flag.
+     * The resolved value is the default value provided in code.
+     * Used when the flag is not found or the provider is not ready.
      */
     DEFAULT,
 
