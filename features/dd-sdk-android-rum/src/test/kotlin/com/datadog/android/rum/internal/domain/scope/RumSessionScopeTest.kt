@@ -18,7 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -1625,7 +1625,7 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockProfilingFeatureScope).sendEvent(ProfilerStopEvent.TTID())
+        verify(mockProfilingFeatureScope).sendEvent(ProfilerEvent.TTIDStop())
     }
 
     @Test

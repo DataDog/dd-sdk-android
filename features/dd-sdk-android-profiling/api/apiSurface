@@ -9,6 +9,8 @@ object com.datadog.android.profiling.Profiling
   fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun start(android.content.Context, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun stop(com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun startAnrProfiling(com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun stopAnrProfiling(com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
     fun setApplicationLaunchSampleRate(Float): Builder
@@ -17,7 +19,7 @@ data class com.datadog.android.profiling.ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration
 data class com.datadog.android.profiling.model.ProfileEvent
-  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, Application, Session, View? = null, Vital)
+  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, Application, Session, View? = null, Vital? = null, LongTask? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): ProfileEvent
@@ -46,3 +48,9 @@ data class com.datadog.android.profiling.model.ProfileEvent
     companion object 
       fun fromJson(kotlin.String): Vital
       fun fromJsonObject(com.google.gson.JsonObject): Vital
+  data class LongTask
+    constructor(kotlin.collections.List<kotlin.String>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LongTask
+      fun fromJsonObject(com.google.gson.JsonObject): LongTask

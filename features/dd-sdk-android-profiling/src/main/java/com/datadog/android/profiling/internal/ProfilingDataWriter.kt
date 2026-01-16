@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.readBytesSafe
+import com.datadog.android.internal.profiling.LongTaskRumContext
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
@@ -31,7 +32,34 @@ internal class ProfilingDataWriter(
                     val rawBatchEvent = buildRawBatchEvent(
                         context = context,
                         profilingResult = profilingResult,
-                        ttidRumContext = ttidRumContext
+                        ttidRumContext = ttidRumContext,
+                        longTaskRumContexts = emptyList()
+                    )
+                    if (rawBatchEvent != null) {
+                        synchronized(this) {
+                            writer.write(
+                                event = rawBatchEvent,
+                                batchMetadata = null,
+                                eventType = EventType.DEFAULT
+                            )
+                        }
+                    }
+                }
+            }
+    }
+
+    override fun write(
+        profilingResult: PerfettoResult,
+        anrLongTaskContexts: List<LongTaskRumContext>
+    ) {
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+            ?.withWriteContext { context, writeScope ->
+                writeScope { writer ->
+                    val rawBatchEvent = buildRawBatchEvent(
+                        context = context,
+                        profilingResult = profilingResult,
+                        ttidRumContext = null,
+                        anrLongTaskContexts
                     )
                     if (rawBatchEvent != null) {
                         synchronized(this) {
@@ -49,7 +77,8 @@ internal class ProfilingDataWriter(
     private fun buildRawBatchEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        ttidRumContext: TTIDRumContext
+        ttidRumContext: TTIDRumContext?,
+        longTaskRumContexts: List<LongTaskRumContext>
     ): RawBatchEvent? {
         val byteData = readProfilingData(profilingResult.resultFilePath)
         if (byteData == null || byteData.isEmpty()) {
@@ -58,7 +87,8 @@ internal class ProfilingDataWriter(
         val profileEvent = createProfileEvent(
             context,
             profilingResult,
-            ttidRumContext
+            ttidRumContext,
+            longTaskRumContexts
         )
         val serializedEvent =
             profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
@@ -68,31 +98,57 @@ internal class ProfilingDataWriter(
     private fun createProfileEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        ttidRumContext: TTIDRumContext
+        ttidRumContext: TTIDRumContext?,
+        longTaskRumContexts: List<LongTaskRumContext>
     ): ProfileEvent {
-        // needed to benefit from smart-cast below, reading property only once
-        val rumViewId = ttidRumContext.viewId
-        val rumViewName = ttidRumContext.viewName
-        return ProfileEvent(
-            start = formatIsoUtc(profilingResult.start),
-            end = formatIsoUtc(profilingResult.end),
-            attachments = listOf(PERFETTO_ATTACHMENT_NAME),
-            family = ANDROID_FAMILY_NAME,
-            runtime = ANDROID_RUNTIME_NAME,
-            version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context),
-            application = ProfileEvent.Application(id = ttidRumContext.applicationId),
-            session = ProfileEvent.Session(id = ttidRumContext.sessionId),
-            vital = ProfileEvent.Vital(id = ttidRumContext.vitalId),
-            view = if (rumViewId != null && rumViewName != null) {
-                ProfileEvent.View(
-                    id = rumViewId,
-                    name = rumViewName
-                )
-            } else {
-                null
-            }
-        )
+        if (ttidRumContext != null) {
+            // needed to benefit from smart-cast below, reading property only once
+            val rumViewId = ttidRumContext.viewId
+            val rumViewName = ttidRumContext.viewName
+            return ProfileEvent(
+                start = formatIsoUtc(profilingResult.start),
+                end = formatIsoUtc(profilingResult.end),
+                attachments = listOf(PERFETTO_ATTACHMENT_NAME),
+                family = ANDROID_FAMILY_NAME,
+                runtime = ANDROID_RUNTIME_NAME,
+                version = VERSION_NUMBER,
+                tagsProfiler = buildTags(context),
+                application = ProfileEvent.Application(id = ttidRumContext.applicationId),
+                session = ProfileEvent.Session(id = ttidRumContext.sessionId),
+                vital = ProfileEvent.Vital(id = ttidRumContext.vitalId),
+                view = if (rumViewId != null && rumViewName != null) {
+                    ProfileEvent.View(
+                        id = rumViewId,
+                        name = rumViewName
+                    )
+                } else {
+                    null
+                }
+            )
+        } else {
+            val rumViewId = longTaskRumContexts.first().viewId
+            val rumViewName = longTaskRumContexts.first().viewName
+            return ProfileEvent(
+                start = formatIsoUtc(profilingResult.start),
+                end = formatIsoUtc(profilingResult.end),
+                attachments = listOf(PERFETTO_ATTACHMENT_NAME),
+                family = ANDROID_FAMILY_NAME,
+                runtime = ANDROID_RUNTIME_NAME,
+                version = VERSION_NUMBER,
+                tagsProfiler = buildTags(context),
+                application = ProfileEvent.Application(id = longTaskRumContexts.first().applicationId),
+                session = ProfileEvent.Session(id = longTaskRumContexts.first().sessionId),
+                longTask = ProfileEvent.LongTask(id = longTaskRumContexts.map { it.longTaskId }),
+                view = if (rumViewId != null && rumViewName != null) {
+                    ProfileEvent.View(
+                        id = rumViewId,
+                        name = rumViewName
+                    )
+                } else {
+                    null
+                }
+            )
+        }
     }
 
     private fun buildTags(

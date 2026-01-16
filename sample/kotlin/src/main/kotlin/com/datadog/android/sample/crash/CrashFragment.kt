@@ -6,6 +6,7 @@
 package com.datadog.android.sample.crash
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,8 +17,15 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.AtomicReference
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.profiling.Profiling
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
+import com.datadog.android.sample.profiling.HeavyCPUWork
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("MagicNumber")
 internal class CrashFragment :
@@ -92,7 +100,36 @@ internal class CrashFragment :
     }
 
     private fun triggerANR() {
-        mainThreadHandler.postDelayed({ Thread.sleep(100000) }, 1)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            val isRunning = AtomicBoolean(true)
+            var longTaskLastReported = System.currentTimeMillis()
+            Thread {
+                val start = System.currentTimeMillis()
+                while (System.currentTimeMillis() - start < 10_000L) {
+                    // do nothing
+                }
+                isRunning.set(false)
+            }.start()
+            val heavyCPUWork = HeavyCPUWork()
+            Profiling.startAnrProfiling()
+            while (isRunning.get()) {
+                heavyCPUWork.performHeavyComputation()
+                val end = System.currentTimeMillis()
+                // MainLooperLongTaskStrategy will print long task only after ANR is resolved, so too late
+                // adding it manually
+                val sinceLastReported = end - longTaskLastReported
+                if (sinceLastReported > 1_000L) {
+                    GlobalRumMonitor.get()._getInternal()
+                        ?.addLongTask(
+                            TimeUnit.MILLISECONDS.toNanos(sinceLastReported),
+                            target = Thread.currentThread().stackTrace.first { it.className.startsWith("com.datadog") }
+                                .toString()
+                        )
+                    longTaskLastReported = end
+                }
+            }
+            Profiling.stopAnrProfiling()
+        }
     }
 
     private fun triggerOOM() {

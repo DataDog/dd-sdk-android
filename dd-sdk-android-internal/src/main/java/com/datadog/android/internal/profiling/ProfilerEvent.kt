@@ -7,17 +7,21 @@
 package com.datadog.android.internal.profiling
 
 /**
- * Profiler stop event.
+ * Profiler event.
  */
-sealed class ProfilerStopEvent {
+sealed class ProfilerEvent {
     /**
      * Internal event to stop profiler at Time To Initial Display (TTID) point.
      *
      * @param rumContext RUM context at TTID point. Will be null if RUM session is not sampled.
      */
-    data class TTID(
+    data class TTIDStop(
         val rumContext: TTIDRumContext? = null
-    ) : ProfilerStopEvent()
+    ) : ProfilerEvent()
+
+    data class AddLongTask(
+        val longTaskRumContext: LongTaskRumContext
+    ) : ProfilerEvent()
 }
 
 /**
@@ -33,6 +37,14 @@ data class TTIDRumContext(
     val applicationId: String,
     val sessionId: String,
     val vitalId: String,
+    val viewId: String?,
+    val viewName: String?
+)
+
+data class LongTaskRumContext(
+    val applicationId: String,
+    val sessionId: String,
+    val longTaskId: String,
     val viewId: String?,
     val viewName: String?
 )

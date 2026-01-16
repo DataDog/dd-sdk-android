@@ -6,13 +6,13 @@
 
 package com.datadog.android.internal.tests.elmyr
 
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class ProfilerStopEventTTIDFactory : ForgeryFactory<ProfilerStopEvent.TTID> {
-    override fun getForgery(forge: Forge): ProfilerStopEvent.TTID {
-        return ProfilerStopEvent.TTID(
+class ProfilerStopEventTTIDFactory : ForgeryFactory<ProfilerEvent.TTIDStop> {
+    override fun getForgery(forge: Forge): ProfilerEvent.TTIDStop {
+        return ProfilerEvent.TTIDStop(
             rumContext = forge.getForgery()
         )
     }

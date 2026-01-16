@@ -184,11 +184,11 @@ internal class PerfettoProfiler(
 
         // Currently we give an estimated maximum size of profiling result to 5MB, it can be
         // increased or configurable if needed.
-        private const val BUFFER_SIZE_KB = 5120 // 5MB
+        internal const val BUFFER_SIZE_KB = 5120 // 5MB
 
         // Currently we give 100HZ frequency to balance the sampling accuracy and performance
         // overhead, it can be updated or configurable if needed.
-        private const val PROFILING_SAMPLING_RATE = 100 // 100Hz
+        internal const val PROFILING_SAMPLING_RATE = 100 // 100Hz
         private const val TELEMETRY_MSG_PROFILING_STARTED = "Profiling started."
         private const val TELEMETRY_MSG_PROFILING_FINISHED = "Profiling finished."
         private const val TELEMETRY_KEY_PROFILING = "profiling"

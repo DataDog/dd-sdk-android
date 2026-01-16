@@ -12,7 +12,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -118,7 +118,7 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            ProfilerStopEvent.TTID(
+            ProfilerEvent.TTIDStop(
                 rumContext = TTIDRumContext(
                     applicationId = rumContext.applicationId,
                     sessionId = rumContext.sessionId,

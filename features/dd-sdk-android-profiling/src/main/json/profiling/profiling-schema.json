@@ -110,6 +110,22 @@
       "required": [
         "id"
       ]
+    },
+    "long_task": {
+      "type": "object",
+      "description": "Long task properties.",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of long task IDs.",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
     }
   },
   "required": [
@@ -121,7 +137,6 @@
     "version",
     "tags_profiler",
     "application",
-    "session",
-    "vital"
+    "session"
   ]
 }

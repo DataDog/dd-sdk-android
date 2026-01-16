@@ -12,12 +12,15 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.profiling.LongTaskRumContext
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -1457,10 +1460,27 @@ internal open class RumViewScope(
                 else -> LongTaskEvent.LongTaskEventSessionType.SYNTHETICS
             }
 
+            val longTaskId = UUID.randomUUID().toString()
+
+            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                ProfilerEvent.AddLongTask(
+                    LongTaskRumContext(
+                        rumContext.applicationId,
+                        rumContext.sessionId,
+                        longTaskId,
+                        rumContext.viewId,
+                        rumContext.viewName
+                    )
+                )
+            )
+
+            val profilingStatus = (datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME]
+                ?.get(PROFILER_IS_RUNNING) as? Boolean)?.let { if (it) LongTaskEvent.ProfilingStatus.RUNNING else null }
+
             LongTaskEvent(
                 date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                 longTask = LongTaskEvent.LongTask(
-                    id = UUID.randomUUID().toString(),
+                    id = longTaskId,
                     duration = event.durationNs,
                     isFrozenFrame = isFrozenFrame
                 ),
@@ -1517,7 +1537,10 @@ internal open class RumViewScope(
                     session = LongTaskEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
                     ),
-                    configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate),
+                    profiling = LongTaskEvent.Profiling(
+                        status = profilingStatus
+                    )
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
@@ -1530,7 +1553,9 @@ internal open class RumViewScope(
                 val storageEvent =
                     if (isFrozenFrame) StorageEvent.FrozenFrame else StorageEvent.LongTask
                 onError { it.eventDropped(rumContext.viewId.orEmpty(), storageEvent) }
-                onSuccess { it.eventSent(rumContext.viewId.orEmpty(), storageEvent) }
+                onSuccess {
+                    it.eventSent(rumContext.viewId.orEmpty(), storageEvent)
+                }
             }
             .submit()
 
@@ -1618,6 +1643,7 @@ internal open class RumViewScope(
     // endregion
 
     companion object {
+        private const val PROFILER_IS_RUNNING = "profiler_is_running"
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +

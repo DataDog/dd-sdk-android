@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.internal.profiling.LongTaskRumContext
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.tools.annotation.NoOpImplementation
@@ -16,5 +17,10 @@ internal interface ProfilingWriter {
     fun write(
         profilingResult: PerfettoResult,
         ttidRumContext: TTIDRumContext
+    )
+
+    fun write(
+        profilingResult: PerfettoResult,
+        anrLongTaskContexts: List<LongTaskRumContext>
     )
 }

@@ -8,7 +8,10 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.os.Build
+import android.os.CancellationSignal
 import androidx.annotation.RequiresApi
+import androidx.core.os.StackSamplingRequestBuilder
+import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
@@ -16,12 +19,18 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.LongTaskRumContext
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.BUFFER_SIZE_KB
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_TAG_APPLICATION_LAUNCH
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -87,26 +96,68 @@ internal class ProfilingFeature(
     }
 
     override fun onReceive(event: Any) {
-        if (event !is ProfilerStopEvent.TTID) {
+        if (event is ProfilerEvent.TTIDStop) {
+            if (ttidRumContext == null) {
+                ttidRumContext = event.rumContext
+                profiler.stop(sdkCore.name)
+                tryWriteProfilingEvent()
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.USER,
+                    { "Profiling stopped with TTID reason" }
+                )
+            }
+        } else if (event is ProfilerEvent.AddLongTask) {
+            anrLongTaskRumContexts += event.longTaskRumContext
+        } else {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
                 { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
             )
-            return
-        }
-
-        if (ttidRumContext == null) {
-            ttidRumContext = event.rumContext
-            profiler.stop(sdkCore.name)
-            tryWriteProfilingEvent()
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { "Profiling stopped with TTID reason" }
-            )
         }
     }
+
+    // region ANR profiling
+
+    private var anrProfilingStopSignal: CancellationSignal? = null
+    private val anrLongTaskRumContexts = CopyOnWriteArrayList<LongTaskRumContext>()
+
+    fun startAnrProfiling() {
+        anrProfilingStopSignal = CancellationSignal().apply {
+            requestProfiling(
+                appContext,
+                StackSamplingRequestBuilder()
+                    .setCancellationSignal(this)
+                    .setTag("ANR/${System.currentTimeMillis()}")
+                    .setSamplingFrequencyHz(PROFILING_SAMPLING_RATE)
+                    .setBufferSizeKb(BUFFER_SIZE_KB)
+                    .build(),
+                Executors.newSingleThreadExecutor()
+            ) {
+                val anrProfilingResult = PerfettoResult(
+                    start = it.tag.orEmpty().substringAfter("/").toLong(),
+                    end = System.currentTimeMillis(),
+                    tag = it.tag.orEmpty(),
+                    resultFilePath = it.resultFilePath.orEmpty()
+                )
+                dataWriter.write(anrProfilingResult, anrLongTaskRumContexts)
+            }
+        }
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[PROFILER_IS_RUNNING] = true
+        }
+    }
+
+    fun stopAnrProfiling() {
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[PROFILER_IS_RUNNING] = false
+        }
+        anrProfilingStopSignal?.cancel()
+        anrProfilingStopSignal = null
+    }
+
+    // endregion
 
     private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
         val oldValue = ProfilingStorage.getSampleRate(appContext)

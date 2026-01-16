@@ -104,10 +104,14 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
-sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
-  data class TTID : ProfilerStopEvent
+sealed class com.datadog.android.internal.profiling.ProfilerEvent
+  data class TTIDStop : ProfilerEvent
     constructor(TTIDRumContext? = null)
+  data class AddLongTask : ProfilerEvent
+    constructor(LongTaskRumContext)
 data class com.datadog.android.internal.profiling.TTIDRumContext
+  constructor(String, String, String, String?, String?)
+data class com.datadog.android.internal.profiling.LongTaskRumContext
   constructor(String, String, String, String?, String?)
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int

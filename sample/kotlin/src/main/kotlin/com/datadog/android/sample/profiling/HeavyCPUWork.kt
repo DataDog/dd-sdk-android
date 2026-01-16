@@ -57,7 +57,7 @@ class HeavyCPUWork {
     /**
      * Performs various CPU-intensive operations.
      */
-    private fun performHeavyComputation() {
+    fun performHeavyComputation() {
         // Mix of different CPU-heavy operations
         when (Random.nextInt(5)) {
             0 -> calculatePrimes(1000)
