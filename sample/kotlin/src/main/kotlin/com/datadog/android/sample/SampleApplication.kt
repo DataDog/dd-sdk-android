@@ -23,14 +23,6 @@ import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
-import dev.openfeature.kotlin.sdk.ImmutableContext
-import dev.openfeature.kotlin.sdk.OpenFeatureAPI
-import dev.openfeature.kotlin.sdk.Value
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
 import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -73,7 +65,15 @@ import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.Value
 import io.opentelemetry.api.GlobalOpenTelemetry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
@@ -353,61 +353,59 @@ class SampleApplication : Application() {
     }
 
     @OptIn(ExperimentalRumApi::class)
-    private fun createRumConfiguration(): RumConfiguration {
-        return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
-            .apply {
-                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
-                }
+    private fun createRumConfiguration(): RumConfiguration = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+        .apply {
+            if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
             }
-            .useViewTrackingStrategy(
-                NavigationViewTrackingStrategy(
-                    R.id.nav_host_fragment,
-                    true,
-                    SampleNavigationPredicate()
-                )
+        }
+        .useViewTrackingStrategy(
+            NavigationViewTrackingStrategy(
+                R.id.nav_host_fragment,
+                true,
+                SampleNavigationPredicate()
             )
-            .setTelemetrySampleRate(100f)
-            .trackUserInteractions()
-            .trackLongTasks(250L)
-            .trackNonFatalAnrs(true)
-            .enableRumDebugWidget(this)
-            .setViewEventMapper { event ->
+        )
+        .setTelemetrySampleRate(100f)
+        .trackUserInteractions()
+        .trackLongTasks(250L)
+        .trackNonFatalAnrs(true)
+        .enableRumDebugWidget(this)
+        .setViewEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setActionEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setResourceEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setErrorEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setLongTaskEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setVitalEventMapper(
+            vitalOperationStepEventMapper = { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            },
+            vitalAppLaunchEventMapper = { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setActionEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setResourceEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setErrorEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setLongTaskEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setVitalEventMapper(
-                vitalOperationStepEventMapper = { event ->
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    event
-                },
-                vitalAppLaunchEventMapper = { event ->
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    event
-                }
-            )
-            .trackBackgroundEvents(true)
-            .trackAnonymousUser(true)
-            .enableComposeActionTracking()
-            .collectAccessibility(true)
-            .build()
-    }
+        )
+        .trackBackgroundEvents(true)
+        .trackAnonymousUser(true)
+        .enableComposeActionTracking()
+        .collectAccessibility(true)
+        .build()
 
     @SuppressLint("LogNotTimber")
     private fun createDatadogConfiguration(): Configuration {
@@ -479,14 +477,12 @@ class SampleApplication : Application() {
 
         internal const val ATTR_IS_MAPPED = "is_mapped"
 
-        internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
-            return ViewModelFactory(
-                getOkHttpClient(context),
-                getRemoteDataSource(context),
-                LocalDataSource(context),
-                getLocalServer(context)
-            )
-        }
+        internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory = ViewModelFactory(
+            getOkHttpClient(context),
+            getRemoteDataSource(context),
+            LocalDataSource(context),
+            getLocalServer(context)
+        )
 
         internal fun getOkHttpClient(context: Context): OkHttpClient {
             val application = context.applicationContext as SampleApplication

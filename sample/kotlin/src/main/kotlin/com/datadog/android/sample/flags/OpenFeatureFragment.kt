@@ -35,11 +35,7 @@ internal class OpenFeatureFragment :
 
     // region Fragment
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val rootView = inflater.inflate(R.layout.fragment_openfeature, container, false)
         flagKeyInput = rootView.findViewById(R.id.flag_key)
         defaultValueInput = rootView.findViewById(R.id.default_value)
@@ -68,25 +64,30 @@ internal class OpenFeatureFragment :
     private fun observeProviderState() {
         val provider = OpenFeatureAPI.getProvider()
         if (provider == null) {
-            updateProviderState("NOT_SET")
+            updateProviderState(STATE_NOT_SET)
             return
         }
 
         // Display initial state
-        updateProviderState("INITIALIZING")
+        updateProviderState(STATE_INITIALIZING)
 
         // Observe state changes
         viewLifecycleOwner.lifecycleScope.launch {
             provider.observe()
                 .catch {
-                    updateProviderState("ERROR")
+                    updateProviderState(STATE_ERROR)
                 }
                 .collect { event ->
                     val stateName = when (event) {
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderReady -> "READY"
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderStale -> "STALE"
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError -> "ERROR"
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderConfigurationChanged -> "CONFIG_CHANGED"
+                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderReady ->
+                            STATE_READY
+                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderStale ->
+                            STATE_STALE
+                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError ->
+                            STATE_ERROR
+                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+                            .ProviderConfigurationChanged ->
+                            STATE_CONFIG_CHANGED
                         else -> event::class.simpleName ?: "Unknown"
                     }
                     updateProviderState(stateName)
@@ -112,75 +113,112 @@ internal class OpenFeatureFragment :
             return
         }
 
+        evaluateFlagAndDisplayResult(flagKey, defaultValue, selectedType)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun evaluateFlagAndDisplayResult(flagKey: String, defaultValue: String, selectedType: Int) {
         try {
             val client = OpenFeatureAPI.getClient()
             val result = when (selectedType) {
-                0 -> { // Boolean
-                    val default = defaultValue.toBooleanStrictOrNull() ?: false
-                    val details = client.getBooleanDetails(flagKey, default)
-                    formatEvaluationDetails(
-                        "Boolean",
-                        flagKey,
-                        details.value,
-                        details.reason,
-                        details.variant,
-                        details.errorCode,
-                        details.errorMessage
-                    )
-                }
-                1 -> { // String
-                    val details = client.getStringDetails(flagKey, defaultValue)
-                    formatEvaluationDetails(
-                        "String",
-                        flagKey,
-                        details.value,
-                        details.reason,
-                        details.variant,
-                        details.errorCode,
-                        details.errorMessage
-                    )
-                }
-                2 -> { // Integer
-                    val default = defaultValue.toIntOrNull() ?: 0
-                    val details = client.getIntegerDetails(flagKey, default)
-                    formatEvaluationDetails(
-                        "Integer",
-                        flagKey,
-                        details.value,
-                        details.reason,
-                        details.variant,
-                        details.errorCode,
-                        details.errorMessage
-                    )
-                }
-                3 -> { // Double
-                    val default = defaultValue.toDoubleOrNull() ?: 0.0
-                    val details = client.getDoubleDetails(flagKey, default)
-                    formatEvaluationDetails(
-                        "Double",
-                        flagKey,
-                        details.value,
-                        details.reason,
-                        details.variant,
-                        details.errorCode,
-                        details.errorMessage
-                    )
-                }
+                FLAG_TYPE_BOOLEAN -> evaluateBooleanFlag(client, flagKey, defaultValue)
+                FLAG_TYPE_STRING -> evaluateStringFlag(client, flagKey, defaultValue)
+                FLAG_TYPE_INTEGER -> evaluateIntegerFlag(client, flagKey, defaultValue)
+                FLAG_TYPE_DOUBLE -> evaluateDoubleFlag(client, flagKey, defaultValue)
                 else -> "Unknown type selected"
             }
             resultTextView.text = result
         } catch (e: Exception) {
-            val errorMsg = buildString {
-                appendLine("Evaluation Error")
-                appendLine()
-                appendLine("Error: ${e.message}")
-                appendLine()
-                appendLine("Stack trace:")
-                appendLine(e.stackTraceToString())
-            }
-            resultTextView.text = errorMsg
+            displayEvaluationError(e)
         }
     }
+
+    private fun evaluateBooleanFlag(
+        client: dev.openfeature.kotlin.sdk.Client,
+        flagKey: String,
+        defaultValue: String
+    ): String {
+        val default = defaultValue.toBooleanStrictOrNull() ?: false
+        val details = client.getBooleanDetails(flagKey, default)
+        return formatEvaluationDetails(
+            "Boolean",
+            flagKey,
+            details.value,
+            details.reason,
+            details.variant,
+            details.errorCode,
+            details.errorMessage
+        )
+    }
+
+    private fun evaluateStringFlag(
+        client: dev.openfeature.kotlin.sdk.Client,
+        flagKey: String,
+        defaultValue: String
+    ): String {
+        val details = client.getStringDetails(flagKey, defaultValue)
+        return formatEvaluationDetails(
+            "String",
+            flagKey,
+            details.value,
+            details.reason,
+            details.variant,
+            details.errorCode,
+            details.errorMessage
+        )
+    }
+
+    private fun evaluateIntegerFlag(
+        client: dev.openfeature.kotlin.sdk.Client,
+        flagKey: String,
+        defaultValue: String
+    ): String {
+        val default = defaultValue.toIntOrNull() ?: 0
+        val details = client.getIntegerDetails(flagKey, default)
+        return formatEvaluationDetails(
+            "Integer",
+            flagKey,
+            details.value,
+            details.reason,
+            details.variant,
+            details.errorCode,
+            details.errorMessage
+        )
+    }
+
+    private fun evaluateDoubleFlag(
+        client: dev.openfeature.kotlin.sdk.Client,
+        flagKey: String,
+        defaultValue: String
+    ): String {
+        val default = defaultValue.toDoubleOrNull() ?: 0.0
+        val details = client.getDoubleDetails(flagKey, default)
+        return formatEvaluationDetails(
+            "Double",
+            flagKey,
+            details.value,
+            details.reason,
+            details.variant,
+            details.errorCode,
+            details.errorMessage
+        )
+    }
+
+    private fun displayEvaluationError(e: Exception) {
+        val errorMsg = buildString {
+            appendLine("Evaluation Error")
+            appendLine()
+            appendLine("Error: ${e.message}")
+            appendLine()
+            appendLine("Stack trace:")
+            appendLine(e.stackTraceToString())
+        }
+        resultTextView.text = errorMsg
+    }
+
+    // endregion
+
+    // region Formatting
 
     private fun formatEvaluationDetails(
         type: String,
@@ -190,55 +228,65 @@ internal class OpenFeatureFragment :
         variant: String?,
         errorCode: dev.openfeature.kotlin.sdk.exceptions.ErrorCode?,
         errorMessage: String?
-    ): String {
-        return buildString {
-            appendLine("Evaluation Details")
-            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━")
+    ): String = buildString {
+        appendLine("Evaluation Details")
+        appendLine("━━━━━━━━━━━━━━━━━━━━━━━━")
+        appendLine()
+
+        appendLine("Flag Key: $flagKey")
+        appendLine("Type: $type")
+        appendLine("Value: $value")
+
+        if (reason != null) {
             appendLine()
-
-            appendLine("Flag Key: $flagKey")
-            appendLine("Type: $type")
-            appendLine("Value: $value")
-
-            if (reason != null) {
-                appendLine()
-                appendLine("Reason: $reason")
-                appendLine("  ${getReasonExplanation(reason)}")
-            }
-
-            if (variant != null) {
-                appendLine()
-                appendLine("Variant: $variant")
-            }
-
-            if (errorCode != null) {
-                appendLine()
-                appendLine("Error Code: $errorCode")
-            }
-
-            if (errorMessage != null) {
-                appendLine("Error Message: $errorMessage")
-            }
-
-            appendLine()
-            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━")
+            appendLine("Reason: $reason")
+            appendLine("  ${getReasonExplanation(reason)}")
         }
+
+        if (variant != null) {
+            appendLine()
+            appendLine("Variant: $variant")
+        }
+
+        if (errorCode != null) {
+            appendLine()
+            appendLine("Error Code: $errorCode")
+        }
+
+        if (errorMessage != null) {
+            appendLine("Error Message: $errorMessage")
+        }
+
+        appendLine()
+        appendLine("━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
-    private fun getReasonExplanation(reason: String): String {
-        return when (reason.uppercase()) {
-            "STATIC" -> "Flag value is static (configured in code)"
-            "DEFAULT" -> "Using default value (flag not found or provider not ready)"
-            "TARGETING_MATCH" -> "Flag matched targeting rules"
-            "SPLIT" -> "Flag evaluation used percentage rollout"
-            "DISABLED" -> "Flag is disabled"
-            "CACHED" -> "Value returned from cache"
-            "ERROR" -> "An error occurred during evaluation"
-            "STALE" -> "Value may be stale (using cached value, refresh failed)"
-            "UNKNOWN" -> "Reason is unknown or not provided"
-            else -> "Evaluation reason: $reason"
-        }
+    private fun getReasonExplanation(reason: String): String = when (reason.uppercase()) {
+        "STATIC" -> "Flag value is static (configured in code)"
+        "DEFAULT" -> "Using default value (flag not found or provider not ready)"
+        "TARGETING_MATCH" -> "Flag matched targeting rules"
+        "SPLIT" -> "Flag evaluation used percentage rollout"
+        "DISABLED" -> "Flag is disabled"
+        "CACHED" -> "Value returned from cache"
+        "ERROR" -> "An error occurred during evaluation"
+        "STALE" -> "Value may be stale (using cached value, refresh failed)"
+        "UNKNOWN" -> "Reason is unknown or not provided"
+        else -> "Evaluation reason: $reason"
     }
 
     // endregion
+
+    companion object {
+        private const val FLAG_TYPE_BOOLEAN = 0
+        private const val FLAG_TYPE_STRING = 1
+        private const val FLAG_TYPE_INTEGER = 2
+        private const val FLAG_TYPE_DOUBLE = 3
+
+        private const val STATE_NOT_SET = "NOT_SET"
+        private const val STATE_INITIALIZING = "INITIALIZING"
+        private const val STATE_READY = "READY"
+        private const val STATE_STALE = "STALE"
+        private const val STATE_ERROR = "ERROR"
+        private const val STATE_CONFIG_CHANGED = "CONFIG_CHANGED"
+    }
 }
