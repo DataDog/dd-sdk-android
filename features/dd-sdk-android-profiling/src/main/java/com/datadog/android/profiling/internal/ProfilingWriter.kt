@@ -6,8 +6,8 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
-import com.datadog.android.rum.TTIDEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -15,6 +15,6 @@ internal interface ProfilingWriter {
 
     fun write(
         profilingResult: PerfettoResult,
-        ttidEvent: TTIDEvent
+        ttidRumContext: TTIDRumContext
     )
 }

@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -1595,6 +1596,36 @@ internal class RumSessionScopeTest {
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
+    }
+
+    @Test
+    fun `M stop profiler W handleEvent { AppStartTTIDEvent, session not tracked }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
+        val event = mock<RumRawEvent.AppStartTTIDEvent>()
+
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+        testedScope.sessionState =
+            forge.aValueFrom(RumSessionScope.State::class.java, exclude = listOf(RumSessionScope.State.TRACKED))
+
+        // When
+        testedScope.handleEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        // Then
+        verify(mockProfilingFeatureScope).sendEvent(ProfilerStopEvent.TTID())
     }
 
     @Test

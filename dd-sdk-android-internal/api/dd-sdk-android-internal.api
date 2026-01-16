@@ -202,6 +202,41 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
 }
 
+public abstract class com/datadog/android/internal/profiling/ProfilerStopEvent {
+}
+
+public final class com/datadog/android/internal/profiling/ProfilerStopEvent$TTID : com/datadog/android/internal/profiling/ProfilerStopEvent {
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/internal/profiling/TTIDRumContext;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/profiling/TTIDRumContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public final fun copy (Lcom/datadog/android/internal/profiling/TTIDRumContext;)Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;Lcom/datadog/android/internal/profiling/TTIDRumContext;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/profiling/TTIDRumContext {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/TTIDRumContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApplicationId ()Ljava/lang/String;
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getViewId ()Ljava/lang/String;
+	public final fun getViewName ()Ljava/lang/String;
+	public final fun getVitalId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
@@ -455,27 +490,6 @@ public final class com/datadog/android/rum/DdRumContentProvider$Companion {
 	public final fun getProcessImportance ()I
 	public final fun setCreateTimeNs (J)V
 	public final fun setProcessImportance (I)V
-}
-
-public final class com/datadog/android/rum/TTIDEvent {
-	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()J
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/TTIDEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/TTIDEvent;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/TTIDEvent;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getApplicationId ()Ljava/lang/String;
-	public final fun getDurationNs ()J
-	public final fun getSessionId ()Ljava/lang/String;
-	public final fun getViewId ()Ljava/lang/String;
-	public final fun getViewName ()Ljava/lang/String;
-	public final fun getVitalId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {

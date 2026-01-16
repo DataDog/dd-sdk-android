@@ -54,7 +54,6 @@ internal class PerfettoProfiler(
     private val callbackMap: MutableMap<String, ProfilerCallback> = ConcurrentHashMap()
 
     init {
-
         resultCallback = Consumer<ProfilingResult> { result ->
             val endTime = timeProvider.getDeviceTimestampMillis()
             val duration = endTime - profilingStartTime
@@ -65,6 +64,7 @@ internal class PerfettoProfiler(
                         PerfettoResult(
                             start = profilingStartTime,
                             end = endTime,
+                            tag = result.tag.orEmpty(),
                             resultFilePath = it
                         )
                     )
@@ -180,7 +180,7 @@ internal class PerfettoProfiler(
 
         // Duration is based on the current P99 TTID metric.
         private val PROFILING_MAX_DURATION_MS = TimeUnit.SECONDS.toMillis(10).toInt()
-        private const val PROFILING_TAG_APPLICATION_LAUNCH = "ApplicationLaunch"
+        internal const val PROFILING_TAG_APPLICATION_LAUNCH = "ApplicationLaunch"
 
         // Currently we give an estimated maximum size of profiling result to 5MB, it can be
         // increased or configurable if needed.

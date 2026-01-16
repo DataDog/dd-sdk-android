@@ -16,9 +16,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.profiling.ProfilingConfiguration
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
-import com.datadog.android.rum.TTIDEvent
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,7 +34,7 @@ internal class ProfilingFeature(
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     @Volatile
-    private var ttidEvent: TTIDEvent? = null
+    private var ttidRumContext: TTIDRumContext? = null
 
     @Volatile
     private var perfettoResult: PerfettoResult? = null
@@ -85,7 +87,7 @@ internal class ProfilingFeature(
     }
 
     override fun onReceive(event: Any) {
-        if (event !is TTIDEvent) {
+        if (event !is ProfilerStopEvent.TTID) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -93,14 +95,17 @@ internal class ProfilingFeature(
             )
             return
         }
-        this.ttidEvent = event
-        profiler.stop(sdkCore.name)
-        tryWriteProfilingEvent()
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
-            { "Profiling stopped with TTID=${event.durationNs}" }
-        )
+
+        if (ttidRumContext == null) {
+            ttidRumContext = event.rumContext
+            profiler.stop(sdkCore.name)
+            tryWriteProfilingEvent()
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { "Profiling stopped with TTID reason" }
+            )
+        }
     }
 
     private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
@@ -112,13 +117,15 @@ internal class ProfilingFeature(
         }
     }
 
+    @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val perfettoResult = perfettoResult ?: return
-        val ttidEvent = ttidEvent ?: return
+        val ttidRumContext = ttidRumContext ?: return
+        if (perfettoResult.tag != PerfettoProfiler.PROFILING_TAG_APPLICATION_LAUNCH) return
         if (!isTtidProfileSent.getAndSet(true)) {
             dataWriter.write(
                 profilingResult = perfettoResult,
-                ttidEvent = ttidEvent
+                ttidRumContext = ttidRumContext
             )
         }
     }

@@ -12,12 +12,12 @@ import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.data.SharedPreferencesStorage
+import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStorage
-import com.datadog.android.rum.TTIDEvent
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -180,7 +180,7 @@ class ProfilingFeatureTest {
 
     @Test
     fun `M stop Profiling W receive TTID event`(
-        @Forgery fakeTTIDEvent: TTIDEvent
+        @Forgery fakeTTIDEvent: ProfilerStopEvent.TTID
     ) {
         // When
         testedFeature.onReceive(fakeTTIDEvent)

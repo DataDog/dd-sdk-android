@@ -11,7 +11,7 @@ object com.datadog.android.profiling.Profiling
   fun stop(com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
-    fun setSampleRate(Float): Builder
+    fun setApplicationLaunchSampleRate(Float): Builder
     fun useCustomEndpoint(String): Builder
     fun build(): ProfilingConfiguration
   companion object 

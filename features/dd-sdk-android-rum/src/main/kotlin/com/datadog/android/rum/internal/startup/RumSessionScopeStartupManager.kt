@@ -12,7 +12,8 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.rum.TTIDEvent
+import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
@@ -117,13 +118,14 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            TTIDEvent(
-                durationNs = event.info.durationNs,
-                applicationId = rumContext.applicationId,
-                sessionId = rumContext.sessionId,
-                viewId = rumContext.viewId,
-                viewName = rumContext.viewName,
-                vitalId = ttidEvent.vital.id
+            ProfilerStopEvent.TTID(
+                rumContext = TTIDRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName,
+                    vitalId = ttidEvent.vital.id
+                )
             )
         )
 

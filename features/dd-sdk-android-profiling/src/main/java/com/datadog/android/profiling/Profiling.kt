@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object Profiling {
 
+    @Volatile
     internal var profiler: Profiler = NoOpProfiler()
     internal val isProfilerInitialized = AtomicBoolean(false)
 
