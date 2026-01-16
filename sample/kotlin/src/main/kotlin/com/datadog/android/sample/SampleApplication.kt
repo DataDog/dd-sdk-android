@@ -20,7 +20,17 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.openfeature.asOpenFeatureProvider
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.Value
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -104,6 +114,9 @@ class SampleApplication : Application() {
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     private val localServer = LocalServer()
+
+    // Coroutine scope for observing OpenFeature events
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
@@ -213,8 +226,60 @@ class SampleApplication : Application() {
     }
 
     private fun initializeFlags() {
+        // Enable Datadog Flags feature
         val flagsConfig = FlagsConfiguration.Builder().build()
         Flags.enable(flagsConfig)
+
+        // Create FlagsClient and convert to OpenFeature provider
+        val flagsClient = FlagsClient.Builder().build()
+        val provider = flagsClient.asOpenFeatureProvider()
+
+        // Set as OpenFeature provider
+        OpenFeatureAPI.setProvider(provider)
+
+        // Set evaluation context on OpenFeatureAPI (provider forwards to FlagsClient)
+        val preferences = Preferences.defaultPreferences(this)
+        val userId = preferences.getUserId() ?: "anonymous-${System.currentTimeMillis()}"
+        val context = ImmutableContext(
+            targetingKey = userId,
+            attributes = mapOf(
+                "userName" to Value.String(preferences.getUserName() ?: ""),
+                "userEmail" to Value.String(preferences.getUserEmail() ?: "")
+            )
+        )
+        OpenFeatureAPI.setEvaluationContext(context)
+
+        // Observe OpenFeature provider state changes
+        applicationScope.launch {
+            provider.observe()
+                .catch { error ->
+                    GlobalRumMonitor.get().addError(
+                        "OpenFeature observer error",
+                        RumErrorSource.SOURCE,
+                        error,
+                        mapOf("component" to "openfeature-observer")
+                    )
+                }
+                .collect { event ->
+                    // Track provider errors in RUM
+                    when (event) {
+                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError -> {
+                            GlobalRumMonitor.get().addError(
+                                "OpenFeature provider error",
+                                RumErrorSource.SOURCE,
+                                null,
+                                mapOf(
+                                    "error" to event.error.toString(),
+                                    "component" to "openfeature-provider"
+                                )
+                            )
+                        }
+                        else -> {
+                            // Ignore other events (UI handles state display)
+                        }
+                    }
+                }
+        }
     }
 
     private fun initializeLogs() {
