@@ -77,6 +77,7 @@
                 android:id="@+id/flag_key"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:text="ffe-openfeature-client-test-boolean"
                 android:hint="@string/hint_flag_key"
                 tools:text="feature-flag-key" />
 
