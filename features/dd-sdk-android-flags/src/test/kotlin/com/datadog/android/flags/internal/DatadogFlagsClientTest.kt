@@ -801,7 +801,7 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = forge.aBool()
         val fakeFlagValue = !fakeDefaultValue
         val fakeVariationKey = forge.anAlphabeticalString()
-        val fakeReason = forge.anElementFrom("TARGETING_MATCH", "RULE_MATCH", "DEFAULT")
+        val fakeReason = forge.anElementFrom("STATIC", "TARGETING_MATCH", "RULE_MATCH", "DEFAULT")
         val fakeExtraLogging = JSONObject().apply {
             put("version", forge.anAlphabeticalString())
             put("environment", forge.anElementFrom("prod", "staging", "dev"))
@@ -830,6 +830,36 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorMessage).isNull()
         assertThat(result.flagMetadata).isNotNull
         assertThat(result.flagMetadata).containsKeys("version", "environment")
+    }
+
+    @Test
+    fun `M return ResolutionDetails with STATIC reason W resolve() { flag has STATIC reason }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            variationKey = fakeVariationKey,
+            reason = "STATIC"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.variant).isEqualTo(fakeVariationKey)
+        assertThat(result.reason).isEqualTo(ResolutionReason.STATIC)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
     }
 
     @Test
