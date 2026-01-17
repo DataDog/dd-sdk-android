@@ -16,7 +16,10 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.datadog.android.sample.R
+import dev.openfeature.kotlin.sdk.Client
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -79,14 +82,13 @@ internal class OpenFeatureFragment :
                 }
                 .collect { event ->
                     val stateName = when (event) {
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderReady ->
+                        is OpenFeatureProviderEvents.ProviderReady ->
                             STATE_READY
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderStale ->
+                        is OpenFeatureProviderEvents.ProviderStale ->
                             STATE_STALE
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError ->
+                        is OpenFeatureProviderEvents.ProviderError ->
                             STATE_ERROR
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
-                            .ProviderConfigurationChanged ->
+                        is OpenFeatureProviderEvents.ProviderConfigurationChanged ->
                             STATE_CONFIG_CHANGED
                         else -> event::class.simpleName ?: "Unknown"
                     }
@@ -133,11 +135,7 @@ internal class OpenFeatureFragment :
         }
     }
 
-    private fun evaluateBooleanFlag(
-        client: dev.openfeature.kotlin.sdk.Client,
-        flagKey: String,
-        defaultValue: String
-    ): String {
+    private fun evaluateBooleanFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toBooleanStrictOrNull() ?: false
         val details = client.getBooleanDetails(flagKey, default)
         return formatEvaluationDetails(
@@ -151,11 +149,7 @@ internal class OpenFeatureFragment :
         )
     }
 
-    private fun evaluateStringFlag(
-        client: dev.openfeature.kotlin.sdk.Client,
-        flagKey: String,
-        defaultValue: String
-    ): String {
+    private fun evaluateStringFlag(client: Client, flagKey: String, defaultValue: String): String {
         val details = client.getStringDetails(flagKey, defaultValue)
         return formatEvaluationDetails(
             "String",
@@ -168,11 +162,7 @@ internal class OpenFeatureFragment :
         )
     }
 
-    private fun evaluateIntegerFlag(
-        client: dev.openfeature.kotlin.sdk.Client,
-        flagKey: String,
-        defaultValue: String
-    ): String {
+    private fun evaluateIntegerFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toIntOrNull() ?: 0
         val details = client.getIntegerDetails(flagKey, default)
         return formatEvaluationDetails(
@@ -186,11 +176,7 @@ internal class OpenFeatureFragment :
         )
     }
 
-    private fun evaluateDoubleFlag(
-        client: dev.openfeature.kotlin.sdk.Client,
-        flagKey: String,
-        defaultValue: String
-    ): String {
+    private fun evaluateDoubleFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toDoubleOrNull() ?: 0.0
         val details = client.getDoubleDetails(flagKey, default)
         return formatEvaluationDetails(
@@ -226,7 +212,7 @@ internal class OpenFeatureFragment :
         value: Any?,
         reason: String?,
         variant: String?,
-        errorCode: dev.openfeature.kotlin.sdk.exceptions.ErrorCode?,
+        errorCode: ErrorCode?,
         errorMessage: String?
     ): String = buildString {
         appendLine("Evaluation Details")

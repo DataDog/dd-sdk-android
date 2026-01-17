@@ -68,6 +68,7 @@ import com.google.gson.JsonObject
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import io.opentelemetry.api.GlobalOpenTelemetry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -263,7 +264,7 @@ class SampleApplication : Application() {
                 .collect { event ->
                     // Track provider errors in RUM
                     when (event) {
-                        is dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError -> {
+                        is OpenFeatureProviderEvents.ProviderError -> {
                             GlobalRumMonitor.get().addError(
                                 "OpenFeature provider error",
                                 RumErrorSource.SOURCE,
@@ -353,61 +354,59 @@ class SampleApplication : Application() {
     }
 
     @OptIn(ExperimentalRumApi::class)
-    private fun createRumConfiguration(): RumConfiguration {
-        return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
-            .apply {
-                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
-                }
+    private fun createRumConfiguration(): RumConfiguration = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+        .apply {
+            if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
             }
-            .useViewTrackingStrategy(
-                NavigationViewTrackingStrategy(
-                    R.id.nav_host_fragment,
-                    true,
-                    SampleNavigationPredicate()
-                )
+        }
+        .useViewTrackingStrategy(
+            NavigationViewTrackingStrategy(
+                R.id.nav_host_fragment,
+                true,
+                SampleNavigationPredicate()
             )
-            .setTelemetrySampleRate(100f)
-            .trackUserInteractions()
-            .trackLongTasks(250L)
-            .trackNonFatalAnrs(true)
-            .enableRumDebugWidget(this)
-            .setViewEventMapper { event ->
+        )
+        .setTelemetrySampleRate(100f)
+        .trackUserInteractions()
+        .trackLongTasks(250L)
+        .trackNonFatalAnrs(true)
+        .enableRumDebugWidget(this)
+        .setViewEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setActionEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setResourceEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setErrorEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setLongTaskEventMapper { event ->
+            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+            event
+        }
+        .setVitalEventMapper(
+            vitalOperationStepEventMapper = { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            },
+            vitalAppLaunchEventMapper = { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setActionEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setResourceEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setErrorEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setLongTaskEventMapper { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            }
-            .setVitalEventMapper(
-                vitalOperationStepEventMapper = { event ->
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    event
-                },
-                vitalAppLaunchEventMapper = { event ->
-                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                    event
-                }
-            )
-            .trackBackgroundEvents(true)
-            .trackAnonymousUser(true)
-            .enableComposeActionTracking()
-            .collectAccessibility(true)
-            .build()
-    }
+        )
+        .trackBackgroundEvents(true)
+        .trackAnonymousUser(true)
+        .enableComposeActionTracking()
+        .collectAccessibility(true)
+        .build()
 
     @SuppressLint("LogNotTimber")
     private fun createDatadogConfiguration(): Configuration {
@@ -479,14 +478,12 @@ class SampleApplication : Application() {
 
         internal const val ATTR_IS_MAPPED = "is_mapped"
 
-        internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
-            return ViewModelFactory(
-                getOkHttpClient(context),
-                getRemoteDataSource(context),
-                LocalDataSource(context),
-                getLocalServer(context)
-            )
-        }
+        internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory = ViewModelFactory(
+            getOkHttpClient(context),
+            getRemoteDataSource(context),
+            LocalDataSource(context),
+            getLocalServer(context)
+        )
 
         internal fun getOkHttpClient(context: Context): OkHttpClient {
             val application = context.applicationContext as SampleApplication
