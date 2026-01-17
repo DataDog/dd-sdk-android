@@ -17,9 +17,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.datadog.android.sample.R
 import dev.openfeature.kotlin.sdk.Client
+import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
-import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -138,56 +138,24 @@ internal class OpenFeatureFragment :
     private fun evaluateBooleanFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toBooleanStrictOrNull() ?: false
         val details = client.getBooleanDetails(flagKey, default)
-        return formatEvaluationDetails(
-            "Boolean",
-            flagKey,
-            details.value,
-            details.reason,
-            details.variant,
-            details.errorCode,
-            details.errorMessage
-        )
+        return formatEvaluationDetails("Boolean", details)
     }
 
     private fun evaluateStringFlag(client: Client, flagKey: String, defaultValue: String): String {
         val details = client.getStringDetails(flagKey, defaultValue)
-        return formatEvaluationDetails(
-            "String",
-            flagKey,
-            details.value,
-            details.reason,
-            details.variant,
-            details.errorCode,
-            details.errorMessage
-        )
+        return formatEvaluationDetails("String", details)
     }
 
     private fun evaluateIntegerFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toIntOrNull() ?: 0
         val details = client.getIntegerDetails(flagKey, default)
-        return formatEvaluationDetails(
-            "Integer",
-            flagKey,
-            details.value,
-            details.reason,
-            details.variant,
-            details.errorCode,
-            details.errorMessage
-        )
+        return formatEvaluationDetails("Integer", details)
     }
 
     private fun evaluateDoubleFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toDoubleOrNull() ?: 0.0
         val details = client.getDoubleDetails(flagKey, default)
-        return formatEvaluationDetails(
-            "Double",
-            flagKey,
-            details.value,
-            details.reason,
-            details.variant,
-            details.errorCode,
-            details.errorMessage
-        )
+        return formatEvaluationDetails("Double", details)
     }
 
     private fun displayEvaluationError(e: Exception) {
@@ -206,41 +174,33 @@ internal class OpenFeatureFragment :
 
     // region Formatting
 
-    private fun formatEvaluationDetails(
-        type: String,
-        flagKey: String,
-        value: Any?,
-        reason: String?,
-        variant: String?,
-        errorCode: ErrorCode?,
-        errorMessage: String?
-    ): String = buildString {
+    private fun formatEvaluationDetails(type: String, details: FlagEvaluationDetails<*>): String = buildString {
         appendLine("Evaluation Details")
         appendLine("━━━━━━━━━━━━━━━━━━━━━━━━")
         appendLine()
 
-        appendLine("Flag Key: $flagKey")
+        appendLine("Flag Key: ${details.flagKey}")
         appendLine("Type: $type")
-        appendLine("Value: $value")
+        appendLine("Value: ${details.value}")
 
-        if (reason != null) {
+        if (details.reason != null) {
             appendLine()
-            appendLine("Reason: $reason")
-            appendLine("  ${getReasonExplanation(reason)}")
+            appendLine("Reason: ${details.reason}")
+            appendLine("  ${getReasonExplanation(details.reason!!)}")
         }
 
-        if (variant != null) {
+        if (details.variant != null) {
             appendLine()
-            appendLine("Variant: $variant")
+            appendLine("Variant: ${details.variant}")
         }
 
-        if (errorCode != null) {
+        if (details.errorCode != null) {
             appendLine()
-            appendLine("Error Code: $errorCode")
+            appendLine("Error Code: ${details.errorCode}")
         }
 
-        if (errorMessage != null) {
-            appendLine("Error Message: $errorMessage")
+        if (details.errorMessage != null) {
+            appendLine("Error Message: ${details.errorMessage}")
         }
 
         appendLine()
@@ -248,9 +208,11 @@ internal class OpenFeatureFragment :
     }
 
     private fun getReasonExplanation(reason: String): String = when (reason.uppercase()) {
-        "STATIC" -> "Flag value is static (configured in code)"
-        "DEFAULT" -> "Using default value (flag not found or provider not ready)"
+        "STATIC" -> "No targeting rules matched; using fallback/default allocation"
+        "DEFAULT" -> "Using coded default value (flag not found or provider not ready)"
         "TARGETING_MATCH" -> "Flag matched targeting rules"
+        "RULE_MATCH" -> "Flag matched a specific evaluation rule"
+        "PREREQUISITE_FAILED" -> "Prerequisite flag evaluation failed"
         "SPLIT" -> "Flag evaluation used percentage rollout"
         "DISABLED" -> "Flag is disabled"
         "CACHED" -> "Value returned from cache"
