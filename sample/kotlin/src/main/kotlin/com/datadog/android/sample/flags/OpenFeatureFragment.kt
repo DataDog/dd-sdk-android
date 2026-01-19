@@ -207,7 +207,7 @@ internal class OpenFeatureFragment :
         appendLine("━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
-    private fun getReasonExplanation(reason: String): String = when (reason.uppercase()) {
+    private fun getReasonExplanation(reason: String): String = when (reason.uppercase(Locale.US)) {
         "STATIC" -> "No targeting rules matched; using fallback/default allocation"
         "DEFAULT" -> "Using coded default value (flag not found or provider not ready)"
         "TARGETING_MATCH" -> "Flag matched targeting rules"
