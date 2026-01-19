@@ -81,6 +81,7 @@ import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 import java.security.SecureRandom
+import java.util.UUID
 
 /**
  * The main [Application] for the sample project.
@@ -240,13 +241,21 @@ class SampleApplication : Application() {
 
         // Set evaluation context on OpenFeatureAPI (provider forwards to FlagsClient)
         val preferences = Preferences.defaultPreferences(this)
-        val userId = preferences.getUserId() ?: "anonymous-${System.currentTimeMillis()}"
+        val userId = preferences.getUserId()?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+        val attributes = buildMap {
+            put("userId", Value.String(userId))
+            preferences.getUserName()?.takeIf { it.isNotBlank() }?.let {
+                put("userName", Value.String(it))
+            }
+            preferences.getUserEmail()?.takeIf { it.isNotBlank() }?.let {
+                put("userEmail", Value.String(it))
+            }
+        }
+
+        // Setting a blank targeting key results in all users being assigned the same bucket where randomization occurs.
         val context = ImmutableContext(
             targetingKey = userId,
-            attributes = mapOf(
-                "userName" to Value.String(preferences.getUserName() ?: ""),
-                "userEmail" to Value.String(preferences.getUserEmail() ?: "")
-            )
+            attributes = attributes
         )
         OpenFeatureAPI.setEvaluationContext(context)
 
