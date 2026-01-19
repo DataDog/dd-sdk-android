@@ -20,9 +20,9 @@ import dev.openfeature.kotlin.sdk.Client
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
-import java.util.Locale
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * Fragment demonstrating OpenFeature SDK integration with Datadog Flags.
