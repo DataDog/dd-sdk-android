@@ -56,8 +56,8 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -271,7 +271,7 @@ internal open class RumViewScope(
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = RumVitalOperationStepEvent.StepType.START,
+                stepType = VitalOperationStepEvent.StepType.START,
                 failureReason = null,
                 eventAttributes = event.attributes
             )
@@ -293,7 +293,7 @@ internal open class RumViewScope(
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = RumVitalOperationStepEvent.StepType.END,
+                stepType = VitalOperationStepEvent.StepType.END,
                 failureReason = event.failureReason?.toSchemaFailureReason(),
                 eventAttributes = event.attributes
             )
@@ -307,10 +307,10 @@ internal open class RumViewScope(
         datadogContext: DatadogContext,
         name: String,
         operationKey: String?,
-        stepType: RumVitalOperationStepEvent.StepType,
-        failureReason: RumVitalOperationStepEvent.FailureReason?,
+        stepType: VitalOperationStepEvent.StepType,
+        failureReason: VitalOperationStepEvent.FailureReason?,
         eventAttributes: Map<String, Any?>
-    ): RumVitalOperationStepEvent {
+    ): VitalOperationStepEvent {
         val rumContext = getRumContext()
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -318,7 +318,7 @@ internal open class RumViewScope(
         ) {
             null
         } else {
-            RumVitalOperationStepEvent.Synthetics(
+            VitalOperationStepEvent.Synthetics(
                 testId = rumContext.syntheticsTestId,
                 resultId = rumContext.syntheticsResultId
             )
@@ -330,54 +330,54 @@ internal open class RumViewScope(
 
         val sessionType = when {
             rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
-            syntheticsAttribute == null -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
-            else -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
+            syntheticsAttribute == null -> VitalOperationStepEvent.VitalOperationStepEventSessionType.USER
+            else -> VitalOperationStepEvent.VitalOperationStepEventSessionType.SYNTHETICS
         }
         val batteryInfo = batteryInfoProvider.getState()
         val displayInfo = displayInfoProvider.getState()
         val user = datadogContext.userInfo
 
-        return RumVitalOperationStepEvent(
+        return VitalOperationStepEvent(
             date = event.eventTime.timestamp + serverTimeOffsetInMs,
-            context = RumVitalOperationStepEvent.Context(
+            context = VitalOperationStepEvent.Context(
                 additionalProperties = getCustomAttributes().toMutableMap().also {
                     it.putAll(eventAttributes)
                 }
             ),
-            dd = RumVitalOperationStepEvent.Dd(
-                session = RumVitalOperationStepEvent.DdSession(
+            dd = VitalOperationStepEvent.Dd(
+                session = VitalOperationStepEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalOperationStepSessionPrecondition()
                 ),
-                configuration = RumVitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = VitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
             ),
-            application = RumVitalOperationStepEvent.Application(
+            application = VitalOperationStepEvent.Application(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
             synthetics = syntheticsAttribute,
-            session = RumVitalOperationStepEvent.RumVitalOperationStepEventSession(
+            session = VitalOperationStepEvent.VitalOperationStepEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay
             ),
-            view = RumVitalOperationStepEvent.RumVitalOperationStepEventView(
+            view = VitalOperationStepEvent.VitalOperationStepEventView(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            source = RumVitalOperationStepEvent.RumVitalOperationStepEventSource.tryFromSource(
+            source = VitalOperationStepEvent.VitalOperationStepEventSource.tryFromSource(
                 source = datadogContext.source,
                 internalLogger = sdkCore.internalLogger
             ),
             account = datadogContext.accountInfo?.let {
-                RumVitalOperationStepEvent.Account(
+                VitalOperationStepEvent.Account(
                     id = it.id,
                     name = it.name,
                     additionalProperties = it.extraInfo.toMutableMap()
                 )
             },
             usr = if (user.hasUserData()) {
-                RumVitalOperationStepEvent.Usr(
+                VitalOperationStepEvent.Usr(
                     id = user.id,
                     name = user.name,
                     email = user.email,
@@ -387,7 +387,7 @@ internal open class RumViewScope(
             } else {
                 null
             },
-            device = RumVitalOperationStepEvent.Device(
+            device = VitalOperationStepEvent.Device(
                 type = datadogContext.deviceInfo.deviceType.toVitalOperationStepSchemaType(),
                 name = datadogContext.deviceInfo.deviceName,
                 model = datadogContext.deviceInfo.deviceModel,
@@ -399,7 +399,7 @@ internal open class RumViewScope(
                 powerSavingMode = batteryInfo.lowPowerMode,
                 brightnessLevel = displayInfo.screenBrightness
             ),
-            os = RumVitalOperationStepEvent.Os(
+            os = VitalOperationStepEvent.Os(
                 name = datadogContext.deviceInfo.osName,
                 version = datadogContext.deviceInfo.osVersion,
                 versionMajor = datadogContext.deviceInfo.osMajorVersion
@@ -410,7 +410,7 @@ internal open class RumViewScope(
             buildId = datadogContext.appBuildId,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
-            vital = RumVitalOperationStepEvent.Vital(
+            vital = VitalOperationStepEvent.Vital(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,

@@ -26,6 +26,7 @@ createJsonModelsGenerationTask("generateRumModelsFromJson") {
         "resource-schema.json" to "ResourceEvent",
         "view-schema.json" to "ViewEvent",
         "long_task-schema.json" to "LongTaskEvent",
-        "vital-schema.json" to "VitalEvent"
+        "vital-app-launch-schema.json" to "VitalAppLaunchEvent",
+        "vital-operation-step-schema.json" to "VitalOperationStepEvent"
     )
 }

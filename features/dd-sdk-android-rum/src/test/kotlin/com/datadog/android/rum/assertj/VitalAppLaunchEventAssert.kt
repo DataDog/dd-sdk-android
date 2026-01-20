@@ -11,13 +11,13 @@ import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSessionPrecondition
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
 internal class VitalAppLaunchEventAssert(
-    actual: RumVitalAppLaunchEvent
-) : AbstractObjectAssert<VitalAppLaunchEventAssert, RumVitalAppLaunchEvent>(
+    actual: VitalAppLaunchEvent
+) : AbstractObjectAssert<VitalAppLaunchEventAssert, VitalAppLaunchEvent>(
     actual,
     VitalAppLaunchEventAssert::class.java
 ) {
@@ -74,7 +74,7 @@ internal class VitalAppLaunchEventAssert(
             .isEqualTo(expected)
     }
 
-    fun hasSessionType(expected: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType) = apply {
+    fun hasSessionType(expected: VitalAppLaunchEvent.VitalAppLaunchEventSessionType) = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage(
                 "Expected event to have session.type:$expected but was ${actual.session.type}"
@@ -151,7 +151,7 @@ internal class VitalAppLaunchEventAssert(
             ).isEqualTo(resultId)
     }
 
-    fun hasSource(source: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource?) = apply {
+    fun hasSource(source: VitalAppLaunchEvent.VitalAppLaunchEventSource?) = apply {
         assertThat(actual.source)
             .overridingErrorMessage(
                 "Expected event to have a source %s" +
@@ -217,7 +217,7 @@ internal class VitalAppLaunchEventAssert(
         name: String,
         model: String,
         brand: String,
-        type: RumVitalAppLaunchEvent.DeviceType,
+        type: VitalAppLaunchEvent.DeviceType,
         architecture: String
     ) = apply {
         assertThat(actual.device?.name)
@@ -273,23 +273,23 @@ internal class VitalAppLaunchEventAssert(
 
     fun hasConnectivityInfo(expected: NetworkInfo?) = apply {
         val expectedStatus = if (expected?.isConnected() == true) {
-            RumVitalAppLaunchEvent.ConnectivityStatus.CONNECTED
+            VitalAppLaunchEvent.ConnectivityStatus.CONNECTED
         } else {
-            RumVitalAppLaunchEvent.ConnectivityStatus.NOT_CONNECTED
+            VitalAppLaunchEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
-            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(RumVitalAppLaunchEvent.Interface.ETHERNET)
-            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(RumVitalAppLaunchEvent.Interface.WIFI)
-            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(RumVitalAppLaunchEvent.Interface.WIMAX)
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(RumVitalAppLaunchEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalAppLaunchEvent.Interface.ETHERNET)
+            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalAppLaunchEvent.Interface.WIFI)
+            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalAppLaunchEvent.Interface.WIMAX)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalAppLaunchEvent.Interface.BLUETOOTH)
             NetworkInfo.Connectivity.NETWORK_2G,
             NetworkInfo.Connectivity.NETWORK_3G,
             NetworkInfo.Connectivity.NETWORK_4G,
             NetworkInfo.Connectivity.NETWORK_5G,
             NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(RumVitalAppLaunchEvent.Interface.CELLULAR)
+            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalAppLaunchEvent.Interface.CELLULAR)
 
-            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(RumVitalAppLaunchEvent.Interface.OTHER)
+            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalAppLaunchEvent.Interface.OTHER)
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
             null -> null
         }
@@ -354,7 +354,7 @@ internal class VitalAppLaunchEventAssert(
 
     companion object {
         internal fun assertThat(
-            actual: RumVitalAppLaunchEvent
+            actual: VitalAppLaunchEvent
         ): VitalAppLaunchEventAssert = VitalAppLaunchEventAssert(actual)
     }
 }
