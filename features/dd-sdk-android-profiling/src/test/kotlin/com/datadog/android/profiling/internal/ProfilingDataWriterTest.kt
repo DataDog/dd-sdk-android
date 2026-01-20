@@ -127,7 +127,8 @@ internal class ProfilingDataWriterTest {
             "version:${fakeDatadogContext.version}",
             "sdk_version:${fakeDatadogContext.sdkVersion}",
             "profiler_version:${fakeDatadogContext.sdkVersion}",
-            "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}"
+            "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
+            "operation:launch"
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")

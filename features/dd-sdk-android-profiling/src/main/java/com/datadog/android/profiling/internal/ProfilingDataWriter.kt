@@ -108,7 +108,9 @@ internal class ProfilingDataWriter(
         append(",")
         append("$TAG_KEY_PROFILER_VERSION:${context.sdkVersion}")
         append(",")
-        append("$TAG_RUNTIME_VERSION:${context.deviceInfo.osVersion}")
+        append("$TAG_KEY_RUNTIME_VERSION:${context.deviceInfo.osVersion}")
+        append(",")
+        append("$TAG_KEY_OPERATION:$OPERATION_TYPE_LAUNCH")
         context.appBuildId?.let { buildId ->
             append(",")
             append("$TAG_KEY_BUILD_ID:$buildId")
@@ -127,11 +129,13 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_BUILD_ID = "build_id"
         private const val TAG_KEY_SDK_VERSION = "sdk_version"
         private const val TAG_KEY_PROFILER_VERSION = "profiler_version"
-        private const val TAG_RUNTIME_VERSION = "runtime_version"
+        private const val TAG_KEY_RUNTIME_VERSION = "runtime_version"
         private const val TAG_KEY_ENV = "env"
+        private const val TAG_KEY_OPERATION = "operation"
         private const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         private const val ANDROID_FAMILY_NAME = "android"
         private const val ANDROID_RUNTIME_NAME = "android"
+        private const val OPERATION_TYPE_LAUNCH = "launch"
 
         // Only `4` is supported by profiling Backend
         private const val VERSION_NUMBER = "4"
