@@ -111,7 +111,8 @@ class SampleApplication : Application() {
         super.onCreate()
         Stetho.initializeWithDefaults(this)
         initializeDatadog()
-
+        InternalDataRepository.instance.loadInternalData(this)
+        InternalDataRepository.instance.preprocessInternalData(this)
         initializeTimber()
 
         initializeImageLoaders()
