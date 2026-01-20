@@ -12,9 +12,11 @@ import android.os.CancellationSignal
 import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -123,31 +125,6 @@ class PerfettoProfilerTest {
     }
 
     @Test
-    fun `M log info message W start()`() {
-        // When
-        testedProfiler.start(mockContext, setOf(fakeInstanceName))
-
-        // Then
-        val messageCaptor = argumentCaptor<() -> String>()
-        val expectedProps = mapOf(
-            "profiling" to mapOf(
-                "tag" to "ApplicationLaunch"
-            )
-        )
-        verify(mockInternalLogger)
-            .log(
-                eq(InternalLogger.Level.INFO),
-                eq(InternalLogger.Target.TELEMETRY),
-                messageCaptor.capture(),
-                isNull(),
-                eq(true),
-                eq(expectedProps)
-            )
-
-        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("Profiling started.")
-    }
-
-    @Test
     fun `M request profiling stack sampling only once W several call start(){ same instance }`() {
         // When
         testedProfiler.start(mockContext, setOf(fakeInstanceName))
@@ -184,10 +161,68 @@ class PerfettoProfilerTest {
     }
 
     @Test
-    fun `M send telemetry W profiling finishes`(
+    fun `M send telemetry W profiling finishes {with timeout}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeStartTime: Long,
         @LongForgery(min = 0L) fakeDuration: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+
+        // When
+        testedProfiler.start(mockContext, setOf(fakeInstanceName))
+
+        // Then
+        val stopSignalCaptor = argumentCaptor<CancellationSignal>()
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                stopSignalCaptor.capture(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { errorMessage } doReturn fakeErrorMessage
+        }
+
+        callbackCaptor.firstValue.accept(mockResult)
+
+        val messageCaptor = argumentCaptor<() -> String>()
+        val expectedProps = mapOf(
+            "profiling_app_launch" to mapOf(
+                "error_code" to ProfilingResult.ERROR_NONE,
+                "error_message" to fakeErrorMessage,
+                "duration" to fakeDuration,
+                "file_size" to 0L,
+                "stopped_reason" to "timeout"
+            ),
+            "profiling_config" to mapOf(
+                "buffer_size" to 5120,
+                "sampling_frequency" to 101
+            )
+        )
+        verify(mockInternalLogger)
+            .logMetric(
+                messageCaptor.capture(),
+                eq(expectedProps),
+                eq(MethodCallSamplingRate.ALL.rate),
+                isNull()
+            )
+
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling App Launch")
+    }
+
+    @Test
+    fun `M send telemetry W profiling finishes {with error}`(
+        @StringForgery fakeErrorMessage: String,
+        @LongForgery(min = 0L) fakeStartTime: Long,
+        @LongForgery(min = 0L) fakeDuration: Long,
+        @IntForgery(min = 1, max = 8) fakeErrorCode: Int
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
@@ -208,7 +243,7 @@ class PerfettoProfilerTest {
             )
 
         val mockResult = mock<ProfilingResult> {
-            on { errorCode } doReturn ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS
+            on { errorCode } doReturn fakeErrorCode
             on { errorMessage } doReturn fakeErrorMessage
         }
 
@@ -216,25 +251,85 @@ class PerfettoProfilerTest {
 
         val messageCaptor = argumentCaptor<() -> String>()
         val expectedProps = mapOf(
-            "profiling" to mapOf(
-                "error_code" to ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS,
-                "tag" to "ApplicationLaunch",
+            "profiling_app_launch" to mapOf(
+                "error_code" to fakeErrorCode,
                 "error_message" to fakeErrorMessage,
                 "duration" to fakeDuration,
-                "size_bytes" to 0L
+                "file_size" to 0L,
+                "stopped_reason" to "error"
+            ),
+            "profiling_config" to mapOf(
+                "buffer_size" to 5120,
+                "sampling_frequency" to 101
             )
         )
         verify(mockInternalLogger)
-            .log(
-                eq(InternalLogger.Level.INFO),
-                eq(InternalLogger.Target.TELEMETRY),
+            .logMetric(
                 messageCaptor.capture(),
-                isNull(),
-                eq(true),
-                eq(expectedProps)
+                eq(expectedProps),
+                eq(MethodCallSamplingRate.ALL.rate),
+                isNull()
             )
 
-        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("Profiling finished.")
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling App Launch")
+    }
+
+    @Test
+    fun `M send metric telemetry W internalLogger is assigned later`(
+        @StringForgery fakeErrorMessage: String,
+        @LongForgery(min = 0L) fakeStartTime: Long,
+        @LongForgery(min = 0L) fakeDuration: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        testedProfiler.internalLogger = null
+
+        // When
+        testedProfiler.start(mockContext, setOf(fakeInstanceName))
+        testedProfiler.internalLogger = mockInternalLogger
+
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS
+            on { errorMessage } doReturn fakeErrorMessage
+        }
+
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val expectedProps = mapOf(
+            "profiling_app_launch" to mapOf(
+                "error_code" to ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS,
+                "error_message" to fakeErrorMessage,
+                "duration" to fakeDuration,
+                "file_size" to 0L,
+                "stopped_reason" to "error"
+            ),
+            "profiling_config" to mapOf(
+                "buffer_size" to 5120,
+                "sampling_frequency" to 101
+            )
+        )
+        verify(mockInternalLogger)
+            .logMetric(
+                messageCaptor.capture(),
+                eq(expectedProps),
+                eq(MethodCallSamplingRate.ALL.rate),
+                isNull()
+            )
+
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling App Launch")
     }
 
     @Test

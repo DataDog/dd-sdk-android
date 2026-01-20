@@ -960,6 +960,7 @@ datadog:
       - "kotlin.collections.MutableMap?.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.api.feature.FeatureContextUpdateReceiver)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.core.internal.persistence.ConsentAwareStorage.Batch)"
+      - "kotlin.collections.MutableSet.add(com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.TelemetryData)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.sessionreplay.ExtensionSupport)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventId)"
       - "kotlin.collections.MutableSet.add(java.io.File)"
