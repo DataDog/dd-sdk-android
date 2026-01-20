@@ -72,6 +72,7 @@ internal constructor(
 
         private var coreConfig = DEFAULT_CORE_CONFIG
         private var crashReportsEnabled: Boolean = true
+        private var version: String? = null
 
         internal var hostsSanitizer = HostsSanitizer()
 
@@ -86,7 +87,9 @@ internal constructor(
                 variant = variant,
                 service = service,
                 crashReportsEnabled = crashReportsEnabled,
-                additionalConfig = additionalConfig
+                additionalConfig = additionalConfig.toMutableMap().apply {
+                    version?.let { put(Datadog.DD_APP_VERSION_TAG, it) }
+                }
             )
         }
 
@@ -267,6 +270,17 @@ internal constructor(
          */
         fun setUploadSchedulerStrategy(uploadSchedulerStrategy: UploadSchedulerStrategy?): Builder {
             coreConfig = coreConfig.copy(uploadSchedulerStrategy = uploadSchedulerStrategy)
+            return this
+        }
+
+        /**
+         * Sets the version name that will be used for all events sent to Datadog.
+         * If not provided, the SDK will use the version from the application's package info.
+         *
+         * @param version the version name to use
+         */
+        fun setVersion(version: String): Builder {
+            this.version = version
             return this
         }
 

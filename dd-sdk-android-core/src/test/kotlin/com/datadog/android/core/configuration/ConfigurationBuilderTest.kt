@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.configuration
 
+import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
@@ -20,10 +21,12 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Authenticator
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -99,6 +102,21 @@ internal class ConfigurationBuilderTest {
         // Then
         assertThat(config.crashReportsEnabled).isFalse
         assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `M build config with custom version W setVersion() and build()`(
+        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) version: String
+    ) {
+        // When
+        val config = testedBuilder
+            .setVersion(version)
+            .build()
+
+        // Then
+        assertThat(config.additionalConfig).containsExactly(
+            entry(Datadog.DD_APP_VERSION_TAG, version)
+        )
     }
 
     @Test
