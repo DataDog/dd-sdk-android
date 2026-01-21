@@ -20,6 +20,7 @@ datadog:
       - "android.content.Context.createDeviceProtectedStorageContext()"
       - "android.content.Context.getSharedPreferences(kotlin.String?, kotlin.Int)"
       - "android.content.Context.getSystemService(kotlin.String)"
+      - "android.content.Context.getSystemService(java.lang.Class)"
       - "android.content.Context.registerComponentCallbacks(android.content.ComponentCallbacks?)"
       - "android.content.Context.registerReceiver(android.content.BroadcastReceiver?, android.content.IntentFilter?)"
       - "android.content.Context.registerReceiver(android.content.BroadcastReceiver?, android.content.IntentFilter?, kotlin.Int)"
