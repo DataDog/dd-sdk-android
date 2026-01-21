@@ -11,9 +11,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 
 internal fun RumSessionType.toAction(): ActionEvent.ActionEventSessionType {
     return when (this) {
@@ -49,16 +49,16 @@ internal fun RumSessionType.toLongTask(): LongTaskEvent.LongTaskEventSessionType
         RumSessionType.USER -> LongTaskEvent.LongTaskEventSessionType.USER
     }
 }
-internal fun RumSessionType.toVital(): RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType {
+internal fun RumSessionType.toVital(): VitalOperationStepEvent.VitalOperationStepEventSessionType {
     return when (this) {
-        RumSessionType.SYNTHETICS -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.SYNTHETICS
-        RumSessionType.USER -> RumVitalOperationStepEvent.RumVitalOperationStepEventSessionType.USER
+        RumSessionType.SYNTHETICS -> VitalOperationStepEvent.VitalOperationStepEventSessionType.SYNTHETICS
+        RumSessionType.USER -> VitalOperationStepEvent.VitalOperationStepEventSessionType.USER
     }
 }
 
-internal fun RumSessionType.toVitalAppLaunch(): RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType {
+internal fun RumSessionType.toVitalAppLaunch(): VitalAppLaunchEvent.VitalAppLaunchEventSessionType {
     return when (this) {
-        RumSessionType.SYNTHETICS -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.SYNTHETICS
-        RumSessionType.USER -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
+        RumSessionType.SYNTHETICS -> VitalAppLaunchEvent.VitalAppLaunchEventSessionType.SYNTHETICS
+        RumSessionType.USER -> VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
     }
 }

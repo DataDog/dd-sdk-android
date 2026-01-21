@@ -12,9 +12,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aRumEvent
 import com.datadog.android.rum.utils.verifyLog
@@ -67,10 +67,10 @@ internal class RumEventMapperTest {
     lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
 
     @Mock
-    lateinit var mockVitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent>
+    lateinit var mockVitalOperationStepEventMapper: EventMapper<VitalOperationStepEvent>
 
     @Mock
-    lateinit var mockVitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent>
+    lateinit var mockVitalAppLaunchEventMapper: EventMapper<VitalAppLaunchEvent>
 
     @Mock
     lateinit var mockTelemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>
@@ -185,7 +185,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M map the bundled event W map { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
+        val fakeRumEvent = forge.getForgery<VitalOperationStepEvent>()
         whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent)).thenReturn(fakeRumEvent)
 
         // WHEN
@@ -199,7 +199,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M map the bundled event W map { VitalAppLaunchEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        val fakeRumEvent = forge.getForgery<VitalAppLaunchEvent>()
         whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent)).thenReturn(fakeRumEvent)
 
         // WHEN
@@ -428,7 +428,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return null event W map returns null object { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
+        val fakeRumEvent = forge.getForgery<VitalOperationStepEvent>()
         whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent))
             .thenReturn(null)
 
@@ -448,7 +448,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return null event W map returns null object { VitalAppLaunchEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        val fakeRumEvent = forge.getForgery<VitalAppLaunchEvent>()
         whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent))
             .thenReturn(null)
 
@@ -571,7 +571,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return null event W map returns different object { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
+        val fakeRumEvent = forge.getForgery<VitalOperationStepEvent>()
         whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent))
             .thenReturn(forge.getForgery())
 
@@ -591,7 +591,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return null event W map returns different object { VitalAppLaunchEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        val fakeRumEvent = forge.getForgery<VitalAppLaunchEvent>()
         whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent))
             .thenReturn(forge.getForgery())
 
@@ -713,7 +713,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return null event W map returns a copy { VitalOperationStepEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalOperationStepEvent>()
+        val fakeRumEvent = forge.getForgery<VitalOperationStepEvent>()
         whenever(mockVitalOperationStepEventMapper.map(fakeRumEvent))
             .thenReturn(fakeRumEvent.copy())
 
@@ -733,7 +733,7 @@ internal class RumEventMapperTest {
     @Test
     fun `M return null event W map returns a copy { VitalAppLaunchEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalAppLaunchEvent>()
+        val fakeRumEvent = forge.getForgery<VitalAppLaunchEvent>()
         whenever(mockVitalAppLaunchEventMapper.map(fakeRumEvent))
             .thenReturn(fakeRumEvent.copy())
 

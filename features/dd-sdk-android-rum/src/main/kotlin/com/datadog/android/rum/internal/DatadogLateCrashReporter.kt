@@ -152,12 +152,14 @@ internal class DatadogLateCrashReporter(
                     lastViewEvent
                 )
                 writeScope {
+                    // mark it before creating RUM events, so that we don't handle it again if code crashed after
+                    // RUM events are written
+                    sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
                     rumWriter.write(it, toSendErrorEvent, EventType.CRASH)
                     if (lastViewEvent.isWithinSessionAvailability) {
                         val updatedViewEvent = updateViewEvent(lastViewEvent)
                         rumWriter.write(it, updatedViewEvent, EventType.CRASH)
                     }
-                    sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
                 }
             }
         }

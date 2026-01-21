@@ -18,7 +18,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -112,7 +112,7 @@ internal class RumSessionScopeStartupManagerImpl(
             hasReplay = null,
             rumContext = rumContext,
             durationNs = event.info.durationNs,
-            appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTID,
+            appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTID,
             scenario = event.info.scenario,
             profilingStatus = datadogContext.getProfilingStatus()
         )
@@ -243,7 +243,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 hasReplay = null,
                 rumContext = rumContext,
                 durationNs = durationNs,
-                appLaunchMetric = RumVitalAppLaunchEvent.AppLaunchMetric.TTFD,
+                appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
                 scenario = scenario,
                 profilingStatus = null
             )
@@ -254,7 +254,7 @@ internal class RumSessionScopeStartupManagerImpl(
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
-        ttidEvent: RumVitalAppLaunchEvent
+        ttidEvent: VitalAppLaunchEvent
     ) {
         val durationNs = ttidEvent.vital.duration.toLong()
 
@@ -277,10 +277,10 @@ internal class RumSessionScopeStartupManagerImpl(
         }.submit()
     }
 
-    private fun DatadogContext.getProfilingStatus(): RumVitalAppLaunchEvent.ProfilingStatus? {
+    private fun DatadogContext.getProfilingStatus(): VitalAppLaunchEvent.ProfilingStatus? {
         val isProfilerRunning = featuresContext[Feature.PROFILING_FEATURE_NAME]
             ?.get(PROFILER_IS_RUNNING)
-        return if (isProfilerRunning == true) RumVitalAppLaunchEvent.ProfilingStatus.RUNNING else null
+        return if (isProfilerRunning == true) VitalAppLaunchEvent.ProfilingStatus.RUNNING else null
     }
 
     companion object {
