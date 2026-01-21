@@ -16,7 +16,7 @@ Before using the OpenFeature provider, you must:
 
 ### Add dependencies
 
-Add both the Datadog Feature Flags SDK and OpenFeature Provider to your application's `build.gradle` file:
+Add both the Datadog Feature Flags SDK and OpenFeature Provider to your application's `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
