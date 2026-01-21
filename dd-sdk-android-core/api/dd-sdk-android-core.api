@@ -702,8 +702,8 @@ public final class com/datadog/android/core/configuration/BatchSize : java/lang/
 
 public final class com/datadog/android/core/configuration/Configuration {
 	public static final field Companion Lcom/datadog/android/core/configuration/Configuration$Companion;
-	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;)Lcom/datadog/android/core/configuration/Configuration;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
+	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/String;)Lcom/datadog/android/core/configuration/Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

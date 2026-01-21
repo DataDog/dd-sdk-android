@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.configuration
 
-import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
@@ -26,7 +25,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Authenticator
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -114,9 +112,10 @@ internal class ConfigurationBuilderTest {
             .build()
 
         // Then
-        assertThat(config.additionalConfig).containsExactly(
-            entry(Datadog.DD_APP_VERSION_TAG, version)
-        )
+        assertThat(config.version).isEqualTo(version)
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
+        assertThat(config.additionalConfig).isEmpty()
     }
 
     @Test

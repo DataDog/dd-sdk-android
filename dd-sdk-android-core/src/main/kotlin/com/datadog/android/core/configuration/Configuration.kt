@@ -27,7 +27,8 @@ internal constructor(
     internal val variant: String,
     internal val service: String?,
     internal val crashReportsEnabled: Boolean,
-    internal val additionalConfig: Map<String, Any>
+    internal val additionalConfig: Map<String, Any>,
+    internal val version: String?
 ) {
 
     internal data class Core(
@@ -87,9 +88,9 @@ internal constructor(
                 variant = variant,
                 service = service,
                 crashReportsEnabled = crashReportsEnabled,
-                additionalConfig = additionalConfig.toMutableMap().apply {
-                    version?.let { put(Datadog.DD_APP_VERSION_TAG, it) }
-                }
+                additionalConfig = additionalConfig,
+                version = version
+
             )
         }
 

@@ -588,6 +588,7 @@ internal class DatadogCoreInitializationTest {
         ).apply {
             initialize(
                 fakeConfiguration.copy(
+                    version = null,
                     additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
                 )
             )
@@ -612,6 +613,7 @@ internal class DatadogCoreInitializationTest {
         ).apply {
             initialize(
                 fakeConfiguration.copy(
+                    version = null,
                     additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt())
                 )
             )
