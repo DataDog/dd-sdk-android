@@ -18,15 +18,14 @@ Before using the OpenFeature provider, you must:
 
 Add both the Datadog Feature Flags SDK and OpenFeature Provider to your application's `build.gradle` file:
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-flags:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-flags-openfeature:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-flags:<latest-version>")
+    implementation("com.datadoghq:dd-sdk-android-flags-openfeature:<latest-version>")
 
-    // Recommended: RUM integration to corelate flags and RUM session data
-    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
+    // Recommended: RUM integration to correlate flags and RUM session data
+    implementation("com.datadoghq:dd-sdk-android-rum:<latest-version>")
 }
-```
 
 ### Initial setup
 
