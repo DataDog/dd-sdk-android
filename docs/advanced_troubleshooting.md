@@ -64,9 +64,9 @@ You can check which version your dependencies are using by typing the following 
 
 If you're using OkHttp version `3.13.0` or above, you may run into this crash when initializing the SDK. This happens because from this version on, OkHttp uses Java 1.8, including the Java lambda features, which are not available in Android.
 
-You can fix this issue by forcing the Android compiler to use Java 8 compatibility when building your application. To do so, add the following code to your application's `build.gradle` script.
+You can fix this issue by forcing the Android compiler to use Java 8 compatibility when building your application. To do so, add the following code to your application's `build.gradle.kts` script.
 
-```groovy
+```kotlin
 android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

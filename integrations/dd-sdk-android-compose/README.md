@@ -3,12 +3,12 @@
 ## Getting Started
 
 To include the Datadog integration for [Jetpack Compose][1] in your project, add the
-following to your application's `build.gradle` file.
+following to your application's `build.gradle.kts` file.
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-compose:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-rum:<latest-version>")
+    implementation("com.datadoghq:dd-sdk-android-compose:<latest-version>")
 }
 ```
 
