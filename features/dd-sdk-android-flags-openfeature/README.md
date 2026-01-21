@@ -127,8 +127,7 @@ val isEnabled = client.getBooleanValue("my-feature", false)
 
 **Important notes:**
 - The targeting key must be consistent for the same user or entity to ensure consistent flag evaluation across requests.
-- For anonymous users, use a **persistent UUID** as the targeting key (store it in `SharedPreferences`).
-- All attribute values must be strings (use `Value.String()`).
+- For anonymous users, use a **persistent UUID** as the targeting key (persist it in a store such as `SharedPreferences`).
 
 For complete details on using the OpenFeature API, including flag evaluation methods, hooks, state management, and events, see the [OpenFeature Kotlin SDK documentation](https://openfeature.dev/docs/reference/technologies/client/kotlin/)
 
