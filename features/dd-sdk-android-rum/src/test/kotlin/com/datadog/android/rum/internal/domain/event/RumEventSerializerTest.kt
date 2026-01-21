@@ -14,9 +14,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -558,7 +558,7 @@ internal class RumEventSerializerTest {
 
     @RepeatedTest(8)
     fun `M serialize RUM event W serialize() with VitalOperationStepEvent`(
-        @Forgery event: RumVitalOperationStepEvent
+        @Forgery event: VitalOperationStepEvent
     ) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -635,7 +635,7 @@ internal class RumEventSerializerTest {
 
     @RepeatedTest(8)
     fun `M serialize RUM event W serialize() with VitalAppLaunchEvent`(
-        @Forgery event: RumVitalAppLaunchEvent
+        @Forgery event: VitalAppLaunchEvent
     ) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -1423,7 +1423,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M use the attributes group verbose name W validateAttributes { VitalEvent }`(
-        @Forgery fakeEvent: RumVitalOperationStepEvent
+        @Forgery fakeEvent: VitalOperationStepEvent
     ) {
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
@@ -2105,7 +2105,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M drop non-serializable attributes W serialize() with VitalEvent { bad usr#additionalProperties }`(
-        @Forgery event: RumVitalOperationStepEvent,
+        @Forgery event: VitalOperationStepEvent,
         forge: Forge
     ) {
         // Given
@@ -2142,7 +2142,7 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `M drop non-serializable attributes W serialize() with VitalEvent { bad context#additionalProperties }`(
-        @Forgery event: RumVitalOperationStepEvent,
+        @Forgery event: VitalOperationStepEvent,
         forge: Forge
     ) {
         // Given
@@ -2210,10 +2210,10 @@ internal class RumEventSerializerTest {
                 )
             }
 
-            5 -> this.getForgery(RumVitalOperationStepEvent::class.java).let {
+            5 -> this.getForgery(VitalOperationStepEvent::class.java).let {
                 it.copy(
-                    context = RumVitalOperationStepEvent.Context(additionalProperties = attributes),
-                    usr = (it.usr ?: RumVitalOperationStepEvent.Usr())
+                    context = VitalOperationStepEvent.Context(additionalProperties = attributes),
+                    usr = (it.usr ?: VitalOperationStepEvent.Usr())
                         .copy(additionalProperties = userAttributes)
                 )
             }

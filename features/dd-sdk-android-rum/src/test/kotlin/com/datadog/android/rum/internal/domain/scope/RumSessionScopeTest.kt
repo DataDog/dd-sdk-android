@@ -39,8 +39,8 @@ import com.datadog.android.rum.internal.startup.testRumStartupScenarios
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -185,7 +185,7 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeDisplayInfo: DisplayInfo
 
-    private var fakeVitalSource: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? = null
+    private var fakeVitalSource: VitalAppLaunchEvent.VitalAppLaunchEventSource? = null
 
     @Mock
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
@@ -234,7 +234,7 @@ internal class RumSessionScopeTest {
         )
 
         fakeVitalSource = if (isValidSource) {
-            RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.fromJson(fakeSource)
+            VitalAppLaunchEvent.VitalAppLaunchEventSource.fromJson(fakeSource)
         } else {
             null
         }
