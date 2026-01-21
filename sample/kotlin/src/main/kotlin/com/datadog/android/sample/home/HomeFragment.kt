@@ -55,6 +55,7 @@ internal class HomeFragment :
     override fun onClick(v: View) {
         val destination = when (v.id) {
             R.id.navigation_logs -> R.id.fragment_logs
+            R.id.navigation_openfeature -> R.id.fragment_openfeature
             R.id.navigation_crash -> R.id.fragment_crash
             R.id.navigation_traces -> R.id.fragment_trace
             R.id.navigation_otel_traces -> R.id.fragment_otel_traces

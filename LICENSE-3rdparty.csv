@@ -62,6 +62,7 @@ import,com.squareup.moshi,Apache-2.0,"Copyright 2013 Square, Inc"
 import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
 import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
+import,dev.openfeature,Apache-2.0,Copyright 2022 The OpenFeature Authors
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
 import,io.coil-kt.coil3,Apache-2.0,Copyright 2021 Coil Contributors
 import,io.opentelemetry,Apache-2.0,Copyright 2019 The OpenTelemetry Authors
