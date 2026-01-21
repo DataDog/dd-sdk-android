@@ -22,6 +22,11 @@
         android:label="@string/title_logs"/>
 
     <fragment
+        android:id="@+id/fragment_openfeature"
+        android:name="com.datadog.android.sample.flags.OpenFeatureFragment"
+        android:label="@string/title_openfeature"/>
+
+    <fragment
         android:id="@+id/fragment_crash"
         android:name="com.datadog.android.sample.crash.CrashFragment"
         android:label="@string/title_crash"/>
