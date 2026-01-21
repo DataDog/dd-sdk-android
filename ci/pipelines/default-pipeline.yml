@@ -51,6 +51,14 @@ stages:
     - export CENTRAL_PUBLISHER_PASSWORD=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD)
     - export GPG_PUBLIC_FINGERPRINT=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
 
+.base-cache-pull-job:
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+
 # CI IMAGE
 
 ci-image:
@@ -94,6 +102,8 @@ static-analysis:
     strategy: depend
 
 analysis:detekt-custom:
+  extends:
+    - .base-cache-pull-job
   tags:
     - "arch:amd64"
   image: $CI_IMAGE_DOCKER
@@ -112,16 +122,12 @@ analysis:detekt-custom:
 # TESTS
 
 test:debug:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -137,16 +143,12 @@ test:debug:
       junit: "**/build/test-results/testDebugUnitTest/*.xml"
 
 test:tools:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -185,6 +187,8 @@ test:kover:
 # the steps in this section should reflect our test pyramid strategy
 
 test-pyramid:core-it-min-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -198,6 +202,8 @@ test-pyramid:core-it-min-api:
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-latest-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -211,6 +217,8 @@ test-pyramid:core-it-latest-api:
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-median-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -224,16 +232,12 @@ test-pyramid:core-it-median-api:
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:single-fit-logs:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -245,16 +249,12 @@ test-pyramid:single-fit-logs:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-rum:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -266,16 +266,12 @@ test-pyramid:single-fit-rum:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-trace:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -287,16 +283,12 @@ test-pyramid:single-fit-trace:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-okhttp:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -310,6 +302,8 @@ test-pyramid:single-fit-okhttp:
 # RUN INSTRUMENTED TESTS ON MIN API (23), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -323,6 +317,8 @@ test-pyramid:legacy-integration-instrumented-min-api:
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-latest-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -336,6 +332,8 @@ test-pyramid:legacy-integration-instrumented-latest-api:
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-median-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -349,6 +347,8 @@ test-pyramid:legacy-integration-instrumented-median-api:
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:detekt-api-coverage:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -366,6 +366,8 @@ test-pyramid:detekt-api-coverage:
     - grep -v -f apiUsage.log apiSurface.log
 
 test-pyramid:publish-e2e-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -394,6 +396,8 @@ test-pyramid:publish-e2e-synthetics:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
 
 test-pyramid:publish-webview-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -422,6 +426,8 @@ test-pyramid:publish-webview-synthetics:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
 
 test-pyramid:publish-staging-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -450,6 +456,8 @@ test-pyramid:publish-staging-synthetics:
       - sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk
 
 test-pyramid:publish-benchmark-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
