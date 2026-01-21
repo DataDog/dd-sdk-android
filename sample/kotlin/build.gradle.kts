@@ -151,6 +151,7 @@ dependencies {
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-flags"))
+    implementation(project(":features:dd-sdk-android-flags-openfeature"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-rum-debug-widget"))
     implementation(project(":features:dd-sdk-android-trace"))
