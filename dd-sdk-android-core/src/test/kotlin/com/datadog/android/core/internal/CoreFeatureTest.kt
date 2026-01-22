@@ -140,6 +140,9 @@ internal class CoreFeatureTest {
     @Forgery
     lateinit var fakeBuildId: UUID
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeVersion: String
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
@@ -158,6 +161,7 @@ internal class CoreFeatureTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        fakeConfig = fakeConfig.copy(version = fakeVersion)
     }
 
     @AfterEach

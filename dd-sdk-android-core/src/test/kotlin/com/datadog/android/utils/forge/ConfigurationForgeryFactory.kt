@@ -21,7 +21,7 @@ internal class ConfigurationForgeryFactory :
             service = forge.aStringMatching("[a-z]+(\\.[a-z]+)+"),
             crashReportsEnabled = forge.aBool(),
             additionalConfig = forge.aMap { aString() to aString() },
-            version = forge.anAlphaNumericalString()
+            version = forge.aNullable { forge.anAlphaNumericalString() }
         )
     }
 }

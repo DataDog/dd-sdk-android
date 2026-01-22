@@ -625,6 +625,28 @@ internal class DatadogCoreInitializationTest {
         )
     }
 
+    @Test
+    fun `M apply app version W setVersion(appVersion) { with app version }`(
+        @StringForgery appVersion: String
+    ) {
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    version = appVersion
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(appVersion)
+    }
+
     // endregion
 
     companion object {
