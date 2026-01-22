@@ -18,7 +18,7 @@ import java.util.UUID
 /**
  * Factory for creating requests to the EVP intake endpoint for evaluation logging.
  *
- * Per EVALLOG.1:
+ * Request format:
  * - Endpoint: /api/v2/flagevaluations
  * - Content-Type: application/json
  * - Payload: BatchedFlagEvaluations with context wrapper
@@ -51,7 +51,7 @@ internal class EvaluationsRequestFactory(
                 sdkVersion = context.sdkVersion
             ),
             body = buildBatchedPayload(context, batchData),
-            contentType = RequestFactory.CONTENT_TYPE_JSON // EVALLOG.1: application/json
+            contentType = RequestFactory.CONTENT_TYPE_JSON
         )
     }
 
@@ -79,7 +79,7 @@ internal class EvaluationsRequestFactory(
     /**
      * Builds the batched payload with context wrapper.
      *
-     * Per EVALLOG.1, the payload must be a BatchedFlagEvaluations object:
+     * The payload must be a BatchedFlagEvaluations object:
      * {
      *   "context": { service, version, env, device, os, rum, geo },
      *   "flagEvaluations": [ ... ]
