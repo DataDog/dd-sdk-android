@@ -18,12 +18,14 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
+@OptIn(ExperimentalProfilingApi::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,

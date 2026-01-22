@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 
+@OptIn(ExperimentalProfilingApi::class)
 @Extensions(
     ExtendWith(ForgeExtension::class)
 )

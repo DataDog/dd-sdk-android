@@ -11,6 +11,7 @@ import androidx.annotation.FloatRange
 /**
  * Describes configuration to be used for the Profiling feature.
  */
+@ExperimentalProfilingApi
 data class ProfilingConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val sampleRate: Float

@@ -22,6 +22,7 @@ import com.datadog.android.profiling.internal.ProfilingStorage
  * A [ContentProvider] to start Profiling request as early as possible in the app's
  * lifecycle.
  */
+@OptIn(ExperimentalProfilingApi::class)
 class DdProfilingContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {

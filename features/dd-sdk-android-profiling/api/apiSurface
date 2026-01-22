@@ -5,6 +5,7 @@ class com.datadog.android.profiling.DdProfilingContentProvider : android.content
   override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+annotation com.datadog.android.profiling.ExperimentalProfilingApi
 object com.datadog.android.profiling.Profiling
   fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
   fun start(android.content.Context, com.datadog.android.api.SdkCore = Datadog.getInstance())

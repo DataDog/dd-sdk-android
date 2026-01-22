@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * An entry point to Datadog Profiling feature.
  */
+@ExperimentalProfilingApi
 object Profiling {
 
     @Volatile
