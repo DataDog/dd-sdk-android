@@ -155,7 +155,7 @@ internal class EvaluationEventsProcessor(
         // Cancel scheduled flush
         scheduledFlushFuture?.cancel(false)
 
-        // EVALLOG.4: Flush on shutdown
+        // Flush on shutdown
         flush()
     }
 
