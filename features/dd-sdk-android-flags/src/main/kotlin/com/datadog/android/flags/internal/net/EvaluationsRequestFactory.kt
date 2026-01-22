@@ -13,7 +13,6 @@ import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.flags.model.BatchedFlagEvaluations
-import com.google.gson.JsonParser
 import java.util.UUID
 
 /**
