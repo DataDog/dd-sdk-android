@@ -15,6 +15,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -203,7 +204,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to 101
+                "sampling_frequency" to PROFILING_SAMPLING_RATE
             )
         )
         verify(mockInternalLogger)
@@ -260,7 +261,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to 101
+                "sampling_frequency" to PROFILING_SAMPLING_RATE
             )
         )
         verify(mockInternalLogger)
@@ -318,7 +319,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to 101
+                "sampling_frequency" to PROFILING_SAMPLING_RATE
             )
         )
         verify(mockInternalLogger)

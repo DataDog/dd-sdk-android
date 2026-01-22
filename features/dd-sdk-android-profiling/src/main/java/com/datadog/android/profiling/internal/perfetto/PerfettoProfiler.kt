@@ -225,9 +225,9 @@ internal class PerfettoProfiler(
         // increased or configurable if needed.
         private const val BUFFER_SIZE_KB = 5120 // 5MB
 
-        // Currently we give 101HZ frequency to balance the sampling accuracy and performance
+        // Currently we give 201HZ frequency to balance the sampling accuracy and performance
         // overhead also to avoid lockstep sampling, it can be updated or configurable if needed.
-        private const val PROFILING_SAMPLING_RATE = 101 // 101Hz
+        internal const val PROFILING_SAMPLING_RATE = 201 // 201Hz
         private const val TELEMETRY_MSG_PROFILING_APP_LAUNCH =
             "[Mobile Metric] Profiling App Launch"
         private const val TELEMETRY_KEY_PROFILING_APP_LAUNCH = "profiling_app_launch"
