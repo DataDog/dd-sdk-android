@@ -626,7 +626,7 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
-    fun `M apply app version W setVersion(appVersion) { with app version }`(
+    fun `M apply app version from config W initialize { version in config is not null }`(
         @StringForgery appVersion: String
     ) {
         // When
