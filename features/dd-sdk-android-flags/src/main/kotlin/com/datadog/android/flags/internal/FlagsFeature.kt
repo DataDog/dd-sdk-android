@@ -20,6 +20,7 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -153,7 +154,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     private fun createExposureWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
 
     private fun createEvaluationWriter(): EvaluationEventWriter =
-        com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter(sdkCore)
+        EvaluationEventRecordWriter(sdkCore)
 
     // region FlagsClient Management
 
