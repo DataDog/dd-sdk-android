@@ -20,5 +20,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
 
         forge.addFactory(FlagsConfigurationForgeryFactory())
         forge.addFactory(PrecomputedFlagForgeryFactory())
+        forge.addFactory(FlagEvaluationForgeryFactory())
+        forge.addFactory(EvaluationContextForgeryFactory())
     }
 }
