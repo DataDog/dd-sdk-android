@@ -96,6 +96,7 @@ internal class EvaluationsRequestFactory(
             try {
                 val jsonString = String(event.data, Charsets.UTF_8)
                 val flagEvaluation = BatchedFlagEvaluations.FlagEvaluation.fromJson(jsonString)
+                @Suppress("UnsafeThirdPartyFunctionCall") // add() is safe - wrapped in try-catch
                 flagEvaluations.add(flagEvaluation)
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 // Catch all JSON parsing exceptions to prevent batch failure
