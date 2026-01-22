@@ -69,7 +69,7 @@ internal class AggregationStatsTest {
     // region recordEvaluation
 
     @Test
-    fun `M increment count W recordEvaluation()`(forge: Forge) {
+    fun `M increment count W recordEvaluation()`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData, null)
 
@@ -83,7 +83,7 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M update last evaluation timestamp W recordEvaluation()`(forge: Forge) {
+    fun `M update last evaluation timestamp W recordEvaluation()`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData, null)
         val laterTimestamp = fakeTimestamp + 5000
@@ -97,7 +97,7 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M preserve first evaluation timestamp W recordEvaluation() { multiple calls }`(forge: Forge) {
+    fun `M preserve first evaluation timestamp W recordEvaluation() { multiple calls }`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData, null)
 
@@ -205,7 +205,11 @@ internal class AggregationStatsTest {
             reason = ResolutionReason.ERROR.name
         )
         val stats = AggregationStats(fakeTimestamp, fakeContext, errorData, errorMessage)
-        val keyWithError = fakeAggregationKey.copy(variantKey = null, allocationKey = null, errorCode = "FLAG_NOT_FOUND")
+        val keyWithError = fakeAggregationKey.copy(
+            variantKey = null,
+            allocationKey = null,
+            errorCode = "FLAG_NOT_FOUND"
+        )
 
         // When
         val event = stats.toEvaluationEvent(fakeFlagName, keyWithError)
