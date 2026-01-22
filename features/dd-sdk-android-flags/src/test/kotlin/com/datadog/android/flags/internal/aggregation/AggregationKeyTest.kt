@@ -145,23 +145,23 @@ internal class AggregationKeyTest {
     }
 
     @Test
-    fun `M default to ERROR W fromEvaluation() { invalid reason }`(forge: Forge) {
-        // Given
+    fun `M include variant and allocation W fromEvaluation() { unrecognized reason }`(forge: Forge) {
+        // Given - unrecognized reasons are treated like normal matches (not DEFAULT/ERROR)
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val invalidReason = forge.anAlphabeticalString()
+        val unrecognizedReason = forge.anAlphabeticalString()
         val data = UnparsedFlag(
             value = fakeValue,
             variationKey = fakeVariantKey,
             allocationKey = fakeAllocationKey,
-            reason = invalidReason
+            reason = unrecognizedReason
         )
 
         // When
         val key = AggregationKey.fromEvaluation(fakeFlagName, context, data, null)
 
-        // Then
-        assertThat(key.variantKey).isNull()
-        assertThat(key.allocationKey).isNull()
+        // Then - variant and allocation should be included for forward compatibility
+        assertThat(key.variantKey).isEqualTo(fakeVariantKey)
+        assertThat(key.allocationKey).isEqualTo(fakeAllocationKey)
     }
 
     @Test
