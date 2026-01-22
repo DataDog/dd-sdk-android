@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 
 /**
@@ -48,16 +47,9 @@ internal data class AggregationKey(
             data: UnparsedFlag,
             errorCode: String?
         ): AggregationKey {
-            @Suppress("SwallowedException") // Intentionally default to ERROR for unknown reasons
-            val reason = try {
-                ResolutionReason.valueOf(data.reason)
-            } catch (e: IllegalArgumentException) {
-                // If reason is not a valid ResolutionReason, default to ERROR
-                ResolutionReason.ERROR
-            }
-
             // EVALLOG.8: Omit variant/allocation for DEFAULT/ERROR reasons
-            val isDefaultOrError = reason == ResolutionReason.DEFAULT || reason == ResolutionReason.ERROR
+            // Use string comparison to be forward-compatible with new reason values
+            val isDefaultOrError = data.reason == "DEFAULT" || data.reason == "ERROR"
 
             return AggregationKey(
                 flagKey = flagName,
