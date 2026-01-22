@@ -73,14 +73,13 @@ internal class EvaluationEventsProcessor(
         val timestamp = timeProvider.getDeviceTimestampMillis()
         val key = AggregationKey.fromEvaluation(flagName, context, data, errorCode)
 
-        // Compute updates the existing stats or creates new ones
-        @Suppress("UnsafeThirdPartyFunctionCall") // lambda always returns non-null value
-        aggregationMap.compute(key) { _, existing ->
+        // Update existing stats or create new ones (thread-safe for API 21+)
+        synchronized(aggregationMap) {
+            val existing = aggregationMap[key]
             if (existing != null) {
                 existing.recordEvaluation(timestamp, errorMessage)
-                existing
             } else {
-                AggregationStats(timestamp, context, data, errorMessage)
+                aggregationMap[key] = AggregationStats(timestamp, context, data, errorMessage)
             }
         }
 
