@@ -80,6 +80,7 @@ internal class PerfettoProfiler(
                     )
                 }
             }
+            runningInstances.set(emptySet())
             sendProfilingEndTelemetry(result = result, duration = duration)
         }
     }
@@ -101,7 +102,6 @@ internal class PerfettoProfiler(
         callbackMap.filter { runningInstances.get().contains(it.key) }.forEach { callback ->
             callback.value.onSuccess(result)
         }
-        runningInstances.set(emptySet())
     }
 
     override fun start(appContext: Context, sdkInstanceNames: Set<String>) {

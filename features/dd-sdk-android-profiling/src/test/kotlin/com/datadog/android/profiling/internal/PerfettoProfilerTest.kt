@@ -333,6 +333,71 @@ class PerfettoProfilerTest {
     }
 
     @Test
+    fun `M isRunning is false W callback is called {no error}`(
+        @LongForgery(min = 0L) fakeStartTime: Long,
+        @LongForgery(min = 0L) fakeDuration: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+
+        // When
+        testedProfiler.start(mockContext, setOf(fakeInstanceName))
+
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+        }
+
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        assertThat(testedProfiler.isRunning(fakeInstanceName)).isFalse
+    }
+
+    @Test
+    fun `M isRunning is false W callback is called {with error}`(
+        @IntForgery(min = 1) fakeErrorCode: Int,
+        @LongForgery(min = 0L) fakeStartTime: Long,
+        @LongForgery(min = 0L) fakeDuration: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+
+        // When
+        testedProfiler.start(mockContext, setOf(fakeInstanceName))
+
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn fakeErrorCode
+        }
+
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        assertThat(testedProfiler.isRunning(fakeInstanceName)).isFalse
+    }
+
+    @Test
     fun `M return false W isRunning { profiler not started }`() {
         // When
         val status = testedProfiler.isRunning(fakeInstanceName)

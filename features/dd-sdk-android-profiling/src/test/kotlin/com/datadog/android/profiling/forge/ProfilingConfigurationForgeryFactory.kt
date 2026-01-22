@@ -6,10 +6,12 @@
 
 package com.datadog.android.profiling.forge
 
+import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
+@OptIn(ExperimentalProfilingApi::class)
 class ProfilingConfigurationForgeryFactory :
     ForgeryFactory<ProfilingConfiguration> {
     override fun getForgery(forge: Forge): ProfilingConfiguration {

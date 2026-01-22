@@ -9,8 +9,6 @@ package com.datadog.android.profiling.internal
 import android.content.Context
 import com.datadog.android.internal.data.SharedPreferencesStorage
 
-private const val KEY_PROFILING_ENABLED = "dd_profiling_enabled"
-
 internal object ProfilingStorage {
 
     internal const val KEY_PROFILING_ENABLED = "dd_profiling_enabled"

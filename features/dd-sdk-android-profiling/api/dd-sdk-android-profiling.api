@@ -8,6 +8,9 @@ public final class com/datadog/android/profiling/DdProfilingContentProvider : an
 	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
 }
 
+public abstract interface annotation class com/datadog/android/profiling/ExperimentalProfilingApi : java/lang/annotation/Annotation {
+}
+
 public final class com/datadog/android/profiling/Profiling {
 	public static final field INSTANCE Lcom/datadog/android/profiling/Profiling;
 	public static final fun enable ()V
