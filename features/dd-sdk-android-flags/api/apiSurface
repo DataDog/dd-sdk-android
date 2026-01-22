@@ -142,7 +142,8 @@ data class com.datadog.android.flags.model.BatchedFlagEvaluations
     companion object 
       fun fromJson(kotlin.String): View
       fun fromJsonObject(com.google.gson.JsonObject): View
-  class Evaluation
+  data class Evaluation
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Evaluation

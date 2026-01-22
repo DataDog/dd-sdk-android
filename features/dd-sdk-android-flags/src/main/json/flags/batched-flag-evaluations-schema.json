@@ -120,7 +120,8 @@
             "properties": {
               "evaluation": {
                 "type": "object",
-                "description": "Evaluation context (excluding targetingKey)"
+                "description": "Evaluation context (excluding targetingKey)",
+                "additionalProperties": true
               },
               "dd": {
                 "type": "object",
