@@ -22,6 +22,33 @@ class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queu
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+interface com.datadog.android.internal.data.PreferencesStorage
+  fun putFloat(String, Float)
+  fun getFloat(String, Float = 0f): Float
+  fun putInt(String, Int)
+  fun getInt(String, Int = 0): Int
+  fun getString(String, String? = null): String?
+  fun putString(String, String)
+  fun getStringSet(String, Set<String> = emptySet()): Set<String>
+  fun putStringSet(String, Set<String>)
+  fun putBoolean(String, Boolean)
+  fun getBoolean(String, Boolean = false): Boolean
+  fun remove(String)
+  fun clear()
+class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesStorage
+  constructor(android.content.Context)
+  override fun putFloat(String, Float)
+  override fun getFloat(String, Float): Float
+  override fun putInt(String, Int)
+  override fun getInt(String, Int): Int
+  override fun getString(String, String?): String?
+  override fun putString(String, String)
+  override fun getStringSet(String, Set<String>): Set<String>
+  override fun putStringSet(String, Set<String>)
+  override fun putBoolean(String, Boolean)
+  override fun getBoolean(String, Boolean): Boolean
+  override fun remove(String)
+  override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
 enum com.datadog.android.internal.network.GraphQLHeaders
@@ -77,6 +104,11 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
+sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
+  data class TTID : ProfilerStopEvent
+    constructor(TTIDRumContext? = null)
+data class com.datadog.android.internal.profiling.TTIDRumContext
+  constructor(String, String, String, String?, String?)
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
@@ -168,6 +200,7 @@ fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+fun formatIsoUtc(Long): String
 class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
   override fun onCreate(): Boolean
   override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?

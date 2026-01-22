@@ -11,12 +11,16 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert
+import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -166,7 +170,16 @@ internal class RumSessionScopeStartupManagerTest {
         }
 
         fakeDatadogContext = fakeDatadogContext.copy(
-            source = fakeSource
+            source = fakeSource,
+            featuresContext = fakeDatadogContext.featuresContext.let {
+                if (forge.aBool()) {
+                    it.toMutableMap().apply {
+                        put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                    }
+                } else {
+                    it
+                }
+            }
         )
 
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
@@ -235,6 +248,55 @@ internal class RumSessionScopeStartupManagerTest {
         }
 
         verifyNoMoreInteractions(mockWriter, mockRumAppStartupTelemetryReporter)
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M stop profiler W onTTIDEvent`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val event = RumRawEvent.AppStartTTIDEvent(
+            info = info
+        )
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(
+            mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        ) doReturn mockProfilingFeatureScope
+
+        // When
+        manager.onAppStartEvent(mock())
+
+        manager.onTTIDEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            verify(mockProfilingFeatureScope).sendEvent(
+                ProfilerStopEvent.TTID(
+                    TTIDRumContext(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId,
+                        vitalId = lastValue.vital.id,
+                        viewId = rumContext.viewId,
+                        viewName = rumContext.viewName
+                    )
+                )
+            )
+        }
     }
 
     @ParameterizedTest
@@ -494,7 +556,7 @@ internal class RumSessionScopeStartupManagerTest {
 
     @ParameterizedTest
     @MethodSource("testScenarios")
-    fun `M report TTID as TTFD W onTTIDEvent { if onTTFDEvent called before onTTIDEvent }`(
+    fun `M report TTID as TTFD W onTTIDEvent { onTTFDEvent called before onTTIDEvent }`(
         scenario: RumStartupScenario,
         forge: Forge
     ) {
@@ -652,7 +714,7 @@ internal class RumSessionScopeStartupManagerTest {
     }
 
     private fun verifyTTID(value: VitalAppLaunchEvent, info: RumTTIDInfo) {
-        VitalAppLaunchEventAssert.assertThat(value).apply {
+        assertThat(value).apply {
             hasDate(info.scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
             hasApplicationId(rumContext.applicationId)
             containsExactlyContextAttributes(fakeParentAttributes)
@@ -661,7 +723,8 @@ internal class RumSessionScopeStartupManagerTest {
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
             hasSessionType(
-                fakeRumSessionType?.toVitalAppLaunch() ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
+                fakeRumSessionType?.toVitalAppLaunch()
+                    ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
 
@@ -688,6 +751,14 @@ internal class RumSessionScopeStartupManagerTest {
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
             hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .apply {
+                    if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
+                        hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                    } else {
+                        hasNoProfilingStatus()
+                    }
+                }
+            hasNoProfilingErrorReason()
         }
 
         val vital = value.vital
@@ -703,8 +774,12 @@ internal class RumSessionScopeStartupManagerTest {
         }
     }
 
-    private fun verifyTTFD(value: VitalAppLaunchEvent, scenario: RumStartupScenario, durationNs: Long) {
-        VitalAppLaunchEventAssert.assertThat(value).apply {
+    private fun verifyTTFD(
+        value: VitalAppLaunchEvent,
+        scenario: RumStartupScenario,
+        durationNs: Long
+    ) {
+        assertThat(value).apply {
             hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
             hasApplicationId(rumContext.applicationId)
             containsExactlyContextAttributes(fakeParentAttributes)
@@ -713,7 +788,8 @@ internal class RumSessionScopeStartupManagerTest {
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
             hasSessionType(
-                fakeRumSessionType?.toVitalAppLaunch() ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
+                fakeRumSessionType?.toVitalAppLaunch()
+                    ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
             )
             hasNoSessionReplay()
 
@@ -740,6 +816,8 @@ internal class RumSessionScopeStartupManagerTest {
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
             hasDDTags(buildDDTagsString(fakeDatadogContext))
+            hasNoProfilingStatus()
+            hasNoProfilingErrorReason()
         }
 
         val vital = value.vital

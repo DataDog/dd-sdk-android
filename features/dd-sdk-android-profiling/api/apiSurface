@@ -1,0 +1,48 @@
+class com.datadog.android.profiling.DdProfilingContentProvider : android.content.ContentProvider
+  override fun onCreate(): Boolean
+  override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
+  override fun getType(android.net.Uri): String?
+  override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
+  override fun delete(android.net.Uri, String?, Array<String>?): Int
+  override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+object com.datadog.android.profiling.Profiling
+  fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun start(android.content.Context, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun stop(com.datadog.android.api.SdkCore = Datadog.getInstance())
+data class com.datadog.android.profiling.ProfilingConfiguration
+  class Builder
+    fun setApplicationLaunchSampleRate(Float): Builder
+    fun useCustomEndpoint(String): Builder
+    fun build(): ProfilingConfiguration
+  companion object 
+    val DEFAULT: ProfilingConfiguration
+data class com.datadog.android.profiling.model.ProfileEvent
+  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, Application, Session, View? = null, Vital)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ProfileEvent
+    fun fromJsonObject(com.google.gson.JsonObject): ProfileEvent
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class View
+    constructor(kotlin.String, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
+  data class Vital
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Vital
+      fun fromJsonObject(com.google.gson.JsonObject): Vital

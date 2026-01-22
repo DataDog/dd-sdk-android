@@ -352,6 +352,33 @@ internal class VitalAppLaunchEventAssert(
             .isEqualTo(ddTags)
     }
 
+    fun hasProfilingStatus(profilingStatus: VitalAppLaunchEvent.ProfilingStatus?) = apply {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+    }
+
+    fun hasNoProfilingStatus() = apply {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling status" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isNull()
+    }
+
+    fun hasNoProfilingErrorReason() = apply {
+        assertThat(actual.dd.profiling?.errorReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling error reason" +
+                    " but instead was: ${actual.dd.profiling?.errorReason}"
+            )
+            .isNull()
+    }
+
     companion object {
         internal fun assertThat(
             actual: VitalAppLaunchEvent

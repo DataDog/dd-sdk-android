@@ -710,10 +710,12 @@ internal class RumFeature(
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
+                            val durationNs = timestampNs - scenario.initialTime.nanoTime
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = timestampNs - scenario.initialTime.nanoTime
+                                durationNs = durationNs
                             )
+
                             rumMonitor.sendTTIDEvent(info)
                         }
                     }
