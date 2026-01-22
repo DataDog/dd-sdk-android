@@ -83,22 +83,29 @@ internal class AggregationStats(
         val isDefaultOrError = reason == ResolutionReason.DEFAULT || reason == ResolutionReason.ERROR
 
         // Take atomic snapshot of statistics to prevent torn reads
-        val (snapshotCount, snapshotFirst, snapshotLast, snapshotMessage) = synchronized(this) {
-            listOf(count, firstEvaluation, lastEvaluation, lastErrorMessage)
+        val snapshotCount: Int
+        val snapshotFirst: Long
+        val snapshotLast: Long
+        val snapshotMessage: String?
+        synchronized(this) {
+            snapshotCount = count
+            snapshotFirst = firstEvaluation
+            snapshotLast = lastEvaluation
+            snapshotMessage = lastErrorMessage
         }
 
         return BatchedFlagEvaluations.FlagEvaluation(
-            timestamp = snapshotFirst as Long,
+            timestamp = snapshotFirst,
             flag = BatchedFlagEvaluations.Identifier(flagKey),
             variant = aggregationKey.variantKey?.let { BatchedFlagEvaluations.Identifier(it) },
             allocation = aggregationKey.allocationKey?.let { BatchedFlagEvaluations.Identifier(it) },
             targetingRule = null, // Not tracked in current implementation
             targetingKey = aggregationKey.targetingKey,
             context = null, // Context logging reserved for future use
-            error = (snapshotMessage as String?)?.let { BatchedFlagEvaluations.Error(message = it) },
-            evaluationCount = (snapshotCount as Int).toLong(),
+            error = snapshotMessage?.let { BatchedFlagEvaluations.Error(message = it) },
+            evaluationCount = snapshotCount.toLong(),
             firstEvaluation = snapshotFirst,
-            lastEvaluation = snapshotLast as Long,
+            lastEvaluation = snapshotLast,
             runtimeDefaultUsed = isDefaultOrError
         )
     }
