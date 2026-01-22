@@ -7,8 +7,8 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
