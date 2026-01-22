@@ -20,6 +20,7 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -40,10 +41,16 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     internal var applicationId: String? = null
 
     @Volatile
-    internal var processor: EventsProcessor = NoOpEventsProcessor()
+    internal var exposureProcessor: EventsProcessor = NoOpEventsProcessor()
 
     @Volatile
-    internal var dataWriter: RecordWriter = NoOpRecordWriter()
+    internal var exposureWriter: RecordWriter = NoOpRecordWriter()
+
+    @Volatile
+    internal var evaluationProcessor: EvaluationEventsProcessor? = null
+
+    @Volatile
+    internal var evaluationWriter: EvaluationEventWriter? = null
 
     @Volatile
     private var isInitialized = false
@@ -105,16 +112,37 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
         sdkCore.setContextUpdateReceiver(this)
-        dataWriter = createDataWriter()
-        processor = ExposureEventsProcessor(
-            writer = dataWriter,
+
+        // Exposure logging
+        exposureWriter = createExposureWriter()
+        exposureProcessor = ExposureEventsProcessor(
+            writer = exposureWriter,
             timeProvider = sdkCore.timeProvider
         )
+
+        // Evaluation logging (enabled by default)
+        if (flagsConfiguration.trackEvaluations) {
+            evaluationWriter = createEvaluationWriter()
+            val scheduledExecutor = sdkCore.createScheduledExecutorService("flags-evaluation")
+            evaluationProcessor = EvaluationEventsProcessor(
+                writer = evaluationWriter!!,
+                timeProvider = sdkCore.timeProvider,
+                scheduledExecutor = scheduledExecutor,
+                internalLogger = sdkCore.internalLogger,
+                flushIntervalMs = flagsConfiguration.evaluationFlushIntervalMs
+            )
+            evaluationProcessor?.schedulePeriodicFlush()
+        }
     }
 
     override fun onStop() {
+        // Flush evaluations on shutdown
+        evaluationProcessor?.stop()
+
         sdkCore.removeContextUpdateReceiver(this)
-        dataWriter = NoOpRecordWriter()
+        exposureWriter = NoOpRecordWriter()
+        evaluationWriter = null
+        evaluationProcessor = null
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
             registeredClients.clear()
@@ -123,7 +151,10 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
 
     // endregion
 
-    private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
+    private fun createExposureWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
+
+    private fun createEvaluationWriter(): EvaluationEventWriter =
+        EvaluationEventRecordWriter(sdkCore)
 
     // region FlagsClient Management
 
