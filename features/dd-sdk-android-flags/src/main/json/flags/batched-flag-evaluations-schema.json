@@ -92,7 +92,7 @@
         "properties": {
           "timestamp": {
             "type": "integer",
-            "description": "Timestamp of first evaluation (epoch ms) - equals first_evaluation per EVALLOG.10"
+            "description": "Timestamp of first evaluation (epoch ms) - equals first_evaluation"
           },
           "flag": {
             "$ref": "#/definitions/Identifier",
@@ -100,11 +100,11 @@
           },
           "variant": {
             "$ref": "#/definitions/Identifier",
-            "description": "Variant identifier - omit for DEFAULT/ERROR per EVALLOG.8"
+            "description": "Variant identifier - omit for DEFAULT/ERROR"
           },
           "allocation": {
             "$ref": "#/definitions/Identifier",
-            "description": "Allocation identifier - omit for DEFAULT/ERROR per EVALLOG.8"
+            "description": "Allocation identifier - omit for DEFAULT/ERROR"
           },
           "targeting_rule": {
             "$ref": "#/definitions/Identifier",
@@ -112,11 +112,11 @@
           },
           "targeting_key": {
             "type": "string",
-            "description": "The targeting key - EVALLOG.7: omit if null, include if empty string"
+            "description": "The targeting key - omit if null, include if empty string"
           },
           "context": {
             "type": "object",
-            "description": "Per-evaluation context - EVALLOG.9: reserved for future use",
+            "description": "Per-evaluation context - reserved for future use",
             "properties": {
               "evaluation": {
                 "type": "object",
@@ -156,7 +156,7 @@
           },
           "error": {
             "type": "object",
-            "description": "Error information - EVALLOG.5: if evaluation failed",
+            "description": "Error information - if evaluation failed",
             "properties": {
               "message": { "type": "string" }
             },
@@ -166,21 +166,21 @@
           "evaluation_count": {
             "type": "integer",
             "minimum": 1,
-            "description": "Number of evaluations aggregated - EVALLOG.3"
+            "description": "Number of evaluations aggregated"
           },
           "first_evaluation": {
             "type": "integer",
             "minimum": 1759276800000,
-            "description": "Timestamp of first evaluation (epoch ms) - EVALLOG.3, EVALLOG.10"
+            "description": "Timestamp of first evaluation (epoch ms)"
           },
           "last_evaluation": {
             "type": "integer",
             "minimum": 1759276800000,
-            "description": "Timestamp of last evaluation (epoch ms) - EVALLOG.3"
+            "description": "Timestamp of last evaluation (epoch ms)"
           },
           "runtime_default_used": {
             "type": "boolean",
-            "description": "True if DEFAULT or ERROR reason - EVALLOG.13"
+            "description": "True if DEFAULT or ERROR reason"
           }
         },
         "required": [
