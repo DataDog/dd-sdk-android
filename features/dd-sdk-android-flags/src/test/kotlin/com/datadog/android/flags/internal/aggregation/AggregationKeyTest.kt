@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.internal.aggregation
 
-import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
