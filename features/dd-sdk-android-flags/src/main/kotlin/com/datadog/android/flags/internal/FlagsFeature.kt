@@ -40,10 +40,16 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     internal var applicationId: String? = null
 
     @Volatile
-    internal var processor: EventsProcessor = NoOpEventsProcessor()
+    internal var exposureProcessor: EventsProcessor = NoOpEventsProcessor()
 
     @Volatile
-    internal var dataWriter: RecordWriter = NoOpRecordWriter()
+    internal var exposureWriter: RecordWriter = NoOpRecordWriter()
+
+    @Volatile
+    internal var evaluationProcessor: EvaluationEventsProcessor? = null
+
+    @Volatile
+    internal var evaluationWriter: EvaluationEventWriter? = null
 
     @Volatile
     private var isInitialized = false
@@ -103,16 +109,23 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
         sdkCore.setContextUpdateReceiver(this)
-        dataWriter = createDataWriter()
-        processor = ExposureEventsProcessor(
-            writer = dataWriter,
+
+        // Exposure logging
+        exposureWriter = createExposureWriter()
+        exposureProcessor = ExposureEventsProcessor(
+            writer = exposureWriter,
             timeProvider = sdkCore.timeProvider
         )
     }
 
     override fun onStop() {
+        // Flush evaluations on shutdown
+        evaluationProcessor?.stop()
+
         sdkCore.removeContextUpdateReceiver(this)
-        dataWriter = NoOpRecordWriter()
+        exposureWriter = NoOpRecordWriter()
+        evaluationWriter = null
+        evaluationProcessor = null
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
             registeredClients.clear()

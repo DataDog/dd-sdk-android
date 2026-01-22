@@ -128,7 +128,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationProcessor = null,
             flagStateManager = mockFlagsStateManager
         )
     }
@@ -776,7 +777,8 @@ internal class DatadogFlagsClientTest {
             flagsRepository = customRepository,
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationProcessor = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1163,7 +1165,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationProcessor = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1268,7 +1271,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationProcessor = null,
             flagStateManager = mockFlagsStateManager
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
@@ -1863,7 +1867,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationProcessor = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1902,7 +1907,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationProcessor = null,
             flagStateManager = mockFlagsStateManager
         )
 
