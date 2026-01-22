@@ -47,7 +47,7 @@ internal data class AggregationKey(
             data: UnparsedFlag,
             errorCode: String?
         ): AggregationKey {
-            // EVALLOG.8: Omit variant/allocation for DEFAULT/ERROR reasons
+            // Omit variant/allocation for DEFAULT/ERROR reasons
             // Use string comparison to be forward-compatible with new reason values
             val isDefaultOrError = data.reason == "DEFAULT" || data.reason == "ERROR"
 
