@@ -74,6 +74,7 @@ internal class EvaluationEventsProcessor(
         val key = AggregationKey.fromEvaluation(flagName, context, data, errorCode)
 
         // Compute updates the existing stats or creates new ones
+        @Suppress("UnsafeThirdPartyFunctionCall") // lambda always returns non-null value
         aggregationMap.compute(key) { _, existing ->
             if (existing != null) {
                 existing.recordEvaluation(timestamp, errorMessage)
@@ -124,6 +125,7 @@ internal class EvaluationEventsProcessor(
      */
     fun schedulePeriodicFlush() {
         try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
             scheduledFlushFuture = scheduledExecutor.schedule(
                 {
                     flush()
