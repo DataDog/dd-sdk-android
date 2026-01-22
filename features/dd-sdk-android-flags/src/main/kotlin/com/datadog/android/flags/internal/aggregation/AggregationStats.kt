@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.BatchedFlagEvaluations
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 
 /**
@@ -72,15 +71,8 @@ internal class AggregationStats(
      * @return the evaluation event
      */
     fun toEvaluationEvent(flagKey: String, aggregationKey: AggregationKey): BatchedFlagEvaluations.FlagEvaluation {
-        @Suppress("SwallowedException") // Intentionally default to ERROR for unknown reasons
-        val reason = try {
-            ResolutionReason.valueOf(data.reason)
-        } catch (e: IllegalArgumentException) {
-            // If reason is not a valid ResolutionReason, default to ERROR
-            ResolutionReason.ERROR
-        }
-
-        val isDefaultOrError = reason == ResolutionReason.DEFAULT || reason == ResolutionReason.ERROR
+        // Use string comparison to be forward-compatible with new reason values
+        val isDefaultOrError = data.reason == "DEFAULT" || data.reason == "ERROR"
 
         // Take atomic snapshot of statistics to prevent torn reads
         val snapshotCount: Int

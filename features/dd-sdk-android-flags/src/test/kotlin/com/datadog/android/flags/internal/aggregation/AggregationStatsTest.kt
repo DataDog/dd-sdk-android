@@ -246,22 +246,22 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M default to ERROR reason W toEvaluationEvent() { invalid reason }`(forge: Forge) {
-        // Given
-        val invalidReason = forge.anAlphabeticalString()
-        val invalidData = UnparsedFlag(
+    fun `M set runtime default false W toEvaluationEvent() { unrecognized reason }`(forge: Forge) {
+        // Given - unrecognized reasons are treated like normal matches (not DEFAULT/ERROR)
+        val unrecognizedReason = forge.anAlphabeticalString()
+        val unrecognizedData = UnparsedFlag(
             value = fakeValue,
             variationKey = fakeVariantKey,
             allocationKey = fakeAllocationKey,
-            reason = invalidReason
+            reason = unrecognizedReason
         )
-        val stats = AggregationStats(fakeTimestamp, fakeContext, invalidData, null)
+        val stats = AggregationStats(fakeTimestamp, fakeContext, unrecognizedData, null)
 
         // When
         val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
 
-        // Then
-        assertThat(event.runtimeDefaultUsed).isTrue()
+        // Then - unrecognized reasons should not set runtimeDefaultUsed for forward compatibility
+        assertThat(event.runtimeDefaultUsed).isFalse()
     }
 
     @Test
