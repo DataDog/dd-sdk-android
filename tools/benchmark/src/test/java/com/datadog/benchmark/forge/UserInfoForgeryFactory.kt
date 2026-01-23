@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package forge
+package com.datadog.benchmark.forge
 
 import com.datadog.android.api.context.UserInfo
 import com.datadog.tools.unit.forge.exhaustiveAttributes

@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package internal
+package com.datadog.benchmark.internal
 
+import com.datadog.benchmark.forge.ForgeConfigurator
 import com.datadog.benchmark.internal.reader.CPUVitalReader
 import com.datadog.benchmark.internal.reader.VitalReader
-import forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

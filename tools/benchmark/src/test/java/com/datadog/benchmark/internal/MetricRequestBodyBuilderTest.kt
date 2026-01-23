@@ -4,12 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package internal
+package com.datadog.benchmark.internal
 
+import com.datadog.benchmark.forge.ForgeConfigurator
+import com.datadog.benchmark.internal.model.BenchmarkContext
+import com.datadog.benchmark.internal.model.MetricType
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.google.gson.JsonParser
-import forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -44,14 +46,14 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(ForgeConfigurator::class)
 class MetricRequestBodyBuilderTest {
 
-    private lateinit var metricRequestBodyBuilder: com.datadog.benchmark.internal.MetricRequestBodyBuilder
+    private lateinit var metricRequestBodyBuilder: MetricRequestBodyBuilder
 
     @Forgery
-    private lateinit var benchmarkContext: com.datadog.benchmark.internal.model.BenchmarkContext
+    private lateinit var benchmarkContext: BenchmarkContext
 
     @BeforeEach
     fun `set up`() {
-        metricRequestBodyBuilder = com.datadog.benchmark.internal.MetricRequestBodyBuilder(benchmarkContext)
+        metricRequestBodyBuilder = MetricRequestBodyBuilder(benchmarkContext)
     }
 
     @Test
@@ -166,14 +168,14 @@ class MetricRequestBodyBuilderTest {
 
     // endregion
 
-    private fun resolveMetricType(type: MetricDataType): com.datadog.benchmark.internal.model.MetricType {
+    private fun resolveMetricType(type: MetricDataType): MetricType {
         return when (type) {
             MetricDataType.LONG_GAUGE, MetricDataType.DOUBLE_GAUGE ->
-                com.datadog.benchmark.internal.model.MetricType.GAUGE
+                MetricType.GAUGE
 
             MetricDataType.LONG_SUM, MetricDataType.DOUBLE_SUM ->
-                com.datadog.benchmark.internal.model.MetricType.COUNT
-            else -> com.datadog.benchmark.internal.model.MetricType.UNSPECIFIED
+                MetricType.COUNT
+            else -> MetricType.UNSPECIFIED
         }
     }
 

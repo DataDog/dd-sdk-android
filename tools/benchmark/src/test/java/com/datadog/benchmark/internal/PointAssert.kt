@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package internal
+package com.datadog.benchmark.internal
 
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonObject
