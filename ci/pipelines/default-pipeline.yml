@@ -361,7 +361,8 @@ test-pyramid:detekt-api-coverage:
     - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
-    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" --jvm-target 11 -cp $(cat sdk_classpath)
+    # Explicit includes to avoid OOM. Keep it in sync with includes for rules.
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
     # For now we just print the uncovered apis, eventually we will fail if it's not empty
     - grep -v -f apiUsage.log apiSurface.log
 
