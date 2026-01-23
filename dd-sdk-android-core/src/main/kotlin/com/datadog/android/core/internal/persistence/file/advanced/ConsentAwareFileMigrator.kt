@@ -33,6 +33,7 @@ internal class ConsentAwareFileMigrator(
             newFileOrchestrator
         )
         operation.run()
+        newFileOrchestrator.refreshFilesFromDisk()
     }
 
     @WorkerThread

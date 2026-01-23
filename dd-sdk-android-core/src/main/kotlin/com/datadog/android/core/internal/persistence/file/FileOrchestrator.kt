@@ -64,4 +64,17 @@ internal interface FileOrchestrator {
      * @return the number of pending files in the orchestrator, after decrementing by 1.
      */
     fun decrementAndGetPendingFilesCount(): Int
+
+    /**
+     * Notifies the orchestrator that a file has been deleted.
+     *
+     * @param file the file that was deleted
+     */
+    fun onFileDeleted(file: File)
+
+    /**
+     * Refreshes the internal file list from disk.
+     */
+    @WorkerThread
+    fun refreshFilesFromDisk()
 }

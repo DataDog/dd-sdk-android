@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.utils.forge.Configurator
@@ -55,7 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class BatchFileOrchestratorTest {
 
-    private lateinit var testedOrchestrator: FileOrchestrator
+    private lateinit var testedOrchestrator: BatchFileOrchestrator
 
     @TempDir
     lateinit var tempDir: File
@@ -266,6 +265,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(oldFile)
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(oldFile),
             argThat { this is RemovalReason.Obsolete },
@@ -296,6 +296,7 @@ internal class BatchFileOrchestratorTest {
         // cleanup shouldn't be performed during the next getWritableFile call
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
+        testedOrchestrator.refreshFilesFromDisk()
         testedOrchestrator.getWritableFile()
 
         // Then
@@ -333,6 +334,7 @@ internal class BatchFileOrchestratorTest {
         stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
+        testedOrchestrator.refreshFilesFromDisk()
         testedOrchestrator.getWritableFile()
 
         // Then
@@ -470,6 +472,7 @@ internal class BatchFileOrchestratorTest {
         checkNotNull(previousFile)
         previousFile.createNewFile()
         previousFile.delete()
+        testedOrchestrator.onFileDeleted(previousFile)
         stubTimeProvider.deviceTimestampMs += 1
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
@@ -532,13 +535,13 @@ internal class BatchFileOrchestratorTest {
         var previousFile = testedOrchestrator.getWritableFile()
 
         repeat(4) {
-            checkNotNull(previousFile)
+            val currentFile = checkNotNull(previousFile)
 
             val previousData = forge.aList(MAX_ITEM_PER_BATCH) {
                 forge.anAlphabeticalString()
             }
 
-            previousFile?.writeText(previousData[0])
+            currentFile.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
                 val file = testedOrchestrator.getWritableFile()
@@ -558,11 +561,11 @@ internal class BatchFileOrchestratorTest {
                 .doesNotExist()
                 .hasParent(fakeRootDir)
             assertThat(nextFile.name.toLong()).isEqualTo(newFileTimestamp)
-            assertThat(previousFile?.readText())
+            assertThat(currentFile.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
             argumentCaptor<BatchClosedMetadata> {
-                verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile!!), capture())
+                verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(currentFile), capture())
                 assertThat(firstValue.lastTimeWasUsedInMs)
                     .isBetween(fileCreateTimestamp, lastFileUsageTimestamp)
                 assertThat(firstValue.eventsCount).isEqualTo(MAX_ITEM_PER_BATCH.toLong())
@@ -721,6 +724,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(oldFile)
     }
 
     @Test
@@ -1178,6 +1182,282 @@ internal class BatchFileOrchestratorTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
         )
+    }
+
+    // endregion
+
+    // region refreshFilesFromDisk
+
+    @Test
+    fun `M discover new files W refreshFilesFromDisk()`() {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+        val file = File(fakeRootDir, fileName)
+        testedOrchestrator.getAllFiles()
+        file.createNewFile()
+
+        // When
+        testedOrchestrator.refreshFilesFromDisk()
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).contains(file)
+    }
+
+    @Test
+    fun `M remove deleted files W refreshFilesFromDisk()`() {
+        // Given
+        val file = testedOrchestrator.getWritableFile()
+        checkNotNull(file)
+        file.createNewFile()
+        assertThat(testedOrchestrator.getAllFiles()).contains(file)
+        file.delete()
+
+        // When
+        testedOrchestrator.refreshFilesFromDisk()
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(file)
+    }
+
+    @Test
+    fun `M ignore non-batch files W refreshFilesFromDisk()`(
+        @StringForgery nonNumericName: String
+    ) {
+        // Given
+        val file = File(fakeRootDir, nonNumericName)
+        file.createNewFile()
+
+        // When
+        testedOrchestrator.refreshFilesFromDisk()
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(file)
+    }
+
+    // endregion
+
+    // region onFileDeleted
+
+    @Test
+    fun `M remove file from knownFiles W onFileDeleted()`() {
+        // Given
+        val file = testedOrchestrator.getWritableFile()
+        checkNotNull(file)
+        assertThat(testedOrchestrator.getAllFiles()).contains(file)
+
+        // When
+        testedOrchestrator.onFileDeleted(file)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(file)
+    }
+
+    @Test
+    fun `M do nothing W onFileDeleted() { file not in knownFiles }`() {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+        val file = File(fakeRootDir, fileName)
+        testedOrchestrator.getAllFiles()
+
+        // When
+        testedOrchestrator.onFileDeleted(file)
+
+        // Then
+        assertThat(testedOrchestrator.getAllFiles()).isEmpty()
+    }
+
+    // endregion
+
+    // region File tracking (createNewFile adds to knownFiles)
+
+    @Test
+    fun `M track file immediately W getWritableFile() creates new file`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+
+        // When
+        val file = testedOrchestrator.getWritableFile()
+
+        // Then
+        checkNotNull(file)
+        assertThat(testedOrchestrator.getAllFiles()).contains(file)
+    }
+
+    @Test
+    fun `M discover pre-existing files W first access`() {
+        // Given
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val preExistingFile = File(fakeRootDir, (currentTime - RECENT_DELAY_MS * 2).toString())
+        preExistingFile.createNewFile()
+
+        // When
+        val files = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(files).contains(preExistingFile)
+    }
+
+    // endregion
+
+    // region getReadableFile stale entry cleanup
+
+    @Test
+    fun `M skip and remove stale file W getReadableFile() { file deleted externally }`() {
+        // Given
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val oldTimestamp = currentTime - (RECENT_DELAY_MS * 2)
+        val file = File(fakeRootDir, oldTimestamp.toString())
+        file.createNewFile()
+        testedOrchestrator.getAllFiles()
+        assertThat(testedOrchestrator.getAllFiles()).contains(file)
+        file.delete()
+
+        // When
+        val readableFile = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(readableFile).isNull()
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(file)
+    }
+
+    @Test
+    fun `M return next valid file W getReadableFile() { first file deleted externally }`() {
+        // Given
+        val currentTime = stubTimeProvider.deviceTimestampMs
+        val oldTimestamp1 = currentTime - (RECENT_DELAY_MS * 3)
+        val oldTimestamp2 = currentTime - (RECENT_DELAY_MS * 2)
+        val deletedFile = File(fakeRootDir, oldTimestamp1.toString())
+        val validFile = File(fakeRootDir, oldTimestamp2.toString())
+        deletedFile.createNewFile()
+        validFile.createNewFile()
+        testedOrchestrator.getAllFiles()
+        deletedFile.delete()
+
+        // When
+        val readableFile = testedOrchestrator.getReadableFile(emptySet())
+
+        // Then
+        assertThat(readableFile).isEqualTo(validFile)
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(deletedFile)
+        assertThat(testedOrchestrator.getAllFiles()).contains(validFile)
+    }
+
+    // endregion
+
+    // region Performance - cached knownFiles
+
+    @Test
+    fun `M not detect externally added file W getAllFiles() without refreshFilesFromDisk`() {
+        // This test verifies we use cached knownFiles (performance optimization)
+        // If we were calling listFiles() every time, this test would fail
+
+        // Given
+        testedOrchestrator.getAllFiles()
+        val externalFile = File(fakeRootDir, System.currentTimeMillis().toString())
+        externalFile.createNewFile()
+
+        // When
+        val files = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(files).doesNotContain(externalFile)
+    }
+
+    @Test
+    fun `M detect externally added file W getAllFiles() after refreshFilesFromDisk`() {
+        // Given
+        testedOrchestrator.getAllFiles()
+        val externalFile = File(fakeRootDir, System.currentTimeMillis().toString())
+        externalFile.createNewFile()
+
+        // When
+        testedOrchestrator.refreshFilesFromDisk()
+        val files = testedOrchestrator.getAllFiles()
+
+        // Then
+        assertThat(files).contains(externalFile)
+    }
+
+    // endregion
+
+    // region freeSpaceIfNeeded updates knownFiles
+
+    @Test
+    fun `M remove purged files from knownFiles W getWritableFile() { disk space exceeded }`(
+        @StringForgery(size = MAX_BATCH_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val filesCount = MAX_DISK_SPACE / MAX_BATCH_SIZE
+        val files = (0..filesCount).map {
+            val file = testedOrchestrator.getWritableFile()
+            checkNotNull(file)
+            file.writeText(previousData)
+            stubTimeProvider.deviceTimestampMs += 1
+            file
+        }
+        val oldestFile = files.first()
+
+        // When
+        stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
+        testedOrchestrator.getWritableFile()
+
+        // Then
+        assertThat(oldestFile).doesNotExist()
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(oldestFile)
+    }
+
+    @Test
+    fun `M reset currentBatchState W getWritableFile() { current batch file purged }`(
+        @StringForgery(size = MAX_BATCH_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val firstFile = testedOrchestrator.getWritableFile()
+        checkNotNull(firstFile)
+        firstFile.writeText(previousData)
+
+        // Create more files to exceed disk space
+        val filesCount = MAX_DISK_SPACE / MAX_BATCH_SIZE
+        repeat(filesCount) {
+            stubTimeProvider.deviceTimestampMs += RECENT_DELAY_MS + 1
+            val file = testedOrchestrator.getWritableFile()
+            checkNotNull(file)
+            file.writeText(previousData)
+        }
+
+        // When
+        stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
+        val newFile = testedOrchestrator.getWritableFile()
+
+        // Then
+        assertThat(firstFile).doesNotExist()
+        checkNotNull(newFile)
+        assertThat(newFile).isNotEqualTo(firstFile)
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(firstFile)
+    }
+
+    // endregion
+
+    // region getReusableWritableFile edge cases
+
+    @Test
+    fun `M create new file W getWritableFile() { currentBatchState file deleted externally }`() {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val firstFile = testedOrchestrator.getWritableFile()
+        checkNotNull(firstFile)
+        firstFile.createNewFile()
+        firstFile.delete()
+
+        // When
+        stubTimeProvider.deviceTimestampMs += 1
+        val newFile = testedOrchestrator.getWritableFile()
+
+        // Then
+        checkNotNull(newFile)
+        assertThat(newFile).isNotEqualTo(firstFile)
+        assertThat(testedOrchestrator.getAllFiles()).doesNotContain(firstFile)
     }
 
     // endregion

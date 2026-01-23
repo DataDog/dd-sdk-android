@@ -99,7 +99,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `M wipe pending data W migrateData() {GRANTED to PENDING}`(
+    fun `M wipe pending data and refresh files W migrateData() {GRANTED to PENDING}`(
         @Forgery pendingDir: File
     ) {
         // Given
@@ -116,10 +116,11 @@ internal class ConsentAwareFileMigratorTest {
 
         // Then
         verify(mockFileMover).delete(pendingDir)
+        verify(mockNewOrchestrator).refreshFilesFromDisk()
     }
 
     @Test
-    fun `M wipe pending data W migrateData() {NOT_GRANTED to PENDING}`(
+    fun `M wipe pending data and refresh files W migrateData() {NOT_GRANTED to PENDING}`(
         @Forgery pendingDir: File
     ) {
         // Given
@@ -136,10 +137,11 @@ internal class ConsentAwareFileMigratorTest {
 
         // Then
         verify(mockFileMover).delete(pendingDir)
+        verify(mockNewOrchestrator).refreshFilesFromDisk()
     }
 
     @Test
-    fun `M move pending data W migrateData() {PENDING to GRANTED}`(
+    fun `M move pending data and refresh files W migrateData() {PENDING to GRANTED}`(
         @Forgery pendingDir: File,
         @Forgery grantedDir: File
     ) {
@@ -158,6 +160,7 @@ internal class ConsentAwareFileMigratorTest {
 
         // Then
         verify(mockFileMover).moveFiles(pendingDir, grantedDir)
+        verify(mockNewOrchestrator).refreshFilesFromDisk()
     }
 
     @RepeatedTest(8)

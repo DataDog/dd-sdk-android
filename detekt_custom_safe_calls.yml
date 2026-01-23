@@ -980,6 +980,7 @@ datadog:
       - "kotlin.collections.MutableSet.indexOf(kotlin.String)"
       - "kotlin.collections.MutableSet.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.MutableSet.map(kotlin.Function1)"
+      - "kotlin.collections.MutableSet.maxOrNull()"
       - "kotlin.collections.MutableSet.remove(com.datadog.android.api.feature.FeatureContextUpdateReceiver)"
       - "kotlin.collections.MutableSet.remove(com.datadog.android.core.internal.persistence.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.remove(java.io.File)"
