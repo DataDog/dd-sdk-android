@@ -61,5 +61,16 @@ internal class SingleFileOrchestrator(
         return 0
     }
 
+    // single file orchestrator has no internal file tracking state, so this is a no-op
+    override fun onFileDeleted(file: File) {
+        // No-op
+    }
+
+    // single file orchestrator has no internal file tracking state, so this is a no-op
+    @WorkerThread
+    override fun refreshFilesFromDisk() {
+        // No-op
+    }
+
     // endregion
 }

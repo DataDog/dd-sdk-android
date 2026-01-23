@@ -139,7 +139,7 @@ internal class ConsentAwareFileMigratorTest {
     }
 
     @Test
-    fun `M move pending data W migrateData() {PENDING to GRANTED}`(
+    fun `M move pending data and refresh files W migrateData() {PENDING to GRANTED}`(
         @Forgery pendingDir: File,
         @Forgery grantedDir: File
     ) {
@@ -158,6 +158,7 @@ internal class ConsentAwareFileMigratorTest {
 
         // Then
         verify(mockFileMover).moveFiles(pendingDir, grantedDir)
+        verify(mockNewOrchestrator).refreshFilesFromDisk()
     }
 
     @RepeatedTest(8)

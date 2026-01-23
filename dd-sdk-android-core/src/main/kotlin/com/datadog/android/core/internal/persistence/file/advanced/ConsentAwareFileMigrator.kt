@@ -33,6 +33,11 @@ internal class ConsentAwareFileMigrator(
             newFileOrchestrator
         )
         operation.run()
+
+        // After migration, notify target orchestrator to refresh its file list from disk
+        if (previousState == TrackingConsent.PENDING && newState == TrackingConsent.GRANTED) {
+            newFileOrchestrator.refreshFilesFromDisk()
+        }
     }
 
     @WorkerThread
