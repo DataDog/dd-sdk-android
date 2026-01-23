@@ -403,6 +403,7 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockFileMover).delete(file)
         verify(mockFileMover).delete(mockMetaFile)
+        verify(mockGrantedOrchestrator).onFileDeleted(file)
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(file),
             eq(reason),
