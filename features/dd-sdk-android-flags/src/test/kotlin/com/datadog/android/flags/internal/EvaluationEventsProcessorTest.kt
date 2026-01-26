@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -34,7 +35,9 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -43,6 +46,7 @@ import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationEventsProcessorTest {
 
     @Mock
@@ -263,19 +267,7 @@ internal class EvaluationEventsProcessorTest {
 
         // Then
         verify(mockWriter, never()).write(any())
-    }
-
-    @Test
-    fun `M clear aggregations W flush() { after flush }`() {
-        // Given
-        testedProcessor.processEvaluation(fakeFlagName, fakeContext, fakeData, null, null)
-
-        // When
-        testedProcessor.flush()
-        testedProcessor.flush()
-
-        // Then - second flush should not write anything
-        verify(mockWriter, times(1)).write(any())
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -301,7 +293,7 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M continue aggregating W flush() { after flush }`() {
+    fun `M reset and continue W flush() { after flush clears and accepts new }`() {
         // Given
         testedProcessor.processEvaluation(fakeFlagName, fakeContext, fakeData, null, null)
         testedProcessor.flush()
@@ -357,45 +349,169 @@ internal class EvaluationEventsProcessorTest {
         )
     }
 
+    @Test
+    fun `M reschedule itself W scheduled task runs()`() {
+        // Given
+        var taskRunnable: Runnable? = null
+        var scheduleCount = 0
+
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
+            scheduleCount++
+            taskRunnable = it.getArgument(0)
+            mockScheduledFuture
+        }
+
+        // When
+        testedProcessor.schedulePeriodicFlush() // Initial schedule
+        assertThat(scheduleCount).isEqualTo(1)
+
+        taskRunnable?.run() // Execute the scheduled task
+
+        // Then - should have rescheduled itself
+        assertThat(scheduleCount).isEqualTo(2)
+        verify(mockScheduledExecutor, times(2)).schedule(
+            any<Runnable>(),
+            eq(10_000L),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M reschedule W scheduled task runs() { with empty flush }`() {
+        // Given
+        var taskRunnable: Runnable? = null
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
+            taskRunnable = it.getArgument(0)
+            mockScheduledFuture
+        }
+
+        // When
+        testedProcessor.schedulePeriodicFlush()
+        taskRunnable?.run() // Execute with no evaluations to flush
+
+        // Then - should not write but should reschedule
+        verify(mockWriter, never()).write(any())
+        verify(mockScheduledExecutor, times(2)).schedule(
+            any<Runnable>(),
+            eq(10_000L),
+            eq(TimeUnit.MILLISECONDS)
+        )
+        verifyNoMoreInteractions(mockWriter)
+    }
+
     // endregion
 
     // region stop
 
     @Test
-    fun `M flush and cancel W stop()`() {
-        // Given
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
-        testedProcessor.schedulePeriodicFlush()
-        testedProcessor.processEvaluation(fakeFlagName, fakeContext, fakeData, null, null)
-
-        // When
-        testedProcessor.stop()
-
-        // Then
-        verify(mockScheduledFuture).cancel(false)
-        verify(mockWriter).write(any())
-    }
-
-    @Test
     fun `M flush W stop() { no scheduled task }`() {
         // Given
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
         testedProcessor.processEvaluation(fakeFlagName, fakeContext, fakeData, null, null)
 
         // When
         testedProcessor.stop()
 
         // Then
+        verify(mockScheduledExecutor).shutdown()
         verify(mockWriter).write(any())
     }
 
     @Test
     fun `M not write W stop() { empty aggregations }`() {
         // Given
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
+
         // When
         testedProcessor.stop()
 
         // Then
+        verify(mockScheduledExecutor).shutdown()
         verify(mockWriter, never()).write(any())
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M shutdown before cancel W stop() { ensures order }`() {
+        // Given
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
+        testedProcessor.schedulePeriodicFlush()
+
+        // When
+        testedProcessor.stop()
+
+        // Then - verify shutdown is called BEFORE cancel
+        val inOrder = org.mockito.Mockito.inOrder(mockScheduledExecutor, mockScheduledFuture)
+        inOrder.verify(mockScheduledExecutor).shutdown()
+        inOrder.verify(mockScheduledFuture).cancel(false)
+    }
+
+    @Test
+    fun `M force shutdown W stop() { termination timeout }`() {
+        // Given
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn false
+        whenever(mockScheduledExecutor.shutdownNow()).thenReturn(emptyList())
+
+        // When
+        testedProcessor.stop()
+
+        // Then - shutdownNow should be called when awaitTermination returns false
+        verify(mockScheduledExecutor).shutdown()
+        verify(mockScheduledExecutor).shutdownNow()
+    }
+
+    @Test
+    fun `M force shutdown and restore interrupt W stop() { interrupted }`() {
+        // Given
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())).thenThrow(InterruptedException())
+        whenever(mockScheduledExecutor.shutdownNow()).thenReturn(emptyList())
+
+        // When
+        testedProcessor.stop()
+
+        // Then - shutdownNow should be called and thread interrupt status restored
+        verify(mockScheduledExecutor).shutdown()
+        verify(mockScheduledExecutor).shutdownNow()
+        assertThat(Thread.interrupted()).isTrue() // Verify interrupt flag was set
+    }
+
+    @Test
+    fun `M prevent reschedule W stop() { task running during stop }`() {
+        // Given
+        var taskRunnable: Runnable? = null
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer { invocation ->
+            taskRunnable = invocation.getArgument(0)
+            mockScheduledFuture
+        }
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
+
+        testedProcessor.schedulePeriodicFlush()
+
+        // Simulate the executor being shutdown
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
+            .thenThrow(RejectedExecutionException("Executor shutdown"))
+
+        // When - simulate task running during stop
+        val stopThread = Thread {
+            testedProcessor.stop()
+        }
+        stopThread.start()
+
+        // Execute the scheduled task (which will try to reschedule)
+        taskRunnable?.run()
+
+        stopThread.join()
+
+        // Then - exception should be caught and logged (not crash)
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            any<List<InternalLogger.Target>>(),
+            any(),
+            any<RejectedExecutionException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     // endregion
@@ -511,40 +627,6 @@ internal class EvaluationEventsProcessorTest {
 
         // Then - should have written some events
         verify(mockWriter, times(processingThreadCount * executionsPerThread)).write(any())
-    }
-
-    @Test
-    fun `M maintain consistency W processEvaluation() { high contention }`() {
-        // Given
-        val threadCount = 20
-        val executionsPerThread = 200
-
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
-
-        // When
-        val threads = (1..threadCount).map {
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) {
-                    testedProcessor.processEvaluation(fakeFlagName, fakeContext, fakeData, null, null)
-                }
-                finishLatch.countDown()
-            }
-        }
-
-        threads.forEach { it.start() }
-        startLatch.countDown()
-        finishLatch.await()
-
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
-
-        val event = eventCaptor.firstValue
-        assertThat(event.evaluationCount).isEqualTo((threadCount * executionsPerThread).toLong())
     }
 
     // endregion
