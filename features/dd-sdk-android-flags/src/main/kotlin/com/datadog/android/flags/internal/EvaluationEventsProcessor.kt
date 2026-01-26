@@ -148,14 +148,36 @@ internal class EvaluationEventsProcessor(
      * Stops the processor and flushes remaining evaluations.
      *
      * Performs final flush on shutdown.
+     * Shuts down the scheduled executor to prevent race conditions.
      * Cancels any scheduled flush tasks.
+     *
+     * Thread-safe: can be called concurrently with other operations.
      */
     fun stop() {
-        // Cancel scheduled flush
+        // Shutdown executor FIRST to reject any new schedule attempts
+        // This prevents the race condition where a scheduled task could reschedule itself
+        // after we cancel the future
+        @Suppress("UnsafeThirdPartyFunctionCall") // safe - does not throw in Android
+        scheduledExecutor.shutdown()
+
+        // Cancel currently scheduled future (may already be running)
         scheduledFlushFuture?.cancel(false)
 
-        // Flush on shutdown
+        // Perform final flush
         flush()
+
+        // Wait for executor to terminate gracefully
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // InterruptedException is caught and handled
+            if (!scheduledExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                // Force shutdown if tasks don't complete in time
+                scheduledExecutor.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            scheduledExecutor.shutdownNow()
+            @Suppress("UnsafeThirdPartyFunctionCall") // safe - SecurityException not thrown in Android
+            Thread.currentThread().interrupt()
+        }
     }
 
     companion object {
