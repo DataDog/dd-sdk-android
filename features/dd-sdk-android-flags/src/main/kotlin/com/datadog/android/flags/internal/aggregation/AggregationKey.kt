@@ -6,16 +6,13 @@
 
 package com.datadog.android.flags.internal.aggregation
 
-import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.UnparsedFlag
-
 /**
  * Aggregation key for evaluation logging.
  *
  * Evaluations are aggregated on:
  * - flag key
- * - variant key (null for DEFAULT/ERROR reasons)
- * - allocation key (null for DEFAULT/ERROR reasons)
+ * - variant key (or null when no variant is assigned)
+ * - allocation key (or null when no allocation is assigned)
  * - targeting key
  * - error code (ErrorCode enum name for aggregation, e.g., "FLAG_NOT_FOUND")
  *
@@ -26,38 +23,8 @@ import com.datadog.android.flags.model.UnparsedFlag
  */
 internal data class AggregationKey(
     val flagKey: String,
-    val variantKey: String?,
-    val allocationKey: String?,
+    val variantKey: String? = null,
+    val allocationKey: String? = null,
     val targetingKey: String?,
-    val errorCode: String?
-) {
-    companion object {
-        /**
-         * Creates an aggregation key from an evaluation.
-         *
-         * @param flagName the flag name
-         * @param context the evaluation context
-         * @param data the flag data
-         * @param errorCode optional error code (ErrorCode enum name for aggregation)
-         * @return the aggregation key
-         */
-        fun fromEvaluation(
-            flagName: String,
-            context: EvaluationContext,
-            data: UnparsedFlag,
-            errorCode: String?
-        ): AggregationKey {
-            // Omit variant/allocation for DEFAULT/ERROR reasons
-            // Use string comparison to be forward-compatible with new reason values
-            val isDefaultOrError = data.reason == "DEFAULT" || data.reason == "ERROR"
-
-            return AggregationKey(
-                flagKey = flagName,
-                variantKey = if (isDefaultOrError) null else data.variationKey,
-                allocationKey = if (isDefaultOrError) null else data.allocationKey,
-                targetingKey = context.targetingKey,
-                errorCode = errorCode
-            )
-        }
-    }
-}
+    val errorCode: String? = null
+)

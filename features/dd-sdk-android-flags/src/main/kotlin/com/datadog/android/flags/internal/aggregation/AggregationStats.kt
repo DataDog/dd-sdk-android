@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.BatchedFlagEvaluations
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.UnparsedFlag
 
 /**
  * Aggregation statistics for evaluation logging.
@@ -23,13 +22,13 @@ import com.datadog.android.flags.model.UnparsedFlag
  *
  * @param firstTimestamp the timestamp of the first evaluation
  * @param context the evaluation context
- * @param data the flag data
+ * @param reason the resolution reason (null for error evaluations, non-null for success evaluations)
  * @param errorMessage optional error message (detailed, for logging)
  */
 internal class AggregationStats(
     firstTimestamp: Long,
     private val context: EvaluationContext,
-    private val data: UnparsedFlag,
+    private val reason: String?,
     errorMessage: String?
 ) {
     @Volatile
@@ -79,8 +78,9 @@ internal class AggregationStats(
      * @return the evaluation event
      */
     fun toEvaluationEvent(flagKey: String, aggregationKey: AggregationKey): BatchedFlagEvaluations.FlagEvaluation {
-        // Use string comparison to be forward-compatible with new reason values
-        val isDefaultOrError = data.reason == "DEFAULT" || data.reason == "ERROR"
+        // For error evaluations (reason == null), omit variant/allocation
+        // For success evaluations with DEFAULT/ERROR reason, also omit per spec
+        val isDefaultOrError = reason == null || reason == "DEFAULT" || reason == "ERROR"
 
         // Take atomic snapshot of statistics to prevent torn reads
         val snapshotCount: Int
