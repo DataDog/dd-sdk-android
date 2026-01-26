@@ -48,6 +48,7 @@ internal class AggregationStats(
      * Records an additional evaluation at the given timestamp.
      *
      * Updates the last error message to the most recent one.
+     * Updates the first and last evaluation timestamps as necessary.
      * Thread-safe: can be called concurrently from multiple threads.
      *
      * @param timestamp the timestamp of the evaluation
@@ -56,7 +57,14 @@ internal class AggregationStats(
     fun recordEvaluation(timestamp: Long, errorMessage: String?) {
         synchronized(this) {
             count++
-            lastEvaluation = timestamp
+
+            if (timestamp < firstEvaluation) {
+                firstEvaluation = timestamp
+            }
+            if (timestamp > lastEvaluation) {
+                lastEvaluation = timestamp
+            }
+
             lastErrorMessage = errorMessage
         }
     }
