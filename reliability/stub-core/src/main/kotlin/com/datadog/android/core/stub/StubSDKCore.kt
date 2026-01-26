@@ -10,6 +10,7 @@ import android.app.Application
 import android.content.ContentResolver
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.SystemClock
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
@@ -161,12 +162,12 @@ class StubSDKCore(
     override val internalLogger: InternalLogger = StubInternalLogger()
 
     override val timeProvider = object : TimeProvider {
-        override fun getDeviceTimestampMillis(): Long = 0L
+        override fun getDeviceTimestampMillis(): Long = System.currentTimeMillis()
         override fun getServerTimestampMillis(): Long = 0L
-        override fun getDeviceElapsedTimeNanos(): Long = 0L
+        override fun getDeviceElapsedTimeNanos(): Long = System.nanoTime()
         override fun getServerOffsetNanos(): Long = 0L
         override fun getServerOffsetMillis(): Long = 0L
-        override fun getDeviceElapsedRealtimeMillis(): Long = 0L
+        override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
     }
 
     override fun registerFeature(feature: Feature) {
