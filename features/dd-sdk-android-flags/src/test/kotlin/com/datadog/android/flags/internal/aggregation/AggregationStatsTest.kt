@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.aggregation
 
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
@@ -16,6 +17,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -51,11 +53,14 @@ internal class AggregationStatsTest {
     @BeforeEach
     fun `set up`() {
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        fakeData = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        fakeData = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
         fakeAggregationKey = AggregationKey(
             flagKey = fakeFlagName,
@@ -176,10 +181,13 @@ internal class AggregationStatsTest {
     @Test
     fun `M set runtime default true W toEvaluationEvent() { DEFAULT reason }`() {
         // Given
-        val defaultData = UnparsedFlag(
-            value = fakeValue,
-            variationKey = null,
-            allocationKey = null,
+        val defaultData = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
+            allocationKey = "",
+            variationKey = "",
+            extraLogging = JSONObject(),
             reason = ResolutionReason.DEFAULT.name
         )
         val stats = AggregationStats(fakeTimestamp, fakeContext, defaultData, null)
@@ -198,10 +206,13 @@ internal class AggregationStatsTest {
     fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`(forge: Forge) {
         // Given
         val errorMessage = forge.anAlphabeticalString()
-        val errorData = UnparsedFlag(
-            value = fakeValue,
-            variationKey = null,
-            allocationKey = null,
+        val errorData = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
+            allocationKey = "",
+            variationKey = "",
+            extraLogging = JSONObject(),
             reason = ResolutionReason.ERROR.name
         )
         val stats = AggregationStats(fakeTimestamp, fakeContext, errorData, errorMessage)
@@ -234,10 +245,13 @@ internal class AggregationStatsTest {
     @Test
     fun `M set runtime default false W toEvaluationEvent() { TARGETING_MATCH reason }`() {
         // Given
-        val targetingData = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val targetingData = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
             reason = ResolutionReason.TARGETING_MATCH.name
         )
         val stats = AggregationStats(fakeTimestamp, fakeContext, targetingData, null)
@@ -253,10 +267,13 @@ internal class AggregationStatsTest {
     fun `M set runtime default false W toEvaluationEvent() { unrecognized reason }`(forge: Forge) {
         // Given - unrecognized reasons are treated like normal matches (not DEFAULT/ERROR)
         val unrecognizedReason = forge.anAlphabeticalString()
-        val unrecognizedData = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val unrecognizedData = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
             reason = unrecognizedReason
         )
         val stats = AggregationStats(fakeTimestamp, fakeContext, unrecognizedData, null)

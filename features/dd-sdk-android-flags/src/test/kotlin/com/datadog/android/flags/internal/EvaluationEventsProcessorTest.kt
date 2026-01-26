@@ -7,12 +7,14 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
+import org.json.JSONObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -23,10 +25,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -77,7 +81,7 @@ internal class EvaluationEventsProcessorTest {
 
     private lateinit var testedProcessor: EvaluationEventsProcessor
     private lateinit var fakeContext: EvaluationContext
-    private lateinit var fakeData: UnparsedFlag
+    private lateinit var fakeData: PrecomputedFlag
 
     @BeforeEach
     fun `set up`() {
@@ -91,14 +95,17 @@ internal class EvaluationEventsProcessorTest {
         )
 
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        fakeData = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        fakeData = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
-        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
+        Mockito.lenient().whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
     }
 
     // region processEvaluation
@@ -332,8 +339,9 @@ internal class EvaluationEventsProcessorTest {
     fun `M log error W schedulePeriodicFlush() { executor throws }`(forge: Forge) {
         // Given
         val exception = RejectedExecutionException(forge.anAlphabeticalString())
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
-            .thenThrow(exception)
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
+            .doReturn(mockScheduledFuture)
+            .doThrow(exception)
 
         // When
         testedProcessor.schedulePeriodicFlush()
@@ -342,9 +350,11 @@ internal class EvaluationEventsProcessorTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
+            any<List<InternalLogger.Target>>(),
             any(),
-            any(),
-            eq(exception)
+            eq(exception),
+            eq(false),
+            eq(null)
         )
     }
 
