@@ -494,4 +494,131 @@ internal class AggregationStatsTest {
     }
 
     // endregion
+
+    // region Out of order timestamps
+
+    @Test
+    fun `M update firstEvaluation W recordEvaluation() { earlier evaluation arrives }`() {
+        // Given - initial timestamp at 5000ms
+        val initialTimestamp = 5000L
+        val stats = AggregationStats(initialTimestamp, fakeContext, fakeData, null)
+
+        // When -  earlier evaluation arrives
+        val earlierTimestamp = 3000L
+        stats.recordEvaluation(earlierTimestamp, null)
+
+        // Then
+        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        assertThat(event.firstEvaluation).isEqualTo(earlierTimestamp)
+        assertThat(event.lastEvaluation).isEqualTo(initialTimestamp)
+        assertThat(event.evaluationCount).isEqualTo(2L)
+    }
+
+    @Test
+    fun `M maintain correct range W recordEvaluation() { out of order arrival }`() {
+        // Given - initial timestamp at 5000ms
+        val initialTimestamp = 5000L
+        val stats = AggregationStats(initialTimestamp, fakeContext, fakeData, null)
+
+        // When - events arrive out of order
+        stats.recordEvaluation(10000L, null) // Late event
+        stats.recordEvaluation(2000L, null) // Early event (out of order)
+        stats.recordEvaluation(7000L, null) // Middle event (out of order)
+
+        // Then - should track actual min and max
+        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        assertThat(event.firstEvaluation).isEqualTo(2000L) // Minimum
+        assertThat(event.lastEvaluation).isEqualTo(10000L) // Maximum
+        assertThat(event.evaluationCount).isEqualTo(4L)
+    }
+
+    @Test
+    fun `M handle same timestamp W recordEvaluation() { multiple evaluations at same time }`() {
+        // Given
+        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData, null)
+
+        // When - multiple evaluations at exact same timestamp
+        repeat(5) {
+            stats.recordEvaluation(fakeTimestamp, null)
+        }
+
+        // Then - timestamps shouldn't change, but count should increment
+        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
+        assertThat(event.lastEvaluation).isEqualTo(fakeTimestamp)
+        assertThat(event.evaluationCount).isEqualTo(6L) // 1 initial + 5 recorded
+    }
+
+    @Test
+    fun `M handle large time jumps W recordEvaluation() { forward and backward }`() {
+        // Given - test both forward and backward large jumps
+        val stats = AggregationStats(50000L, fakeContext, fakeData, null)
+
+        // When - large time jump forward (e.g., NTP sync, time zone change)
+        val futureTimestamp = 1000000000L
+        stats.recordEvaluation(futureTimestamp, null)
+
+        // Then - lastEvaluation should update
+        val eventAfterForward = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        assertThat(eventAfterForward.lastEvaluation).isEqualTo(futureTimestamp)
+
+        // When - large time jump backward (e.g., clock adjustment)
+        val pastTimestamp = 1000L
+        stats.recordEvaluation(pastTimestamp, null)
+
+        // Then - firstEvaluation should update, lastEvaluation unchanged
+        val eventAfterBackward = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        assertThat(eventAfterBackward.firstEvaluation).isEqualTo(pastTimestamp)
+        assertThat(eventAfterBackward.lastEvaluation).isEqualTo(futureTimestamp)
+        assertThat(eventAfterBackward.evaluationCount).isEqualTo(3L)
+    }
+
+    @Test
+    fun `M handle concurrent out-of-order evaluations W recordEvaluation() { thread safety }`() {
+        // Given
+        val initialTimestamp = 50000L
+        val stats = AggregationStats(initialTimestamp, fakeContext, fakeData, null)
+        val threadCount = 10
+        val executionsPerThread = 100
+
+        val startLatch = CountDownLatch(1)
+        val finishLatch = CountDownLatch(threadCount)
+
+        // When - threads send evaluations with intentionally out-of-order timestamps
+        val threads = (1..threadCount).map { threadIndex ->
+            Thread {
+                startLatch.await()
+                repeat(executionsPerThread) { executionIndex ->
+                    // Some threads go backwards, some forward, creating complex out-of-order scenario
+                    val timestamp = if (threadIndex % 2 == 0) {
+                        // Even threads: go backwards from initial
+                        initialTimestamp - (threadIndex * 1000L) - executionIndex
+                    } else {
+                        // Odd threads: go forwards from initial
+                        initialTimestamp + (threadIndex * 1000L) + executionIndex
+                    }
+                    stats.recordEvaluation(timestamp, null)
+                }
+                finishLatch.countDown()
+            }
+        }
+
+        threads.forEach { it.start() }
+        startLatch.countDown()
+        finishLatch.await()
+
+        // Then - should have correct min/max despite chaos
+        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+
+        // Calculate expected min and max
+        val minTimestamp = initialTimestamp - (10 * 1000L) - 99 // Thread 10, last execution
+        val maxTimestamp = initialTimestamp + (9 * 1000L) + 99 // Thread 9, last execution
+
+        assertThat(event.firstEvaluation).isEqualTo(minTimestamp)
+        assertThat(event.lastEvaluation).isEqualTo(maxTimestamp)
+        assertThat(event.firstEvaluation).isLessThan(event.lastEvaluation)
+        assertThat(event.evaluationCount).isEqualTo((threadCount * executionsPerThread + 1).toLong())
+    }
+
+    // endregion
 }
