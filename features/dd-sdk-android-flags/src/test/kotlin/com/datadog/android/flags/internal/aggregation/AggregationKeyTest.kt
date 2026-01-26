@@ -6,16 +6,17 @@
 
 package com.datadog.android.flags.internal.aggregation
 
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
-import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
@@ -44,11 +45,14 @@ internal class AggregationKeyTest {
     fun `M create aggregation key W fromEvaluation() { successful match }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -66,10 +70,13 @@ internal class AggregationKeyTest {
     fun `M omit variant and allocation W fromEvaluation() { DEFAULT reason }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
             reason = ResolutionReason.DEFAULT.name
         )
 
@@ -88,10 +95,13 @@ internal class AggregationKeyTest {
     fun `M omit variant and allocation W fromEvaluation() { ERROR reason }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
             reason = ResolutionReason.ERROR.name
         )
 
@@ -110,11 +120,14 @@ internal class AggregationKeyTest {
     fun `M include variant and allocation W fromEvaluation() { MATCHED reason }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -129,10 +142,13 @@ internal class AggregationKeyTest {
     fun `M include variant and allocation W fromEvaluation() { TARGETING_MATCH reason }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
             reason = ResolutionReason.TARGETING_MATCH.name
         )
 
@@ -149,10 +165,13 @@ internal class AggregationKeyTest {
         // Given - unrecognized reasons are treated like normal matches (not DEFAULT/ERROR)
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
         val unrecognizedReason = forge.anAlphabeticalString()
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
             reason = unrecognizedReason
         )
 
@@ -168,10 +187,13 @@ internal class AggregationKeyTest {
     fun `M include error code W fromEvaluation() { error provided }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = null,
-            allocationKey = null,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
+            allocationKey = "",
+            variationKey = "",
+            extraLogging = JSONObject(),
             reason = ResolutionReason.ERROR.name
         )
         val errorCode = ErrorCode.PROVIDER_NOT_READY.name
@@ -187,11 +209,14 @@ internal class AggregationKeyTest {
     fun `M set null error code W fromEvaluation() { no error }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -209,11 +234,14 @@ internal class AggregationKeyTest {
     fun `M create same keys W fromEvaluation() { identical evaluations }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -229,11 +257,14 @@ internal class AggregationKeyTest {
     fun `M create different keys W fromEvaluation() { different flag names }`(forge: Forge) {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
         val anotherFlagName = forge.anAlphabeticalString()
 
@@ -250,11 +281,14 @@ internal class AggregationKeyTest {
         // Given
         val context1 = EvaluationContext(targetingKey = fakeTargetingKey)
         val context2 = EvaluationContext(targetingKey = forge.anAlphabeticalString())
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -269,17 +303,23 @@ internal class AggregationKeyTest {
     fun `M create different keys W fromEvaluation() { different variants }`(forge: Forge) {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data1 = UnparsedFlag(
-            value = fakeValue,
+        val data1 = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
+            allocationKey = fakeAllocationKey,
             variationKey = fakeVariantKey,
-            allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
-        val data2 = UnparsedFlag(
-            value = fakeValue,
-            variationKey = forge.anAlphabeticalString(),
+        val data2 = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = forge.anAlphabeticalString(),
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -294,17 +334,23 @@ internal class AggregationKeyTest {
     fun `M create different keys W fromEvaluation() { different allocations }`(forge: Forge) {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data1 = UnparsedFlag(
-            value = fakeValue,
-            variationKey = fakeVariantKey,
+        val data1 = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
-        )
-        val data2 = UnparsedFlag(
-            value = fakeValue,
             variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
+        )
+        val data2 = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
             allocationKey = forge.anAlphabeticalString(),
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
@@ -319,10 +365,13 @@ internal class AggregationKeyTest {
     fun `M create different keys W fromEvaluation() { different error codes }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = null,
-            allocationKey = null,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
+            allocationKey = "",
+            variationKey = "",
+            extraLogging = JSONObject(),
             reason = ResolutionReason.ERROR.name
         )
         val errorCode1 = ErrorCode.FLAG_NOT_FOUND.name
@@ -340,10 +389,13 @@ internal class AggregationKeyTest {
     fun `M create same keys W fromEvaluation() { same error code different messages }`() {
         // Given - error messages don't affect aggregation
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data = UnparsedFlag(
-            value = fakeValue,
-            variationKey = null,
-            allocationKey = null,
+        val data = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = fakeValue,
+            doLog = false,
+            allocationKey = "",
+            variationKey = "",
+            extraLogging = JSONObject(),
             reason = ResolutionReason.ERROR.name
         )
         val errorCode = ErrorCode.TYPE_MISMATCH.name
@@ -361,17 +413,23 @@ internal class AggregationKeyTest {
     fun `M ignore flag value W fromEvaluation() { different values same key }`(forge: Forge) {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
-        val data1 = UnparsedFlag(
-            value = forge.anAlphabeticalString(),
-            variationKey = fakeVariantKey,
+        val data1 = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = forge.anAlphabeticalString(),
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
-        val data2 = UnparsedFlag(
-            value = forge.anAlphabeticalString(),
-            variationKey = fakeVariantKey,
+        val data2 = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = forge.anAlphabeticalString(),
+            doLog = false,
             allocationKey = fakeAllocationKey,
-            reason = ResolutionReason.MATCHED.name
+            variationKey = fakeVariantKey,
+            extraLogging = JSONObject(),
+            reason = ResolutionReason.TARGETING_MATCH.name
         )
 
         // When
