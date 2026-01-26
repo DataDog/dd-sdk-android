@@ -208,7 +208,7 @@ class ManualTrackingRumTest {
         // When
         rumMonitor.startView(viewKey, viewName)
         rumMonitor.addAction(RumActionType.CUSTOM, actionName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         // Used to trigger the action event
         rumMonitor.stopView(viewKey)
 
@@ -347,7 +347,7 @@ class ManualTrackingRumTest {
         // When
         rumMonitor.startView(key, name)
         rumMonitor.startResource(resourceKey, RumResourceMethod.GET, resourceUrl.toString())
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopResource(resourceKey, resourceStatus, resourceSize, RumResourceKind.NATIVE)
         rumMonitor.stopView(key)
 
@@ -418,7 +418,7 @@ class ManualTrackingRumTest {
         // When
         rumMonitor.startView(key, name)
         rumMonitor.startResource(resourceId, RumResourceMethod.GET, resourceUrl.toString())
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE)
         rumMonitor.stopView(key)
 
@@ -485,12 +485,11 @@ class ManualTrackingRumTest {
     ) {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        val startTime = System.nanoTime()
         rumMonitor.startView(key, name)
 
         // When
-        val endTime = System.nanoTime()
-        val expectedViewLoadingTime = endTime - startTime
+        stubSdkCore.advanceTimeBy(100)
+        val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
         rumMonitor.addViewLoadingTime(overwrite)
 
         // Then
@@ -578,19 +577,17 @@ class ManualTrackingRumTest {
     ) {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        val startTime = System.nanoTime()
         rumMonitor.startView(key, name)
-        val intermediateTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(50)
         rumMonitor.addViewLoadingTime(overwrite)
 
         // When
-        Thread.sleep(100)
-        val endTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(50)
         rumMonitor.addViewLoadingTime(true)
 
         // Then
-        val expectedFirstViewLoadingTime = intermediateTime - startTime
-        val expectedSecondViewLoadingTime = endTime - startTime
+        val expectedFirstViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
+        val expectedSecondViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(3)
@@ -645,17 +642,16 @@ class ManualTrackingRumTest {
     ) {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        val startTime = System.nanoTime()
         rumMonitor.startView(key, name)
-        val intermediateTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(50)
         rumMonitor.addViewLoadingTime(overwrite)
 
         // When
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(50)
         rumMonitor.addViewLoadingTime(false)
 
         // Then
-        val expectedViewLoadingTime = intermediateTime - startTime
+        val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(2)
