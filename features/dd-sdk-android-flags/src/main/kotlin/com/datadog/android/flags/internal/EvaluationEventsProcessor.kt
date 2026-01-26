@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.aggregation.AggregationKey
 import com.datadog.android.flags.internal.aggregation.AggregationStats
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
@@ -49,37 +48,116 @@ internal class EvaluationEventsProcessor(
     private var scheduledFlushFuture: ScheduledFuture<*>? = null
 
     /**
-     * Processes an evaluation for aggregation.
+     * Processes an evaluation that has flag data.
      *
-     * All evaluations are logged (defaults, errors, matches, etc.).
-     * Evaluations with the same key are aggregated together.
+     * This is the primary path for regular flag evaluations where we have
+     * complete flag metadata from the repository including variant, allocation,
+     * and resolution reason.
+     *
+     * Evaluations with the same aggregation key are grouped together.
      * Automatic flush triggered if size limit reached.
      *
      * Thread-safe: can be called concurrently from multiple threads.
      *
-     * @param flagName the flag name
-     * @param context the evaluation context
-     * @param data the flag data
-     * @param errorCode optional error code (ErrorCode enum name for aggregation)
-     * @param errorMessage optional error message (detailed message for logging)
+     * @param flagKey the flag key
+     * @param context the evaluation context (targeting key, attributes)
+     * @param variantKey the variant/variation key, or null if not assigned
+     * @param allocationKey the allocation key, or null if not assigned
+     * @param reason the resolution reason indicating why this value was resolved
      */
-    fun processEvaluation(
-        flagName: String,
+    fun processSuccessEvaluation(
+        flagKey: String,
         context: EvaluationContext,
-        data: UnparsedFlag,
+        variantKey: String?,
+        allocationKey: String?,
+        reason: String
+    ) {
+        recordEvaluation(
+            flagKey = flagKey,
+            context = context,
+            variantKey = variantKey,
+            allocationKey = allocationKey,
+            reason = reason,
+            errorCode = null,
+            errorMessage = null
+        )
+    }
+
+    /**
+     * Processes an error evaluation without any flag data.
+     *
+     * This path is used when flag resolution fails before we can retrieve
+     * any flag data from the repository (e.g., SDK not initialized, network error,
+     * flag not found, provider not ready).
+     *
+     * Without flag data, we aggregate only on the error code.
+     *
+     * Evaluations with the same aggregation key are grouped together.
+     * Automatic flush triggered if size limit reached.
+     *
+     * Thread-safe: can be called concurrently from multiple threads.
+     *
+     * @param flagKey the flag key
+     * @param context the evaluation context (targeting key, attributes)
+     * @param errorCode the error type (for aggregation)
+     * @param errorMessage the detailed error message (for logging)
+     */
+    fun processErrorEvaluation(
+        flagKey: String,
+        context: EvaluationContext,
+        errorCode: String,
+        errorMessage: String
+    ) {
+        recordEvaluation(
+            flagKey = flagKey,
+            context = context,
+            variantKey = null,
+            allocationKey = null,
+            reason = null,
+            errorCode = errorCode,
+            errorMessage = errorMessage
+        )
+    }
+
+    /**
+     * Internal method that handles evaluation recording.
+     *
+     * Creates the aggregation key and updates the stats.
+     *
+     * @param flagKey the flag key being evaluated
+     * @param context the evaluation context
+     * @param variantKey the variant key, null if not applicable
+     * @param allocationKey the allocation key, null if not applicable
+     * @param reason the resolution reason, null if error without flag data
+     * @param errorCode the error code, null if successful evaluation
+     * @param errorMessage optional error message for debugging
+     */
+    private fun recordEvaluation(
+        flagKey: String,
+        context: EvaluationContext,
+        variantKey: String?,
+        allocationKey: String?,
+        reason: String?,
         errorCode: String?,
         errorMessage: String?
     ) {
         val timestamp = timeProvider.getDeviceTimestampMillis()
-        val key = AggregationKey.fromEvaluation(flagName, context, data, errorCode)
 
-        // Update existing stats or create new ones (thread-safe for API 21+)
+        val key = AggregationKey(
+            flagKey = flagKey,
+            variantKey = variantKey,
+            allocationKey = allocationKey,
+            targetingKey = context.targetingKey,
+            errorCode = errorCode
+        )
+
+        // Update existing stats or create new ones
         synchronized(aggregationMap) {
             val existing = aggregationMap[key]
             if (existing != null) {
                 existing.recordEvaluation(timestamp, errorMessage)
             } else {
-                aggregationMap[key] = AggregationStats(timestamp, context, data, errorMessage)
+                aggregationMap[key] = AggregationStats(timestamp, context, reason, errorMessage)
             }
         }
 
