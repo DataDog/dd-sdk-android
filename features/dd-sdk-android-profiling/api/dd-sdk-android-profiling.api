@@ -17,10 +17,6 @@ public final class com/datadog/android/profiling/Profiling {
 	public static final fun enable (Lcom/datadog/android/profiling/ProfilingConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/profiling/ProfilingConfiguration;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun enable$default (Lcom/datadog/android/profiling/ProfilingConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
-	public final fun start (Landroid/content/Context;Lcom/datadog/android/api/SdkCore;)V
-	public static synthetic fun start$default (Lcom/datadog/android/profiling/Profiling;Landroid/content/Context;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
-	public final fun stop (Lcom/datadog/android/api/SdkCore;)V
-	public static synthetic fun stop$default (Lcom/datadog/android/profiling/Profiling;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/profiling/ProfilingConfiguration {

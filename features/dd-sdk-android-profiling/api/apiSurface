@@ -8,8 +8,6 @@ class com.datadog.android.profiling.DdProfilingContentProvider : android.content
 annotation com.datadog.android.profiling.ExperimentalProfilingApi
 object com.datadog.android.profiling.Profiling
   fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
-  fun start(android.content.Context, com.datadog.android.api.SdkCore = Datadog.getInstance())
-  fun stop(com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
     fun setApplicationLaunchSampleRate(Float): Builder
