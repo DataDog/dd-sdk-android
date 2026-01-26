@@ -264,6 +264,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithError(
                 key,
@@ -271,7 +272,8 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }

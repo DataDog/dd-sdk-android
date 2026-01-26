@@ -111,14 +111,12 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        val startViewTime = System.nanoTime()
         monitor.startView(viewKey, viewName)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
-        val stopResourceTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.stopView(viewKey)
-        val appExpectedTtnsTime = (stopResourceTime - startViewTime)
+        val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -184,17 +182,15 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        val startViewTime = System.nanoTime()
         monitor.startView(viewKey, viewName)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
-        val stopResourceTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.addTiming(forge.anAlphabeticalString())
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.addTiming(forge.anAlphabeticalString())
         monitor.stopView(viewKey)
-        val appExpectedTtnsTime = (stopResourceTime - startViewTime)
+        val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -286,14 +282,12 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        val startViewTime = System.nanoTime()
         monitor.startView(viewKey, viewName)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
-        val stopResourceTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
         monitor.stopView(viewKey)
-        val appExpectedTtnsTime = (stopResourceTime - startViewTime)
+        val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -365,7 +359,7 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(viewKey, viewName)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
         monitor.stopView(viewKey)
 
@@ -412,7 +406,7 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(viewKey, viewName)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.stopView(viewKey)
 
@@ -458,9 +452,9 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(viewKey, viewName)
         // wait for more than the default threshold in the default identifier (100ms)
-        Thread.sleep(100 + 10)
+        stubSdkCore.advanceTimeBy(110)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.stopView(viewKey)
 
@@ -531,9 +525,9 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(viewKey, viewName)
         // wait for more than the custom threshold
-        Thread.sleep(resourceIdentifierThresholdMs + 10)
+        stubSdkCore.advanceTimeBy(resourceIdentifierThresholdMs + 10)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.stopView(viewKey)
 
@@ -606,7 +600,7 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(viewKey, viewName)
         monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.stopView(viewKey)
 
@@ -1196,13 +1190,13 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(previousViewKey, previousViewName)
         monitor.startAction(validActionType, lastInteractionName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopAction(validActionType, lastInteractionName)
         monitor.stopView(previousViewKey)
         // Wait for more than the default threshold in the default identifier (3000ms)
-        Thread.sleep(3000 + 10)
+        stubSdkCore.advanceTimeBy(3010)
         monitor.startView(viewKey, viewName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopView(viewKey)
 
         // Then
@@ -1295,13 +1289,13 @@ class ViewLoadingTimeMetricsTests {
         // When
         monitor.startView(previousViewKey, previousViewName)
         monitor.startAction(validActionType, lastInteractionName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopAction(validActionType, lastInteractionName)
         monitor.stopView(previousViewKey)
         // Wait for more than the custom threshold
-        Thread.sleep(customThreshold + 10)
+        stubSdkCore.advanceTimeBy(customThreshold + 10)
         monitor.startView(viewKey, viewName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopView(viewKey)
 
         // Then
@@ -1389,25 +1383,24 @@ class ViewLoadingTimeMetricsTests {
     private fun runSuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType): Long {
         monitor.startView(previousViewKey, previousViewName)
         monitor.startAction(rumActionType, lastInteractionName)
-        Thread.sleep(100)
-        val stopActionTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopAction(rumActionType, lastInteractionName)
         monitor.stopView(previousViewKey)
-        val startViewTime = System.nanoTime()
+        stubSdkCore.advanceTimeBy(100)
         monitor.startView(viewKey, viewName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopView(viewKey)
-        return (startViewTime - stopActionTime)
+        return TimeUnit.MILLISECONDS.toNanos(100)
     }
 
     private fun runUnsuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType) {
         monitor.startView(previousViewKey, previousViewName)
         monitor.startAction(rumActionType, lastInteractionName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopAction(rumActionType, lastInteractionName)
         monitor.stopView(previousViewKey)
         monitor.startView(viewKey, viewName)
-        Thread.sleep(100)
+        stubSdkCore.advanceTimeBy(100)
         monitor.stopView(viewKey)
     }
 
