@@ -287,6 +287,7 @@ internal class DatadogRumMonitor(
         errorType: String?,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithStackTrace(
                 key,
@@ -295,7 +296,8 @@ internal class DatadogRumMonitor(
                 source,
                 stackTrace,
                 errorType,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -340,6 +342,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithError(
                 key,
@@ -347,7 +350,8 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -361,6 +365,7 @@ internal class DatadogRumMonitor(
         errorType: String?,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithStackTrace(
                 key,
@@ -369,7 +374,8 @@ internal class DatadogRumMonitor(
                 source,
                 stackTrace,
                 errorType,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
