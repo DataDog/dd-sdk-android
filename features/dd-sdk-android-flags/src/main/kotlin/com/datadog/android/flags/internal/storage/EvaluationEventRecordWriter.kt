@@ -29,17 +29,25 @@ internal class EvaluationEventRecordWriter(private val sdkCore: FeatureSdkCore) 
      * @param event the flag evaluation event to write
      */
     override fun write(event: BatchedFlagEvaluations.FlagEvaluation) {
+        writeAll(listOf(event))
+    }
+
+    override fun writeAll(events: List<BatchedFlagEvaluations.FlagEvaluation>) {
+        if (events.isEmpty()) return
+
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->
                 writeScope {
-                    val serializedRecord = event.toJson().toString().toByteArray(Charsets.UTF_8)
-                    val rawBatchEvent = RawBatchEvent(data = serializedRecord)
                     synchronized(this@EvaluationEventRecordWriter) {
-                        it.write(
-                            event = rawBatchEvent,
-                            batchMetadata = null,
-                            eventType = EventType.DEFAULT
-                        )
+                        events.forEach { event ->
+                            val serializedRecord = event.toJson().toString().toByteArray(Charsets.UTF_8)
+                            val rawBatchEvent = RawBatchEvent(data = serializedRecord)
+                            it.write(
+                                event = rawBatchEvent,
+                                batchMetadata = null,
+                                eventType = EventType.DEFAULT
+                            )
+                        }
                     }
                 }
             }
