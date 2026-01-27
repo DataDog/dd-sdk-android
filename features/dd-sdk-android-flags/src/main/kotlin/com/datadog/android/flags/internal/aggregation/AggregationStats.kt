@@ -18,35 +18,7 @@ import com.datadog.android.flags.model.EvaluationContext
  * - Last error message (updated on each evaluation)
  * - Runtime default usage
  *
- * Thread Safety Model:
- * - Uses both @Volatile fields AND synchronized blocks for complete thread-safety
- * - @Volatile ensures visibility of individual field writes across threads
- * - synchronized(this) ensures atomicity of compound operations (multiple field updates)
- * - Both mechanisms are required for correct concurrent behavior
- *
- * Why Both @Volatile AND synchronized():
- * 1. @Volatile alone: Prevents stale reads of individual fields but cannot guarantee
- *    consistent snapshots across multiple fields. Thread A might see updated count
- *    but stale timestamp, creating inconsistent state.
- *
- * 2. synchronized alone: Would work if all access was externally synchronized, but
- *    with the lock-free putIfAbsent() strategy in EvaluationEventsProcessor, multiple
- *    threads can concurrently call recordEvaluation() on the same AggregationStats object.
- *
- * 3. Both together: Ensures that compound updates (count++, timestamp checks, message update)
- *    happen atomically, AND ensures visibility of those updates to other threads.
- *    This is required for the lock-free putIfAbsent() concurrency model.
- *
- * Example Concurrent Scenario (why both are needed):
- * - Thread A: Inserts new key via putIfAbsent() → null (no update needed)
- * - Thread B: putIfAbsent() on same key → returns existing AggregationStats
- * - Thread C: putIfAbsent() on same key → returns existing AggregationStats
- * - Thread B and C: BOTH call recordEvaluation() on SAME object concurrently
- *   → synchronized(this) prevents race conditions
- *   → @Volatile ensures visibility when either thread later calls toEvaluationEvent()
- *
- * Performance: The synchronized block overhead (~20-30ns) is negligible compared to
- * the ConcurrentHashMap operations (~100-200ns) and is essential for correctness.
+ * Thread Safe
  *
  * @param firstTimestamp the timestamp of the first evaluation
  * @param context the evaluation context
@@ -106,11 +78,7 @@ internal class AggregationStats(
      * @return the evaluation event
      */
     fun toEvaluationEvent(flagKey: String, aggregationKey: AggregationKey): BatchedFlagEvaluations.FlagEvaluation {
-        // For error evaluations (reason == null), omit variant/allocation
-        // For success evaluations with DEFAULT/ERROR reason, also omit per spec
-        val isDefaultOrError = reason == null || reason == "DEFAULT" || reason == "ERROR"
-
-        // Take atomic snapshot of statistics to prevent torn reads
+        // Take atomic snapshot of statistics
         val snapshotCount: Int
         val snapshotFirst: Long
         val snapshotLast: Long
@@ -127,14 +95,14 @@ internal class AggregationStats(
             flag = BatchedFlagEvaluations.Identifier(flagKey),
             variant = aggregationKey.variantKey?.let { BatchedFlagEvaluations.Identifier(it) },
             allocation = aggregationKey.allocationKey?.let { BatchedFlagEvaluations.Identifier(it) },
-            targetingRule = null, // Not tracked in current implementation
+            targetingRule = null, // Not applicable
             targetingKey = aggregationKey.targetingKey,
             context = null, // Context logging reserved for future use
             error = snapshotMessage?.let { BatchedFlagEvaluations.Error(message = it) },
             evaluationCount = snapshotCount.toLong(),
             firstEvaluation = snapshotFirst,
             lastEvaluation = snapshotLast,
-            runtimeDefaultUsed = isDefaultOrError
+            runtimeDefaultUsed = reason == null || reason == "DEFAULT" || reason == "ERROR"
         )
     }
 }
