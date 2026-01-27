@@ -25,11 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Evaluations with the same AggregationKey are aggregated together.
  * Events are flushed on: time interval, size limit, or shutdown.
  *
- * Concurrency Model:
- * - Lock-free writes: Uses ConcurrentHashMap.putIfAbsent() for new key insertions
- * - Atomic flush guard: AtomicBoolean prevents concurrent flush operations
- * - Snapshot pattern: Flush works on isolated snapshot while new evaluations continue
- *
  * Thread-safe for concurrent processEvaluation() and flush() calls.
  *
  * @param writer the writer to send evaluation events to
@@ -59,10 +54,6 @@ internal class EvaluationEventsProcessor(
 
     /**
      * Processes an evaluation that has flag data.
-     *
-     * This is the primary path for regular flag evaluations where we have
-     * complete flag metadata from the repository including variant, allocation,
-     * and resolution reason.
      *
      * Evaluations with the same aggregation key are grouped together.
      * Flush triggered if size limit reached.

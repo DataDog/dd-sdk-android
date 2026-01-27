@@ -12,39 +12,9 @@ import com.datadog.tools.annotation.NoOpImplementation
 /**
  * Writer interface for persisting evaluation events to storage.
  *
- * Storage Model:
- * - Individual [BatchedFlagEvaluations.FlagEvaluation] objects are written to storage
- * - Each evaluation is stored as a separate record (not batched at write time)
- * - At upload time, the SDK Core collects all stored evaluations and wraps them
- *   in a single [BatchedFlagEvaluations] payload with top-level context
- *
- * Batching Strategy:
- * - Write: Individual records → Storage
- * - Upload: Storage → Batch assembly → Network request
- * - This allows flexible batch sizing and fresh context at upload time
- *
- * Thread Safety Requirements:
- * - Implementations MUST be thread-safe and handle concurrent write() calls correctly
- * - write() may be called concurrently from EvaluationEventsProcessor.flush()
- * - The atomic flush flag in EvaluationEventsProcessor ensures only one flush
- *   operation occurs at a time, but implementations should still be thread-safe
- *   as write() is called from background threads
- *
- * Concurrency Model:
- * - Single flush at a time (via AtomicBoolean in processor)
- * - But flush writes multiple events sequentially
- * - SDK Core storage has its own internal thread-safety
- * - Implementations should use synchronized blocks if needed
- *
- * Example Flow:
- * 1. EvaluationEventsProcessor aggregates evaluations in memory
- * 2. flush() is triggered (time/size/shutdown)
- * 3. Processor converts aggregations to FlagEvaluation objects
- * 4. write() is called for each evaluation (sequential within flush)
- * 5. Each evaluation stored as individual JSON record
- * 6. SDK Core's upload scheduler reads batch of records
- * 7. EvaluationsRequestFactory wraps all in BatchedFlagEvaluations
- * 8. Single HTTP request to /api/v2/flagevaluations
+ * Implementations must be thread-safe and handle concurrent calls correctly.
+ * Evaluations are written as individual records and then batched together at upload time.
+ * Managing these recors/uploads is the responsibility of the SDK Core's upload scheduler.
  *
  * @see EvaluationEventsProcessor
  * @see com.datadog.android.flags.internal.net.EvaluationsRequestFactory
@@ -58,8 +28,6 @@ internal interface EvaluationEventWriter {
      * will be collected and batched together at upload time.
      *
      * Thread Safety: This method must be thread-safe and handle concurrent calls correctly.
-     * However, the EvaluationEventsProcessor atomic flush flag ensures only one flush
-     * (and thus one sequence of write calls) occurs at a time.
      *
      * @param event the evaluation event to write to storage
      */

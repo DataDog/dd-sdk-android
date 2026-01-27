@@ -6,12 +6,12 @@
 
 package com.datadog.android.flags.internal.utils
 
-import com.datadog.android.flags.model.BatchedFlagEvaluations
+import com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class FlagEvaluationAssert(actual: BatchedFlagEvaluations.FlagEvaluation) :
-    AbstractObjectAssert<FlagEvaluationAssert, BatchedFlagEvaluations.FlagEvaluation>(
+internal class FlagEvaluationAssert(actual: FlagEvaluation) :
+    AbstractObjectAssert<FlagEvaluationAssert, FlagEvaluation>(
         actual,
         FlagEvaluationAssert::class.java
     ) {
@@ -183,7 +183,7 @@ internal class FlagEvaluationAssert(actual: BatchedFlagEvaluations.FlagEvaluatio
     }
 
     companion object {
-        fun assertThat(actual: BatchedFlagEvaluations.FlagEvaluation): FlagEvaluationAssert =
+        fun assertThat(actual: FlagEvaluation): FlagEvaluationAssert =
             FlagEvaluationAssert(actual)
     }
 }
