@@ -75,7 +75,7 @@ object Profiling {
      * @param sdkCore SDK instance to start profiling with. If not provided, default SDK instance.
      */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    fun start(context: Context, sdkCore: SdkCore = Datadog.getInstance()) {
+    internal fun start(context: Context, sdkCore: SdkCore = Datadog.getInstance()) {
         start(context, setOf(sdkCore.name))
     }
 
@@ -84,7 +84,7 @@ object Profiling {
      *
      * @param sdkCore SDK instance to stop profiling. If not provided, default SDK instance.
      */
-    fun stop(sdkCore: SdkCore = Datadog.getInstance()) {
+    internal fun stop(sdkCore: SdkCore = Datadog.getInstance()) {
         profiler.stop(sdkCore.name)
     }
 
