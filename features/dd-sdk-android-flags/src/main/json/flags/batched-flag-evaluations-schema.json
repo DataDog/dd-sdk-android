@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "flags/batched-flag-evaluations-schema.json",
+  "title": "BatchedFlagEvaluations",
+  "type": "object",
+  "description": "Schema for batched evaluation events sent to /api/v2/flagevaluations endpoint",
+  "definitions": {
+    "Identifier": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" }
+      },
+      "required": ["key"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "context": {
+      "type": "object",
+      "description": "Top-level context shared across all evaluations in the batch",
+      "properties": {
+        "service": {
+          "type": "string",
+          "description": "Service name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Application version"
+        },
+        "env": {
+          "type": "string",
+          "description": "Environment (prod, staging, dev)"
+        },
+        "device": {
+          "type": "object",
+          "description": "Device information",
+          "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string" },
+            "brand": { "type": "string" },
+            "model": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "os": {
+          "type": "object",
+          "description": "Operating system information",
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "geo": {
+          "type": "object",
+          "description": "Geographic information",
+          "properties": {
+            "country_iso_code": { "type": "string" },
+            "country": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "rum": {
+          "type": "object",
+          "description": "RUM context information",
+          "properties": {
+            "application": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "view": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "flagEvaluations": {
+      "type": "array",
+      "description": "Array of aggregated flag evaluation events",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "description": "Timestamp of first evaluation (epoch ms) - equals first_evaluation"
+          },
+          "flag": {
+            "$ref": "#/definitions/Identifier",
+            "description": "Feature flag identifier"
+          },
+          "variant": {
+            "$ref": "#/definitions/Identifier",
+            "description": "Variant identifier - omit for DEFAULT/ERROR"
+          },
+          "allocation": {
+            "$ref": "#/definitions/Identifier",
+            "description": "Allocation identifier - omit for DEFAULT/ERROR"
+          },
+          "targeting_rule": {
+            "$ref": "#/definitions/Identifier",
+            "description": "Targeting rule identifier"
+          },
+          "targeting_key": {
+            "type": "string",
+            "description": "The targeting key - omit if null, include if empty string"
+          },
+          "context": {
+            "type": "object",
+            "description": "Per-evaluation context - reserved for future use",
+            "properties": {
+              "evaluation": {
+                "type": "object",
+                "description": "Evaluation context (excluding targetingKey)",
+                "additionalProperties": true
+              },
+              "dd": {
+                "type": "object",
+                "description": "Datadog-specific context",
+                "properties": {
+                  "service": { "type": "string" },
+                  "rum": {
+                    "type": "object",
+                    "properties": {
+                      "application": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                      },
+                      "view": {
+                        "type": "object",
+                        "properties": {
+                          "url": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          },
+          "error": {
+            "type": "object",
+            "description": "Error information - if evaluation failed",
+            "properties": {
+              "message": { "type": "string" }
+            },
+            "required": ["message"],
+            "additionalProperties": false
+          },
+          "evaluation_count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of evaluations aggregated"
+          },
+          "first_evaluation": {
+            "type": "integer",
+            "minimum": 1759276800000,
+            "description": "Timestamp of first evaluation (epoch ms)"
+          },
+          "last_evaluation": {
+            "type": "integer",
+            "minimum": 1759276800000,
+            "description": "Timestamp of last evaluation (epoch ms)"
+          },
+          "runtime_default_used": {
+            "type": "boolean",
+            "description": "True if DEFAULT or ERROR reason"
+          }
+        },
+        "required": [
+          "timestamp",
+          "flag",
+          "first_evaluation",
+          "last_evaluation",
+          "evaluation_count"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["flagEvaluations"],
+  "additionalProperties": false
+}
