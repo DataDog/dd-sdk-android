@@ -17,7 +17,7 @@ import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.toVitalAppLaunch
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import java.util.UUID
 
 internal class RumVitalAppLaunchEventHelper(
@@ -37,15 +37,16 @@ internal class RumVitalAppLaunchEventHelper(
         rumContext: RumContext,
         durationNs: Long,
         scenario: RumStartupScenario,
-        appLaunchMetric: RumVitalAppLaunchEvent.AppLaunchMetric
-    ): RumVitalAppLaunchEvent {
+        appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric,
+        profilingStatus: VitalAppLaunchEvent.ProfilingStatus?
+    ): VitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
-            RumVitalAppLaunchEvent.Synthetics(
+            VitalAppLaunchEvent.Synthetics(
                 testId = rumContext.syntheticsTestId,
                 resultId = rumContext.syntheticsResultId
             )
@@ -53,8 +54,8 @@ internal class RumVitalAppLaunchEventHelper(
 
         val sessionType = when {
             rumSessionTypeOverride != null -> rumSessionTypeOverride.toVitalAppLaunch()
-            syntheticsAttribute == null -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER
-            else -> RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.SYNTHETICS
+            syntheticsAttribute == null -> VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
+            else -> VitalAppLaunchEvent.VitalAppLaunchEventSessionType.SYNTHETICS
         }
 
         val batteryInfo = batteryInfoProvider.getState()
@@ -65,7 +66,7 @@ internal class RumVitalAppLaunchEventHelper(
         val viewUrl = rumContext.viewUrl
 
         val view = if (viewId != null && viewUrl != null) {
-            RumVitalAppLaunchEvent.RumVitalAppLaunchEventView(
+            VitalAppLaunchEvent.VitalAppLaunchEventView(
                 id = viewId,
                 referrer = null,
                 url = viewUrl,
@@ -75,43 +76,46 @@ internal class RumVitalAppLaunchEventHelper(
             null
         }
 
-        return RumVitalAppLaunchEvent(
+        return VitalAppLaunchEvent(
             date = timestampMs,
-            context = RumVitalAppLaunchEvent.Context(
+            context = VitalAppLaunchEvent.Context(
                 additionalProperties = customAttributes.toMutableMap().also {
                     it.putAll(eventAttributes)
                 }
             ),
-            dd = RumVitalAppLaunchEvent.Dd(
-                session = RumVitalAppLaunchEvent.DdSession(
+            dd = VitalAppLaunchEvent.Dd(
+                session = VitalAppLaunchEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalAppLaunchSessionPrecondition()
                 ),
-                configuration = RumVitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
+                profiling = VitalAppLaunchEvent.Profiling(
+                    status = profilingStatus
+                )
             ),
-            application = RumVitalAppLaunchEvent.Application(
+            application = VitalAppLaunchEvent.Application(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
             synthetics = syntheticsAttribute,
-            session = RumVitalAppLaunchEvent.RumVitalAppLaunchEventSession(
+            session = VitalAppLaunchEvent.VitalAppLaunchEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay
             ),
             view = view,
-            source = RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.tryFromSource(
+            source = VitalAppLaunchEvent.VitalAppLaunchEventSource.tryFromSource(
                 source = datadogContext.source,
                 internalLogger = internalLogger
             ),
             account = datadogContext.accountInfo?.let {
-                RumVitalAppLaunchEvent.Account(
+                VitalAppLaunchEvent.Account(
                     id = it.id,
                     name = it.name,
                     additionalProperties = it.extraInfo.toMutableMap()
                 )
             },
             usr = if (user.hasUserData()) {
-                RumVitalAppLaunchEvent.Usr(
+                VitalAppLaunchEvent.Usr(
                     id = user.id,
                     name = user.name,
                     email = user.email,
@@ -121,7 +125,7 @@ internal class RumVitalAppLaunchEventHelper(
             } else {
                 null
             },
-            device = RumVitalAppLaunchEvent.Device(
+            device = VitalAppLaunchEvent.Device(
                 type = datadogContext.deviceInfo.deviceType.toVitalAppLaunchSchemaType(),
                 name = datadogContext.deviceInfo.deviceName,
                 model = datadogContext.deviceInfo.deviceModel,
@@ -133,7 +137,7 @@ internal class RumVitalAppLaunchEventHelper(
                 powerSavingMode = batteryInfo.lowPowerMode,
                 brightnessLevel = displayInfo.screenBrightness
             ),
-            os = RumVitalAppLaunchEvent.Os(
+            os = VitalAppLaunchEvent.Os(
                 name = datadogContext.deviceInfo.osName,
                 version = datadogContext.deviceInfo.osVersion,
                 versionMajor = datadogContext.deviceInfo.osMajorVersion
@@ -142,7 +146,7 @@ internal class RumVitalAppLaunchEventHelper(
             version = datadogContext.version,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
-            vital = RumVitalAppLaunchEvent.Vital(
+            vital = VitalAppLaunchEvent.Vital(
                 id = UUID.randomUUID().toString(),
                 name = appLaunchMetric.vitalName(),
                 description = null,
@@ -156,9 +160,9 @@ internal class RumVitalAppLaunchEventHelper(
     }
 }
 
-private fun RumVitalAppLaunchEvent.AppLaunchMetric.vitalName(): String {
+private fun VitalAppLaunchEvent.AppLaunchMetric.vitalName(): String {
     return when (this) {
-        RumVitalAppLaunchEvent.AppLaunchMetric.TTID -> "time_to_initial_display"
-        RumVitalAppLaunchEvent.AppLaunchMetric.TTFD -> "time_to_full_display"
+        VitalAppLaunchEvent.AppLaunchMetric.TTID -> "time_to_initial_display"
+        VitalAppLaunchEvent.AppLaunchMetric.TTFD -> "time_to_full_display"
     }
 }

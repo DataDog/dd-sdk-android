@@ -13,9 +13,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -28,8 +28,8 @@ internal data class RumEventMapper(
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
     val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper(),
-    val vitalOperationStepEventMapper: EventMapper<RumVitalOperationStepEvent> = NoOpEventMapper(),
-    val vitalAppLaunchEventMapper: EventMapper<RumVitalAppLaunchEvent> = NoOpEventMapper(),
+    val vitalOperationStepEventMapper: EventMapper<VitalOperationStepEvent> = NoOpEventMapper(),
+    val vitalAppLaunchEventMapper: EventMapper<VitalAppLaunchEvent> = NoOpEventMapper(),
     val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent> = NoOpEventMapper(),
     private val internalLogger: InternalLogger
 ) : EventMapper<Any> {
@@ -64,8 +64,8 @@ internal data class RumEventMapper(
             }
             is ResourceEvent -> resourceEventMapper.map(event)
             is LongTaskEvent -> longTaskEventMapper.map(event)
-            is RumVitalOperationStepEvent -> vitalOperationStepEventMapper.map(event)
-            is RumVitalAppLaunchEvent -> vitalAppLaunchEventMapper.map(event)
+            is VitalOperationStepEvent -> vitalOperationStepEventMapper.map(event)
+            is VitalAppLaunchEvent -> vitalAppLaunchEventMapper.map(event)
             is TelemetryConfigurationEvent -> telemetryConfigurationMapper.map(event)
             is TelemetryDebugEvent,
             is TelemetryUsageEvent,

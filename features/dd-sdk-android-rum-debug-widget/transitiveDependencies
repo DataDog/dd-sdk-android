@@ -1,13 +1,14 @@
 Dependencies List
 
 androidx.activity:activity:1.7.2                                :  139 Kb
-androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
+androidx.annotation:annotation-experimental:1.4.1               :   38 Kb
 androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
 androidx.arch.core:core-common:2.2.0                            :   11 Kb
 androidx.arch.core:core-runtime:2.2.0                           :    7 Kb
 androidx.collection:collection-jvm:1.4.5                        :  770 Kb
-androidx.core:core-ktx:1.5.0                                    :  160 Kb
-androidx.core:core:1.8.0                                        : 1052 Kb
+androidx.core:core-ktx:1.17.0                                   :  168 Kb
+androidx.core:core-viewtree:1.0.0                               :    6 Kb
+androidx.core:core:1.17.0                                       : 1376 Kb
 androidx.customview:customview:1.1.0                            :   32 Kb
 androidx.fragment:fragment:1.6.2                                :  345 Kb
 androidx.lifecycle:lifecycle-common:2.6.2                       :   51 Kb
@@ -20,12 +21,12 @@ androidx.loader:loader:1.0.0                                    :   32 Kb
 androidx.savedstate:savedstate:1.2.1                            :   19 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
+com.google.guava:listenablefuture:1.0                           :    3 Kb
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1          :   19 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1         : 1510 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
+org.jspecify:jspecify:1.0.0                                     :    3 Kb
 
-Total transitive dependencies size                              :    5 Mb
+Total transitive dependencies size                              :    6 Mb
 

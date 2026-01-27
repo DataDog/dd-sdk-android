@@ -56,6 +56,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -739,7 +740,10 @@ internal class DatadogLateCrashReporterTest {
         // Then
         verify(mockRumFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            inOrder(mockSdkCore, mockRumWriter) {
+                verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
+                verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            }
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasErrorId()
@@ -788,8 +792,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
                 .isActive(false)
         }
-
-        verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
     }
 
     @Test
@@ -831,7 +833,10 @@ internal class DatadogLateCrashReporterTest {
         // Then
         verify(mockRumFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            inOrder(mockSdkCore, mockRumWriter) {
+                verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
+                verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            }
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasErrorId()
@@ -872,8 +877,6 @@ internal class DatadogLateCrashReporterTest {
                 .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
                 .isActive(false)
         }
-
-        verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
     }
 
     @Test
@@ -922,7 +925,10 @@ internal class DatadogLateCrashReporterTest {
         // Then
         verify(mockRumFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<Any> {
-            verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            inOrder(mockSdkCore, mockRumWriter) {
+                verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
+                verify(mockRumWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            }
 
             ErrorEventAssert.assertThat(firstValue as ErrorEvent)
                 .hasErrorId()
@@ -966,8 +972,6 @@ internal class DatadogLateCrashReporterTest {
                 )
                 .hasThreads(fakeThreadsDump)
         }
-
-        verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
     }
 
     @Test

@@ -54,6 +54,45 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public abstract interface class com/datadog/android/internal/data/PreferencesStorage {
+	public abstract fun clear ()V
+	public abstract fun getBoolean (Ljava/lang/String;Z)Z
+	public abstract fun getFloat (Ljava/lang/String;F)F
+	public abstract fun getInt (Ljava/lang/String;I)I
+	public abstract fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public abstract fun getStringSet (Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;
+	public abstract fun putBoolean (Ljava/lang/String;Z)V
+	public abstract fun putFloat (Ljava/lang/String;F)V
+	public abstract fun putInt (Ljava/lang/String;I)V
+	public abstract fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public abstract fun putStringSet (Ljava/lang/String;Ljava/util/Set;)V
+	public abstract fun remove (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/data/PreferencesStorage$DefaultImpls {
+	public static synthetic fun getBoolean$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;ZILjava/lang/Object;)Z
+	public static synthetic fun getFloat$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;FILjava/lang/Object;)F
+	public static synthetic fun getInt$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;IILjava/lang/Object;)I
+	public static synthetic fun getString$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public static synthetic fun getStringSet$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/Set;
+}
+
+public final class com/datadog/android/internal/data/SharedPreferencesStorage : com/datadog/android/internal/data/PreferencesStorage {
+	public fun <init> (Landroid/content/Context;)V
+	public fun clear ()V
+	public fun getBoolean (Ljava/lang/String;Z)Z
+	public fun getFloat (Ljava/lang/String;F)F
+	public fun getInt (Ljava/lang/String;I)I
+	public fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public fun getStringSet (Ljava/lang/String;Ljava/util/Set;)Ljava/util/Set;
+	public fun putBoolean (Ljava/lang/String;Z)V
+	public fun putFloat (Ljava/lang/String;F)V
+	public fun putInt (Ljava/lang/String;I)V
+	public fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public fun putStringSet (Ljava/lang/String;Ljava/util/Set;)V
+	public fun remove (Ljava/lang/String;)V
+}
+
 public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Object;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -161,6 +200,41 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
+}
+
+public abstract class com/datadog/android/internal/profiling/ProfilerStopEvent {
+}
+
+public final class com/datadog/android/internal/profiling/ProfilerStopEvent$TTID : com/datadog/android/internal/profiling/ProfilerStopEvent {
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/internal/profiling/TTIDRumContext;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/profiling/TTIDRumContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public final fun copy (Lcom/datadog/android/internal/profiling/TTIDRumContext;)Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;Lcom/datadog/android/internal/profiling/TTIDRumContext;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/profiling/TTIDRumContext {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/TTIDRumContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApplicationId ()Ljava/lang/String;
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getViewId ()Ljava/lang/String;
+	public final fun getViewName ()Ljava/lang/String;
+	public final fun getVitalId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
@@ -394,6 +468,10 @@ public final class com/datadog/android/internal/utils/ThreadExtKt {
 
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/TimeExtKt {
+	public static final fun formatIsoUtc (J)Ljava/lang/String;
 }
 
 public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {

@@ -140,6 +140,9 @@ internal class CoreFeatureTest {
     @Forgery
     lateinit var fakeBuildId: UUID
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeVersion: String
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
@@ -158,6 +161,7 @@ internal class CoreFeatureTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        fakeConfig = fakeConfig.copy(version = fakeVersion)
     }
 
     @AfterEach
@@ -326,7 +330,7 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.packageVersionProvider.version).isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
@@ -351,7 +355,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageVersionProvider.version)
-            .isEqualTo(appContext.fakeVersionName)
+            .isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
@@ -373,8 +377,30 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageVersionProvider.version)
-            .isEqualTo(appContext.fakeVersionName)
+            .isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
+    }
+
+    @Test
+    fun `M use app version W initialize() {null config version}`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig.copy(version = null),
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
+        assertThat(testedFeature.packageVersionProvider.version)
+            .isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
@@ -393,7 +419,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeConfig,
+            fakeConfig.copy(version = null),
             fakeConsent
         )
 
@@ -422,7 +448,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeConfig,
+            fakeConfig.copy(version = null),
             fakeConsent
         )
 
@@ -456,7 +482,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeConfig,
+            fakeConfig.copy(version = null),
             fakeConsent
         )
 
@@ -730,7 +756,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageVersionProvider.version)
-            .isEqualTo(appContext.fakeVersionName)
+            .isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)

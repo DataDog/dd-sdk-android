@@ -20,7 +20,9 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -29,6 +31,8 @@ import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.profiling.Profiling
+import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
@@ -63,13 +67,23 @@ import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import io.opentelemetry.api.GlobalOpenTelemetry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 import java.security.SecureRandom
+import java.util.UUID
 
 /**
  * The main [Application] for the sample project.
@@ -104,6 +118,9 @@ class SampleApplication : Application() {
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     private val localServer = LocalServer()
+
+    // Coroutine scope for observing OpenFeature events
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
@@ -166,6 +183,14 @@ class SampleApplication : Application() {
         initializeFlags()
 
         GlobalRumMonitor.get().debug = true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            Profiling.enable(
+                ProfilingConfiguration.Builder()
+                    .setApplicationLaunchSampleRate(100f)
+                    .build()
+            )
+        }
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
@@ -213,8 +238,68 @@ class SampleApplication : Application() {
     }
 
     private fun initializeFlags() {
+        // Enable Datadog Flags feature
         val flagsConfig = FlagsConfiguration.Builder().build()
         Flags.enable(flagsConfig)
+
+        // Create FlagsClient and convert to OpenFeature provider
+        val flagsClient = FlagsClient.Builder().build()
+        val provider = flagsClient.asOpenFeatureProvider()
+
+        // Set as OpenFeature provider
+        OpenFeatureAPI.setProvider(provider)
+
+        // Set evaluation context on OpenFeatureAPI (provider forwards to FlagsClient)
+        val preferences = Preferences.defaultPreferences(this)
+        val userId = preferences.getUserId()?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+        val attributes = buildMap {
+            put("userId", Value.String(userId))
+            preferences.getUserName()?.takeIf { it.isNotBlank() }?.let {
+                put("userName", Value.String(it))
+            }
+            preferences.getUserEmail()?.takeIf { it.isNotBlank() }?.let {
+                put("userEmail", Value.String(it))
+            }
+        }
+
+        // Setting a blank targeting key results in all users being assigned the same bucket where randomization occurs.
+        val context = ImmutableContext(
+            targetingKey = userId,
+            attributes = attributes
+        )
+        OpenFeatureAPI.setEvaluationContext(context)
+
+        // Observe OpenFeature provider state changes
+        applicationScope.launch {
+            provider.observe()
+                .catch { error ->
+                    GlobalRumMonitor.get().addError(
+                        "OpenFeature observer error",
+                        RumErrorSource.SOURCE,
+                        error,
+                        mapOf("component" to "openfeature-observer")
+                    )
+                }
+                .collect { event ->
+                    // Track provider errors in RUM
+                    when (event) {
+                        is OpenFeatureProviderEvents.ProviderError -> {
+                            GlobalRumMonitor.get().addError(
+                                "OpenFeature provider error",
+                                RumErrorSource.SOURCE,
+                                null,
+                                mapOf(
+                                    "error" to event.error.toString(),
+                                    "component" to "openfeature-provider"
+                                )
+                            )
+                        }
+                        else -> {
+                            // Ignore other events (UI handles state display)
+                        }
+                    }
+                }
+        }
     }
 
     private fun initializeLogs() {

@@ -151,6 +151,7 @@ dependencies {
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-flags"))
+    implementation(project(":features:dd-sdk-android-flags-openfeature"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-rum-debug-widget"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -160,6 +161,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
     implementation(project(":features:dd-sdk-android-session-replay-compose"))
+    implementation(project(":features:dd-sdk-android-profiling"))
     implementation(project(":integrations:dd-sdk-android-trace-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rum-coroutines"))
     implementation(project(":integrations:dd-sdk-android-rx"))
