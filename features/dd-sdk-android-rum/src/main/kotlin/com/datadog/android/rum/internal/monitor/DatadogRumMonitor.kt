@@ -264,6 +264,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithError(
                 key,
@@ -271,7 +272,8 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -517,7 +519,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
-        val now = Time()
+        val now = getCurrentTime()
         val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
@@ -542,7 +544,7 @@ internal class DatadogRumMonitor(
 
     @ExperimentalRumApi
     override fun addViewLoadingTime(overwrite: Boolean) {
-        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite))
+        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite, getCurrentTime()))
     }
 
     override fun addViewAttributes(attributes: Map<String, Any?>) {
@@ -910,8 +912,11 @@ internal class DatadogRumMonitor(
     }
 
     private fun getEventTime(attributes: Map<String, Any?>): Time {
-        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: Time()
+        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: getCurrentTime()
     }
+
+    private fun getCurrentTime() =
+        Time(sdkCore.timeProvider.getDeviceTimestampMillis(), sdkCore.timeProvider.getDeviceElapsedTimeNanos())
 
     private fun getErrorType(attributes: Map<String, Any?>): String? {
         return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
