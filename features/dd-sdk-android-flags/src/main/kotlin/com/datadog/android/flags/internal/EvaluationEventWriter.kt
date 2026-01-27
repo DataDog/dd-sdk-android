@@ -32,4 +32,16 @@ internal interface EvaluationEventWriter {
      * @param event the evaluation event to write to storage
      */
     fun write(event: BatchedFlagEvaluations.FlagEvaluation)
+
+    /**
+     * Writes a list of flag evaluation events to persistent storage.
+     *
+     * The events are serialized and stored as individual records. Multiple events
+     * will be collected and batched together at upload time.
+     *
+     * Thread Safety: This method must be thread-safe and handle concurrent calls correctly.
+     *
+     * @param events the evaluation events to write to storage
+     */
+    fun writeAll(events: List<BatchedFlagEvaluations.FlagEvaluation>)
 }
