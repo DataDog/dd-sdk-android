@@ -86,8 +86,10 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
             .put("targeting_key", context.targetingKey)
             .put("targeting_attributes", attributeObj)
         val env = buildEnvPayload(flagsContext)
+        val source = buildSourcePayload(flagsContext)
         val attributes = JSONObject()
             .put("env", env)
+            .put("source", source)
             .put("subject", subject)
         val data = JSONObject()
             .put("type", "precompute-assignments-request")
@@ -123,11 +125,18 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
         JSONObject()
             .put("dd_env", flagsContext.env)
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
+    private fun buildSourcePayload(flagsContext: FlagsContext): JSONObject =
+        JSONObject()
+            .put("sdk_name", SDK_NAME)
+            .put("sdk_version", flagsContext.sdkVersion)
+
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
+        private const val SDK_NAME = "dd-sdk-android"
     }
 }

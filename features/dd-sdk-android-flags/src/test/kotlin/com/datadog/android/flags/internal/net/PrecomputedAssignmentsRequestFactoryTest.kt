@@ -45,6 +45,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -56,7 +57,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv
+            env = fakeEnv,
+            sdkVersion = fakeSdkVersion
         )
 
         // When
@@ -75,6 +77,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     fun `M create valid request W create() { no application id }`(
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -86,7 +89,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             applicationId = null,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv
+            env = fakeEnv,
+            sdkVersion = fakeSdkVersion
         )
 
         // When
@@ -104,6 +108,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -117,6 +122,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
             env = fakeEnv,
+            sdkVersion = fakeSdkVersion,
             customFlagEndpoint = fakeCustomEndpoint
         )
 
@@ -136,6 +142,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -151,7 +158,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv
+            env = fakeEnv,
+            sdkVersion = fakeSdkVersion
         )
 
         // When
@@ -170,6 +178,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Validate attributes structure
         val attributes = data.getJSONObject("attributes")
         assertThat(attributes.has("env")).isTrue()
+        assertThat(attributes.has("source")).isTrue()
         assertThat(attributes.has("subject")).isTrue()
 
         // Validate subject
@@ -186,6 +195,11 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Validate env
         val env = attributes.getJSONObject("env")
         assertThat(env.getString("dd_env")).isEqualTo(fakeEnv)
+
+        // Validate source
+        val source = attributes.getJSONObject("source")
+        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
+        assertThat(source.getString("sdk_version")).isEqualTo(fakeSdkVersion)
     }
 
     @Test
@@ -193,6 +207,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -204,7 +219,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv
+            env = fakeEnv,
+            sdkVersion = fakeSdkVersion
         )
 
         // When
@@ -229,6 +245,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -245,7 +262,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv
+            env = fakeEnv,
+            sdkVersion = fakeSdkVersion
         )
 
         // When
@@ -277,6 +295,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
+        @StringForgery fakeSdkVersion: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -288,7 +307,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1_FED,
-            env = fakeEnv
+            env = fakeEnv,
+            sdkVersion = fakeSdkVersion
         )
 
         // When
