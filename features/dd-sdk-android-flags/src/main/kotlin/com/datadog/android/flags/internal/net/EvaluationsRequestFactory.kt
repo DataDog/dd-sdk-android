@@ -15,12 +15,11 @@ import com.datadog.android.api.storage.RawBatchEvent
 
 /**
  * Placeholder RequestFactory for evaluations endpoint.
- * Will be implemented in Phase 3.
  */
 internal class EvaluationsRequestFactory(
-    @Suppress("UnusedPrivateProperty") // Will be used in Phase 4
+    @Suppress("UnusedPrivateProperty")
     private val internalLogger: InternalLogger,
-    @Suppress("UnusedPrivateProperty") // Will be used in Phase 4
+    @Suppress("UnusedPrivateProperty")
     private val customEvaluationEndpoint: String?
 ) : RequestFactory {
     override fun create(
@@ -29,7 +28,6 @@ internal class EvaluationsRequestFactory(
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
     ): Request? {
-        // Placeholder - returns null so no uploads happen yet
         return null
     }
 }

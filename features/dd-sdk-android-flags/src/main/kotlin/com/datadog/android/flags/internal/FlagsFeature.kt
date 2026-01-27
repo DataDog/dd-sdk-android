@@ -55,6 +55,9 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     @Volatile
     private var isDebugBuild: Boolean = false
 
+    @Volatile
+    private var evaluationsFeature: EvaluationsFeature? = null
+
     /**
      * Registry of [FlagsClient] instances by name.
      * This map stores all clients created for this feature instance.
@@ -113,7 +116,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
 
         // Register evaluations sub-feature (Phase 1: empty placeholder)
         if (flagsConfiguration.trackEvaluations) {
-            registerEvaluationsFeature(sdkCore)
+            registerEvaluationsFeature()
         }
     }
 
@@ -132,12 +135,13 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
 
     // region evaluationsFeature
 
-    private fun registerEvaluationsFeature(sdkCore: FeatureSdkCore) {
+    private fun registerEvaluationsFeature() {
         val evaluationsFeature = EvaluationsFeature(
             sdkCore = sdkCore,
             customEvaluationEndpoint = flagsConfiguration.customEvaluationEndpoint
         )
         sdkCore.registerFeature(evaluationsFeature)
+        this.evaluationsFeature = evaluationsFeature
     }
 
     // endregion
