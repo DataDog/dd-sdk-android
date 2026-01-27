@@ -21,14 +21,15 @@ interface com.datadog.android.flags.FlagsClient
 data class com.datadog.android.flags.FlagsConfiguration
   class Builder
     fun trackExposures(Boolean): Builder
+    fun trackEvaluations(Boolean): Builder
     fun useCustomExposureEndpoint(String): Builder
+    fun useCustomEvaluationEndpoint(String): Builder
+    fun evaluationFlushInterval(Long): Builder
     fun useCustomFlagEndpoint(String): Builder
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
-    fun trackEvaluations(Boolean): Builder
-    fun useCustomEvaluationEndpoint(String): Builder
-    fun evaluationFlushInterval(Long): Builder
     fun build(): FlagsConfiguration
+    companion object 
   companion object 
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)

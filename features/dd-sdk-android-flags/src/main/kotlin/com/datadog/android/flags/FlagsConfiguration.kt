@@ -11,26 +11,26 @@ package com.datadog.android.flags
  */
 data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean,
-    internal val customExposureEndpoint: String?,
-    internal val customFlagEndpoint: String?,
-    internal val rumIntegrationEnabled: Boolean,
-    internal val gracefulModeEnabled: Boolean,
     internal val trackEvaluations: Boolean,
+    internal val customExposureEndpoint: String?,
     internal val customEvaluationEndpoint: String?,
-    internal val evaluationFlushIntervalMs: Long
+    internal val customFlagEndpoint: String?,
+    internal val evaluationFlushIntervalMs: Long,
+    internal val rumIntegrationEnabled: Boolean,
+    internal val gracefulModeEnabled: Boolean
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
     class Builder {
         private var trackExposures: Boolean = true
+        private var trackEvaluations: Boolean = true
         private var customExposureEndpoint: String? = null
+        private var customEvaluationEndpoint: String? = null
         private var customFlagEndpoint: String? = null
+        private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
-        private var trackEvaluations: Boolean = true
-        private var customEvaluationEndpoint: String? = null
-        private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -40,6 +40,20 @@ data class FlagsConfiguration internal constructor(
          */
         fun trackExposures(enabled: Boolean): Builder {
             trackExposures = enabled
+            return this
+        }
+
+        /**
+         * Sets whether evaluations should be logged to the dedicated evaluations intake endpoint.
+         *
+         * Evaluation logging captures aggregated metrics about all flag evaluations, including
+         * frequency, default values, and errors. This is enabled by default.
+         *
+         * @param enabled Whether to enable evaluation logging (default: true).
+         * @return this [Builder] instance for method chaining.
+         */
+        fun trackEvaluations(enabled: Boolean): Builder {
+            trackEvaluations = enabled
             return this
         }
 
@@ -54,6 +68,39 @@ data class FlagsConfiguration internal constructor(
          */
         fun useCustomExposureEndpoint(endpoint: String): Builder {
             customExposureEndpoint = endpoint
+            return this
+        }
+
+        /**
+         * Sets a custom endpoint URL for sending evaluation events.
+         *
+         * By default, evaluation events are sent to the standard Datadog intake endpoint.
+         * Use this method to override the endpoint URL for testing or proxy purposes.
+         *
+         * @param endpoint The custom endpoint URL to use for evaluation event uploads.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun useCustomEvaluationEndpoint(endpoint: String): Builder {
+            customEvaluationEndpoint = endpoint
+            return this
+        }
+
+        /**
+         * Sets the flush interval for aggregated evaluation events.
+         *
+         * Evaluation events are aggregated and flushed periodically.
+         * Values outside the valid range (1-60 seconds) will be coerced to the nearest bound.
+         *
+         * @param intervalMs The flush interval in milliseconds (default: 10,000ms = 10 seconds).
+         *                   Values below 1,000ms will be coerced to 1,000ms.
+         *                   Values above 60,000ms will be coerced to 60,000ms.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun evaluationFlushInterval(intervalMs: Long): Builder {
+            evaluationFlushIntervalMs = intervalMs.coerceIn(
+                MIN_EVALUATION_FLUSH_INTERVAL_MS,
+                MAX_EVALUATION_FLUSH_INTERVAL_MS
+            )
             return this
         }
 
@@ -103,53 +150,25 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
-         * Sets whether flag evaluations should be logged (default: true per EVALLOG.12).
-         * @param enabled Whether to enable evaluation logging.
-         * @return this [Builder] instance for method chaining.
-         */
-        fun trackEvaluations(enabled: Boolean): Builder {
-            trackEvaluations = enabled
-            return this
-        }
-
-        /**
-         * Sets a custom endpoint URL for sending evaluation events.
-         * @param endpoint The custom endpoint URL.
-         * @return this [Builder] instance for method chaining.
-         */
-        fun useCustomEvaluationEndpoint(endpoint: String): Builder {
-            customEvaluationEndpoint = endpoint
-            return this
-        }
-
-        /**
-         * Sets the flush interval for evaluation events (1-60 seconds, default: 10s).
-         * Values outside the valid range will be clamped to the nearest boundary.
-         * @param intervalMs Flush interval in milliseconds.
-         * @return this [Builder] instance for method chaining.
-         */
-        fun evaluationFlushInterval(intervalMs: Long): Builder {
-            evaluationFlushIntervalMs = intervalMs.coerceIn(
-                MIN_EVALUATION_FLUSH_INTERVAL_MS,
-                MAX_EVALUATION_FLUSH_INTERVAL_MS
-            )
-            return this
-        }
-
-        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
             trackExposures = trackExposures,
-            customExposureEndpoint = customExposureEndpoint,
-            customFlagEndpoint = customFlagEndpoint,
-            rumIntegrationEnabled = rumIntegrationEnabled,
-            gracefulModeEnabled = gracefulModeEnabled,
             trackEvaluations = trackEvaluations,
+            customExposureEndpoint = customExposureEndpoint,
             customEvaluationEndpoint = customEvaluationEndpoint,
-            evaluationFlushIntervalMs = evaluationFlushIntervalMs
+            customFlagEndpoint = customFlagEndpoint,
+            evaluationFlushIntervalMs = evaluationFlushIntervalMs,
+            rumIntegrationEnabled = rumIntegrationEnabled,
+            gracefulModeEnabled = gracefulModeEnabled
         )
+
+        companion object {
+            private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L
+            private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L
+            private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L
+        }
     }
 
     /**
