@@ -88,7 +88,7 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M update last evaluation timestamp W recordEvaluation()`() {
+    fun `M update timestamps W recordEvaluation() and toEvaluationEvent()`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
         val laterTimestamp = fakeTimestamp + 5000
@@ -96,9 +96,11 @@ internal class AggregationStatsTest {
         // When
         stats.recordEvaluation(laterTimestamp, null)
 
-        // Then
+        // Then - lastEvaluation updated, firstEvaluation unchanged, timestamp equals firstEvaluation
         val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
         assertThat(event.lastEvaluation).isEqualTo(laterTimestamp)
+        assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
+        assertThat(event.timestamp).isEqualTo(event.firstEvaluation)
     }
 
     @Test
@@ -117,7 +119,7 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M update last error message W recordEvaluation() { multiple errors same code }`(forge: Forge) {
+    fun `M update error message and count W recordEvaluation() { multiple errors same code }`(forge: Forge) {
         // Given
         val errorMessage1 = "First error: ${forge.anAlphabeticalString()}"
         val errorMessage2 = "Second error: ${forge.anAlphabeticalString()}"
@@ -128,27 +130,10 @@ internal class AggregationStatsTest {
         stats.recordEvaluation(fakeTimestamp + 1000, errorMessage2)
         stats.recordEvaluation(fakeTimestamp + 2000, errorMessage3)
 
-        // Then
+        // Then - last error message and aggregated count
         val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
         assertThat(event.error?.message).isEqualTo(errorMessage3)
-    }
-
-    @Test
-    fun `M keep aggregated count W recordEvaluation() { same error code different messages }`(forge: Forge) {
-        // Given
-        val errorMessage1 = "Error details: ${forge.anAlphabeticalString()}"
-        val errorMessage2 = "Error details: ${forge.anAlphabeticalString()}"
-        val errorMessage3 = "Error details: ${forge.anAlphabeticalString()}"
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, errorMessage1)
-
-        // When
-        stats.recordEvaluation(fakeTimestamp + 1000, errorMessage2)
-        stats.recordEvaluation(fakeTimestamp + 2000, errorMessage3)
-
-        // Then
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
         assertThat(event.evaluationCount).isEqualTo(3L)
-        assertThat(event.error?.message).isEqualTo(errorMessage3) // Last message
     }
 
     // endregion
@@ -290,19 +275,6 @@ internal class AggregationStatsTest {
 
         // Then
         assertThat(eventWithoutError.error).isNull()
-    }
-
-    @Test
-    fun `M use timestamp as first evaluation W toEvaluationEvent() { single evaluation }`() {
-        // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
-
-        // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
-
-        // Then
-        assertThat(event.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(event.timestamp).isEqualTo(event.firstEvaluation)
     }
 
     @Test
@@ -472,23 +444,6 @@ internal class AggregationStatsTest {
     // endregion
 
     // region Out of order timestamps
-
-    @Test
-    fun `M update firstEvaluation W recordEvaluation() { earlier evaluation arrives }`() {
-        // Given - initial timestamp at 5000ms
-        val initialTimestamp = 5000L
-        val stats = AggregationStats(initialTimestamp, fakeContext, fakeData.reason, null)
-
-        // When -  earlier evaluation arrives
-        val earlierTimestamp = 3000L
-        stats.recordEvaluation(earlierTimestamp, null)
-
-        // Then
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
-        assertThat(event.firstEvaluation).isEqualTo(earlierTimestamp)
-        assertThat(event.lastEvaluation).isEqualTo(initialTimestamp)
-        assertThat(event.evaluationCount).isEqualTo(2L)
-    }
 
     @Test
     fun `M maintain correct range W recordEvaluation() { out of order arrival }`() {
