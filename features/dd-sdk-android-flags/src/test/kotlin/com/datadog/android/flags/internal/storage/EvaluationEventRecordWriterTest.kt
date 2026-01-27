@@ -30,6 +30,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -283,6 +284,71 @@ internal class EvaluationEventRecordWriterTest {
         // EVALLOG.7: empty string targeting_key should be included in JSON
         val capturedJson = String(eventCaptor.firstValue.data, Charsets.UTF_8)
         assertThat(capturedJson).contains("\"targeting_key\":\"\"")
+    }
+
+    // endregion
+
+    // region writeAll
+
+    @Test
+    fun `M write multiple events W writeAll() { batch of events }`(
+        @Forgery event1: BatchedFlagEvaluations.FlagEvaluation,
+        @Forgery event2: BatchedFlagEvaluations.FlagEvaluation,
+        @Forgery event3: BatchedFlagEvaluations.FlagEvaluation
+    ) {
+        // Given
+        val events = listOf(event1, event2, event3)
+
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockFeature.withWriteContext(any(), any()))
+            .thenAnswer { invocation ->
+                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+                val mockContext = mock<DatadogContext>()
+                callback.invoke(mockContext) { writerScope ->
+                    writerScope.invoke(mockEventBatchWriter)
+                }
+            }
+
+        // When
+        testedWriter.writeAll(events)
+
+        // Then - should write all 3 events
+        val eventCaptor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter, times(3)).write(
+            event = eventCaptor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+
+        val capturedEvents = eventCaptor.allValues
+        assertThat(capturedEvents).hasSize(3)
+    }
+
+    @Test
+    fun `M not write W writeAll() { empty list }`() {
+        // When
+        testedWriter.writeAll(emptyList())
+
+        // Then
+        verifyNoInteractions(mockSdkCore)
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M not write W writeAll() { feature not available }`(
+        @Forgery event1: BatchedFlagEvaluations.FlagEvaluation,
+        @Forgery event2: BatchedFlagEvaluations.FlagEvaluation
+    ) {
+        // Given
+        val events = listOf(event1, event2)
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(null)
+
+        // When
+        testedWriter.writeAll(events)
+
+        // Then
+        verify(mockSdkCore).getFeature(Feature.FLAGS_FEATURE_NAME)
+        verifyNoInteractions(mockEventBatchWriter)
     }
 
     // endregion
