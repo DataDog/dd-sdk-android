@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -38,8 +39,8 @@ import com.datadog.android.rum.internal.startup.testRumStartupScenarios
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -184,7 +185,7 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeDisplayInfo: DisplayInfo
 
-    private var fakeVitalSource: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? = null
+    private var fakeVitalSource: VitalAppLaunchEvent.VitalAppLaunchEventSource? = null
 
     @Mock
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
@@ -233,7 +234,7 @@ internal class RumSessionScopeTest {
         )
 
         fakeVitalSource = if (isValidSource) {
-            RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.fromJson(fakeSource)
+            VitalAppLaunchEvent.VitalAppLaunchEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -1595,6 +1596,36 @@ internal class RumSessionScopeTest {
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
+    }
+
+    @Test
+    fun `M stop profiler W handleEvent { AppStartTTIDEvent, session not tracked }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
+        val event = mock<RumRawEvent.AppStartTTIDEvent>()
+
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+        testedScope.sessionState =
+            forge.aValueFrom(RumSessionScope.State::class.java, exclude = listOf(RumSessionScope.State.TRACKED))
+
+        // When
+        testedScope.handleEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        // Then
+        verify(mockProfilingFeatureScope).sendEvent(ProfilerStopEvent.TTID())
     }
 
     @Test

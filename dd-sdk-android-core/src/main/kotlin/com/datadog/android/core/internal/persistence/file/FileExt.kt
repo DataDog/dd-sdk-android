@@ -130,7 +130,11 @@ fun File.listFilesSafe(internalLogger: InternalLogger, filter: FilenameFilter): 
     }
 }
 
-internal fun File.lengthSafe(internalLogger: InternalLogger): Long {
+/**
+ *  Non-throwing version of [File.length]. If exception happens, 0 is returned.
+ */
+@InternalApi
+fun File.lengthSafe(internalLogger: InternalLogger): Long {
     return safeCall(default = 0L, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         length()
@@ -172,7 +176,11 @@ fun File.readTextSafe(charset: Charset = Charsets.UTF_8, internalLogger: Interna
     }
 }
 
-internal fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
+/**
+ * Non-throwing version of [File.readBytes]. If exception happens, null is returned.
+ */
+@InternalApi
+fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
     return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
         safeCall(default = null, internalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall")

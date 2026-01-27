@@ -55,11 +55,23 @@ internal object FlagValueConverter {
                 String::class -> variationValue as T
                 Int::class -> variationValue.toIntOrNull() as? T
                 Double::class -> variationValue.toDoubleOrNull() as? T
+                Map::class -> variationValue.toMap() as? T
                 JSONObject::class -> {
                     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
-                    JSONObject(variationValue) as? T
+                    val json = JSONObject(variationValue)
+                    @Suppress("UNCHECKED_CAST")
+                    json as? T
                 }
-                else -> null
+                else -> {
+                    // Check if targetType is a Map implementation
+                    // Safe: isAssignableFrom is a standard Java reflection call
+                    @Suppress("UnsafeThirdPartyFunctionCall")
+                    if (Map::class.java.isAssignableFrom(targetType.java)) {
+                        variationValue.toMap() as? T
+                    } else {
+                        null
+                    }
+                }
             }
 
             result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
@@ -81,7 +93,17 @@ internal object FlagValueConverter {
             variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value ||
                 variationType == VariationType.INTEGER.value
         JSONObject::class -> variationType == VariationType.OBJECT.value
-        else -> false
+        Map::class -> variationType == VariationType.OBJECT.value
+        else -> {
+            // Check if targetType is a Map implementation (e.g., LinkedHashMap, HashMap, etc.)
+            // Safe: isAssignableFrom is a standard Java reflection call
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            if (Map::class.java.isAssignableFrom(targetType.java)) {
+                variationType == VariationType.OBJECT.value
+            } else {
+                false
+            }
+        }
     }
 
     fun getTypeName(targetType: KClass<*>): String = when (targetType) {
@@ -90,6 +112,7 @@ internal object FlagValueConverter {
         Int::class -> "Int"
         Double::class -> "Double"
         JSONObject::class -> "JSONObject"
+        Map::class -> "Map"
         else -> targetType.simpleName ?: "Unknown"
     }
 }

@@ -810,7 +810,10 @@ internal class DatadogRumMonitor(
             handler.removeCallbacks(keepAliveRunnable)
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.withWriteContext(
-                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                    withFeatureContexts = setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.PROFILING_FEATURE_NAME
+                    )
                 ) { datadogContext, writeScope ->
                     // avoid trowing a RejectedExecutionException
                     if (!executorService.isShutdown) {
