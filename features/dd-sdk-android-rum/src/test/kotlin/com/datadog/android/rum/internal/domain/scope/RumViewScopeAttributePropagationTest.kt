@@ -343,7 +343,7 @@ internal class RumViewScopeAttributePropagationTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter

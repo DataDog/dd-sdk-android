@@ -1086,7 +1086,7 @@ internal class RumContinuousActionScopeTest {
     fun `M send Action immediately W handleEvent(StopView) {viewTreeChangeCount != 0}`() {
         // When
         val expectedStoppedTimestamp = fakeEventTime.nanoTime
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1151,7 +1151,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1216,7 +1216,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1286,7 +1286,7 @@ internal class RumContinuousActionScopeTest {
         }
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1364,7 +1364,7 @@ internal class RumContinuousActionScopeTest {
         }
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2430,7 +2430,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2496,7 +2496,7 @@ internal class RumContinuousActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap(), eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)

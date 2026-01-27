@@ -35,10 +35,11 @@ internal fun Forge.startViewEvent(eventTime: Time = Time()): RumRawEvent.StartVi
     )
 }
 
-internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
+internal fun Forge.stopViewEvent(eventTime: Time = Time()): RumRawEvent.StopView {
     return RumRawEvent.StopView(
         key = getForgery(),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = eventTime
     )
 }
 
@@ -265,7 +266,7 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
             RumRawEvent.ApplicationStarted(Time(), aLong()),
             RumRawEvent.ResetSession(),
             RumRawEvent.KeepAlive(),
-            RumRawEvent.StopView(getForgery(), emptyMap()),
+            RumRawEvent.StopView(getForgery(), emptyMap(), eventTime = Time()),
             RumRawEvent.ActionSent(
                 fakeId,
                 aPositiveInt(),

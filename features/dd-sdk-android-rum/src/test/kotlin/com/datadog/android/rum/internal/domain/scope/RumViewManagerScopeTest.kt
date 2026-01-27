@@ -361,7 +361,7 @@ internal class RumViewManagerScopeTest {
         val firstViewEvent = forge.startViewEvent(eventTime = baseTime)
         testedScope.applicationDisplayed = true
         testedScope.handleEvent(firstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap(), baseTime)
+        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap(), eventTime = baseTime)
         testedScope.handleEvent(stopFirstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When

@@ -195,7 +195,7 @@ internal class DatadogRumMonitor(
     override fun stopView(key: Any, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StopView(RumScopeKey.from(key), attributes.toMap(), eventTime)
+            RumRawEvent.StopView(RumScopeKey.from(key), attributes.toMap(), eventTime = eventTime)
         )
     }
 
