@@ -55,16 +55,7 @@ internal class EvaluationsRequestFactory(
         )
     }
 
-    /**
-     * Builds the request headers.
-     *
-     * @param requestId unique request ID
-     * @param clientToken Datadog client token
-     * @param source SDK source identifier
-     * @param sdkVersion SDK version
-     * @return map of headers
-     */
-    private fun buildHeaders(
+     private fun buildHeaders(
         requestId: String,
         clientToken: String,
         source: String,
@@ -76,21 +67,7 @@ internal class EvaluationsRequestFactory(
         RequestFactory.HEADER_REQUEST_ID to requestId
     )
 
-    /**
-     * Builds the batched payload with context wrapper.
-     *
-     * The payload must be a BatchedFlagEvaluations object:
-     * {
-     *   "context": { service, version, env, device, os, rum, geo },
-     *   "flagEvaluations": [ ... ]
-     * }
-     *
-     * @param context Datadog context for extracting metadata
-     * @param batchData list of raw batch events (individual FlagEvaluation objects)
-     * @return batched payload as UTF-8 bytes
-     */
     private fun buildBatchedPayload(context: DatadogContext, batchData: List<RawBatchEvent>): ByteArray {
-        // Parse individual FlagEvaluation events
         val flagEvaluations = mutableListOf<BatchedFlagEvaluations.FlagEvaluation>()
         batchData.forEach { event ->
             try {
