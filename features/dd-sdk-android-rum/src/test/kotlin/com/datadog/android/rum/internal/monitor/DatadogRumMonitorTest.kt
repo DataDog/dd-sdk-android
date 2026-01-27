@@ -36,6 +36,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -52,7 +53,6 @@ import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -141,9 +141,6 @@ internal class DatadogRumMonitorTest {
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
-    lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
-
-    @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -216,6 +213,9 @@ internal class DatadogRumMonitorTest {
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
+
+    @Forgery
+    lateinit var fakeEventTime: Time
 
     private var fakeRumSessionType: RumSessionType? = null
 
@@ -2472,7 +2472,8 @@ internal class DatadogRumMonitorTest {
                     ),
                     RumRawEvent.StartView(
                         key = forge.getForgery(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = fakeEventTime
                     )
                 )
                 testedMonitor.handleEvent(event)

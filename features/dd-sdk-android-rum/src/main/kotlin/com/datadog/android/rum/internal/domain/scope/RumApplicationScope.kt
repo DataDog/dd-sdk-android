@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.currentTime
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -213,7 +214,8 @@ internal class RumApplicationScope(
             lastActiveViewInfo?.let {
                 val startViewEvent = RumRawEvent.StartView(
                     key = it.key,
-                    attributes = it.attributes
+                    attributes = it.attributes,
+                    eventTime = sdkCore.currentTime()
                 )
                 newSession.handleEvent(startViewEvent, datadogContext, writeScope, writer)
             }

@@ -6,12 +6,16 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.core.InternalSdkCore
 import java.util.concurrent.TimeUnit
 
 internal data class Time(
     val timestamp: Long = System.currentTimeMillis(),
     val nanoTime: Long = System.nanoTime()
 )
+
+internal fun InternalSdkCore.currentTime() =
+    Time(timeProvider.getDeviceTimestampMillis(), timeProvider.getDeviceElapsedTimeNanos())
 
 /**
  * Convert a value obtained from [System.currentTimeMillis] to [Time].

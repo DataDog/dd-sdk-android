@@ -17,6 +17,7 @@ import com.datadog.android.rum.tests.elmyr.BatteryInfoForgeryFactory
 import com.datadog.android.rum.tests.elmyr.DisplayInfoForgeryFactory
 import com.datadog.android.rum.tests.elmyr.ResourceIdForgeryFactory
 import com.datadog.android.rum.tests.elmyr.RumScopeKeyForgeryFactory
+import com.datadog.android.rum.tests.elmyr.TimeForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -54,6 +55,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(SlowFramesConfigurationForgeryFactory())
         forge.addFactory(DisplayInfoForgeryFactory())
         forge.addFactory(BatteryInfoForgeryFactory())
+        forge.addFactory(TimeForgeryFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())

@@ -561,7 +561,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -578,7 +578,7 @@ internal class RumViewScopeTest {
     ) {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -655,13 +655,13 @@ internal class RumViewScopeTest {
     ) {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         val result2 = testedScope.handleEvent(
-            RumRawEvent.StartView(key2, emptyMap()),
+            RumRawEvent.StartView(key2, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6662,7 +6662,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6726,7 +6726,7 @@ internal class RumViewScopeTest {
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6766,7 +6766,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6796,13 +6796,13 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey1, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey1, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey2, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey2, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6823,7 +6823,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6868,7 +6868,7 @@ internal class RumViewScopeTest {
         // When
         testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter

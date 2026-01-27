@@ -28,7 +28,7 @@ internal sealed class RumRawEvent {
     internal data class StartView(
         val key: RumScopeKey,
         val attributes: Map<String, Any?>,
-        override val eventTime: Time = Time()
+        override val eventTime: Time
     ) : RumRawEvent()
 
     internal data class StopView(

@@ -21,6 +21,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -28,7 +29,6 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -98,9 +98,6 @@ internal class RumApplicationScopeTest {
 
     @Mock
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
-
-    @Mock
-    lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
@@ -349,7 +346,8 @@ internal class RumApplicationScopeTest {
     @Test
     fun `M create a new session W handleEvent { no active sessions, start view } `(
         @StringForgery viewKey: String,
-        @StringForgery viewName: String
+        @StringForgery viewName: String,
+        @Forgery eventTime: Time
     ) {
         // Given
         val initialSession = testedScope.childScopes.first()
@@ -357,7 +355,8 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = mapOf()
+                attributes = mapOf(),
+                eventTime = eventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -377,7 +376,8 @@ internal class RumApplicationScopeTest {
     fun `M create a new session with last known view W handleEvent { no active sessions, start action } `(
         forge: Forge,
         @StringForgery viewKey: String,
-        @StringForgery viewName: String
+        @StringForgery viewName: String,
+        @Forgery eventTime: Time
     ) {
         // Given
         val mockAttributes = forge.exhaustiveAttributes()
@@ -385,7 +385,8 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = fakeKey,
-                attributes = mockAttributes
+                attributes = mockAttributes,
+                eventTime = eventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
