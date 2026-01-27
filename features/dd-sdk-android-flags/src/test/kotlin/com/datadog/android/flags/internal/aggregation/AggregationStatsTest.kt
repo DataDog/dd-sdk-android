@@ -302,7 +302,7 @@ internal class AggregationStatsTest {
     fun `M handle null variant and allocation W toEvaluationEvent() { key has null fields }`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
-        
+
         // When - null variant
         val keyWithNullVariant = fakeAggregationKey.copy(variantKey = null)
         val eventWithNullVariant = stats.toEvaluationEvent(fakeFlagName, keyWithNullVariant)
