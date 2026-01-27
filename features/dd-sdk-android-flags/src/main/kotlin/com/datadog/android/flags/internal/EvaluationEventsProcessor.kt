@@ -12,9 +12,11 @@ import com.datadog.android.flags.internal.aggregation.AggregationStats
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Processor for evaluation logging events.
@@ -22,7 +24,11 @@ import java.util.concurrent.TimeUnit
  * Aggregates evaluation events before sending them to reduce network traffic.
  * Evaluations with the same AggregationKey are aggregated together.
  * Events are flushed on: time interval, size limit, or shutdown.
- * The aggregation map is cleared after each flush.
+ *
+ * Concurrency Model:
+ * - Lock-free writes: Uses ConcurrentHashMap.putIfAbsent() for new key insertions
+ * - Atomic flush guard: AtomicBoolean prevents concurrent flush operations
+ * - Snapshot pattern: Flush works on isolated snapshot while new evaluations continue
  *
  * Thread-safe for concurrent processEvaluation() and flush() calls.
  *
@@ -42,7 +48,11 @@ internal class EvaluationEventsProcessor(
     private val maxAggregations: Int = MAX_AGGREGATIONS_BEFORE_FLUSH
 ) {
 
-    private val aggregationMap = ConcurrentHashMap<AggregationKey, AggregationStats>()
+    private var aggregationMap = ConcurrentHashMap<AggregationKey, AggregationStats>()
+    private val flushLock = Object()
+
+    // Atomic flag to prevent concurrent flush operations
+    private val flushInProgress = AtomicBoolean(false)
 
     @Volatile
     private var scheduledFlushFuture: ScheduledFuture<*>? = null
@@ -55,7 +65,7 @@ internal class EvaluationEventsProcessor(
      * and resolution reason.
      *
      * Evaluations with the same aggregation key are grouped together.
-     * Automatic flush triggered if size limit reached.
+     * Flush triggered if size limit reached.
      *
      * Thread-safe: can be called concurrently from multiple threads.
      *
@@ -64,75 +74,10 @@ internal class EvaluationEventsProcessor(
      * @param variantKey the variant/variation key, or null if not assigned
      * @param allocationKey the allocation key, or null if not assigned
      * @param reason the resolution reason indicating why this value was resolved
+     * @param errorCode the error code, or null if not applicable
+     * @param errorMessage the optional error message for debugging
      */
-    fun processSuccessEvaluation(
-        flagKey: String,
-        context: EvaluationContext,
-        variantKey: String?,
-        allocationKey: String?,
-        reason: String
-    ) {
-        recordEvaluation(
-            flagKey = flagKey,
-            context = context,
-            variantKey = variantKey,
-            allocationKey = allocationKey,
-            reason = reason,
-            errorCode = null,
-            errorMessage = null
-        )
-    }
-
-    /**
-     * Processes an error evaluation without any flag data.
-     *
-     * This path is used when flag resolution fails before we can retrieve
-     * any flag data from the repository (e.g., SDK not initialized, network error,
-     * flag not found, provider not ready).
-     *
-     * Without flag data, we aggregate only on the error code.
-     *
-     * Evaluations with the same aggregation key are grouped together.
-     * Automatic flush triggered if size limit reached.
-     *
-     * Thread-safe: can be called concurrently from multiple threads.
-     *
-     * @param flagKey the flag key
-     * @param context the evaluation context (targeting key, attributes)
-     * @param errorCode the error type (for aggregation)
-     * @param errorMessage the detailed error message (for logging)
-     */
-    fun processErrorEvaluation(
-        flagKey: String,
-        context: EvaluationContext,
-        errorCode: String,
-        errorMessage: String
-    ) {
-        recordEvaluation(
-            flagKey = flagKey,
-            context = context,
-            variantKey = null,
-            allocationKey = null,
-            reason = null,
-            errorCode = errorCode,
-            errorMessage = errorMessage
-        )
-    }
-
-    /**
-     * Internal method that handles evaluation recording.
-     *
-     * Creates the aggregation key and updates the stats.
-     *
-     * @param flagKey the flag key being evaluated
-     * @param context the evaluation context
-     * @param variantKey the variant key, null if not applicable
-     * @param allocationKey the allocation key, null if not applicable
-     * @param reason the resolution reason, null if error without flag data
-     * @param errorCode the error code, null if successful evaluation
-     * @param errorMessage optional error message for debugging
-     */
-    private fun recordEvaluation(
+    fun processEvaluation(
         flagKey: String,
         context: EvaluationContext,
         variantKey: String?,
@@ -151,17 +96,16 @@ internal class EvaluationEventsProcessor(
             errorCode = errorCode
         )
 
-        // Update existing stats or create new ones
-        synchronized(aggregationMap) {
-            val existing = aggregationMap[key]
-            if (existing != null) {
-                existing.recordEvaluation(timestamp, errorMessage)
-            } else {
-                aggregationMap[key] = AggregationStats(timestamp, context, reason, errorMessage)
-            }
-        }
+        @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
+        val existing = aggregationMap.putIfAbsent(
+            key,
+            AggregationStats(timestamp, context, reason, errorMessage)
+        )
 
-        // Size-based flush
+        // Pre-existing stats object found, record evaluation
+        existing?.recordEvaluation(timestamp, errorMessage)
+
+        // Flush when buffer is full
         if (aggregationMap.size >= maxAggregations) {
             flush()
         }
@@ -170,27 +114,39 @@ internal class EvaluationEventsProcessor(
     /**
      * Flushes all aggregated evaluations.
      *
-     * Called on: time interval, size limit, or shutdown.
-     * The aggregation map is cleared after flushing.
-     *
-     * Thread-safe: synchronized to prevent concurrent flush operations.
+     * Cancels any scheduled flush and schedules a new one upon completion.
+     * Thread-safe: atomic flag prevents concurrent flush operations.
+     * If a flush is already in progress, this method returns immediately (non-blocking).
+     * New evaluations can be processed concurrently with flush operations.
      */
-    fun flush() {
-        // Take atomic snapshot and clear map
-        val snapshot = synchronized(aggregationMap) {
-            val copy = aggregationMap.toMap()
-            aggregationMap.clear()
-            copy
-        }
-
-        if (snapshot.isEmpty()) {
+    fun flush(rescheduleFlush: Boolean = true) {
+        if (!flushInProgress.compareAndSet(false, true)) {
             return
         }
 
-        // Convert each aggregation to an event and write
-        snapshot.forEach { (key, stats) ->
-            val event = stats.toEvaluationEvent(key.flagKey, key)
-            writer.write(event)
+        // Cancel any scheduled flush tasks
+        scheduledFlushFuture?.cancel(false)
+
+        try {
+            val snapshot = synchronized(flushLock) {
+                if (aggregationMap.isEmpty()) {
+                    return@synchronized null
+                }
+                val entriesToFlush = aggregationMap
+                aggregationMap = ConcurrentHashMap()
+                entriesToFlush
+            } ?: return
+
+            // Convert to events and write (to storage)
+            snapshot.forEach { (key, stats) ->
+                val event = stats.toEvaluationEvent(key.flagKey, key)
+                writer.write(event)
+            }
+        } finally {
+            flushInProgress.set(false)
+            if (rescheduleFlush) {
+                schedulePeriodicFlush()
+            }
         }
     }
 
@@ -198,7 +154,6 @@ internal class EvaluationEventsProcessor(
      * Schedules periodic flushing of aggregated evaluations.
      *
      * Flushes occur at the configured time interval (default 10s).
-     * The task reschedules itself after each flush (self-scheduling pattern).
      */
     fun schedulePeriodicFlush() {
         try {
@@ -206,15 +161,15 @@ internal class EvaluationEventsProcessor(
             scheduledFlushFuture = scheduledExecutor.schedule(
                 {
                     flush()
-                    schedulePeriodicFlush() // Self-reschedule
                 },
                 flushIntervalMs,
                 TimeUnit.MILLISECONDS
             )
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            // Catch all exceptions during scheduling to prevent crashes
+        } catch (e: RejectedExecutionException) {
+            // Executor is shut down or cannot accept task
+            // Expected during processor shutdown, log for diagnostics
             internalLogger.log(
-                InternalLogger.Level.ERROR,
+                InternalLogger.Level.WARN,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { "Failed to schedule evaluation flush" },
                 e
@@ -233,16 +188,15 @@ internal class EvaluationEventsProcessor(
      */
     fun stop() {
         // Shutdown executor FIRST to reject any new schedule attempts
-        // This prevents the race condition where a scheduled task could reschedule itself
-        // after we cancel the future
+        // This prevents the race condition where a flush could reschedule a task after we cancel the future
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - does not throw in Android
         scheduledExecutor.shutdown()
 
-        // Cancel currently scheduled future (may already be running)
+        // Cancel currently scheduled future; don't interrupt if it's running
         scheduledFlushFuture?.cancel(false)
 
         // Perform final flush
-        flush()
+        flush(rescheduleFlush = false)
 
         // Wait for executor to terminate gracefully
         try {
