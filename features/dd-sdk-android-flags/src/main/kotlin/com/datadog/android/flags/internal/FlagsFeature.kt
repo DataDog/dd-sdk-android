@@ -110,6 +110,11 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
             writer = dataWriter,
             timeProvider = sdkCore.timeProvider
         )
+
+        // Register evaluations sub-feature (Phase 1: empty placeholder)
+        if (flagsConfiguration.trackEvaluations) {
+            registerEvaluationsFeature(sdkCore)
+        }
     }
 
     override fun onStop() {
@@ -124,6 +129,18 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     // endregion
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
+
+    // region evaluationsFeature
+
+    private fun registerEvaluationsFeature(sdkCore: FeatureSdkCore) {
+        val evaluationsFeature = EvaluationsFeature(
+            sdkCore = sdkCore,
+            customEvaluationEndpoint = flagsConfiguration.customEvaluationEndpoint
+        )
+        sdkCore.registerFeature(evaluationsFeature)
+    }
+
+    // endregion
 
     // region FlagsClient Management
 

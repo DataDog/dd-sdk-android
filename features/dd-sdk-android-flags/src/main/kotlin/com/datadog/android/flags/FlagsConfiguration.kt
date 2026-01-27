@@ -14,7 +14,10 @@ data class FlagsConfiguration internal constructor(
     internal val customExposureEndpoint: String?,
     internal val customFlagEndpoint: String?,
     internal val rumIntegrationEnabled: Boolean,
-    internal val gracefulModeEnabled: Boolean
+    internal val gracefulModeEnabled: Boolean,
+    internal val trackEvaluations: Boolean,
+    internal val customEvaluationEndpoint: String?,
+    internal val evaluationFlushIntervalMs: Long
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -25,6 +28,9 @@ data class FlagsConfiguration internal constructor(
         private var customFlagEndpoint: String? = null
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
+        private var trackEvaluations: Boolean = true
+        private var customEvaluationEndpoint: String? = null
+        private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -97,6 +103,40 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets whether flag evaluations should be logged (default: true per EVALLOG.12).
+         * @param enabled Whether to enable evaluation logging.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun trackEvaluations(enabled: Boolean): Builder {
+            trackEvaluations = enabled
+            return this
+        }
+
+        /**
+         * Sets a custom endpoint URL for sending evaluation events.
+         * @param endpoint The custom endpoint URL.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun useCustomEvaluationEndpoint(endpoint: String): Builder {
+            customEvaluationEndpoint = endpoint
+            return this
+        }
+
+        /**
+         * Sets the flush interval for evaluation events (1-60 seconds, default: 10s).
+         * Values outside the valid range will be clamped to the nearest boundary.
+         * @param intervalMs Flush interval in milliseconds.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun evaluationFlushInterval(intervalMs: Long): Builder {
+            evaluationFlushIntervalMs = intervalMs.coerceIn(
+                MIN_EVALUATION_FLUSH_INTERVAL_MS,
+                MAX_EVALUATION_FLUSH_INTERVAL_MS
+            )
+            return this
+        }
+
+        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
@@ -105,7 +145,10 @@ data class FlagsConfiguration internal constructor(
             customExposureEndpoint = customExposureEndpoint,
             customFlagEndpoint = customFlagEndpoint,
             rumIntegrationEnabled = rumIntegrationEnabled,
-            gracefulModeEnabled = gracefulModeEnabled
+            gracefulModeEnabled = gracefulModeEnabled,
+            trackEvaluations = trackEvaluations,
+            customEvaluationEndpoint = customEvaluationEndpoint,
+            evaluationFlushIntervalMs = evaluationFlushIntervalMs
         )
     }
 
@@ -113,6 +156,21 @@ data class FlagsConfiguration internal constructor(
      * Companion object for [FlagsConfiguration] providing factory methods and default instances.
      */
     companion object {
+        /**
+         * Default flush interval for evaluation events (10 seconds).
+         */
+        private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L
+
+        /**
+         * Minimum flush interval for evaluation events (1 second).
+         */
+        private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L
+
+        /**
+         * Maximum flush interval for evaluation events (60 seconds).
+         */
+        private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L
+
         /**
          * The default [FlagsConfiguration] instance.
          *
