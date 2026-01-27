@@ -179,8 +179,8 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M set runtime default true W toEvaluationEvent() { DEFAULT reason }`() {
-        // Given
+    fun `M set runtime default true W toEvaluationEvent() { DEFAULT or ERROR reason }`(forge: Forge) {
+        // Given - DEFAULT reason
         val defaultData = PrecomputedFlag(
             variationType = "boolean",
             variationValue = fakeValue,
@@ -190,52 +190,46 @@ internal class AggregationStatsTest {
             extraLogging = JSONObject(),
             reason = ResolutionReason.DEFAULT.name
         )
-        val stats = AggregationStats(fakeTimestamp, fakeContext, defaultData.reason, null)
+        val defaultStats = AggregationStats(fakeTimestamp, fakeContext, defaultData.reason, null)
         val keyWithoutVariant = fakeAggregationKey.copy(variantKey = null, allocationKey = null)
 
-        // When
-        val event = stats.toEvaluationEvent(fakeFlagName, keyWithoutVariant)
+        // When - DEFAULT reason
+        val defaultEvent = defaultStats.toEvaluationEvent(fakeFlagName, keyWithoutVariant)
 
         // Then
-        assertThat(event.runtimeDefaultUsed).isTrue()
-        assertThat(event.variant).isNull()
-        assertThat(event.allocation).isNull()
-    }
+        assertThat(defaultEvent.runtimeDefaultUsed).isTrue()
+        assertThat(defaultEvent.variant).isNull()
+        assertThat(defaultEvent.allocation).isNull()
 
-    @Test
-    fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`(forge: Forge) {
-        // Given - error evaluation (reason = null, no flag data)
+        // Given - ERROR reason (reason = null, no flag data)
         val errorMessage = forge.anAlphabeticalString()
-        val stats = AggregationStats(fakeTimestamp, fakeContext, null, errorMessage)
+        val errorStats = AggregationStats(fakeTimestamp, fakeContext, null, errorMessage)
         val keyWithError = fakeAggregationKey.copy(
             variantKey = null,
             allocationKey = null,
             errorCode = "FLAG_NOT_FOUND"
         )
 
-        // When
-        val event = stats.toEvaluationEvent(fakeFlagName, keyWithError)
+        // When - ERROR reason
+        val errorEvent = errorStats.toEvaluationEvent(fakeFlagName, keyWithError)
 
         // Then
-        assertThat(event.runtimeDefaultUsed).isTrue()
-        assertThat(event.error?.message).isEqualTo(errorMessage)
+        assertThat(errorEvent.runtimeDefaultUsed).isTrue()
+        assertThat(errorEvent.error?.message).isEqualTo(errorMessage)
     }
 
     @Test
-    fun `M set runtime default false W toEvaluationEvent() { MATCHED reason }`() {
-        // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
+    fun `M set runtime default false W toEvaluationEvent() { MATCHED or TARGETING_MATCH reason }`() {
+        // Given - MATCHED reason
+        val matchedStats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
 
         // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val matchedEvent = matchedStats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
 
         // Then
-        assertThat(event.runtimeDefaultUsed).isFalse()
-    }
+        assertThat(matchedEvent.runtimeDefaultUsed).isFalse()
 
-    @Test
-    fun `M set runtime default false W toEvaluationEvent() { TARGETING_MATCH reason }`() {
-        // Given
+        // Given - TARGETING_MATCH reason
         val targetingData = PrecomputedFlag(
             variationType = "boolean",
             variationValue = fakeValue,
@@ -245,13 +239,13 @@ internal class AggregationStatsTest {
             extraLogging = JSONObject(),
             reason = ResolutionReason.TARGETING_MATCH.name
         )
-        val stats = AggregationStats(fakeTimestamp, fakeContext, targetingData.reason, null)
+        val targetingStats = AggregationStats(fakeTimestamp, fakeContext, targetingData.reason, null)
 
         // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val targetingEvent = targetingStats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
 
         // Then
-        assertThat(event.runtimeDefaultUsed).isFalse()
+        assertThat(targetingEvent.runtimeDefaultUsed).isFalse()
     }
 
     @Test
@@ -277,28 +271,25 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M include error message W toEvaluationEvent() { error provided }`(forge: Forge) {
-        // Given
+    fun `M handle error message W toEvaluationEvent() { error present or absent }`(forge: Forge) {
+        // Given - error provided
         val errorMessage = forge.anAlphabeticalString()
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, errorMessage)
+        val statsWithError = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, errorMessage)
 
         // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val eventWithError = statsWithError.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
 
         // Then
-        assertThat(event.error?.message).isEqualTo(errorMessage)
-    }
+        assertThat(eventWithError.error?.message).isEqualTo(errorMessage)
 
-    @Test
-    fun `M exclude error W toEvaluationEvent() { no error }`() {
-        // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
+        // Given - no error
+        val statsWithoutError = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
 
         // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val eventWithoutError = statsWithoutError.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
 
         // Then
-        assertThat(event.error).isNull()
+        assertThat(eventWithoutError.error).isNull()
     }
 
     @Test
@@ -336,29 +327,23 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M handle null variant W toEvaluationEvent() { key has null variant }`() {
+    fun `M handle null variant and allocation W toEvaluationEvent() { key has null fields }`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
+        
+        // When - null variant
         val keyWithNullVariant = fakeAggregationKey.copy(variantKey = null)
-
-        // When
-        val event = stats.toEvaluationEvent(fakeFlagName, keyWithNullVariant)
+        val eventWithNullVariant = stats.toEvaluationEvent(fakeFlagName, keyWithNullVariant)
 
         // Then
-        assertThat(event.variant).isNull()
-    }
+        assertThat(eventWithNullVariant.variant).isNull()
 
-    @Test
-    fun `M handle null allocation W toEvaluationEvent() { key has null allocation }`() {
-        // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeData.reason, null)
+        // When - null allocation
         val keyWithNullAllocation = fakeAggregationKey.copy(allocationKey = null)
-
-        // When
-        val event = stats.toEvaluationEvent(fakeFlagName, keyWithNullAllocation)
+        val eventWithNullAllocation = stats.toEvaluationEvent(fakeFlagName, keyWithNullAllocation)
 
         // Then
-        assertThat(event.allocation).isNull()
+        assertThat(eventWithNullAllocation.allocation).isNull()
     }
 
     // endregion
