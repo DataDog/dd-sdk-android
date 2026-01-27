@@ -55,7 +55,7 @@ internal class EvaluationsRequestFactory(
         )
     }
 
-     private fun buildHeaders(
+    private fun buildHeaders(
         requestId: String,
         clientToken: String,
         source: String,
