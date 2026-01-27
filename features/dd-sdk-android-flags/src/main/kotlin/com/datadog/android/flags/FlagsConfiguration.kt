@@ -92,8 +92,6 @@ data class FlagsConfiguration internal constructor(
          * Values outside the valid range (1-60 seconds) will be coerced to the nearest bound.
          *
          * @param intervalMs The flush interval in milliseconds (default: 10,000ms = 10 seconds).
-         *                   Values below 1,000ms will be coerced to 1,000ms.
-         *                   Values above 60,000ms will be coerced to 60,000ms.
          * @return this [Builder] instance for method chaining.
          */
         fun evaluationFlushInterval(intervalMs: Long): Builder {

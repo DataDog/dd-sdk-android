@@ -38,7 +38,10 @@ internal class EvaluationsFeature(
     )
 
     override fun onInitialize(appContext: Context) {
-        // Phase 1: Placeholder - just set initialized flag
+        if (initialized.get()) {
+            return
+        }
+
         initialized.set(true)
     }
 

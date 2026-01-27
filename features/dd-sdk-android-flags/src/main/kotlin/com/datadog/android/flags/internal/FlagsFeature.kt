@@ -114,7 +114,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
             timeProvider = sdkCore.timeProvider
         )
 
-        // Register evaluations sub-feature (Phase 1: empty placeholder)
+        // Register evaluations sub-feature
         if (flagsConfiguration.trackEvaluations) {
             registerEvaluationsFeature()
         }
