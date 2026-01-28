@@ -61,7 +61,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
-    // region Domain Objects
+    // region Storage Feature
 
     override val storageConfiguration = FeatureStorageConfiguration.DEFAULT
 
@@ -70,6 +70,10 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
             internalLogger = sdkCore.internalLogger,
             customExposureEndpoint = flagsConfiguration.customExposureEndpoint
         )
+
+    // endregion
+
+    // region Domain Objects
 
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
