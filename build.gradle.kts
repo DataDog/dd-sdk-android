@@ -134,6 +134,8 @@ registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
 }
 registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyLicenses")
 
+registerSubModuleAggregationTask("generateApiSurface", "generateApiSurface")
+
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
 
 registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompilerMetadataChanges")
