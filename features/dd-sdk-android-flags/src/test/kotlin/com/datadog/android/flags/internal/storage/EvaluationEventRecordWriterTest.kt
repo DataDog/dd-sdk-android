@@ -30,7 +30,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -56,36 +55,6 @@ internal class EvaluationEventRecordWriterTest {
         testedWriter = EvaluationEventRecordWriter(sdkCore = mockSdkCore)
     }
 
-    // region write
-
-    @Test
-    fun `M delegate to writeAll W write() { single event }`(
-        @Forgery fakeEvent: BatchedFlagEvaluations.FlagEvaluation
-    ) {
-        // Given
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
-        whenever(mockFeature.withWriteContext(any(), any()))
-            .thenAnswer { invocation ->
-                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-                val mockContext = mock<DatadogContext>()
-                callback.invoke(mockContext) { writerScope ->
-                    writerScope.invoke(mockEventBatchWriter)
-                }
-            }
-
-        // When
-        testedWriter.write(fakeEvent)
-
-        // Then - write() should call writeAll() which writes the event
-        verify(mockEventBatchWriter).write(
-            event = any(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-    }
-
-    // endregion
-
     // region writeAll
 
     @Test
@@ -97,7 +66,7 @@ internal class EvaluationEventRecordWriterTest {
         // Given
         val events = listOf(event1, event2, event3)
 
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(mockFeature)
         whenever(mockFeature.withWriteContext(any(), any()))
             .thenAnswer { invocation ->
                 val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
@@ -136,7 +105,7 @@ internal class EvaluationEventRecordWriterTest {
         @Forgery event: BatchedFlagEvaluations.FlagEvaluation
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(mockFeature)
         whenever(mockFeature.withWriteContext(any(), any()))
             .thenAnswer { invocation ->
                 val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
@@ -170,13 +139,13 @@ internal class EvaluationEventRecordWriterTest {
     ) {
         // Given
         val events = listOf(event1, event2)
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(null)
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(null)
 
         // When
         testedWriter.writeAll(events)
 
         // Then - should not write anything
-        verify(mockSdkCore).getFeature(Feature.FLAGS_FEATURE_NAME)
+        verify(mockSdkCore).getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
         verifyNoInteractions(mockEventBatchWriter)
     }
 
@@ -198,7 +167,7 @@ internal class EvaluationEventRecordWriterTest {
             runtimeDefaultUsed = false
         )
 
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(mockFeature)
         whenever(mockFeature.withWriteContext(any(), any()))
             .thenAnswer { invocation ->
                 val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
@@ -229,7 +198,7 @@ internal class EvaluationEventRecordWriterTest {
         @Forgery event: BatchedFlagEvaluations.FlagEvaluation
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(mockFeature)
         whenever(mockFeature.withWriteContext(any(), any()))
             .thenAnswer { invocation ->
                 val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
