@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.BatchedFlagEvaluations
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.BatchedFlagEvaluations.Context1 as EvaluationEventContext
 
 /**
  * Aggregation statistics for evaluation logging.
@@ -17,17 +18,20 @@ import com.datadog.android.flags.model.EvaluationContext
  * - First/last timestamps
  * - Last error message (updated on each evaluation)
  * - Runtime default usage
+ * - Datadog context (service, RUM application/view)
  *
  * Thread Safe
  *
  * @param firstTimestamp the timestamp of the first evaluation
  * @param context the evaluation context
+ * @param ddContext the Datadog context (service, RUM application/view)
  * @param reason the resolution reason (null for error evaluations, non-null for success evaluations)
  * @param errorMessage optional error message (detailed, for logging)
  */
 internal class AggregationStats(
     firstTimestamp: Long,
     private val context: EvaluationContext,
+    private val ddContext: DDContext,
     private val reason: String?,
     errorMessage: String?
 ) {
@@ -90,6 +94,22 @@ internal class AggregationStats(
             snapshotMessage = lastErrorMessage
         }
 
+        // Build context with Datadog-specific information
+        val eventContext = EvaluationEventContext(
+            evaluation = null, // Evaluation context reserved for future use
+            dd = BatchedFlagEvaluations.Dd(
+                service = ddContext.service,
+                rum = ddContext.applicationId?.let { appId ->
+                    BatchedFlagEvaluations.Rum(
+                        application = BatchedFlagEvaluations.Application(id = appId),
+                        view = ddContext.viewName?.let { viewName ->
+                            BatchedFlagEvaluations.View(url = viewName)
+                        }
+                    )
+                }
+            )
+        )
+
         return BatchedFlagEvaluations.FlagEvaluation(
             timestamp = snapshotFirst,
             flag = BatchedFlagEvaluations.Identifier(flagKey),
@@ -97,7 +117,7 @@ internal class AggregationStats(
             allocation = aggregationKey.allocationKey?.let { BatchedFlagEvaluations.Identifier(it) },
             targetingRule = null, // Not applicable
             targetingKey = aggregationKey.targetingKey,
-            context = null, // Context logging reserved for future use
+            context = eventContext,
             error = snapshotMessage?.let { BatchedFlagEvaluations.Error(message = it) },
             evaluationCount = snapshotCount.toLong(),
             firstEvaluation = snapshotFirst,

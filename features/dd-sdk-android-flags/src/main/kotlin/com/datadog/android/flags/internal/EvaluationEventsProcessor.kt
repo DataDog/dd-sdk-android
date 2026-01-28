@@ -73,7 +73,7 @@ internal class EvaluationEventsProcessor(
     fun processEvaluation(
         flagKey: String,
         context: EvaluationContext,
-        rumContext: DDContext,
+        ddContext: DDContext,
         variantKey: String?,
         allocationKey: String?,
         reason: String?,
@@ -87,14 +87,14 @@ internal class EvaluationEventsProcessor(
             variantKey = variantKey,
             allocationKey = allocationKey,
             targetingKey = context.targetingKey,
-            rumViewId = rumContext.viewId,
+            rumViewId = ddContext.viewId,
             errorCode = errorCode
         )
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
         val existing = aggregationMap.putIfAbsent(
             key,
-            AggregationStats(timestamp, context, reason, errorMessage)
+            AggregationStats(timestamp, context, ddContext, reason, errorMessage)
         )
 
         // Pre-existing stats object found, record evaluation
