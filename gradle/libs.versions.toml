@@ -104,6 +104,7 @@ ktorServer = "3.0.0-rc-1"
 jctools = "3.3.0"
 openTelemetry = "1.40.0"
 re2j = "1.7"
+zstd = "1.5.7-6"
 material3Android = "1.1.2"
 
 [libraries]
@@ -291,6 +292,7 @@ jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
 openTelemetrySdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetry" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
+zstdJni = { module = "com.github.luben:zstd-jni", version.ref = "zstd" }
 
 [bundles]
 

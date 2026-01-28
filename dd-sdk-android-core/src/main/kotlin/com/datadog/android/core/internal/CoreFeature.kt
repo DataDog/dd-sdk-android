@@ -31,6 +31,7 @@ import com.datadog.android.core.internal.account.NoOpMutableAccountInfoProvider
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
+import com.datadog.android.core.internal.data.upload.ZstdRequestInterceptor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
@@ -631,9 +632,10 @@ internal class CoreFeature(
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 builder.addNetworkInterceptor(CurlInterceptor())
             } else {
-                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                builder.addInterceptor(GzipRequestInterceptor(internalLogger))
+//                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+//                builder.addInterceptor(GzipRequestInterceptor(internalLogger))
             }
+            builder.addInterceptor(ZstdRequestInterceptor(internalLogger))
 
             // Configure proxy if provided
             if (configuration.proxy != null) {

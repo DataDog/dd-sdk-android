@@ -1,0 +1,81 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.core.internal.data.upload
+
+import com.datadog.android.api.InternalLogger
+import com.github.luben.zstd.ZstdOutputStream
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okio.BufferedSink
+import okio.buffer
+import okio.sink
+import java.io.IOException
+import kotlin.jvm.Throws
+
+internal class ZstdRequestInterceptor(private val internalLogger: InternalLogger) : Interceptor {
+
+    @Suppress("UnsafeThirdPartyFunctionCall", "TooGenericExceptionCaught")
+    @Throws(IOException::class)
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest: Request = chain.request()
+        val body = originalRequest.body
+
+        return if (body == null ||
+            originalRequest.header(HEADER_ENCODING) != null ||
+            body is MultipartBody
+        ) {
+            chain.proceed(originalRequest)
+        } else {
+            val compressedRequest = try {
+                originalRequest.newBuilder()
+                    .header(HEADER_ENCODING, ENCODING_ZSTD)
+                    .method(originalRequest.method, compress(body))
+                    .build()
+            } catch (e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    { "Unable to zstd request body" },
+                    e
+                )
+                originalRequest
+            }
+            chain.proceed(compressedRequest)
+        }
+    }
+
+    private fun compress(body: RequestBody): RequestBody {
+        return object : RequestBody() {
+            override fun contentType(): MediaType? {
+                return body.contentType()
+            }
+
+            override fun contentLength(): Long {
+                return -1
+            }
+
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            override fun writeTo(sink: BufferedSink) {
+                val zstdSink = ZstdOutputStream(sink.outputStream()).sink().buffer()
+                body.writeTo(zstdSink)
+                zstdSink.close()
+            }
+        }
+    }
+
+    companion object {
+        private const val HEADER_ENCODING = "Content-Encoding"
+        private const val ENCODING_ZSTD = "zstd"
+    }
+}
