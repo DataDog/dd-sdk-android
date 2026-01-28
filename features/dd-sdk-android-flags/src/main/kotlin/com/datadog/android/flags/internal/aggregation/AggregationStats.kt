@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.BatchedFlagEvaluations
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.BatchedFlagEvaluations.Context1 as EvaluationEventContext
 
 /**
@@ -37,16 +38,10 @@ internal class AggregationStats(
     private val reason: String?,
     errorMessage: String?
 ) {
-    @Volatile
+    // All field access is synchronized - see recordEvaluation() and toEvaluationEvent()
     private var count: Int = 1
-
-    @Volatile
     private var firstEvaluation: Long = firstTimestamp
-
-    @Volatile
     private var lastEvaluation: Long = firstTimestamp
-
-    @Volatile
     private var lastErrorMessage: String? = errorMessage
 
     /**
@@ -122,7 +117,9 @@ internal class AggregationStats(
             evaluationCount = snapshotCount.toLong(),
             firstEvaluation = snapshotFirst,
             lastEvaluation = snapshotLast,
-            runtimeDefaultUsed = reason == null || reason == "DEFAULT" || reason == "ERROR"
+            runtimeDefaultUsed = reason == null ||
+                reason == ResolutionReason.DEFAULT.name ||
+                reason == ResolutionReason.ERROR.name
         )
     }
 }

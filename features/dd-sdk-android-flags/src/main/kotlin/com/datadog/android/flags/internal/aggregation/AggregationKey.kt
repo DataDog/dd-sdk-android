@@ -14,7 +14,7 @@ package com.datadog.android.flags.internal.aggregation
  * - variant key (or null when no variant is assigned)
  * - allocation key (or null when no allocation is assigned)
  * - targeting key
- * - RUM view ID (or null when RUM is not active)
+ * - RUM view name (or null when RUM is not active or no view available)
  * - error code (ErrorCode enum name for aggregation, e.g., "FLAG_NOT_FOUND")
  *
  * Note: Error messages are stored in AggregationStats but not used for aggregation
@@ -27,6 +27,6 @@ internal data class AggregationKey(
     val variantKey: String? = null,
     val allocationKey: String? = null,
     val targetingKey: String?,
-    val rumViewId: String? = null,
+    val viewName: String? = null,
     val errorCode: String? = null
 )
