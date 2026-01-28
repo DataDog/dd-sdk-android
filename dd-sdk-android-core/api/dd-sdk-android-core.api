@@ -364,6 +364,7 @@ public final class com/datadog/android/api/context/UserInfo {
 
 public abstract interface class com/datadog/android/api/feature/Feature {
 	public static final field Companion Lcom/datadog/android/api/feature/Feature$Companion;
+	public static final field FLAGS_EVALUATIONS_FEATURE_NAME Ljava/lang/String;
 	public static final field FLAGS_FEATURE_NAME Ljava/lang/String;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
 	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
@@ -377,6 +378,7 @@ public abstract interface class com/datadog/android/api/feature/Feature {
 }
 
 public final class com/datadog/android/api/feature/Feature$Companion {
+	public static final field FLAGS_EVALUATIONS_FEATURE_NAME Ljava/lang/String;
 	public static final field FLAGS_FEATURE_NAME Ljava/lang/String;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
 	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;

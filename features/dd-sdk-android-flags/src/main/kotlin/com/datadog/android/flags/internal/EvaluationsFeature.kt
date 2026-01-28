@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import android.content.Context
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
@@ -30,7 +31,7 @@ internal class EvaluationsFeature(
     // region Feature
 
     @Suppress("TodoWithoutTask") // Will be done before r4r
-    override val name: String = "flags-evaluations" // TODO Move to Feature.kt before RUM-mobile team review.
+    override val name: String = Feature.FLAGS_EVALUATIONS_FEATURE_NAME
 
     override val requestFactory: RequestFactory = EvaluationsRequestFactory(
         internalLogger = sdkCore.internalLogger,
