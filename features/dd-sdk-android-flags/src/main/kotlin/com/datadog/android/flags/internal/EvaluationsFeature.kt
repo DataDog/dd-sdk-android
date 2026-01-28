@@ -77,21 +77,4 @@ internal class EvaluationsFeature(
     }
 
     // endregion
-
-    internal companion object {
-        /**
-         * Key for RUM application ID in the RUM feature context.
-         */
-        private const val RUM_APPLICATION_ID = "application_id"
-
-        /**
-         * Key for RUM view ID in the RUM feature context.
-         */
-        private const val RUM_VIEW_ID = "view_id"
-
-        /**
-         * Key for RUM view name in the RUM feature context.
-         */
-        private const val RUM_VIEW_NAME = "view_name"
-    }
 }
