@@ -186,7 +186,7 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M set runtime default true W toEvaluationEvent() { DEFAULT or ERROR reason }`(forge: Forge) {
+    fun `M set runtime default true W toEvaluationEvent() { DEFAULT reason }`() {
         // Given - DEFAULT reason
         val defaultData = PrecomputedFlag(
             variationType = "boolean",
@@ -200,14 +200,17 @@ internal class AggregationStatsTest {
         val defaultStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, defaultData.reason, null)
         val keyWithoutVariant = fakeAggregationKey.copy(variantKey = null, allocationKey = null)
 
-        // When - DEFAULT reason
+        // When
         val defaultEvent = defaultStats.toEvaluationEvent(fakeFlagName, keyWithoutVariant)
 
         // Then
         assertThat(defaultEvent.runtimeDefaultUsed).isTrue()
         assertThat(defaultEvent.variant).isNull()
         assertThat(defaultEvent.allocation).isNull()
+    }
 
+    @Test
+    fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`(forge: Forge) {
         // Given - ERROR reason (reason = null, no flag data)
         val errorMessage = forge.anAlphabeticalString()
         val errorStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, null, errorMessage)
@@ -217,7 +220,7 @@ internal class AggregationStatsTest {
             errorCode = "FLAG_NOT_FOUND"
         )
 
-        // When - ERROR reason
+        // When
         val errorEvent = errorStats.toEvaluationEvent(fakeFlagName, keyWithError)
 
         // Then
@@ -226,8 +229,8 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M set runtime default false W toEvaluationEvent() { MATCHED or TARGETING_MATCH reason }`() {
-        // Given - MATCHED reason
+    fun `M set runtime default false W toEvaluationEvent() { MATCHED reason }`() {
+        // Given
         val matchedStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
@@ -235,7 +238,10 @@ internal class AggregationStatsTest {
 
         // Then
         assertThat(matchedEvent.runtimeDefaultUsed).isFalse()
+    }
 
+    @Test
+    fun `M set runtime default false W toEvaluationEvent() { TARGETING_MATCH reason }`() {
         // Given - TARGETING_MATCH reason
         val targetingData = PrecomputedFlag(
             variationType = "boolean",
@@ -278,8 +284,8 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M handle error message W toEvaluationEvent() { error present or absent }`(forge: Forge) {
-        // Given - error provided
+    fun `M include error message W toEvaluationEvent() { error provided }`(forge: Forge) {
+        // Given
         val errorMessage = forge.anAlphabeticalString()
         val statsWithError = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, errorMessage)
 
@@ -288,8 +294,11 @@ internal class AggregationStatsTest {
 
         // Then
         assertThat(eventWithError.error?.message).isEqualTo(errorMessage)
+    }
 
-        // Given - no error
+    @Test
+    fun `M omit error W toEvaluationEvent() { no error }`() {
+        // Given
         val statsWithoutError = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
@@ -300,7 +309,7 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M use aggregation key fields W toEvaluationEvent() { key overrides data }`(forge: Forge) {
+    fun `M use aggregation key fields W toEvaluationEvent() { key fields provided }`(forge: Forge) {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val keyWithDifferentValues = AggregationKey(
@@ -321,19 +330,25 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M handle null variant and allocation W toEvaluationEvent() { key has null fields }`() {
+    fun `M handle null variant W toEvaluationEvent() { key has null variant }`() {
         // Given
         val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
-
-        // When - null variant
         val keyWithNullVariant = fakeAggregationKey.copy(variantKey = null)
+
+        // When
         val eventWithNullVariant = stats.toEvaluationEvent(fakeFlagName, keyWithNullVariant)
 
         // Then
         assertThat(eventWithNullVariant.variant).isNull()
+    }
 
-        // When - null allocation
+    @Test
+    fun `M handle null allocation W toEvaluationEvent() { key has null allocation }`() {
+        // Given
+        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val keyWithNullAllocation = fakeAggregationKey.copy(allocationKey = null)
+
+        // When
         val eventWithNullAllocation = stats.toEvaluationEvent(fakeFlagName, keyWithNullAllocation)
 
         // Then
