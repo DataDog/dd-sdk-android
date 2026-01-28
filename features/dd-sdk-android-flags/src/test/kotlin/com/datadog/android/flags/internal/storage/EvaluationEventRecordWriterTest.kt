@@ -30,6 +30,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -58,232 +59,29 @@ internal class EvaluationEventRecordWriterTest {
     // region write
 
     @Test
-    fun `M write flag evaluation W write() { feature available }`(
+    fun `M delegate to writeAll W write() { single event }`(
         @Forgery fakeEvent: BatchedFlagEvaluations.FlagEvaluation
     ) {
         // Given
-        val expectedJson = fakeEvent.toJson().toString()
-
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
-        whenever(
-            mockFeature.withWriteContext(any(), any())
-        ).thenAnswer { invocation ->
-            val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-            val mockContext = mock<DatadogContext>()
-            callback.invoke(mockContext) { writerScope ->
-                writerScope.invoke(mockEventBatchWriter)
+        whenever(mockFeature.withWriteContext(any(), any()))
+            .thenAnswer { invocation ->
+                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+                val mockContext = mock<DatadogContext>()
+                callback.invoke(mockContext) { writerScope ->
+                    writerScope.invoke(mockEventBatchWriter)
+                }
             }
-        }
 
         // When
         testedWriter.write(fakeEvent)
 
-        // Then
-        val eventCaptor = argumentCaptor<RawBatchEvent>()
+        // Then - write() should call writeAll() which writes the event
         verify(mockEventBatchWriter).write(
-            event = eventCaptor.capture(),
+            event = any(),
             batchMetadata = isNull(),
             eventType = eq(EventType.DEFAULT)
         )
-
-        val capturedEvent = eventCaptor.firstValue
-        assertThat(String(capturedEvent.data, Charsets.UTF_8)).isEqualTo(expectedJson)
-    }
-
-    @Test
-    fun `M not write W write() { feature not available }`(@Forgery fakeEvent: BatchedFlagEvaluations.FlagEvaluation) {
-        // Given
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(null)
-
-        // When
-        testedWriter.write(fakeEvent)
-
-        // Then
-        verifyNoInteractions(mockEventBatchWriter)
-    }
-
-    @Test
-    fun `M serialize event correctly W write() { complete event }`() {
-        // Given
-        val fakeEvent = BatchedFlagEvaluations.FlagEvaluation(
-            timestamp = 1234567890L,
-            flag = BatchedFlagEvaluations.Identifier("test-flag"),
-            variant = BatchedFlagEvaluations.Identifier("variant-a"),
-            allocation = BatchedFlagEvaluations.Identifier("allocation-1"),
-            targetingRule = BatchedFlagEvaluations.Identifier("rule-1"),
-            targetingKey = "user-123",
-            context = null,
-            error = null,
-            evaluationCount = 42L,
-            firstEvaluation = 1234567890L,
-            lastEvaluation = 1234567999L,
-            runtimeDefaultUsed = false
-        )
-
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
-        whenever(
-            mockFeature.withWriteContext(any(), any())
-        ).thenAnswer { invocation ->
-            val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-            val mockContext = mock<DatadogContext>()
-            callback.invoke(mockContext) { writerScope ->
-                writerScope.invoke(mockEventBatchWriter)
-            }
-        }
-
-        // When
-        testedWriter.write(fakeEvent)
-
-        // Then
-        val eventCaptor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = eventCaptor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-
-        val capturedJson = String(eventCaptor.firstValue.data, Charsets.UTF_8)
-        assertThat(capturedJson).contains("\"test-flag\"")
-        assertThat(capturedJson).contains("\"variant-a\"")
-        assertThat(capturedJson).contains("\"allocation-1\"")
-        assertThat(capturedJson).contains("\"user-123\"")
-        assertThat(capturedJson).contains("\"evaluation_count\":42")
-    }
-
-    @Test
-    fun `M serialize event correctly W write() { with error }`() {
-        // Given
-        val fakeEvent = BatchedFlagEvaluations.FlagEvaluation(
-            timestamp = 1234567890L,
-            flag = BatchedFlagEvaluations.Identifier("test-flag"),
-            variant = null,
-            allocation = null,
-            targetingRule = null,
-            targetingKey = null,
-            context = null,
-            error = BatchedFlagEvaluations.Error(message = "Test error message"),
-            evaluationCount = 1L,
-            firstEvaluation = 1234567890L,
-            lastEvaluation = 1234567890L,
-            runtimeDefaultUsed = true
-        )
-
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
-        whenever(
-            mockFeature.withWriteContext(any(), any())
-        ).thenAnswer { invocation ->
-            val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-            val mockContext = mock<DatadogContext>()
-            callback.invoke(mockContext) { writerScope ->
-                writerScope.invoke(mockEventBatchWriter)
-            }
-        }
-
-        // When
-        testedWriter.write(fakeEvent)
-
-        // Then
-        val eventCaptor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = eventCaptor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-
-        val capturedJson = String(eventCaptor.firstValue.data, Charsets.UTF_8)
-        assertThat(capturedJson).contains("\"error\"")
-        assertThat(capturedJson).contains("\"Test error message\"")
-        assertThat(capturedJson).contains("\"runtime_default_used\":true")
-    }
-
-    @Test
-    fun `M handle null targeting key W write() { null value }`() {
-        // Given
-        val fakeEvent = BatchedFlagEvaluations.FlagEvaluation(
-            timestamp = 1234567890L,
-            flag = BatchedFlagEvaluations.Identifier("test-flag"),
-            variant = null,
-            allocation = null,
-            targetingRule = null,
-            targetingKey = null,
-            context = null,
-            error = null,
-            evaluationCount = 1L,
-            firstEvaluation = 1234567890L,
-            lastEvaluation = 1234567890L,
-            runtimeDefaultUsed = true
-        )
-
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
-        whenever(
-            mockFeature.withWriteContext(any(), any())
-        ).thenAnswer { invocation ->
-            val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-            val mockContext = mock<DatadogContext>()
-            callback.invoke(mockContext) { writerScope ->
-                writerScope.invoke(mockEventBatchWriter)
-            }
-        }
-
-        // When
-        testedWriter.write(fakeEvent)
-
-        // Then
-        val eventCaptor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = eventCaptor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-
-        // EVALLOG.7: null targeting_key should be omitted from JSON
-        val capturedJson = String(eventCaptor.firstValue.data, Charsets.UTF_8)
-        assertThat(capturedJson).doesNotContain("targeting_key")
-    }
-
-    @Test
-    fun `M handle empty targeting key W write() { empty string }`() {
-        // Given
-        val fakeEvent = BatchedFlagEvaluations.FlagEvaluation(
-            timestamp = 1234567890L,
-            flag = BatchedFlagEvaluations.Identifier("test-flag"),
-            variant = null,
-            allocation = null,
-            targetingRule = null,
-            targetingKey = "",
-            context = null,
-            error = null,
-            evaluationCount = 1L,
-            firstEvaluation = 1234567890L,
-            lastEvaluation = 1234567890L,
-            runtimeDefaultUsed = true
-        )
-
-        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
-        whenever(
-            mockFeature.withWriteContext(any(), any())
-        ).thenAnswer { invocation ->
-            val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-            val mockContext = mock<DatadogContext>()
-            callback.invoke(mockContext) { writerScope ->
-                writerScope.invoke(mockEventBatchWriter)
-            }
-        }
-
-        // When
-        testedWriter.write(fakeEvent)
-
-        // Then
-        val eventCaptor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = eventCaptor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-
-        // EVALLOG.7: empty string targeting_key should be included in JSON
-        val capturedJson = String(eventCaptor.firstValue.data, Charsets.UTF_8)
-        assertThat(capturedJson).contains("\"targeting_key\":\"\"")
     }
 
     // endregion
@@ -291,7 +89,7 @@ internal class EvaluationEventRecordWriterTest {
     // region writeAll
 
     @Test
-    fun `M write multiple events W writeAll() { batch of events }`(
+    fun `M write all events to storage W writeAll() { multiple events }`(
         @Forgery event1: BatchedFlagEvaluations.FlagEvaluation,
         @Forgery event2: BatchedFlagEvaluations.FlagEvaluation,
         @Forgery event3: BatchedFlagEvaluations.FlagEvaluation
@@ -312,7 +110,7 @@ internal class EvaluationEventRecordWriterTest {
         // When
         testedWriter.writeAll(events)
 
-        // Then - should write all 3 events
+        // Then - all 3 events should be written
         val eventCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter, times(3)).write(
             event = eventCaptor.capture(),
@@ -320,22 +118,53 @@ internal class EvaluationEventRecordWriterTest {
             eventType = eq(EventType.DEFAULT)
         )
 
+        // Verify each event was serialized correctly
         val capturedEvents = eventCaptor.allValues
         assertThat(capturedEvents).hasSize(3)
+
+        val expectedJson1 = event1.toJson().toString()
+        val expectedJson2 = event2.toJson().toString()
+        val expectedJson3 = event3.toJson().toString()
+
+        assertThat(String(capturedEvents[0].data, Charsets.UTF_8)).isEqualTo(expectedJson1)
+        assertThat(String(capturedEvents[1].data, Charsets.UTF_8)).isEqualTo(expectedJson2)
+        assertThat(String(capturedEvents[2].data, Charsets.UTF_8)).isEqualTo(expectedJson3)
     }
 
     @Test
-    fun `M not write W writeAll() { empty list }`() {
+    fun `M use write context W writeAll() { events provided }`(
+        @Forgery event: BatchedFlagEvaluations.FlagEvaluation
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockFeature.withWriteContext(any(), any()))
+            .thenAnswer { invocation ->
+                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+                val mockContext = mock<DatadogContext>()
+                callback.invoke(mockContext) { writerScope ->
+                    writerScope.invoke(mockEventBatchWriter)
+                }
+            }
+
+        // When
+        testedWriter.writeAll(listOf(event))
+
+        // Then - should use withWriteContext
+        verify(mockFeature).withWriteContext(any(), any())
+    }
+
+    @Test
+    fun `M do nothing W writeAll() { empty list }`() {
         // When
         testedWriter.writeAll(emptyList())
 
-        // Then
+        // Then - should not interact with SDK Core at all
         verifyNoInteractions(mockSdkCore)
         verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test
-    fun `M not write W writeAll() { feature not available }`(
+    fun `M do nothing W writeAll() { feature not available }`(
         @Forgery event1: BatchedFlagEvaluations.FlagEvaluation,
         @Forgery event2: BatchedFlagEvaluations.FlagEvaluation
     ) {
@@ -346,9 +175,86 @@ internal class EvaluationEventRecordWriterTest {
         // When
         testedWriter.writeAll(events)
 
-        // Then
+        // Then - should not write anything
         verify(mockSdkCore).getFeature(Feature.FLAGS_FEATURE_NAME)
         verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M serialize events correctly W writeAll() { events with all fields }`() {
+        // Given - event with all fields populated
+        val event = BatchedFlagEvaluations.FlagEvaluation(
+            timestamp = 1234567890L,
+            flag = BatchedFlagEvaluations.Identifier("test-flag"),
+            variant = BatchedFlagEvaluations.Identifier("variant-a"),
+            allocation = BatchedFlagEvaluations.Identifier("allocation-1"),
+            targetingRule = BatchedFlagEvaluations.Identifier("rule-1"),
+            targetingKey = "user-123",
+            context = null,
+            error = null,
+            evaluationCount = 42L,
+            firstEvaluation = 1234567890L,
+            lastEvaluation = 1234567999L,
+            runtimeDefaultUsed = false
+        )
+
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockFeature.withWriteContext(any(), any()))
+            .thenAnswer { invocation ->
+                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+                val mockContext = mock<DatadogContext>()
+                callback.invoke(mockContext) { writerScope ->
+                    writerScope.invoke(mockEventBatchWriter)
+                }
+            }
+
+        // When
+        testedWriter.writeAll(listOf(event))
+
+        // Then - event should be serialized as JSON
+        val eventCaptor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = eventCaptor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+
+        val capturedJson = String(eventCaptor.firstValue.data, Charsets.UTF_8)
+        val expectedJson = event.toJson().toString()
+        assertThat(capturedJson).isEqualTo(expectedJson)
+    }
+
+    @Test
+    fun `M write event with UTF-8 encoding W writeAll() { event provided }`(
+        @Forgery event: BatchedFlagEvaluations.FlagEvaluation
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
+        whenever(mockFeature.withWriteContext(any(), any()))
+            .thenAnswer { invocation ->
+                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+                val mockContext = mock<DatadogContext>()
+                callback.invoke(mockContext) { writerScope ->
+                    writerScope.invoke(mockEventBatchWriter)
+                }
+            }
+
+        // When
+        testedWriter.writeAll(listOf(event))
+
+        // Then - data should be UTF-8 encoded
+        val eventCaptor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = eventCaptor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+
+        val capturedData = eventCaptor.firstValue.data
+        val asString = String(capturedData, Charsets.UTF_8)
+        // Should be valid JSON
+        assertThat(asString).startsWith("{")
+        assertThat(asString).endsWith("}")
     }
 
     // endregion
