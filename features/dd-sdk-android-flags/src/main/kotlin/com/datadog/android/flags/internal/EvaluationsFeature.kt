@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import android.content.Context
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
