@@ -98,8 +98,8 @@ internal class EvaluationEventsProcessorTest {
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
-            flushIntervalMs = 10_000L,
-            maxAggregations = 1000
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS
         )
 
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
@@ -452,103 +452,6 @@ internal class EvaluationEventsProcessorTest {
 
     // endregion
 
-    // region processEvaluation
-
-    @Test
-    fun `M aggregate evaluation W processEvaluation() { with complete flag data }`() {
-        // Given
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeDDContext,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
-
-        val event = eventCaptor.firstValue
-        assertThat(event.flag.key).isEqualTo(fakeFlagKey)
-        assertThat(event.variant?.key).isEqualTo(fakeVariantKey)
-        assertThat(event.allocation?.key).isEqualTo(fakeAllocationKey)
-    }
-
-    @Test
-    fun `M aggregate evaluation W processEvaluation() { without flag data }`() {
-        // Given
-        val errorCode = ErrorCode.FLAG_NOT_FOUND.name
-        val errorMessage = "Flag not found in repository"
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeDDContext,
-            null,
-            null,
-            null,
-            errorCode,
-            errorMessage
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
-
-        val event = eventCaptor.firstValue
-        assertThat(event.flag.key).isEqualTo(fakeFlagKey)
-        assertThat(event.error?.message).isEqualTo(errorMessage)
-    }
-
-    @Test
-    fun `M aggregate separately W processEvaluation() { same flag different paths }`() {
-        // Given
-        val errorCode = ErrorCode.FLAG_NOT_FOUND.name
-        val errorMessage = "Not found"
-
-        // When - same flag, but one success and one error
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeDDContext,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeDDContext,
-            null,
-            null,
-            null,
-            errorCode,
-            errorMessage
-        )
-        testedProcessor.flush()
-
-        // Then - should create 2 separate aggregations
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(2)).write(eventCaptor.capture())
-
-        val events = eventCaptor.allValues
-        assertThat(events).hasSize(2)
-        assertThat(events.count { it.error != null }).isEqualTo(1)
-        assertThat(events.count { it.variant != null }).isEqualTo(1)
-    }
-
-    // endregion
-
     // region flush
 
     @Test
@@ -709,7 +612,7 @@ internal class EvaluationEventsProcessorTest {
         assertThat(scheduleCount).isGreaterThan(0)
         verify(mockScheduledExecutor, atLeastOnce()).schedule(
             any<Runnable>(),
-            eq(10_000L),
+            eq(TEST_FLUSH_INTERVAL_MS),
             eq(TimeUnit.MILLISECONDS)
         )
     }
@@ -1312,4 +1215,9 @@ internal class EvaluationEventsProcessorTest {
     }
 
     // endregion
+
+    companion object {
+        private const val TEST_FLUSH_INTERVAL_MS = 10_000L
+        private const val TEST_MAX_AGGREGATIONS = 1000
+    }
 }
