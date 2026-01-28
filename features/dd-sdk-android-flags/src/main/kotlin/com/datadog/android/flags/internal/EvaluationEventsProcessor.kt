@@ -40,8 +40,8 @@ internal class EvaluationEventsProcessor(
     private val timeProvider: TimeProvider,
     private val scheduledExecutor: ScheduledExecutorService,
     private val internalLogger: InternalLogger,
-    private val flushIntervalMs: Long = DEFAULT_FLUSH_INTERVAL_MS,
-    private val maxAggregations: Int = MAX_AGGREGATIONS_BEFORE_FLUSH
+    private val flushIntervalMs: Long,
+    private val maxAggregations: Int
 ) {
 
     @Volatile
@@ -88,7 +88,7 @@ internal class EvaluationEventsProcessor(
             variantKey = variantKey,
             allocationKey = allocationKey,
             targetingKey = context.targetingKey,
-            rumViewId = ddContext.viewId,
+            viewName = ddContext.viewName,
             errorCode = errorCode
         )
 
@@ -207,12 +207,5 @@ internal class EvaluationEventsProcessor(
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - SecurityException not thrown in Android
             Thread.currentThread().interrupt()
         }
-    }
-
-    companion object {
-        const val DEFAULT_FLUSH_INTERVAL_MS = 10_000L // 10 seconds
-        const val MIN_FLUSH_INTERVAL_MS = 1_000L
-        const val MAX_FLUSH_INTERVAL_MS = 60_000L
-        const val MAX_AGGREGATIONS_BEFORE_FLUSH = 1000
     }
 }

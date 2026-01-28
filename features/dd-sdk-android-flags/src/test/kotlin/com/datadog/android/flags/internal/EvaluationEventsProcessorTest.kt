@@ -91,15 +91,31 @@ internal class EvaluationEventsProcessorTest {
     private lateinit var fakeData: PrecomputedFlag
     private lateinit var fakeDDContext: DDContext
 
+    fun createEvaluationEventsProcessor(
+        writer: EvaluationEventWriter,
+        timeProvider: TimeProvider,
+        scheduledExecutor: ScheduledExecutorService,
+        internalLogger: InternalLogger,
+        flushIntervalMs: Long = TEST_FLUSH_INTERVAL_MS,
+        maxAggregations: Int = TEST_MAX_AGGREGATIONS
+    ): EvaluationEventsProcessor {
+        return EvaluationEventsProcessor(
+            writer = writer,
+            timeProvider = timeProvider,
+            scheduledExecutor = scheduledExecutor,
+            internalLogger = internalLogger,
+            flushIntervalMs = flushIntervalMs,
+            maxAggregations = maxAggregations
+        )
+    }
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        testedProcessor = EvaluationEventsProcessor(
+        testedProcessor = createEvaluationEventsProcessor(
             writer = mockWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
-            internalLogger = mockInternalLogger,
-            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS
+            internalLogger = mockInternalLogger
         )
 
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
@@ -361,12 +377,12 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M create separate aggregations W processEvaluation() { different error codes }`() {
+    fun `M create separate aggregations W processEvaluation() { different error codes }`(forge: Forge) {
         // Given
         val errorCode1 = ErrorCode.FLAG_NOT_FOUND.name
         val errorCode2 = ErrorCode.PROVIDER_NOT_READY.name
-        val errorMessage1 = "Flag not found"
-        val errorMessage2 = "Provider not ready"
+        val errorMessage1 = forge.anAlphabeticalString()
+        val errorMessage2 = forge.anAlphabeticalString()
 
         // When
         testedProcessor.processEvaluation(
@@ -493,7 +509,7 @@ internal class EvaluationEventsProcessorTest {
     fun `M flush automatically W processEvaluation() { size limit reached }`() {
         // Given
         val maxAggregations = 5
-        val testProcessor = EvaluationEventsProcessor(
+        val testProcessor = createEvaluationEventsProcessor(
             writer = mockWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
@@ -551,13 +567,14 @@ internal class EvaluationEventsProcessorTest {
         )
         testedProcessor.flush()
 
-        // Then
+        // Then - should have called writeAll twice, once per flush
         val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
+        verify(mockWriter, times(2)).writeAll(eventCaptor.capture())
 
-        val events = eventCaptor.firstValue
-        assertThat(events).hasSize(2)
-        assertThat(events.map { it.evaluationCount }).containsOnly(1L)
+        // Flatten all events from both writeAll calls
+        val allEvents = eventCaptor.allValues.flatten()
+        assertThat(allEvents).hasSize(2)
+        assertThat(allEvents.map { it.evaluationCount }).containsOnly(1L)
     }
 
     @Test
@@ -676,7 +693,7 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.schedulePeriodicFlush() // Initial schedule
         assertThat(scheduleCount).isEqualTo(1)
 
-        taskRunnable?.run() // Execute the scheduled task
+        checkNotNull(taskRunnable).run() // Execute the scheduled task
 
         // Then - should have rescheduled itself
         assertThat(scheduleCount).isEqualTo(2)
@@ -698,7 +715,7 @@ internal class EvaluationEventsProcessorTest {
 
         // When
         testedProcessor.schedulePeriodicFlush()
-        taskRunnable?.run() // Execute with no evaluations to flush
+        checkNotNull(taskRunnable).run() // Execute with no evaluations to flush
 
         // Then - should not write but should reschedule
         verify(mockWriter, never()).writeAll(any())
@@ -825,7 +842,7 @@ internal class EvaluationEventsProcessorTest {
         stopThread.start()
 
         // Execute the scheduled task (which will try to reschedule)
-        taskRunnable?.run()
+        checkNotNull(taskRunnable).run()
 
         stopThread.join()
 
@@ -1011,16 +1028,13 @@ internal class EvaluationEventsProcessorTest {
         val slowWriteLatch = CountDownLatch(1)
         val writeStartedLatch = CountDownLatch(1)
         val slowWriter = object : EvaluationEventWriter {
-            override fun write(event: BatchedFlagEvaluations.FlagEvaluation) {
-                writeAll(listOf(event))
-            }
             override fun writeAll(events: List<BatchedFlagEvaluations.FlagEvaluation>) {
                 writeStartedLatch.countDown()
                 slowWriteLatch.await() // Block until released
             }
         }
 
-        val slowProcessor = EvaluationEventsProcessor(
+        val slowProcessor = createEvaluationEventsProcessor(
             writer = slowWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
@@ -1122,40 +1136,27 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M continue accepting evaluations W flush() { during flush operation }`() {
-        // Given - populate initial evaluations
-        repeat(50) { index ->
-            val context = EvaluationContext(targetingKey = "initial-$index")
-            testedProcessor.processEvaluation(
-                fakeFlagKey,
-                context,
-                fakeDDContext,
-                fakeData.variationKey,
-                fakeData.allocationKey,
-                fakeData.reason,
-                null,
-                null
-            )
-        }
+        // Given - stub scheduler to avoid reschedule interactions
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
 
         // Create a slow writer to simulate long flush
         val flushInProgress = CountDownLatch(1)
         val continueFlush = CountDownLatch(1)
         val writeCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val firstCallFlag = java.util.concurrent.atomic.AtomicBoolean(true)
 
         val slowWriter = object : EvaluationEventWriter {
-            override fun write(event: BatchedFlagEvaluations.FlagEvaluation) {
-                writeAll(listOf(event))
-            }
             override fun writeAll(events: List<BatchedFlagEvaluations.FlagEvaluation>) {
+                val isFirstCall = firstCallFlag.compareAndSet(true, false)
                 writeCount.addAndGet(events.size)
-                if (writeCount.get() == 1) {
+                if (isFirstCall) {
                     flushInProgress.countDown() // Signal first write started
                     continueFlush.await() // Block until signaled
                 }
             }
         }
 
-        val slowProcessor = EvaluationEventsProcessor(
+        val slowProcessor = createEvaluationEventsProcessor(
             writer = slowWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,

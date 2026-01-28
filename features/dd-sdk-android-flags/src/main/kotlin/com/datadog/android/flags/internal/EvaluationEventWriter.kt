@@ -22,19 +22,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface EvaluationEventWriter {
     /**
-     * Writes a single flag evaluation event to persistent storage.
-     *
-     * The event is serialized and stored as an individual record. Multiple events
-     * will be collected and batched together at upload time.
-     *
-     * Thread Safety: This method must be thread-safe and handle concurrent calls correctly.
-     *
-     * @param event the evaluation event to write to storage
-     */
-    fun write(event: BatchedFlagEvaluations.FlagEvaluation)
-
-    /**
-     * Writes a list of flag evaluation events to persistent storage.
+     * Writes flag evaluation events to persistent storage.
      *
      * The events are serialized and stored as individual records. Multiple events
      * will be collected and batched together at upload time.
