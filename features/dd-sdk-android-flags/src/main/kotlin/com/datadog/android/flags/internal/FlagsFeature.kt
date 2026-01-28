@@ -55,9 +55,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     @Volatile
     private var isDebugBuild: Boolean = false
 
-    @Volatile
-    private var evaluationsFeature: EvaluationsFeature? = null
-
     /**
      * Registry of [FlagsClient] instances by name.
      * This map stores all clients created for this feature instance.
@@ -65,21 +62,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
     // region Domain Objects
-
-    /**
-     * Uses the default storage configuration with standard batch size (500 items per batch).
-     */
-    override val storageConfiguration =
-        FeatureStorageConfiguration.DEFAULT.copy(
-            maxItemsPerBatch = MAX_ITEMS_PER_BATCH
-        )
-
-    override val requestFactory =
-        ExposuresRequestFactory(
-            internalLogger = sdkCore.internalLogger,
-            customExposureEndpoint = flagsConfiguration.customExposureEndpoint
-        )
-
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger
@@ -87,9 +69,23 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
 
     // endregion
 
+    // region Feature
+
+    override val storageConfiguration =
+        FeatureStorageConfiguration.DEFAULT
+
+    override val requestFactory =
+        ExposuresRequestFactory(
+            internalLogger = sdkCore.internalLogger,
+            customExposureEndpoint = flagsConfiguration.customExposureEndpoint
+        )
+
     override val name: String = FLAGS_FEATURE_NAME
 
+    // endregion
+
     // region Context Listener
+
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == RUM_FEATURE_NAME && applicationId == null) {
             applicationId = context[RUM_APPLICATION_ID]?.toString()
@@ -113,11 +109,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
             writer = dataWriter,
             timeProvider = sdkCore.timeProvider
         )
-
-        // Register evaluations sub-feature
-        if (flagsConfiguration.trackEvaluations) {
-            registerEvaluationsFeature()
-        }
     }
 
     override fun onStop() {
@@ -132,19 +123,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     // endregion
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
-
-    // region evaluationsFeature
-
-    private fun registerEvaluationsFeature() {
-        val evaluationsFeature = EvaluationsFeature(
-            sdkCore = sdkCore,
-            customEvaluationEndpoint = flagsConfiguration.customEvaluationEndpoint
-        )
-        sdkCore.registerFeature(evaluationsFeature)
-        this.evaluationsFeature = evaluationsFeature
-    }
-
-    // endregion
 
     // region FlagsClient Management
 
@@ -235,7 +213,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     }
 
     internal companion object {
-        const val MAX_ITEMS_PER_BATCH = 500
         private const val LOG_TAG = "[Datadog Flags]"
     }
 }

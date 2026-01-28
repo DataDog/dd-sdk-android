@@ -45,7 +45,6 @@ public final class com/datadog/android/flags/FlagsClient$DefaultImpls {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration {
-	public static final field Companion Lcom/datadog/android/flags/FlagsConfiguration$Companion;
 	public final fun copy (ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZ)Lcom/datadog/android/flags/FlagsConfiguration;
 	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
@@ -68,9 +67,6 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Builder$Companion {
-}
-
-public final class com/datadog/android/flags/FlagsConfiguration$Companion {
 }
 
 public abstract interface class com/datadog/android/flags/FlagsStateListener {

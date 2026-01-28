@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.net.EvaluationsRequestFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -23,19 +24,19 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 internal class EvaluationsFeature(
     private val sdkCore: FeatureSdkCore,
-    customEvaluationEndpoint: String?
+    internal val flagsConfiguration: FlagsConfiguration
 ) : StorageBackedFeature {
 
     internal val initialized = AtomicBoolean(false)
 
     // region Feature
 
-    @Suppress("TodoWithoutTask") // Will be done before r4r
     override val name: String = Feature.FLAGS_EVALUATIONS_FEATURE_NAME
+    override val storageConfiguration = FeatureStorageConfiguration.DEFAULT
 
     override val requestFactory: RequestFactory = EvaluationsRequestFactory(
         internalLogger = sdkCore.internalLogger,
-        customEvaluationEndpoint = customEvaluationEndpoint
+        customEvaluationEndpoint = flagsConfiguration.customEvaluationEndpoint
     )
 
     override fun onInitialize(appContext: Context) {
@@ -50,17 +51,5 @@ internal class EvaluationsFeature(
         initialized.set(false)
     }
 
-    /**
-     * Uses the default storage configuration with standard batch size (500 items per batch).
-     */
-    override val storageConfiguration =
-        FeatureStorageConfiguration.DEFAULT.copy(
-            maxItemsPerBatch = MAX_ITEMS_PER_BATCH
-        )
-
     // endregion
-
-    internal companion object {
-        const val MAX_ITEMS_PER_BATCH = 500
-    }
 }

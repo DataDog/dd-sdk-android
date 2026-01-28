@@ -30,7 +30,6 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
     companion object 
-  companion object 
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.StateObservable

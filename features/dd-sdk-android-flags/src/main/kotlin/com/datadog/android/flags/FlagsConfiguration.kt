@@ -163,36 +163,22 @@ data class FlagsConfiguration internal constructor(
         )
 
         companion object {
-            private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L
-            private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L
-            private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L
+            private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L // 10 seconds
+            private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L // 1 second
+            private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L // 60 seconds
         }
     }
 
     /**
      * Companion object for [FlagsConfiguration] providing factory methods and default instances.
      */
-    companion object {
-        /**
-         * Default flush interval for evaluation events (10 seconds).
-         */
-        private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L
-
-        /**
-         * Minimum flush interval for evaluation events (1 second).
-         */
-        private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L
-
-        /**
-         * Maximum flush interval for evaluation events (60 seconds).
-         */
-        private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L
-
+    internal companion object {
         /**
          * The default [FlagsConfiguration] instance.
          *
          * This configuration has:
          * - Exposure tracking enabled
+         * - Evaluation tracking enabled
          * - No custom endpoint URL (uses standard Datadog intake)
          * - No custom flag endpoint URL (uses standard Datadog edge assignment endpoint)
          */
