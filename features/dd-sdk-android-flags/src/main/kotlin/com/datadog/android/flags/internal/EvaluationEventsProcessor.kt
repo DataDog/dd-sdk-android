@@ -44,6 +44,7 @@ internal class EvaluationEventsProcessor(
     private val maxAggregations: Int = MAX_AGGREGATIONS_BEFORE_FLUSH
 ) {
 
+    @Volatile
     private var aggregationMap = ConcurrentHashMap<AggregationKey, AggregationStats>()
     private val flushLock = Object()
 
@@ -94,7 +95,7 @@ internal class EvaluationEventsProcessor(
         @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
         val existing = aggregationMap.putIfAbsent(
             key,
-            AggregationStats(timestamp, context, ddContext, reason, errorMessage)
+            AggregationStats(key, timestamp, context, ddContext, reason, errorMessage)
         )
 
         // Pre-existing stats object found, record evaluation
@@ -133,10 +134,11 @@ internal class EvaluationEventsProcessor(
             } ?: return
 
             // Convert to events and write (to storage)
-            snapshot.forEach { (key, stats) ->
-                val event = stats.toEvaluationEvent(key.flagKey, key)
-                writer.write(event)
-            }
+            writer.writeAll(
+                snapshot.map { (_, stats) ->
+                    stats.toEvaluationEvent()
+                }
+            )
         } finally {
             flushInProgress.set(false)
             if (rescheduleFlush) {

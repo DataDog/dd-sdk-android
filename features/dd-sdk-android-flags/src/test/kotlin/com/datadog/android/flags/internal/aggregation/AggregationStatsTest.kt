@@ -95,28 +95,30 @@ internal class AggregationStatsTest {
     @Test
     fun `M increment count W recordEvaluation()`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
         stats.recordEvaluation(fakeTimestamp + 1000, null)
         stats.recordEvaluation(fakeTimestamp + 2000, null)
 
         // Then
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.evaluationCount).isEqualTo(3L)
     }
 
     @Test
     fun `M update timestamps W recordEvaluation() and toEvaluationEvent()`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val laterTimestamp = fakeTimestamp + 5000
 
         // When
         stats.recordEvaluation(laterTimestamp, null)
 
         // Then - lastEvaluation updated, firstEvaluation unchanged, timestamp equals firstEvaluation
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.lastEvaluation).isEqualTo(laterTimestamp)
         assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
         assertThat(event.timestamp).isEqualTo(event.firstEvaluation)
@@ -125,7 +127,8 @@ internal class AggregationStatsTest {
     @Test
     fun `M preserve first evaluation timestamp W recordEvaluation() { multiple calls }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
         repeat(10) { index ->
@@ -133,7 +136,7 @@ internal class AggregationStatsTest {
         }
 
         // Then
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
     }
 
@@ -143,14 +146,22 @@ internal class AggregationStatsTest {
         val errorMessage1 = "First error: ${forge.anAlphabeticalString()}"
         val errorMessage2 = "Second error: ${forge.anAlphabeticalString()}"
         val errorMessage3 = "Third error: ${forge.anAlphabeticalString()}"
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, errorMessage1)
+        val stats =
+            AggregationStats(
+                fakeAggregationKey,
+                fakeTimestamp,
+                fakeContext,
+                fakeDDContext,
+                fakeData.reason,
+                errorMessage1
+            )
 
         // When
         stats.recordEvaluation(fakeTimestamp + 1000, errorMessage2)
         stats.recordEvaluation(fakeTimestamp + 2000, errorMessage3)
 
         // Then - last error message and aggregated count
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.error?.message).isEqualTo(errorMessage3)
         assertThat(event.evaluationCount).isEqualTo(3L)
     }
@@ -162,10 +173,11 @@ internal class AggregationStatsTest {
     @Test
     fun `M create event with correct fields W toEvaluationEvent() { successful match }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
 
         // Then
         assertThat(event.timestamp).isEqualTo(fakeTimestamp)
@@ -197,11 +209,12 @@ internal class AggregationStatsTest {
             extraLogging = JSONObject(),
             reason = ResolutionReason.DEFAULT.name
         )
-        val defaultStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, defaultData.reason, null)
         val keyWithoutVariant = fakeAggregationKey.copy(variantKey = null, allocationKey = null)
+        val defaultStats =
+            AggregationStats(keyWithoutVariant, fakeTimestamp, fakeContext, fakeDDContext, defaultData.reason, null)
 
         // When
-        val defaultEvent = defaultStats.toEvaluationEvent(fakeFlagName, keyWithoutVariant)
+        val defaultEvent = defaultStats.toEvaluationEvent()
 
         // Then
         assertThat(defaultEvent.runtimeDefaultUsed).isTrue()
@@ -213,15 +226,16 @@ internal class AggregationStatsTest {
     fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`(forge: Forge) {
         // Given - ERROR reason (reason = null, no flag data)
         val errorMessage = forge.anAlphabeticalString()
-        val errorStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, null, errorMessage)
         val keyWithError = fakeAggregationKey.copy(
             variantKey = null,
             allocationKey = null,
             errorCode = "FLAG_NOT_FOUND"
         )
+        val errorStats =
+            AggregationStats(keyWithError, fakeTimestamp, fakeContext, fakeDDContext, null, errorMessage)
 
         // When
-        val errorEvent = errorStats.toEvaluationEvent(fakeFlagName, keyWithError)
+        val errorEvent = errorStats.toEvaluationEvent()
 
         // Then
         assertThat(errorEvent.runtimeDefaultUsed).isTrue()
@@ -231,10 +245,11 @@ internal class AggregationStatsTest {
     @Test
     fun `M set runtime default false W toEvaluationEvent() { MATCHED reason }`() {
         // Given
-        val matchedStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val matchedStats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
-        val matchedEvent = matchedStats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val matchedEvent = matchedStats.toEvaluationEvent()
 
         // Then
         assertThat(matchedEvent.runtimeDefaultUsed).isFalse()
@@ -252,10 +267,11 @@ internal class AggregationStatsTest {
             extraLogging = JSONObject(),
             reason = ResolutionReason.TARGETING_MATCH.name
         )
-        val targetingStats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, targetingData.reason, null)
+        val targetingStats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, targetingData.reason, null)
 
         // When
-        val targetingEvent = targetingStats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val targetingEvent = targetingStats.toEvaluationEvent()
 
         // Then
         assertThat(targetingEvent.runtimeDefaultUsed).isFalse()
@@ -274,10 +290,18 @@ internal class AggregationStatsTest {
             extraLogging = JSONObject(),
             reason = unrecognizedReason
         )
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, unrecognizedData.reason, null)
+        val stats =
+            AggregationStats(
+                fakeAggregationKey,
+                fakeTimestamp,
+                fakeContext,
+                fakeDDContext,
+                unrecognizedData.reason,
+                null
+            )
 
         // When
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
 
         // Then - unrecognized reasons should not set runtimeDefaultUsed for forward compatibility
         assertThat(event.runtimeDefaultUsed).isFalse()
@@ -287,10 +311,18 @@ internal class AggregationStatsTest {
     fun `M include error message W toEvaluationEvent() { error provided }`(forge: Forge) {
         // Given
         val errorMessage = forge.anAlphabeticalString()
-        val statsWithError = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, errorMessage)
+        val statsWithError =
+            AggregationStats(
+                fakeAggregationKey,
+                fakeTimestamp,
+                fakeContext,
+                fakeDDContext,
+                fakeData.reason,
+                errorMessage
+            )
 
         // When
-        val eventWithError = statsWithError.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val eventWithError = statsWithError.toEvaluationEvent()
 
         // Then
         assertThat(eventWithError.error?.message).isEqualTo(errorMessage)
@@ -299,44 +331,40 @@ internal class AggregationStatsTest {
     @Test
     fun `M omit error W toEvaluationEvent() { no error }`() {
         // Given
-        val statsWithoutError = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val statsWithoutError =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
-        val eventWithoutError = statsWithoutError.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val eventWithoutError = statsWithoutError.toEvaluationEvent()
 
         // Then
         assertThat(eventWithoutError.error).isNull()
     }
 
     @Test
-    fun `M use aggregation key fields W toEvaluationEvent() { key fields provided }`(forge: Forge) {
+    fun `M use aggregation key fields W toEvaluationEvent() { key fields provided }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
-        val keyWithDifferentValues = AggregationKey(
-            flagKey = forge.anAlphabeticalString(),
-            variantKey = forge.anAlphabeticalString(),
-            allocationKey = forge.anAlphabeticalString(),
-            targetingKey = forge.anAlphabeticalString(),
-            errorCode = null
-        )
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
-        val event = stats.toEvaluationEvent(forge.anAlphabeticalString(), keyWithDifferentValues)
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(event.variant?.key).isEqualTo(keyWithDifferentValues.variantKey)
-        assertThat(event.allocation?.key).isEqualTo(keyWithDifferentValues.allocationKey)
-        assertThat(event.targetingKey).isEqualTo(keyWithDifferentValues.targetingKey)
+        assertThat(event.variant?.key).isEqualTo(fakeAggregationKey.variantKey)
+        assertThat(event.allocation?.key).isEqualTo(fakeAggregationKey.allocationKey)
+        assertThat(event.targetingKey).isEqualTo(fakeAggregationKey.targetingKey)
     }
 
     @Test
     fun `M handle null variant W toEvaluationEvent() { key has null variant }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val keyWithNullVariant = fakeAggregationKey.copy(variantKey = null)
+        val stats =
+            AggregationStats(keyWithNullVariant, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
-        val eventWithNullVariant = stats.toEvaluationEvent(fakeFlagName, keyWithNullVariant)
+        val eventWithNullVariant = stats.toEvaluationEvent()
 
         // Then
         assertThat(eventWithNullVariant.variant).isNull()
@@ -345,11 +373,12 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle null allocation W toEvaluationEvent() { key has null allocation }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val keyWithNullAllocation = fakeAggregationKey.copy(allocationKey = null)
+        val stats =
+            AggregationStats(keyWithNullAllocation, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When
-        val eventWithNullAllocation = stats.toEvaluationEvent(fakeFlagName, keyWithNullAllocation)
+        val eventWithNullAllocation = stats.toEvaluationEvent()
 
         // Then
         assertThat(eventWithNullAllocation.allocation).isNull()
@@ -362,7 +391,8 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle concurrent recordEvaluation calls W recordEvaluation() { multiple threads }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val threadCount = 10
         val executionsPerThread = 100
         val expectedCount = threadCount * executionsPerThread + 1 // +1 for initial construction
@@ -389,14 +419,15 @@ internal class AggregationStatsTest {
         finishLatch.await()
 
         // Then
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.evaluationCount).isEqualTo(expectedCount.toLong())
     }
 
     @Test
     fun `M produce consistent snapshot W toEvaluationEvent() { called during concurrent updates }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val updateThreadCount = 5
         val snapshotThreadCount = 5
         val executionsPerThread = 100
@@ -420,7 +451,7 @@ internal class AggregationStatsTest {
             Thread {
                 startLatch.await()
                 repeat(executionsPerThread) {
-                    val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+                    val event = stats.toEvaluationEvent()
                     // Verify snapshot consistency
                     if (event.firstEvaluation > event.lastEvaluation) {
                         inconsistentSnapshots.incrementAndGet()
@@ -445,7 +476,8 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle concurrent error message updates W recordEvaluation() { multiple threads }`(forge: Forge) {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val threadCount = 10
         val executionsPerThread = 50
 
@@ -473,7 +505,7 @@ internal class AggregationStatsTest {
         finishLatch.await()
 
         // Then
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         // Last error message should be one of the error messages
         assertThat(errorMessages).contains(event.error?.message)
     }
@@ -486,7 +518,8 @@ internal class AggregationStatsTest {
     fun `M maintain correct range W recordEvaluation() { out of order arrival }`() {
         // Given - initial timestamp at 5000ms
         val initialTimestamp = 5000L
-        val stats = AggregationStats(initialTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, initialTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When - events arrive out of order
         stats.recordEvaluation(10000L, null) // Late event
@@ -494,7 +527,7 @@ internal class AggregationStatsTest {
         stats.recordEvaluation(7000L, null) // Middle event (out of order)
 
         // Then - should track actual min and max
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.firstEvaluation).isEqualTo(2000L) // Minimum
         assertThat(event.lastEvaluation).isEqualTo(10000L) // Maximum
         assertThat(event.evaluationCount).isEqualTo(4L)
@@ -503,7 +536,8 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle same timestamp W recordEvaluation() { multiple evaluations at same time }`() {
         // Given
-        val stats = AggregationStats(fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, fakeTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When - multiple evaluations at exact same timestamp
         repeat(5) {
@@ -511,7 +545,7 @@ internal class AggregationStatsTest {
         }
 
         // Then - timestamps shouldn't change, but count should increment
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
         assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
         assertThat(event.lastEvaluation).isEqualTo(fakeTimestamp)
         assertThat(event.evaluationCount).isEqualTo(6L) // 1 initial + 5 recorded
@@ -520,14 +554,14 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle large time jumps W recordEvaluation() { forward and backward }`() {
         // Given - test both forward and backward large jumps
-        val stats = AggregationStats(50000L, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats = AggregationStats(fakeAggregationKey, 50000L, fakeContext, fakeDDContext, fakeData.reason, null)
 
         // When - large time jump forward (e.g., NTP sync, time zone change)
         val futureTimestamp = 1000000000L
         stats.recordEvaluation(futureTimestamp, null)
 
         // Then - lastEvaluation should update
-        val eventAfterForward = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val eventAfterForward = stats.toEvaluationEvent()
         assertThat(eventAfterForward.lastEvaluation).isEqualTo(futureTimestamp)
 
         // When - large time jump backward (e.g., clock adjustment)
@@ -535,7 +569,7 @@ internal class AggregationStatsTest {
         stats.recordEvaluation(pastTimestamp, null)
 
         // Then - firstEvaluation should update, lastEvaluation unchanged
-        val eventAfterBackward = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val eventAfterBackward = stats.toEvaluationEvent()
         assertThat(eventAfterBackward.firstEvaluation).isEqualTo(pastTimestamp)
         assertThat(eventAfterBackward.lastEvaluation).isEqualTo(futureTimestamp)
         assertThat(eventAfterBackward.evaluationCount).isEqualTo(3L)
@@ -545,7 +579,8 @@ internal class AggregationStatsTest {
     fun `M handle concurrent out-of-order evaluations W recordEvaluation() { thread safety }`() {
         // Given
         val initialTimestamp = 50000L
-        val stats = AggregationStats(initialTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
+        val stats =
+            AggregationStats(fakeAggregationKey, initialTimestamp, fakeContext, fakeDDContext, fakeData.reason, null)
         val threadCount = 10
         val executionsPerThread = 100
 
@@ -576,7 +611,7 @@ internal class AggregationStatsTest {
         finishLatch.await()
 
         // Then - should have correct min/max despite chaos
-        val event = stats.toEvaluationEvent(fakeFlagName, fakeAggregationKey)
+        val event = stats.toEvaluationEvent()
 
         // Calculate expected min and max
         val minTimestamp = initialTimestamp - (10 * 1000L) - 99 // Thread 10, last execution

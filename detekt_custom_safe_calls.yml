@@ -487,6 +487,7 @@ datadog:
       - "java.util.concurrent.ConcurrentHashMap.forEach(kotlin.Function1)"
       - "java.util.concurrent.ConcurrentHashMap.getOrPut(kotlin.String?, kotlin.Function0)"
       - "java.util.concurrent.ConcurrentHashMap.isEmpty()"
+      - "java.util.concurrent.ConcurrentHashMap.map(kotlin.Function1)"
       - "java.util.concurrent.ConcurrentHashMap.putIfAbsent(kotlin.String, com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.SlowFramesTelemetry)"
       - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String)"
       - "java.util.concurrent.ConcurrentHashMap.toMap()"

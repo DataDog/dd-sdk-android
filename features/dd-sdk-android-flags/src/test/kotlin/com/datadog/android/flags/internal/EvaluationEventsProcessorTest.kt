@@ -141,10 +141,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val event = eventCaptor.firstValue
+        val event = eventCaptor.firstValue.first()
         assertThat(event.flag.key).isEqualTo(fakeFlagKey)
         assertThat(event.evaluationCount).isEqualTo(1L)
     }
@@ -186,10 +186,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(1)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val event = eventCaptor.firstValue
+        val event = eventCaptor.firstValue.first()
         assertThat(event.flag.key).isEqualTo(fakeFlagKey)
         assertThat(event.evaluationCount).isEqualTo(3L)
     }
@@ -223,10 +223,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(2)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val events = eventCaptor.allValues
+        val events = eventCaptor.firstValue
         assertThat(events).hasSize(2)
         assertThat(events.map { it.flag.key }).containsExactlyInAnyOrder(fakeFlagKey, anotherFlagName)
     }
@@ -260,10 +260,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(2)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val events = eventCaptor.allValues
+        val events = eventCaptor.firstValue
         assertThat(events).hasSize(2)
         assertThat(
             events.map { it.targetingKey }
@@ -299,10 +299,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(2)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val events = eventCaptor.allValues
+        val events = eventCaptor.firstValue
         assertThat(events).hasSize(2)
         assertThat(
             events.map { it.variant?.key }
@@ -351,11 +351,11 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then - should aggregate into one event
-        val eventCaptor = argumentCaptor<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(1)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
         // Verify it used the last error message
-        val capturedEvent = eventCaptor.firstValue
+        val capturedEvent = eventCaptor.firstValue.first()
         assertThat(capturedEvent.error?.message).isEqualTo(errorMessage3)
         assertThat(capturedEvent.evaluationCount).isEqualTo(3L)
     }
@@ -392,10 +392,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(2)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val events = eventCaptor.allValues
+        val events = eventCaptor.firstValue
         assertThat(events).hasSize(2)
         assertThat(events.map { it.error?.message }).containsExactlyInAnyOrder(errorMessage1, errorMessage2)
     }
@@ -441,10 +441,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val event = eventCaptor.firstValue
+        val event = eventCaptor.firstValue.first()
         assertThat(event.evaluationCount).isEqualTo(3L)
         assertThat(event.firstEvaluation).isEqualTo(timestamps[0])
         assertThat(event.lastEvaluation).isEqualTo(timestamps[2])
@@ -472,10 +472,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        assertThat(eventCaptor.firstValue.flag.key).isEqualTo(fakeFlagKey)
+        assertThat(eventCaptor.firstValue.first().flag.key).isEqualTo(fakeFlagKey)
     }
 
     @Test
@@ -485,7 +485,7 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        verify(mockWriter, never()).write(any())
+        verify(mockWriter, never()).writeAll(any())
         verifyNoMoreInteractions(mockWriter)
     }
 
@@ -517,10 +517,10 @@ internal class EvaluationEventsProcessorTest {
         }
 
         // Then - should have auto-flushed
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(maxAggregations)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        assertThat(eventCaptor.allValues).hasSize(maxAggregations)
+        assertThat(eventCaptor.firstValue).hasSize(maxAggregations)
     }
 
     @Test
@@ -552,10 +552,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(2)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val events = eventCaptor.allValues
+        val events = eventCaptor.firstValue
         assertThat(events).hasSize(2)
         assertThat(events.map { it.evaluationCount }).containsOnly(1L)
     }
@@ -701,7 +701,7 @@ internal class EvaluationEventsProcessorTest {
         taskRunnable?.run() // Execute with no evaluations to flush
 
         // Then - should not write but should reschedule
-        verify(mockWriter, never()).write(any())
+        verify(mockWriter, never()).writeAll(any())
         verify(mockScheduledExecutor, times(2)).schedule(
             any<Runnable>(),
             eq(10_000L),
@@ -734,10 +734,10 @@ internal class EvaluationEventsProcessorTest {
 
         // Then
         verify(mockScheduledExecutor).shutdown()
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        assertThat(eventCaptor.firstValue.flag.key).isEqualTo(fakeFlagKey)
+        assertThat(eventCaptor.firstValue.first().flag.key).isEqualTo(fakeFlagKey)
     }
 
     @Test
@@ -750,7 +750,7 @@ internal class EvaluationEventsProcessorTest {
 
         // Then
         verify(mockScheduledExecutor).shutdown()
-        verify(mockWriter, never()).write(any())
+        verify(mockWriter, never()).writeAll(any())
         verifyNoMoreInteractions(mockWriter)
     }
 
@@ -882,10 +882,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then - should aggregate all into one event
-        val eventCaptor = argumentCaptor<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        val event = eventCaptor.firstValue
+        val event = eventCaptor.firstValue.first()
         assertThat(event.evaluationCount).isEqualTo((threadCount * executionsPerThread).toLong())
     }
 
@@ -928,10 +928,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(threadCount * executionsPerThread)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        assertThat(eventCaptor.allValues).hasSize(threadCount * executionsPerThread)
+        assertThat(eventCaptor.firstValue).hasSize(threadCount * executionsPerThread)
     }
 
     @Test
@@ -984,10 +984,10 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush() // Final flush
 
         // Then - should have written some events
-        val eventCaptor = argumentCaptor<BatchedFlagEvaluations.FlagEvaluation>()
-        verify(mockWriter, times(processingThreadCount * executionsPerThread)).write(eventCaptor.capture())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
 
-        assertThat(eventCaptor.allValues).hasSize(processingThreadCount * executionsPerThread)
+        assertThat(eventCaptor.firstValue).hasSize(processingThreadCount * executionsPerThread)
     }
 
     @Test
@@ -1115,7 +1115,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.flush()
 
         // Then - all unique keys should be written (no lost updates)
-        verify(mockWriter, times(threadCount * uniqueKeysPerThread)).write(any())
+        val eventCaptor = argumentCaptor<List<BatchedFlagEvaluations.FlagEvaluation>>()
+        verify(mockWriter).writeAll(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue).hasSize(threadCount * uniqueKeysPerThread)
     }
 
     @Test
