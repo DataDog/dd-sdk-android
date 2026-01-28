@@ -162,7 +162,7 @@ data class FlagsConfiguration internal constructor(
             gracefulModeEnabled = gracefulModeEnabled
         )
 
-        companion object {
+        internal companion object {
             private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L // 10 seconds
             private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L // 1 second
             private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L // 60 seconds
