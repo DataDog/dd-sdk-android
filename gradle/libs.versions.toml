@@ -104,7 +104,7 @@ ktorServer = "3.0.0-rc-1"
 jctools = "3.3.0"
 openTelemetry = "1.40.0"
 re2j = "1.7"
-zstd = "1.5.7-6"
+zstd = "1.5.7-6@aar"
 material3Android = "1.1.2"
 
 [libraries]

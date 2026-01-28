@@ -106,7 +106,7 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.gson)
     implementation(libs.kronosNTP)
-    implementation(libs.zstdJni)
+    implementation("com.github.luben:zstd-jni:1.5.7-6@aar")
 
     // Android Instrumentation
     implementation(libs.androidXAnnotation)
