@@ -63,7 +63,7 @@ internal class EvaluationEventsProcessor(
      *
      * @param flagKey the flag key
      * @param context the evaluation context (targeting key, attributes)
-     * @param rumContext the RUM context (view ID, session ID, application ID)
+     * @param ddContext the DD SDK context (including RUM fields such as view ID, application ID)
      * @param variantKey the variant/variation key, or null if not assigned
      * @param allocationKey the allocation key, or null if not assigned
      * @param reason the resolution reason indicating why this value was resolved
