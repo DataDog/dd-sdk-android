@@ -72,16 +72,7 @@ internal class EvaluationsFeature(
     // region FeatureContextUpdateReceiver
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == RUM_FEATURE_NAME) {
-            val applicationId = context[RUM_APPLICATION_ID] as? String
-            val viewId = context[RUM_VIEW_ID] as? String
-            val viewName = context[RUM_VIEW_NAME] as? String
-
-            rumContext = DDContext(
-                service = sdkCore.service,
-                applicationId = applicationId,
-                viewId = viewId,
-                viewName = viewName
-            )
+            rumContext = DDContext.fromFeatureContext(context)
         }
     }
 
