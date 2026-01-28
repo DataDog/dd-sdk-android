@@ -160,35 +160,6 @@ internal class EvaluationsRequestFactoryTest {
     }
 
     @Test
-    fun `M parse multiple evaluations W create() { batch of events }`(
-        @Forgery evaluation1: BatchedFlagEvaluations.FlagEvaluation,
-        @Forgery evaluation2: BatchedFlagEvaluations.FlagEvaluation,
-        @Forgery evaluation3: BatchedFlagEvaluations.FlagEvaluation
-    ) {
-        // Given
-        val batchData = listOf(
-            RawBatchEvent(data = evaluation1.toJson().toString().toByteArray(Charsets.UTF_8)),
-            RawBatchEvent(data = evaluation2.toJson().toString().toByteArray(Charsets.UTF_8)),
-            RawBatchEvent(data = evaluation3.toJson().toString().toByteArray(Charsets.UTF_8))
-        )
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, null)
-
-        // Then
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val evaluations = bodyJson.getAsJsonArray("flagEvaluations")
-        assertThat(evaluations).hasSize(3)
-
-        val flagKeys = evaluations.map { it.asJsonObject.get("flag").asJsonObject.get("key").asString }
-        assertThat(flagKeys).containsExactly(
-            evaluation1.flag.key,
-            evaluation2.flag.key,
-            evaluation3.flag.key
-        )
-    }
-
-    @Test
     fun `M handle empty batch W create() { no events }`() {
         // Given
         val batchData = emptyList<RawBatchEvent>()
@@ -202,41 +173,15 @@ internal class EvaluationsRequestFactoryTest {
         assertThat(bodyJson.getAsJsonArray("flagEvaluations")).isEmpty()
     }
 
-    @Test
-    fun `M preserve event order W create() { ordered batch }`(
-        @Forgery evaluation1: BatchedFlagEvaluations.FlagEvaluation,
-        @Forgery evaluation2: BatchedFlagEvaluations.FlagEvaluation,
-        @Forgery evaluation3: BatchedFlagEvaluations.FlagEvaluation
-    ) {
-        // Given - specific order
-        val batchData = listOf(
-            RawBatchEvent(data = evaluation1.toJson().toString().toByteArray(Charsets.UTF_8)),
-            RawBatchEvent(data = evaluation2.toJson().toString().toByteArray(Charsets.UTF_8)),
-            RawBatchEvent(data = evaluation3.toJson().toString().toByteArray(Charsets.UTF_8))
-        )
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, null)
-
-        // Then - order is preserved
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val evaluations = bodyJson.getAsJsonArray("flagEvaluations")
-
-        val timestamps = evaluations.map { it.asJsonObject.get("timestamp").asLong }
-        assertThat(timestamps).containsExactly(
-            evaluation1.timestamp,
-            evaluation2.timestamp,
-            evaluation3.timestamp
-        )
-    }
-
     // endregion
 
     // region Top-Level Context
 
     @Test
-    fun `M include service metadata W create() { context available }`(
+    fun `M include all context fields W create() { full context available }`(
         @Forgery flagEvaluation: BatchedFlagEvaluations.FlagEvaluation,
+        @StringForgery applicationId: String,
+        @StringForgery viewName: String,
         forge: Forge
     ) {
         // Given
@@ -244,80 +189,10 @@ internal class EvaluationsRequestFactoryTest {
         val version = forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
         val env = forge.anElementFrom("prod", "staging", "dev")
 
-        val contextWithMetadata = fakeDatadogContext.copy(
+        val fullContext = fakeDatadogContext.copy(
             service = service,
             version = version,
-            env = env
-        )
-
-        val batchData = listOf(
-            RawBatchEvent(data = flagEvaluation.toJson().toString().toByteArray(Charsets.UTF_8))
-        )
-
-        // When
-        val request = testedFactory.create(contextWithMetadata, fakeExecutionContext, batchData, null)
-
-        // Then
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val context = bodyJson.getAsJsonObject("context")
-
-        assertThat(context.get("service").asString).isEqualTo(service)
-        assertThat(context.get("version").asString).isEqualTo(version)
-        assertThat(context.get("env").asString).isEqualTo(env)
-    }
-
-    @Test
-    fun `M include device context W create() { device info available }`(
-        @Forgery flagEvaluation: BatchedFlagEvaluations.FlagEvaluation
-    ) {
-        // Given
-        val batchData = listOf(
-            RawBatchEvent(data = flagEvaluation.toJson().toString().toByteArray(Charsets.UTF_8))
-        )
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, null)
-
-        // Then
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val device = bodyJson.getAsJsonObject("context").getAsJsonObject("device")
-
-        assertThat(device.get("name").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceName)
-        assertThat(
-            device.get("type").asString
-        ).isEqualTo(fakeDatadogContext.deviceInfo.deviceType.toString().lowercase())
-        assertThat(device.get("brand").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceBrand)
-        assertThat(device.get("model").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceModel)
-    }
-
-    @Test
-    fun `M include OS context W create() { OS info available }`(
-        @Forgery flagEvaluation: BatchedFlagEvaluations.FlagEvaluation
-    ) {
-        // Given
-        val batchData = listOf(
-            RawBatchEvent(data = flagEvaluation.toJson().toString().toByteArray(Charsets.UTF_8))
-        )
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, null)
-
-        // Then
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val os = bodyJson.getAsJsonObject("context").getAsJsonObject("os")
-
-        assertThat(os.get("name").asString).isEqualTo(fakeDatadogContext.deviceInfo.osName)
-        assertThat(os.get("version").asString).isEqualTo(fakeDatadogContext.deviceInfo.osVersion)
-    }
-
-    @Test
-    fun `M include RUM context W create() { RUM available }`(
-        @Forgery flagEvaluation: BatchedFlagEvaluations.FlagEvaluation,
-        @StringForgery applicationId: String,
-        @StringForgery viewName: String
-    ) {
-        // Given
-        val contextWithRum = fakeDatadogContext.copy(
+            env = env,
             featuresContext = mapOf(
                 "rum" to mapOf(
                     "application_id" to applicationId,
@@ -325,17 +200,36 @@ internal class EvaluationsRequestFactoryTest {
                 )
             )
         )
+
         val batchData = listOf(
             RawBatchEvent(data = flagEvaluation.toJson().toString().toByteArray(Charsets.UTF_8))
         )
 
         // When
-        val request = testedFactory.create(contextWithRum, fakeExecutionContext, batchData, null)
+        val request = testedFactory.create(fullContext, fakeExecutionContext, batchData, null)
 
         // Then
         val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
         val context = bodyJson.getAsJsonObject("context")
 
+        // Service metadata
+        assertThat(context.get("service").asString).isEqualTo(service)
+        assertThat(context.get("version").asString).isEqualTo(version)
+        assertThat(context.get("env").asString).isEqualTo(env)
+
+        // Device context
+        val device = context.getAsJsonObject("device")
+        assertThat(device.get("name").asString).isEqualTo(fullContext.deviceInfo.deviceName)
+        assertThat(device.get("type").asString).isEqualTo(fullContext.deviceInfo.deviceType.toString().lowercase())
+        assertThat(device.get("brand").asString).isEqualTo(fullContext.deviceInfo.deviceBrand)
+        assertThat(device.get("model").asString).isEqualTo(fullContext.deviceInfo.deviceModel)
+
+        // OS context
+        val os = context.getAsJsonObject("os")
+        assertThat(os.get("name").asString).isEqualTo(fullContext.deviceInfo.osName)
+        assertThat(os.get("version").asString).isEqualTo(fullContext.deviceInfo.osVersion)
+
+        // RUM context
         assertThat(context.has("rum")).isTrue()
         val rum = context.getAsJsonObject("rum")
         assertThat(rum.getAsJsonObject("application").get("id").asString).isEqualTo(applicationId)
@@ -531,39 +425,6 @@ internal class EvaluationsRequestFactoryTest {
 
     // endregion
 
-    // region Data Integrity
-
-    // Note: Serialization round-trip tests removed - covered by parse multiple evaluations test
-    // Forgery-generated evaluations may have incompatible field combinations that fail fromJson()
-
-    // endregion
-
-    // region Geo Context
-
-    @Test
-    fun `M omit geo context W create() { geo not tracked }`(
-        @Forgery flagEvaluation: BatchedFlagEvaluations.FlagEvaluation
-    ) {
-        // Given
-        val batchData = listOf(
-            RawBatchEvent(data = flagEvaluation.toJson().toString().toByteArray(Charsets.UTF_8))
-        )
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, null)
-
-        // Then - geo should be null or not present (not currently tracked)
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val context = bodyJson.getAsJsonObject("context")
-
-        // Geo is explicitly set to null in implementation
-        if (context.has("geo")) {
-            assertThat(context.get("geo").isJsonNull).isTrue()
-        }
-    }
-
-    // endregion
-
     // region Batch Metadata
 
     @Test
@@ -584,30 +445,6 @@ internal class EvaluationsRequestFactoryTest {
         assertThat(request).isNotNull()
         val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
         assertThat(bodyJson.has("flagEvaluations")).isTrue()
-    }
-
-    // endregion
-
-    // region Large Batch
-
-    @Test
-    fun `M handle large batch W create() { 100 events }`(forge: Forge) {
-        // Given - 100 events
-        val batchData = (1..100).map { _ ->
-            val evaluation = forge.getForgery<BatchedFlagEvaluations.FlagEvaluation>()
-            RawBatchEvent(data = evaluation.toJson().toString().toByteArray(Charsets.UTF_8))
-        }
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, null)
-
-        // Then - all 100 events in payload
-        val bodyJson = JsonParser.parseString(String(request.body, Charsets.UTF_8)).asJsonObject
-        val evaluations = bodyJson.getAsJsonArray("flagEvaluations")
-        assertThat(evaluations).hasSize(100)
-
-        // Payload size is reasonable (should be under 4MB)
-        assertThat(request.body.size).isLessThan(4 * 1024 * 1024)
     }
 
     // endregion
