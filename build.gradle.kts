@@ -117,7 +117,8 @@ tasks.register("unitTestTools") {
         ":tools:detekt:test",
         ":tools:lint:test",
         ":tools:noopfactory:test",
-        ":tools:benchmark:test"
+        ":tools:benchmark:test",
+        ":tools:testserver:test"
     )
 }
 
