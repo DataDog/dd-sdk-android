@@ -8,6 +8,7 @@ package com.datadog.gradle.config
 
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.kotlin.dsl.withType
 
 fun Project.junitConfig() {
@@ -22,6 +23,9 @@ fun Project.junitConfig() {
         reports {
             junitXml.required.set(true)
             html.required.set(true)
+        }
+        testLogging {
+            events(TestLogEvent.FAILED, TestLogEvent.STANDARD_ERROR)
         }
     }
 }
