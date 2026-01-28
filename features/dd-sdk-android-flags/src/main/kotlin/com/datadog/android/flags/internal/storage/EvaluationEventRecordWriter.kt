@@ -16,26 +16,14 @@ import com.datadog.android.flags.model.BatchedFlagEvaluations
 /**
  * Persists serialized flag evaluation events to SDK Core storage.
  *
- * Events are written to the FLAGS feature storage and will be uploaded
+ * Events are written to the EVALUATIONS feature storage and will be uploaded
  * to the EVP intake endpoint by the SDK Core's upload mechanism.
  */
 internal class EvaluationEventRecordWriter(private val sdkCore: FeatureSdkCore) : EvaluationEventWriter {
-
-    /**
-     * Writes a flag evaluation event to storage.
-     *
-     * Thread-safe: uses synchronized block to prevent concurrent writes.
-     *
-     * @param event the flag evaluation event to write
-     */
-    override fun write(event: BatchedFlagEvaluations.FlagEvaluation) {
-        writeAll(listOf(event))
-    }
-
     override fun writeAll(events: List<BatchedFlagEvaluations.FlagEvaluation>) {
         if (events.isEmpty()) return
 
-        sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
+        sdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->
                 writeScope {
                     synchronized(this@EvaluationEventRecordWriter) {
