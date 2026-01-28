@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.ComponentIdManager
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -172,6 +173,9 @@ internal class RumViewScopeTest {
 
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
+    lateinit var mockComponentIdManager: ComponentIdManager
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
@@ -9186,7 +9190,8 @@ internal class RumViewScopeTest {
         accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
-        insightsCollector = mockInsightsCollector
+        insightsCollector = mockInsightsCollector,
+        componentIdManager = mockComponentIdManager
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

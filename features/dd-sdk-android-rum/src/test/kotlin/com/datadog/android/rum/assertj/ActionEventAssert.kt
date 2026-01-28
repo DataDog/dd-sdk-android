@@ -541,6 +541,56 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasComponentId(expected: String?): ActionEventAssert {
+        assertThat(actual.dd.action?.target?.componentId)
+            .overridingErrorMessage(
+                "Expected event data to have dd.action.target.component_id $expected " +
+                    "but was ${actual.dd.action?.target?.componentId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasTargetWidth(expected: Long?): ActionEventAssert {
+        assertThat(actual.dd.action?.target?.width)
+            .overridingErrorMessage(
+                "Expected event data to have dd.action.target.width $expected " +
+                    "but was ${actual.dd.action?.target?.width}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasTargetHeight(expected: Long?): ActionEventAssert {
+        assertThat(actual.dd.action?.target?.height)
+            .overridingErrorMessage(
+                "Expected event data to have dd.action.target.height $expected " +
+                    "but was ${actual.dd.action?.target?.height}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasPositionX(expected: Long?): ActionEventAssert {
+        assertThat(actual.dd.action?.position?.x)
+            .overridingErrorMessage(
+                "Expected event data to have dd.action.position.x $expected " +
+                    "but was ${actual.dd.action?.position?.x}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasPositionY(expected: Long?): ActionEventAssert {
+        assertThat(actual.dd.action?.position?.y)
+            .overridingErrorMessage(
+                "Expected event data to have dd.action.position.y $expected " +
+                    "but was ${actual.dd.action?.position?.y}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ActionEvent): ActionEventAssert =

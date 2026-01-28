@@ -213,3 +213,15 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
     var createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)
+interface com.datadog.android.internal.ComponentIdManager
+  fun setCurrentScreen(String?)
+  fun onWindowRefreshed(android.view.View)
+  fun getComponentId(android.view.View): String?
+  companion object 
+    const val FEATURE_CONTEXT_KEY: String
+class com.datadog.android.internal.ComponentIdManagerImpl : ComponentIdManager
+  constructor(String)
+  override fun setCurrentScreen(String?)
+  override fun onWindowRefreshed(android.view.View)
+  override fun getComponentId(android.view.View): String?
+  companion object 

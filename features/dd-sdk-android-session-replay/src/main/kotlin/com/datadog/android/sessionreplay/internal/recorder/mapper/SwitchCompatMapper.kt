@@ -204,8 +204,9 @@ internal open class SwitchCompatMapper(
                 y = trackBounds.y.densityNormalized(pixelsDensity).toLong(),
                 width = trackBounds.width.densityNormalized(pixelsDensity).toLong(),
                 height = trackBounds.height.densityNormalized(pixelsDensity).toLong(),
-                border = null,
-                shapeStyle = trackShapeStyle
+                componentId = resolveComponentId(view, mappingContext.componentIdManager),
+                shapeStyle = trackShapeStyle,
+                border = null
             )
             wireframes.add(trackWireframe)
         }

@@ -16,6 +16,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.ComponentIdManager
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -131,6 +132,9 @@ internal class ImageViewMapperTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockComponentIdManager: ComponentIdManager
+
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
 
@@ -161,6 +165,7 @@ internal class ImageViewMapperTest {
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockMappingContext.imageWireframeHelper).thenReturn(mockImageWireframeHelper)
         whenever(mockMappingContext.imagePrivacy).thenReturn(fakeImagePrivacy)
+        whenever(mockMappingContext.componentIdManager).thenReturn(mockComponentIdManager)
 
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockImageView.resources).thenReturn(mockResources)
