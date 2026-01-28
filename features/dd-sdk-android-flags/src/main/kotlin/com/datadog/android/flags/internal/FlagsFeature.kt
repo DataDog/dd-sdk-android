@@ -62,17 +62,8 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
     // region Domain Objects
-    internal val precomputedRequestFactory =
-        PrecomputedAssignmentsRequestFactory(
-            internalLogger = sdkCore.internalLogger
-        )
 
-    // endregion
-
-    // region Feature
-
-    override val storageConfiguration =
-        FeatureStorageConfiguration.DEFAULT
+    override val storageConfiguration = FeatureStorageConfiguration.DEFAULT
 
     override val requestFactory =
         ExposuresRequestFactory(
@@ -80,12 +71,16 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
             customExposureEndpoint = flagsConfiguration.customExposureEndpoint
         )
 
-    override val name: String = FLAGS_FEATURE_NAME
+    internal val precomputedRequestFactory =
+        PrecomputedAssignmentsRequestFactory(
+            internalLogger = sdkCore.internalLogger
+        )
 
     // endregion
 
-    // region Context Listener
+    override val name: String = FLAGS_FEATURE_NAME
 
+    // region Context Listener
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == RUM_FEATURE_NAME && applicationId == null) {
             applicationId = context[RUM_APPLICATION_ID]?.toString()

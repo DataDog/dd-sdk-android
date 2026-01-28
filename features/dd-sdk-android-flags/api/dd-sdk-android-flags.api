@@ -53,7 +53,6 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
-	public static final field Companion Lcom/datadog/android/flags/FlagsConfiguration$Builder$Companion;
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
@@ -64,9 +63,6 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public final fun useCustomEvaluationEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
-}
-
-public final class com/datadog/android/flags/FlagsConfiguration$Builder$Companion {
 }
 
 public abstract interface class com/datadog/android/flags/FlagsStateListener {
