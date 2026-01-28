@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.BatchedFlagEvaluations.Context1 as Evalua
  *
  * Thread Safe
  *
+ * @param aggregationKey the aggregation key for this stats bundle.
  * @param firstTimestamp the timestamp of the first evaluation
  * @param context the evaluation context
  * @param ddContext the Datadog context (service, RUM application/view)
@@ -29,6 +30,7 @@ import com.datadog.android.flags.model.BatchedFlagEvaluations.Context1 as Evalua
  * @param errorMessage optional error message (detailed, for logging)
  */
 internal class AggregationStats(
+    private val aggregationKey: AggregationKey,
     firstTimestamp: Long,
     private val context: EvaluationContext,
     private val ddContext: DDContext,
@@ -77,11 +79,9 @@ internal class AggregationStats(
      *
      * Thread-safe: synchronizes to create consistent snapshot of statistics.
      *
-     * @param flagKey the flag key
-     * @param aggregationKey the aggregation key containing variant, allocation, targeting info
      * @return the evaluation event
      */
-    fun toEvaluationEvent(flagKey: String, aggregationKey: AggregationKey): BatchedFlagEvaluations.FlagEvaluation {
+    fun toEvaluationEvent(): BatchedFlagEvaluations.FlagEvaluation {
         // Take atomic snapshot of statistics
         val snapshotCount: Int
         val snapshotFirst: Long
@@ -112,7 +112,7 @@ internal class AggregationStats(
 
         return BatchedFlagEvaluations.FlagEvaluation(
             timestamp = snapshotFirst,
-            flag = BatchedFlagEvaluations.Identifier(flagKey),
+            flag = BatchedFlagEvaluations.Identifier(aggregationKey.flagKey),
             variant = aggregationKey.variantKey?.let { BatchedFlagEvaluations.Identifier(it) },
             allocation = aggregationKey.allocationKey?.let { BatchedFlagEvaluations.Identifier(it) },
             targetingRule = null, // Not applicable

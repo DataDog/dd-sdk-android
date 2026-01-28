@@ -27,24 +27,27 @@ internal data class DDContext(
         /**
          * Empty context when RUM is not active or no view is available.
          */
-        val EMPTY = DDContext(
+        internal val EMPTY = DDContext(
             service = null,
             applicationId = null,
             viewId = null,
             viewName = null
         )
 
-        internal const val RUM_APPLICATION_ID = "application_id"
-        internal const val RUM_VIEW_ID = "view_id"
-        internal const val RUM_VIEW_NAME = "view_name"
+        private const val RUM_APPLICATION_ID = "application_id"
+        private const val RUM_VIEW_ID = "view_id"
+        private const val RUM_VIEW_NAME = "view_name"
 
-        internal fun fromFeatureContext(featureContext: Map<String, Any?>): DDContext {
+        internal fun fromFeatureContext(
+            featureContext: Map<String, Any?>,
+            service: String?
+        ): DDContext {
             val applicationId = featureContext[RUM_APPLICATION_ID] as? String
             val viewId = featureContext[RUM_VIEW_ID] as? String
             val viewName = featureContext[RUM_VIEW_NAME] as? String
 
             return DDContext(
-                service = null,
+                service = service,
                 applicationId = applicationId,
                 viewId = viewId,
                 viewName = viewName

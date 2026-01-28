@@ -14,7 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  *
  * Implementations must be thread-safe and handle concurrent calls correctly.
  * Evaluations are written as individual records and then batched together at upload time.
- * Managing these recors/uploads is the responsibility of the SDK Core's upload scheduler.
+ * Managing these records/uploads is the responsibility of the SDK Core's upload scheduler.
  *
  * @see EvaluationEventsProcessor
  * @see com.datadog.android.flags.internal.net.EvaluationsRequestFactory
