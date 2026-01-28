@@ -283,7 +283,9 @@ internal class EvaluationsRequestFactoryTest {
         val device = bodyJson.getAsJsonObject("context").getAsJsonObject("device")
 
         assertThat(device.get("name").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceName)
-        assertThat(device.get("type").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceType.toString().lowercase())
+        assertThat(
+            device.get("type").asString
+        ).isEqualTo(fakeDatadogContext.deviceInfo.deviceType.toString().lowercase())
         assertThat(device.get("brand").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceBrand)
         assertThat(device.get("model").asString).isEqualTo(fakeDatadogContext.deviceInfo.deviceModel)
     }
