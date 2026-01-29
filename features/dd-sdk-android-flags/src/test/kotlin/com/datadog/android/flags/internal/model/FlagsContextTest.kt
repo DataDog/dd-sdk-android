@@ -47,6 +47,9 @@ internal class FlagsContextTest {
     @StringForgery
     lateinit var fakeEnv: String
 
+    @StringForgery
+    lateinit var fakeSdkVersion: String
+
     @Test
     fun `M create FlagsContext with all parameters W create() { complete configuration }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeExposureEndpoint: String,
@@ -57,6 +60,7 @@ internal class FlagsContextTest {
         whenever(mockDatadogContext.site) doReturn mockDatadogSite
         whenever(mockDatadogSite.name) doReturn fakeSiteName
         whenever(mockDatadogContext.env) doReturn fakeEnv
+        whenever(mockDatadogContext.sdkVersion) doReturn fakeSdkVersion
 
         val flagsConfiguration = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeExposureEndpoint)
@@ -71,6 +75,7 @@ internal class FlagsContextTest {
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
+        assertThat(flagsContext.sdkVersion).isEqualTo(fakeSdkVersion)
         assertThat(flagsContext.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
         assertThat(flagsContext.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
     }
@@ -82,6 +87,7 @@ internal class FlagsContextTest {
         whenever(mockDatadogContext.site) doReturn mockDatadogSite
         whenever(mockDatadogSite.name) doReturn fakeSiteName
         whenever(mockDatadogContext.env) doReturn fakeEnv
+        whenever(mockDatadogContext.sdkVersion) doReturn fakeSdkVersion
 
         val flagsConfiguration = FlagsConfiguration.Builder().build()
 
@@ -93,6 +99,7 @@ internal class FlagsContextTest {
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
+        assertThat(flagsContext.sdkVersion).isEqualTo(fakeSdkVersion)
         assertThat(flagsContext.customExposureEndpoint).isNull()
         assertThat(flagsContext.customFlagEndpoint).isNull()
     }
@@ -104,6 +111,7 @@ internal class FlagsContextTest {
         whenever(mockDatadogContext.site) doReturn mockDatadogSite
         whenever(mockDatadogContext.site.name) doReturn fakeSiteName
         whenever(mockDatadogContext.env) doReturn fakeEnv
+        whenever(mockDatadogContext.sdkVersion) doReturn fakeSdkVersion
 
         val flagsConfiguration = FlagsConfiguration.Builder().build()
 
@@ -115,5 +123,6 @@ internal class FlagsContextTest {
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
+        assertThat(flagsContext.sdkVersion).isEqualTo(fakeSdkVersion)
     }
 }
