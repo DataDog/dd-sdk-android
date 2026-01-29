@@ -44,6 +44,18 @@ android {
         compose = true
         viewBinding = true
     }
+
+    flavorDimensions += listOf("datadog")
+    productFlavors {
+        register("noDatadog") {
+            isDefault = true
+            dimension = "datadog"
+        }
+        register("withDatadog") {
+            dimension = "datadog"
+        }
+    }
+
     val bmPassword = System.getenv("BM_STORE_PASSWD")
     signingConfigs {
         if (bmPassword != null) {

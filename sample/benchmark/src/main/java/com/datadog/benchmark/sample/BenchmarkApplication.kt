@@ -11,7 +11,7 @@ import android.content.Context
 import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
 import com.datadog.benchmark.sample.di.app.DaggerBenchmarkAppComponent
 
-internal class BenchmarkApplication : Application() {
+open internal class BenchmarkApplication : Application() {
 
     internal lateinit var benchmarkAppComponent: BenchmarkAppComponent
 
