@@ -38,4 +38,10 @@ target_link_libraries(
 # Zstd configuration defines
 target_compile_definitions(zstd-jni-1 PRIVATE
     ZSTD_LEGACY_SUPPORT=0
+    ZSTD_MULTITHREAD=0
+)
+
+# Use version script to hide internal symbols and reduce binary size
+set_target_properties(zstd-jni-1 PROPERTIES
+    LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libzstd-jni.map"
 )

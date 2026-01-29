@@ -1,0 +1,4 @@
+{
+    global: Java_com_github_luben_zstd*;
+    local: *;
+};
