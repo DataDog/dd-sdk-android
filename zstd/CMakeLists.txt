@@ -42,6 +42,6 @@ target_link_libraries(
 
 # Zstd configuration defines
 target_compile_definitions(zstd-jni-1 PRIVATE
-    ZSTD_LEGACY_SUPPORT=4
+    ZSTD_LEGACY_SUPPORT=0
     ZSTD_MULTITHREAD=1
 )
