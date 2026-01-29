@@ -12,6 +12,10 @@ plugins {
     kotlin("android")
 }
 
+// Get the Datadog module to include from gradle property
+// Usage: ./gradlew :sample:size-benchmark:assembleWithDatadogRelease -PdatadogModule=:features:dd-sdk-android-rum
+val datadogModule: String? = project.findProperty("datadogModule") as String?
+
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -85,34 +89,13 @@ dependencies {
     // WorkManager
     implementation(libs.androidXWorkManager)
 
-    // Datadog Libraries - only for withDatadog flavor
-    // Feature modules
-    "withDatadogImplementation"(project(":features:dd-sdk-android-logs"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-flags"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-flags-openfeature"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-rum"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-rum-debug-widget"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-trace"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-trace-otel"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-ndk"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-webview"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-session-replay"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-session-replay-material"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-session-replay-compose"))
-    "withDatadogImplementation"(project(":features:dd-sdk-android-profiling"))
-
-    // Integration modules
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-trace-coroutines"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-rum-coroutines"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-rx"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-timber"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-coil"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-coil3"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-glide"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-fresco"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-sqldelight"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-compose"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-cronet"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-okhttp"))
-    "withDatadogImplementation"(project(":integrations:dd-sdk-android-okhttp-otel"))
+    // Datadog module - only for withDatadog flavor
+    // The module is specified via -PdatadogModule=:path:to:module gradle property
+    // If no module is specified, no Datadog dependency is added
+    if (datadogModule != null) {
+        logger.lifecycle("Size Benchmark: Including Datadog module '$datadogModule'")
+        "withDatadogImplementation"(project(datadogModule))
+    } else {
+        logger.lifecycle("Size Benchmark: No Datadog module specified (-PdatadogModule not set)")
+    }
 }
