@@ -125,13 +125,13 @@ internal class FlagsStateManagerTest {
     }
 
     @Test
-    fun `M stop notifying subsequent listeners W updateState() { if listener throws }`() {
+    fun `M stop notifying subsequent listeners W updateState() { listener throws }`() {
         // Given
         val executionOrder = mutableListOf<String>()
 
         val listener1 = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                if (newState is FlagsClientState.Ready) {
+                if (newState == FlagsClientState.Ready) {
                     executionOrder.add("listener1")
                 }
             }
@@ -139,7 +139,7 @@ internal class FlagsStateManagerTest {
 
         val listener2 = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                if (newState is FlagsClientState.Ready) {
+                if (newState == FlagsClientState.Ready) {
                     executionOrder.add("listener2")
                     throw RuntimeException("Listener 2 intentionally throws")
                 }
@@ -148,7 +148,7 @@ internal class FlagsStateManagerTest {
 
         val listener3 = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                if (newState is FlagsClientState.Ready) {
+                if (newState == FlagsClientState.Ready) {
                     executionOrder.add("listener3")
                 }
             }
@@ -164,17 +164,12 @@ internal class FlagsStateManagerTest {
         try {
             testedManager.updateState(FlagsClientState.Ready)
         } catch (e: RuntimeException) {
-            // Expected exception from listener2
             bubbledException = e
         }
 
-        // Then - state is set despite exception
+        // Then
         assertThat(testedManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
-
-        // Then - exception was bubbled up
         assertThat(bubbledException).isNotNull()
-
-        // Then - only listeners before the throwing listener were notified
         assertThat(executionOrder).containsExactly(
             "listener1",
             "listener2"
@@ -186,17 +181,15 @@ internal class FlagsStateManagerTest {
     fun `M notify all listeners W multiple listeners registered and state updated`() {
         // Given
         val notificationCount = AtomicInteger(0)
-        val listeners = mutableListOf<FlagsStateListener>()
 
         repeat(10) {
             val listener = object : FlagsStateListener {
                 override fun onStateChanged(newState: FlagsClientState) {
-                    if (newState is FlagsClientState.Ready) {
+                    if (newState == FlagsClientState.Ready) {
                         notificationCount.incrementAndGet()
                     }
                 }
             }
-            listeners.add(listener)
             testedManager.addListener(listener)
         }
 
@@ -209,7 +202,7 @@ internal class FlagsStateManagerTest {
     }
 
     @Test
-    fun `M block updateState calls W addListener() with slow listener notification`() {
+    fun `M block updateState calls W addListener() { slow listener notification }`() {
         // Given
         val stateOld = FlagsClientState.NotReady
         val stateNew = FlagsClientState.Ready
@@ -217,7 +210,6 @@ internal class FlagsStateManagerTest {
         val receivedStates = mutableListOf<Pair<FlagsClientState, Long>>()
         val addListenerStarted = CountDownLatch(1)
         val addListenerSlowCallbackStarted = CountDownLatch(1)
-        val updateStateCanProceed = CountDownLatch(1)
 
         // Listener that is slow to process the initial state notification
         val slowListener = object : FlagsStateListener {
@@ -229,22 +221,21 @@ internal class FlagsStateManagerTest {
                 // If this is the first notification (from addListener), be slow
                 if (newState == stateOld) {
                     addListenerSlowCallbackStarted.countDown()
-                    // Hold up the read lock by sleeping
+                    // Hold up the write lock by sleeping
                     Thread.sleep(10)
-                    updateStateCanProceed.countDown()
                 }
             }
         }
 
-        // When - demonstrate that slow listener in addListener blocks updateState
+        // When
         val addListenerThread = Thread {
             addListenerStarted.countDown()
             // This will:
-            // 1. Acquire read lock
+            // 1. Acquire write lock
             // 2. Read currentState (NotReady)
             // 3. Call listener.onStateChanged(NotReady) - SLOW (sleeps 10ms)
             // 4. Add listener to subscription
-            // 5. Release read lock
+            // 5. Release write lock
             testedManager.addListener(slowListener)
         }
 
@@ -252,40 +243,121 @@ internal class FlagsStateManagerTest {
             // Wait for addListener to start its slow callback
             addListenerSlowCallbackStarted.await()
             // Try to update state - this will BLOCK waiting for write lock
-            // because addListener is still holding the read lock
             testedManager.updateState(stateNew)
         }
 
-        // Start all threads
         addListenerThread.start()
-        addListenerStarted.await() // Ensure addListener starts first
+        addListenerStarted.await()
         updateStateThread.start()
 
-        // Wait for all threads to complete
         addListenerThread.join(5000)
         updateStateThread.join(5000)
 
-        // Then - verify the order of operations
+        // Then
         synchronized(receivedStates) {
-            // Listener should have received all states in order
             assertThat(receivedStates.map { it.first }).containsExactly(
                 stateOld, // From addListener's initial notification (slow)
-                stateNew // From first updateState (blocked until addListener completes)
+                stateNew // From updateState (blocked until addListener completes)
             )
 
-            // Verify timing: the slow addListener callback completed before updateState calls
             val oldStateTime = receivedStates[0].second
             val newStateTime = receivedStates[1].second
 
-            // updateState calls should have been delayed by at least the sleep time
+            // updateState should have been delayed by at least the sleep time
             assertThat(newStateTime - oldStateTime).isGreaterThan(10_000_000) // ~10ms in nanoseconds
-
-            // The states should be received in chronological order
             assertThat(oldStateTime).isLessThan(newStateTime)
         }
 
-        // Verify final state
         assertThat(testedManager.getCurrentState()).isEqualTo(stateNew)
+    }
+
+    @Test
+    fun `M block getCurrentState calls W addListener() { slow listener notification }`() {
+        // Given
+        val stateOld = FlagsClientState.NotReady
+
+        val addListenerStarted = CountDownLatch(1)
+        val addListenerSlowCallbackStarted = CountDownLatch(1)
+        val getCurrentStateAttempted = CountDownLatch(1)
+
+        val operationTimestamps = mutableListOf<Pair<String, Long>>()
+
+        // Listener that is slow to process the initial state notification
+        val slowListener = object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                synchronized(operationTimestamps) {
+                    operationTimestamps.add("addListener callback start" to System.nanoTime())
+                }
+
+                // If this is the first notification (from addListener), be slow
+                if (newState == stateOld) {
+                    addListenerSlowCallbackStarted.countDown()
+                    // Hold up the write lock by sleeping
+                    Thread.sleep(50)
+                }
+
+                synchronized(operationTimestamps) {
+                    operationTimestamps.add("addListener callback end" to System.nanoTime())
+                }
+            }
+        }
+
+        // When
+        val addListenerThread = Thread {
+            synchronized(operationTimestamps) {
+                operationTimestamps.add("addListener start" to System.nanoTime())
+            }
+            addListenerStarted.countDown()
+            testedManager.addListener(slowListener)
+            synchronized(operationTimestamps) {
+                operationTimestamps.add("addListener end" to System.nanoTime())
+            }
+        }
+
+        val getCurrentStateThread = Thread {
+            // Wait for addListener to start its slow callback
+            addListenerSlowCallbackStarted.await()
+            getCurrentStateAttempted.countDown()
+            testedManager.getCurrentState()
+            synchronized(operationTimestamps) {
+                operationTimestamps.add("getCurrentState completed" to System.nanoTime())
+            }
+        }
+
+        addListenerThread.start()
+        addListenerStarted.await()
+        getCurrentStateThread.start()
+        getCurrentStateAttempted.await()
+
+        addListenerThread.join(5000)
+        getCurrentStateThread.join(5000)
+
+        // Then
+        synchronized(operationTimestamps) {
+            val operations = operationTimestamps.map { it.first }
+            val times = operationTimestamps.associate { it.first to it.second }
+
+            assertThat(operations).containsExactly(
+                "addListener start",
+                "addListener callback start",
+                "addListener callback end",
+                "addListener end",
+                "getCurrentState completed"
+            )
+
+            val addListenerCallbackStart = checkNotNull(times["addListener callback start"])
+            val getCurrentStateCompleted = checkNotNull(times["getCurrentState completed"])
+
+            // getCurrentState should have been delayed by at least 50ms (the sleep time in addListener)
+            assertThat(
+                getCurrentStateCompleted - addListenerCallbackStart
+            ).isGreaterThan(50_000_000) // ~50ms in nanoseconds
+
+            val addListenerEnd = checkNotNull(times["addListener end"])
+            assertThat(getCurrentStateCompleted).isGreaterThan(addListenerEnd)
+        }
+
+        assertThat(testedManager.getCurrentState()).isEqualTo(stateOld)
     }
 
     // endregion
