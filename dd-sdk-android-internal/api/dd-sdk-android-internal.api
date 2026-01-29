@@ -106,6 +106,36 @@ public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/identity/NoOpViewIdentityResolver : com/datadog/android/internal/identity/ViewIdentityResolver {
+	public fun <init> ()V
+	public fun onWindowRefreshed (Landroid/view/View;)V
+	public fun resolveViewIdentity (Landroid/view/View;)Ljava/lang/String;
+	public fun setCurrentScreen (Ljava/lang/String;)V
+}
+
+public abstract interface class com/datadog/android/internal/identity/ViewIdentityResolver {
+	public static final field Companion Lcom/datadog/android/internal/identity/ViewIdentityResolver$Companion;
+	public static final field FEATURE_CONTEXT_KEY Ljava/lang/String;
+	public abstract fun onWindowRefreshed (Landroid/view/View;)V
+	public abstract fun resolveViewIdentity (Landroid/view/View;)Ljava/lang/String;
+	public abstract fun setCurrentScreen (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/identity/ViewIdentityResolver$Companion {
+	public static final field FEATURE_CONTEXT_KEY Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/identity/ViewIdentityResolverImpl : com/datadog/android/internal/identity/ViewIdentityResolver {
+	public static final field Companion Lcom/datadog/android/internal/identity/ViewIdentityResolverImpl$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun onWindowRefreshed (Landroid/view/View;)V
+	public fun resolveViewIdentity (Landroid/view/View;)Ljava/lang/String;
+	public fun setCurrentScreen (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/identity/ViewIdentityResolverImpl$Companion {
+}
+
 public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
 	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;

@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
@@ -2934,7 +2935,7 @@ internal class RumActionScopeTest {
             name,
             false,
             emptyMap(),
-            timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
+            eventTime = timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3044,6 +3045,110 @@ internal class RumActionScopeTest {
                 fakeParentContext.viewId.orEmpty(),
                 StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
             )
+    }
+
+    @Test
+    fun `M populate heatmap fields W sendAction() {viewIdentity present}`(
+        @StringForgery fakeViewIdentity: String,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        val attributesWithDimensions = fakeAttributes +
+            (RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY to fakeViewIdentity) +
+            (RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to fakeWidth) +
+            (RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to fakeHeight) +
+            (RumAttributes.INTERNAL_ACTION_POSITION_X to fakePosX) +
+            (RumAttributes.INTERNAL_ACTION_POSITION_Y to fakePosY)
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = attributesWithDimensions,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(fakeViewIdentity)
+                .hasTargetWidth(fakeWidth)
+                .hasTargetHeight(fakeHeight)
+                .hasPositionX(fakePosX)
+                .hasPositionY(fakePosY)
+        }
+    }
+
+    @Test
+    fun `M have null viewIdentity W sendAction() {viewIdentity not present}`(
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        val attributesWithDimensions = fakeAttributes +
+            (RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to fakeWidth) +
+            (RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to fakeHeight) +
+            (RumAttributes.INTERNAL_ACTION_POSITION_X to fakePosX) +
+            (RumAttributes.INTERNAL_ACTION_POSITION_Y to fakePosY)
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = attributesWithDimensions,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(null)
+                .hasTargetWidth(fakeWidth)
+                .hasTargetHeight(fakeHeight)
+                .hasPositionX(fakePosX)
+                .hasPositionY(fakePosY)
+        }
     }
 
     // region Internal

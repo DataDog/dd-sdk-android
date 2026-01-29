@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumErrorSource
@@ -147,6 +148,9 @@ internal class RumViewManagerScopeTest {
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
 
+    @Mock
+    lateinit var mockViewIdentityResolver: ViewIdentityResolver
+
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
@@ -189,7 +193,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
     }
 
@@ -583,7 +588,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -620,7 +626,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -660,7 +667,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -733,7 +741,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -774,7 +783,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()

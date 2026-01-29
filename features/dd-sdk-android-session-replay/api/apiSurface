@@ -86,16 +86,18 @@ interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringO
 interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
   fun map(android.view.View, MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 data class com.datadog.android.sessionreplay.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback, ViewIdentityProvider)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
   constructor(com.datadog.android.sessionreplay.utils.GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
+interface com.datadog.android.sessionreplay.recorder.ViewIdentityProvider
+  fun resolveIdentity(android.view.View): String?
 abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
   protected open fun resolveViewBackground(android.view.View, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
-  protected open fun resolveBackgroundAsShapeWireframe(android.view.View, com.datadog.android.sessionreplay.utils.GlobalBounds, Int, Int, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe?
+  protected open fun resolveBackgroundAsShapeWireframe(android.view.View, com.datadog.android.sessionreplay.utils.GlobalBounds, Int, Int, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?, com.datadog.android.sessionreplay.recorder.MappingContext): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe?
   protected open fun resolveBackgroundAsImageWireframe(android.view.View, com.datadog.android.sessionreplay.utils.GlobalBounds, Int, Int, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
   companion object 
 open class com.datadog.android.sessionreplay.recorder.mapper.BaseViewGroupMapper<T: android.view.ViewGroup> : BaseAsyncBackgroundWireframeMapper<T>, TraverseAllChildrenMapper<T>
@@ -103,6 +105,7 @@ open class com.datadog.android.sessionreplay.recorder.mapper.BaseViewGroupMapper
 abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper<T: android.view.View> : WireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   protected fun resolveViewId(android.view.View): Long
+  protected fun resolveViewIdentity(android.view.View, com.datadog.android.sessionreplay.recorder.ViewIdentityProvider): String?
   protected fun resolveShapeStyle(android.graphics.drawable.Drawable, Float, com.datadog.android.api.InternalLogger): com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle?
 class com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper : TextViewMapper<android.widget.EditText>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
@@ -295,35 +298,35 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
   sealed class Wireframe
     abstract fun toJson(): com.google.gson.JsonElement
     data class ShapeWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null, ShapeStyle? = null, ShapeBorder? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ShapeWireframe
         fun fromJsonObject(com.google.gson.JsonObject): ShapeWireframe
     data class TextWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): TextWireframe
         fun fromJsonObject(com.google.gson.JsonObject): TextWireframe
     data class ImageWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ImageWireframe
         fun fromJsonObject(com.google.gson.JsonObject): ImageWireframe
     data class PlaceholderWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null, kotlin.String? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): PlaceholderWireframe
         fun fromJsonObject(com.google.gson.JsonObject): PlaceholderWireframe
     data class WebviewWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, kotlin.Boolean? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, kotlin.Boolean? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 

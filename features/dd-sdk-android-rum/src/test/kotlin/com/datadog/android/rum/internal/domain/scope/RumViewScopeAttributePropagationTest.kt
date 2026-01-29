@@ -18,10 +18,10 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
@@ -110,6 +110,9 @@ internal class RumViewScopeAttributePropagationTest {
 
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
+    lateinit var mockViewIdentityResolver: ViewIdentityResolver
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -652,7 +655,8 @@ internal class RumViewScopeAttributePropagationTest {
         accessibilitySnapshotManager: AccessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider: InfoProvider<BatteryInfo> = mockBatteryInfoProvider,
         displayInfoProvider: InfoProvider<DisplayInfo> = mockDisplayInfoProvider,
-        insightsCollector: InsightsCollector = mockInsightsCollector
+        insightsCollector: InsightsCollector = mockInsightsCollector,
+        viewIdentityResolver: ViewIdentityResolver = mockViewIdentityResolver
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -677,7 +681,8 @@ internal class RumViewScopeAttributePropagationTest {
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionTypeOverride = rumSessionType,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        viewIdentityResolver = viewIdentityResolver
     )
 
     // endregion

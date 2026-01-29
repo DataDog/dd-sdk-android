@@ -322,7 +322,12 @@ internal class RumEventSerializer(
             RumAttributes.INTERNAL_TIMESTAMP,
             RumAttributes.INTERNAL_ERROR_TYPE,
             RumAttributes.INTERNAL_ERROR_SOURCE_TYPE,
-            RumAttributes.INTERNAL_ERROR_IS_CRASH
+            RumAttributes.INTERNAL_ERROR_IS_CRASH,
+            RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY,
+            RumAttributes.INTERNAL_ACTION_POSITION_X,
+            RumAttributes.INTERNAL_ACTION_POSITION_Y,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH,
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT
         )
 
         // this are attributes which may come after the calls made by cross-platform SDKs (they are

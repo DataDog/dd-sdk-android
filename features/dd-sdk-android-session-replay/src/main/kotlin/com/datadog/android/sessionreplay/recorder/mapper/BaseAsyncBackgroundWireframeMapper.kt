@@ -93,7 +93,8 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
                 bounds = bounds,
                 width = width,
                 height = height,
-                shapeStyle = shapeStyle
+                shapeStyle = shapeStyle,
+                mappingContext = mappingContext
             )
         }
     }
@@ -106,13 +107,15 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
      *  @param width the view width.
      *  @param height the view height.
      *  @param shapeStyle the optional [MobileSegment.ShapeStyle] to use.
+     *  @param mappingContext the [MappingContext] which contains contextual data, useful for mapping.
      */
     protected open fun resolveBackgroundAsShapeWireframe(
         view: View,
         bounds: GlobalBounds,
         width: Int,
         height: Int,
-        shapeStyle: MobileSegment.ShapeStyle?
+        shapeStyle: MobileSegment.ShapeStyle?,
+        mappingContext: MappingContext
     ): MobileSegment.Wireframe.ShapeWireframe? {
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -127,6 +130,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
             y = bounds.y,
             width = width.densityNormalized(density).toLong(),
             height = height.densityNormalized(density).toLong(),
+            permanentId = resolveViewIdentity(view, mappingContext.viewIdentityProvider),
             shapeStyle = shapeStyle,
             border = null
         )

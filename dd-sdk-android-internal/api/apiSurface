@@ -51,6 +51,18 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
+interface com.datadog.android.internal.identity.ViewIdentityResolver
+  fun setCurrentScreen(String?)
+  fun onWindowRefreshed(android.view.View)
+  fun resolveViewIdentity(android.view.View): String?
+  companion object 
+    const val FEATURE_CONTEXT_KEY: String
+class com.datadog.android.internal.identity.ViewIdentityResolverImpl : ViewIdentityResolver
+  constructor(String)
+  override fun setCurrentScreen(String?)
+  override fun onWindowRefreshed(android.view.View)
+  override fun resolveViewIdentity(android.view.View): String?
+  companion object 
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

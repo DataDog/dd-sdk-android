@@ -1021,17 +1021,19 @@ public final class com/datadog/android/rum/model/ActionEvent$DdAction$Companion 
 public final class com/datadog/android/rum/model/ActionEvent$DdActionTarget {
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Long;
+	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$DdActionTarget;
 	public final fun getHeight ()Ljava/lang/Long;
+	public final fun getPermanentId ()Ljava/lang/String;
 	public final fun getSelector ()Ljava/lang/String;
 	public final fun getWidth ()Ljava/lang/Long;
 	public fun hashCode ()I

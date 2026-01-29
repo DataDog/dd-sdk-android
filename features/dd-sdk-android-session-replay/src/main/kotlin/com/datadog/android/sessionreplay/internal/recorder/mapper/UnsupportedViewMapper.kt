@@ -48,6 +48,7 @@ internal class UnsupportedViewMapper(
                 y = viewGlobalBounds.y,
                 width = viewGlobalBounds.width,
                 height = viewGlobalBounds.height,
+                permanentId = resolveViewIdentity(view, mappingContext.viewIdentityProvider),
                 label = resolveViewTitle(view)
             )
         )
