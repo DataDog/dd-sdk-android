@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp.internal.utils.forge
 
-import com.datadog.android.okhttp.TraceContext
+import com.datadog.android.trace.internal.net.TraceContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

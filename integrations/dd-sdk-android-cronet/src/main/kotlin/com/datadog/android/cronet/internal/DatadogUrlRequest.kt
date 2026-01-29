@@ -6,29 +6,50 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import org.chromium.net.UrlRequest
 import java.nio.ByteBuffer
 
 internal class DatadogUrlRequest(
-    private val info: HttpRequestInfo,
-    private val delegate: UrlRequest,
-    private val rumResourceInstrumentation: RumResourceInstrumentation
+    private val requestContext: DatadogCronetRequestContext,
+    private val cronetInstrumentationStateHolder: CronetInstrumentationStateHolder
 ) : UrlRequest() {
 
+    @Volatile
+    private var delegatedRequest: UrlRequest? = null
+
     override fun start() {
-        rumResourceInstrumentation.startResource(info)
-        rumResourceInstrumentation.sendWaitForResourceTimingEvent(info)
-        delegate.start()
+        val requestInfo: CronetHttpRequestInfo = requestContext.buildRequestInfo()
+        requestContext.rumResourceInstrumentation?.apply {
+            startResource(requestInfo)
+            sendWaitForResourceTimingEvent(requestInfo)
+        }
+
+        val traceState = requestContext.networkTracingInstrumentation?.onRequest(requestInfo)
+            ?.also { traceState -> cronetInstrumentationStateHolder.traceState = traceState }
+
+        val finalRequestInfo: HttpRequestInfo = traceState?.requestInfo ?: requestInfo
+
+        (finalRequestInfo as? CronetHttpRequestInfo)
+            ?.buildCronetRequest(traceState)
+            ?.also { delegatedRequest = it }
+            ?.start()
     }
 
-    override fun followRedirect() = delegate.followRedirect()
+    override fun cancel() {
+        delegatedRequest?.cancel()
+    }
 
-    override fun read(buffer: ByteBuffer?) = delegate.read(buffer)
+    override fun followRedirect() {
+        delegatedRequest?.followRedirect()
+    }
 
-    override fun cancel() = delegate.cancel()
+    override fun read(buffer: ByteBuffer?) {
+        delegatedRequest?.read(buffer)
+    }
 
-    override fun isDone(): Boolean = delegate.isDone
+    override fun getStatus(listener: StatusListener?) {
+        delegatedRequest?.getStatus(listener)
+    }
 
-    override fun getStatus(listener: StatusListener?) = delegate.getStatus(listener)
+    override fun isDone(): Boolean = delegatedRequest?.isDone ?: false
 }

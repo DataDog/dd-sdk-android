@@ -10,6 +10,7 @@ import com.datadog.android.cronet.DatadogCronetEngine.Companion.CRONET_NETWORK_I
 import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import com.datadog.android.rum.internal.net.RumResourceInstrumentationAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -338,33 +339,39 @@ internal class DatadogCronetEngineBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M propagate RumResourceAttributesProvider W setRumResourceAttributesProvider()`() {
+    fun `M propagate RumResourceAttributesProvider W setCustomRumInstrumentation()`() {
         // Given
         val customProvider = mock<RumResourceAttributesProvider>()
         whenever(mockBuilderDelegate.build()).thenReturn(mock())
+        val customConfig = RumResourceInstrumentation.Configuration()
+            .setRumResourceAttributesProvider(customProvider)
 
         // When
-        val builder = testedBuilder.setRumResourceAttributesProvider(customProvider)
+        val builder = testedBuilder.setCustomRumInstrumentation(customConfig)
         val engine = builder.build()
 
         // Then
         assertThat(builder).isSameAs(testedBuilder)
         check(engine is DatadogCronetEngine)
-        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
+        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation!!)
             .hasRumResourceAttributesProvider(customProvider)
     }
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M propagate sdkInstanceName W setSdkInstanceName()`(@StringForgery sdkInstanceName: String) {
+    fun `M propagate sdkInstanceName W setCustomRumInstrumentation()`(@StringForgery sdkInstanceName: String) {
+        // Given
+        val customConfig = RumResourceInstrumentation.Configuration()
+            .setSdkInstanceName(sdkInstanceName)
+
         // When
-        val builder = testedBuilder.setSdkInstanceName(sdkInstanceName)
+        val builder = testedBuilder.setCustomRumInstrumentation(customConfig)
         val engine = builder.build()
 
         // Then
         check(engine is DatadogCronetEngine)
         assertThat(builder).isSameAs(testedBuilder)
-        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
+        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation!!)
             .hasSdkInstanceName(sdkInstanceName)
     }
 
@@ -378,7 +385,7 @@ internal class DatadogCronetEngineBuilderTest {
 
         // Then
         check(engine is DatadogCronetEngine)
-        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
+        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation!!)
             .hasNetworkLayerName(CRONET_NETWORK_INSTRUMENTATION_NAME)
     }
 

@@ -62,6 +62,11 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants$TracerC
 	public static final field URL_AS_RESOURCE_NAME Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/trace/api/propagation/DatadogHttpHeadersPropagation {
+	public abstract fun handleNotSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+	public abstract fun handleSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+}
+
 public abstract interface class com/datadog/android/trace/api/propagation/DatadogPropagation {
 	public abstract fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public abstract fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V

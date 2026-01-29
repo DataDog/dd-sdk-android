@@ -7,6 +7,7 @@
 package com.datadog.android.rum
 
 import android.app.Activity
+import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -15,6 +16,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -92,5 +94,38 @@ internal class RumInternalProxyTest {
 
         // Then
         verify(mockRumMonitor).enableJankStatsTracking(activity)
+    }
+
+    @Test
+    fun `M return RumResourceInstrumentation W build() {non-null builder}`(
+        @StringForgery fakeInstrumentationName: String
+    ) {
+        // Given
+        val builder = RumResourceInstrumentationConfiguration()
+
+        // When
+        val result = with(_RumInternalProxy.Companion) {
+            builder.build(fakeInstrumentationName)
+        }
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
+    }
+
+    @Test
+    fun `M return null W build() {null builder}`(
+        @StringForgery fakeInstrumentationName: String
+    ) {
+        // Given
+        val builder: RumResourceInstrumentationConfiguration? = null
+
+        // When
+        val result = with(_RumInternalProxy.Companion) {
+            builder.build(fakeInstrumentationName)
+        }
+
+        // Then
+        assertThat(result).isNull()
     }
 }

@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.resource.ResourceId
@@ -83,14 +84,19 @@ class RumResourceInstrumentation(
      * Stops tracking a network resource with a successful response.
      * @param requestInfo the request information
      * @param responseInfo the response information
+     * @param attributes additional attributes to attach to the resource event
      */
-    fun stopResource(requestInfo: HttpRequestInfo, responseInfo: HttpResponseInfo) = ifRumEnabled { sdkCore ->
+    fun stopResource(
+        requestInfo: HttpRequestInfo,
+        responseInfo: HttpResponseInfo,
+        attributes: Map<String, Any?> = emptyMap()
+    ) = ifRumEnabled { sdkCore ->
         sdkCore.networkMonitor?.stopResource(
             buildResourceId(requestInfo, generateUuid = false),
             responseInfo.statusCode,
             responseInfo.getBodyLength(),
             responseInfo.getRumResourceKind(),
-            rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null)
+            attributes + rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null)
         )
     }
 
@@ -165,6 +171,14 @@ class RumResourceInstrumentation(
 
             return ResourceId(key, uuid?.toString())
         }
+
+        /**
+         * Creates a new [com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration] for configuring RUM resource tracking.
+         * @return a new builder instance.
+         */
+        @JvmStatic
+        @Suppress("FunctionName")
+        fun Configuration() = RumResourceInstrumentationConfiguration()
 
         private fun identifyRequest(requestInfo: HttpRequestInfo): String {
             val method = requestInfo.method

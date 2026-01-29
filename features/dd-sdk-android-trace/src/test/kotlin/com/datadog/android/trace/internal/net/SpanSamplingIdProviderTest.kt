@@ -4,11 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.okhttp.internal.utils
+package com.datadog.android.trace.internal.net
 
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.okhttp.trace.newSpanMock
 import com.datadog.android.trace.api.ZERO
 import com.datadog.android.trace.api.from
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -51,7 +50,7 @@ internal class SpanSamplingIdProviderTest {
     fun `set up`(forge: Forge) {
         fakeTags = forge.aMap { anAlphabeticalString() to aString() }
         whenever(mockSpanContext.tags) doReturn fakeTags
-        mockSpan = forge.newSpanMock(mockSpanContext)
+        whenever(mockSpan.context()) doReturn mockSpanContext
     }
 
     @Test

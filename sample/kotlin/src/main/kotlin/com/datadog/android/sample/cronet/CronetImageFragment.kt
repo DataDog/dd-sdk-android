@@ -16,7 +16,9 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.datadog.android.cronet.DatadogCronetEngine
 import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import com.datadog.android.sample.R
+import com.datadog.android.trace.NetworkTracingInstrumentation
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
 import org.chromium.net.UrlRequest
@@ -41,6 +43,12 @@ internal class CronetImageFragment : Fragment() {
         "https://storage.googleapis.com/cronet/walnut.jpg"
     )
 
+    private val tracedHosts = listOf(
+        "datadoghq.com",
+        "127.0.0.1",
+        "storage.googleapis.com"
+    )
+
     @OptIn(ExperimentalRumApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,6 +65,8 @@ internal class CronetImageFragment : Fragment() {
         cronetEngine = DatadogCronetEngine.Builder(requireContext())
             .enableQuic(true)
             .enableHttp2(true)
+            .enableNetworkTracing(NetworkTracingInstrumentation.Configuration(tracedHosts))
+            .setCustomRumInstrumentation(RumResourceInstrumentation.Configuration())
             .build()
         loadButton.setOnClickListener { loadRandomImage() }
     }

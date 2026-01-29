@@ -36,4 +36,10 @@ interface HttpRequestInfo {
      * @return the length of the content in bytes, or null if the content length is unavailable.
      */
     fun contentLength(): Long?
+
+    /**
+     * Creates a modifier to modify this request info.
+     * @return a new [HttpRequestInfoModifier] initialized with this request's data.
+     */
+    fun modify(): HttpRequestInfoModifier
 }

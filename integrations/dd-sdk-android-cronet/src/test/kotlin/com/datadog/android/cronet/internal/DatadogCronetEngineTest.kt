@@ -8,11 +8,13 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.cronet.DatadogCronetEngine
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.trace.NetworkTracingInstrumentation
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.chromium.net.BidirectionalStream
 import org.chromium.net.CronetEngine
 import org.chromium.net.NetworkQualityRttListener
@@ -47,13 +49,17 @@ internal class DatadogCronetEngineTest {
     @Mock
     lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
 
+    @Mock
+    lateinit var mockNetworkTracingInstrumentation: NetworkTracingInstrumentation
+
     lateinit var testedEngine: DatadogCronetEngine
 
     @BeforeEach
     fun setup() {
         testedEngine = DatadogCronetEngine(
             mockDelegate,
-            mockRumResourceInstrumentation
+            rumResourceInstrumentation = mockRumResourceInstrumentation,
+            networkTracingInstrumentation = null
         )
     }
 
@@ -282,11 +288,65 @@ internal class DatadogCronetEngineTest {
         val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
 
         // Then
-        verify(mockDelegate).newUrlRequestBuilder(
-            eq(url),
-            any<UrlRequest.Callback>(),
-            eq(mockExecutor)
+        assertThat(result).isInstanceOf(DatadogUrlRequestBuilder::class.java)
+    }
+
+    @Test
+    fun `M return DatadogUrlRequestBuilder with tracingInstrumentation W newUrlRequestBuilder() {tracing enabled}`(
+        @StringForgery url: String
+    ) {
+        // Given
+        testedEngine = DatadogCronetEngine(
+            mockDelegate,
+            rumResourceInstrumentation = mockRumResourceInstrumentation,
+            networkTracingInstrumentation = mockNetworkTracingInstrumentation
         )
-        check(result is DatadogUrlRequestBuilder)
+        val mockCallback = mock<UrlRequest.Callback>()
+        val mockExecutor = mock<Executor>()
+        val mockBuilder = mock<UrlRequest.Builder>()
+        whenever(
+            mockDelegate.newUrlRequestBuilder(
+                eq(url),
+                any<UrlRequest.Callback>(),
+                eq(mockExecutor)
+            )
+        ).thenReturn(mockBuilder)
+
+        // When
+        val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
+
+        // Then
+        assertThat(result).isInstanceOf(DatadogUrlRequestBuilder::class.java)
+        assertThat(testedEngine.networkTracingInstrumentation)
+            .isSameAs(mockNetworkTracingInstrumentation)
+    }
+
+    @Test
+    fun `M return DatadogUrlRequestBuilder with null tracingInstrumentation W newUrlRequestBuilder()`(
+        @StringForgery url: String
+    ) {
+        // Given
+        testedEngine = DatadogCronetEngine(
+            mockDelegate,
+            rumResourceInstrumentation = mockRumResourceInstrumentation,
+            networkTracingInstrumentation = null
+        )
+        val mockCallback = mock<UrlRequest.Callback>()
+        val mockExecutor = mock<Executor>()
+        val mockBuilder = mock<UrlRequest.Builder>()
+        whenever(
+            mockDelegate.newUrlRequestBuilder(
+                eq(url),
+                any<UrlRequest.Callback>(),
+                eq(mockExecutor)
+            )
+        ).thenReturn(mockBuilder)
+
+        // When
+        val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
+
+        // Then
+        assertThat(result).isInstanceOf(DatadogUrlRequestBuilder::class.java)
+        assertThat(testedEngine.networkTracingInstrumentation).isNull()
     }
 }

@@ -12,18 +12,17 @@ import okhttp3.Request
 import okhttp3.Response
 
 /**
- * Listener for automatically created [Span] around OkHttp [Request].
+ * Listener for automatically created [DatadogSpan] around OkHttp [Request].
  */
-
 @NoOpImplementation
 interface TracedRequestListener {
 
     /**
      * Notifies that a span was automatically created around an OkHttp [Request].
-     * You can update the given [Span] (e.g.: add custom tags / baggage items) before it
+     * You can update the given [DatadogSpan] (e.g.: add custom tags / baggage items) before it
      * is persisted. Won't be called if [Request] wasn't sampled.
      * @param request the intercepted [Request]
-     * @param span the [Span] created around the intercepted [Request]
+     * @param span the [DatadogSpan] created around the intercepted [Request]
      * @param response the [Request] response in case of any
      * @param throwable in case an error occurred during the [Request]
      */

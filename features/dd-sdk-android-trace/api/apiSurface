@@ -1,5 +1,9 @@
 object com.datadog.android.trace.DatadogTracing
   fun newTracerBuilder(com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+open class com.datadog.android.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<com.datadog.android.trace.api.span.DatadogSpan>
+  constructor(() -> Float)
+  constructor(Float)
+  constructor(Double)
 object com.datadog.android.trace.GlobalDatadogTracer
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
@@ -7,6 +11,26 @@ object com.datadog.android.trace.GlobalDatadogTracer
   fun clear()
 interface com.datadog.android.trace.InternalCoreWriterProvider
   fun getCoreTracerWriter(): com.datadog.android.trace.api.span.DatadogSpanWriter
+interface com.datadog.android.trace.NetworkTracedRequestListener
+  fun onRequestIntercepted(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.trace.api.span.DatadogSpan, com.datadog.android.api.instrumentation.network.HttpResponseInfo?, Throwable?)
+class com.datadog.android.trace.NetworkTracingInstrumentation
+  fun onRequest(com.datadog.android.api.instrumentation.network.HttpRequestInfo): com.datadog.android.trace.internal.net.RequestTraceState
+  fun onResponseSucceed(com.datadog.android.trace.internal.net.RequestTraceState, com.datadog.android.api.instrumentation.network.HttpResponseInfo)
+  fun onResponseFailed(com.datadog.android.trace.internal.net.RequestTraceState, Throwable)
+  companion object 
+    fun Configuration(Map<String, Set<TracingHeaderType>>)
+    fun Configuration(List<String>)
+class com.datadog.android.trace.NetworkTracingInstrumentationConfiguration
+  fun setTraceOrigin(String)
+  fun setSdkInstanceName(String)
+  fun setTracedRequestListener(NetworkTracedRequestListener)
+  fun setTraceSampleRate(Float)
+  fun setTraceSampler(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>)
+  fun setTraceContextInjection(TraceContextInjection)
+  fun set404ResourcesRedacted(Boolean)
+  fun disableNetworkLayerInstrumentation()
+  fun disableRumToTracesLinking()
+  companion object 
 fun <T: Any?> withinSpan(String, com.datadog.android.trace.api.span.DatadogSpan? = null, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.() -> T): T
 object com.datadog.android.trace.Trace
   fun enable(TraceConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
@@ -16,11 +40,20 @@ data class com.datadog.android.trace.TraceConfiguration
     fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
     fun setNetworkInfoEnabled(Boolean): Builder
     fun build(): TraceConfiguration
+enum com.datadog.android.trace.TraceContextInjection
+  - ALL
+  - SAMPLED
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
 class com.datadog.android.trace.internal.DatadogPropagationHelper
   fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
+  fun setTraceContext(com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier, String, String, Int)
+  fun extractParentContext(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.api.instrumentation.network.HttpRequestInfo): com.datadog.android.trace.api.span.DatadogSpanContext?
   fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
+  fun propagateSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Set<com.datadog.android.trace.TracingHeaderType>)
+  fun propagateNotSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Set<com.datadog.android.trace.TracingHeaderType>, com.datadog.android.trace.TraceContextInjection, String?)
+  fun extractSamplingDecision(com.datadog.android.api.instrumentation.network.HttpRequestInfo): Boolean?
+  companion object 
 class com.datadog.android.trace.internal.DatadogSpanIdConverter
   fun fromHex(String): Long
   fun toHexStringPadded(Long): String
@@ -34,10 +67,16 @@ object com.datadog.android.trace.internal.DatadogTracingToolkit
   fun addThrowable(com.datadog.android.trace.api.span.DatadogSpan, Throwable, Byte)
   fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun mergeBaggage(String?, String): String
+  fun com.datadog.android.trace.NetworkTracingInstrumentationConfiguration.build(String): com.datadog.android.trace.NetworkTracingInstrumentation
 class com.datadog.android.trace.internal.RumContextPropagator
   constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
   companion object 
     fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
+data class com.datadog.android.trace.internal.net.RequestTraceState
+  constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier, Boolean = true, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null)
+  val requestInfo: com.datadog.android.api.instrumentation.network.HttpRequestInfo
+data class com.datadog.android.trace.internal.net.TraceContext
+  constructor(String, String, Int)
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T
 data class com.datadog.android.trace.model.SpanEvent
   constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)

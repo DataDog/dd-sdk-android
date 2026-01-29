@@ -24,9 +24,9 @@ class com.datadog.android.cronet.DatadogCronetEngine : org.chromium.net.CronetEn
   override fun removeThroughputListener(org.chromium.net.NetworkQualityThroughputListener?)
   class Builder : org.chromium.net.CronetEngine.Builder
     constructor(android.content.Context, org.chromium.net.CronetEngine.Builder = CronetEngine.Builder(context))
-    fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
-    fun setSdkInstanceName(String)
+    fun setCustomRumInstrumentation(com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration?)
     fun setListenerExecutor(java.util.concurrent.Executor)
+    fun enableNetworkTracing(com.datadog.android.trace.NetworkTracingInstrumentationConfiguration)
     override fun getDefaultUserAgent(): String
     override fun enableQuic(Boolean)
     override fun setStoragePath(String?)

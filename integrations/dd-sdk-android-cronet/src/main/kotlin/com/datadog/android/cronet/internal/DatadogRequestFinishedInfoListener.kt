@@ -6,8 +6,10 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.trace.internal.net.RequestTraceState
 import org.chromium.net.RequestFinishedInfo
 import java.io.IOException
 import java.util.Date
@@ -21,7 +23,7 @@ internal class DatadogRequestFinishedInfoListener(
 
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
         val requestInfo = finishedInfo.annotations?.filterIsInstance<HttpRequestInfo>()?.firstOrNull()
-
+        val traceInfo = finishedInfo.annotations?.filterIsInstance<RequestTraceState>()?.firstOrNull()
         if (requestInfo == null) {
             rumResourceInstrumentation.reportInstrumentationError(
                 "Unable to instrument RUM resource without the request info"
@@ -58,10 +60,24 @@ internal class DatadogRequestFinishedInfoListener(
                 } else {
                     rumResourceInstrumentation.stopResource(
                         requestInfo = requestInfo,
-                        responseInfo = responseInfo
+                        responseInfo = responseInfo,
+                        attributes = traceInfo?.toAttributes().orEmpty()
                     )
                 }
             }
+        }
+    }
+
+    private fun RequestTraceState.toAttributes(): Map<String, Any?>? {
+        val span = span
+        return if (span != null && rumApmLinkingEnabled) {
+            buildMap {
+                put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
+                put(RumAttributes.SPAN_ID, span.context().spanId.toString())
+                put(RumAttributes.RULE_PSR, (sampleRate ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
+            }
+        } else {
+            null
         }
     }
 
@@ -113,13 +129,12 @@ internal class DatadogRequestFinishedInfoListener(
 
     companion object {
 
-        internal operator fun Long?.plus(other: Long?): Long? {
-            return if (this == null || other == null) null else this + other
-        }
+        private const val ALL_IN_SAMPLE_RATE: Float = 100f
+        private const val ZERO_SAMPLE_RATE: Float = 0f
 
-        internal operator fun Long?.minus(other: Long?): Long {
-            return if (this == null || other == null) 0L else this - other
-        }
+        internal operator fun Long?.plus(other: Long?) = if (this == null || other == null) null else this + other
+
+        internal operator fun Long?.minus(other: Long?) = if (this == null || other == null) 0L else this - other
 
         internal operator fun Date?.minus(other: Date?): Long {
             val thisTime = this?.time

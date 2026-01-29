@@ -11,8 +11,10 @@ import android.content.Intent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumConfiguration.Builder
+import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 
@@ -130,5 +132,8 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         ): Builder {
             return builder.setInsightsCollector(insightsCollector)
         }
+
+        fun RumResourceInstrumentationConfiguration?.build(name: String): RumResourceInstrumentation? =
+            this?.build(name)
     }
 }

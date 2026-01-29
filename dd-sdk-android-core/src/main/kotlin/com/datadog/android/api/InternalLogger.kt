@@ -192,3 +192,17 @@ interface InternalLogger {
         val UNBOUND: InternalLogger = SdkInternalLogger(null)
     }
 }
+
+/**
+ * Convenience extension function to log a message directly to the user via Logcat.
+ * This is equivalent to calling [InternalLogger.log] with [InternalLogger.Target.USER].
+ *
+ * @param level the severity level of the log.
+ * @param onlyOnce whether only one instance of the message should be sent per lifetime of the logger.
+ * @param messageBuilder the lambda building the log message.
+ */
+fun InternalLogger.logToUser(
+    level: InternalLogger.Level,
+    onlyOnce: Boolean = false,
+    messageBuilder: () -> String
+) = log(level, InternalLogger.Target.USER, messageBuilder, onlyOnce = onlyOnce)

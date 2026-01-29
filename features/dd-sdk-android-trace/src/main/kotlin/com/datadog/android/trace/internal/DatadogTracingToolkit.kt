@@ -6,6 +6,8 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.NetworkTracingInstrumentation
+import com.datadog.android.trace.NetworkTracingInstrumentationConfiguration
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
@@ -104,4 +106,12 @@ object DatadogTracingToolkit {
             .mergeWith(Baggage.from(newHeader))
             .toString()
     }
+
+    /**
+     * Builds a [NetworkTracingInstrumentation] instance from this builder.
+     *
+     * @param name the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
+     * @return a new [NetworkTracingInstrumentation] instance configured with this builder's settings.
+     */
+    fun NetworkTracingInstrumentationConfiguration.build(name: String): NetworkTracingInstrumentation = this.build(name)
 }
