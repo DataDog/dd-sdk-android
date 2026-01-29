@@ -31,6 +31,7 @@ object com.datadog.android.rum.RumAttributes
   const val GRAPHQL_OPERATION_NAME: String
   const val GRAPHQL_PAYLOAD: String
   const val GRAPHQL_VARIABLES: String
+  const val GRAPHQL_ERRORS: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
