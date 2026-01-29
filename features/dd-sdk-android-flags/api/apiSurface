@@ -72,6 +72,90 @@ interface com.datadog.android.flags.model.UnparsedFlag
   val variationKey: String
   val extraLogging: org.json.JSONObject
   val reason: String
+data class com.datadog.android.flags.model.BatchedFlagEvaluations
+  constructor(Context? = null, kotlin.collections.List<FlagEvaluation>)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): BatchedFlagEvaluations
+    fun fromJsonObject(com.google.gson.JsonObject): BatchedFlagEvaluations
+  data class Context
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Device? = null, Os? = null, Geo? = null, Rum? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Context
+      fun fromJsonObject(com.google.gson.JsonObject): Context
+  data class FlagEvaluation
+    constructor(kotlin.Long, Identifier, Identifier? = null, Identifier? = null, Identifier? = null, kotlin.String? = null, Context1? = null, Error? = null, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): FlagEvaluation
+      fun fromJsonObject(com.google.gson.JsonObject): FlagEvaluation
+  data class Device
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
+  data class Geo
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Geo
+      fun fromJsonObject(com.google.gson.JsonObject): Geo
+  data class Rum
+    constructor(Application? = null, View? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Rum
+      fun fromJsonObject(com.google.gson.JsonObject): Rum
+  data class Identifier
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Identifier
+      fun fromJsonObject(com.google.gson.JsonObject): Identifier
+  data class Context1
+    constructor(Evaluation? = null, Dd? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Context1
+      fun fromJsonObject(com.google.gson.JsonObject): Context1
+  data class Error
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
+      fun fromJsonObject(com.google.gson.JsonObject): Error
+  data class Application
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class View
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View
+  data class Evaluation
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Evaluation
+      fun fromJsonObject(com.google.gson.JsonObject): Evaluation
+  data class Dd
+    constructor(kotlin.String? = null, Rum? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
 data class com.datadog.android.flags.model.ExposureEvent
   constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject)
   fun toJson(): com.google.gson.JsonElement
