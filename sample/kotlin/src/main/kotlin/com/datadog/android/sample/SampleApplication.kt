@@ -63,7 +63,6 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry
 import com.datadog.android.vendor.sample.LocalServer
-import com.datadog.android.zstd.ZstdWrapper
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -133,8 +132,6 @@ class SampleApplication : Application() {
         initializeImageLoaders()
 
         localServer.init(this)
-
-        ZstdWrapper().stringFromJNI()
     }
 
     override fun onLowMemory() {
