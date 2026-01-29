@@ -13,6 +13,7 @@ android {
     namespace = "com.datadog.android.zstd"
 
     defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild {
             cmake {
                 cppFlags("-std=c++17")
