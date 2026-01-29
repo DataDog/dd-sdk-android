@@ -50,6 +50,11 @@ interface Feature {
         const val FLAGS_FEATURE_NAME: String = "flags"
 
         /**
+         * Flags feature name.
+         */
+        const val FLAGS_EVALUATIONS_FEATURE_NAME: String = "flags-evaluations"
+
+        /**
          * Tracing feature name.
          */
         const val TRACING_FEATURE_NAME: String = "tracing"

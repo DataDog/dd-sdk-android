@@ -11,8 +11,11 @@ package com.datadog.android.flags
  */
 data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean,
+    internal val trackEvaluations: Boolean,
     internal val customExposureEndpoint: String?,
+    internal val customEvaluationEndpoint: String?,
     internal val customFlagEndpoint: String?,
+    internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean
 ) {
@@ -21,8 +24,11 @@ data class FlagsConfiguration internal constructor(
      */
     class Builder {
         private var trackExposures: Boolean = true
+        private var trackEvaluations: Boolean = true
         private var customExposureEndpoint: String? = null
+        private var customEvaluationEndpoint: String? = null
         private var customFlagEndpoint: String? = null
+        private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
 
@@ -38,6 +44,20 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets whether evaluations should be logged to the dedicated evaluations intake endpoint.
+         *
+         * Evaluation logging captures aggregated metrics about all flag evaluations, including
+         * frequency, default values, and errors. This is enabled by default.
+         *
+         * @param enabled Whether to enable evaluation logging (default: true).
+         * @return this [Builder] instance for method chaining.
+         */
+        fun trackEvaluations(enabled: Boolean): Builder {
+            trackEvaluations = enabled
+            return this
+        }
+
+        /**
          * Sets a custom endpoint URL for sending exposure events.
          *
          * By default, exposure events are sent to the standard Datadog intake endpoint.
@@ -48,6 +68,37 @@ data class FlagsConfiguration internal constructor(
          */
         fun useCustomExposureEndpoint(endpoint: String): Builder {
             customExposureEndpoint = endpoint
+            return this
+        }
+
+        /**
+         * Sets a custom endpoint URL for sending evaluation events.
+         *
+         * By default, evaluation events are sent to the standard Datadog intake endpoint.
+         * Use this method to override the endpoint URL for testing or proxy purposes.
+         *
+         * @param endpoint The custom endpoint URL to use for evaluation event uploads.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun useCustomEvaluationEndpoint(endpoint: String): Builder {
+            customEvaluationEndpoint = endpoint
+            return this
+        }
+
+        /**
+         * Sets the flush interval for aggregated evaluation events.
+         *
+         * Evaluation events are aggregated and flushed periodically.
+         * Values outside the valid range (1-60 seconds) will be coerced to the nearest bound.
+         *
+         * @param intervalMs The flush interval in milliseconds (default: 10,000ms = 10 seconds).
+         * @return this [Builder] instance for method chaining.
+         */
+        fun evaluationFlushInterval(intervalMs: Long): Builder {
+            evaluationFlushIntervalMs = intervalMs.coerceIn(
+                MIN_EVALUATION_FLUSH_INTERVAL_MS,
+                MAX_EVALUATION_FLUSH_INTERVAL_MS
+            )
             return this
         }
 
@@ -102,22 +153,32 @@ data class FlagsConfiguration internal constructor(
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
             trackExposures = trackExposures,
+            trackEvaluations = trackEvaluations,
             customExposureEndpoint = customExposureEndpoint,
+            customEvaluationEndpoint = customEvaluationEndpoint,
             customFlagEndpoint = customFlagEndpoint,
+            evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled
         )
+
+        internal companion object {
+            private const val DEFAULT_EVALUATION_FLUSH_INTERVAL_MS = 10_000L // 10 seconds
+            private const val MIN_EVALUATION_FLUSH_INTERVAL_MS = 1_000L // 1 second
+            private const val MAX_EVALUATION_FLUSH_INTERVAL_MS = 60_000L // 60 seconds
+        }
     }
 
     /**
      * Companion object for [FlagsConfiguration] providing factory methods and default instances.
      */
-    companion object {
+    internal companion object {
         /**
          * The default [FlagsConfiguration] instance.
          *
          * This configuration has:
          * - Exposure tracking enabled
+         * - Evaluation tracking enabled
          * - No custom endpoint URL (uses standard Datadog intake)
          * - No custom flag endpoint URL (uses standard Datadog edge assignment endpoint)
          */
