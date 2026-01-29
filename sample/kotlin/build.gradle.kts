@@ -177,6 +177,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
     implementation(project(":tools:benchmark"))
+    implementation(project(":zstd"))
 
     // Desugaring SDK
     coreLibraryDesugaring(libs.androidDesugaringSdk)
