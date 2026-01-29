@@ -8,7 +8,6 @@ file(GLOB COMPRESS_SOURCES "src/main/cpp/compress/*.c")
 # Only include necessary JNI files
 set(JNI_SOURCES
     "src/main/cpp/jni_zstd.c"
-    "src/main/cpp/jni_fast_zstd.c"
     "src/main/cpp/jni_outputstream_zstd.c"
 )
 
