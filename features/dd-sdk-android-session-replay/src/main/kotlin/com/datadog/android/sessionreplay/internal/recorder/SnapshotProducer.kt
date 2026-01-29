@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.ComponentIdManager
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -37,7 +38,8 @@ internal class SnapshotProducer(
         systemInformation: SystemInformation,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        recordedDataQueueRefs: RecordedDataQueueRefs
+        recordedDataQueueRefs: RecordedDataQueueRefs,
+        componentIdManager: ComponentIdManager
     ): Node? {
         return convertViewToNode(
             rootView,
@@ -50,7 +52,8 @@ internal class SnapshotProducer(
                 interopViewCallback = DefaultInteropViewCallback(
                     treeViewTraversal,
                     recordedDataQueueRefs
-                )
+                ),
+                componentIdManager = componentIdManager
             ),
             LinkedList(),
             recordedDataQueueRefs

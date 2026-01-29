@@ -1,3 +1,33 @@
+public abstract interface class com/datadog/android/internal/ComponentIdManager {
+	public static final field Companion Lcom/datadog/android/internal/ComponentIdManager$Companion;
+	public static final field FEATURE_CONTEXT_KEY Ljava/lang/String;
+	public abstract fun getComponentId (Landroid/view/View;)Ljava/lang/String;
+	public abstract fun onWindowRefreshed (Landroid/view/View;)V
+	public abstract fun setCurrentScreen (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/ComponentIdManager$Companion {
+	public static final field FEATURE_CONTEXT_KEY Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/ComponentIdManagerImpl : com/datadog/android/internal/ComponentIdManager {
+	public static final field Companion Lcom/datadog/android/internal/ComponentIdManagerImpl$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun getComponentId (Landroid/view/View;)Ljava/lang/String;
+	public fun onWindowRefreshed (Landroid/view/View;)V
+	public fun setCurrentScreen (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/ComponentIdManagerImpl$Companion {
+}
+
+public final class com/datadog/android/internal/NoOpComponentIdManager : com/datadog/android/internal/ComponentIdManager {
+	public fun <init> ()V
+	public fun getComponentId (Landroid/view/View;)Ljava/lang/String;
+	public fun onWindowRefreshed (Landroid/view/View;)V
+	public fun setCurrentScreen (Ljava/lang/String;)V
+}
+
 public abstract interface class com/datadog/android/internal/attributes/LocalAttribute {
 }
 

@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import com.datadog.android.sessionreplay.internal.utils.getComponentIdManager
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
@@ -54,10 +55,16 @@ internal class WindowsOnDrawListener(
         override fun run() {
             val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
 
-            // is is very important to have the windows sorted by their z-order
+            // It is very important to have the windows sorted by their z-order
             val context = rootViews.firstOrNull()?.context ?: return
             val systemInformation = miscUtils.resolveSystemInformation(context)
             val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
+
+            // Fetch componentIdManager lazily from RUM's feature context (see getComponentIdManager docs)
+            val componentIdManager = sdkCore.getComponentIdManager()
+
+            // onWindowRefreshed is a no-op when using NoOpComponentIdManager (heatmap tracking disabled)
+            rootViews.forEach { componentIdManager.onWindowRefreshed(it) }
 
             val nodes = sdkCore.internalLogger.measureMethodCallPerf(
                 METHOD_CALL_CALLER_CLASS,
@@ -73,7 +80,8 @@ internal class WindowsOnDrawListener(
                             systemInformation = systemInformation,
                             textAndInputPrivacy = textAndInputPrivacy,
                             imagePrivacy = imagePrivacy,
-                            recordedDataQueueRefs = recordedDataQueueRefs
+                            recordedDataQueueRefs = recordedDataQueueRefs,
+                            componentIdManager = componentIdManager
                         )
                     }
                 }

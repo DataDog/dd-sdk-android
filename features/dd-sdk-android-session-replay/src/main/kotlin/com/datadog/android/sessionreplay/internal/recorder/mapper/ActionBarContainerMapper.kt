@@ -60,6 +60,7 @@ internal class ActionBarContainerMapper(
                     y = bounds.y,
                     width = bounds.width,
                     height = bounds.height,
+                    componentId = resolveComponentId(view, mappingContext.componentIdManager),
                     shapeStyle = shapeStyle,
                     border = null
                 )

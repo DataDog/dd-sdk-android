@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.ComponentIdManager
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -72,6 +73,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
+    @Mock
+    lateinit var mockComponentIdManager: ComponentIdManager
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -112,7 +116,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -139,7 +144,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -166,7 +172,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -193,7 +200,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -224,7 +232,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -261,7 +270,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         val argumentCaptor = argumentCaptor<MappingContext>()
@@ -296,7 +306,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         val argumentCaptor = argumentCaptor<MappingContext>()
@@ -340,7 +351,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -373,7 +385,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -413,7 +426,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then
@@ -460,7 +474,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockComponentIdManager
         )
 
         // Then

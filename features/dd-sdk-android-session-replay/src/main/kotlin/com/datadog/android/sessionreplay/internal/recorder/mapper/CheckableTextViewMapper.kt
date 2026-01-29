@@ -84,8 +84,9 @@ internal abstract class CheckableTextViewMapper<T>(
                 y = checkBoxBounds.y,
                 width = checkBoxBounds.width,
                 height = checkBoxBounds.height,
-                border = shapeBorder,
-                shapeStyle = shapeStyle
+                componentId = resolveComponentId(view, mappingContext.componentIdManager),
+                shapeStyle = shapeStyle,
+                border = shapeBorder
             )
         )
     }

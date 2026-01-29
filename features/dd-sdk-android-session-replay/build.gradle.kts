@@ -50,7 +50,7 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android-core"))
-    implementation(project(":dd-sdk-android-internal"))
+    api(project(":dd-sdk-android-internal"))
     implementation(libs.okHttp)
     implementation(libs.kotlin)
     implementation(libs.gson)

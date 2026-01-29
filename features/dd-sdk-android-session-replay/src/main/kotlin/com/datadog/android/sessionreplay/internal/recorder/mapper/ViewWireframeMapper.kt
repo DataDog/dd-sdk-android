@@ -50,6 +50,7 @@ internal class ViewWireframeMapper(
                     viewGlobalBounds.y,
                     viewGlobalBounds.width,
                     viewGlobalBounds.height,
+                    componentId = resolveComponentId(view, mappingContext.componentIdManager),
                     shapeStyle = shapeStyle,
                     border = null
                 )

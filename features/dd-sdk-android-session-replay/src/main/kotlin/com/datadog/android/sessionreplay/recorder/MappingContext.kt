@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.recorder
 
+import com.datadog.android.internal.ComponentIdManager
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -24,6 +25,8 @@ import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
  * is an option selector type (e.g. time picker, date picker, drop - down list)
  * @param interopViewCallback the callback for Jetpack Compose semantics tree to call
  * when there is an interop view to map.
+ * @param componentIdManager the manager for generating stable component IDs for heatmap tracking
+ * (uses no-op implementation if heatmap tracking is disabled)
  */
 data class MappingContext(
     val systemInformation: SystemInformation,
@@ -32,5 +35,6 @@ data class MappingContext(
     val imagePrivacy: ImagePrivacy,
     val touchPrivacyManager: TouchPrivacyManager,
     val hasOptionSelectorParent: Boolean = false,
-    val interopViewCallback: InteropViewCallback
+    val interopViewCallback: InteropViewCallback,
+    val componentIdManager: ComponentIdManager
 )

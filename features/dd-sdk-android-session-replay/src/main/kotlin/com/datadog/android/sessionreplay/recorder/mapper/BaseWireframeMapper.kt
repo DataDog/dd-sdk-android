@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.graphics.drawable.Drawable
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.ComponentIdManager
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -40,6 +41,30 @@ abstract class BaseWireframeMapper<in T : View>(
      */
     protected fun resolveViewId(view: View): Long {
         return viewIdentifierResolver.resolveViewId(view)
+    }
+
+    /**
+     * Resolves the globally unique ID for the view, used for heatmap correlation.
+     * This ID is stable across sessions.
+     *
+     * ## When to use this method vs omitting componentId
+     *
+     * Use `resolveComponentId(view, componentIdManager)` when the wireframe directly corresponds
+     * to a View in the Android hierarchy. This includes both interactive elements (buttons, etc.)
+     * and non-interactive elements (text labels, images, etc.) - any View the user might tap on.
+     *
+     * Omit componentId (it defaults to null) when the wireframe is synthetic - i.e., it doesn't
+     * correspond to a real View:
+     * - Visual sub-components (e.g., progress bar fill, seek bar thumb, picker dividers)
+     * - System-level decorations (e.g., window background in DecorViewMapper)
+     *
+     * @param view the view to get the component ID for
+     * @param componentIdManager the manager for generating stable component IDs
+     * @return the component ID, or null if the view's canonical path cannot be determined
+     *         (e.g., detached view)
+     */
+    protected fun resolveComponentId(view: View, componentIdManager: ComponentIdManager): String? {
+        return componentIdManager.getComponentId(view)
     }
 
     /**

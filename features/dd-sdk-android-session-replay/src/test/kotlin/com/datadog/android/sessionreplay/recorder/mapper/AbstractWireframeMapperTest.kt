@@ -159,7 +159,13 @@ internal abstract class AbstractWireframeMapperTest<V : View, WM : WireframeMapp
     ) {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("x", "y", "width", "height", "shapeStyle.cornerRadius") // Ignored due to rounding errors
+            .ignoringFields(
+                "x",
+                "y",
+                "width",
+                "height",
+                "shapeStyle.cornerRadius"
+            ) // Ignored due to rounding errors
             .isEqualTo(expected)
 
         assertThat(actual.x).isCloseTo(expected.x, withinPercentage(BOUNDS_THRESHOLD_PERCENT))
