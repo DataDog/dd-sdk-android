@@ -66,6 +66,7 @@ include(":sample:wear")
 include(":sample:vendor-lib")
 include(":sample:benchmark")
 include(":sample:automotive")
+include(":sample:size-benchmark")
 
 // TOOLCHAIN
 include(":tools:detekt")
