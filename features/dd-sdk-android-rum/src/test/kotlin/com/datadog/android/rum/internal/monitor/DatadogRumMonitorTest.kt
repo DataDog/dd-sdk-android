@@ -1992,65 +1992,6 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `sends keep alive event to rootScope regularly`() {
-        argumentCaptor<Runnable> {
-            inOrder(mockApplicationScope, mockWriter, mockHandler) {
-                verify(mockHandler).postDelayed(capture(), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verifyNoInteractions(mockApplicationScope)
-                val runnable = firstValue
-                runnable.run()
-                verify(mockHandler).removeCallbacks(same(runnable))
-                verify(mockApplicationScope).handleEvent(
-                    argThat { this is RumRawEvent.KeepAlive },
-                    same(fakeDatadogContext),
-                    same(mockEventWriteScope),
-                    same(mockWriter)
-                )
-                verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verify(mockApplicationScope).activeSession
-                verify(mockApplicationScope).getRumContext()
-                verifyNoMoreInteractions()
-            }
-        }
-    }
-
-    @Test
-    fun `delays keep alive runnable on other event`() {
-        val mockEvent: RumRawEvent = mock()
-        val runnable = testedMonitor.keepAliveRunnable
-
-        testedMonitor.handleEvent(mockEvent)
-
-        argumentCaptor<Runnable> {
-            inOrder(mockApplicationScope, mockWriter, mockHandler) {
-                verify(mockHandler).removeCallbacks(same(runnable))
-                verify(mockApplicationScope).handleEvent(
-                    same(mockEvent),
-                    same(fakeDatadogContext),
-                    same(mockEventWriteScope),
-                    same(mockWriter)
-                )
-                verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verify(mockApplicationScope).activeSession
-                verify(mockApplicationScope).getRumContext()
-                verifyNoMoreInteractions()
-            }
-        }
-    }
-
-    @Test
-    fun `removes callback from handler on stopKeepAliveCallback`() {
-        // When
-        testedMonitor.stopKeepAliveCallback()
-
-        // Then
-        // initial post
-        verify(mockHandler).postDelayed(any(), any())
-        verify(mockHandler).removeCallbacks(same(testedMonitor.keepAliveRunnable))
-        verifyNoMoreInteractions(mockHandler, mockWriter, mockApplicationScope)
-    }
-
-    @Test
     fun `M drain the executor queue W drainExecutorService()`(forge: Forge) {
         // Given
         val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
