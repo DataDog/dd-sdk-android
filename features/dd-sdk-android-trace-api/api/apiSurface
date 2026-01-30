@@ -44,6 +44,9 @@ object com.datadog.android.trace.api.DatadogTracingConstants
     const val UNSET: Byte
     const val HTTP_SERVER_DECORATOR: Byte
     const val DEFAULT: Byte
+interface com.datadog.android.trace.api.propagation.DatadogHttpHeadersPropagation
+  fun handleSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan): com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier
+  fun handleNotSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan): com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier
 interface com.datadog.android.trace.api.propagation.DatadogPropagation
   fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
   fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?

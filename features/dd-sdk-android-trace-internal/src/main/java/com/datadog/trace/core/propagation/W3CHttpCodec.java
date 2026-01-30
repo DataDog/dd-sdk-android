@@ -31,9 +31,8 @@ import java.util.TreeMap;
 /**
  * A codec designed for HTTP transport via headers using W3C traceparent and tracestate headers
  */
-class W3CHttpCodec {
+public class W3CHttpCodec {
     private static final Logger log = LoggerFactory.getLogger(W3CHttpCodec.class);
-
     public static final String TRACE_PARENT_KEY = "traceparent";
     public static final String TRACE_STATE_KEY = "tracestate";
     public static final String BAGGAGE_KEY = "baggage";

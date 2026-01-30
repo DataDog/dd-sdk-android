@@ -271,12 +271,18 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 }
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
+	public final fun build (Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;Ljava/lang/String;)Lcom/datadog/android/rum/internal/net/RumResourceInstrumentation;
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInsightsCollector (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+}
+
+public final class com/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration {
+	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;
+	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;
 }
 
 public final class com/datadog/android/rum/configuration/SlowFramesConfiguration {
@@ -423,15 +429,18 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 public final class com/datadog/android/rum/internal/net/RumResourceInstrumentation {
 	public static final field Companion Lcom/datadog/android/rum/internal/net/RumResourceInstrumentation$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
+	public static final fun Configuration ()Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;
 	public final fun reportInstrumentationError (Ljava/lang/String;)V
 	public final fun sendTiming (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public final fun sendWaitForResourceTimingEvent (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
 	public final fun startResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
-	public final fun stopResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)V
+	public final fun stopResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/util/Map;)V
+	public static synthetic fun stopResource$default (Lcom/datadog/android/rum/internal/net/RumResourceInstrumentation;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/util/Map;ILjava/lang/Object;)V
 	public final fun stopResourceWithError (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Throwable;)V
 }
 
 public final class com/datadog/android/rum/internal/net/RumResourceInstrumentation$Companion {
+	public final fun Configuration ()Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;
 	public final fun buildResourceId (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Z)Lcom/datadog/android/rum/resource/ResourceId;
 }
 

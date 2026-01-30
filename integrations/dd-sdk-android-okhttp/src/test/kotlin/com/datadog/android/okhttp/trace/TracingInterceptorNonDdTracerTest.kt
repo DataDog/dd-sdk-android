@@ -11,10 +11,11 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.trace.DeterministicTraceSampler
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.propagation.DatadogPropagation

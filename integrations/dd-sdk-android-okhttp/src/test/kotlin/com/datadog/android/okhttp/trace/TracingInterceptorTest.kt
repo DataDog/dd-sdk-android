@@ -13,8 +13,6 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.TraceContext
-import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
@@ -23,6 +21,8 @@ import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertTh
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.trace.DeterministicTraceSampler
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.propagation.DatadogPropagation
@@ -35,6 +35,7 @@ import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.fromHex
+import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

@@ -26,16 +26,16 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /** A codec designed for HTTP transport via headers using Datadog headers */
-class DatadogHttpCodec {
+public class DatadogHttpCodec {
   private static final Logger log = LoggerFactory.getLogger(DatadogHttpCodec.class);
 
   static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
-  static final String TRACE_ID_KEY = "x-datadog-trace-id";
-  static final String SPAN_ID_KEY = "x-datadog-parent-id";
-  static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
-  static final String ORIGIN_KEY = "x-datadog-origin";
+  public static final String TRACE_ID_KEY = "x-datadog-trace-id";
+  public static final String SPAN_ID_KEY = "x-datadog-parent-id";
+  public static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
+  public static final String ORIGIN_KEY = "x-datadog-origin";
   private static final String E2E_START_KEY = OT_BAGGAGE_PREFIX + DDTags.TRACE_START_TIME;
-  static final String DATADOG_TAGS_KEY = "x-datadog-tags";
+  public static final String DATADOG_TAGS_KEY = "x-datadog-tags";
 
   private DatadogHttpCodec() {
     // This class should not be created. This also makes code coverage checks happy.

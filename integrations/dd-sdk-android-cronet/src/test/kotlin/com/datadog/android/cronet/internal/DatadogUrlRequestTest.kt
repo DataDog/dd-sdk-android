@@ -6,11 +6,12 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.cronet.DatadogCronetEngine
 import com.datadog.android.rum.internal.net.RumResourceInstrumentation
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
@@ -22,11 +23,15 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.nio.ByteBuffer
+import java.util.concurrent.Executor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -37,22 +42,45 @@ import java.nio.ByteBuffer
 internal class DatadogUrlRequestTest {
 
     @Mock
-    lateinit var mockDelegate: UrlRequest
+    lateinit var mockBuiltRequest: UrlRequest
 
     @Mock
     lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
 
-    @Forgery
-    lateinit var fakeRequestInfo: HttpRequestInfo
+    @Mock
+    lateinit var mockEngine: DatadogCronetEngine
+
+    @Mock
+    lateinit var mockCallback: DatadogRequestCallback
+
+    @Mock
+    lateinit var mockExecutor: Executor
+
+    @Mock
+    lateinit var mockDelegateBuilder: UrlRequest.Builder
 
     lateinit var testedRequest: DatadogUrlRequest
 
     @BeforeEach
-    fun setup() {
+    fun setup(forge: Forge) {
+        whenever(mockEngine.rumResourceInstrumentation) doReturn mockRumResourceInstrumentation
+        whenever(mockEngine.networkTracingInstrumentation) doReturn null
+        whenever(mockEngine.newDelegateUrlRequestBuilder(any(), any(), any())) doReturn mockDelegateBuilder
+        whenever(mockDelegateBuilder.setHttpMethod(any())) doReturn mockDelegateBuilder
+        whenever(mockDelegateBuilder.addHeader(any(), any())) doReturn mockDelegateBuilder
+        whenever(mockDelegateBuilder.addRequestAnnotation(any())) doReturn mockDelegateBuilder
+        whenever(mockDelegateBuilder.build()) doReturn mockBuiltRequest
+
+        val requestContext = DatadogCronetRequestContext(
+            url = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+"),
+            engine = mockEngine,
+            datadogRequestCallback = mockCallback,
+            executor = mockExecutor
+        ).apply { setHttpMethod(forge.anElementFrom(HttpSpec.Method.values())) }
+
         testedRequest = DatadogUrlRequest(
-            info = fakeRequestInfo,
-            delegate = mockDelegate,
-            rumResourceInstrumentation = mockRumResourceInstrumentation
+            requestContext = requestContext,
+            cronetInstrumentationStateHolder = mockCallback
         )
     }
 
@@ -62,62 +90,71 @@ internal class DatadogUrlRequestTest {
         testedRequest.start()
 
         // Then
-        verify(mockDelegate).start()
+        verify(mockBuiltRequest).start()
     }
 
     @Test
     fun `M delegate to request W followRedirect()`() {
+        // Given
+        testedRequest.start()
+
         // When
         testedRequest.followRedirect()
 
         // Then
-        verify(mockDelegate).followRedirect()
+        verify(mockBuiltRequest).followRedirect()
     }
 
     @Test
     fun `M delegate to request W read()`() {
         // Given
+        testedRequest.start()
         val mockBuffer = mock<ByteBuffer>()
 
         // When
         testedRequest.read(mockBuffer)
 
         // Then
-        verify(mockDelegate).read(mockBuffer)
+        verify(mockBuiltRequest).read(mockBuffer)
     }
 
     @Test
     fun `M delegate to request W cancel()`() {
+        // Given
+        testedRequest.start()
+
         // When
         testedRequest.cancel()
 
         // Then
-        verify(mockDelegate).cancel()
+        verify(mockBuiltRequest).cancel()
     }
 
     @Test
     fun `M delegate to request W isDone`(@BoolForgery fakeDone: Boolean) {
         // Given
-        whenever(mockDelegate.isDone).thenReturn(fakeDone)
+        testedRequest.start()
+        whenever(mockBuiltRequest.isDone).thenReturn(fakeDone)
 
         // When
         val result = testedRequest.isDone
 
         // Then
-        verify(mockDelegate).isDone
+        verify(mockBuiltRequest).isDone
         assertThat(result).isEqualTo(fakeDone)
     }
 
     @Test
     fun `M delegate to request W getStatus()`() {
         // Given
+        testedRequest.start()
         val mockListener = mock<UrlRequest.StatusListener>()
 
         // When
         testedRequest.getStatus(mockListener)
 
         // Then
-        verify(mockDelegate).getStatus(mockListener)
+        verify(mockBuiltRequest).getStatus(mockListener)
     }
 
     @Test
@@ -126,7 +163,7 @@ internal class DatadogUrlRequestTest {
         testedRequest.start()
 
         // Then
-        verify(mockRumResourceInstrumentation).startResource(fakeRequestInfo)
+        verify(mockRumResourceInstrumentation).startResource(any<CronetHttpRequestInfo>())
     }
 
     @Test
@@ -135,6 +172,62 @@ internal class DatadogUrlRequestTest {
         testedRequest.start()
 
         // Then
-        mockRumResourceInstrumentation.sendWaitForResourceTimingEvent(fakeRequestInfo)
+        verify(mockRumResourceInstrumentation).sendWaitForResourceTimingEvent(any<CronetHttpRequestInfo>())
     }
+
+    // region Edge cases: methods called before start()
+
+    @Test
+    fun `M do nothing W cancel() { before start }`() {
+        // When
+        testedRequest.cancel()
+
+        // Then
+        verifyNoInteractions(mockBuiltRequest)
+    }
+
+    @Test
+    fun `M do nothing W followRedirect() { before start }`() {
+        // When
+        testedRequest.followRedirect()
+
+        // Then
+        verifyNoInteractions(mockBuiltRequest)
+    }
+
+    @Test
+    fun `M do nothing W read() { before start }`() {
+        // Given
+        val mockBuffer = mock<ByteBuffer>()
+
+        // When
+        testedRequest.read(mockBuffer)
+
+        // Then
+        verifyNoInteractions(mockBuiltRequest)
+    }
+
+    @Test
+    fun `M do nothing W getStatus() { before start }`() {
+        // Given
+        val mockListener = mock<UrlRequest.StatusListener>()
+
+        // When
+        testedRequest.getStatus(mockListener)
+
+        // Then
+        verifyNoInteractions(mockBuiltRequest)
+    }
+
+    @Test
+    fun `M return false W isDone { before start }`() {
+        // When
+        val result = testedRequest.isDone
+
+        // Then
+        assertThat(result).isFalse()
+        verifyNoInteractions(mockBuiltRequest)
+    }
+
+    // endregion
 }

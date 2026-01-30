@@ -127,6 +127,11 @@ public final class com/datadog/android/api/InternalLogger$Target : java/lang/Enu
 	public static fun values ()[Lcom/datadog/android/api/InternalLogger$Target;
 }
 
+public final class com/datadog/android/api/InternalLoggerKt {
+	public static final fun logToUser (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;ZLkotlin/jvm/functions/Function0;)V
+	public static synthetic fun logToUser$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;ZLkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+}
+
 public abstract interface class com/datadog/android/api/SdkCore {
 	public abstract fun addAccountExtraInfo (Ljava/util/Map;)V
 	public abstract fun addUserProperties (Ljava/util/Map;)V
@@ -460,6 +465,20 @@ public abstract interface class com/datadog/android/api/instrumentation/network/
 	public abstract fun getHeaders ()Ljava/util/Map;
 	public abstract fun getMethod ()Ljava/lang/String;
 	public abstract fun getUrl ()Ljava/lang/String;
+	public abstract fun modify ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+}
+
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestInfoModifier {
+	public abstract fun addHeader (Ljava/lang/String;[Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+	public abstract fun addTag (Ljava/lang/Class;Ljava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+	public abstract fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+	public abstract fun replaceHeader (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+	public abstract fun result ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;
+	public abstract fun setUrl (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpRequestInfoModifier$DefaultImpls {
+	public static fun replaceHeader (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoModifier;
 }
 
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpResponseInfo {

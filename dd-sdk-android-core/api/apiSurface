@@ -53,6 +53,7 @@ interface com.datadog.android.api.InternalLogger
   fun logApiUsage(Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
   companion object 
     val UNBOUND: InternalLogger
+fun InternalLogger.logToUser(InternalLogger.Level, Boolean = false, () -> String)
 interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
@@ -158,6 +159,14 @@ interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val contentType: String?
   val method: String
   fun contentLength(): Long?
+  fun modify(): HttpRequestInfoModifier
+interface com.datadog.android.api.instrumentation.network.HttpRequestInfoModifier
+  fun setUrl(String): HttpRequestInfoModifier
+  fun addHeader(String, String): HttpRequestInfoModifier
+  fun removeHeader(String): HttpRequestInfoModifier
+  fun replaceHeader(String, String)
+  fun <T> addTag(Class<T>, T?): HttpRequestInfoModifier
+  fun result(): HttpRequestInfo
 interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
   val statusCode: Int
