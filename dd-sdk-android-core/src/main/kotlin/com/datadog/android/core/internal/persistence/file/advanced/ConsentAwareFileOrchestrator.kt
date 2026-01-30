@@ -72,6 +72,15 @@ internal open class ConsentAwareFileOrchestrator(
         return delegateOrchestrator.decrementAndGetPendingFilesCount()
     }
 
+    override fun onFileDeleted(file: File) {
+        grantedOrchestrator.onFileDeleted(file)
+    }
+
+    @WorkerThread
+    override fun refreshFilesFromDisk() {
+        grantedOrchestrator.refreshFilesFromDisk()
+    }
+
     // endregion
 
     // region TrackingConsentProviderCallback
