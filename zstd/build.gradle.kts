@@ -14,6 +14,7 @@ android {
 
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
                 cFlags("-Oz", "-fvisibility=hidden", "-flto")
@@ -38,4 +39,7 @@ androidLibraryConfig()
 
 dependencies {
     implementation(libs.kotlin)
+
+    androidTestImplementation(libs.bundles.integrationTests)
+    androidTestImplementation(libs.assertJ)
 }
