@@ -622,7 +622,7 @@ internal class EvaluationEventsProcessorTest {
         )
 
         // When
-        testedProcessor.flush()
+        testedProcessor.flush(true)
 
         // Then - should reschedule periodic flush
         assertThat(scheduleCount).isGreaterThan(0)
