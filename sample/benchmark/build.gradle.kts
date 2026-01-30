@@ -89,7 +89,8 @@ android {
 }
 
 datadog {
-    composeInstrumentation = InstrumentationMode.AUTO
+    // Set to false because Datadog SDK dependencies are only available for withDatadog flavor
+    enabled = false
 }
 
 dependencies {
@@ -116,19 +117,21 @@ dependencies {
     implementation(libs.coroutinesCore)
     implementation(libs.bundles.ktorClient)
     implementation(libs.kotlinxSerializationJson)
-    implementation(project(":features:dd-sdk-android-logs"))
-    implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":features:dd-sdk-android-trace"))
-    implementation(project(":features:dd-sdk-android-trace-otel"))
-    implementation(project(":features:dd-sdk-android-ndk"))
-    implementation(project(":features:dd-sdk-android-webview"))
-    implementation(project(":features:dd-sdk-android-session-replay"))
-    implementation(project(":features:dd-sdk-android-session-replay-material"))
-    implementation(project(":features:dd-sdk-android-session-replay-compose"))
-    implementation(project(":integrations:dd-sdk-android-compose"))
-    implementation(project(":integrations:dd-sdk-android-glide"))
-    implementation(project(":integrations:dd-sdk-android-okhttp"))
-    implementation(project(":tools:benchmark"))
+
+    // Datadog SDK dependencies - only for withDatadog flavor
+    "withDatadogImplementation"(project(":features:dd-sdk-android-logs"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-rum"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-trace"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-trace-otel"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-ndk"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-webview"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-session-replay"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-session-replay-material"))
+    "withDatadogImplementation"(project(":features:dd-sdk-android-session-replay-compose"))
+    "withDatadogImplementation"(project(":integrations:dd-sdk-android-compose"))
+    "withDatadogImplementation"(project(":integrations:dd-sdk-android-glide"))
+    "withDatadogImplementation"(project(":integrations:dd-sdk-android-okhttp"))
+    "withDatadogImplementation"(project(":tools:benchmark"))
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

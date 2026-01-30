@@ -9,7 +9,6 @@ package com.datadog.benchmark.sample.ui.logscustom
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datadog.android.log.Logger
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.ui.LogPayloadSize
 import com.datadog.benchmark.sample.ui.createLogAttributes
