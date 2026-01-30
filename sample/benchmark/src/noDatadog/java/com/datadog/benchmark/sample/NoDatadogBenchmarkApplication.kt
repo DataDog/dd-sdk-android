@@ -6,13 +6,11 @@
 
 package com.datadog.benchmark.sample
 
-import com.datadog.benchmark.sample.di.DaggerWithDatadogBenchmarkApplicationComponent
 import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
+import com.datadog.benchmark.sample.di.app.DaggerWithoutDatadogBenchmarkAppComponent
 
-internal class WithDatadogBenchmarkApplication : BenchmarkApplication() {
+internal class NoDatadogBenchmarkApplication : BenchmarkApplication() {
     override fun createComponent(): BenchmarkAppComponent {
-        return DaggerWithDatadogBenchmarkApplicationComponent
-            .factory()
-            .create(this)
+        return DaggerWithoutDatadogBenchmarkAppComponent.factory().create(this)
     }
 }
