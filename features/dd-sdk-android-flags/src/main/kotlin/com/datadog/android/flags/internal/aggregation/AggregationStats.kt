@@ -6,10 +6,9 @@
 
 package com.datadog.android.flags.internal.aggregation
 
-import com.datadog.android.flags.model.BatchedFlagEvaluations
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.model.ResolutionReason
-import com.datadog.android.flags.model.BatchedFlagEvaluations.Context1 as EvaluationEventContext
 
 /**
  * Aggregation statistics for evaluation logging.
@@ -70,13 +69,13 @@ internal class AggregationStats(
     }
 
     /**
-     * Converts the aggregated statistics to an EvaluationEvent.
+     * Converts the aggregated statistics to a FlagEvaluation.
      *
      * Thread-safe: synchronizes to create consistent snapshot of statistics.
      *
-     * @return the evaluation event
+     * @return the flag evaluation event
      */
-    fun toEvaluationEvent(): BatchedFlagEvaluations.FlagEvaluation {
+    fun toEvaluationEvent(): FlagEvaluation {
         // Take atomic snapshot of statistics
         val snapshotCount: Int
         val snapshotFirst: Long
@@ -90,30 +89,30 @@ internal class AggregationStats(
         }
 
         // Build context with Datadog-specific information
-        val eventContext = EvaluationEventContext(
+        val eventContext = FlagEvaluation.Context(
             evaluation = null, // Evaluation context reserved for future use
-            dd = BatchedFlagEvaluations.Dd(
+            dd = FlagEvaluation.Dd(
                 service = ddContext.service,
                 rum = ddContext.applicationId?.let { appId ->
-                    BatchedFlagEvaluations.Rum(
-                        application = BatchedFlagEvaluations.Application(id = appId),
+                    FlagEvaluation.Rum(
+                        application = FlagEvaluation.Application(id = appId),
                         view = ddContext.viewName?.let { viewName ->
-                            BatchedFlagEvaluations.View(url = viewName)
+                            FlagEvaluation.View(url = viewName)
                         }
                     )
                 }
             )
         )
 
-        return BatchedFlagEvaluations.FlagEvaluation(
+        return FlagEvaluation(
             timestamp = snapshotFirst,
-            flag = BatchedFlagEvaluations.Identifier(aggregationKey.flagKey),
-            variant = aggregationKey.variantKey?.let { BatchedFlagEvaluations.Identifier(it) },
-            allocation = aggregationKey.allocationKey?.let { BatchedFlagEvaluations.Identifier(it) },
+            flag = FlagEvaluation.Flag(aggregationKey.flagKey),
+            variant = aggregationKey.variantKey?.let { FlagEvaluation.Flag(it) },
+            allocation = aggregationKey.allocationKey?.let { FlagEvaluation.Flag(it) },
             targetingRule = null, // Not applicable
             targetingKey = aggregationKey.targetingKey,
             context = eventContext,
-            error = snapshotMessage?.let { BatchedFlagEvaluations.Error(message = it) },
+            error = snapshotMessage?.let { FlagEvaluation.Error(message = it) },
             evaluationCount = snapshotCount.toLong(),
             firstEvaluation = snapshotFirst,
             lastEvaluation = snapshotLast,

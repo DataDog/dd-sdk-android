@@ -6,9 +6,7 @@
 
 package com.datadog.android.flags.utils.forge
 
-import com.datadog.android.flags.model.BatchedFlagEvaluations.Error
-import com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation
-import com.datadog.android.flags.model.BatchedFlagEvaluations.Identifier
+import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.model.ResolutionReason
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -23,14 +21,14 @@ internal class FlagEvaluationForgeryFactory : ForgeryFactory<FlagEvaluation> {
 
         return FlagEvaluation(
             timestamp = firstEvalTimestamp,
-            flag = Identifier(forge.anAlphabeticalString()),
+            flag = FlagEvaluation.Flag(forge.anAlphabeticalString()),
             variant = if (!isDefaultOrError) {
-                Identifier(forge.anAlphabeticalString())
+                FlagEvaluation.Flag(forge.anAlphabeticalString())
             } else {
                 null
             },
             allocation = if (!isDefaultOrError) {
-                Identifier(forge.anAlphabeticalString())
+                FlagEvaluation.Flag(forge.anAlphabeticalString())
             } else {
                 null
             },
@@ -38,7 +36,7 @@ internal class FlagEvaluationForgeryFactory : ForgeryFactory<FlagEvaluation> {
             targetingKey = forge.aNullable { forge.anAlphabeticalString() },
             context = null,
             error = if (hasError) {
-                Error(message = forge.anAlphabeticalString())
+                FlagEvaluation.Error(message = forge.anAlphabeticalString())
             } else {
                 null
             },
