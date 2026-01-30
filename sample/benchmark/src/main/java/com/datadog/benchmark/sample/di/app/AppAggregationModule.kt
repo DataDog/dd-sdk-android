@@ -11,7 +11,6 @@ import dagger.Module
 @Module(
     includes = [
         AppModule::class,
-        DatadogModule::class,
         NetworkModule::class
     ]
 )
