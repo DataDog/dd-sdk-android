@@ -39,9 +39,15 @@ target_link_libraries(
 target_compile_definitions(zstd-jni-1 PRIVATE
     ZSTD_LEGACY_SUPPORT=0
     ZSTD_MULTITHREAD=0
+    ZSTD_STRIP_ERROR_STRINGS=1
+    ZSTD_NO_UNUSED_FUNCTIONS=1
+    ZSTD_LIB_EXCLUDE_COMPRESSORS_DFAST_AND_UP=1
+    DYNAMIC_BMI2=0
+    ZSTD_NO_INLINE=1
 )
 
 # Use version script to hide internal symbols and reduce binary size
+# Add LTO linker flag for better dead code elimination
 set_target_properties(zstd-jni-1 PROPERTIES
-    LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libzstd-jni.map"
+    LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libzstd-jni.map -flto"
 )
