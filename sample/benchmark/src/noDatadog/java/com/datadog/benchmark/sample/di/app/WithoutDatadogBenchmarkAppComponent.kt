@@ -14,7 +14,8 @@ import javax.inject.Singleton
 @Component(
     modules = [
         AppAggregationModule::class,
-        ObservabilityModule::class
+        ObservabilityModule::class,
+        OkHttpModule::class
     ]
 )
 @Singleton

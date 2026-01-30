@@ -6,12 +6,6 @@
 
 package com.datadog.benchmark.sample.di.app
 
-import android.content.Context
-import com.datadog.android.api.SdkCore
-import com.datadog.android.okhttp.DatadogInterceptor
-import com.datadog.benchmark.sample.config.BenchmarkConfig
-import com.datadog.benchmark.sample.config.SyntheticsRun
-import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkServiceImpl
 import dagger.Binds
@@ -22,9 +16,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import okhttp3.Cache
 import okhttp3.OkHttpClient
-import java.io.File
 import javax.inject.Singleton
 
 @Module
@@ -35,26 +27,6 @@ internal interface NetworkModule {
     fun bindRickAndMortyNetworkService(impl: RickAndMortyNetworkServiceImpl): RickAndMortyNetworkService
 
     companion object {
-        @Provides
-        @Singleton
-        fun provideOkHttpClient(
-            context: Context,
-            config: BenchmarkConfig,
-            sdkCore: dagger.Lazy<SdkCore>
-        ): OkHttpClient {
-            return OkHttpClient.Builder().apply {
-                cache(Cache(File(context.cacheDir, "okhttp-cache"), OKHTTP_CACHE_SIZE_BYTES))
-
-                if (config.scenario == SyntheticsScenario.RumAuto && config.run == SyntheticsRun.Instrumented) {
-                    val interceptor = DatadogInterceptor.Builder(emptyMap()).apply {
-                        setSdkInstanceName(sdkCore.get().name)
-                    }.build()
-
-                    addInterceptor(interceptor)
-                }
-            }.build()
-        }
-
         @Provides
         @Singleton
         fun provideKtorHttpClient(
@@ -71,5 +43,3 @@ internal interface NetworkModule {
         }
     }
 }
-
-private const val OKHTTP_CACHE_SIZE_BYTES: Long = 10 * 1024 * 1024 // 10mb
