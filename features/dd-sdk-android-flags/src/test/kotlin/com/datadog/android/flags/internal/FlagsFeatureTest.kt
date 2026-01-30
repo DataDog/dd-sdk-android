@@ -13,7 +13,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
-import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import fr.xgouchet.elmyr.Forge
@@ -112,8 +111,6 @@ internal class FlagsFeatureTest {
         // Given
         assertThat(testedFeature.exposureProcessor).isInstanceOf(NoOpEventsProcessor::class.java)
         assertThat(testedFeature.exposureWriter).isInstanceOf(NoOpRecordWriter::class.java)
-        assertThat(testedFeature.evaluationProcessor).isNull()
-        assertThat(testedFeature.evaluationWriter).isNull()
 
         // When
         testedFeature.onInitialize(mockContext)
@@ -121,8 +118,6 @@ internal class FlagsFeatureTest {
         // Then
         assertThat(testedFeature.exposureProcessor).isInstanceOf(ExposureEventsProcessor::class.java)
         assertThat(testedFeature.exposureWriter).isInstanceOf(ExposureEventRecordWriter::class.java)
-        assertThat(testedFeature.evaluationProcessor).isInstanceOf(EvaluationEventsProcessor::class.java)
-        assertThat(testedFeature.evaluationWriter).isInstanceOf(EvaluationEventRecordWriter::class.java)
     }
 
     @Test
@@ -149,15 +144,12 @@ internal class FlagsFeatureTest {
         // Given
         testedFeature.onInitialize(mockContext) // Initialize with real writers and processors
         assertThat(testedFeature.exposureWriter).isInstanceOf(ExposureEventRecordWriter::class.java)
-        assertThat(testedFeature.evaluationWriter).isInstanceOf(EvaluationEventRecordWriter::class.java)
 
         // When
         testedFeature.onStop()
 
         // Then
         assertThat(testedFeature.exposureWriter).isInstanceOf(NoOpRecordWriter::class.java)
-        assertThat(testedFeature.evaluationWriter).isNull()
-        assertThat(testedFeature.evaluationProcessor).isNull()
     }
 
     // endregion

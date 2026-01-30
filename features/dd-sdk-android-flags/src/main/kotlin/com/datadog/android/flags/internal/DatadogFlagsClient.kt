@@ -39,7 +39,7 @@ import org.json.JSONObject
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
- * @param evaluationProcessor responsible for aggregating and flushing evaluation events (optional).
+ * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
@@ -50,7 +50,7 @@ internal class DatadogFlagsClient(
     private val flagsConfiguration: FlagsConfiguration,
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
-    private val evaluationProcessor: EvaluationEventsProcessor?,
+    private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
 
@@ -207,15 +207,20 @@ internal class DatadogFlagsClient(
 
     private fun writeEvaluationEvent(
         name: String,
-        data: UnparsedFlag,
+        data: UnparsedFlag?,
         context: EvaluationContext,
         errorCode: String?,
         errorMessage: String?
     ) {
-        evaluationProcessor?.processEvaluation(
-            flagName = name,
+        val feature = evaluationsFeature ?: return
+        val processor = feature.evaluationProcessor ?: return
+
+        processor.processEvaluation(
+            flagKey = name,
             context = context,
-            data = data,
+            variantKey = data?.variationKey,
+            allocationKey = data?.allocationKey,
+            reason = data?.reason,
             errorCode = errorCode,
             errorMessage = errorMessage
         )

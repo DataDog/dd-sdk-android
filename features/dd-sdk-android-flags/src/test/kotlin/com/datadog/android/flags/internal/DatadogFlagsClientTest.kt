@@ -129,7 +129,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
-            evaluationProcessor = null,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
     }
@@ -778,7 +778,7 @@ internal class DatadogFlagsClientTest {
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
-            evaluationProcessor = null,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1166,7 +1166,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
-            evaluationProcessor = null,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1272,7 +1272,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
-            evaluationProcessor = null,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
@@ -1868,7 +1868,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
-            evaluationProcessor = null,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1908,7 +1908,7 @@ internal class DatadogFlagsClientTest {
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
-            evaluationProcessor = null,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
