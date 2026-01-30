@@ -170,10 +170,6 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal data class KeepAlive(
-        override val eventTime: Time = Time()
-    ) : RumRawEvent()
-
     internal data class ApplicationStarted(
         override val eventTime: Time,
         val applicationStartupNanos: Long

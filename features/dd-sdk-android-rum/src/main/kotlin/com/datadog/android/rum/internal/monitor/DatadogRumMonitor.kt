@@ -125,17 +125,9 @@ internal class DatadogRumMonitor(
         insightsCollector = insightsCollector
     )
 
-    internal val keepAliveRunnable = Runnable {
-        handleEvent(RumRawEvent.KeepAlive())
-    }
-
     internal var debugListener: RumDebugListener? = null
 
     private val internalProxy = _RumInternalProxy(this)
-
-    init {
-        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
-    }
 
     private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
 
@@ -815,7 +807,6 @@ internal class DatadogRumMonitor(
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)
         } else {
-            handler.removeCallbacks(keepAliveRunnable)
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.withWriteContext(
                     withFeatureContexts = setOf(
@@ -836,7 +827,6 @@ internal class DatadogRumMonitor(
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
                                 }
-                                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                                 currentRumContext()
                             }
                         )
@@ -899,10 +889,6 @@ internal class DatadogRumMonitor(
         return context
     }
 
-    internal fun stopKeepAliveCallback() {
-        handler.removeCallbacks(keepAliveRunnable)
-    }
-
     internal fun notifyDebugListenerWithState() {
         debugListener?.let {
             val sessionScope = rootScope.activeSession
@@ -945,7 +931,6 @@ internal class DatadogRumMonitor(
     // endregion
 
     companion object {
-        internal val KEEP_ALIVE_MS = TimeUnit.MINUTES.toMillis(5)
 
         // should be aligned with CoreFeature#DRAIN_WAIT_SECONDS, but not a requirement
         internal const val DRAIN_WAIT_SECONDS = 10L
