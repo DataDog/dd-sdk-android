@@ -25,11 +25,11 @@ internal class EvaluationEventRecordWriter(private val sdkCore: FeatureSdkCore) 
 
         sdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->
-                writeScope {
-                    events.forEach { event ->
+                writeScope { batchWriter ->
+                    for (event in events) {
                         val serializedRecord = event.toJson().toString().toByteArray(Charsets.UTF_8)
                         val rawBatchEvent = RawBatchEvent(data = serializedRecord)
-                        it.write(
+                        batchWriter.write(
                             event = rawBatchEvent,
                             batchMetadata = null,
                             eventType = EventType.DEFAULT
