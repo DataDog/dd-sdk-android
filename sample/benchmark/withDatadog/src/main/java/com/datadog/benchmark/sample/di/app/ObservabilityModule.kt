@@ -12,7 +12,6 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.DatadogFeaturesInitializer
 import com.datadog.benchmark.sample.ObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.observability.ObservabilityActionType
@@ -191,14 +190,14 @@ internal interface ObservabilityModule {
         }
 
         @Provides
-        fun provideMeter(meter: DatadogBaseMeter): ObservabilityMeter {
+        fun provideMeter(): ObservabilityMeter {
             return object : ObservabilityMeter {
                 override fun startMeasuring() {
-                    meter.startMeasuring()
+                    // no-op
                 }
 
                 override fun stopMeasuring() {
-                    meter.stopMeasuring()
+                    // no-op
                 }
             }
         }

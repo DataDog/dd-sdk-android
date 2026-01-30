@@ -20,13 +20,8 @@ import com.datadog.android.log.Logger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
-import com.datadog.benchmark.DatadogBaseMeter
-import com.datadog.benchmark.DatadogExporterConfiguration
-import com.datadog.benchmark.DatadogSdkMeter
-import com.datadog.benchmark.DatadogVitalsMeter
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
-import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.sample.benchmark.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -50,28 +45,6 @@ internal interface DatadogModule {
                 createDatadogConfiguration(),
                 TrackingConsent.GRANTED
             )!!
-        }
-
-        @Provides
-        @Singleton
-        fun provideDatadogMeter(config: BenchmarkConfig, sdkCore: SdkCore): DatadogBaseMeter {
-            val exporterConfig = DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
-                .setApplicationId(BuildConfig.APPLICATION_ID)
-                .setApplicationName(BENCHMARK_APPLICATION_NAME)
-                .setRun(config.getRun())
-                .setScenario(config.getScenario())
-                .setApplicationVersion(BuildConfig.VERSION_NAME)
-                .setIntervalInSeconds(METER_INTERVAL_IN_SECONDS)
-                .build()
-
-            return if (config.scenario == SyntheticsScenario.Upload) {
-                DatadogSdkMeter.create(exporterConfig)
-            } else {
-                DatadogVitalsMeter.create(
-                    exporterConfig,
-                    sdkCore
-                )
-            }
         }
 
         @Provides

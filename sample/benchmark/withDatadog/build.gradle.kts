@@ -105,7 +105,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-glide"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
-    implementation(project(":tools:benchmark"))
+//    implementation(project(":tools:benchmark"))
 
     // Dependencies needed for kapt
     implementation(libs.bundles.glide)
