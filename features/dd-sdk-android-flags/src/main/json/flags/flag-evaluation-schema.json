@@ -35,9 +35,14 @@
       "title": "InputContext",
       "type": "object",
       "properties": {
-        "evaluation": { "type": "object" },
+        "evaluation": {
+          "type": "object",
+          "description": "Evaluation context (excluding targetingKey)",
+          "additionalProperties": true
+        },
         "dd": {
           "type": "object",
+          "description": "Datadog-specific context",
           "properties": {
             "service": { "type": "string" },
             "rum": {
@@ -48,7 +53,6 @@
                   "properties": {
                     "id": { "type": "string" }
                   },
-                  "required": [],
                   "additionalProperties": false
                 },
                 "view": {
@@ -56,19 +60,15 @@
                   "properties": {
                     "url": { "type": "string" }
                   },
-                  "required": [],
                   "additionalProperties": false
                 }
               },
-              "required": [],
               "additionalProperties": false
             }
           },
-          "required": [],
-          "additionalProperties": false
+          "additionalProperties": true
         }
       },
-      "required": [],
       "additionalProperties": false
     },
     "variant": {

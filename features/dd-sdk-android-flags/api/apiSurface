@@ -204,13 +204,14 @@ data class com.datadog.android.flags.model.FlagEvaluation
     companion object 
       fun fromJson(kotlin.String): Error
       fun fromJsonObject(com.google.gson.JsonObject): Error
-  class Evaluation
+  data class Evaluation
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Evaluation
       fun fromJsonObject(com.google.gson.JsonObject): Evaluation
   data class Dd
-    constructor(kotlin.String? = null, Rum? = null)
+    constructor(kotlin.String? = null, Rum? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Dd
