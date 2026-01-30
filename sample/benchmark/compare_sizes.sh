@@ -1,54 +1,52 @@
 #!/bin/bash
 
 # Script to compile and compare sizes of noDatadog and withDatadog benchmark apps
+# Uses APK splits, compares only arm64-v8a architecture
 # Usage: ./compare_sizes.sh
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ABI="arm64-v8a"
 
-echo "=================================="
+echo "========================================"
 echo "Building Benchmark Apps (Release)"
-echo "=================================="
+echo "Comparing architecture: $ABI"
+echo "========================================"
 echo ""
 
 cd "$ROOT_DIR"
 
 # Build both apps
-echo "Building noDatadog release APK..."
+echo "Building noDatadog release APKs..."
 ./gradlew :sample:benchmark:noDatadog:assembleRelease --quiet
 
-echo "Building withDatadog release APK..."
+echo "Building withDatadog release APKs..."
 ./gradlew :sample:benchmark:withDatadog:assembleRelease --quiet
 
 echo ""
 echo "=================================="
-echo "APK Size Comparison"
+echo "APK Size Comparison ($ABI)"
 echo "=================================="
 echo ""
 
-# Find the APK files
-NO_DATADOG_APK="$SCRIPT_DIR/noDatadog/build/outputs/apk/release/noDatadog-release.apk"
-WITH_DATADOG_APK="$SCRIPT_DIR/withDatadog/build/outputs/apk/release/withDatadog-release.apk"
-
-# Check if APKs exist, try alternative names if not found
-if [ ! -f "$NO_DATADOG_APK" ]; then
-    NO_DATADOG_APK=$(find "$SCRIPT_DIR/noDatadog/build/outputs/apk/release" -name "*.apk" 2>/dev/null | head -1)
-fi
-
-if [ ! -f "$WITH_DATADOG_APK" ]; then
-    WITH_DATADOG_APK=$(find "$SCRIPT_DIR/withDatadog/build/outputs/apk/release" -name "*.apk" 2>/dev/null | head -1)
-fi
+# Find the arm64-v8a APK files
+NO_DATADOG_APK=$(find "$SCRIPT_DIR/noDatadog/build/outputs/apk/release" -name "*${ABI}*.apk" 2>/dev/null | head -1)
+WITH_DATADOG_APK=$(find "$SCRIPT_DIR/withDatadog/build/outputs/apk/release" -name "*${ABI}*.apk" 2>/dev/null | head -1)
 
 # Verify APKs exist
 if [ -z "$NO_DATADOG_APK" ] || [ ! -f "$NO_DATADOG_APK" ]; then
-    echo "Error: noDatadog APK not found"
+    echo "Error: noDatadog $ABI APK not found"
+    echo "Available APKs:"
+    ls -la "$SCRIPT_DIR/noDatadog/build/outputs/apk/release/" 2>/dev/null || echo "  (none)"
     exit 1
 fi
 
 if [ -z "$WITH_DATADOG_APK" ] || [ ! -f "$WITH_DATADOG_APK" ]; then
-    echo "Error: withDatadog APK not found"
+    echo "Error: withDatadog $ABI APK not found"
+    echo "Available APKs:"
+    ls -la "$SCRIPT_DIR/withDatadog/build/outputs/apk/release/" 2>/dev/null || echo "  (none)"
     exit 1
 fi
 
@@ -93,3 +91,11 @@ echo ""
 echo "APK locations:"
 echo "  noDatadog:   $NO_DATADOG_APK"
 echo "  withDatadog: $WITH_DATADOG_APK"
+
+# List all generated APKs
+echo ""
+echo "All generated APKs:"
+echo "  noDatadog:"
+ls -lh "$SCRIPT_DIR/noDatadog/build/outputs/apk/release/"*.apk 2>/dev/null | awk '{print "    " $9 " (" $5 ")"}'
+echo "  withDatadog:"
+ls -lh "$SCRIPT_DIR/withDatadog/build/outputs/apk/release/"*.apk 2>/dev/null | awk '{print "    " $9 " (" $5 ")"}'

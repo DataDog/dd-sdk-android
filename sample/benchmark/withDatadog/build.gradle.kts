@@ -43,6 +43,15 @@ android {
         configureFlavorForBenchmark(project.rootDir)
     }
 
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = false
+        }
+    }
+
     compileOptions {
         java17()
     }
@@ -97,7 +106,6 @@ dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
-    implementation(project(":features:dd-sdk-android-ndk"))
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
