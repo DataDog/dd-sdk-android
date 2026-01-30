@@ -4,31 +4,35 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.di.app
+package com.datadog.benchmark.sample.di
 
 import com.datadog.benchmark.sample.BenchmarkApplication
 import com.datadog.benchmark.sample.BenchmarkGlideModule
 import com.datadog.benchmark.sample.activities.LaunchActivity
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponentDependencies
+import com.datadog.benchmark.sample.di.app.AppModule
+import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
+import com.datadog.benchmark.sample.di.app.DatadogModule
+import com.datadog.benchmark.sample.di.app.NetworkModule
+import com.datadog.benchmark.sample.di.app.OpenTelemetryModule
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton
 
 @Component(
     modules = [
-        AppAggregationModule::class
+        AppModule::class,
+        DatadogModule::class,
+        NetworkModule::class,
+        OpenTelemetryModule::class
     ]
 )
 @Singleton
-internal interface BenchmarkAppComponent : BenchmarkActivityComponentDependencies {
+internal interface WithDatadogBenchmarkApplicationComponent : BenchmarkAppComponent {
     @Component.Factory
     interface Factory {
         fun create(
             @BindsInstance application: BenchmarkApplication
         ): BenchmarkAppComponent
     }
-
-    fun inject(benchmarkApplication: BenchmarkApplication)
-    fun inject(launchActivity: LaunchActivity)
-    fun inject(glideModule: BenchmarkGlideModule)
 }
