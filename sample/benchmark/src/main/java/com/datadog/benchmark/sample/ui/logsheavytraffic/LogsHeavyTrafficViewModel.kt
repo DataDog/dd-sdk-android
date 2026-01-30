@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.log.Logger
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
+import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.ui.LogPayloadSize
 import com.datadog.benchmark.sample.ui.createLogAttributes
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficScope
@@ -68,7 +69,7 @@ internal data class LogsHeavyTrafficScreenState(
 
 @LogsHeavyTrafficScope
 internal class LogsHeavyTrafficViewModel @Inject constructor(
-    private val logger: Logger,
+    private val logger: ObservabilityLogger,
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
     private val defaultDispatcher: CoroutineDispatcher,
     private val navigationManager: LogsHeavyTrafficNavigationManager,
@@ -138,7 +139,7 @@ internal class LogsHeavyTrafficViewModel @Inject constructor(
     }
 }
 
-private fun Logger.logConfig(config: LogsHeavyTrafficScreenState.LoggingConfig) {
+private fun ObservabilityLogger.logConfig(config: LogsHeavyTrafficScreenState.LoggingConfig) {
     repeat(config.logsPerImage) {
         log(
             priority = config.logLevel,

@@ -13,7 +13,8 @@ import javax.inject.Singleton
 
 @Component(
     modules = [
-        AppAggregationModule::class
+        AppAggregationModule::class,
+        ObservabilityModule::class
     ]
 )
 @Singleton

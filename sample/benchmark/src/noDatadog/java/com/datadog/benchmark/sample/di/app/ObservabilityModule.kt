@@ -6,7 +6,6 @@
 
 package com.datadog.benchmark.sample.di.app
 
-import com.datadog.android.log.Logger
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import dagger.Module
 import dagger.Provides
@@ -16,7 +15,7 @@ internal interface ObservabilityModule {
 
     companion object {
         @Provides
-        fun provideLogger(logger: Logger): ObservabilityLogger {
+        fun provideLogger(): ObservabilityLogger {
             return object : ObservabilityLogger {
                 override fun log(
                     priority: Int,
@@ -24,12 +23,7 @@ internal interface ObservabilityModule {
                     throwable: Throwable?,
                     attributes: Map<String, Any?>
                 ) {
-                    logger.log(
-                        priority = priority,
-                        message = message,
-                        throwable = throwable,
-                        attributes = attributes
-                    )
+                    // no-op
                 }
             }
         }

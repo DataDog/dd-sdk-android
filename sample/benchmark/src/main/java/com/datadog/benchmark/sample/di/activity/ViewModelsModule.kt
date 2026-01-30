@@ -13,6 +13,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.rum.RumMonitor
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
+import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.ui.logscustom.LogsScreenViewModel
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioViewModel
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioViewModel
@@ -32,7 +33,7 @@ internal interface ViewModelsModule {
         @Provides
         @ViewModelQualifier(LogsScreenViewModel::class)
         fun provideLogsScreenViewModelFactory(
-            logger: Logger,
+            logger: ObservabilityLogger,
             @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
             defaultDispatcher: CoroutineDispatcher
         ): ViewModelProvider.Factory = viewModelFactory {

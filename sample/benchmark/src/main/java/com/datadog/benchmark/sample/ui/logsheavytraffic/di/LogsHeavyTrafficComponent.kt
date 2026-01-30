@@ -6,8 +6,8 @@
 
 package com.datadog.benchmark.sample.ui.logsheavytraffic.di
 
-import com.datadog.android.log.Logger
 import com.datadog.benchmark.sample.di.common.DispatchersModule
+import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficHostFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficSettingsFragment
@@ -17,7 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import javax.inject.Scope
 
 internal interface LogsHeavyTrafficComponentDependencies {
-    val logger: Logger
+    val logger: ObservabilityLogger
 }
 
 @Scope

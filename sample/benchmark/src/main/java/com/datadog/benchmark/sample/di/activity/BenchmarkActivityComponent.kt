@@ -20,6 +20,7 @@ import com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioAc
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
+import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetails.RumAutoCharacterDetailFragment
@@ -44,7 +45,7 @@ internal interface BenchmarkActivityComponentDependencies {
     val benchmarkConfig: BenchmarkConfig
 
     val sdkCore: SdkCore
-    val logger: Logger
+    val logger: ObservabilityLogger
     val rumMonitor: RumMonitor
     val datadogBaseMeter: DatadogBaseMeter
     val tracer: Tracer

@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datadog.android.log.Logger
+import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.ui.LogPayloadSize
 import com.datadog.benchmark.sample.ui.createLogAttributes
 import kotlinx.coroutines.CoroutineDispatcher
@@ -74,7 +75,7 @@ internal data class LogsScreenState(
 }
 
 internal class LogsScreenViewModel(
-    private val logger: Logger,
+    private val logger: ObservabilityLogger,
     private val defaultDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -157,7 +158,7 @@ internal class LogsScreenViewModel(
     }
 }
 
-private fun Logger.logConfig(config: LogsScreenState.LoggingConfig) {
+private fun ObservabilityLogger.logConfig(config: LogsScreenState.LoggingConfig) {
     repeat(config.logsPerBatch) {
         log(
             priority = config.logLevel,
