@@ -75,6 +75,7 @@ android {
                 "proguard-rules.pro"
             )
             isMinifyEnabled = true
+            isShrinkResources = true
             signingConfigs.findByName("release")?.let {
                 signingConfig = it
             } ?: kotlin.run {
