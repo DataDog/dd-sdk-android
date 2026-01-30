@@ -7,6 +7,7 @@
 package com.datadog.benchmark.sample.di.app
 
 import com.datadog.benchmark.sample.BenchmarkApplication
+import com.datadog.benchmark.sample.BenchmarkGlideModule
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton
@@ -20,6 +21,8 @@ import javax.inject.Singleton
 )
 @Singleton
 internal interface WithDatadogBenchmarkAppComponent : BenchmarkAppComponent {
+    fun inject(glideModule: BenchmarkGlideModule)
+
     @Component.Factory
     interface Factory {
         fun create(

@@ -11,6 +11,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.Registry
 import com.bumptech.glide.annotation.GlideModule
 import com.datadog.android.glide.DatadogGlideModule
+import com.datadog.benchmark.sample.di.app.WithDatadogBenchmarkAppComponent
 import okhttp3.OkHttpClient
 import javax.inject.Inject
 
@@ -20,7 +21,7 @@ internal class BenchmarkGlideModule : DatadogGlideModule() {
     lateinit var okHttpClient: OkHttpClient
 
     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
-        context.benchmarkAppComponent.inject(this)
+        (context.benchmarkAppComponent as WithDatadogBenchmarkAppComponent).inject(this)
 
         super.registerComponents(context, glide, registry)
     }

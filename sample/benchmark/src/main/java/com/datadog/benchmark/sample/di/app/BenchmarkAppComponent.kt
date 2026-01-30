@@ -7,12 +7,10 @@
 package com.datadog.benchmark.sample.di.app
 
 import com.datadog.benchmark.sample.BenchmarkApplication
-import com.datadog.benchmark.sample.BenchmarkGlideModule
 import com.datadog.benchmark.sample.activities.LaunchActivity
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponentDependencies
 
 internal interface BenchmarkAppComponent : BenchmarkActivityComponentDependencies {
     fun inject(benchmarkApplication: BenchmarkApplication)
     fun inject(launchActivity: LaunchActivity)
-    fun inject(glideModule: BenchmarkGlideModule)
 }
