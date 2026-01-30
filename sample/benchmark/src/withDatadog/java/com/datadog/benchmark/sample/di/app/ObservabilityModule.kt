@@ -12,9 +12,11 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.DatadogFeaturesInitializer
 import com.datadog.benchmark.sample.ObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.observability.ObservabilityActionType
+import com.datadog.benchmark.sample.observability.ObservabilityMeter
 import com.datadog.benchmark.sample.observability.ObservabilityErrorSource
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.observability.ObservabilityResourceKind
@@ -184,6 +186,19 @@ internal interface ObservabilityModule {
             return object : ObservabilityTracer {
                 override fun spanBuilder(spanName: String): ObservabilitySpanBuilder {
                     return OtelSpanBuilderWrapper(tracer.spanBuilder(spanName))
+                }
+            }
+        }
+
+        @Provides
+        fun provideMeter(meter: DatadogBaseMeter): ObservabilityMeter {
+            return object : ObservabilityMeter {
+                override fun startMeasuring() {
+                    meter.startMeasuring()
+                }
+
+                override fun stopMeasuring() {
+                    meter.stopMeasuring()
                 }
             }
         }

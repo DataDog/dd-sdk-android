@@ -9,6 +9,7 @@ package com.datadog.benchmark.sample.di.app
 import com.datadog.benchmark.sample.NoOpObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.ObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.observability.ObservabilityActionType
+import com.datadog.benchmark.sample.observability.ObservabilityMeter
 import com.datadog.benchmark.sample.observability.ObservabilityErrorSource
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
 import com.datadog.benchmark.sample.observability.ObservabilityResourceKind
@@ -98,6 +99,19 @@ internal interface ObservabilityModule {
             return object : ObservabilityTracer {
                 override fun spanBuilder(spanName: String): ObservabilitySpanBuilder {
                     return NoOpSpanBuilder
+                }
+            }
+        }
+
+        @Provides
+        fun provideMeter(): ObservabilityMeter {
+            return object : ObservabilityMeter {
+                override fun startMeasuring() {
+                    // no-op
+                }
+
+                override fun stopMeasuring() {
+                    // no-op
                 }
             }
         }

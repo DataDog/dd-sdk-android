@@ -9,10 +9,7 @@
 package com.datadog.benchmark.sample.di.activity
 
 import android.content.Context
-import com.datadog.android.api.SdkCore
-import com.datadog.android.log.Logger
-import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
-import com.datadog.benchmark.DatadogBaseMeter
+import com.datadog.benchmark.sample.observability.ObservabilityMeter
 import com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity
 import com.datadog.benchmark.sample.activities.scenarios.RumAutoScenarioActivity
 import com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeScenarioActivity
@@ -21,6 +18,8 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
+import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
+import com.datadog.benchmark.sample.observability.ObservabilityTracer
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetails.RumAutoCharacterDetailFragment
@@ -34,7 +33,6 @@ import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragm
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import dagger.Component
-import com.datadog.benchmark.sample.observability.ObservabilityTracer
 import javax.inject.Scope
 
 @Scope
@@ -46,7 +44,7 @@ internal interface BenchmarkActivityComponentDependencies {
 
     val logger: ObservabilityLogger
     val rumMonitor: ObservabilityRumMonitor
-    val datadogBaseMeter: DatadogBaseMeter
+    val meter: ObservabilityMeter
     val tracer: ObservabilityTracer
 
     val rickAndMortyNetworkService: RickAndMortyNetworkService
