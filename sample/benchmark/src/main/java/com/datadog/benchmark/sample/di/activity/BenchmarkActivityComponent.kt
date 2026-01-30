@@ -44,7 +44,6 @@ internal interface BenchmarkActivityComponentDependencies {
     val context: Context
     val benchmarkConfig: BenchmarkConfig
 
-    val sdkCore: SdkCore
     val logger: ObservabilityLogger
     val rumMonitor: ObservabilityRumMonitor
     val datadogBaseMeter: DatadogBaseMeter

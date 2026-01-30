@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import coil.Coil
 import coil.ImageLoader
 import com.datadog.benchmark.sample.BenchmarkConfigHolder
-import com.datadog.benchmark.sample.DatadogFeaturesInitializer
+import com.datadog.benchmark.sample.ObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity
 import com.datadog.benchmark.sample.activities.scenarios.RumAutoScenarioActivity
 import com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeScenarioActivity
@@ -30,7 +30,7 @@ internal class LaunchActivity : AppCompatActivity() {
     internal lateinit var benchmarkConfigHolder: BenchmarkConfigHolder
 
     @Inject
-    internal lateinit var benchmarkFeaturesInitializer: DatadogFeaturesInitializer
+    internal lateinit var benchmarkFeaturesInitializer: ObservabilityFeaturesInitializer
 
     @Inject
     internal lateinit var okHttpClient: dagger.Lazy<OkHttpClient>

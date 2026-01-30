@@ -6,6 +6,8 @@
 
 package com.datadog.benchmark.sample.di.app
 
+import com.datadog.benchmark.sample.NoOpObservabilityFeaturesInitializer
+import com.datadog.benchmark.sample.ObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.observability.ObservabilityActionType
 import com.datadog.benchmark.sample.observability.ObservabilityErrorSource
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
@@ -15,11 +17,17 @@ import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
 import com.datadog.benchmark.sample.observability.ObservabilitySpan
 import com.datadog.benchmark.sample.observability.ObservabilitySpanBuilder
 import com.datadog.benchmark.sample.observability.ObservabilityTracer
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 
 @Module
 internal interface ObservabilityModule {
+
+    @Binds
+    fun bindObservabilityFeaturesInitializer(
+        impl: NoOpObservabilityFeaturesInitializer
+    ): ObservabilityFeaturesInitializer
 
     companion object {
         @Provides

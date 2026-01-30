@@ -12,6 +12,8 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.benchmark.sample.DatadogFeaturesInitializer
+import com.datadog.benchmark.sample.ObservabilityFeaturesInitializer
 import com.datadog.benchmark.sample.observability.ObservabilityActionType
 import com.datadog.benchmark.sample.observability.ObservabilityErrorSource
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
@@ -21,6 +23,7 @@ import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
 import com.datadog.benchmark.sample.observability.ObservabilitySpan
 import com.datadog.benchmark.sample.observability.ObservabilitySpanBuilder
 import com.datadog.benchmark.sample.observability.ObservabilityTracer
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import io.opentelemetry.api.trace.Span
@@ -30,6 +33,11 @@ import io.opentelemetry.context.Context
 
 @Module
 internal interface ObservabilityModule {
+
+    @Binds
+    fun bindObservabilityFeaturesInitializer(
+        impl: DatadogFeaturesInitializer
+    ): ObservabilityFeaturesInitializer
 
     companion object {
         @Provides

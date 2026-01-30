@@ -44,10 +44,10 @@ import javax.inject.Singleton
 internal class DatadogFeaturesInitializer @Inject constructor(
     private val sdkCore: Lazy<SdkCore>,
     private val rumMonitor: Lazy<RumMonitor>
-) {
+) : ObservabilityFeaturesInitializer {
     private var isInitialized = false
 
-    fun initialize(config: BenchmarkConfig, intent: Intent) {
+    override fun initialize(config: BenchmarkConfig, intent: Intent) {
         if (config.run == SyntheticsRun.Baseline) {
             return
         }
