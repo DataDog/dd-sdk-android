@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.datadog.android.log.Logger
-import com.datadog.android.rum.RumMonitor
+import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
 import com.datadog.benchmark.sample.observability.ObservabilityLogger
@@ -19,7 +19,7 @@ import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioViewModel
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioViewModel
 import dagger.Module
 import dagger.Provides
-import io.opentelemetry.api.trace.Tracer
+import com.datadog.benchmark.sample.observability.ObservabilityTracer
 import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Qualifier
 import kotlin.reflect.KClass
@@ -48,7 +48,7 @@ internal interface ViewModelsModule {
         @Provides
         @ViewModelQualifier(TraceScenarioViewModel::class)
         fun provideTraceScenarioViewModelFactory(
-            tracer: Tracer,
+            tracer: ObservabilityTracer,
             @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
             defaultDispatcher: CoroutineDispatcher
         ): ViewModelProvider.Factory = viewModelFactory {
@@ -63,7 +63,7 @@ internal interface ViewModelsModule {
         @Provides
         @ViewModelQualifier(RumManualScenarioViewModel::class)
         fun provideRumManualScenarioViewModelFactory(
-            rumMonitor: RumMonitor,
+            rumMonitor: ObservabilityRumMonitor,
             @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
             defaultDispatcher: CoroutineDispatcher
         ): ViewModelProvider.Factory = viewModelFactory {

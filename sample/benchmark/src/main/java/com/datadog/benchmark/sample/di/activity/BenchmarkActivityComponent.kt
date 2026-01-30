@@ -11,7 +11,7 @@ package com.datadog.benchmark.sample.di.activity
 import android.content.Context
 import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logger
-import com.datadog.android.rum.RumMonitor
+import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity
 import com.datadog.benchmark.sample.activities.scenarios.RumAutoScenarioActivity
@@ -34,7 +34,7 @@ import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragm
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import dagger.Component
-import io.opentelemetry.api.trace.Tracer
+import com.datadog.benchmark.sample.observability.ObservabilityTracer
 import javax.inject.Scope
 
 @Scope
@@ -46,9 +46,9 @@ internal interface BenchmarkActivityComponentDependencies {
 
     val sdkCore: SdkCore
     val logger: ObservabilityLogger
-    val rumMonitor: RumMonitor
+    val rumMonitor: ObservabilityRumMonitor
     val datadogBaseMeter: DatadogBaseMeter
-    val tracer: Tracer
+    val tracer: ObservabilityTracer
 
     val rickAndMortyNetworkService: RickAndMortyNetworkService
 }

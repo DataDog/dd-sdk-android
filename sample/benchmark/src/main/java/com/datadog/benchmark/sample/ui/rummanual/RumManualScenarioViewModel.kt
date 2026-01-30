@@ -8,11 +8,11 @@ package com.datadog.benchmark.sample.ui.rummanual
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.RumResourceMethod
+import com.datadog.benchmark.sample.observability.ObservabilityActionType
+import com.datadog.benchmark.sample.observability.ObservabilityErrorSource
+import com.datadog.benchmark.sample.observability.ObservabilityResourceKind
+import com.datadog.benchmark.sample.observability.ObservabilityResourceMethod
+import com.datadog.benchmark.sample.observability.ObservabilityRumMonitor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -35,7 +35,7 @@ import kotlin.time.Duration.Companion.seconds
 internal sealed interface RumManualScenarioScreenAction {
     data class SelectEventType(val newEventType: RumManualScenarioState.RumEventType) : RumManualScenarioScreenAction
     data class ChangeViewName(val newViewName: String) : RumManualScenarioScreenAction
-    data class SelectActionType(val newActionType: RumActionType) : RumManualScenarioScreenAction
+    data class SelectActionType(val newActionType: ObservabilityActionType) : RumManualScenarioScreenAction
     data class ChangeActionUrl(val newActionUrl: String) : RumManualScenarioScreenAction
     object IncreaseEventsPerBatch : RumManualScenarioScreenAction
     object DecreaseEventsPerBatch : RumManualScenarioScreenAction
@@ -62,7 +62,7 @@ internal data class RumManualScenarioState(
     data class Config(
         val eventType: RumEventType,
         val viewName: String,
-        val actionType: RumActionType,
+        val actionType: ObservabilityActionType,
         val actionUrl: String,
         val resourceUrl: String,
         val errorMessage: String,
@@ -84,7 +84,7 @@ internal data class RumManualScenarioState(
             config = Config(
                 eventType = RumEventType.VIEW,
                 viewName = "FooFragment",
-                actionType = RumActionType.TAP,
+                actionType = ObservabilityActionType.TAP,
                 actionUrl = "actionEventTitle",
                 resourceUrl = "https://api.shopist.io/checkout.json",
                 errorMessage = "Android benchmark debug error message",
@@ -98,7 +98,7 @@ internal data class RumManualScenarioState(
 }
 
 internal class RumManualScenarioViewModel(
-    private val rumMonitor: RumMonitor,
+    private val rumMonitor: ObservabilityRumMonitor,
     private val defaultDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     private val actions = Channel<RumManualScenarioScreenAction>(UNLIMITED)
@@ -237,7 +237,7 @@ internal class RumManualScenarioViewModel(
             RumManualScenarioState.RumEventType.RESOURCE -> {
                 rumMonitor.startResource(
                     key = RUM_RESOURCE_KEY,
-                    method = RumResourceMethod.GET,
+                    method = ObservabilityResourceMethod.GET,
                     url = config.resourceUrl
                 )
                 delay(100.milliseconds)
@@ -245,13 +245,13 @@ internal class RumManualScenarioViewModel(
                     key = RUM_RESOURCE_KEY,
                     statusCode = 200,
                     size = 1024,
-                    kind = RumResourceKind.IMAGE
+                    kind = ObservabilityResourceKind.IMAGE
                 )
             }
             RumManualScenarioState.RumEventType.ERROR -> {
                 rumMonitor.addError(
                     message = config.errorMessage,
-                    source = RumErrorSource.SOURCE,
+                    source = ObservabilityErrorSource.SOURCE,
                     throwable = null
                 )
                 delay(100.milliseconds)

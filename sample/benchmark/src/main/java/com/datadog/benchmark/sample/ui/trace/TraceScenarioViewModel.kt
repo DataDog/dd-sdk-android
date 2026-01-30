@@ -9,11 +9,8 @@ package com.datadog.benchmark.sample.ui.trace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datadog.android.trace.api.DatadogTracingConstants
-import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
-import io.opentelemetry.context.Context
+import com.datadog.benchmark.sample.observability.ObservabilitySpan
+import com.datadog.benchmark.sample.observability.ObservabilityTracer
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -76,7 +73,7 @@ internal data class TraceScenarioScreenState(
 }
 
 internal class TraceScenarioViewModel(
-    private val tracer: Tracer,
+    private val tracer: ObservabilityTracer,
     private val defaultDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     private val actions = Channel<TraceScenarioScreenAction>(UNLIMITED)
@@ -181,15 +178,15 @@ internal class TraceScenarioViewModel(
 
     private fun launchTracingJob(task: TraceScenarioScreenState.TracingTask): Job {
         return viewModelScope.launch(defaultDispatcher) {
-            val rootSpan = tracer.spanBuilder(task.config.spanOperation).apply {
-                setAttribute(DatadogTracingConstants.Tags.RESOURCE_NAME, task.config.spanResource)
-            }.startSpan()
+            val rootSpan = tracer.spanBuilder(task.config.spanOperation)
+                .startSpan()
+                .setAttribute(TAG_RESOURCE_NAME, task.config.spanResource)
 
             if (task.config.isError) {
                 rootSpan.apply {
-                    setStatus(StatusCode.ERROR)
-                    setAttribute(DatadogTracingConstants.Tags.ERROR_TYPE, "simulated_error")
-                    setAttribute(DatadogTracingConstants.Tags.ERROR_MSG, "Simulated error message")
+                    setError()
+                    setAttribute(TAG_ERROR_TYPE, "simulated_error")
+                    setAttribute(TAG_ERROR_MSG, "Simulated error message")
                 }
             }
 
@@ -203,7 +200,11 @@ internal class TraceScenarioViewModel(
         }
     }
 
-    private suspend fun doChildWork(parent: Span, config: TraceScenarioScreenState.TracingConfig, depthLeft: Int) {
+    private suspend fun doChildWork(
+        parent: ObservabilitySpan,
+        config: TraceScenarioScreenState.TracingConfig,
+        depthLeft: Int
+    ) {
         if (depthLeft == 0) {
             return
         }
@@ -211,7 +212,7 @@ internal class TraceScenarioViewModel(
         repeat(config.childrenCount) {
             val spanName = "${config.spanOperation} - Child $it at level ${config.depth - depthLeft + 1}"
             val span = tracer.spanBuilder(spanName)
-                .setParent(Context.current().with(parent))
+                .setParent(parent)
                 .startSpan()
 
             delay(config.childDelayMillis.milliseconds)
@@ -226,3 +227,7 @@ internal class TraceScenarioViewModel(
 private const val CHILDREN_COUNT_STEP = 1
 private const val CHILD_DELAY_STEP = 50
 private const val DEPTH_STEP = 1
+
+private const val TAG_RESOURCE_NAME = "resource.name"
+private const val TAG_ERROR_TYPE = "error.type"
+private const val TAG_ERROR_MSG = "error.msg"

@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.datadog.android.rum.RumActionType
+import com.datadog.benchmark.sample.observability.ObservabilityActionType
 import com.datadog.benchmark.sample.ui.common.ExpandedItemView
 import com.datadog.benchmark.sample.ui.common.ValueChooserItemView
 
@@ -112,7 +112,7 @@ private fun ActionEventConfiguration(
 ) {
     ExpandedItemView(
         titleText = "Action type",
-        items = RumActionType.values().toList(),
+        items = ObservabilityActionType.values().toList(),
         headerText = config.actionType.name,
         itemTextFactory = { it.name },
         onClick = { dispatch(RumManualScenarioScreenAction.SelectActionType(it)) }
