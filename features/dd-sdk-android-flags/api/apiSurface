@@ -180,3 +180,57 @@ data class com.datadog.android.flags.model.ExposureEvent
     companion object 
       fun fromJson(kotlin.String): Attributes
       fun fromJsonObject(com.google.gson.JsonObject): Attributes
+data class com.datadog.android.flags.model.FlagEvaluation
+  constructor(kotlin.Long, Flag, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, kotlin.String? = null, Context? = null, Flag? = null, Flag? = null, Flag? = null, Error? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): FlagEvaluation
+    fun fromJsonObject(com.google.gson.JsonObject): FlagEvaluation
+  data class Flag
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Flag
+      fun fromJsonObject(com.google.gson.JsonObject): Flag
+  data class Context
+    constructor(Evaluation? = null, Dd? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Context
+      fun fromJsonObject(com.google.gson.JsonObject): Context
+  data class Error
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
+      fun fromJsonObject(com.google.gson.JsonObject): Error
+  data class Evaluation
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Evaluation
+      fun fromJsonObject(com.google.gson.JsonObject): Evaluation
+  data class Dd
+    constructor(kotlin.String? = null, Rum? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
+  data class Rum
+    constructor(Application? = null, View? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Rum
+      fun fromJsonObject(com.google.gson.JsonObject): Rum
+  data class Application
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class View
+    constructor(kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+      fun fromJsonObject(com.google.gson.JsonObject): View

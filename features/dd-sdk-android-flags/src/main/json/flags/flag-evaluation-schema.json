@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "flags/flag-evaluation-schema.json",
+  "title": "FlagEvaluation",
+  "type": "object",
+  "description": "Schema for individual flag evaluation events (NDJSON format)",
+  "properties": {
+    "timestamp": {
+      "type": "integer",
+      "description": "The timestamp (milliseconds since epoch) at which the evaluation occurred."
+    },
+    "flag": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" }
+      },
+      "required": ["key"],
+      "additionalProperties": false
+    },
+    "first_evaluation": {
+      "type": "integer",
+      "minimum": 1759276800000
+    },
+    "last_evaluation": {
+      "type": "integer",
+      "minimum": 1759276800000
+    },
+    "evaluation_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "runtime_default_used": { "type": "boolean" },
+    "targeting_key": { "type": "string" },
+    "context": {
+      "title": "InputContext",
+      "type": "object",
+      "properties": {
+        "evaluation": {
+          "type": "object",
+          "description": "Evaluation context (excluding targetingKey)",
+          "additionalProperties": true
+        },
+        "dd": {
+          "type": "object",
+          "description": "Datadog-specific context",
+          "properties": {
+            "service": { "type": "string" },
+            "rum": {
+              "type": "object",
+              "properties": {
+                "application": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                },
+                "view": {
+                  "type": "object",
+                  "properties": {
+                    "url": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" }
+      },
+      "required": ["key"],
+      "additionalProperties": false
+    },
+    "allocation": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" }
+      },
+      "required": ["key"],
+      "additionalProperties": false
+    },
+    "targeting_rule": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" }
+      },
+      "required": ["key"],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" }
+      },
+      "required": ["message"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "timestamp",
+    "flag",
+    "first_evaluation",
+    "last_evaluation",
+    "evaluation_count"
+  ]
+}
