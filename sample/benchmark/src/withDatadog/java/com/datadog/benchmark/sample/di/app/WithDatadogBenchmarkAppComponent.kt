@@ -16,7 +16,8 @@ import javax.inject.Singleton
     modules = [
         AppAggregationModule::class,
         ObservabilityModule::class,
-        OkHttpModule::class
+        OkHttpModule::class,
+        OpenTelemetryModule::class
     ]
 )
 @Singleton

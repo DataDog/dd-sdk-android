@@ -12,8 +12,7 @@ import dagger.Module
     includes = [
         AppModule::class,
         DatadogModule::class,
-        NetworkModule::class,
-        OpenTelemetryModule::class
+        NetworkModule::class
     ]
 )
 interface AppAggregationModule
