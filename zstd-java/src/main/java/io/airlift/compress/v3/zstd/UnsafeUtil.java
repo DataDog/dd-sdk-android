@@ -40,7 +40,6 @@ final class UnsafeUtil
     private static final Method putInt;
     private static final Method getLong;
     private static final Method putLong;
-    private static final Method copyMemory;
 
     private UnsafeUtil() {}
 
@@ -69,7 +68,6 @@ final class UnsafeUtil
             putInt = unsafeClass.getMethod("putInt", Object.class, long.class, int.class);
             getLong = unsafeClass.getMethod("getLong", Object.class, long.class);
             putLong = unsafeClass.getMethod("putLong", Object.class, long.class, long.class);
-            copyMemory = unsafeClass.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
         }
         catch (Exception e) {
             throw new IncompatibleJvmException("Zstandard requires access to sun.misc.Unsafe: " + e.getMessage());
@@ -156,13 +154,22 @@ final class UnsafeUtil
         }
     }
 
+    /**
+     * Copy memory between byte arrays.
+     * Android's Unsafe doesn't have the 5-parameter copyMemory method,
+     * so we use System.arraycopy instead.
+     */
     public static void copyMemory(Object srcBase, long srcOffset, Object destBase, long destOffset, long bytes)
     {
-        try {
-            copyMemory.invoke(UNSAFE, srcBase, srcOffset, destBase, destOffset, bytes);
+        if (srcBase instanceof byte[] && destBase instanceof byte[]) {
+            byte[] src = (byte[]) srcBase;
+            byte[] dest = (byte[]) destBase;
+            int srcIndex = (int) (srcOffset - ARRAY_BYTE_BASE_OFFSET);
+            int destIndex = (int) (destOffset - ARRAY_BYTE_BASE_OFFSET);
+            System.arraycopy(src, srcIndex, dest, destIndex, (int) bytes);
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
+        else {
+            throw new UnsupportedOperationException("copyMemory only supports byte arrays on Android");
         }
     }
 }
