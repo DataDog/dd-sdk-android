@@ -23,6 +23,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
@@ -99,7 +100,8 @@ internal class DatadogRumMonitor(
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    viewIdentityResolver: ViewIdentityResolver
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -122,7 +124,8 @@ internal class DatadogRumMonitor(
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        viewIdentityResolver = viewIdentityResolver
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -202,14 +205,14 @@ internal class DatadogRumMonitor(
     override fun addAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, false, attributes.toMap(), eventTime)
+            RumRawEvent.StartAction(type, name, false, attributes, eventTime)
         )
     }
 
     override fun startAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, true, attributes.toMap(), eventTime)
+            RumRawEvent.StartAction(type, name, true, attributes, eventTime)
         )
     }
 

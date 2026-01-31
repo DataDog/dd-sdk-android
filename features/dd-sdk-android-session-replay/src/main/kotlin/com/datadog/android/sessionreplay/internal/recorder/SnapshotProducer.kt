@@ -20,6 +20,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.ViewIdentityProvider
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import java.util.LinkedList
 
@@ -37,7 +38,8 @@ internal class SnapshotProducer(
         systemInformation: SystemInformation,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        recordedDataQueueRefs: RecordedDataQueueRefs
+        recordedDataQueueRefs: RecordedDataQueueRefs,
+        viewIdentityProvider: ViewIdentityProvider
     ): Node? {
         return convertViewToNode(
             rootView,
@@ -50,7 +52,8 @@ internal class SnapshotProducer(
                 interopViewCallback = DefaultInteropViewCallback(
                     treeViewTraversal,
                     recordedDataQueueRefs
-                )
+                ),
+                viewIdentityProvider = viewIdentityProvider
             ),
             LinkedList(),
             recordedDataQueueRefs

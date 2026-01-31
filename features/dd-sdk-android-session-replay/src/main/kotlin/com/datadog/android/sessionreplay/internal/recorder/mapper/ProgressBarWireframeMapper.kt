@@ -67,7 +67,7 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
         val defaultColor = getDefaultColor(view)
         val trackColor = getColor(view.progressTintList, view.drawableState) ?: defaultColor
 
-        buildNonActiveTrackWireframe(view, trackBounds, trackColor)?.let(wireframes::add)
+        buildNonActiveTrackWireframe(view, trackBounds, trackColor, mappingContext)?.let(wireframes::add)
 
         val hasProgress = !view.isIndeterminate
         val showProgress =
@@ -110,7 +110,8 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
     private fun buildNonActiveTrackWireframe(
         view: P,
         trackBounds: GlobalBounds,
-        trackColor: Int
+        trackColor: Int,
+        mappingContext: MappingContext
     ): MobileSegment.Wireframe? {
         val nonActiveTrackId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, NON_ACTIVE_TRACK_KEY_NAME)
             ?: return null
@@ -124,6 +125,7 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
             y = trackBounds.y,
             width = trackBounds.width,
             height = trackBounds.height,
+            permanentId = resolveViewIdentity(view, mappingContext.viewIdentityProvider),
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = backgroundColor,
                 opacity = view.alpha

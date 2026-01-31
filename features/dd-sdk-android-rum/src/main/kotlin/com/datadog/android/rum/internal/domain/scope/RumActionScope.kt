@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
@@ -28,7 +29,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RumActionScope(
     override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
@@ -70,8 +71,6 @@ internal class RumActionScope(
 
     private var sent = false
     internal var stopped = false
-
-    // endregion
 
     @WorkerThread
     override fun handleEvent(
@@ -270,6 +269,12 @@ internal class RumActionScope(
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
 
+        val viewIdentity = actionAttributes[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] as? String
+        val positionX = actionAttributes[RumAttributes.INTERNAL_ACTION_POSITION_X] as? Long
+        val positionY = actionAttributes[RumAttributes.INTERNAL_ACTION_POSITION_Y] as? Long
+        val targetWidth = actionAttributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] as? Long
+        val targetHeight = actionAttributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] as? Long
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -351,7 +356,19 @@ internal class RumActionScope(
                     session = ActionEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
-                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
+                    action = ActionEvent.DdAction(
+                        position = positionX?.let { x ->
+                            positionY?.let { y ->
+                                ActionEvent.Position(x = x, y = y)
+                            }
+                        },
+                        target = ActionEvent.DdActionTarget(
+                            permanentId = viewIdentity,
+                            width = targetWidth,
+                            height = targetHeight
+                        )
+                    )
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,

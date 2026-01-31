@@ -91,6 +91,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         internalCallback: SessionReplayInternalCallback
     ) {
         val internalLogger = sdkCore.internalLogger
+
         val rumContextDataHandler = RumContextDataHandler(
             rumContextProvider,
             timeProvider,
@@ -159,14 +160,15 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
-                    DefaultImageWireframeHelper(
+                    imageWireframeHelper = DefaultImageWireframeHelper(
                         logger = internalLogger,
                         resourceResolver = resourceResolver,
                         viewIdentifierResolver = viewIdentifierResolver,
                         viewUtilsInternal = ViewUtilsInternal(),
-                        imageTypeResolver = ImageTypeResolver()
+                        imageTypeResolver = ImageTypeResolver(),
+                        sdkCore = sdkCore
                     ),
-                    TreeViewTraversal(
+                    treeViewTraversal = TreeViewTraversal(
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
                         decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
@@ -177,10 +179,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         viewUtilsInternal = ViewUtilsInternal(),
                         internalLogger = internalLogger
                     ),
-                    ComposedOptionSelectorDetector(
+                    optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                     ),
-                    touchPrivacyManager,
+                    touchPrivacyManager = touchPrivacyManager,
                     internalLogger = internalLogger
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,

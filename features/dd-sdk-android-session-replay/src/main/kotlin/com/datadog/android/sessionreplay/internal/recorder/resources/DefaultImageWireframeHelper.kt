@@ -16,9 +16,11 @@ import android.widget.TextView
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
+import com.datadog.android.sessionreplay.internal.utils.getViewIdentityResolver
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
@@ -36,7 +38,8 @@ internal class DefaultImageWireframeHelper(
     private val resourceResolver: ResourceResolver,
     private val viewIdentifierResolver: ViewIdentifierResolver,
     private val viewUtilsInternal: ViewUtilsInternal,
-    private val imageTypeResolver: ImageTypeResolver
+    private val imageTypeResolver: ImageTypeResolver,
+    private val sdkCore: FeatureSdkCore
 ) : ImageWireframeHelper {
 
     @Suppress("ReturnCount")
@@ -280,6 +283,7 @@ internal class DefaultImageWireframeHelper(
                 y,
                 width = drawableWidthDp,
                 height = drawableHeightDp,
+                permanentId = sdkCore.getViewIdentityResolver().resolveViewIdentity(view),
                 shapeStyle = shapeStyle,
                 border = border,
                 clip = clipping,

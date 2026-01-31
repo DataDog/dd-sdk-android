@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.ViewIdentityProvider
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -131,6 +132,9 @@ internal class ImageViewMapperTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockViewIdentityProvider: ViewIdentityProvider
+
     @Forgery
     lateinit var fakeImagePrivacy: ImagePrivacy
 
@@ -161,6 +165,7 @@ internal class ImageViewMapperTest {
         whenever(mockMappingContext.systemInformation).thenReturn(mockSystemInformation)
         whenever(mockMappingContext.imageWireframeHelper).thenReturn(mockImageWireframeHelper)
         whenever(mockMappingContext.imagePrivacy).thenReturn(fakeImagePrivacy)
+        whenever(mockMappingContext.viewIdentityProvider).thenReturn(mockViewIdentityProvider)
 
         whenever(mockResources.displayMetrics).thenReturn(mockDisplayMetrics)
         whenever(mockImageView.resources).thenReturn(mockResources)

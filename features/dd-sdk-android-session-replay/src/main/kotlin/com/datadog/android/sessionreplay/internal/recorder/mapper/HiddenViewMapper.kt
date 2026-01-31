@@ -38,6 +38,7 @@ internal class HiddenViewMapper(
                 y = viewGlobalBounds.y,
                 width = viewGlobalBounds.width,
                 height = viewGlobalBounds.height,
+                permanentId = mappingContext.viewIdentityProvider.resolveIdentity(view),
                 label = HIDDEN_VIEW_PLACEHOLDER_TEXT
             )
         )

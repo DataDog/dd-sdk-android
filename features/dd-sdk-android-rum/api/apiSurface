@@ -528,7 +528,7 @@ data class com.datadog.android.rum.model.ActionEvent
       fun fromJson(kotlin.String): Position
       fun fromJsonObject(com.google.gson.JsonObject): Position
   data class DdActionTarget
-    constructor(kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null)
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): DdActionTarget
