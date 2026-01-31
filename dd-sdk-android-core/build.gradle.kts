@@ -107,6 +107,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kronosNTP)
     implementation(project(":zstd"))
+    implementation(project(":zstd-java"))
 
     // Android Instrumentation
     implementation(libs.androidXAnnotation)

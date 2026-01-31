@@ -8,6 +8,7 @@
 include(":dd-sdk-android-core")
 include(":dd-sdk-android-internal")
 include(":zstd")
+include(":zstd-java")
 
 // MAIN FEATURE LIBRARIES
 include(":features:dd-sdk-android-trace-api")
