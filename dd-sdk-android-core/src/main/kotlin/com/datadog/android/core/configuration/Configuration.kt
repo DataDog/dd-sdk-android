@@ -285,7 +285,11 @@ internal constructor(
             return this
         }
 
-        internal fun allowClearTextHttp(): Builder {
+        /**
+         * Allow cleartext HTTP traffic for SDK endpoints.
+         * Use this when redirecting SDK traffic to a local development server.
+         */
+        fun allowClearTextHttp(): Builder {
             coreConfig = coreConfig.copy(
                 needsClearTextHttp = true
             )
