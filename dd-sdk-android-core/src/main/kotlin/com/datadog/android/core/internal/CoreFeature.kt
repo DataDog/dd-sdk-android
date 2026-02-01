@@ -30,6 +30,7 @@ import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.account.NoOpMutableAccountInfoProvider
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
+import com.datadog.android.core.internal.data.upload.RequestBodyCapturingInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
 import com.datadog.android.core.internal.data.upload.ZstdRequestInterceptor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -265,7 +266,7 @@ internal class CoreFeature(
             // Kronos performs I/O operation on startup, it needs to run in background
             initializeClockSync(appContext)
         }
-        setupOkHttpClient(configuration.coreConfig)
+        setupOkHttpClient(appContext, configuration.coreConfig)
         firstPartyHostHeaderTypeResolver
             .addKnownHostsWithHeaderTypes(configuration.coreConfig.firstPartyHostsWithHeaderTypes)
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
@@ -616,7 +617,14 @@ internal class CoreFeature(
         networkInfoProvider.register(appContext)
     }
 
-    private fun setupOkHttpClient(configuration: Configuration.Core) {
+    private fun setupOkHttpClient(appContext: Context, configuration: Configuration.Core) {
+        // Create capture directory for request body benchmarking (DEBUG builds only)
+        val captureDir = if (BuildConfig.DEBUG) {
+            File(appContext.getExternalFilesDir(null), CAPTURED_REQUESTS_DIR_NAME)
+        } else {
+            null
+        }
+
         callFactory = OkHttpCallFactory {
             // Use shared base client to inherit FIPS-compliant configuration,
             // shared thread pool and connection pool
@@ -625,6 +633,11 @@ internal class CoreFeature(
             // Override connection specs for cleartext HTTP if needed
             if (configuration.needsClearTextHttp) {
                 builder.connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+            }
+
+            // Add request body capturing interceptor for benchmarking (DEBUG builds only)
+            if (BuildConfig.DEBUG && captureDir != null) {
+                builder.addInterceptor(RequestBodyCapturingInterceptor(captureDir, internalLogger))
             }
 
             // Add debug or production interceptors
@@ -774,6 +787,7 @@ internal class CoreFeature(
         internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
         private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
         internal const val DATADOG_STORAGE_DIR_NAME = "datadog-%s"
+        private const val CAPTURED_REQUESTS_DIR_NAME = "captured_requests"
 
         // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
         // possibility to override it which is useful when SDK is used via bridge, say
