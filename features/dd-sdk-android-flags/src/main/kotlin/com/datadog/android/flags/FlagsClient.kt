@@ -9,14 +9,12 @@ package com.datadog.android.flags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
-import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
@@ -457,9 +455,6 @@ interface FlagsClient {
 
                 val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
 
-                val evaluationsFeature = featureSdkCore
-                    .getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME) as? EvaluationsFeature
-
                 return DatadogFlagsClient(
                     featureSdkCore = featureSdkCore,
                     evaluationsManager = evaluationsManager,
@@ -467,7 +462,7 @@ interface FlagsClient {
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
                     exposureProcessor = flagsFeature.exposureProcessor,
-                    evaluationsFeature = evaluationsFeature,
+                    evaluationsFeature = flagsFeature.evaluationsFeature,
                     flagStateManager = flagStateManager
                 )
             }
