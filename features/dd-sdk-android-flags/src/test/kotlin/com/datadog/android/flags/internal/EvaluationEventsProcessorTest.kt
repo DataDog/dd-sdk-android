@@ -7,8 +7,6 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.model.ResolutionReason
@@ -20,12 +18,12 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito
+import org.mockito.Mockito.inOrder
+import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -38,14 +36,16 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -82,421 +82,67 @@ internal class EvaluationEventsProcessorTest {
     @StringForgery
     lateinit var fakeAllocationKey: String
 
-    @StringForgery
-    lateinit var fakeValue: String
-
     private lateinit var testedProcessor: EvaluationEventsProcessor
     private lateinit var fakeContext: EvaluationContext
-    private lateinit var fakeData: PrecomputedFlag
     private lateinit var fakeService: String
     private lateinit var fakeApplicationId: String
     private lateinit var fakeViewName: String
-
-    fun createEvaluationEventsProcessor(
-        writer: EvaluationEventWriter,
-        timeProvider: TimeProvider,
-        scheduledExecutor: ScheduledExecutorService,
-        internalLogger: InternalLogger,
-        flushIntervalMs: Long = TEST_FLUSH_INTERVAL_MS,
-        maxAggregations: Int = TEST_MAX_AGGREGATIONS
-    ): EvaluationEventsProcessor = EvaluationEventsProcessor(
-        writer = writer,
-        timeProvider = timeProvider,
-        scheduledExecutor = scheduledExecutor,
-        internalLogger = internalLogger,
-        flushIntervalMs = flushIntervalMs,
-        maxAggregations = maxAggregations
-    )
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeService = forge.anAlphabeticalString()
         fakeApplicationId = forge.anAlphabeticalString()
         fakeViewName = forge.anAlphabeticalString()
+        fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
 
-        testedProcessor = createEvaluationEventsProcessor(
+        testedProcessor = EvaluationEventsProcessor(
             writer = mockWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS
         )
 
-        fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        fakeData = PrecomputedFlag(
-            variationType = "boolean",
-            variationValue = fakeValue,
-            doLog = false,
-            allocationKey = fakeAllocationKey,
-            variationKey = fakeVariantKey,
-            extraLogging = JSONObject(),
-            reason = ResolutionReason.TARGETING_MATCH.name
-        )
-
-        Mockito.lenient().whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
+        lenient().whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
     }
 
-    // region Evaluation Processing (processEvaluation)
+    // region processEvaluation
 
     @Test
-    fun `M aggregate evaluation W processEvaluation() { first evaluation }`() {
-        // Given
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
+    fun `M write event W processEvaluation() then flush()`() {
+        processEval()
         testedProcessor.flush()
 
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        val event = eventCaptor.firstValue.first()
-        assertThat(event.flag.key).isEqualTo(fakeFlagKey)
-        assertThat(event.evaluationCount).isEqualTo(1L)
+        val events = captureWrittenEvents()
+        assertThat(events).hasSize(1)
+        assertThat(events.first().flag.key).isEqualTo(fakeFlagKey)
     }
 
     @Test
-    fun `M aggregate same key W processEvaluation() { identical evaluations }`() {
-        // Given
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
+    fun `M trigger auto-flush W processEvaluation() { max aggregations reached }`() {
+        val maxAggregations = 5
+        val processor = EvaluationEventsProcessor(
+            writer = mockWriter,
+            timeProvider = mockTimeProvider,
+            scheduledExecutor = mockScheduledExecutor,
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = maxAggregations
         )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.flush()
 
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
+        repeat(maxAggregations) { index ->
+            processor.processEvaluation(
+                fakeFlagKey,
+                EvaluationContext(targetingKey = "user-$index"),
+                fakeService, fakeApplicationId, fakeViewName,
+                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name,
+                null, null
+            )
+        }
 
-        val event = eventCaptor.firstValue.first()
-        assertThat(event.flag.key).isEqualTo(fakeFlagKey)
-        assertThat(event.evaluationCount).isEqualTo(3L)
-    }
-
-    @Test
-    fun `M create separate aggregations W processEvaluation() { different flags }`(forge: Forge) {
-        // Given
-        val anotherFlagName = forge.anAlphabeticalString()
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            anotherFlagName,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        val events = eventCaptor.firstValue
-        assertThat(events).hasSize(2)
-        assertThat(events.map { it.flag.key }).containsExactlyInAnyOrder(fakeFlagKey, anotherFlagName)
-    }
-
-    @Test
-    fun `M create separate aggregations W processEvaluation() { different targeting keys }`(forge: Forge) {
-        // Given
-        val anotherContext = EvaluationContext(targetingKey = forge.anAlphabeticalString())
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            anotherContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        val events = eventCaptor.firstValue
-        assertThat(events).hasSize(2)
-        assertThat(
-            events.map { it.targetingKey }
-        ).containsExactlyInAnyOrder(fakeTargetingKey, anotherContext.targetingKey)
-    }
-
-    @Test
-    fun `M create separate aggregations W processEvaluation() { different variants }`(forge: Forge) {
-        // Given
-        val anotherData = fakeData.copy(variationKey = forge.anAlphabeticalString())
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            anotherData.variationKey,
-            anotherData.allocationKey,
-            anotherData.reason,
-            null,
-            null
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        val events = eventCaptor.firstValue
-        assertThat(events).hasSize(2)
-        assertThat(
-            events.map { it.variant?.key }
-        ).containsExactlyInAnyOrder(fakeData.variationKey, anotherData.variationKey)
-    }
-
-    @Test
-    fun `M aggregate by error code W processEvaluation() { same code different messages }`(forge: Forge) {
-        // Given
-        val errorCode = ErrorCode.TYPE_MISMATCH.name
-        val errorMessage1 = "Error message 1: ${forge.anAlphabeticalString()}"
-        val errorMessage2 = "Error message 2: ${forge.anAlphabeticalString()}"
-        val errorMessage3 = "Error message 3: ${forge.anAlphabeticalString()}"
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            null,
-            null,
-            null,
-            errorCode,
-            errorMessage1
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            null,
-            null,
-            null,
-            errorCode,
-            errorMessage2
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            null,
-            null,
-            null,
-            errorCode,
-            errorMessage3
-        )
-        testedProcessor.flush()
-
-        // Then - should aggregate into one event
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        // Verify it used the last error message
-        val capturedEvent = eventCaptor.firstValue.first()
-        assertThat(capturedEvent.error?.message).isEqualTo(errorMessage3)
-        assertThat(capturedEvent.evaluationCount).isEqualTo(3L)
-    }
-
-    @Test
-    fun `M create separate aggregations W processEvaluation() { different error codes }`(forge: Forge) {
-        // Given
-        val errorCode1 = ErrorCode.FLAG_NOT_FOUND.name
-        val errorCode2 = ErrorCode.PROVIDER_NOT_READY.name
-        val errorMessage1 = forge.anAlphabeticalString()
-        val errorMessage2 = forge.anAlphabeticalString()
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            null,
-            null,
-            null,
-            errorCode1,
-            errorMessage1
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            null,
-            null,
-            null,
-            errorCode2,
-            errorMessage2
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        val events = eventCaptor.firstValue
-        assertThat(events).hasSize(2)
-        assertThat(events.map { it.error?.message }).containsExactlyInAnyOrder(errorMessage1, errorMessage2)
-    }
-
-    @Test
-    fun `M increment count W processEvaluation() { multiple evaluations same key }`() {
-        // Given
-        val timestamps = listOf(fakeTimestamp, fakeTimestamp + 1000, fakeTimestamp + 2000)
-        whenever(mockTimeProvider.getDeviceTimestampMillis())
-            .thenReturn(timestamps[0], timestamps[1], timestamps[2])
-
-        // When
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        val event = eventCaptor.firstValue.first()
-        assertThat(event.evaluationCount).isEqualTo(3L)
-        assertThat(event.firstEvaluation).isEqualTo(timestamps[0])
-        assertThat(event.lastEvaluation).isEqualTo(timestamps[2])
+        val events = captureWrittenEvents()
+        assertThat(events).hasSize(maxAggregations)
     }
 
     // endregion
@@ -504,179 +150,51 @@ internal class EvaluationEventsProcessorTest {
     // region flush
 
     @Test
-    fun `M write events W flush() { aggregations exist }`() {
-        // Given
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-
-        // When
-        testedProcessor.flush()
-
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        assertThat(eventCaptor.firstValue.first().flag.key).isEqualTo(fakeFlagKey)
-    }
-
-    @Test
     fun `M not write W flush() { empty aggregations }`() {
-        // Given
-        // When
         testedProcessor.flush()
 
-        // Then
         verify(mockWriter, never()).writeAll(any())
-        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
-    fun `M flush automatically W processEvaluation() { size limit reached }`() {
-        // Given
-        val maxAggregations = 5
-        val testProcessor = createEvaluationEventsProcessor(
-            writer = mockWriter,
-            timeProvider = mockTimeProvider,
-            scheduledExecutor = mockScheduledExecutor,
-            internalLogger = mockInternalLogger,
-            maxAggregations = maxAggregations
-        )
-
-        // When
-        repeat(maxAggregations) { index ->
-            val uniqueContext = EvaluationContext(targetingKey = "user-$index")
-            testProcessor.processEvaluation(
-                fakeFlagKey,
-                uniqueContext,
-                fakeService,
-                fakeApplicationId,
-                fakeViewName,
-                fakeData.variationKey,
-                fakeData.allocationKey,
-                fakeData.reason,
-                null,
-                null
-            )
-        }
-
-        // Then - should have auto-flushed
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        assertThat(eventCaptor.firstValue).hasSize(maxAggregations)
-    }
-
-    @Test
-    fun `M reset and continue W flush() { after flush clears and accepts new }`() {
-        // Given
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
+    fun `M clear and accept new W flush() { after previous flush }`() {
+        processEval()
         testedProcessor.flush()
 
-        // When - new evaluation after flush
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
+        processEval()
         testedProcessor.flush()
 
-        // Then - should have called writeAll twice, once per flush
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter, times(2)).writeAll(eventCaptor.capture())
-
-        // Flatten all events from both writeAll calls
-        val allEvents = eventCaptor.allValues.flatten()
-        assertThat(allEvents).hasSize(2)
-        assertThat(allEvents.map { it.evaluationCount }).containsOnly(1L)
+        val captor = argumentCaptor<List<FlagEvaluation>>()
+        verify(mockWriter, times(2)).writeAll(captor.capture())
+        assertThat(captor.allValues.flatten()).hasSize(2)
     }
 
     @Test
-    fun `M cancel scheduled future W flush() { future exists }`() {
-        // Given
+    fun `M cancel scheduled future W flush()`() {
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
         testedProcessor.schedulePeriodicFlush()
 
-        // Add evaluation
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
-
-        // When - manual flush
+        processEval()
         testedProcessor.flush()
 
-        // Then - should cancel the existing scheduled future
         verify(mockScheduledFuture).cancel(false)
     }
 
     @Test
-    fun `M reschedule periodic flush W flush() { after completing flush }`() {
-        // Given
+    fun `M reschedule W flush() { periodic flush enabled }`() {
         var scheduleCount = 0
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
             scheduleCount++
             mockScheduledFuture
         }
 
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
+        testedProcessor.schedulePeriodicFlush()
+        val initialCount = scheduleCount
 
-        // When
-        testedProcessor.flush(true)
+        processEval()
+        testedProcessor.flush()
 
-        // Then - should reschedule periodic flush
-        assertThat(scheduleCount).isGreaterThan(0)
-        verify(mockScheduledExecutor, atLeastOnce()).schedule(
-            any<Runnable>(),
-            eq(TEST_FLUSH_INTERVAL_MS),
-            eq(TimeUnit.MILLISECONDS)
-        )
+        assertThat(scheduleCount).isGreaterThan(initialCount)
     }
 
     // endregion
@@ -685,33 +203,23 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M schedule flush W schedulePeriodicFlush()`() {
-        // Given
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
 
-        // When
         testedProcessor.schedulePeriodicFlush()
 
-        // Then
-        verify(mockScheduledExecutor).schedule(
-            any<Runnable>(),
-            eq(10_000L),
-            eq(TimeUnit.MILLISECONDS)
-        )
+        verify(mockScheduledExecutor).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test
-    fun `M log error W schedulePeriodicFlush() { executor throws }`(forge: Forge) {
-        // Given
+    fun `M log warning W schedulePeriodicFlush() { executor rejects }`(forge: Forge) {
         val exception = RejectedExecutionException(forge.anAlphabeticalString())
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
             .doReturn(mockScheduledFuture)
             .doThrow(exception)
 
-        // When
         testedProcessor.schedulePeriodicFlush()
-        testedProcessor.schedulePeriodicFlush() // Second call throws
+        testedProcessor.schedulePeriodicFlush()
 
-        // Then - should log at WARN level (not ERROR)
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             any<List<InternalLogger.Target>>(),
@@ -723,53 +231,71 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M reschedule itself W scheduled task runs()`() {
-        // Given
+    fun `M reschedule W scheduled task executes()`() {
         var taskRunnable: Runnable? = null
         var scheduleCount = 0
-
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
             scheduleCount++
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
         }
 
-        // When
-        testedProcessor.schedulePeriodicFlush() // Initial schedule
+        testedProcessor.schedulePeriodicFlush()
         assertThat(scheduleCount).isEqualTo(1)
 
-        checkNotNull(taskRunnable).run() // Execute the scheduled task
+        checkNotNull(taskRunnable).run()
 
-        // Then - should have rescheduled itself
         assertThat(scheduleCount).isEqualTo(2)
-        verify(mockScheduledExecutor, times(2)).schedule(
-            any<Runnable>(),
-            eq(10_000L),
-            eq(TimeUnit.MILLISECONDS)
-        )
     }
 
     @Test
-    fun `M reschedule W scheduled task runs() { with empty flush }`() {
-        // Given
+    fun `M reschedule W scheduled task executes() { empty flush }`() {
         var taskRunnable: Runnable? = null
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
         }
 
-        // When
         testedProcessor.schedulePeriodicFlush()
-        checkNotNull(taskRunnable).run() // Execute with no evaluations to flush
+        checkNotNull(taskRunnable).run()
 
-        // Then - should not write but should reschedule
         verify(mockWriter, never()).writeAll(any())
-        verify(mockScheduledExecutor, times(2)).schedule(
-            any<Runnable>(),
-            eq(10_000L),
-            eq(TimeUnit.MILLISECONDS)
+        verify(mockScheduledExecutor, times(2)).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
+    }
+
+    // endregion
+
+    // region Constructor with periodicFlushEnabled
+
+    @Test
+    fun `M auto-schedule W constructor { periodicFlushEnabled = true }`() {
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
+
+        EvaluationEventsProcessor(
+            writer = mockWriter,
+            timeProvider = mockTimeProvider,
+            scheduledExecutor = mockScheduledExecutor,
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS,
+            periodicFlushEnabled = true
         )
-        verifyNoMoreInteractions(mockWriter)
+
+        verify(mockScheduledExecutor).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `M not schedule W constructor { periodicFlushEnabled = false (default) }`() {
+        EvaluationEventsProcessor(
+            writer = mockWriter,
+            timeProvider = mockTimeProvider,
+            scheduledExecutor = mockScheduledExecutor,
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS
+        )
+
+        verify(mockScheduledExecutor, never()).schedule(any<Runnable>(), any(), any())
     }
 
     // endregion
@@ -777,133 +303,83 @@ internal class EvaluationEventsProcessorTest {
     // region stop
 
     @Test
-    fun `M flush W stop() { no scheduled task }`() {
-        // Given
+    fun `M flush remaining W stop()`() {
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
-        testedProcessor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
-        )
 
-        // When
+        processEval()
         testedProcessor.stop()
 
-        // Then
         verify(mockScheduledExecutor).shutdown()
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        assertThat(eventCaptor.firstValue.first().flag.key).isEqualTo(fakeFlagKey)
+        val events = captureWrittenEvents()
+        assertThat(events.first().flag.key).isEqualTo(fakeFlagKey)
     }
 
     @Test
     fun `M not write W stop() { empty aggregations }`() {
-        // Given
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
 
-        // When
         testedProcessor.stop()
 
-        // Then
         verify(mockScheduledExecutor).shutdown()
         verify(mockWriter, never()).writeAll(any())
-        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
-    fun `M shutdown before cancel W stop() { ensures order }`() {
-        // Given
+    fun `M shutdown before cancel W stop()`() {
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
             .doReturn(mockScheduledFuture)
-            .doThrow(RejectedExecutionException("Executor shutdown")) // flush() tries to reschedule
+            .doThrow(RejectedExecutionException("Executor shutdown"))
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
         testedProcessor.schedulePeriodicFlush()
 
-        // When
         testedProcessor.stop()
 
-        // Then - verify shutdown is called first
-        val inOrder = org.mockito.Mockito.inOrder(mockScheduledExecutor, mockScheduledFuture)
+        val inOrder = inOrder(mockScheduledExecutor, mockScheduledFuture)
         inOrder.verify(mockScheduledExecutor).shutdown()
-        // Note: cancel may be called multiple times (from stop() and from flush())
         inOrder.verify(mockScheduledFuture, atLeastOnce()).cancel(false)
     }
 
     @Test
     fun `M force shutdown W stop() { termination timeout }`() {
-        // Given
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn false
         whenever(mockScheduledExecutor.shutdownNow()).thenReturn(emptyList())
 
-        // When
         testedProcessor.stop()
 
-        // Then - shutdownNow should be called when awaitTermination returns false
         verify(mockScheduledExecutor).shutdown()
         verify(mockScheduledExecutor).shutdownNow()
     }
 
     @Test
     fun `M force shutdown and restore interrupt W stop() { interrupted }`() {
-        // Given
         whenever(mockScheduledExecutor.awaitTermination(any(), any())).thenThrow(InterruptedException())
         whenever(mockScheduledExecutor.shutdownNow()).thenReturn(emptyList())
 
-        // When
         testedProcessor.stop()
 
-        // Then - shutdownNow should be called and thread interrupt status restored
         verify(mockScheduledExecutor).shutdown()
         verify(mockScheduledExecutor).shutdownNow()
-        assertThat(Thread.interrupted()).isTrue() // Verify interrupt flag was set
+        assertThat(Thread.interrupted()).isTrue()
     }
 
     @Test
-    fun `M prevent reschedule W stop() { task running during stop }`() {
-        // Given
+    fun `M prevent reschedule W stop() { task runs after stop }`() {
         var taskRunnable: Runnable? = null
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer { invocation ->
-            taskRunnable = invocation.getArgument(0)
+        var scheduleCount = 0
+        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
+            scheduleCount++
+            taskRunnable = it.getArgument(0)
             mockScheduledFuture
         }
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
 
         testedProcessor.schedulePeriodicFlush()
+        val initialCount = scheduleCount
 
-        // Simulate the executor being shutdown
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
-            .thenThrow(RejectedExecutionException("Executor shutdown"))
-
-        // When - simulate task running during stop
-        val stopThread = Thread {
-            testedProcessor.stop()
-        }
-        stopThread.start()
-
-        // Execute the scheduled task (which will try to reschedule)
+        testedProcessor.stop()
         checkNotNull(taskRunnable).run()
 
-        stopThread.join()
-
-        // Then - exception should be caught and logged (not crash)
-        // Note: stop() calls flush(rescheduleFlush=false) which doesn't reschedule,
-        // but the running scheduled task tries to reschedule and gets rejected
-        verify(mockInternalLogger, atLeastOnce()).log(
-            eq(InternalLogger.Level.WARN),
-            any<List<InternalLogger.Target>>(),
-            any(),
-            any<RejectedExecutionException>(),
-            eq(false),
-            eq(null)
-        )
+        assertThat(scheduleCount).isEqualTo(initialCount)
     }
 
     // endregion
@@ -911,132 +387,70 @@ internal class EvaluationEventsProcessorTest {
     // region Thread Safety
 
     @Test
-    fun `M handle concurrent evaluations W processEvaluation() { same key }`() {
-        // Given
+    fun `M aggregate all W processEvaluation() { concurrent same key }`() {
         val threadCount = 10
         val executionsPerThread = 100
 
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
-
-        // When
-        val threads = (1..threadCount).map {
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) {
-                    testedProcessor.processEvaluation(
-                        fakeFlagKey,
-                        fakeContext,
-                        fakeService,
-                        fakeApplicationId,
-                        fakeViewName,
-                        fakeData.variationKey,
-                        fakeData.allocationKey,
-                        fakeData.reason,
-                        null,
-                        null
-                    )
-                }
-                finishLatch.countDown()
-            }
+        runConcurrently(threadCount) {
+            repeat(executionsPerThread) { processEval() }
         }
-
-        threads.forEach { it.start() }
-        startLatch.countDown() // Start all at once
-        finishLatch.await()
 
         testedProcessor.flush()
 
-        // Then - should aggregate all into one event
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter, times(1)).writeAll(eventCaptor.capture())
-
-        assertThat(eventCaptor.firstValue).hasSize(1)
-        assertThat(eventCaptor.firstValue.first().evaluationCount)
-            .isEqualTo((threadCount * executionsPerThread).toLong())
+        val events = captureWrittenEvents()
+        assertThat(events).hasSize(1)
+        assertThat(events.first().evaluationCount).isEqualTo((threadCount * executionsPerThread).toLong())
     }
 
     @Test
-    fun `M handle concurrent evaluations W processEvaluation() { different keys }`() {
-        // Given
+    fun `M write all W processEvaluation() { concurrent different keys }`() {
         val threadCount = 10
         val executionsPerThread = 50
 
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
-
-        // When
-        val threads = (1..threadCount).map { threadIndex ->
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) { executionIndex ->
-                    val uniqueContext = EvaluationContext(
-                        targetingKey = "thread-$threadIndex-execution-$executionIndex"
-                    )
-                    testedProcessor.processEvaluation(
-                        fakeFlagKey,
-                        uniqueContext,
-                        fakeService,
-                        fakeApplicationId,
-                        fakeViewName,
-                        fakeData.variationKey,
-                        fakeData.allocationKey,
-                        fakeData.reason,
-                        null,
-                        null
-                    )
-                }
-                finishLatch.countDown()
+        runConcurrently(threadCount) { threadIndex ->
+            repeat(executionsPerThread) { execIndex ->
+                testedProcessor.processEvaluation(
+                    fakeFlagKey,
+                    EvaluationContext(targetingKey = "thread-$threadIndex-exec-$execIndex"),
+                    fakeService, fakeApplicationId, fakeViewName,
+                    fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name,
+                    null, null
+                )
             }
         }
-
-        threads.forEach { it.start() }
-        startLatch.countDown()
-        finishLatch.await()
 
         testedProcessor.flush()
 
-        // Then
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-
-        assertThat(eventCaptor.firstValue).hasSize(threadCount * executionsPerThread)
+        val events = captureWrittenEvents()
+        assertThat(events).hasSize(threadCount * executionsPerThread)
     }
 
     @Test
-    fun `M handle concurrent flush W processEvaluation and flush() { mixed operations }`() {
-        // Given
-        val processingThreadCount = 5
-        val flushThreadCount = 2
+    fun `M write all W flush() { concurrent with processEvaluation }`() {
+        val processingThreads = 5
+        val flushThreads = 2
         val executionsPerThread = 100
 
         val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(processingThreadCount + flushThreadCount)
+        val finishLatch = CountDownLatch(processingThreads + flushThreads)
 
-        // When
-        val processingThreads = (1..processingThreadCount).map { threadIndex ->
+        val processingWorkers = (1..processingThreads).map { threadIndex ->
             Thread {
                 startLatch.await()
-                repeat(executionsPerThread) { executionIndex ->
-                    val context = EvaluationContext(targetingKey = "user-$threadIndex-$executionIndex")
+                repeat(executionsPerThread) { execIndex ->
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
-                        context,
-                        fakeService,
-                        fakeApplicationId,
-                        fakeViewName,
-                        fakeData.variationKey,
-                        fakeData.allocationKey,
-                        fakeData.reason,
-                        null,
-                        null
+                        EvaluationContext(targetingKey = "user-$threadIndex-$execIndex"),
+                        fakeService, fakeApplicationId, fakeViewName,
+                        fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name,
+                        null, null
                     )
                 }
                 finishLatch.countDown()
             }
         }
 
-        val flushThreads = (1..flushThreadCount).map {
+        val flushWorkers = (1..flushThreads).map {
             Thread {
                 startLatch.await()
                 repeat(10) {
@@ -1047,203 +461,275 @@ internal class EvaluationEventsProcessorTest {
             }
         }
 
-        val allThreads = processingThreads + flushThreads
-        allThreads.forEach { it.start() }
+        (processingWorkers + flushWorkers).forEach { it.start() }
         startLatch.countDown()
         finishLatch.await()
+        testedProcessor.flush()
 
-        testedProcessor.flush() // Final flush
-
-        // Then - all events should be written (possibly across multiple writeAll calls)
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter, atLeast(1)).writeAll(eventCaptor.capture())
-
-        val totalEventsWritten = eventCaptor.allValues.sumOf { it.size }
-        assertThat(totalEventsWritten).isEqualTo(processingThreadCount * executionsPerThread)
+        val captor = argumentCaptor<List<FlagEvaluation>>()
+        verify(mockWriter, atLeast(1)).writeAll(captor.capture())
+        assertThat(captor.allValues.sumOf { it.size }).isEqualTo(processingThreads * executionsPerThread)
     }
 
     @Test
-    fun `M skip concurrent flush W flush() { flush already in progress }`() {
-        // Given
-        val writeStartedLatch = CountDownLatch(1)
-        val blockingLatch = CountDownLatch(1)
-        var writeCallCount = 0
+    fun `M skip concurrent flush W flush() { already in progress }`() {
+        val writeStarted = CountDownLatch(1)
+        val blockWrite = CountDownLatch(1)
+        var writeCount = 0
 
         val slowWriter = object : EvaluationEventWriter {
             override fun writeAll(events: List<FlagEvaluation>) {
-                writeCallCount++
-                writeStartedLatch.countDown()
-                blockingLatch.await()
+                writeCount++
+                writeStarted.countDown()
+                blockWrite.await()
             }
         }
 
-        val processor = createEvaluationEventsProcessor(
+        val processor = EvaluationEventsProcessor(
             writer = slowWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS
         )
 
         processor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            fakeViewName,
-            fakeData.variationKey,
-            fakeData.allocationKey,
-            fakeData.reason,
-            null,
-            null
+            fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
+            fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
         )
 
-        // When - start flush in background thread
         val flushThread = Thread { processor.flush() }
         flushThread.start()
-        writeStartedLatch.await()
+        writeStarted.await()
 
-        // Call flush again while first is blocked
         processor.flush()
         processor.flush()
         processor.flush()
 
-        // Release the blocked writer
-        blockingLatch.countDown()
+        blockWrite.countDown()
         flushThread.join()
 
-        // Then - writeAll should only be called once
-        assertThat(writeCallCount).isEqualTo(1)
+        assertThat(writeCount).isEqualTo(1)
     }
 
     @Test
-    fun `M handle concurrent new key insertions W processEvaluation() { lock-free }`() {
-        // Given - test lock-free putIfAbsent behavior with unique keys
+    fun `M not lose events W stop() { flush in progress }`() {
+        val writeStarted = CountDownLatch(1)
+        val continueWrite = CountDownLatch(1)
+        val writtenEvents = CopyOnWriteArrayList<FlagEvaluation>()
+
+        val slowWriter = object : EvaluationEventWriter {
+            override fun writeAll(events: List<FlagEvaluation>) {
+                if (writtenEvents.isEmpty()) {
+                    writeStarted.countDown()
+                    continueWrite.await()
+                }
+                writtenEvents.addAll(events)
+            }
+        }
+
+        val processor = EvaluationEventsProcessor(
+            writer = slowWriter,
+            timeProvider = mockTimeProvider,
+            scheduledExecutor = mockScheduledExecutor,
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS
+        )
+
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
+
+        repeat(10) { index ->
+            processor.processEvaluation(
+                fakeFlagKey, EvaluationContext(targetingKey = "initial-$index"),
+                fakeService, fakeApplicationId, fakeViewName,
+                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+            )
+        }
+
+        val flushThread = Thread { processor.flush() }
+        flushThread.start()
+        writeStarted.await()
+
+        repeat(5) { index ->
+            processor.processEvaluation(
+                fakeFlagKey, EvaluationContext(targetingKey = "during-flush-$index"),
+                fakeService, fakeApplicationId, fakeViewName,
+                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+            )
+        }
+
+        val stopThread = Thread {
+            continueWrite.countDown()
+            processor.stop()
+        }
+        stopThread.start()
+        stopThread.join(5000)
+        flushThread.join(1000)
+
+        assertThat(writtenEvents).hasSize(15)
+    }
+
+    @Test
+    fun `M not lose evaluations W processEvaluation() { concurrent with flush swap }`() {
+        val totalWritten = AtomicInteger(0)
+
+        val trackingWriter = object : EvaluationEventWriter {
+            override fun writeAll(events: List<FlagEvaluation>) {
+                totalWritten.addAndGet(events.sumOf { it.evaluationCount.toInt() })
+            }
+        }
+
+        val processor = EvaluationEventsProcessor(
+            writer = trackingWriter,
+            timeProvider = mockTimeProvider,
+            scheduledExecutor = mockScheduledExecutor,
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = Int.MAX_VALUE
+        )
+
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
+
         val threadCount = 10
-        val uniqueKeysPerThread = 100
-
+        val evaluationsPerThread = 100
+        val flushCount = 20
         val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
+        val finishLatch = CountDownLatch(threadCount + 1)
 
-        // When - threads insert unique keys concurrently (should be lock-free)
-        val threads = (1..threadCount).map { threadId ->
+        val evalThreads = (1..threadCount).map {
             Thread {
                 startLatch.await()
-                repeat(uniqueKeysPerThread) { index ->
-                    val uniqueContext = EvaluationContext("user-$threadId-$index")
-                    testedProcessor.processEvaluation(
-                        fakeFlagKey,
-                        uniqueContext,
-                        fakeService,
-                        fakeApplicationId,
-                        fakeViewName,
-                        fakeVariantKey,
-                        fakeAllocationKey,
-                        fakeData.reason,
-                        null,
-                        null
+                repeat(evaluationsPerThread) {
+                    processor.processEvaluation(
+                        fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
+                        fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
                     )
                 }
                 finishLatch.countDown()
             }
         }
 
-        threads.forEach { it.start() }
-        startLatch.countDown() // Start all at once
+        val flushThread = Thread {
+            startLatch.await()
+            repeat(flushCount) {
+                Thread.sleep(1)
+                processor.flush()
+            }
+            finishLatch.countDown()
+        }
+
+        evalThreads.forEach { it.start() }
+        flushThread.start()
+        startLatch.countDown()
         finishLatch.await()
+        processor.stop()
 
-        testedProcessor.flush()
-
-        // Then - all unique keys should be written (no lost updates)
-        val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
-        assertThat(eventCaptor.firstValue).hasSize(threadCount * uniqueKeysPerThread)
+        assertThat(totalWritten.get()).isEqualTo(threadCount * evaluationsPerThread)
     }
 
     @Test
-    fun `M continue accepting evaluations W flush() { during flush operation }`() {
-        // Given - stub scheduler to avoid reschedule interactions
+    fun `M accept evaluations W flush() { during flush operation }`() {
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
 
-        // Create a slow writer to simulate long flush
         val flushInProgress = CountDownLatch(1)
         val continueFlush = CountDownLatch(1)
-        val writeCount = java.util.concurrent.atomic.AtomicInteger(0)
-        val firstCallFlag = java.util.concurrent.atomic.AtomicBoolean(true)
+        val writeCount = AtomicInteger(0)
+        val firstCall = AtomicBoolean(true)
 
         val slowWriter = object : EvaluationEventWriter {
             override fun writeAll(events: List<FlagEvaluation>) {
-                val isFirstCall = firstCallFlag.compareAndSet(true, false)
+                val isFirst = firstCall.compareAndSet(true, false)
                 writeCount.addAndGet(events.size)
-                if (isFirstCall) {
-                    flushInProgress.countDown() // Signal first write started
-                    continueFlush.await() // Block until signaled
+                if (isFirst) {
+                    flushInProgress.countDown()
+                    continueFlush.await()
                 }
             }
         }
 
-        val slowProcessor = createEvaluationEventsProcessor(
+        val processor = EvaluationEventsProcessor(
             writer = slowWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            maxAggregations = TEST_MAX_AGGREGATIONS
         )
 
-        // Populate slow processor
         repeat(50) { index ->
-            val context = EvaluationContext(targetingKey = "initial-$index")
-            slowProcessor.processEvaluation(
-                fakeFlagKey,
-                context,
-                fakeService,
-                fakeApplicationId,
-                fakeViewName,
-                fakeData.variationKey,
-                fakeData.allocationKey,
-                fakeData.reason,
-                null,
-                null
+            processor.processEvaluation(
+                fakeFlagKey, EvaluationContext(targetingKey = "initial-$index"),
+                fakeService, fakeApplicationId, fakeViewName,
+                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
             )
         }
 
         val flushComplete = CountDownLatch(1)
-
-        // When - start flush in background
         val flushThread = Thread {
-            slowProcessor.flush()
+            processor.flush()
             flushComplete.countDown()
         }
         flushThread.start()
-
-        // Wait for flush to start writing
         flushInProgress.await()
 
-        // Add new evaluations DURING flush (should go to new map due to swap pattern)
         repeat(25) { index ->
-            val context = EvaluationContext(targetingKey = "during-flush-$index")
-            slowProcessor.processEvaluation(
-                fakeFlagKey,
-                context,
-                fakeService,
-                fakeApplicationId,
-                fakeViewName,
-                fakeData.variationKey,
-                fakeData.allocationKey,
-                fakeData.reason,
-                null,
-                null
+            processor.processEvaluation(
+                fakeFlagKey, EvaluationContext(targetingKey = "during-flush-$index"),
+                fakeService, fakeApplicationId, fakeViewName,
+                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
             )
         }
 
-        // Release the flush
         continueFlush.countDown()
         flushComplete.await()
         flushThread.join()
+        processor.flush()
 
-        // Then - flush again and verify the new evaluations are present
-        slowProcessor.flush()
-
-        // Should have written initial 50 + new 25 during flush
         assertThat(writeCount.get()).isEqualTo(75)
+    }
+
+    // endregion
+
+    // region Helpers
+
+    private fun processEval(
+        flagKey: String = fakeFlagKey,
+        context: EvaluationContext = fakeContext,
+        variantKey: String? = fakeVariantKey,
+        allocationKey: String? = fakeAllocationKey,
+        reason: String? = ResolutionReason.TARGETING_MATCH.name,
+        errorCode: String? = null,
+        errorMessage: String? = null
+    ) {
+        testedProcessor.processEvaluation(
+            flagKey, context, fakeService, fakeApplicationId, fakeViewName,
+            variantKey, allocationKey, reason, errorCode, errorMessage
+        )
+    }
+
+    private fun captureWrittenEvents(): List<FlagEvaluation> {
+        val captor = argumentCaptor<List<FlagEvaluation>>()
+        verify(mockWriter).writeAll(captor.capture())
+        return captor.firstValue
+    }
+
+    private fun runConcurrently(threadCount: Int, action: (Int) -> Unit) {
+        val startLatch = CountDownLatch(1)
+        val finishLatch = CountDownLatch(threadCount)
+
+        val threads = (1..threadCount).map { index ->
+            Thread {
+                startLatch.await()
+                action(index)
+                finishLatch.countDown()
+            }
+        }
+
+        threads.forEach { it.start() }
+        startLatch.countDown()
+        finishLatch.await()
     }
 
     // endregion

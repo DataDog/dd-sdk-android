@@ -580,6 +580,8 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.set(UNKNOWN)"
       - "java.util.concurrent.locks.ReadWriteLock.readLock()"
       - "java.util.concurrent.locks.ReadWriteLock.writeLock()"
+      - "java.util.concurrent.locks.ReentrantLock.constructor()"
+      - "java.util.concurrent.locks.ReentrantLock.tryLock()"
       - "java.util.concurrent.locks.ReentrantReadWriteLock.constructor()"
       - "java.util.concurrent.locks.ReentrantReadWriteLock.constructor(kotlin.Boolean)"
       - "java.util.concurrent.locks.ReentrantReadWriteLock.read(kotlin.Function0)"

@@ -7,21 +7,18 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.aggregation.AggregationKey
-import com.datadog.android.flags.internal.aggregation.AggregationStats
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.time.TimeProvider
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Aggregates flag evaluation events before writing them to storage.
- *
- * Thread-safe for concurrent [processEvaluation] and [flush] calls.
  */
 internal class EvaluationEventsProcessor(
     private val writer: EvaluationEventWriter,
@@ -29,17 +26,23 @@ internal class EvaluationEventsProcessor(
     private val scheduledExecutor: ScheduledExecutorService,
     private val internalLogger: InternalLogger,
     private val flushIntervalMs: Long,
-    private val maxAggregations: Int
+    maxAggregations: Int,
+    periodicFlushEnabled: Boolean = false
 ) {
+    private val aggregator = EvaluationAggregator(maxAggregations)
+    private val flushMutex = ReentrantLock()
 
     @Volatile
-    private var aggregationMap = ConcurrentHashMap<AggregationKey, AggregationStats>()
-    private val flushLock = Object()
-
-    private val flushInProgress = AtomicBoolean(false)
+    private var periodicFlushEnabled = periodicFlushEnabled
 
     @Volatile
     private var scheduledFlushFuture: ScheduledFuture<*>? = null
+
+    init {
+        if (periodicFlushEnabled) {
+            scheduleNextFlush()
+        }
+    }
 
     fun processEvaluation(
         flagKey: String,
@@ -53,79 +56,61 @@ internal class EvaluationEventsProcessor(
         errorCode: String?,
         errorMessage: String?
     ) {
-        val timestamp = timeProvider.getDeviceTimestampMillis()
-
-        val key = AggregationKey(
+        val shouldFlush = aggregator.record(
+            timestamp = timeProvider.getDeviceTimestampMillis(),
             flagKey = flagKey,
+            context = context,
+            service = service,
+            rumApplicationId = rumApplicationId,
+            rumViewName = rumViewName,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            targetingKey = context.targetingKey,
-            viewName = rumViewName,
-            errorCode = errorCode
+            reason = reason,
+            errorCode = errorCode,
+            errorMessage = errorMessage
         )
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
-        val existing = aggregationMap.putIfAbsent(
-            key,
-            AggregationStats(
-                aggregationKey = key,
-                firstTimestamp = timestamp,
-                context = context,
-                service = service,
-                rumApplicationId = rumApplicationId,
-                rumViewName = rumViewName,
-                reason = reason,
-                errorMessage = errorMessage
-            )
-        )
-
-        existing?.recordEvaluation(timestamp, errorMessage)
-
-        if (aggregationMap.size >= maxAggregations) {
-            flush(true)
+        if (shouldFlush) {
+            flush()
         }
     }
 
-    /**
-     * Flushes aggregated evaluations. Non-blocking if flush already in progress.
-     */
-    fun flush(rescheduleFlush: Boolean = false) {
-        if (!flushInProgress.compareAndSet(false, true)) {
+    fun flush() {
+        if (!flushMutex.tryLock()) {
             return
         }
 
+        try {
+            flushInternal()
+        } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall") // safe - only called after successful tryLock()
+            flushMutex.unlock()
+        }
+    }
+
+    private fun flushInternal() {
         scheduledFlushFuture?.cancel(false)
 
-        try {
-            val snapshot = synchronized(flushLock) {
-                if (aggregationMap.isEmpty()) {
-                    return@synchronized null
-                }
-                val entriesToFlush = aggregationMap
-                aggregationMap = ConcurrentHashMap()
-                entriesToFlush
-            } ?: return
+        val events = aggregator.drain()
+        if (events.isNotEmpty()) {
+            writer.writeAll(events)
+        }
 
-            writer.writeAll(
-                snapshot.map { (_, stats) ->
-                    stats.toEvaluationEvent()
-                }
-            )
-        } finally {
-            flushInProgress.set(false)
-            if (rescheduleFlush) {
-                schedulePeriodicFlush()
-            }
+        if (periodicFlushEnabled) {
+            scheduleNextFlush()
         }
     }
 
     fun schedulePeriodicFlush() {
+        periodicFlushEnabled = true
+        scheduleNextFlush()
+    }
+
+    private fun scheduleNextFlush() {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
             scheduledFlushFuture = scheduledExecutor.schedule(
-                {
-                    flush(true)
-                },
+                { flush() },
                 flushIntervalMs,
                 TimeUnit.MILLISECONDS
             )
@@ -140,10 +125,16 @@ internal class EvaluationEventsProcessor(
     }
 
     fun stop() {
+        periodicFlushEnabled = false
+
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - does not throw in Android
         scheduledExecutor.shutdown()
         scheduledFlushFuture?.cancel(false)
-        flush(rescheduleFlush = false)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
+        flushMutex.withLock {
+            flushInternal()
+        }
 
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // InterruptedException is caught and handled

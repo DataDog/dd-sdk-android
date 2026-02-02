@@ -12,7 +12,8 @@ import com.datadog.tools.annotation.NoOpImplementation
 /**
  * Writer interface for persisting evaluation events to storage.
  *
- * Implementations must be thread-safe and handle concurrent calls correctly.
+ * Thread Safety: Implementations must be thread-safe and not rely on external synchronization.
+ *
  * Evaluations are written as individual records and then batched together at upload time.
  * Managing these records/uploads is the responsibility of the SDK Core's upload scheduler.
  *
@@ -27,7 +28,7 @@ internal interface EvaluationEventWriter {
      * The events are serialized and stored as individual records. Multiple events
      * will be collected and batched together at upload time.
      *
-     * Thread Safety: This method must be thread-safe and handle concurrent calls correctly.
+     * Thread Safety: Implementations must be thread-safe and not rely on external synchronization.
      *
      * @param events the evaluation events to write to storage
      */
