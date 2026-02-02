@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -899,10 +900,11 @@ internal class EvaluationEventsProcessorTest {
 
         // Then - should aggregate all into one event
         val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
+        verify(mockWriter, times(1)).writeAll(eventCaptor.capture())
 
-        val event = eventCaptor.firstValue.first()
-        assertThat(event.evaluationCount).isEqualTo((threadCount * executionsPerThread).toLong())
+        assertThat(eventCaptor.firstValue).hasSize(1)
+        assertThat(eventCaptor.firstValue.first().evaluationCount)
+            .isEqualTo((threadCount * executionsPerThread).toLong())
     }
 
     @Test
@@ -999,96 +1001,63 @@ internal class EvaluationEventsProcessorTest {
 
         testedProcessor.flush() // Final flush
 
-        // Then - should have written some events
+        // Then - all events should be written (possibly across multiple writeAll calls)
         val eventCaptor = argumentCaptor<List<FlagEvaluation>>()
-        verify(mockWriter).writeAll(eventCaptor.capture())
+        verify(mockWriter, atLeast(1)).writeAll(eventCaptor.capture())
 
-        assertThat(eventCaptor.firstValue).hasSize(processingThreadCount * executionsPerThread)
+        val totalEventsWritten = eventCaptor.allValues.sumOf { it.size }
+        assertThat(totalEventsWritten).isEqualTo(processingThreadCount * executionsPerThread)
     }
 
     @Test
     fun `M skip concurrent flush W flush() { flush already in progress }`() {
-        // Given - populate map with events
-        repeat(100) { index ->
-            val context = EvaluationContext(targetingKey = "user-$index")
-            testedProcessor.processEvaluation(
-                fakeFlagKey,
-                context,
-                fakeDDContext,
-                fakeData.variationKey,
-                fakeData.allocationKey,
-                fakeData.reason,
-                null,
-                null
-            )
-        }
-
-        // Create a slow writer that blocks during write
-        val slowWriteLatch = CountDownLatch(1)
+        // Given
         val writeStartedLatch = CountDownLatch(1)
+        val blockingLatch = CountDownLatch(1)
+        var writeCallCount = 0
+
         val slowWriter = object : EvaluationEventWriter {
             override fun writeAll(events: List<FlagEvaluation>) {
+                writeCallCount++
                 writeStartedLatch.countDown()
-                slowWriteLatch.await() // Block until released
+                blockingLatch.await()
             }
         }
 
-        val slowProcessor = createEvaluationEventsProcessor(
+        val processor = createEvaluationEventsProcessor(
             writer = slowWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger
         )
 
-        // Populate slow processor
-        repeat(100) { index ->
-            val context = EvaluationContext(targetingKey = "user-$index")
-            slowProcessor.processEvaluation(
-                fakeFlagKey,
-                context,
-                fakeDDContext,
-                fakeData.variationKey,
-                fakeData.allocationKey,
-                fakeData.reason,
-                null,
-                null
-            )
-        }
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeDDContext,
+            fakeData.variationKey,
+            fakeData.allocationKey,
+            fakeData.reason,
+            null,
+            null
+        )
 
-        val flush1Started = CountDownLatch(1)
-        val flush1Complete = CountDownLatch(1)
-        val flush2Complete = CountDownLatch(1)
+        // When - start flush in background thread
+        val flushThread = Thread { processor.flush() }
+        flushThread.start()
+        writeStartedLatch.await()
 
-        // When - trigger flush from two threads simultaneously
-        val thread1 = Thread {
-            flush1Started.countDown()
-            slowProcessor.flush()
-            flush1Complete.countDown()
-        }
+        // Call flush again while first is blocked
+        processor.flush()
+        processor.flush()
+        processor.flush()
 
-        val thread2 = Thread {
-            flush1Started.await() // Wait for thread1 to start
-            Thread.sleep(10) // Ensure thread1 enters flush first
-            slowProcessor.flush() // Should return immediately
-            flush2Complete.countDown()
-        }
+        // Release the blocked writer
+        blockingLatch.countDown()
+        flushThread.join()
 
-        thread1.start()
-        thread2.start()
-
-        // Wait for both flush calls to be made
-        writeStartedLatch.await() // Thread1's flush started writing
-
-        // Then - thread2 should have completed immediately without blocking
-        val thread2Completed = flush2Complete.await(100, TimeUnit.MILLISECONDS)
-        assertThat(thread2Completed).isTrue() // Thread2 should return immediately
-
-        // Release the slow writer
-        slowWriteLatch.countDown()
-        flush1Complete.await()
-
-        thread1.join()
-        thread2.join()
+        // Then - writeAll should only be called once
+        assertThat(writeCallCount).isEqualTo(1)
     }
 
     @Test
