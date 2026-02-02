@@ -32,21 +32,18 @@ import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
  */
 internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 
-internal class FlagsFeature(
-    private val sdkCore: FeatureSdkCore,
-    internal val flagsConfiguration: FlagsConfiguration,
-    internal val evaluationsFeature: EvaluationsFeature? = null
-) : StorageBackedFeature,
+internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val flagsConfiguration: FlagsConfiguration) :
+    StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
     @Volatile
     internal var applicationId: String? = null
 
     @Volatile
-    internal var exposureProcessor: EventsProcessor = NoOpEventsProcessor()
+    internal var processor: EventsProcessor = NoOpEventsProcessor()
 
     @Volatile
-    internal var exposureWriter: RecordWriter = NoOpRecordWriter()
+    internal var dataWriter: RecordWriter = NoOpRecordWriter()
 
     @Volatile
     private var isInitialized = false
@@ -106,18 +103,16 @@ internal class FlagsFeature(
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
         sdkCore.setContextUpdateReceiver(this)
-
-        // Exposure logging
-        exposureWriter = createDataWriter()
-        exposureProcessor = ExposureEventsProcessor(
-            writer = exposureWriter,
+        dataWriter = createDataWriter()
+        processor = ExposureEventsProcessor(
+            writer = dataWriter,
             timeProvider = sdkCore.timeProvider
         )
     }
 
     override fun onStop() {
         sdkCore.removeContextUpdateReceiver(this)
-        exposureWriter = NoOpRecordWriter()
+        dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
             registeredClients.clear()
