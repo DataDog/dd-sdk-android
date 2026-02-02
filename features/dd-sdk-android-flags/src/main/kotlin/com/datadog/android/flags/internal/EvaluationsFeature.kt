@@ -1,4 +1,3 @@
-
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * separate from exposure logging. Events are uploaded to /api/v2/flagevaluations.
  */
 internal class EvaluationsFeature(
-    val sdkCore: FeatureSdkCore,
+    private val sdkCore: FeatureSdkCore,
     internal val flagsConfiguration: FlagsConfiguration
 ) : StorageBackedFeature {
 
@@ -44,6 +43,7 @@ internal class EvaluationsFeature(
         if (initialized.get()) {
             return
         }
+
         initialized.set(true)
     }
 
