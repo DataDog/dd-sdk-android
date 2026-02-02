@@ -4,18 +4,23 @@
   "title": "FlagEvaluation",
   "type": "object",
   "description": "Schema for individual flag evaluation events (NDJSON format)",
-  "properties": {
-    "timestamp": {
-      "type": "integer",
-      "description": "The timestamp (milliseconds since epoch) at which the evaluation occurred."
-    },
-    "flag": {
+  "definitions": {
+    "Identifier": {
       "type": "object",
       "properties": {
         "key": { "type": "string" }
       },
       "required": ["key"],
       "additionalProperties": false
+    }
+  },
+  "properties": {
+    "timestamp": {
+      "type": "integer",
+      "description": "The timestamp (milliseconds since epoch) at which the evaluation occurred."
+    },
+    "flag": {
+      "$ref": "#/definitions/Identifier"
     },
     "first_evaluation": {
       "type": "integer",
@@ -72,28 +77,13 @@
       "additionalProperties": false
     },
     "variant": {
-      "type": "object",
-      "properties": {
-        "key": { "type": "string" }
-      },
-      "required": ["key"],
-      "additionalProperties": false
+      "$ref": "#/definitions/Identifier"
     },
     "allocation": {
-      "type": "object",
-      "properties": {
-        "key": { "type": "string" }
-      },
-      "required": ["key"],
-      "additionalProperties": false
+      "$ref": "#/definitions/Identifier"
     },
     "targeting_rule": {
-      "type": "object",
-      "properties": {
-        "key": { "type": "string" }
-      },
-      "required": ["key"],
-      "additionalProperties": false
+      "$ref": "#/definitions/Identifier"
     },
     "error": {
       "type": "object",

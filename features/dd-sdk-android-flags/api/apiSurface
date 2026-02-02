@@ -181,17 +181,17 @@ data class com.datadog.android.flags.model.ExposureEvent
       fun fromJson(kotlin.String): Attributes
       fun fromJsonObject(com.google.gson.JsonObject): Attributes
 data class com.datadog.android.flags.model.FlagEvaluation
-  constructor(kotlin.Long, Flag, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, kotlin.String? = null, Context? = null, Flag? = null, Flag? = null, Flag? = null, Error? = null)
+  constructor(kotlin.Long, Identifier, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, kotlin.String? = null, Context? = null, Identifier? = null, Identifier? = null, Identifier? = null, Error? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): FlagEvaluation
     fun fromJsonObject(com.google.gson.JsonObject): FlagEvaluation
-  data class Flag
+  data class Identifier
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Flag
-      fun fromJsonObject(com.google.gson.JsonObject): Flag
+      fun fromJson(kotlin.String): Identifier
+      fun fromJsonObject(com.google.gson.JsonObject): Identifier
   data class Context
     constructor(Evaluation? = null, Dd? = null)
     fun toJson(): com.google.gson.JsonElement
