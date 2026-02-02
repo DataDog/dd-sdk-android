@@ -7,9 +7,6 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -56,9 +53,6 @@ import java.util.concurrent.TimeUnit
 internal class EvaluationEventsProcessorTest {
 
     @Mock
-    lateinit var mockInternalSdkCore: InternalSdkCore
-
-    @Mock
     lateinit var mockWriter: EvaluationEventWriter
 
     @Mock
@@ -72,9 +66,6 @@ internal class EvaluationEventsProcessorTest {
 
     @Mock
     lateinit var mockScheduledFuture: ScheduledFuture<*>
-
-    @Mock
-    lateinit var mockDatadogContext: DatadogContext
 
     @LongForgery(min = 1000000L)
     var fakeTimestamp = 0L
@@ -102,39 +93,26 @@ internal class EvaluationEventsProcessorTest {
     private lateinit var fakeViewName: String
 
     fun createEvaluationEventsProcessor(
-        internalSdkCore: InternalSdkCore = mockInternalSdkCore,
         writer: EvaluationEventWriter,
         timeProvider: TimeProvider,
         scheduledExecutor: ScheduledExecutorService,
         internalLogger: InternalLogger,
         flushIntervalMs: Long = TEST_FLUSH_INTERVAL_MS,
         maxAggregations: Int = TEST_MAX_AGGREGATIONS
-    ): EvaluationEventsProcessor {
-        return EvaluationEventsProcessor(
-            internalSdkCore = internalSdkCore,
-            writer = writer,
-            timeProvider = timeProvider,
-            scheduledExecutor = scheduledExecutor,
-            internalLogger = internalLogger,
-            flushIntervalMs = flushIntervalMs,
-            maxAggregations = maxAggregations
-        )
-    }
+    ): EvaluationEventsProcessor = EvaluationEventsProcessor(
+        writer = writer,
+        timeProvider = timeProvider,
+        scheduledExecutor = scheduledExecutor,
+        internalLogger = internalLogger,
+        flushIntervalMs = flushIntervalMs,
+        maxAggregations = maxAggregations
+    )
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeService = forge.anAlphabeticalString()
         fakeApplicationId = forge.anAlphabeticalString()
         fakeViewName = forge.anAlphabeticalString()
-
-        // Setup mock DatadogContext with RUM context
-        val rumContext = mapOf<String, Any?>(
-            "application_id" to fakeApplicationId,
-            "view_name" to fakeViewName
-        )
-        whenever(mockDatadogContext.service) doReturn fakeService
-        whenever(mockDatadogContext.featuresContext) doReturn mapOf(Feature.RUM_FEATURE_NAME to rumContext)
-        whenever(mockInternalSdkCore.getDatadogContext(any())) doReturn mockDatadogContext
 
         testedProcessor = createEvaluationEventsProcessor(
             writer = mockWriter,
@@ -166,6 +144,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -190,6 +171,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -199,6 +183,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -208,6 +195,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -234,6 +224,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -243,6 +236,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             anotherFlagName,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -269,6 +265,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -278,6 +277,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             anotherContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -306,6 +308,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -315,6 +320,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             anotherData.variationKey,
             anotherData.allocationKey,
             anotherData.reason,
@@ -346,6 +354,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             null,
             null,
             null,
@@ -355,6 +366,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             null,
             null,
             null,
@@ -364,6 +378,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             null,
             null,
             null,
@@ -394,6 +411,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             null,
             null,
             null,
@@ -403,6 +423,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             null,
             null,
             null,
@@ -431,6 +454,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -440,6 +466,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -449,6 +478,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -477,6 +509,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -523,6 +558,9 @@ internal class EvaluationEventsProcessorTest {
             testProcessor.processEvaluation(
                 fakeFlagKey,
                 uniqueContext,
+                fakeService,
+                fakeApplicationId,
+                fakeViewName,
                 fakeData.variationKey,
                 fakeData.allocationKey,
                 fakeData.reason,
@@ -544,6 +582,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -556,6 +597,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -584,6 +628,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -610,6 +657,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -733,6 +783,9 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -874,6 +927,9 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         fakeContext,
+                        fakeService,
+                        fakeApplicationId,
+                        fakeViewName,
                         fakeData.variationKey,
                         fakeData.allocationKey,
                         fakeData.reason,
@@ -920,6 +976,9 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         uniqueContext,
+                        fakeService,
+                        fakeApplicationId,
+                        fakeViewName,
                         fakeData.variationKey,
                         fakeData.allocationKey,
                         fakeData.reason,
@@ -963,6 +1022,9 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         context,
+                        fakeService,
+                        fakeApplicationId,
+                        fakeViewName,
                         fakeData.variationKey,
                         fakeData.allocationKey,
                         fakeData.reason,
@@ -1025,6 +1087,9 @@ internal class EvaluationEventsProcessorTest {
         processor.processEvaluation(
             fakeFlagKey,
             fakeContext,
+            fakeService,
+            fakeApplicationId,
+            fakeViewName,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -1068,6 +1133,9 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         uniqueContext,
+                        fakeService,
+                        fakeApplicationId,
+                        fakeViewName,
                         fakeVariantKey,
                         fakeAllocationKey,
                         fakeData.reason,
@@ -1126,6 +1194,9 @@ internal class EvaluationEventsProcessorTest {
             slowProcessor.processEvaluation(
                 fakeFlagKey,
                 context,
+                fakeService,
+                fakeApplicationId,
+                fakeViewName,
                 fakeData.variationKey,
                 fakeData.allocationKey,
                 fakeData.reason,
@@ -1152,6 +1223,9 @@ internal class EvaluationEventsProcessorTest {
             slowProcessor.processEvaluation(
                 fakeFlagKey,
                 context,
+                fakeService,
+                fakeApplicationId,
+                fakeViewName,
                 fakeData.variationKey,
                 fakeData.allocationKey,
                 fakeData.reason,
