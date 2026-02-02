@@ -27,19 +27,16 @@ internal class EvaluationEventsProcessor(
     private val internalLogger: InternalLogger,
     private val flushIntervalMs: Long,
     private val aggregator: EvaluationAggregator,
-    periodicFlushEnabled: Boolean = false
+    @Volatile private var periodicFlushEnabled: Boolean = true
 ) {
     private val flushMutex = ReentrantLock()
-
-    @Volatile
-    private var periodicFlushEnabled = periodicFlushEnabled
 
     @Volatile
     private var scheduledFlushFuture: ScheduledFuture<*>? = null
 
     init {
         if (periodicFlushEnabled) {
-            scheduleNextFlush()
+            schedulePeriodicFlush()
         }
     }
 
@@ -96,16 +93,12 @@ internal class EvaluationEventsProcessor(
         }
 
         if (periodicFlushEnabled) {
-            scheduleNextFlush()
+            schedulePeriodicFlush()
         }
     }
 
     fun schedulePeriodicFlush() {
         periodicFlushEnabled = true
-        scheduleNextFlush()
-    }
-
-    private fun scheduleNextFlush() {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
             scheduledFlushFuture = scheduledExecutor.schedule(
@@ -131,6 +124,7 @@ internal class EvaluationEventsProcessor(
         scheduledFlushFuture?.cancel(false)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
+        // Wait for any in-progress flush to complete, then flush any remaining events.
         flushMutex.withLock {
             flushInternal()
         }

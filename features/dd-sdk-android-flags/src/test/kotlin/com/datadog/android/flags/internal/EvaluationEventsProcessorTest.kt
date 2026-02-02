@@ -104,7 +104,8 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            aggregator = testedAggregator
+            aggregator = testedAggregator,
+            periodicFlushEnabled = false
         )
 
         lenient().whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
@@ -275,7 +276,7 @@ internal class EvaluationEventsProcessorTest {
     // region Constructor with periodicFlushEnabled
 
     @Test
-    fun `M auto-schedule W constructor { periodicFlushEnabled = true }`() {
+    fun `M auto-schedule W constructor { periodicFlushEnabled = true (default) }`() {
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
 
         EvaluationEventsProcessor(
@@ -284,22 +285,22 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            aggregator = testedAggregator,
-            periodicFlushEnabled = true
+            aggregator = testedAggregator
         )
 
         verify(mockScheduledExecutor).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test
-    fun `M not schedule W constructor { periodicFlushEnabled = false (default) }`() {
+    fun `M not schedule W constructor { periodicFlushEnabled = false }`() {
         EvaluationEventsProcessor(
             writer = mockWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            aggregator = testedAggregator
+            aggregator = testedAggregator,
+            periodicFlushEnabled = false
         )
 
         verify(mockScheduledExecutor, never()).schedule(any<Runnable>(), any(), any())
