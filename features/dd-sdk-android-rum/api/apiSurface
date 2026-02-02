@@ -85,6 +85,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier?): Builder
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
+    fun trackResourceHeaders(com.datadog.android.rum.configuration.ResourceHeadersConfiguration): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -178,6 +179,52 @@ class com.datadog.android.rum._RumInternalProxy
     fun setRumSessionTypeOverride(com.datadog.android.rum.RumConfiguration.Builder, RumSessionType): com.datadog.android.rum.RumConfiguration.Builder
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
+class com.datadog.android.rum.configuration.ResourceHeadersConfiguration
+  class Builder
+    fun excludeDefaultHeaders(): Builder
+    fun captureRequestHeaders(List<String>): Builder
+    fun captureResponseHeaders(List<String>): Builder
+    fun excludeRequestHeaders(List<String>): Builder
+    fun excludeResponseHeaders(List<String>): Builder
+    fun addRule(HeaderCaptureRule): Builder
+    fun build(): ResourceHeadersConfiguration
+  companion object 
+    val DEFAULT_REQUEST_HEADERS: List<String>
+    val DEFAULT_RESPONSE_HEADERS: List<String>
+    val FORBIDDEN_HEADERS: Set<String>
+    const val HEADER_SIZE_LIMIT_BYTES: Int
+data class com.datadog.android.rum.configuration.HeaderCaptureRule
+  constructor(UrlMatcher? = null, List<HeaderMatcher> = emptyList(), List<HeaderMatcher> = emptyList())
+  class Builder
+    fun build(): HeaderCaptureRule
+sealed class com.datadog.android.rum.configuration.UrlMatcher
+  abstract fun matches(String): Boolean
+  data class Exact : UrlMatcher
+    constructor(String)
+    override fun matches(String): Boolean
+  data class Pattern : UrlMatcher
+    constructor(Regex)
+    override fun matches(String): Boolean
+  data class Predicate : UrlMatcher
+    constructor((String) -> Boolean)
+    override fun matches(String): Boolean
+  companion object 
+    fun exact(String): UrlMatcher
+    fun regex(String): UrlMatcher
+    fun regex(Regex): UrlMatcher
+    fun predicate((String) -> Boolean): UrlMatcher
+interface com.datadog.android.rum.configuration.HeaderValueMapper
+  fun map(String): String
+sealed class com.datadog.android.rum.configuration.HeaderMatcher
+  abstract val valueMapper: HeaderValueMapper?
+  data class Exact : HeaderMatcher
+    constructor(String, HeaderValueMapper? = null)
+  data class Pattern : HeaderMatcher
+    constructor(Regex, HeaderValueMapper? = null)
+  companion object 
+    fun exact(String, HeaderValueMapper? = null): HeaderMatcher
+    fun regex(String, HeaderValueMapper? = null): HeaderMatcher
+    fun regex(Regex, HeaderValueMapper? = null): HeaderMatcher
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
@@ -1363,7 +1410,7 @@ data class com.datadog.android.rum.model.ResourceEvent
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
   data class Resource
-    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, RenderBlockingStatus? = null, Worker? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, kotlin.String? = null, DeliveryType? = null, Provider? = null, Graphql? = null)
+    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, Request? = null, Response? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, RenderBlockingStatus? = null, Worker? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, kotlin.String? = null, DeliveryType? = null, Provider? = null, Graphql? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Resource
@@ -1398,6 +1445,18 @@ data class com.datadog.android.rum.model.ResourceEvent
     companion object 
       fun fromJson(kotlin.String): ContainerView
       fun fromJsonObject(com.google.gson.JsonObject): ContainerView
+  data class Request
+    constructor(RequestHeaders? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Request
+      fun fromJsonObject(com.google.gson.JsonObject): Request
+  data class Response
+    constructor(RequestHeaders? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Response
+      fun fromJsonObject(com.google.gson.JsonObject): Response
   data class Worker
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
@@ -1452,6 +1511,12 @@ data class com.datadog.android.rum.model.ResourceEvent
     companion object 
       fun fromJson(kotlin.String): Graphql
       fun fromJsonObject(com.google.gson.JsonObject): Graphql
+  data class RequestHeaders
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): RequestHeaders
+      fun fromJsonObject(com.google.gson.JsonObject): RequestHeaders
   data class Error
     constructor(kotlin.String, kotlin.String? = null, kotlin.collections.List<Location>? = null, kotlin.collections.List<Path>? = null)
     fun toJson(): com.google.gson.JsonElement

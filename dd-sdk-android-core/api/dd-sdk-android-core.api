@@ -841,10 +841,20 @@ public final class com/datadog/android/core/internal/net/HttpSpec$ContentType {
 }
 
 public final class com/datadog/android/core/internal/net/HttpSpec$Headers {
+	public static final field ACCEPT Ljava/lang/String;
+	public static final field ACCEPT_ENCODING Ljava/lang/String;
+	public static final field AGE Ljava/lang/String;
+	public static final field CACHE_CONTROL Ljava/lang/String;
+	public static final field CONTENT_ENCODING Ljava/lang/String;
 	public static final field CONTENT_LENGTH Ljava/lang/String;
 	public static final field CONTENT_TYPE Ljava/lang/String;
+	public static final field ETAG Ljava/lang/String;
+	public static final field EXPIRES Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$Headers;
+	public static final field SERVER_TIMING Ljava/lang/String;
+	public static final field VARY Ljava/lang/String;
 	public static final field WEBSOCKET_ACCEPT_HEADER Ljava/lang/String;
+	public static final field X_CACHE Ljava/lang/String;
 }
 
 public final class com/datadog/android/core/internal/net/HttpSpec$Method {

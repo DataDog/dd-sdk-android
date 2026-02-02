@@ -60,6 +60,36 @@
               "minimum": 0,
               "readOnly": true
             },
+            "request" : {
+              "type": "object",
+              "description": "Request properties",
+              "properties": {
+                "headers": {
+                  "type": "object",
+                  "description": "HTTP request headers",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
+            "response": {
+              "type": "object",
+              "description": "Response properties",
+              "properties": {
+                "headers": {
+                  "type": "object",
+                  "description": "HTTP response headers",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
             "duration": {
               "type": "integer",
               "description": "Duration of the resource",

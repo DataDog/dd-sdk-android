@@ -73,7 +73,8 @@ internal class ConfigurationRumForgeryFactory :
             rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
             collectAccessibility = forge.aBool(),
             disableJankStats = false,
-            insightsCollector = mock()
+            insightsCollector = mock(),
+            resourceHeadersConfiguration = forge.aNullable { getForgery() }
         )
     }
 }

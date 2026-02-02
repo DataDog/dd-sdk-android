@@ -107,6 +107,18 @@ object RumAttributes {
     const val RESOURCE_TIMINGS: String = "_dd.resource_timings"
 
     /**
+     * Captured HTTP request headers from network requests.
+     * This attribute contains a map of header names to values.
+     */
+    internal const val REQUEST_HEADERS: String = "_dd.resource.request_headers"
+
+    /**
+     * Captured HTTP response headers from network responses.
+     * This attribute contains a map of header names to values.
+     */
+    internal const val RESPONSE_HEADERS: String = "_dd.resource.response_headers"
+
+    /**
      * GraphQL operation type (String).
      */
     const val GRAPHQL_OPERATION_TYPE: String = "_dd.graphql.operation_type"

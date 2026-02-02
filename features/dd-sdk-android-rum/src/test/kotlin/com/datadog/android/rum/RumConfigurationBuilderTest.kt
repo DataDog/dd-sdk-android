@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
+import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
@@ -738,5 +739,33 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.insightsCollector)
             .isInstanceOf(NoOpInsightsCollector::class.java)
+    }
+
+    @Test
+    fun `M set resource headers configuration W trackResourceHeaders()`() {
+        // Given
+        val headersConfig = ResourceHeadersConfiguration.Builder()
+            .captureRequestHeaders(listOf("X-Request-ID", "X-Correlation-ID"))
+            .captureResponseHeaders(listOf("X-RateLimit-Remaining"))
+            .build()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .trackResourceHeaders(headersConfig)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.resourceHeadersConfiguration)
+            .isEqualTo(headersConfig)
+    }
+
+    @Test
+    fun `M have null resource headers configuration by default W build()`() {
+        // When
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.resourceHeadersConfiguration)
+            .isNull()
     }
 }

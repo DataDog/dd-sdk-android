@@ -16,10 +16,12 @@ import com.datadog.android.core.SdkReference
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.resource.ResourceId
@@ -81,16 +83,27 @@ class RumResourceInstrumentation(
 
     /**
      * Stops tracking a network resource with a successful response.
+     *
+     * This method automatically extracts captured headers based on the RUM configuration
+     * ([com.datadog.android.rum.RumConfiguration.Builder.trackResourceHeaders]).
+     *
      * @param requestInfo the request information
      * @param responseInfo the response information
      */
     fun stopResource(requestInfo: HttpRequestInfo, responseInfo: HttpResponseInfo) = ifRumEnabled { sdkCore ->
+        val headerAttributes = extractHeaderAttributes(
+            sdkCore = sdkCore,
+            requestHeaders = requestInfo.headers,
+            responseHeaders = responseInfo.headers,
+            url = requestInfo.url
+        )
+
         sdkCore.networkMonitor?.stopResource(
             buildResourceId(requestInfo, generateUuid = false),
             responseInfo.statusCode,
             responseInfo.getBodyLength(),
             responseInfo.getRumResourceKind(),
-            rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null)
+            rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null) + headerAttributes
         )
     }
 
@@ -139,6 +152,31 @@ class RumResourceInstrumentation(
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, networkInstrumentationName, prefix) }
             )
+        }
+    }
+
+    private fun extractHeaderAttributes(
+        sdkCore: FeatureSdkCore,
+        requestHeaders: Map<String, List<String>>,
+        responseHeaders: Map<String, List<String>>,
+        url: String?
+    ): Map<String, Any?> {
+        val configuration = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.configuration
+            ?.resourceHeadersConfiguration ?: return emptyMap()
+
+        val extractor = ResourceHeadersExtractor(configuration, sdkCore.internalLogger)
+        val extractedRequestHeaders = extractor.extractRequestHeaders(requestHeaders, url)
+        val extractedResponseHeaders = extractor.extractResponseHeaders(responseHeaders, url)
+
+        return buildMap {
+            if (extractedRequestHeaders.isNotEmpty()) {
+                put(RumAttributes.REQUEST_HEADERS, extractedRequestHeaders)
+            }
+            if (extractedResponseHeaders.isNotEmpty()) {
+                put(RumAttributes.RESPONSE_HEADERS, extractedResponseHeaders)
+            }
         }
     }
 

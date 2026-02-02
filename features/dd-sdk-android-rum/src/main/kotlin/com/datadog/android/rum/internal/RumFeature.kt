@@ -40,6 +40,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -175,6 +176,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    internal var resourceHeadersConfiguration: ResourceHeadersConfiguration? = null
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     private var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -199,6 +201,7 @@ internal class RumFeature(
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
         insightsCollector = configuration.insightsCollector
+        resourceHeadersConfiguration = configuration.resourceHeadersConfiguration
 
         dataWriter = createDataWriter(
             configuration,
@@ -351,6 +354,7 @@ internal class RumFeature(
         anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
+        resourceHeadersConfiguration = null
 
         cleanupInfoProviders()
 
@@ -763,7 +767,8 @@ internal class RumFeature(
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
-        val insightsCollector: InsightsCollector
+        val insightsCollector: InsightsCollector,
+        val resourceHeadersConfiguration: ResourceHeadersConfiguration?
     )
 
     internal companion object {
@@ -816,7 +821,8 @@ internal class RumFeature(
             rumSessionTypeOverride = null,
             collectAccessibility = false,
             disableJankStats = false,
-            insightsCollector = NoOpInsightsCollector()
+            insightsCollector = NoOpInsightsCollector(),
+            resourceHeadersConfiguration = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

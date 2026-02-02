@@ -52,6 +52,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(FrameMetricDataForgeryFactory())
         forge.addFactory(ViewUIPerformanceReportForgeryFactory())
         forge.addFactory(SlowFramesConfigurationForgeryFactory())
+        forge.addFactory(ResourceHeadersConfigurationForgeryFactory())
         forge.addFactory(DisplayInfoForgeryFactory())
         forge.addFactory(BatteryInfoForgeryFactory())
 

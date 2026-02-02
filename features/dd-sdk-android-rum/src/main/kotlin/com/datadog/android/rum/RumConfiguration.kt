@@ -10,6 +10,7 @@ import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
@@ -373,6 +374,30 @@ data class RumConfiguration internal constructor(
          */
         fun trackAnonymousUser(enabled: Boolean): Builder {
             rumConfig = rumConfig.copy(trackAnonymousUser = enabled)
+            return this
+        }
+
+        /**
+         * Enables capturing HTTP headers from network requests and responses.
+         *
+         * When enabled, the specified headers will be captured and added to RUM resource events.
+         * Headers can be queried in RUM Explorer using:
+         * - `@resource.request.headers.<header_name>` for request headers
+         * - `@resource.response.headers.<header_name>` for response headers
+         *
+         * By default, a set of headers are captured automatically. See [ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS]
+         * and [ResourceHeadersConfiguration.DEFAULT_RESPONSE_HEADERS] for the complete list.
+         * Use [ResourceHeadersConfiguration.Builder.excludeDefaultHeaders] to disable them.
+         *
+         * Certain sensitive headers (Authorization, Cookie, etc.) are never captured
+         * regardless of configuration. See [ResourceHeadersConfiguration.FORBIDDEN_HEADERS].
+         *
+         * @param configuration The headers configuration specifying which headers to capture.
+         * @return This builder for chaining.
+         * @see ResourceHeadersConfiguration
+         */
+        fun trackResourceHeaders(configuration: ResourceHeadersConfiguration): Builder {
+            rumConfig = rumConfig.copy(resourceHeadersConfiguration = configuration)
             return this
         }
 

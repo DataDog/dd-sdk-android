@@ -324,6 +324,16 @@ object com.datadog.android.core.internal.net.HttpSpec
   object Headers
     const val CONTENT_TYPE: String
     const val CONTENT_LENGTH: String
+    const val CONTENT_ENCODING: String
+    const val CACHE_CONTROL: String
+    const val ETAG: String
+    const val AGE: String
+    const val EXPIRES: String
+    const val VARY: String
+    const val SERVER_TIMING: String
+    const val X_CACHE: String
+    const val ACCEPT: String
+    const val ACCEPT_ENCODING: String
     const val WEBSOCKET_ACCEPT_HEADER: String
   object ContentType
     const val TEXT_PLAIN: String

@@ -60,6 +60,36 @@ object HttpSpec {
         /** Content-Length header name. */
         const val CONTENT_LENGTH: String = "Content-Length"
 
+        /** Content-Encoding header name. */
+        const val CONTENT_ENCODING: String = "Content-Encoding"
+
+        /** Cache-Control header name. */
+        const val CACHE_CONTROL: String = "Cache-Control"
+
+        /** ETag header name. */
+        const val ETAG: String = "ETag"
+
+        /** Age header name. */
+        const val AGE: String = "Age"
+
+        /** Expires header name. */
+        const val EXPIRES: String = "Expires"
+
+        /** Vary header name. */
+        const val VARY: String = "Vary"
+
+        /** Server-Timing header name. */
+        const val SERVER_TIMING: String = "Server-Timing"
+
+        /** X-Cache header name. */
+        const val X_CACHE: String = "X-Cache"
+
+        /** Accept header name. */
+        const val ACCEPT: String = "Accept"
+
+        /** Accept-Encoding header name. */
+        const val ACCEPT_ENCODING: String = "Accept-Encoding"
+
         /** Sec-WebSocket-Accept header name. */
         const val WEBSOCKET_ACCEPT_HEADER: String = "Sec-WebSocket-Accept"
     }
