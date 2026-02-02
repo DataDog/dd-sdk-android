@@ -1,6 +1,7 @@
 [versions]
 # Commons
 apollo = "4.3.3"
+benchmarkGradlePlugin = "1.2.4"
 cronetApi = "141.7340.3"
 cronetPlayServices = "18.1.1"
 gson = "2.10.1"
@@ -106,12 +107,14 @@ openTelemetry = "1.40.0"
 re2j = "1.7"
 zstd = "1.5.7-6@aar"
 material3Android = "1.1.2"
+androidXBenchmark = "1.2.4"
 
 [libraries]
 
 # Classpaths
 # Gradle version catalog doesn't allow names to end with plugin, that is why strange names
 androidToolsGradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "androidToolsPlugin" }
+androidx-benchmark-gradle-plugin = { module = "androidx.benchmark:benchmark-gradle-plugin", version.ref = "benchmarkGradlePlugin" }
 apolloRuntime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinSPGradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
@@ -200,6 +203,9 @@ androidXEspressoCore = { module = "androidx.test.espresso:espresso-core", versio
 androidXEspressoContrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espresso" }
 androidXEspressoIntents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espresso" }
 androidXEspressoWeb = { module = "androidx.test.espresso:espresso-web", version.ref = "espresso" }
+
+# Benchmark
+androidXBenchmarkJunit4 = { module = "androidx.benchmark:benchmark-junit4", version.ref = "androidXBenchmark" }
 
 # Test tools
 elmyr = { module = "com.github.xgouchet.Elmyr:core", version.ref = "elmyr" }
@@ -389,3 +395,4 @@ nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", versi
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
 composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 apolloPlugin = { id = "com.apollographql.apollo", version.ref = "apollo" }
+androidXBenchmarkPlugin = { id = "androidx.benchmark", version.ref = "androidXBenchmark" }
