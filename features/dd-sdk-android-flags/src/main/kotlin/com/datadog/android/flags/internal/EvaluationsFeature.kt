@@ -15,6 +15,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.internal.net.EvaluationsRequestFactory
 import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
 import com.datadog.android.flags.model.EvaluationContext
@@ -84,13 +85,14 @@ internal class EvaluationsFeature(
         scheduledExecutor = executor
 
         val writer = EvaluationEventRecordWriter(sdkCore)
+        val aggregator = EvaluationAggregator(DEFAULT_MAX_AGGREGATIONS)
         evaluationProcessor = EvaluationEventsProcessor(
             writer = writer,
             timeProvider = sdkCore.timeProvider,
             scheduledExecutor = executor,
             internalLogger = sdkCore.internalLogger,
             flushIntervalMs = flagsConfiguration.evaluationFlushIntervalMs,
-            maxAggregations = DEFAULT_MAX_AGGREGATIONS
+            aggregator = aggregator
         )
         evaluationProcessor?.schedulePeriodicFlush()
 
