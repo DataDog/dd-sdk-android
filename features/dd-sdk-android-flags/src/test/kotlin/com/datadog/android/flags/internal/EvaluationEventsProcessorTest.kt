@@ -260,7 +260,10 @@ internal class EvaluationEventsProcessorTest {
         checkNotNull(taskRunnable).run()
 
         verify(mockWriter, never()).writeAll(any())
-        verify(mockScheduledExecutor, times(2)).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
+        verify(
+            mockScheduledExecutor,
+            times(2)
+        ).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
     }
 
     // endregion
