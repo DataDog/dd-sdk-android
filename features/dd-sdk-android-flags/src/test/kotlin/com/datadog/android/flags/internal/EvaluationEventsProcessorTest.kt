@@ -7,7 +7,9 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.aggregation.DDContext
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -54,6 +56,9 @@ import java.util.concurrent.TimeUnit
 internal class EvaluationEventsProcessorTest {
 
     @Mock
+    lateinit var mockInternalSdkCore: InternalSdkCore
+
+    @Mock
     lateinit var mockWriter: EvaluationEventWriter
 
     @Mock
@@ -67,6 +72,9 @@ internal class EvaluationEventsProcessorTest {
 
     @Mock
     lateinit var mockScheduledFuture: ScheduledFuture<*>
+
+    @Mock
+    lateinit var mockDatadogContext: DatadogContext
 
     @LongForgery(min = 1000000L)
     var fakeTimestamp = 0L
@@ -89,9 +97,12 @@ internal class EvaluationEventsProcessorTest {
     private lateinit var testedProcessor: EvaluationEventsProcessor
     private lateinit var fakeContext: EvaluationContext
     private lateinit var fakeData: PrecomputedFlag
-    private lateinit var fakeDDContext: DDContext
+    private lateinit var fakeService: String
+    private lateinit var fakeApplicationId: String
+    private lateinit var fakeViewName: String
 
     fun createEvaluationEventsProcessor(
+        internalSdkCore: InternalSdkCore = mockInternalSdkCore,
         writer: EvaluationEventWriter,
         timeProvider: TimeProvider,
         scheduledExecutor: ScheduledExecutorService,
@@ -100,6 +111,7 @@ internal class EvaluationEventsProcessorTest {
         maxAggregations: Int = TEST_MAX_AGGREGATIONS
     ): EvaluationEventsProcessor {
         return EvaluationEventsProcessor(
+            internalSdkCore = internalSdkCore,
             writer = writer,
             timeProvider = timeProvider,
             scheduledExecutor = scheduledExecutor,
@@ -111,6 +123,19 @@ internal class EvaluationEventsProcessorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeService = forge.anAlphabeticalString()
+        fakeApplicationId = forge.anAlphabeticalString()
+        fakeViewName = forge.anAlphabeticalString()
+
+        // Setup mock DatadogContext with RUM context
+        val rumContext = mapOf<String, Any?>(
+            "application_id" to fakeApplicationId,
+            "view_name" to fakeViewName
+        )
+        whenever(mockDatadogContext.service) doReturn fakeService
+        whenever(mockDatadogContext.featuresContext) doReturn mapOf(Feature.RUM_FEATURE_NAME to rumContext)
+        whenever(mockInternalSdkCore.getDatadogContext(any())) doReturn mockDatadogContext
+
         testedProcessor = createEvaluationEventsProcessor(
             writer = mockWriter,
             timeProvider = mockTimeProvider,
@@ -128,12 +153,6 @@ internal class EvaluationEventsProcessorTest {
             extraLogging = JSONObject(),
             reason = ResolutionReason.TARGETING_MATCH.name
         )
-        fakeDDContext = DDContext(
-            service = forge.anAlphabeticalString(),
-            applicationId = forge.anAlphabeticalString(),
-            viewId = forge.anAlphabeticalString(),
-            viewName = forge.anAlphabeticalString()
-        )
 
         Mockito.lenient().whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
     }
@@ -147,7 +166,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -172,7 +190,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -182,7 +199,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -192,7 +208,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -219,7 +234,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -229,7 +243,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             anotherFlagName,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -256,7 +269,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -266,7 +278,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             anotherContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -295,7 +306,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -305,7 +315,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             anotherData.variationKey,
             anotherData.allocationKey,
             anotherData.reason,
@@ -337,7 +346,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             null,
             null,
             null,
@@ -347,7 +355,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             null,
             null,
             null,
@@ -357,7 +364,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             null,
             null,
             null,
@@ -388,7 +394,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             null,
             null,
             null,
@@ -398,7 +403,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             null,
             null,
             null,
@@ -427,7 +431,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -437,7 +440,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -447,7 +449,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -476,7 +477,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -523,7 +523,6 @@ internal class EvaluationEventsProcessorTest {
             testProcessor.processEvaluation(
                 fakeFlagKey,
                 uniqueContext,
-                fakeDDContext,
                 fakeData.variationKey,
                 fakeData.allocationKey,
                 fakeData.reason,
@@ -545,7 +544,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -558,7 +556,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -587,7 +584,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -614,7 +610,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -738,7 +733,6 @@ internal class EvaluationEventsProcessorTest {
         testedProcessor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -880,7 +874,6 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         fakeContext,
-                        fakeDDContext,
                         fakeData.variationKey,
                         fakeData.allocationKey,
                         fakeData.reason,
@@ -927,7 +920,6 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         uniqueContext,
-                        fakeDDContext,
                         fakeData.variationKey,
                         fakeData.allocationKey,
                         fakeData.reason,
@@ -971,7 +963,6 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         context,
-                        fakeDDContext,
                         fakeData.variationKey,
                         fakeData.allocationKey,
                         fakeData.reason,
@@ -1034,7 +1025,6 @@ internal class EvaluationEventsProcessorTest {
         processor.processEvaluation(
             fakeFlagKey,
             fakeContext,
-            fakeDDContext,
             fakeData.variationKey,
             fakeData.allocationKey,
             fakeData.reason,
@@ -1078,7 +1068,6 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         uniqueContext,
-                        fakeDDContext,
                         fakeVariantKey,
                         fakeAllocationKey,
                         fakeData.reason,
@@ -1137,7 +1126,6 @@ internal class EvaluationEventsProcessorTest {
             slowProcessor.processEvaluation(
                 fakeFlagKey,
                 context,
-                fakeDDContext,
                 fakeData.variationKey,
                 fakeData.allocationKey,
                 fakeData.reason,
@@ -1164,7 +1152,6 @@ internal class EvaluationEventsProcessorTest {
             slowProcessor.processEvaluation(
                 fakeFlagKey,
                 context,
-                fakeDDContext,
                 fakeData.variationKey,
                 fakeData.allocationKey,
                 fakeData.reason,

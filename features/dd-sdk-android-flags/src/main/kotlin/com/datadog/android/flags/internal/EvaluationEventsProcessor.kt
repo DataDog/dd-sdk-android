@@ -7,9 +7,10 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.aggregation.AggregationKey
 import com.datadog.android.flags.internal.aggregation.AggregationStats
-import com.datadog.android.flags.internal.aggregation.DDContext
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.ConcurrentHashMap
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Thread-safe for concurrent [processEvaluation] and [flush] calls.
  */
 internal class EvaluationEventsProcessor(
+    private val internalSdkCore: InternalSdkCore,
     private val writer: EvaluationEventWriter,
     private val timeProvider: TimeProvider,
     private val scheduledExecutor: ScheduledExecutorService,
@@ -45,7 +47,6 @@ internal class EvaluationEventsProcessor(
     fun processEvaluation(
         flagKey: String,
         context: EvaluationContext,
-        ddContext: DDContext,
         variantKey: String?,
         allocationKey: String?,
         reason: String?,
@@ -54,19 +55,37 @@ internal class EvaluationEventsProcessor(
     ) {
         val timestamp = timeProvider.getDeviceTimestampMillis()
 
+        // Fetch current DatadogContext to get service and RUM information
+        val datadogContext = internalSdkCore.getDatadogContext(
+            withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+        )
+        val rumContext = datadogContext?.featuresContext?.get(Feature.RUM_FEATURE_NAME)
+        val service = datadogContext?.service
+        val rumApplicationId = rumContext?.get(RUM_APPLICATION_ID) as? String
+        val rumViewName = rumContext?.get(RUM_VIEW_NAME) as? String
+
         val key = AggregationKey(
             flagKey = flagKey,
             variantKey = variantKey,
             allocationKey = allocationKey,
             targetingKey = context.targetingKey,
-            viewName = ddContext.viewName,
+            viewName = rumViewName,
             errorCode = errorCode
         )
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
         val existing = aggregationMap.putIfAbsent(
             key,
-            AggregationStats(key, timestamp, context, ddContext, reason, errorMessage)
+            AggregationStats(
+                aggregationKey = key,
+                firstTimestamp = timestamp,
+                context = context,
+                service = service,
+                rumApplicationId = rumApplicationId,
+                rumViewName = rumViewName,
+                reason = reason,
+                errorMessage = errorMessage
+            )
         )
 
         existing?.recordEvaluation(timestamp, errorMessage)
@@ -74,6 +93,11 @@ internal class EvaluationEventsProcessor(
         if (aggregationMap.size >= maxAggregations) {
             flush(true)
         }
+    }
+
+    private companion object {
+        private const val RUM_APPLICATION_ID = "application_id"
+        private const val RUM_VIEW_NAME = "view_name"
     }
 
     /**

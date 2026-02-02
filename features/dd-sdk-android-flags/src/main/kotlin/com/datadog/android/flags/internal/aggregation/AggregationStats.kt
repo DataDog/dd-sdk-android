@@ -25,7 +25,9 @@ import com.datadog.android.flags.model.ResolutionReason
  * @param aggregationKey the aggregation key for this stats bundle.
  * @param firstTimestamp the timestamp of the first evaluation
  * @param context the evaluation context
- * @param ddContext the Datadog context (service, RUM application/view)
+ * @param service the service name from DatadogContext
+ * @param rumApplicationId the RUM application ID (null if RUM not active)
+ * @param rumViewName the RUM view name (null if no active view)
  * @param reason the resolution reason (null for error evaluations, non-null for success evaluations)
  * @param errorMessage optional error message (detailed, for logging)
  */
@@ -33,7 +35,9 @@ internal class AggregationStats(
     private val aggregationKey: AggregationKey,
     firstTimestamp: Long,
     private val context: EvaluationContext,
-    private val ddContext: DDContext,
+    private val service: String?,
+    private val rumApplicationId: String?,
+    private val rumViewName: String?,
     private val reason: String?,
     errorMessage: String?
 ) {
@@ -92,11 +96,11 @@ internal class AggregationStats(
         val eventContext = FlagEvaluation.Context(
             evaluation = null, // Evaluation context reserved for future use
             dd = FlagEvaluation.Dd(
-                service = ddContext.service,
-                rum = ddContext.applicationId?.let { appId ->
+                service = service,
+                rum = rumApplicationId?.let { appId ->
                     FlagEvaluation.Rum(
                         application = FlagEvaluation.Application(id = appId),
-                        view = ddContext.viewName?.let { viewName ->
+                        view = rumViewName?.let { viewName ->
                             FlagEvaluation.View(url = viewName)
                         }
                     )
