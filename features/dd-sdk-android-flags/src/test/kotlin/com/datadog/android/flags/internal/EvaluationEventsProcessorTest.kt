@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.model.ResolutionReason
@@ -83,6 +84,7 @@ internal class EvaluationEventsProcessorTest {
     lateinit var fakeAllocationKey: String
 
     private lateinit var testedProcessor: EvaluationEventsProcessor
+    private lateinit var testedAggregator: EvaluationAggregator
     private lateinit var fakeContext: EvaluationContext
     private lateinit var fakeService: String
     private lateinit var fakeApplicationId: String
@@ -94,6 +96,7 @@ internal class EvaluationEventsProcessorTest {
         fakeApplicationId = forge.anAlphabeticalString()
         fakeViewName = forge.anAlphabeticalString()
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        testedAggregator = EvaluationAggregator(TEST_MAX_AGGREGATIONS)
 
         testedProcessor = EvaluationEventsProcessor(
             writer = mockWriter,
@@ -101,7 +104,7 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS
+            aggregator = testedAggregator
         )
 
         lenient().whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
@@ -122,13 +125,14 @@ internal class EvaluationEventsProcessorTest {
     @Test
     fun `M trigger auto-flush W processEvaluation() { max aggregations reached }`() {
         val maxAggregations = 5
+        val aggregator = EvaluationAggregator(maxAggregations)
         val processor = EvaluationEventsProcessor(
             writer = mockWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = maxAggregations
+            aggregator = aggregator
         )
 
         repeat(maxAggregations) { index ->
@@ -280,7 +284,7 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS,
+            aggregator = testedAggregator,
             periodicFlushEnabled = true
         )
 
@@ -295,7 +299,7 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS
+            aggregator = testedAggregator
         )
 
         verify(mockScheduledExecutor, never()).schedule(any<Runnable>(), any(), any())
@@ -494,7 +498,7 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS
+            aggregator = testedAggregator
         )
 
         processor.processEvaluation(
@@ -538,7 +542,7 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS
+            aggregator = testedAggregator
         )
 
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
@@ -584,13 +588,14 @@ internal class EvaluationEventsProcessorTest {
             }
         }
 
+        val aggregator = EvaluationAggregator(Int.MAX_VALUE)
         val processor = EvaluationEventsProcessor(
             writer = trackingWriter,
             timeProvider = mockTimeProvider,
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = Int.MAX_VALUE
+            aggregator = aggregator
         )
 
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
@@ -658,7 +663,7 @@ internal class EvaluationEventsProcessorTest {
             scheduledExecutor = mockScheduledExecutor,
             internalLogger = mockInternalLogger,
             flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
-            maxAggregations = TEST_MAX_AGGREGATIONS
+            aggregator = testedAggregator
         )
 
         repeat(50) { index ->

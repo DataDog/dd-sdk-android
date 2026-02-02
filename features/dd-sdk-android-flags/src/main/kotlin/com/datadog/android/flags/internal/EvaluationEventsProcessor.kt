@@ -26,10 +26,9 @@ internal class EvaluationEventsProcessor(
     private val scheduledExecutor: ScheduledExecutorService,
     private val internalLogger: InternalLogger,
     private val flushIntervalMs: Long,
-    maxAggregations: Int,
+    private val aggregator: EvaluationAggregator,
     periodicFlushEnabled: Boolean = false
 ) {
-    private val aggregator = EvaluationAggregator(maxAggregations)
     private val flushMutex = ReentrantLock()
 
     @Volatile
