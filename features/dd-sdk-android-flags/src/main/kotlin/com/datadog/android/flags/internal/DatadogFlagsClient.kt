@@ -214,10 +214,14 @@ internal class DatadogFlagsClient(
     ) {
         val feature = evaluationsFeature ?: return
         val processor = feature.evaluationProcessor ?: return
+        val ddContext = feature.ddContext
 
         processor.processEvaluation(
             flagKey = name,
             context = context,
+            service = ddContext?.service,
+            rumApplicationId = ddContext?.rumApplicationId,
+            rumViewName = ddContext?.rumViewName,
             variantKey = data?.variationKey,
             allocationKey = data?.allocationKey,
             reason = data?.reason,

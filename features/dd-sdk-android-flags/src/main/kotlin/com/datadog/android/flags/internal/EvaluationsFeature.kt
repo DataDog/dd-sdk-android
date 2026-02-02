@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import android.content.Context
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
@@ -28,7 +29,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class EvaluationsFeature(
     private val sdkCore: FeatureSdkCore,
     internal val flagsConfiguration: FlagsConfiguration
-) : StorageBackedFeature {
+) : StorageBackedFeature,
+    FeatureContextUpdateReceiver {
+
+    /**
+     * Cached Datadog context information for evaluation events.
+     */
+    internal data class DDContext(val service: String?, val rumApplicationId: String?, val rumViewName: String?)
 
     internal val initialized = AtomicBoolean(false)
 
@@ -41,6 +48,14 @@ internal class EvaluationsFeature(
         private set
 
     private var scheduledExecutor: ScheduledExecutorService? = null
+
+    /**
+     * Cached context for evaluation events.
+     * Updated when RUM context changes via [onContextUpdate].
+     */
+    @Volatile
+    internal var ddContext: DDContext? = null
+        private set
 
     // region Feature
 
@@ -57,13 +72,20 @@ internal class EvaluationsFeature(
             return
         }
 
+        // Register for context updates
+        sdkCore.setContextUpdateReceiver(this)
+
+        // Get initial service from DatadogContext
+        val internalSdkCore = sdkCore as? InternalSdkCore
+        val initialService = internalSdkCore?.getDatadogContext()?.service
+        ddContext = DDContext(service = initialService, rumApplicationId = null, rumViewName = null)
+
         // Create the evaluation processor
         val executor = sdkCore.createScheduledExecutorService(EXECUTOR_NAME)
         scheduledExecutor = executor
 
         val writer = EvaluationEventRecordWriter(sdkCore)
         evaluationProcessor = EvaluationEventsProcessor(
-            internalSdkCore = sdkCore as InternalSdkCore,
             writer = writer,
             timeProvider = sdkCore.timeProvider,
             scheduledExecutor = executor,
@@ -77,6 +99,8 @@ internal class EvaluationsFeature(
     }
 
     override fun onStop() {
+        sdkCore.removeContextUpdateReceiver(this)
+
         evaluationProcessor?.stop()
         evaluationProcessor = null
 
@@ -84,7 +108,23 @@ internal class EvaluationsFeature(
         scheduledExecutor?.shutdown()
         scheduledExecutor = null
 
+        ddContext = null
         initialized.set(false)
+    }
+
+    // endregion
+
+    // region FeatureContextUpdateReceiver
+
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName == Feature.RUM_FEATURE_NAME) {
+            val currentContext = ddContext
+            ddContext = DDContext(
+                service = currentContext?.service,
+                rumApplicationId = context[RUM_APPLICATION_ID] as? String,
+                rumViewName = context[RUM_VIEW_NAME] as? String
+            )
+        }
     }
 
     // endregion
@@ -92,5 +132,7 @@ internal class EvaluationsFeature(
     internal companion object {
         internal const val DEFAULT_MAX_AGGREGATIONS = 1000
         private const val EXECUTOR_NAME = "flags-evaluation"
+        private const val RUM_APPLICATION_ID = "application_id"
+        private const val RUM_VIEW_NAME = "view_name"
     }
 }
