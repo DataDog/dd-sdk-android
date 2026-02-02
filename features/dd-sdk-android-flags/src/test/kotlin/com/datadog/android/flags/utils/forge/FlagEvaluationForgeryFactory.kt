@@ -21,14 +21,14 @@ internal class FlagEvaluationForgeryFactory : ForgeryFactory<FlagEvaluation> {
 
         return FlagEvaluation(
             timestamp = firstEvalTimestamp,
-            flag = FlagEvaluation.Flag(forge.anAlphabeticalString()),
+            flag = FlagEvaluation.Identifier(forge.anAlphabeticalString()),
             variant = if (!isDefaultOrError) {
-                FlagEvaluation.Flag(forge.anAlphabeticalString())
+                FlagEvaluation.Identifier(forge.anAlphabeticalString())
             } else {
                 null
             },
             allocation = if (!isDefaultOrError) {
-                FlagEvaluation.Flag(forge.anAlphabeticalString())
+                FlagEvaluation.Identifier(forge.anAlphabeticalString())
             } else {
                 null
             },

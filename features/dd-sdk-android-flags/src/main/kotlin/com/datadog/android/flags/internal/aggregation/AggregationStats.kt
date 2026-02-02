@@ -106,9 +106,9 @@ internal class AggregationStats(
 
         return FlagEvaluation(
             timestamp = snapshotFirst,
-            flag = FlagEvaluation.Flag(aggregationKey.flagKey),
-            variant = aggregationKey.variantKey?.let { FlagEvaluation.Flag(it) },
-            allocation = aggregationKey.allocationKey?.let { FlagEvaluation.Flag(it) },
+            flag = FlagEvaluation.Identifier(aggregationKey.flagKey),
+            variant = aggregationKey.variantKey?.let { FlagEvaluation.Identifier(it) },
+            allocation = aggregationKey.allocationKey?.let { FlagEvaluation.Identifier(it) },
             targetingRule = null, // Not applicable
             targetingKey = aggregationKey.targetingKey,
             context = eventContext,
