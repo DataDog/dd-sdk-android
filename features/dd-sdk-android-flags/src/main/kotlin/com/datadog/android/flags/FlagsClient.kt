@@ -461,7 +461,7 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
-                    exposureProcessor = flagsFeature.exposureProcessor,
+                    exposureProcessor = flagsFeature.processor,
                     evaluationsFeature = flagsFeature.evaluationsFeature,
                     flagStateManager = flagStateManager
                 )
