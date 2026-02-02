@@ -17,6 +17,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.net.EvaluationsRequestFactory
 import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
+import com.datadog.android.flags.model.EvaluationContext
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -35,7 +36,7 @@ internal class EvaluationsFeature(
     /**
      * Cached Datadog context information for evaluation events.
      */
-    internal data class DDContext(val service: String?, val rumApplicationId: String?, val rumViewName: String?)
+    private data class DDContext(val service: String?, val rumApplicationId: String?, val rumViewName: String?)
 
     internal val initialized = AtomicBoolean(false)
 
@@ -44,8 +45,7 @@ internal class EvaluationsFeature(
      * Created during initialization and stopped during shutdown.
      */
     @Volatile
-    internal var evaluationProcessor: EvaluationEventsProcessor? = null
-        private set
+    private var evaluationProcessor: EvaluationEventsProcessor? = null
 
     private var scheduledExecutor: ScheduledExecutorService? = null
 
@@ -54,8 +54,7 @@ internal class EvaluationsFeature(
      * Updated when RUM context changes via [onContextUpdate].
      */
     @Volatile
-    internal var ddContext: DDContext? = null
-        private set
+    private var ddContext: DDContext? = null
 
     // region Feature
 
@@ -125,6 +124,39 @@ internal class EvaluationsFeature(
                 rumViewName = context[RUM_VIEW_NAME] as? String
             )
         }
+    }
+
+    // endregion
+
+    // region Evaluation Processing
+
+    /**
+     * Processes a flag evaluation event, adding the current DDContext.
+     */
+    internal fun processEvaluation(
+        flagKey: String,
+        context: EvaluationContext,
+        variantKey: String?,
+        allocationKey: String?,
+        reason: String?,
+        errorCode: String?,
+        errorMessage: String?
+    ) {
+        val processor = evaluationProcessor ?: return
+        val currentDdContext = ddContext
+
+        processor.processEvaluation(
+            flagKey = flagKey,
+            context = context,
+            service = currentDdContext?.service,
+            rumApplicationId = currentDdContext?.rumApplicationId,
+            rumViewName = currentDdContext?.rumViewName,
+            variantKey = variantKey,
+            allocationKey = allocationKey,
+            reason = reason,
+            errorCode = errorCode,
+            errorMessage = errorMessage
+        )
     }
 
     // endregion
