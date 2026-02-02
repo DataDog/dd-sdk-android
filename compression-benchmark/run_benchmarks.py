@@ -192,8 +192,31 @@ def parse_benchmark_json(json_path: Path) -> Dict:
     return results
 
 
-def get_compression_ratios_from_logcat() -> List[Dict]:
-    """Get compression ratio results from adb logcat."""
+def get_compression_ratios_from_device() -> List[Dict]:
+    """Get compression ratio results from device file or logcat."""
+    ratios = []
+    
+    # First try to read from the file saved on device
+    try:
+        # Try to pull the file from the device
+        result = subprocess.run(
+            ['adb', 'shell', 'cat', '/storage/emulated/0/Android/data/com.datadog.benchmark.compression.test/files/compression_ratios.json'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            try:
+                ratios = json.loads(result.stdout)
+                if ratios:
+                    return ratios
+            except json.JSONDecodeError:
+                pass
+    except Exception:
+        pass
+    
+    # Fallback to logcat
     try:
         result = subprocess.run(
             ['adb', 'logcat', '-d'],
@@ -202,7 +225,6 @@ def get_compression_ratios_from_logcat() -> List[Dict]:
             timeout=10
         )
         
-        ratios = []
         for line in result.stdout.split('\n'):
             if 'CompressionRatio' in line and '{' in line:
                 match = re.search(r'\{.*\}', line)
@@ -224,7 +246,7 @@ def get_compression_ratios_from_logcat() -> List[Dict]:
         print_warning("adb not found. Cannot read compression ratios from device.")
         return []
     except Exception as e:
-        print_warning(f"Error reading logcat: {e}")
+        print_warning(f"Error reading compression ratios: {e}")
         return []
 
 
@@ -382,8 +404,8 @@ Examples:
         print_warning(f"Benchmark JSON not found: {benchmark_json}")
         print_speed_table({})
     
-    # Get compression ratios from logcat
-    ratios = get_compression_ratios_from_logcat()
+    # Get compression ratios from device
+    ratios = get_compression_ratios_from_device()
     print_ratio_table(ratios)
     
     # Print footer

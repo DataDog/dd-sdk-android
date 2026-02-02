@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.compression
 
+import android.os.Bundle
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -16,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayOutputStream
+import java.io.File
 import com.github.luben.zstd.ZstdOutputStream as ZstdJniOutputStream
 import io.airlift.compress.v3.zstd.ZstdOutputStream as ZstdJavaOutputStream
 
@@ -79,6 +81,29 @@ class CompressionRatioTest {
         Log.i(TAG, "Gzip:      %.2f%%".format(avgGzipRatio * 100))
         Log.i(TAG, "Zstd JNI:  %.2f%%".format(avgZstdJniRatio * 100))
         Log.i(TAG, "Zstd Java: %.2f%%".format(avgZstdJavaRatio * 100))
+
+        // Write results to a file for the benchmark runner script to read
+        writeResultsToFile(results)
+
+        // Also output to instrumentation results
+        val bundle = Bundle()
+        bundle.putString("compression_ratios", results.joinToString("\n") { it.toJson() })
+        InstrumentationRegistry.getInstrumentation().sendStatus(0, bundle)
+    }
+
+    private fun writeResultsToFile(results: List<CompressionResult>) {
+        try {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val outputDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val outputFile = File(outputDir, "compression_ratios.json")
+            
+            val jsonArray = results.joinToString(",\n  ", "[\n  ", "\n]") { it.toJson() }
+            outputFile.writeText(jsonArray)
+            
+            Log.i(TAG, "Results written to: ${outputFile.absolutePath}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write results to file", e)
+        }
     }
 
     private fun compressWithGzip(data: ByteArray): ByteArray {
