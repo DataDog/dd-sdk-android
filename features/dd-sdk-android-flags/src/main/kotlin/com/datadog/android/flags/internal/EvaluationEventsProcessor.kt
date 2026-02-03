@@ -33,11 +33,10 @@ internal class EvaluationEventsProcessor(
 
     @Volatile
     private var scheduledFlushFuture: ScheduledFuture<*>? = null
+    private val schedulerMutex = ReentrantLock()
 
     init {
-        if (periodicFlushEnabled) {
-            schedulePeriodicFlush()
-        }
+        reschedulePeriodicFlush()
     }
 
     fun processEvaluation(
@@ -65,6 +64,16 @@ internal class EvaluationEventsProcessor(
         )
 
         if (drainedEvents != null) {
+            // If no flush is in process, restart the periodic flush schedule.
+            if (flushMutex.tryLock()) {
+                try {
+                    reschedulePeriodicFlush()
+                } finally {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // safe - called after lock()
+                    flushMutex.unlock()
+                }
+            }
+
             writer.writeAll(drainedEvents)
         }
     }
@@ -83,34 +92,36 @@ internal class EvaluationEventsProcessor(
     }
 
     private fun flushInternal() {
-        scheduledFlushFuture?.cancel(false)
-
         val events = aggregator.drain()
         if (events.isNotEmpty()) {
+            reschedulePeriodicFlush() // cancels any scheduled flush.
             writer.writeAll(events)
-        }
-
-        if (periodicFlushEnabled) {
-            schedulePeriodicFlush()
         }
     }
 
-    fun schedulePeriodicFlush() {
-        periodicFlushEnabled = true
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-            scheduledFlushFuture = scheduledExecutor.schedule(
-                { flush() },
-                flushIntervalMs,
-                TimeUnit.MILLISECONDS
-            )
-        } catch (e: RejectedExecutionException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Failed to schedule evaluation flush" },
-                e
-            )
+    fun reschedulePeriodicFlush() {
+        if (!periodicFlushEnabled) {
+            return
+        }
+
+        // Cancel any scheduled before scheduling a new one.
+        schedulerMutex.withLock {
+            scheduledFlushFuture?.cancel(false)
+            try {
+                @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
+                scheduledFlushFuture = scheduledExecutor.schedule(
+                    { flush() },
+                    flushIntervalMs,
+                    TimeUnit.MILLISECONDS
+                )
+            } catch (e: RejectedExecutionException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                    { "Failed to schedule evaluation flush" },
+                    e
+                )
+            }
         }
     }
 

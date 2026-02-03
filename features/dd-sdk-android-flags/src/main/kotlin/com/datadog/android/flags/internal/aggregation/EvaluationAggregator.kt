@@ -34,6 +34,8 @@ internal class EvaluationAggregator(
      * reach the threshold simultaneously. The size is checked without a lock first
      * (fast path), then re-checked while holding the write lock before draining.
      *
+     * @param onDrainStart Called inside write lock when drain starts. Use to acquire
+     *        external locks atomically with the drain decision.
      * @return list of drained events if threshold was reached, null otherwise
      */
     fun record(
@@ -46,7 +48,8 @@ internal class EvaluationAggregator(
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
-        errorMessage: String?
+        errorMessage: String?,
+        onDrainStart: () -> Unit = {}
     ): List<FlagEvaluation>? {
         val key = AggregationKey(
             flagKey = flagKey,
@@ -78,7 +81,12 @@ internal class EvaluationAggregator(
 
         // Re-check while holding exclusive lock to ensure only one thread drains.
         val drained = mapLock.write {
-            if (aggregationMap.size < maxAggregations) null else swapMap()
+            if (aggregationMap.size < maxAggregations) {
+                null
+            } else {
+                onDrainStart()
+                swapMap()
+            }
         }
         return drained?.map { (_, stats) -> stats.toEvaluationEvent() }
     }
