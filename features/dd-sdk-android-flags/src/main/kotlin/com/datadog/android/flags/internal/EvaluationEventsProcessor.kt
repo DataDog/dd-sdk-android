@@ -51,7 +51,7 @@ internal class EvaluationEventsProcessor(
         errorCode: String?,
         errorMessage: String?
     ) {
-        val shouldFlush = aggregator.record(
+        val drainedEvents = aggregator.record(
             timestamp = timeProvider.getDeviceTimestampMillis(),
             flagKey = flagKey,
             context = context,
@@ -64,8 +64,8 @@ internal class EvaluationEventsProcessor(
             errorMessage = errorMessage
         )
 
-        if (shouldFlush) {
-            flush()
+        if (drainedEvents != null) {
+            writer.writeAll(drainedEvents)
         }
     }
 

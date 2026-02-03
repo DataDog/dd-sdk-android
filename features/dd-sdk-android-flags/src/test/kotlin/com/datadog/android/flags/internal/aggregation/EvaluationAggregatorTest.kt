@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -48,16 +49,16 @@ internal class EvaluationAggregatorTest {
     // region record - threshold
 
     @Test
-    fun `M return false W record() { below threshold }`() {
+    fun `M return null W record() { below threshold }`() {
         val result = record()
 
-        assertThat(result).isFalse()
+        assertThat(result).isNull()
     }
 
     @Test
-    fun `M return true W record() { at threshold }`() {
+    fun `M return drained events W record() { at threshold }`() {
         val aggregator = EvaluationAggregator(maxAggregations = 5)
-        var lastResult = false
+        var lastResult: List<FlagEvaluation>? = null
 
         repeat(5) { index ->
             lastResult = aggregator.record(
@@ -74,7 +75,48 @@ internal class EvaluationAggregatorTest {
             )
         }
 
-        assertThat(lastResult).isTrue()
+        assertThat(lastResult).isNotNull()
+        assertThat(lastResult).hasSize(5)
+        assertThat(lastResult!!.map { it.flag.key }).containsExactlyInAnyOrder(
+            "flag-0", "flag-1", "flag-2", "flag-3", "flag-4"
+        )
+    }
+
+    @Test
+    fun `M return null for subsequent records W record() { after threshold drain }`() {
+        val aggregator = EvaluationAggregator(maxAggregations = 3)
+
+        // Fill to threshold - should drain
+        repeat(3) { index ->
+            aggregator.record(
+                timestamp = fakeTimestamp,
+                flagKey = "flag-$index",
+                context = fakeContext,
+                service = null,
+                rumApplicationId = null,
+                rumViewName = null,
+                variantKey = fakeVariantKey,
+                allocationKey = null,
+                errorCode = null,
+                errorMessage = null
+            )
+        }
+
+        // Next record should return null (map was drained)
+        val result = aggregator.record(
+            timestamp = fakeTimestamp,
+            flagKey = "new-flag",
+            context = fakeContext,
+            service = null,
+            rumApplicationId = null,
+            rumViewName = null,
+            variantKey = fakeVariantKey,
+            allocationKey = null,
+            errorCode = null,
+            errorMessage = null
+        )
+
+        assertThat(result).isNull()
     }
 
     // endregion
@@ -220,14 +262,22 @@ internal class EvaluationAggregatorTest {
     fun `M create all entries W record() { concurrent different keys }`() {
         val threadCount = 10
         val keysPerThread = 50
+        val expectedTotal = threadCount * keysPerThread
+        val allDrained = CopyOnWriteArrayList<FlagEvaluation>()
 
         runConcurrently(threadCount) { threadId ->
             repeat(keysPerThread) { index ->
-                record(flagKey = "thread-$threadId-flag-$index")
+                val drained = record(flagKey = "thread-$threadId-flag-$index")
+                if (drained != null) {
+                    allDrained.addAll(drained)
+                }
             }
         }
 
-        assertThat(testedAggregator.drain()).hasSize(threadCount * keysPerThread)
+        // Collect any remaining events
+        allDrained.addAll(testedAggregator.drain())
+
+        assertThat(allDrained).hasSize(expectedTotal)
     }
 
     @Test
@@ -245,7 +295,10 @@ internal class EvaluationAggregatorTest {
             Thread {
                 startLatch.await()
                 repeat(recordsPerThread) { index ->
-                    record(flagKey = "thread-$threadId-flag-$index")
+                    val drained = record(flagKey = "thread-$threadId-flag-$index")
+                    if (drained != null) {
+                        allDrained.addAll(drained.map { it.evaluationCount })
+                    }
                 }
                 finishLatch.countDown()
             }
@@ -281,7 +334,7 @@ internal class EvaluationAggregatorTest {
         variantKey: String? = fakeVariantKey,
         errorCode: String? = null,
         errorMessage: String? = null
-    ): Boolean {
+    ): List<FlagEvaluation>? {
         return testedAggregator.record(
             timestamp = timestamp,
             flagKey = flagKey,
