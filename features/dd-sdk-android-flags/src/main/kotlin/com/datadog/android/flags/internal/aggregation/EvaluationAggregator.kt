@@ -77,9 +77,10 @@ internal class EvaluationAggregator(
         }
 
         // Re-check while holding exclusive lock to ensure only one thread drains.
-        return mapLock.write {
-            if (aggregationMap.size < maxAggregations) null else drainInternal()
+        val drained = mapLock.write {
+            if (aggregationMap.size < maxAggregations) null else swapMap()
         }
+        return drained?.map { (_, stats) -> stats.toEvaluationEvent() }
     }
 
     /**
@@ -88,18 +89,23 @@ internal class EvaluationAggregator(
      *
      * @return list of aggregated events, or empty list if none
      */
-    fun drain(): List<FlagEvaluation> = mapLock.write { drainInternal() }
+    fun drain(): List<FlagEvaluation> {
+        val drained = mapLock.write { swapMap() }
+        return drained?.map { (_, stats) -> stats.toEvaluationEvent() } ?: emptyList()
+    }
 
     /**
-     * Swaps the aggregation map with a fresh one and converts entries to events.
+     * Swaps the aggregation map with a fresh one and returns the old map.
      * Must be called while holding the write lock.
+     *
+     * @return the old map, or null if empty
      */
-    private fun drainInternal(): List<FlagEvaluation> {
+    private fun swapMap(): Map<AggregationKey, AggregationStats>? {
         if (aggregationMap.isEmpty()) {
-            return emptyList()
+            return null
         }
         val toDrain = aggregationMap
         aggregationMap = ConcurrentHashMap()
-        return toDrain.map { (_, stats) -> stats.toEvaluationEvent() }
+        return toDrain
     }
 }
