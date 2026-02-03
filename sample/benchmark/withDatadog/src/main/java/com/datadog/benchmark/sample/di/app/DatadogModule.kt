@@ -70,8 +70,9 @@ private fun createDatadogConfiguration(): Configuration {
         clientToken = BuildConfig.BENCHMARK_CLIENT_TOKEN,
         env = BuildConfig.BUILD_TYPE
     )
-        .setBatchSize(BatchSize.SMALL)
-        .setUploadFrequency(UploadFrequency.FREQUENT)
+        .setBatchSize(BatchSize.LARGE) // Use LARGE for bigger batches (35s window)
+        .setUploadFrequency(UploadFrequency.RARE) // Use RARE to give more time for batch accumulation
+        .allowClearTextHttp() // Allow HTTP for local capture server
 
     configBuilder.setBackpressureStrategy(
         BackPressureStrategy(

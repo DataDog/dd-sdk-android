@@ -146,6 +146,8 @@ internal class DatadogFeaturesInitializer @Inject constructor(
                 }
             )
             enableComposeActionTracking()
+            // Use local capture server for benchmarking
+            useCustomEndpoint(LOCAL_CAPTURE_SERVER_RUM_ENDPOINT)
         }.build()
     }
 
@@ -230,5 +232,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         private const val ATTR_IS_MAPPED = "is_mapped"
         private const val SAMPLE_RATE_TELEMETRY = 100f
         private const val THRESHOLD_LONG_TASK_INTERVAL = 250L
+        // For emulator: 10.0.2.2 maps to host machine's localhost
+        private const val LOCAL_CAPTURE_SERVER_RUM_ENDPOINT = "http://10.0.2.2:8080/api/v2/rum"
     }
 }

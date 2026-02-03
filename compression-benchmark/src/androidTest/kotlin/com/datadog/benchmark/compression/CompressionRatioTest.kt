@@ -41,6 +41,7 @@ class CompressionRatioTest {
         payloads["rum_small"] = context.assets.open("payloads/rum_small.json").readBytes()
         payloads["rum_medium"] = context.assets.open("payloads/rum_medium.json").readBytes()
         payloads["rum_large"] = context.assets.open("payloads/rum_large.json").readBytes()
+        payloads["rum_max_batch"] = context.assets.open("payloads/rum_max_batch.json").readBytes()
         payloads["logs_batch"] = context.assets.open("payloads/logs_batch.json").readBytes()
     }
 
