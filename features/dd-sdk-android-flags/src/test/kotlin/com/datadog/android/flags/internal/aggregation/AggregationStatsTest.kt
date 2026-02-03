@@ -6,10 +6,7 @@
 
 package com.datadog.android.flags.internal.aggregation
 
-import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.ResolutionReason
-import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -17,7 +14,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -56,21 +52,11 @@ internal class AggregationStatsTest {
     lateinit var fakeViewName: String
 
     private lateinit var fakeContext: EvaluationContext
-    private lateinit var fakeData: UnparsedFlag
     private lateinit var fakeAggregationKey: AggregationKey
 
     @BeforeEach
     fun `set up`() {
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        fakeData = PrecomputedFlag(
-            variationType = "boolean",
-            variationValue = fakeValue,
-            doLog = false,
-            allocationKey = fakeAllocationKey,
-            variationKey = fakeVariantKey,
-            extraLogging = JSONObject(),
-            reason = ResolutionReason.TARGETING_MATCH.name
-        )
         fakeAggregationKey = AggregationKey(
             flagKey = fakeFlagName,
             variantKey = fakeVariantKey,
@@ -93,8 +79,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -117,8 +101,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
         val laterTimestamp = fakeTimestamp + 5000
@@ -143,8 +125,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -171,8 +151,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 errorMessage1
             )
 
@@ -200,8 +178,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -227,17 +203,8 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M set runtime default true W toEvaluationEvent() { DEFAULT reason }`() {
-        // Given - DEFAULT reason
-        val defaultData = PrecomputedFlag(
-            variationType = "boolean",
-            variationValue = fakeValue,
-            doLog = false,
-            allocationKey = "",
-            variationKey = "",
-            extraLogging = JSONObject(),
-            reason = ResolutionReason.DEFAULT.name
-        )
+    fun `M set runtime default true W toEvaluationEvent() { null variantKey }`() {
+        // Given - null variantKey indicates runtime default was used
         val keyWithoutVariant = fakeAggregationKey.copy(variantKey = null, allocationKey = null)
         val defaultStats =
             AggregationStats(
@@ -246,8 +213,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                defaultData.reason,
                 null
             )
 
@@ -276,8 +241,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                null,
                 errorMessage
             )
 
@@ -299,8 +262,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -312,65 +273,22 @@ internal class AggregationStatsTest {
     }
 
     @Test
-    fun `M set runtime default false W toEvaluationEvent() { TARGETING_MATCH reason }`() {
-        // Given - TARGETING_MATCH reason
-        val targetingData = PrecomputedFlag(
-            variationType = "boolean",
-            variationValue = fakeValue,
-            doLog = false,
-            allocationKey = fakeAllocationKey,
-            variationKey = fakeVariantKey,
-            extraLogging = JSONObject(),
-            reason = ResolutionReason.TARGETING_MATCH.name
-        )
-        val targetingStats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                fakeViewName,
-                targetingData.reason,
-                null
-            )
-
-        // When
-        val targetingEvent = targetingStats.toEvaluationEvent()
-
-        // Then
-        assertThat(targetingEvent.runtimeDefaultUsed).isFalse()
-    }
-
-    @Test
-    fun `M set runtime default false W toEvaluationEvent() { unrecognized reason }`(forge: Forge) {
-        // Given - unrecognized reasons are treated like normal matches (not DEFAULT/ERROR)
-        val unrecognizedReason = forge.anAlphabeticalString()
-        val unrecognizedData = PrecomputedFlag(
-            variationType = "boolean",
-            variationValue = fakeValue,
-            doLog = false,
-            allocationKey = fakeAllocationKey,
-            variationKey = fakeVariantKey,
-            extraLogging = JSONObject(),
-            reason = unrecognizedReason
-        )
+    fun `M set runtime default false W toEvaluationEvent() { non-null variantKey }`() {
+        // Given - non-null variantKey indicates a variant was assigned
         val stats =
             AggregationStats(
-                fakeAggregationKey,
+                fakeAggregationKey, // has non-null variantKey
                 fakeTimestamp,
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                unrecognizedData.reason,
                 null
             )
 
         // When
         val event = stats.toEvaluationEvent()
 
-        // Then - unrecognized reasons should not set runtimeDefaultUsed for forward compatibility
+        // Then
         assertThat(event.runtimeDefaultUsed).isFalse()
     }
 
@@ -385,8 +303,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 errorMessage
             )
 
@@ -407,8 +323,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -429,8 +343,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -454,8 +366,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -477,8 +387,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -503,8 +411,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
         val threadCount = 10
@@ -547,8 +453,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
         val updateThreadCount = 5
@@ -606,8 +510,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
         val threadCount = 10
@@ -657,8 +559,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -684,8 +584,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
 
@@ -710,8 +608,6 @@ internal class AggregationStatsTest {
             fakeContext,
             fakeService,
             fakeApplicationId,
-            fakeViewName,
-            fakeData.reason,
             null
         )
 
@@ -745,8 +641,6 @@ internal class AggregationStatsTest {
                 fakeContext,
                 fakeService,
                 fakeApplicationId,
-                fakeViewName,
-                fakeData.reason,
                 null
             )
         val threadCount = 10

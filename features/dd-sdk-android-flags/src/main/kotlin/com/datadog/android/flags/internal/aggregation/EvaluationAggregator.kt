@@ -41,7 +41,6 @@ internal class EvaluationAggregator(
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
-        reason: String?,
         errorCode: String?,
         errorMessage: String?
     ): Boolean {
@@ -60,8 +59,6 @@ internal class EvaluationAggregator(
             context = context,
             service = service,
             rumApplicationId = rumApplicationId,
-            rumViewName = rumViewName,
-            reason = reason,
             errorMessage = errorMessage
         )
 

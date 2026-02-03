@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
-import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
@@ -141,7 +140,7 @@ internal class EvaluationEventsProcessorTest {
                 fakeFlagKey,
                 EvaluationContext(targetingKey = "user-$index"),
                 fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name,
+                fakeVariantKey, fakeAllocationKey,
                 null, null
             )
         }
@@ -421,7 +420,7 @@ internal class EvaluationEventsProcessorTest {
                     fakeFlagKey,
                     EvaluationContext(targetingKey = "thread-$threadIndex-exec-$execIndex"),
                     fakeService, fakeApplicationId, fakeViewName,
-                    fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name,
+                    fakeVariantKey, fakeAllocationKey,
                     null, null
                 )
             }
@@ -450,7 +449,7 @@ internal class EvaluationEventsProcessorTest {
                         fakeFlagKey,
                         EvaluationContext(targetingKey = "user-$threadIndex-$execIndex"),
                         fakeService, fakeApplicationId, fakeViewName,
-                        fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name,
+                        fakeVariantKey, fakeAllocationKey,
                         null, null
                     )
                 }
@@ -504,7 +503,7 @@ internal class EvaluationEventsProcessorTest {
 
         processor.processEvaluation(
             fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
-            fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+            fakeVariantKey, fakeAllocationKey, null, null
         )
 
         val flushThread = Thread { processor.flush() }
@@ -552,7 +551,7 @@ internal class EvaluationEventsProcessorTest {
             processor.processEvaluation(
                 fakeFlagKey, EvaluationContext(targetingKey = "initial-$index"),
                 fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+                fakeVariantKey, fakeAllocationKey, null, null
             )
         }
 
@@ -564,7 +563,7 @@ internal class EvaluationEventsProcessorTest {
             processor.processEvaluation(
                 fakeFlagKey, EvaluationContext(targetingKey = "during-flush-$index"),
                 fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+                fakeVariantKey, fakeAllocationKey, null, null
             )
         }
 
@@ -613,7 +612,7 @@ internal class EvaluationEventsProcessorTest {
                 repeat(evaluationsPerThread) {
                     processor.processEvaluation(
                         fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
-                        fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+                        fakeVariantKey, fakeAllocationKey, null, null
                     )
                 }
                 finishLatch.countDown()
@@ -671,7 +670,7 @@ internal class EvaluationEventsProcessorTest {
             processor.processEvaluation(
                 fakeFlagKey, EvaluationContext(targetingKey = "initial-$index"),
                 fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+                fakeVariantKey, fakeAllocationKey, null, null
             )
         }
 
@@ -687,7 +686,7 @@ internal class EvaluationEventsProcessorTest {
             processor.processEvaluation(
                 fakeFlagKey, EvaluationContext(targetingKey = "during-flush-$index"),
                 fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, ResolutionReason.TARGETING_MATCH.name, null, null
+                fakeVariantKey, fakeAllocationKey, null, null
             )
         }
 
@@ -708,13 +707,12 @@ internal class EvaluationEventsProcessorTest {
         context: EvaluationContext = fakeContext,
         variantKey: String? = fakeVariantKey,
         allocationKey: String? = fakeAllocationKey,
-        reason: String? = ResolutionReason.TARGETING_MATCH.name,
         errorCode: String? = null,
         errorMessage: String? = null
     ) {
         testedProcessor.processEvaluation(
             flagKey, context, fakeService, fakeApplicationId, fakeViewName,
-            variantKey, allocationKey, reason, errorCode, errorMessage
+            variantKey, allocationKey, errorCode, errorMessage
         )
     }
 

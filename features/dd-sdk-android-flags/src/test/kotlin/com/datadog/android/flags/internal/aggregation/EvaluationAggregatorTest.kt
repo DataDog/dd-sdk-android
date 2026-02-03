@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -70,7 +69,6 @@ internal class EvaluationAggregatorTest {
                 rumViewName = null,
                 variantKey = fakeVariantKey,
                 allocationKey = null,
-                reason = ResolutionReason.TARGETING_MATCH.name,
                 errorCode = null,
                 errorMessage = null
             )
@@ -293,7 +291,6 @@ internal class EvaluationAggregatorTest {
             rumViewName = null,
             variantKey = variantKey,
             allocationKey = null,
-            reason = ResolutionReason.TARGETING_MATCH.name,
             errorCode = errorCode,
             errorMessage = errorMessage
         )

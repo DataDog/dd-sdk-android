@@ -48,7 +48,6 @@ internal class EvaluationEventsProcessor(
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
-        reason: String?,
         errorCode: String?,
         errorMessage: String?
     ) {
@@ -61,7 +60,6 @@ internal class EvaluationEventsProcessor(
             rumViewName = rumViewName,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            reason = reason,
             errorCode = errorCode,
             errorMessage = errorMessage
         )

@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
-import com.datadog.android.flags.model.ResolutionReason
 
 /**
  * Aggregation statistics for evaluation logging.
@@ -27,8 +26,6 @@ import com.datadog.android.flags.model.ResolutionReason
  * @param context the evaluation context
  * @param service the service name from DatadogContext
  * @param rumApplicationId the RUM application ID (null if RUM not active)
- * @param rumViewName the RUM view name (null if no active view)
- * @param reason the resolution reason (null for error evaluations, non-null for success evaluations)
  * @param errorMessage optional error message (detailed, for logging)
  */
 internal class AggregationStats(
@@ -37,8 +34,6 @@ internal class AggregationStats(
     private val context: EvaluationContext,
     private val service: String?,
     private val rumApplicationId: String?,
-    private val rumViewName: String?,
-    private val reason: String?,
     errorMessage: String?
 ) {
     // All field access is synchronized - see recordEvaluation() and toEvaluationEvent()
@@ -100,7 +95,7 @@ internal class AggregationStats(
                 rum = rumApplicationId?.let { appId ->
                     FlagEvaluation.Rum(
                         application = FlagEvaluation.Application(id = appId),
-                        view = rumViewName?.let { viewName ->
+                        view = aggregationKey.viewName?.let { viewName ->
                             FlagEvaluation.View(url = viewName)
                         }
                     )
@@ -120,9 +115,7 @@ internal class AggregationStats(
             evaluationCount = snapshotCount.toLong(),
             firstEvaluation = snapshotFirst,
             lastEvaluation = snapshotLast,
-            runtimeDefaultUsed = reason == null ||
-                reason == ResolutionReason.DEFAULT.name ||
-                reason == ResolutionReason.ERROR.name
+            runtimeDefaultUsed = aggregationKey.variantKey == null
         )
     }
 }
