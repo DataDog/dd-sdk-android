@@ -78,7 +78,11 @@ internal class EvaluationAggregatorTest {
         assertThat(lastResult).isNotNull()
         assertThat(lastResult).hasSize(5)
         assertThat(lastResult!!.map { it.flag.key }).containsExactlyInAnyOrder(
-            "flag-0", "flag-1", "flag-2", "flag-3", "flag-4"
+            "flag-0",
+            "flag-1",
+            "flag-2",
+            "flag-3",
+            "flag-4"
         )
     }
 
