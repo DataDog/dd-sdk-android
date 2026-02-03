@@ -10,12 +10,20 @@ interface com.datadog.android.internal.attributes.LocalAttribute
 fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
 fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
 fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
-enum com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
-  - MANUAL
-  - COMPOSE
-  - ACTIVITY
-  - FRAGMENT
-  override val key: LocalAttribute.Key
+sealed interface com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  val value: String
+  enum Native : ViewScopeInstrumentationType
+    constructor(String)
+    - MANUAL
+    - COMPOSE
+    - ACTIVITY
+    - FRAGMENT
+    override val key: LocalAttribute.Key
+  class Custom : ViewScopeInstrumentationType
+    override val value: String
+    override val key: LocalAttribute.Key
+    companion object 
+      fun create(String): Custom
 class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
   constructor(Int = Int.MAX_VALUE)
   override val size: Int

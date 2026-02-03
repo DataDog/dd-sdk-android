@@ -176,7 +176,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
         val expectedAttrs = mockFragment.arguments!!
             .toRumAttributes()
-            .enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+            .enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.FRAGMENT)
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
         // When
@@ -258,7 +258,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
         val expectedAttrs = mapOf(
-            ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT
+            ViewScopeInstrumentationType.Native.FRAGMENT.key.toString() to ViewScopeInstrumentationType.Native.FRAGMENT
         )
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
@@ -376,7 +376,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val expectedAttrs = mockFragment.arguments
             .toRumAttributes()
-            .enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+            .enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.FRAGMENT)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
@@ -468,7 +468,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         )
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val expectedAttrs = mapOf(
-            ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT
+            ViewScopeInstrumentationType.Native.FRAGMENT.key.toString() to ViewScopeInstrumentationType.Native.FRAGMENT
         )
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val argumentCaptor =

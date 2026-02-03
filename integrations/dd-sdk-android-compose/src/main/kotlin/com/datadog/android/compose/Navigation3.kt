@@ -134,7 +134,7 @@ internal fun <T : Any> trackBackStack(
             if (keyPredicate.accept(topKey)) {
                 val attributes =
                     attributesResolver?.resolveAttributes(topKey)?.toMutableMap()
-                        ?.enrichWithConstantAttribute(ViewScopeInstrumentationType.COMPOSE)
+                        ?.enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.COMPOSE)
                         ?: emptyMap()
 
                 rumMonitor.startView(

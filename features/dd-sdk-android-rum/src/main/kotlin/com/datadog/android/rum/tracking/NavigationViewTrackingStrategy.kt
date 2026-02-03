@@ -102,7 +102,7 @@ class NavigationViewTrackingStrategy(
                 mutableMapOf()
             }
 
-            attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+            attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.FRAGMENT)
 
             val viewName = componentPredicate.resolveViewName(destination)
             rumMonitor?.startView(destination, viewName, attributes)

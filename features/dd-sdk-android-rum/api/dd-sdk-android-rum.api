@@ -70,6 +70,7 @@ public final class com/datadog/android/rum/RumAttributes {
 	public static final field INTERNAL_ERROR_IS_CRASH Ljava/lang/String;
 	public static final field INTERNAL_ERROR_SOURCE_TYPE Ljava/lang/String;
 	public static final field INTERNAL_ERROR_TYPE Ljava/lang/String;
+	public static final field INTERNAL_INSTRUMENTATION_TYPE Ljava/lang/String;
 	public static final field INTERNAL_TIMESTAMP Ljava/lang/String;
 	public static final field LONG_TASK_TARGET Ljava/lang/String;
 	public static final field NETWORK_BYTES_READ Ljava/lang/String;
