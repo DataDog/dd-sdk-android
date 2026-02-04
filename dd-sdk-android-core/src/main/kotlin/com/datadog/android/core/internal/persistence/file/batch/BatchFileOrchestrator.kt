@@ -30,6 +30,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToLong
 
 @Suppress("TooManyFunctions")
@@ -50,10 +51,7 @@ internal class BatchFileOrchestrator(
     @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
     private val recentWriteDelayMs = (config.recentDelayMs * DECREASE_PERCENT).roundToLong()
 
-    // keep track of how many items were written in the last known file
-    private var previousFile: File? = null
-    private var previousFileItemCount: Long = 0
-    private var lastFileAccessTimestamp: Long = 0L
+    private val currentBatchState = AtomicReference(CurrentBatchState(null, 0L, 0L))
     private val lastCleanupTimestamp = AtomicLong(0L)
     private val isFileObserverStarted = AtomicBoolean(false)
 
@@ -64,17 +62,16 @@ internal class BatchFileOrchestrator(
         override fun onEvent(event: Int, name: String?) {
             if (!name.isNullOrEmpty() && name.isBatchFileName) {
                 val file = File(rootDir, name)
-                when (event) {
-                    MOVED_TO, CREATE -> {
-                        synchronized(knownFiles) {
-                            knownFiles.add(file)
-                        }
+                val isAdded = event and (MOVED_TO or CREATE) != 0
+                val isRemoved = event and (MOVED_FROM or DELETE) != 0
+                if (isAdded) {
+                    synchronized(knownFiles) {
+                        knownFiles.add(file)
                     }
-
-                    MOVED_FROM, DELETE -> {
-                        synchronized(knownFiles) {
-                            knownFiles.remove(file)
-                        }
+                }
+                if (isRemoved) {
+                    synchronized(knownFiles) {
+                        knownFiles.remove(file)
                     }
                 }
             }
@@ -110,7 +107,7 @@ internal class BatchFileOrchestrator(
         pendingFiles.set(files.count())
 
         return files.firstOrNull {
-            (it !in excludeFiles) && !isFileRecent(it, recentReadDelayMs)
+            (it !in excludeFiles) && !isFileRecent(it, recentReadDelayMs) && it.existsSafe(internalLogger)
         }
     }
 
@@ -226,28 +223,25 @@ internal class BatchFileOrchestrator(
         }
     }
 
-    private fun createNewFile(): File {
-        val newFileName = timeProvider.getDeviceTimestampMillis().toString()
-        val newFile = File(rootDir, newFileName)
-        val closedFile = previousFile
-        val closedFileLastAccessTimestamp = lastFileAccessTimestamp
-        if (closedFile != null) {
+    private fun createNewFile(): File = synchronized(currentBatchState) {
+        val now = timeProvider.getDeviceTimestampMillis()
+        val newFile = File(rootDir, now.toString())
+        val previousState = currentBatchState.get()
+        if (previousState.file != null) {
             metricsDispatcher.sendBatchClosedMetric(
-                closedFile,
+                previousState.file,
                 BatchClosedMetadata(
-                    lastTimeWasUsedInMs = closedFileLastAccessTimestamp,
-                    eventsCount = previousFileItemCount
+                    lastTimeWasUsedInMs = previousState.lastAccessTimestamp,
+                    eventsCount = previousState.itemCount
                 )
             )
         }
-        previousFile = newFile
-        previousFileItemCount = 1
-        lastFileAccessTimestamp = timeProvider.getDeviceTimestampMillis()
+        currentBatchState.set(CurrentBatchState(newFile, 1L, now))
         pendingFiles.incrementAndGet()
         synchronized(knownFiles) {
             knownFiles.add(newFile)
         }
-        return newFile
+        newFile
     }
 
     @Suppress("ReturnCount")
@@ -259,27 +253,32 @@ internal class BatchFileOrchestrator(
             return null
         }
 
-        val lastKnownFile = previousFile
-        val lastKnownFileItemCount = previousFileItemCount
-        if (lastKnownFile != lastFile) {
-            // this situation can happen because:
-            // 1. `lastFile` is a file written during a previous session
-            // 2. `lastFile` was created by another system/process
-            // 3. `lastKnownFile` was deleted
-            // In any case, we don't know the item count, so to be safe, we create a new file
-            return null
-        }
+        synchronized(currentBatchState) {
+            val state = currentBatchState.get()
+            if (state.file != lastFile) {
+                // this situation can happen because:
+                // 1. `lastFile` is a file written during a previous session
+                // 2. `lastFile` was created by another system/process
+                // 3. `state.file` was deleted
+                // In any case, we don't know the item count, so to be safe, we create a new file
+                return null
+            }
 
-        val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
-        val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize
-        val hasSlotForMore = (lastKnownFileItemCount < config.maxItemsPerBatch)
+            val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
+            val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize
+            val hasSlotForMore = (state.itemCount < config.maxItemsPerBatch)
 
-        return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
-            previousFileItemCount = lastKnownFileItemCount + 1
-            lastFileAccessTimestamp = timeProvider.getDeviceTimestampMillis()
-            lastFile
-        } else {
-            null
+            if (!isRecentEnough || !hasRoomForMore || !hasSlotForMore) {
+                return null
+            }
+
+            currentBatchState.set(
+                state.copy(
+                    itemCount = state.itemCount + 1,
+                    lastAccessTimestamp = timeProvider.getDeviceTimestampMillis()
+                )
+            )
+            return lastFile
         }
     }
 
@@ -378,6 +377,12 @@ internal class BatchFileOrchestrator(
         get() = maxOrNull()
 
     // endregion
+
+    private data class CurrentBatchState(
+        val file: File?,
+        val itemCount: Long,
+        val lastAccessTimestamp: Long
+    )
 
     companion object {
 
