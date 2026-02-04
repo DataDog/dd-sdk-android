@@ -43,7 +43,7 @@ target_compile_definitions(zstd-jni-1 PRIVATE
     ZSTD_NO_UNUSED_FUNCTIONS=1
     ZSTD_LIB_EXCLUDE_COMPRESSORS_DFAST_AND_UP=1
     DYNAMIC_BMI2=0
-#    ZSTD_NO_INLINE=1
+    ZSTD_NO_INLINE=1
 )
 
 # Use version script to hide internal symbols and reduce binary size
