@@ -1703,8 +1703,17 @@ internal open class RumViewScope(
             )
         }
 
-        private fun RumRawEvent.StartView.tryResolveInstrumentationType() =
-            attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()] as? ViewScopeInstrumentationType
+        private fun RumRawEvent.StartView.tryResolveInstrumentationType(): ViewScopeInstrumentationType? {
+            // First check for cross-platform string attribute (highest priority)
+            val crossPlatformType = attributes[RumAttributes.INTERNAL_INSTRUMENTATION_TYPE] as? String
+            if (!crossPlatformType.isNullOrBlank()) {
+                return ViewScopeInstrumentationType.Custom.create(crossPlatformType)
+            }
+
+            // Fall back to native enum-based instrumentation type
+            return attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()]
+                as? ViewScopeInstrumentationType
+        }
 
         @Suppress("CommentOverPrivateFunction")
         /**

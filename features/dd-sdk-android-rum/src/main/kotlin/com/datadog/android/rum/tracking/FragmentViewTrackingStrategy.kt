@@ -76,7 +76,7 @@ internal constructor(
                             it.arguments.convertToRumViewAttributes().toMutableMap()
                         } else {
                             mutableMapOf()
-                        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+                        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.FRAGMENT)
                     },
                     componentPredicate = supportFragmentComponentPredicate,
                     rumMonitor = rumMonitor,
@@ -103,7 +103,7 @@ internal constructor(
                             it.arguments.convertToRumViewAttributes().toMutableMap()
                         } else {
                             mutableMapOf()
-                        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+                        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.FRAGMENT)
                     },
                     componentPredicate = defaultFragmentComponentPredicate,
                     rumMonitor = rumMonitor,

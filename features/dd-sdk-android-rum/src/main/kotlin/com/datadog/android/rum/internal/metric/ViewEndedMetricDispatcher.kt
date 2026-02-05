@@ -14,9 +14,12 @@ import com.datadog.android.rum.internal.domain.scope.RumViewType
 internal class ViewEndedMetricDispatcher(
     private val viewType: RumViewType,
     private val internalLogger: InternalLogger,
-    private val instrumentationType: ViewScopeInstrumentationType? = null,
+    instrumentationType: ViewScopeInstrumentationType? = null,
     private val samplingRate: Float = DEFAULT_SAMPLE_RATE
 ) : ViewMetricDispatcher {
+
+    private val instrumentationType: ViewScopeInstrumentationType =
+        instrumentationType ?: ViewScopeInstrumentationType.Native.MANUAL
 
     private var duration: Long? = null
 
@@ -87,7 +90,7 @@ internal class ViewEndedMetricDispatcher(
                 }
             }
         )
-        putNonNull(KEY_INSTRUMENTATION_TYPE, toAttributeValue(instrumentationType))
+        put(KEY_INSTRUMENTATION_TYPE, instrumentationType.value)
     }
 
     companion object {
@@ -126,10 +129,6 @@ internal class ViewEndedMetricDispatcher(
         private const val VALUE_DISABLED = "disabled"
 
         internal const val KEY_INSTRUMENTATION_TYPE = "instrumentation_type"
-        private const val VALUE_INSTRUMENTATION_TYPE_COMPOSE = "compose"
-        private const val VALUE_INSTRUMENTATION_TYPE_MANUAL = "manual"
-        private const val VALUE_INSTRUMENTATION_TYPE_ACTIVITY = "activity"
-        private const val VALUE_INSTRUMENTATION_TYPE_FRAGMENT = "fragment"
 
         private fun <K, V> MutableMap<K, V>.putNonNull(key: K, value: V?) {
             if (value != null) put(key, value)
@@ -150,17 +149,6 @@ internal class ViewEndedMetricDispatcher(
             ViewInitializationMetricsConfig.CUSTOM -> VALUE_CUSTOM
             ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> VALUE_TIME_BASED_DEFAULT
             ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> VALUE_TIME_BASED_CUSTOM
-        }
-
-        @VisibleForTesting
-        private fun toAttributeValue(
-            instrumentationType: ViewScopeInstrumentationType?
-        ): String = when (instrumentationType) {
-            ViewScopeInstrumentationType.COMPOSE -> VALUE_INSTRUMENTATION_TYPE_COMPOSE
-            ViewScopeInstrumentationType.MANUAL -> VALUE_INSTRUMENTATION_TYPE_MANUAL
-            ViewScopeInstrumentationType.ACTIVITY -> VALUE_INSTRUMENTATION_TYPE_ACTIVITY
-            ViewScopeInstrumentationType.FRAGMENT -> VALUE_INSTRUMENTATION_TYPE_FRAGMENT
-            null -> VALUE_INSTRUMENTATION_TYPE_MANUAL
         }
 
         @VisibleForTesting
