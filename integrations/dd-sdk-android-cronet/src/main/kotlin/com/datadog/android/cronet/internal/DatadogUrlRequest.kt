@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
 
 internal class DatadogUrlRequest(
     private val requestContext: DatadogCronetRequestContext,
-    private val cronetInstrumentationStateHolder: CronetInstrumentationStateHolder
+    private val requestCallback: DatadogRequestCallback
 ) : UrlRequest() {
 
     @Volatile
@@ -19,14 +19,12 @@ internal class DatadogUrlRequest(
 
     override fun start() {
         val requestInfo: CronetHttpRequestInfo = requestContext.buildRequestInfo()
-        requestContext.rumResourceInstrumentation?.apply {
+        requestContext.rumNetworkInstrumentation?.apply {
             startResource(requestInfo)
             sendWaitForResourceTimingEvent(requestInfo)
         }
 
-        val traceState = requestContext.apmNetworkInstrumentation?.onRequest(requestInfo)
-            ?.also { traceState -> cronetInstrumentationStateHolder.traceState = traceState }
-
+        val traceState = requestCallback.onRequestStarted(requestInfo)
         val finalRequestInfo: HttpRequestInfo = traceState?.requestInfo ?: requestInfo
 
         (finalRequestInfo as? CronetHttpRequestInfo)

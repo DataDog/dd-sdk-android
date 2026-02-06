@@ -459,6 +459,9 @@ public final class com/datadog/android/api/instrumentation/network/ExtendedReque
 	public static final fun tag (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Class;)Ljava/lang/Object;
 }
 
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestBody {
+}
+
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestInfo {
 	public abstract fun contentLength ()Ljava/lang/Long;
 	public abstract fun getContentType ()Ljava/lang/String;
@@ -473,11 +476,13 @@ public abstract interface class com/datadog/android/api/instrumentation/network/
 	public abstract fun build ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;
 	public abstract fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public abstract fun replaceHeader (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public abstract fun setMethod (Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public abstract fun setUrl (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 }
 
 public final class com/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder$DefaultImpls {
 	public static fun replaceHeader (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public static synthetic fun setMethod$default (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;ILjava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 }
 
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpResponseInfo {
@@ -856,6 +861,7 @@ public final class com/datadog/android/core/internal/net/HttpSpec$ContentType {
 	public static final field APPLICATION_GRPC Ljava/lang/String;
 	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
 	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
+	public static final field APPLICATION_JSON Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$ContentType;
 	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
 	public static final field TEXT_PLAIN Ljava/lang/String;
@@ -866,6 +872,8 @@ public final class com/datadog/android/core/internal/net/HttpSpec$Headers {
 	public static final field CONTENT_LENGTH Ljava/lang/String;
 	public static final field CONTENT_TYPE Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$Headers;
+	public static final field LOCATION Ljava/lang/String;
+	public static final field RETRY_AFTER Ljava/lang/String;
 	public static final field WEBSOCKET_ACCEPT_HEADER Ljava/lang/String;
 }
 
@@ -880,7 +888,31 @@ public final class com/datadog/android/core/internal/net/HttpSpec$Method {
 	public static final field POST Ljava/lang/String;
 	public static final field PUT Ljava/lang/String;
 	public static final field TRACE Ljava/lang/String;
+	public final fun isMethodWithBody (Ljava/lang/String;)Z
 	public final fun values ()Ljava/util/List;
+}
+
+public final class com/datadog/android/core/internal/net/HttpSpec$StatusCodes {
+	public static final field BAD_GATEWAY I
+	public static final field BAD_REQUEST I
+	public static final field FORBIDDEN I
+	public static final field FOUND I
+	public static final field GATEWAY_TIMEOUT I
+	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$StatusCodes;
+	public static final field INTERNAL_ERROR I
+	public static final field METHOD_NOT_ALLOWED I
+	public static final field MOVED_PERMANENTLY I
+	public static final field NOT_FOUND I
+	public static final field OK I
+	public static final field PERMANENT_REDIRECT I
+	public static final field REQUEST_TIMEOUT I
+	public static final field SEE_OTHER I
+	public static final field SERVICE_UNAVAILABLE I
+	public static final field TEMPORARY_REDIRECT I
+	public static final field TOO_MANY_REQUESTS I
+	public static final field UNAUTHORIZED I
+	public final fun clientErrors ()Ljava/util/List;
+	public final fun serverErrors ()Ljava/util/List;
 }
 
 public abstract interface class com/datadog/android/core/internal/persistence/Deserializer {

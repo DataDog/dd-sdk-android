@@ -119,4 +119,21 @@ object DatadogTracingToolkit {
         name: String,
         configuration: ApmNetworkInstrumentationConfiguration
     ): ApmNetworkInstrumentation = configuration.createInstrumentation(name)
+
+    /**
+     * Informs the APM instrumentation whether RUM network instrumentation is active
+     * for the same network integration. This affects span lifecycle management:
+     * when RUM network instrumentation is active and the RUM feature is registered,
+     * spans in [ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY] mode are dropped
+     * to avoid duplication with backend-synthesized spans from RUM resource attributes.
+     *
+     * @param active whether RUM network instrumentation is enabled for this network integration.
+     * @param configuration the APM configuration to update.
+     */
+    fun setRumInstrumentationActive(
+        active: Boolean,
+        configuration: ApmNetworkInstrumentationConfiguration
+    ) {
+        configuration.setRumInstrumentationActive(active)
+    }
 }

@@ -69,7 +69,7 @@ internal class DatadogUrlRequestBuilderTest {
             executor = mockExecutor
         )
         testedBuilder = DatadogUrlRequestBuilder(
-            cronetInstrumentationStateHolder = mockCallback,
+            requestCallback = mockCallback,
             requestContext = requestContext
         )
 

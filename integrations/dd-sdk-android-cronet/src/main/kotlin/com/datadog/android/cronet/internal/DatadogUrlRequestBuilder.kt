@@ -14,7 +14,7 @@ import java.util.concurrent.Executor
 @Suppress("TooManyFunctions") // The number of functions depends on Cronet implementation.
 internal class DatadogUrlRequestBuilder(
     private val requestContext: DatadogCronetRequestContext,
-    internal val cronetInstrumentationStateHolder: CronetInstrumentationStateHolder
+    internal val requestCallback: DatadogRequestCallback
 ) : UrlRequest.Builder() {
 
     override fun setHttpMethod(method: String): UrlRequest.Builder = apply {
@@ -79,6 +79,6 @@ internal class DatadogUrlRequestBuilder(
 
     override fun build() = DatadogUrlRequest(
         requestContext = requestContext,
-        cronetInstrumentationStateHolder = cronetInstrumentationStateHolder
+        requestCallback = requestCallback
     )
 }

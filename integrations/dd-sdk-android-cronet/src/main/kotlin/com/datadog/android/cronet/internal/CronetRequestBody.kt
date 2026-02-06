@@ -5,8 +5,11 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.trace.internal.net.RequestTraceState
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
+import org.chromium.net.UploadDataProvider
+import java.util.concurrent.Executor
 
-internal interface CronetInstrumentationStateHolder {
-    var traceState: RequestTraceState?
-}
+internal data class CronetRequestBody(
+    val uploadProvider: UploadDataProvider,
+    val executor: Executor
+) : HttpRequestBody

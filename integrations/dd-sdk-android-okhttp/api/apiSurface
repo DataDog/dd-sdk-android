@@ -26,10 +26,11 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
     override fun build(): DatadogInterceptor
     fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
 typealias TraceContextInjection = com.datadog.android.trace.TraceContextInjection
-class com.datadog.android.okhttp.internal.OkHttpHttpRequestInfoBuilder : com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
   constructor(okhttp3.Request.Builder)
   override fun setUrl(String)
   override fun addHeader(String, String)
+  override fun setMethod(String, com.datadog.android.api.instrumentation.network.HttpRequestBody?)
   override fun removeHeader(String)
   override fun <T> addTag(Class<T>, T?)
   override fun build(): com.datadog.android.api.instrumentation.network.HttpRequestInfo

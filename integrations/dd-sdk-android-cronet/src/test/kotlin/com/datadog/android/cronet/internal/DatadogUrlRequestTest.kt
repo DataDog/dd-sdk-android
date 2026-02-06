@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -45,7 +45,7 @@ internal class DatadogUrlRequestTest {
     lateinit var mockBuiltRequest: UrlRequest
 
     @Mock
-    lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
+    lateinit var mockRumNetworkInstrumentation: RumNetworkInstrumentation
 
     @Mock
     lateinit var mockEngine: DatadogCronetEngine
@@ -63,7 +63,7 @@ internal class DatadogUrlRequestTest {
 
     @BeforeEach
     fun setup(forge: Forge) {
-        whenever(mockEngine.rumResourceInstrumentation) doReturn mockRumResourceInstrumentation
+        whenever(mockEngine.rumNetworkInstrumentation) doReturn mockRumNetworkInstrumentation
         whenever(mockEngine.apmNetworkInstrumentation) doReturn null
         whenever(mockEngine.newDelegateUrlRequestBuilder(any(), any(), any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.setHttpMethod(any())) doReturn mockDelegateBuilder
@@ -80,7 +80,7 @@ internal class DatadogUrlRequestTest {
 
         testedRequest = DatadogUrlRequest(
             requestContext = requestContext,
-            cronetInstrumentationStateHolder = mockCallback
+            requestCallback = mockCallback
         )
     }
 
@@ -163,7 +163,7 @@ internal class DatadogUrlRequestTest {
         testedRequest.start()
 
         // Then
-        verify(mockRumResourceInstrumentation).startResource(any<CronetHttpRequestInfo>())
+        verify(mockRumNetworkInstrumentation).startResource(any<CronetHttpRequestInfo>())
     }
 
     @Test
@@ -172,7 +172,7 @@ internal class DatadogUrlRequestTest {
         testedRequest.start()
 
         // Then
-        verify(mockRumResourceInstrumentation).sendWaitForResourceTimingEvent(any<CronetHttpRequestInfo>())
+        verify(mockRumNetworkInstrumentation).sendWaitForResourceTimingEvent(any<CronetHttpRequestInfo>())
     }
 
     // region Edge cases: methods called before start()

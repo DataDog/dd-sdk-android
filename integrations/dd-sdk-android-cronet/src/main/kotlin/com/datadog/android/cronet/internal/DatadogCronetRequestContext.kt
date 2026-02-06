@@ -7,8 +7,8 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation.Companion.buildResourceId
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation.Companion.buildResourceId
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTraceState
 import org.chromium.net.RequestFinishedInfo
@@ -38,8 +38,8 @@ internal class DatadogCronetRequestContext internal constructor(
     internal val apmNetworkInstrumentation: ApmNetworkInstrumentation?
         get() = engine.apmNetworkInstrumentation
 
-    internal val rumResourceInstrumentation: RumResourceInstrumentation?
-        get() = engine.rumResourceInstrumentation
+    internal val rumNetworkInstrumentation: RumNetworkInstrumentation?
+        get() = engine.rumNetworkInstrumentation
 
     internal val annotations: List<Any>
         get() = additionalAnnotations.values.toList()

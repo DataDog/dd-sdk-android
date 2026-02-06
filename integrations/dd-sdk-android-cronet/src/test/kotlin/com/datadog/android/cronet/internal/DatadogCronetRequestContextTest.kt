@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTraceState
 import com.datadog.android.utils.forge.Configurator
@@ -520,25 +520,25 @@ internal class DatadogCronetRequestContextTest {
     }
 
     @Test
-    fun `M return rumResourceInstrumentation W rumResourceInstrumentation { rum enabled }`() {
+    fun `M return rumNetworkInstrumentation W rumNetworkInstrumentation { rum enabled }`() {
         // Given
-        val mockRumInstrumentation = mock<RumResourceInstrumentation>()
-        whenever(mockEngine.rumResourceInstrumentation) doReturn mockRumInstrumentation
+        val mockRumInstrumentation = mock<RumNetworkInstrumentation>()
+        whenever(mockEngine.rumNetworkInstrumentation) doReturn mockRumInstrumentation
 
         // When
-        val result = testedContext.rumResourceInstrumentation
+        val result = testedContext.rumNetworkInstrumentation
 
         // Then
         assertThat(result).isSameAs(mockRumInstrumentation)
     }
 
     @Test
-    fun `M return null W rumResourceInstrumentation { rum disabled }`() {
+    fun `M return null W rumNetworkInstrumentation { rum disabled }`() {
         // Given
-        whenever(mockEngine.rumResourceInstrumentation) doReturn null
+        whenever(mockEngine.rumNetworkInstrumentation) doReturn null
 
         // When
-        val result = testedContext.rumResourceInstrumentation
+        val result = testedContext.rumNetworkInstrumentation
 
         // Then
         assertThat(result).isNull()

@@ -24,7 +24,7 @@ import com.datadog.android.trace.internal.net.TracerProvider
  * header types configured for network tracking.
  */
 @Suppress("TooManyFunctions")
-class ApmNetworkInstrumentationConfiguration internal constructor(
+class ApmNetworkInstrumentationConfiguration(
     internal val tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>
 ) {
     internal var traceOrigin: String? = null
@@ -38,10 +38,9 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracer.getOrNull() }
     internal var networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.DETAILED
+    private var rumInstrumentationActive: Boolean = false
 
-    constructor(
-        tracedHosts: List<String>
-    ) : this(
+    constructor(tracedHosts: List<String>) : this(
         tracedHosts.associateWith {
             setOf(
                 TracingHeaderType.DATADOG,
@@ -137,6 +136,10 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         this.networkTracingScope = networkTracingScope
     }
 
+    internal fun setRumInstrumentationActive(active: Boolean) = apply {
+        rumInstrumentationActive = active
+    }
+
     internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer) = apply {
         this.localTracerFactory = factory
     }
@@ -169,6 +172,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
                 networkingLibraryName = instrumentationName,
                 tracedRequestListener = tracedRequestListener,
                 redacted404ResourceName = redacted404ResourceName,
+                rumInstrumentationActive = rumInstrumentationActive,
                 localFirstPartyHostHeaderTypeResolver = localFirstPartyHostHeaderTypeResolver
             )
         }

@@ -7,7 +7,7 @@
 package com.datadog.android.rum
 
 import android.app.Activity
-import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
+import com.datadog.android.rum.configuration.RumInstrumentationConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -97,16 +97,34 @@ internal class RumInternalProxyTest {
     }
 
     @Test
-    fun `M return RumResourceInstrumentation W build() {non-null builder}`(
+    fun `M return RumNetworkInstrumentation W createInstrumentation()`(
         @StringForgery fakeInstrumentationName: String
     ) {
         // Given
-        val builder = RumResourceInstrumentationConfiguration()
+        val builder = RumInstrumentationConfiguration()
 
         // When
         val result = with(_RumInternalProxy.Companion) {
             builder.createInstrumentation(fakeInstrumentationName)
         }
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
+    }
+
+    @Test
+    fun `M return RumNetworkInstrumentation W createRumNetworkInstrumentation()`(
+        @StringForgery fakeInstrumentationName: String
+    ) {
+        // Given
+        val configuration = RumInstrumentationConfiguration()
+
+        // When
+        val result = _RumInternalProxy.createRumNetworkInstrumentation(
+            fakeInstrumentationName,
+            configuration
+        )
 
         // Then
         assertThat(result).isNotNull()

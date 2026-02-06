@@ -261,7 +261,7 @@ internal class CronetRequestInfoTest {
     }
 
     @Test
-    fun `M return content length from headers W contentLength() { upload data provider has length }`(
+    fun `M return content length W contentLength() { header and upload data provider have same length }`(
         @LongForgery(min = 1) fakeLength: Long
     ) {
         // Given

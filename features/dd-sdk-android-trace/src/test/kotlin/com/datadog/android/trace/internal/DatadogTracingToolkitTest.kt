@@ -45,7 +45,7 @@ internal class DatadogTracingToolkitTest {
     }
 
     @Test
-    fun `M build TracingInstrumentation W build() extension`() {
+    fun `M build TracingInstrumentation W createApmNetworkInstrumentation()`() {
         // Given
         val builder = ApmNetworkInstrumentationConfiguration(fakeTracedHosts)
 
@@ -61,7 +61,7 @@ internal class DatadogTracingToolkitTest {
     }
 
     @Test
-    fun `M build TracingInstrumentation with configured values W build() extension`(
+    fun `M build TracingInstrumentation with configured values W createApmNetworkInstrumentation()`(
         @StringForgery fakeSdkInstanceName: String,
         @StringForgery fakeTraceOrigin: String
     ) {

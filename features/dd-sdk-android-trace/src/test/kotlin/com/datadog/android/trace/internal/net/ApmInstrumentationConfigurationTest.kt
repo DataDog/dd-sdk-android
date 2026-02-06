@@ -215,6 +215,17 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
+    fun `M return self W setRumInstrumentationActive()`(
+        @BoolForgery fakeActive: Boolean
+    ) {
+        // When
+        val result = testedBuilder.setRumInstrumentationActive(fakeActive)
+
+        // Then
+        assertThat(result).isSameAs(testedBuilder)
+    }
+
+    @Test
     fun `M sanitize hosts W build() {valid and invalid hosts}`() {
         // Given
         val validHost = "example.com"

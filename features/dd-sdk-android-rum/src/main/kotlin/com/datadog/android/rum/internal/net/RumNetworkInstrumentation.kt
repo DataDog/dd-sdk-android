@@ -38,7 +38,7 @@ import java.util.UUID
  * @param rumResourceAttributesProvider provider for custom attributes to attach to RUM resources
  */
 @InternalApi
-class RumResourceInstrumentation(
+class RumNetworkInstrumentation internal constructor(
     internal val sdkInstanceName: String?,
     internal val networkInstrumentationName: String,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider
@@ -147,7 +147,7 @@ class RumResourceInstrumentation(
         }
     }
 
-    companion object {
+    companion object Companion {
         internal const val ERROR_MSG_FORMAT = "%s request error %s %s"
         internal const val UNSUPPORTED_HTTP_METHOD =
             "Unsupported HTTP method %s reported by %s instrumentation, using GET instead"

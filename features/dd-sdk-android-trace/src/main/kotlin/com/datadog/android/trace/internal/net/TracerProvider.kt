@@ -55,7 +55,7 @@ internal class TracerProvider internal constructor(
                         WARNING_DEFAULT_TRACER.format(Locale.US, networkingLibraryName)
                     }
                 }
-                return localTracerReference.get()
+                localTracerReference.get()
             }
         }
     }
@@ -67,7 +67,7 @@ internal class TracerProvider internal constructor(
 
         const val WARNING_DEFAULT_TRACER =
             "You added a ApmNetworkInstrumentation to your %s instrumentation, " +
-                "but you didn't register any DatadogTracer in . " +
+                "but you didn't register any DatadogTracer. " +
                 "We automatically created a local tracer for you."
     }
 }

@@ -24,6 +24,7 @@ import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.DatadogTracingToolkit.propagationHelper
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal.net.RequestTraceState
 import com.datadog.android.trace.internal.net.TracerProvider
@@ -51,6 +52,9 @@ import java.util.Locale
  * @param tracedRequestListener listener to be notified when a request is intercepted.
  * @param localFirstPartyHostHeaderTypeResolver resolver for determining header types for first-party hosts.
  * @param networkingLibraryName the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
+ * @param rumInstrumentationActive whether RUM network instrumentation is enabled for the same network integration.
+ *        When true and the RUM feature is registered, spans in [ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY]
+ *        mode are dropped to avoid duplication with backend-synthesized spans from RUM resource attributes.
  * @param networkTracingScope Tracing scope for the instrumentation. See [ApmNetworkTracingScope] enum for more details.
  */
 @Suppress("LongParameterList")
@@ -65,9 +69,8 @@ class ApmNetworkInstrumentation internal constructor(
     internal val tracedRequestListener: NetworkTracedRequestListener,
     internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
-    // TODO RUM-13974 will be used in the following tickets
-    @Suppress("unused")
-    private val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.DETAILED
+    private val rumInstrumentationActive: Boolean,
+    val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.DETAILED
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
     private val sdkCoreReference = SdkReference(sdkInstanceName) {
@@ -80,6 +83,29 @@ class ApmNetworkInstrumentation internal constructor(
     }
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
+
+    /**
+     * Controls whether the mobile SDK sends the span directly or lets the backend
+     * synthesize it from RUM resource attributes (trace_id, span_id).
+     *
+     * - [ApmNetworkTracingScope.DETAILED]: spans are always sent from mobile, including
+     *   redirect/retry spans that have no RUM resource representation.
+     *   Mirrors OkHttp `TracingInterceptor` behavior.
+     *
+     * - [ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY]: span is sent from mobile
+     *   unless both RUM network instrumentation is active AND the RUM feature is registered.
+     *   In that case, the span is dropped to avoid duplication — the RUM resource carries
+     *   trace_id/span_id, and the backend synthesizes the APM span from it.
+     *   Mirrors OkHttp `DatadogInterceptor` behavior.
+     */
+    private val canSendSpan: Boolean
+        get() {
+            return if (networkTracingScope == ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY) {
+                !rumInstrumentationActive || !internalSdkCore.isRumEnabled
+            } else {
+                true
+            }
+        }
 
     /**
      * Called when a network request is about to be sent.
@@ -154,7 +180,7 @@ class ApmNetworkInstrumentation internal constructor(
             }
         }
         tracingState.onRequestCompleted(response, null)
-        tracingState.span?.finishRumAware(tracingState.isSampled, !internalSdkCore.isRumEnabled)
+        tracingState.span?.finishRumAware(tracingState.isSampled, canSendSpan)
     }
 
     /**
@@ -174,7 +200,7 @@ class ApmNetworkInstrumentation internal constructor(
             tracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
             tracingState.onRequestCompleted(null, throwable)
         }
-        tracingState.span?.finishRumAware(tracingState.isSampled, !internalSdkCore.isRumEnabled)
+        tracingState.span?.finishRumAware(tracingState.isSampled, canSendSpan)
     }
 
     private fun DatadogSpan.isSampled(request: HttpRequestInfo): Boolean =
@@ -201,6 +227,31 @@ class ApmNetworkInstrumentation internal constructor(
         }
     }
 
+    /**
+     * Reports an instrumentation error to the internal logger.
+     * This method is used to log warnings when network instrumentation encounters issues.
+     *
+     * @param message the error message describing the instrumentation failure.
+     */
+    fun reportInstrumentationError(message: String) {
+        getSdkCoreOrNull()?.internalLogger?.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            { "Unable to instrument resource: $message" }
+        )
+    }
+
+    /**
+     * Removes all tracing headers from the request.
+     * This is useful when starting a new independent trace for redirect requests,
+     * ensuring each redirect creates a separate root span.
+     *
+     * @param requestModifier the request modifier to remove headers from.
+     */
+    fun removeTracingHeaders(requestModifier: HttpRequestInfoBuilder) {
+        propagationHelper.removeAllTracingHeaders(requestModifier)
+    }
+
     private fun updateRequest(
         url: String,
         sdkCore: InternalSdkCore,
@@ -213,14 +264,14 @@ class ApmNetworkInstrumentation internal constructor(
             .ifEmpty { sdkCore.firstPartyHostResolver.headerTypesForUrl(url) }
 
         if (isSampled) {
-            DatadogTracingToolkit.propagationHelper.propagateSampledHeaders(
+            propagationHelper.propagateSampledHeaders(
                 requestModifier,
                 tracer,
                 span,
                 tracingHeaderTypes
             )
         } else {
-            DatadogTracingToolkit.propagationHelper.propagateNotSampledHeaders(
+            propagationHelper.propagateNotSampledHeaders(
                 modifier,
                 tracer,
                 span,

@@ -6,6 +6,7 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
@@ -100,6 +101,16 @@ internal class CronetHttpRequestInfoBuilder(
 
     override fun <T> addTag(type: Class<in T>, tag: T?) = apply {
         requestContext.setTag(type, tag)
+    }
+
+    override fun setMethod(method: String, body: HttpRequestBody?) = apply {
+        requestContext.setHttpMethod(method)
+        (body as? CronetRequestBody)?.let { cronetBody ->
+            requestContext.setUploadDataProvider(
+                cronetBody.uploadProvider,
+                cronetBody.executor
+            )
+        }
     }
 
     override fun build() = requestContext.buildRequestInfo()

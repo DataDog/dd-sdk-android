@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTraceState
 import org.chromium.net.RequestFinishedInfo
 import java.io.IOException
@@ -18,32 +18,32 @@ import java.util.concurrent.TimeUnit
 
 internal class DatadogRequestFinishedInfoListener(
     executor: Executor,
-    internal val rumResourceInstrumentation: RumResourceInstrumentation
+    internal val rumNetworkInstrumentation: RumNetworkInstrumentation
 ) : RequestFinishedInfo.Listener(executor) {
 
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
         val requestInfo = finishedInfo.annotations?.filterIsInstance<HttpRequestInfo>()?.firstOrNull()
         val traceInfo = finishedInfo.annotations?.filterIsInstance<RequestTraceState>()?.firstOrNull()
         if (requestInfo == null) {
-            rumResourceInstrumentation.reportInstrumentationError(
+            rumNetworkInstrumentation.reportInstrumentationError(
                 "Unable to instrument RUM resource without the request info"
             )
             return
         }
 
         val resourceTiming = buildTiming(finishedInfo.metrics)
-        rumResourceInstrumentation.sendTiming(requestInfo, resourceTiming)
+        rumNetworkInstrumentation.sendTiming(requestInfo, resourceTiming)
 
         when (finishedInfo.finishedReason) {
             RequestFinishedInfo.FAILED -> {
-                rumResourceInstrumentation.stopResourceWithError(
+                rumNetworkInstrumentation.stopResourceWithError(
                     requestInfo = requestInfo,
                     throwable = finishedInfo.exception ?: IOException("Request failed")
                 )
             }
 
             RequestFinishedInfo.CANCELED -> {
-                rumResourceInstrumentation.stopResourceWithError(
+                rumNetworkInstrumentation.stopResourceWithError(
                     requestInfo = requestInfo,
                     throwable = IOException("Request was cancelled")
                 )
@@ -53,12 +53,12 @@ internal class DatadogRequestFinishedInfoListener(
                 val responseInfo = finishedInfo.responseInfo?.let { CronetHttpResponseInfo(it) }
 
                 if (responseInfo == null) {
-                    rumResourceInstrumentation.stopResourceWithError(
+                    rumNetworkInstrumentation.stopResourceWithError(
                         requestInfo = requestInfo,
                         throwable = IllegalStateException("Received null response")
                     )
                 } else {
-                    rumResourceInstrumentation.stopResource(
+                    rumNetworkInstrumentation.stopResource(
                         requestInfo = requestInfo,
                         responseInfo = responseInfo,
                         attributes = traceInfo?.toAttributes().orEmpty()

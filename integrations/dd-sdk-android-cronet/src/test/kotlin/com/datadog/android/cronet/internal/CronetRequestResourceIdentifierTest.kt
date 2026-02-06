@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.core.internal.net.HttpSpec
 import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation.Companion.buildResourceId
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation.Companion.buildResourceId
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -93,7 +93,7 @@ internal class CronetRequestResourceIdentifierTest {
     }
 
     @Test
-    fun `M return {method rul contentLength contentType} W uniqueId {POST request with content length and type}`() {
+    fun `M return {method url contentLength contentType} W uniqueId {POST request with content length and type}`() {
         // Given
         val request = newRequestInfo(
             method = HttpSpec.Method.POST,

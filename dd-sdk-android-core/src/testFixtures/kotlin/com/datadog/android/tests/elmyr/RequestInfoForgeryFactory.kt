@@ -7,6 +7,7 @@
 package com.datadog.android.tests.elmyr
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
@@ -56,6 +57,11 @@ class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
         override fun <T> addTag(type: Class<in T>, tag: T?) = apply {
             request = request.copy(tags = request.tags.toMutableMap().also { it[type] = tag })
         }
+
+        override fun setMethod(
+            method: String,
+            body: HttpRequestBody?
+        ) = apply { request = request.copy(method = method) }
 
         override fun build(): HttpRequestInfo = request.copy()
     }

@@ -178,7 +178,7 @@ internal class CronetHttpRequestInfoModifierTest {
     }
 
     @Test
-    fun `M return CronetHttpRequestInfo W result()`() {
+    fun `M return CronetHttpRequestInfo W build()`() {
         // When
         val result = testedRequestInfoBuilder.build()
 
@@ -187,7 +187,7 @@ internal class CronetHttpRequestInfoModifierTest {
     }
 
     @Test
-    fun `M preserve original url W result() { no modifications }`() {
+    fun `M preserve original url W build() { no modifications }`() {
         // When
         val result = testedRequestInfoBuilder.build()
 
@@ -196,7 +196,7 @@ internal class CronetHttpRequestInfoModifierTest {
     }
 
     @Test
-    fun `M preserve original method W result() { no modifications }`() {
+    fun `M preserve original method W build() { no modifications }`() {
         // When
         val result = testedRequestInfoBuilder.build()
 
@@ -205,7 +205,20 @@ internal class CronetHttpRequestInfoModifierTest {
     }
 
     @Test
-    fun `M preserve original annotations W result()`(forge: Forge) {
+    fun `M update method W setMethod()`(forge: Forge) {
+        // Given
+        val newMethod = forge.anElementFrom(HttpSpec.Method.values().filter { it != fakeRequestInfo.method })
+
+        // When
+        val result = testedRequestInfoBuilder.setMethod(newMethod)
+            .build()
+
+        // Then
+        assertThat(result.method).isEqualTo(newMethod)
+    }
+
+    @Test
+    fun `M preserve original annotations W build()`(forge: Forge) {
         // Given
         val existingAnnotation = FakeTag(forge.anAlphabeticalString())
         testedRequestInfoBuilder.addTag(FakeTag::class.java, existingAnnotation)

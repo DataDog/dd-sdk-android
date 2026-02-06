@@ -10,10 +10,10 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions
 
-class RumResourceInstrumentationAssert private constructor(actual: RumResourceInstrumentation) :
-    AbstractObjectAssert<RumResourceInstrumentationAssert, RumResourceInstrumentation>(
+class RumNetworkInstrumentationAssert private constructor(actual: RumNetworkInstrumentation) :
+    AbstractObjectAssert<RumNetworkInstrumentationAssert, RumNetworkInstrumentation>(
         actual,
-        RumResourceInstrumentationAssert::class.java
+        RumNetworkInstrumentationAssert::class.java
     ) {
 
     fun hasNetworkLayerName(expected: String) = apply {
@@ -29,8 +29,8 @@ class RumResourceInstrumentationAssert private constructor(actual: RumResourceIn
     }
 
     companion object {
-        fun assertThat(instrumentation: RumResourceInstrumentation): RumResourceInstrumentationAssert {
-            return RumResourceInstrumentationAssert(instrumentation)
+        fun assertThat(instrumentation: RumNetworkInstrumentation): RumNetworkInstrumentationAssert {
+            return RumNetworkInstrumentationAssert(instrumentation)
         }
     }
 }

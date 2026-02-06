@@ -45,8 +45,8 @@ public final class com/datadog/android/cronet/DatadogCronetEngine$Builder : org/
 	public synthetic fun enablePublicKeyPinningBypassForLocalTrustAnchors (Z)Lorg/chromium/net/CronetEngine$Builder;
 	public fun enableQuic (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun enableQuic (Z)Lorg/chromium/net/CronetEngine$Builder;
-	public final fun enableRumResourceInstrumentation (Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
-	public static synthetic fun enableRumResourceInstrumentation$default (Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;Lcom/datadog/android/rum/configuration/RumResourceInstrumentationConfiguration;ILjava/lang/Object;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public final fun enableRumInstrumentation (Lcom/datadog/android/rum/configuration/RumInstrumentationConfiguration;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
+	public static synthetic fun enableRumInstrumentation$default (Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;Lcom/datadog/android/rum/configuration/RumInstrumentationConfiguration;ILjava/lang/Object;)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public fun enableSdch (Z)Lcom/datadog/android/cronet/DatadogCronetEngine$Builder;
 	public synthetic fun enableSdch (Z)Lorg/chromium/net/CronetEngine$Builder;
 	public fun getDefaultUserAgent ()Ljava/lang/String;

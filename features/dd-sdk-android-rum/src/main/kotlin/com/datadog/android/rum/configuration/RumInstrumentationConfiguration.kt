@@ -8,12 +8,12 @@ package com.datadog.android.rum.configuration
 
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 
 /**
  * Configuration that allows to configure RUM resource tracking for network requests.
  */
-class RumResourceInstrumentationConfiguration {
+class RumInstrumentationConfiguration {
     private var sdkInstanceName: String? = null
     private var resourceAttributesProvider: RumResourceAttributesProvider = NoOpRumResourceAttributesProvider()
 
@@ -37,7 +37,7 @@ class RumResourceInstrumentationConfiguration {
         this.resourceAttributesProvider = rumResourceAttributesProvider
     }
 
-    internal fun createInstrumentation(instrumentationName: String) = RumResourceInstrumentation(
+    internal fun createInstrumentation(instrumentationName: String) = RumNetworkInstrumentation(
         sdkInstanceName,
         instrumentationName,
         resourceAttributesProvider

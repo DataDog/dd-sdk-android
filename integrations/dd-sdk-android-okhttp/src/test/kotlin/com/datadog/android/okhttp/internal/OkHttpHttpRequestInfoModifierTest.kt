@@ -33,12 +33,12 @@ internal class OkHttpHttpRequestInfoModifierTest {
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
 
-    private lateinit var testedModifier: OkHttpHttpRequestInfoBuilder
+    private lateinit var testedModifier: OkHttpRequestInfoBuilder
 
     @BeforeEach
     fun `set up`() {
         val requestBuilder = Request.Builder().url(fakeUrl)
-        testedModifier = OkHttpHttpRequestInfoBuilder(requestBuilder)
+        testedModifier = OkHttpRequestInfoBuilder(requestBuilder)
     }
 
     @Test
@@ -179,7 +179,7 @@ internal class OkHttpHttpRequestInfoModifierTest {
         val result = testedModifier.build()
 
         // Then
-        assertThat(result).isInstanceOf(OkHttpHttpRequestInfo::class.java)
+        assertThat(result).isInstanceOf(OkHttpRequestInfo::class.java)
     }
 
     @Test

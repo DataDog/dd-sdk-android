@@ -6,29 +6,30 @@
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import okhttp3.Request
 import okio.IOException
 
 @Deprecated(
     "This code will be replaced with RequestExt.kt and OkHttpHttpRequestInfo in the further releases.",
     replaceWith = ReplaceWith(
-        "rumResourceInstrumentation.buildResourceId(" +
+        "rumNetworkInstrumentation.buildResourceId(" +
             "OkHttpHttpRequestInfo(request).buildResourceId(generateUuid)" +
             ")"
     )
 )
 internal fun Request.buildResourceId(generateUuid: Boolean) =
-    RumResourceInstrumentation.buildResourceId(
-        OkHttpHttpRequestInfo(this),
+    RumNetworkInstrumentation.buildResourceId(
+        OkHttpRequestInfo(this),
         generateUuid = generateUuid
     )
 
-internal class OkHttpHttpRequestInfo(internal val request: Request) :
+internal class OkHttpRequestInfo(internal val request: Request) :
     HttpRequestInfo,
     ExtendedRequestInfo,
     MutableHttpRequestInfo {
@@ -44,7 +45,7 @@ internal class OkHttpHttpRequestInfo(internal val request: Request) :
         null
     }
 
-    override fun newBuilder() = OkHttpHttpRequestInfoBuilder(request.newBuilder())
+    override fun newBuilder() = OkHttpRequestInfoBuilder(request.newBuilder())
 }
 
 /**
@@ -57,7 +58,7 @@ internal class OkHttpHttpRequestInfo(internal val request: Request) :
  */
 @InternalApi
 @Suppress("UnsafeThirdPartyFunctionCall") // OkHttp builder methods are safe
-class OkHttpHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : HttpRequestInfoBuilder {
+class OkHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : HttpRequestInfoBuilder {
 
     override fun setUrl(url: String) = apply { requestBuilder.url(url) }
 
@@ -67,9 +68,14 @@ class OkHttpHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) 
         }
     }
 
+    override fun setMethod(
+        method: String,
+        body: HttpRequestBody?
+    ) = apply { requestBuilder.method(method, (body as? OkHttpRequestBody)?.body) }
+
     override fun removeHeader(key: String) = apply { requestBuilder.removeHeader(key) }
 
     override fun <T> addTag(type: Class<in T>, tag: T?) = apply { requestBuilder.tag(type, tag) }
 
-    override fun build(): HttpRequestInfo = OkHttpHttpRequestInfo(requestBuilder.build())
+    override fun build(): HttpRequestInfo = OkHttpRequestInfo(requestBuilder.build())
 }

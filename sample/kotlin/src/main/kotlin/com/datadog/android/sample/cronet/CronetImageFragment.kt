@@ -16,7 +16,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.datadog.android.cronet.DatadogCronetEngine
 import com.datadog.android.rum.ExperimentalRumApi
-import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
 import com.datadog.android.sample.R
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import org.chromium.net.CronetEngine
@@ -66,7 +65,7 @@ internal class CronetImageFragment : Fragment() {
         cronetEngine = DatadogCronetEngine.Builder(requireContext())
             .enableQuic(true)
             .enableHttp2(true)
-            .enableRumResourceInstrumentation()
+            .enableRumInstrumentation()
             .enableApmInstrumentation(ApmNetworkInstrumentationConfiguration(tracedHosts))
             .build()
     }

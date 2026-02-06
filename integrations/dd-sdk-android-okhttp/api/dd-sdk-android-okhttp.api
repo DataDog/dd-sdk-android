@@ -35,18 +35,20 @@ public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/d
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
 }
 
-public final class com/datadog/android/okhttp/internal/OkHttpHttpRequestInfoBuilder : com/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder {
+public final class com/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder : com/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder {
 	public fun <init> (Lokhttp3/Request$Builder;)V
 	public synthetic fun addHeader (Ljava/lang/String;[Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
-	public fun addHeader (Ljava/lang/String;[Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpHttpRequestInfoBuilder;
+	public fun addHeader (Ljava/lang/String;[Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 	public synthetic fun addTag (Ljava/lang/Class;Ljava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
-	public fun addTag (Ljava/lang/Class;Ljava/lang/Object;)Lcom/datadog/android/okhttp/internal/OkHttpHttpRequestInfoBuilder;
+	public fun addTag (Ljava/lang/Class;Ljava/lang/Object;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 	public fun build ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;
 	public synthetic fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
-	public fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpHttpRequestInfoBuilder;
+	public fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 	public fun replaceHeader (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public synthetic fun setMethod (Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public fun setMethod (Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 	public synthetic fun setUrl (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
-	public fun setUrl (Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpHttpRequestInfoBuilder;
+	public fun setUrl (Ljava/lang/String;)Lcom/datadog/android/okhttp/internal/OkHttpRequestInfoBuilder;
 }
 
 public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {

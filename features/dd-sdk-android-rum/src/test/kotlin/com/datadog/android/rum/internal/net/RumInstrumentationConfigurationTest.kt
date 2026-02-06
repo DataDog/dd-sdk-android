@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.net
 
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
+import com.datadog.android.rum.configuration.RumInstrumentationConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -31,7 +31,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumInstrumentationConfigurationTest {
 
-    private lateinit var testedBuilder: RumResourceInstrumentationConfiguration
+    private lateinit var testedConfiguration: RumInstrumentationConfiguration
 
     @Mock
     lateinit var mockResourceAttributesProvider: RumResourceAttributesProvider
@@ -41,13 +41,13 @@ internal class RumInstrumentationConfigurationTest {
 
     @BeforeEach
     fun `set up`() {
-        testedBuilder = RumResourceInstrumentationConfiguration()
+        testedConfiguration = RumInstrumentationConfiguration()
     }
 
     @Test
     fun `M build with default values W createInstrumentation()`() {
         // When
-        val result = testedBuilder.createInstrumentation(fakeInstrumentationName)
+        val result = testedConfiguration.createInstrumentation(fakeInstrumentationName)
 
         // Then
         assertThat(result.sdkInstanceName).isNull()
@@ -60,7 +60,7 @@ internal class RumInstrumentationConfigurationTest {
         @StringForgery fakeSdkInstanceName: String
     ) {
         // When
-        val result = testedBuilder.setSdkInstanceName(
+        val result = testedConfiguration.setSdkInstanceName(
             fakeSdkInstanceName
         ).createInstrumentation(fakeInstrumentationName)
 
@@ -71,7 +71,7 @@ internal class RumInstrumentationConfigurationTest {
     @Test
     fun `M set resource attributes provider W setRumResourceAttributesProvider()`() {
         // When
-        val result = testedBuilder.setRumResourceAttributesProvider(mockResourceAttributesProvider)
+        val result = testedConfiguration.setRumResourceAttributesProvider(mockResourceAttributesProvider)
             .createInstrumentation(fakeInstrumentationName)
 
         // Then
@@ -83,11 +83,11 @@ internal class RumInstrumentationConfigurationTest {
         @StringForgery fakeSdkInstanceName: String
     ) {
         // When
-        val result = testedBuilder
+        val result = testedConfiguration
             .setSdkInstanceName(fakeSdkInstanceName)
             .setRumResourceAttributesProvider(mockResourceAttributesProvider)
 
         // Then
-        assertThat(result).isSameAs(testedBuilder)
+        assertThat(result).isSameAs(testedConfiguration)
     }
 }

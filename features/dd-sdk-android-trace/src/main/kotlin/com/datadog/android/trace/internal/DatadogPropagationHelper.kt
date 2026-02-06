@@ -44,7 +44,7 @@ class DatadogPropagationHelper internal constructor() {
     /**
      * Sets the trace context information as a tag on the request.
      *
-     * @param requestInfoBuilder the request modifier to add the trace context to.
+     * @param requestInfoBuilder the request builder to add the trace context to.
      * @param traceId the trace ID to set.
      * @param spanId the span ID to set.
      * @param samplingPriority the sampling priority for the trace.
@@ -74,7 +74,7 @@ class DatadogPropagationHelper internal constructor() {
      * @return the extracted parent context, or null if none found.
      */
     fun extractParentContext(tracer: DatadogTracer, request: HttpRequestInfo): DatadogSpanContext? {
-        val tagContext = request.tag(DatadogSpan::class.java)?.context() ?: extractTraceContext(request)
+        val tagContext = extractTraceContext(request)
 
         val headerContext: DatadogSpanContext? = tracer.propagate().extract(request) { carrier, classifier ->
             val headers = carrier.headers
@@ -129,21 +129,21 @@ class DatadogPropagationHelper internal constructor() {
     /**
      * Injects trace context headers for a sampled request.
      *
-     * @param modifier the request modifier to add headers to.
+     * @param builder the request builder to add headers to.
      * @param tracer the tracer to use for context injection.
      * @param span the span containing the trace context.
      * @param tracingHeaderTypes the set of header types to inject.
      * @return the modified request info builder.
      */
     fun propagateSampledHeaders(
-        modifier: HttpRequestInfoBuilder,
+        builder: HttpRequestInfoBuilder,
         tracer: DatadogTracer,
         span: DatadogSpan,
         tracingHeaderTypes: Set<TracingHeaderType>
-    ) = modifier.apply {
+    ) = builder.apply {
         tracer.propagate().inject(
             span.context(),
-            modifier
+            builder
         ) { carrier: HttpRequestInfoBuilder, key: String, value: String ->
             when (key) {
                 DatadogHttpCodec.ORIGIN_KEY,
@@ -194,7 +194,7 @@ class DatadogPropagationHelper internal constructor() {
      * Handles trace context headers for a non-sampled request.
      * Depending on the injection type, may remove or inject headers with drop sampling priority.
      *
-     * @param modifier the request modifier to modify headers on.
+     * @param builder the request builder to modify headers on.
      * @param tracer the tracer to use for context injection.
      * @param span the span containing the trace context.
      * @param tracingHeaderTypes the set of header types to handle.
@@ -204,13 +204,13 @@ class DatadogPropagationHelper internal constructor() {
      */
     @Suppress("NestedBlockDepth")
     fun propagateNotSampledHeaders(
-        modifier: HttpRequestInfoBuilder,
+        builder: HttpRequestInfoBuilder,
         tracer: DatadogTracer,
         span: DatadogSpan,
         tracingHeaderTypes: Set<TracingHeaderType>,
         injectionType: TraceContextInjection,
         traceOrigin: String?
-    ) = modifier.apply {
+    ) = builder.apply {
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
                 TracingHeaderType.DATADOG -> {
@@ -239,6 +239,17 @@ class DatadogPropagationHelper internal constructor() {
                 }
             }
         }
+    }
+
+    /**
+     * Removes all tracing headers from the request.
+     * This is useful when starting a new independent trace for redirect requests.
+     *
+     * @param builder the request builder to remove headers from.
+     * @return the modified request info builder.
+     */
+    fun removeAllTracingHeaders(builder: HttpRequestInfoBuilder) = builder.apply {
+        ALL_TRACING_HEADERS.forEach { removeHeader(it) }
     }
 
     /**
@@ -344,6 +355,9 @@ class DatadogPropagationHelper internal constructor() {
             W3CHttpCodec.TRACE_PARENT_KEY,
             W3CHttpCodec.TRACE_STATE_KEY
         )
+
+        internal val ALL_TRACING_HEADERS: Set<String> =
+            DATADOG_CODEC_HEADERS + B3M_CODEC_HEADERS + W3C_CODEC_HEADERS + B3HttpCodec.B3_KEY
 
         private fun HttpRequestInfoBuilder.resetDatadogHeaders(
             span: DatadogSpan,

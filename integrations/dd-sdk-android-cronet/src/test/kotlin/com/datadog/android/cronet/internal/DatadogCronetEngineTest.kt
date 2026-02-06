@@ -7,7 +7,7 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -47,7 +47,7 @@ internal class DatadogCronetEngineTest {
     lateinit var mockDelegate: CronetEngine
 
     @Mock
-    lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
+    lateinit var mockRumNetworkInstrumentation: RumNetworkInstrumentation
 
     @Mock
     lateinit var mockApmNetworkInstrumentation: ApmNetworkInstrumentation
@@ -58,7 +58,7 @@ internal class DatadogCronetEngineTest {
     fun setup() {
         testedEngine = DatadogCronetEngine(
             mockDelegate,
-            rumResourceInstrumentation = mockRumResourceInstrumentation,
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
             apmNetworkInstrumentation = null
         )
     }
@@ -298,7 +298,7 @@ internal class DatadogCronetEngineTest {
         // Given
         testedEngine = DatadogCronetEngine(
             mockDelegate,
-            rumResourceInstrumentation = mockRumResourceInstrumentation,
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
             apmNetworkInstrumentation = mockApmNetworkInstrumentation
         )
         val mockCallback = mock<UrlRequest.Callback>()
@@ -328,7 +328,7 @@ internal class DatadogCronetEngineTest {
         // Given
         testedEngine = DatadogCronetEngine(
             mockDelegate,
-            rumResourceInstrumentation = mockRumResourceInstrumentation,
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
             apmNetworkInstrumentation = null
         )
         val mockCallback = mock<UrlRequest.Callback>()

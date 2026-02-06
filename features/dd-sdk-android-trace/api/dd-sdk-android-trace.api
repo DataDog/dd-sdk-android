@@ -1,5 +1,6 @@
 public final class com/datadog/android/trace/ApmNetworkInstrumentationConfiguration {
 	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;)V
 	public final fun set404ResourcesRedacted (Z)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceContextInjection (Lcom/datadog/android/trace/TraceContextInjection;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
@@ -85,9 +86,12 @@ public abstract interface class com/datadog/android/trace/event/SpanEventMapper 
 }
 
 public final class com/datadog/android/trace/internal/ApmNetworkInstrumentation {
+	public final fun getNetworkTracingScope ()Lcom/datadog/android/trace/ApmNetworkTracingScope;
 	public final fun onRequest (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Lcom/datadog/android/trace/internal/net/RequestTraceState;
 	public final fun onResponseFailed (Lcom/datadog/android/trace/internal/net/RequestTraceState;Ljava/lang/Throwable;)V
 	public final fun onResponseSucceeded (Lcom/datadog/android/trace/internal/net/RequestTraceState;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)V
+	public final fun removeTracingHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;)V
+	public final fun reportInstrumentationError (Ljava/lang/String;)V
 }
 
 public final class com/datadog/android/trace/internal/DatadogPropagationHelper {
@@ -98,6 +102,7 @@ public final class com/datadog/android/trace/internal/DatadogPropagationHelper {
 	public final fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 	public final fun propagateNotSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Set;Lcom/datadog/android/trace/TraceContextInjection;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public final fun propagateSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Set;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public final fun removeAllTracingHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public final fun setTraceContext (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Ljava/lang/String;I)V
 }
 
@@ -121,6 +126,7 @@ public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
 	public final fun createApmNetworkInstrumentation (Ljava/lang/String;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;)Lcom/datadog/android/trace/internal/ApmNetworkInstrumentation;
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
 	public final fun mergeBaggage (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public final fun setRumInstrumentationActive (ZLcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;)V
 	public final fun setSdkV2Compatible (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V

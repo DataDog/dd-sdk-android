@@ -12,8 +12,8 @@ import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener
 import com.datadog.android.cronet.internal.DatadogUrlRequestBuilder
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.configuration.RumResourceInstrumentationConfiguration
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.configuration.RumInstrumentationConfiguration
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogTracingToolkit
@@ -47,13 +47,13 @@ import java.util.concurrent.TimeUnit
  *
  * @param delegate the underlying CronetEngine to delegate calls to.
  * @param apmNetworkInstrumentation optional APM tracing instrumentation for creating trace spans.
- * @param rumResourceInstrumentation optional RUM instrumentation for tracking network resources.
+ * @param rumNetworkInstrumentation optional RUM instrumentation for tracking network resources.
  */
 @Suppress("TooManyFunctions") // The number of functions depends on Cronet implementation.
 class DatadogCronetEngine internal constructor(
     internal val delegate: CronetEngine,
     internal val apmNetworkInstrumentation: ApmNetworkInstrumentation?,
-    internal val rumResourceInstrumentation: RumResourceInstrumentation?
+    internal val rumNetworkInstrumentation: RumNetworkInstrumentation?
 ) : CronetEngine() {
 
     /** @inheritDoc */
@@ -71,7 +71,7 @@ class DatadogCronetEngine internal constructor(
         )
         return DatadogUrlRequestBuilder(
             requestContext = requestContext,
-            cronetInstrumentationStateHolder = datadogCallback
+            requestCallback = datadogCallback
         )
     }
 
@@ -187,7 +187,6 @@ class DatadogCronetEngine internal constructor(
      * Builder for creating [DatadogCronetEngine] instances with Datadog instrumentation.
      * This builder wraps the standard [CronetEngine.Builder] and adds options for RUM and APM monitoring.
      *
-     * By default, RUM resource tracking is enabled. APM tracing can be enabled via [enableApmInstrumentation].
      */
     @Suppress("TooManyFunctions") // The amount of functions is depend on Cronet
     class Builder : CronetEngine.Builder {
@@ -219,23 +218,10 @@ class DatadogCronetEngine internal constructor(
             this.delegate = delegate
         }
 
-        /**
-         * Sets a custom RUM instrumentation builder.
-         * Use this to customize how RUM resources are tracked, or pass null to disable RUM tracking.
-         *
-         * @param configuration the RUM instrumentation builder, or null to disable RUM tracking.
-         */
-        @ExperimentalRumApi
-        fun enableRumResourceInstrumentation(
-            configuration: RumResourceInstrumentationConfiguration = RumResourceInstrumentationConfiguration()
-        ) = apply {
-            rumResourceInstrumentationConfiguration = configuration
-        }
-
         private val delegate: CronetEngine.Builder
         private var listenerExecutor: Executor? = null
-        private var tracingInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration? = null
-        private var rumResourceInstrumentationConfiguration: RumResourceInstrumentationConfiguration? = null
+        private var apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration? = null
+        private var rumInstrumentationConfiguration: RumInstrumentationConfiguration? = null
 
         /**
          * Sets the executor for request finished listeners.
@@ -256,7 +242,20 @@ class DatadogCronetEngine internal constructor(
          */
         @ExperimentalRumApi
         fun enableApmInstrumentation(configuration: ApmNetworkInstrumentationConfiguration) = apply {
-            this.tracingInstrumentationConfiguration = configuration
+            this.apmInstrumentationConfiguration = configuration
+        }
+
+        /**
+         * Sets a custom RUM instrumentation builder.
+         * Use this to customize how RUM resources are tracked, or pass null to disable RUM tracking.
+         *
+         * @param configuration the RUM instrumentation builder, or null to disable RUM tracking.
+         */
+        @ExperimentalRumApi
+        fun enableRumInstrumentation(
+            configuration: RumInstrumentationConfiguration = RumInstrumentationConfiguration()
+        ) = apply {
+            rumInstrumentationConfiguration = configuration
         }
 
         /** @inheritDoc */
@@ -369,25 +368,26 @@ class DatadogCronetEngine internal constructor(
 
         /** @inheritDoc */
         override fun build(): CronetEngine {
-            val rumResourceInstrumentation = rumResourceInstrumentationConfiguration?.let {
-                _RumInternalProxy.createRumResourceInstrumentation(CRONET_NETWORK_INSTRUMENTATION_NAME, it)
+            val rumNetworkInstrumentation = rumInstrumentationConfiguration?.let {
+                _RumInternalProxy.createRumNetworkInstrumentation(CRONET_NETWORK_INSTRUMENTATION_NAME, it)
             }
 
-            val tracingInstrumentation = tracingInstrumentationConfiguration?.let {
+            val tracingInstrumentation = apmInstrumentationConfiguration?.let {
+                DatadogTracingToolkit.setRumInstrumentationActive(rumNetworkInstrumentation != null, it)
                 DatadogTracingToolkit.createApmNetworkInstrumentation(CRONET_NETWORK_INSTRUMENTATION_NAME, it)
             }
 
-            val requestFinishedListener = rumResourceInstrumentation?.let { instrumentation ->
+            val requestFinishedListener = rumNetworkInstrumentation?.let { instrumentation ->
                 DatadogRequestFinishedInfoListener(
-                    rumResourceInstrumentation = instrumentation,
+                    rumNetworkInstrumentation = instrumentation,
                     executor = listenerExecutor ?: newListenerExecutor()
                 )
             }
 
-            return if (rumResourceInstrumentation == null && tracingInstrumentation == null) {
+            return if (rumNetworkInstrumentation == null && tracingInstrumentation == null) {
                 delegate.build()
             } else {
-                DatadogCronetEngine(delegate.build(), tracingInstrumentation, rumResourceInstrumentation)
+                DatadogCronetEngine(delegate.build(), tracingInstrumentation, rumNetworkInstrumentation)
                     .also { it.addRequestFinishedListener(requestFinishedListener) }
             }
         }

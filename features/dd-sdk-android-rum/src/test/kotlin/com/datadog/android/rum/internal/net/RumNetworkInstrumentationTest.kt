@@ -12,6 +12,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
@@ -65,9 +66,9 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumResourceInstrumentationTest {
+internal class RumNetworkInstrumentationTest {
 
-    private lateinit var testedInstrumentation: RumResourceInstrumentation
+    private lateinit var testedInstrumentation: RumNetworkInstrumentation
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -115,7 +116,7 @@ internal class RumResourceInstrumentationTest {
             tags = mutableMapOf()
         )
 
-        testedInstrumentation = RumResourceInstrumentation(
+        testedInstrumentation = RumNetworkInstrumentation(
             sdkInstanceName = null,
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider
@@ -245,7 +246,7 @@ internal class RumResourceInstrumentationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumResourceInstrumentation.UNSUPPORTED_HTTP_METHOD.format(
+            RumNetworkInstrumentation.UNSUPPORTED_HTTP_METHOD.format(
                 Locale.US,
                 fakeUnknownMethod,
                 fakeNetworkInstrumentationName
@@ -437,7 +438,7 @@ internal class RumResourceInstrumentationTest {
         testedInstrumentation.stopResourceWithError(fakeRequestInfo, fakeThrowable)
 
         // Then
-        val expectedMessage = RumResourceInstrumentation.ERROR_MSG_FORMAT.format(
+        val expectedMessage = RumNetworkInstrumentation.ERROR_MSG_FORMAT.format(
             Locale.US,
             fakeNetworkInstrumentationName,
             fakeMethod,
@@ -507,7 +508,7 @@ internal class RumResourceInstrumentationTest {
     @Test
     fun `M generate UUID W buildResourceId() {generateUuid = true}`() {
         // When
-        val resourceId = RumResourceInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = true)
+        val resourceId = RumNetworkInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = true)
 
         // Then
         assertThat(resourceId.key).isEqualTo("$fakeMethod•$fakeUrl")
@@ -517,7 +518,7 @@ internal class RumResourceInstrumentationTest {
     @Test
     fun `M not generate UUID W buildResourceId() {generateUuid = false}`() {
         // When
-        val resourceId = RumResourceInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
+        val resourceId = RumNetworkInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
 
         // Then
         assertThat(resourceId.key).isEqualTo("$fakeMethod•$fakeUrl")
@@ -532,7 +533,7 @@ internal class RumResourceInstrumentationTest {
         fakeRequestInfo = fakeRequestInfo.copy(tags = mutableMapOf(UUID::class.java to fakeUuid))
 
         // When
-        val resourceId = RumResourceInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
+        val resourceId = RumNetworkInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
 
         // Then
         assertThat(resourceId.uuid).isEqualTo(fakeUuid.toString())
@@ -547,7 +548,7 @@ internal class RumResourceInstrumentationTest {
         fakeRequestInfo = fakeRequestInfo.copy(contentLength = fakeContentLength, contentType = fakeContentType)
 
         // When
-        val resourceId = RumResourceInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
+        val resourceId = RumNetworkInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
 
         // Then
         assertThat(resourceId.key).isEqualTo("$fakeMethod•$fakeUrl•$fakeContentLength•$fakeContentType")
@@ -561,7 +562,7 @@ internal class RumResourceInstrumentationTest {
         fakeRequestInfo = fakeRequestInfo.copy(contentLength = 0L, contentType = fakeContentType)
 
         // When
-        val resourceId = RumResourceInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
+        val resourceId = RumNetworkInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = false)
 
         // Then
         assertThat(resourceId.key).isEqualTo("$fakeMethod•$fakeUrl•0•$fakeContentType")
@@ -572,7 +573,7 @@ internal class RumResourceInstrumentationTest {
         // Given
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
-        val testedInstrumentationNoRum = RumResourceInstrumentation(
+        val testedInstrumentationNoRum = RumNetworkInstrumentation(
             sdkInstanceName = null,
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider
@@ -585,7 +586,7 @@ internal class RumResourceInstrumentationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumResourceInstrumentation.WARN_RUM_DISABLED.format(
+            RumNetworkInstrumentation.WARN_RUM_DISABLED.format(
                 Locale.US,
                 fakeNetworkInstrumentationName,
                 "Default SDK instance"
@@ -651,6 +652,13 @@ internal class RumResourceInstrumentationTest {
 
         override fun <T> addTag(type: Class<in T>, tag: T?) = apply {
             request = request.copy(tags = request.tags.toMutableMap().also { it[type] = tag })
+        }
+
+        override fun setMethod(
+            method: String,
+            body: HttpRequestBody?
+        ): HttpRequestInfoBuilder = apply {
+            request = request.copy(method = method)
         }
 
         override fun build(): HttpRequestInfo = request.copy()
