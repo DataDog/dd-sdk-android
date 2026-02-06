@@ -7,9 +7,10 @@
 package com.datadog.benchmark.internal.reader
 
 import android.view.Choreographer
+import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.TimeUnit
 
-internal class FpsVitalReader : VitalReader {
+internal class FpsVitalReader(timeProvider: TimeProvider) : VitalReader {
 
     private var currentFps: Double = 0.0
     private var frameCount = 0
@@ -19,11 +20,11 @@ internal class FpsVitalReader : VitalReader {
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (lastFrameTime == 0L) {
-                lastFrameTime = System.nanoTime()
+                lastFrameTime = timeProvider.getDeviceElapsedTimeNanos()
             }
 
             frameCount++
-            val currentFrameTime = System.nanoTime()
+            val currentFrameTime = timeProvider.getDeviceElapsedTimeNanos()
             val elapsedTime: Long = currentFrameTime - lastFrameTime
 
             if (elapsedTime >= TimeUnit.MILLISECONDS.toNanos(intervalMs)) {

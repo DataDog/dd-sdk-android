@@ -53,6 +53,7 @@ interface com.datadog.android.api.InternalLogger
   fun logApiUsage(Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
   companion object 
     val UNBOUND: InternalLogger
+fun InternalLogger.logToUser(InternalLogger.Level, Boolean = false, () -> String)
 interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
@@ -116,6 +117,7 @@ interface com.datadog.android.api.feature.Feature
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
+    const val PROFILING_FEATURE_NAME: String
 interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
   fun onContextUpdate(String, Map<String, Any?>)
 interface com.datadog.android.api.feature.FeatureEventReceiver
@@ -132,6 +134,7 @@ fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class
 fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
+  val timeProvider: com.datadog.android.internal.time.TimeProvider
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
   fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
@@ -150,18 +153,29 @@ interface com.datadog.android.api.feature.StorageBackedFeature : Feature
 interface com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
   fun <T> tag(Class<T>): T?
 fun <T> HttpRequestInfo.tag(Class<T>): T?
+interface com.datadog.android.api.instrumentation.network.HttpRequestBody
 interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val url: String
   val headers: Map<String, List<String>>
   val contentType: String?
   val method: String
   fun contentLength(): Long?
+interface com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+  fun setUrl(String): HttpRequestInfoBuilder
+  fun addHeader(String, String): HttpRequestInfoBuilder
+  fun removeHeader(String): HttpRequestInfoBuilder
+  fun replaceHeader(String, String): HttpRequestInfoBuilder
+  fun <T> addTag(Class<T>, T?): HttpRequestInfoBuilder
+  fun setMethod(String, HttpRequestBody? = null): HttpRequestInfoBuilder
+  fun build(): HttpRequestInfo
 interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
   val statusCode: Int
   val headers: Map<String, List<String>>
   val contentType: String?
   val contentLength: Long?
+interface com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
+  fun newBuilder(): HttpRequestInfoBuilder
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext
@@ -264,6 +278,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setCrashReportsEnabled(Boolean): Builder
     fun setBackpressureStrategy(BackPressureStrategy): Builder
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
+    fun setVersion(String): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -318,11 +333,35 @@ object com.datadog.android.core.internal.net.HttpSpec
     const val OPTIONS: String
     const val CONNECT: String
     fun values()
+    fun isMethodWithBody(String)
   object Headers
     const val CONTENT_TYPE: String
     const val CONTENT_LENGTH: String
+    const val LOCATION: String
+    const val RETRY_AFTER: String
     const val WEBSOCKET_ACCEPT_HEADER: String
+  object StatusCodes
+    const val OK: Int
+    const val MOVED_PERMANENTLY: Int
+    const val FOUND: Int
+    const val SEE_OTHER: Int
+    const val TEMPORARY_REDIRECT: Int
+    const val PERMANENT_REDIRECT: Int
+    const val BAD_REQUEST: Int
+    const val UNAUTHORIZED: Int
+    const val FORBIDDEN: Int
+    const val NOT_FOUND: Int
+    const val METHOD_NOT_ALLOWED: Int
+    const val REQUEST_TIMEOUT: Int
+    const val TOO_MANY_REQUESTS: Int
+    const val INTERNAL_ERROR: Int
+    const val BAD_GATEWAY: Int
+    const val SERVICE_UNAVAILABLE: Int
+    const val GATEWAY_TIMEOUT: Int
+    fun clientErrors()
+    fun serverErrors()
   object ContentType
+    const val APPLICATION_JSON: String
     const val TEXT_PLAIN: String
     const val TEXT_EVENT_STREAM: String
     const val APPLICATION_GRPC: String
@@ -334,12 +373,10 @@ interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: 
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.listFilesSafe(com.datadog.android.api.InternalLogger, java.io.FilenameFilter): Array<java.io.File>?
+fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
+fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
-interface com.datadog.android.core.internal.system.BuildSdkVersionProvider
-  val version: Int
-  companion object 
-    val DEFAULT: BuildSdkVersionProvider
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
@@ -403,7 +440,7 @@ interface com.datadog.android.core.sampling.Sampler<T: Any>
 interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
   fun drainTo(MutableCollection<Runnable>)
   interface Factory
-    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy): FlushableExecutorService
+    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy, com.datadog.android.internal.time.TimeProvider): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>

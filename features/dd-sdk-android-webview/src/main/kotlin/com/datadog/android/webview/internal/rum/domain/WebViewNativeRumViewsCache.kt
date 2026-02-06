@@ -6,10 +6,12 @@
 
 package com.datadog.android.webview.internal.rum.domain
 
+import com.datadog.android.internal.time.TimeProvider
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
 internal class WebViewNativeRumViewsCache(
+    private val timeProvider: TimeProvider,
     private val entriesTtlLimitInMs: Long = DATA_PURGE_TTL_LIMIT_IN_MS
 ) : NativeRumViewsCache {
 
@@ -87,7 +89,7 @@ internal class WebViewNativeRumViewsCache(
     private fun purgeHistory() {
         var cursor = parentViewsHistoryQueue.peekLast()
         while (cursor != null) {
-            val timeSinceLastSnapshot = System.currentTimeMillis() - cursor.timestamp
+            val timeSinceLastSnapshot = timeProvider.getDeviceTimestampMillis() - cursor.timestamp
             if (timeSinceLastSnapshot > entriesTtlLimitInMs) {
                 parentViewsHistoryQueue.remove(cursor)
                 cursor = parentViewsHistoryQueue.peekLast()

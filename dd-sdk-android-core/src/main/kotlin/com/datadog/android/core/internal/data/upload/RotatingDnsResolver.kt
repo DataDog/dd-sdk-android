@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.internal.time.TimeProvider
 import okhttp3.Dns
 import java.net.InetAddress
 import kotlin.time.Duration
@@ -14,17 +15,17 @@ import kotlin.time.Duration.Companion.nanoseconds
 
 internal class RotatingDnsResolver(
     private val delegate: Dns = Dns.SYSTEM,
-    private val ttl: Duration = TTL_30_MIN
+    private val ttl: Duration = TTL_30_MIN,
+    private val timeProvider: TimeProvider
 ) : Dns {
 
     data class ResolvedHost(
         val hostname: String,
-        val addresses: MutableList<InetAddress>
+        val addresses: MutableList<InetAddress>,
+        private val resolutionTimestamp: Long
     ) {
-        private val resolutionTimestamp: Long = System.nanoTime()
-
-        fun getAge(): Duration {
-            return (System.nanoTime() - resolutionTimestamp).nanoseconds
+        fun getAge(currentTime: Long): Duration {
+            return (currentTime - resolutionTimestamp).nanoseconds
         }
 
         fun rotate() {
@@ -50,7 +51,11 @@ internal class RotatingDnsResolver(
         } else {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             val result = delegate.lookup(hostname)
-            knownHosts[hostname] = ResolvedHost(hostname, result.toMutableList())
+            knownHosts[hostname] = ResolvedHost(
+                hostname,
+                result.toMutableList(),
+                timeProvider.getDeviceElapsedTimeNanos()
+            )
             safeCopy(result)
         }
     }
@@ -66,7 +71,7 @@ internal class RotatingDnsResolver(
     }
 
     private fun isValid(knownHost: ResolvedHost): Boolean {
-        return knownHost.getAge() < ttl && knownHost.addresses.isNotEmpty()
+        return knownHost.getAge(timeProvider.getDeviceElapsedTimeNanos()) < ttl && knownHost.addresses.isNotEmpty()
     }
 
     // endregion

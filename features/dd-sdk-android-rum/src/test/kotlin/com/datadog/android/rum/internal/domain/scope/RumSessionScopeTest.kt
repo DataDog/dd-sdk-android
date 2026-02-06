@@ -18,13 +18,17 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -35,8 +39,8 @@ import com.datadog.android.rum.internal.startup.testRumStartupScenarios
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -119,6 +123,9 @@ internal class RumSessionScopeTest {
     lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 
     @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
@@ -178,13 +185,16 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeDisplayInfo: DisplayInfo
 
-    private var fakeVitalSource: RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? = null
+    private var fakeVitalSource: VitalAppLaunchEvent.VitalAppLaunchEventSource? = null
 
     @Mock
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
 
+    private lateinit var stubTimeProvider: StubTimeProvider
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        stubTimeProvider = StubTimeProvider(elapsedTimeNs = TEST_INACTIVITY_NS + 1)
         fakeInitialViewEvent = forge.startViewEvent()
 
         whenever(mockParentScope.getRumContext()).doAnswer { fakeParentContext }
@@ -193,6 +203,7 @@ internal class RumSessionScopeTest {
             mockSessionReplayFeatureScope
         whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
         whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.timeProvider) doReturn stubTimeProvider
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
@@ -223,7 +234,7 @@ internal class RumSessionScopeTest {
         )
 
         fakeVitalSource = if (isValidSource) {
-            RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.fromJson(fakeSource)
+            VitalAppLaunchEvent.VitalAppLaunchEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -637,7 +648,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
 
@@ -658,7 +669,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
 
@@ -678,7 +689,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result =
             testedScope.handleEvent(forge.startActionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -701,7 +712,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result =
             testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -725,7 +736,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result =
             testedScope.handleEvent(forge.startResourceEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -749,7 +760,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result = testedScope.handleEvent(forge.addErrorEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
 
@@ -772,7 +783,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result =
             testedScope.handleEvent(forge.startResourceEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -794,7 +805,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val result = testedScope.handleEvent(forge.addErrorEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
 
@@ -810,16 +821,26 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
         repeat(repeatCount.toInt()) {
-            Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(forge.startActionEvent(false), fakeDatadogContext, mockEventWriteScope, mockWriter)
+            advanceTimeByMs(TEST_SLEEP_MS)
+            testedScope.handleEvent(
+                forge.startActionEvent(continuous = false, eventTime = currentFakeTime()),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
         }
 
         // When
-        Thread.sleep(TEST_SLEEP_MS)
+        advanceTimeByMs(TEST_SLEEP_MS)
         val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
 
@@ -837,18 +858,32 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
         repeat(repeatCount.toInt()) {
-            Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(forge.startActionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+            advanceTimeByMs(TEST_SLEEP_MS)
+            testedScope.handleEvent(
+                forge.startActionEvent(eventTime = currentFakeTime()),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
         }
 
         // When
-        Thread.sleep(TEST_SLEEP_MS)
-        val result =
-            testedScope.handleEvent(forge.startActionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_SLEEP_MS)
+        val result = testedScope.handleEvent(
+            forge.startActionEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -865,18 +900,32 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
         repeat(repeatCount.toInt()) {
-            Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(forge.startActionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+            advanceTimeByMs(TEST_SLEEP_MS)
+            testedScope.handleEvent(
+                forge.startActionEvent(eventTime = currentFakeTime()),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
         }
 
         // When
-        Thread.sleep(TEST_SLEEP_MS)
-        val result =
-            testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_SLEEP_MS)
+        val result = testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -980,12 +1029,12 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
         repeat(repeatCount.toInt()) {
-            Thread.sleep(TEST_SLEEP_MS)
+            advanceTimeByMs(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(false), fakeDatadogContext, mockEventWriteScope, mockWriter)
         }
 
         // When
-        Thread.sleep(TEST_MAX_DURATION_MS)
+        advanceTimeByMs(TEST_MAX_DURATION_MS)
         val newEvent = forge.startViewEvent()
         val result = testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -1009,7 +1058,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val newEvent = forge.startViewEvent()
         val result = testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -1058,12 +1107,12 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
         repeat(repeatCount.toInt()) {
-            Thread.sleep(TEST_SLEEP_MS)
+            advanceTimeByMs(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(false), fakeDatadogContext, mockEventWriteScope, mockWriter)
         }
 
         // When
-        Thread.sleep(TEST_MAX_DURATION_MS)
+        advanceTimeByMs(TEST_MAX_DURATION_MS)
         val newEvent = forge.startViewEvent()
         val result = testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -1088,7 +1137,7 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val newEvent = forge.startViewEvent()
         val result = testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val context = testedScope.getRumContext()
@@ -1219,7 +1268,7 @@ internal class RumSessionScopeTest {
         val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
-        Thread.sleep(TEST_MAX_DURATION_MS)
+        advanceTimeByMs(TEST_MAX_DURATION_MS)
         val newEvent = forge.startViewEvent()
         testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
@@ -1256,7 +1305,7 @@ internal class RumSessionScopeTest {
         val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val newEvent = forge.startViewEvent()
         testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
@@ -1345,7 +1394,7 @@ internal class RumSessionScopeTest {
         val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
-        Thread.sleep(TEST_MAX_DURATION_MS)
+        advanceTimeByMs(TEST_MAX_DURATION_MS)
         val newEvent = forge.startViewEvent()
         testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
@@ -1384,7 +1433,7 @@ internal class RumSessionScopeTest {
         val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
-        Thread.sleep(TEST_INACTIVITY_MS)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
         val newEvent = forge.startViewEvent()
         testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
@@ -1550,6 +1599,36 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M stop profiler W handleEvent { AppStartTTIDEvent, session not tracked }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
+        val event = mock<RumRawEvent.AppStartTTIDEvent>()
+
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+        testedScope.sessionState =
+            forge.aValueFrom(RumSessionScope.State::class.java, exclude = listOf(RumSessionScope.State.TRACKED))
+
+        // When
+        testedScope.handleEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        // Then
+        verify(mockProfilingFeatureScope).sendEvent(ProfilerStopEvent.TTID())
+    }
+
+    @Test
     fun `M call onTTFDEvent W handleEvent { AppStartTTFDEvent }`() {
         // Given
         val event = RumRawEvent.AppStartTTFDEvent()
@@ -1588,6 +1667,17 @@ internal class RumSessionScopeTest {
 
     // region Internal
 
+    private fun advanceTimeByMs(ms: Long) {
+        stubTimeProvider.elapsedTimeNs += TimeUnit.MILLISECONDS.toNanos(ms)
+    }
+
+    private fun currentFakeTime(): Time {
+        return Time(
+            timestamp = stubTimeProvider.deviceTimestampMs,
+            nanoTime = stubTimeProvider.elapsedTimeNs
+        )
+    }
+
     private fun initializeTestedScope(
         sampleRate: Float = 100f,
         withMockChildScope: Boolean = true,
@@ -1616,7 +1706,8 @@ internal class RumSessionScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager }
+            rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager },
+            insightsCollector = mockInsightsCollector
         )
 
         if (withMockChildScope) {

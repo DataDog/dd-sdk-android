@@ -8,8 +8,10 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +30,8 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.system.measureTimeMillis
 
 @Extensions(
@@ -49,12 +53,24 @@ internal class WipeDataMigrationOperationTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @LongForgery(min = 0L)
+    var fakeElapsedTimeNs: Long = 0L
+
     @BeforeEach
     fun `set up`() {
+        val currentTime = AtomicLong(fakeElapsedTimeNs)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
+            currentTime.getAndAdd(RETRY_DELAY_NS)
+        }
+
         testedOperation = WipeDataMigrationOperation(
             fakeTargetDirectory,
             mockFileMover,
-            mockInternalLogger
+            mockInternalLogger,
+            mockTimeProvider
         )
     }
 
@@ -64,7 +80,8 @@ internal class WipeDataMigrationOperationTest {
         testedOperation = WipeDataMigrationOperation(
             null,
             mockFileMover,
-            mockInternalLogger
+            mockInternalLogger,
+            mockTimeProvider
         )
 
         // When
@@ -119,6 +136,7 @@ internal class WipeDataMigrationOperationTest {
     @Test
     fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)
 
@@ -130,5 +148,9 @@ internal class WipeDataMigrationOperationTest {
         // Then
         verify(mockFileMover, times(3)).delete(fakeTargetDirectory)
         assertThat(duration).isBetween(1000L, 1100L)
+    }
+
+    companion object {
+        private val RETRY_DELAY_NS = TimeUnit.MILLISECONDS.toNanos(500)
     }
 }

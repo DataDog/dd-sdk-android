@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -22,6 +23,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
@@ -58,14 +60,15 @@ internal class RumSessionScope(
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
-    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
     private var startReason: StartReason = StartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
-    private val sessionStartNs = AtomicLong(System.nanoTime())
+    private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedTimeNanos())
 
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -95,7 +98,8 @@ internal class RumSessionScope(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider
+        displayInfoProvider = displayInfoProvider,
+        insightsCollector
     )
 
     internal val activeView: RumViewScope?
@@ -166,6 +170,11 @@ internal class RumSessionScope(
                         rumContext = rumContext,
                         customAttributes = getCustomAttributes()
                     )
+                } else {
+                    // can refactor in the future by moving session state check into RumSessionScopeStartupManager
+                    sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                        ProfilerStopEvent.TTID()
+                    )
                 }
             }
             is RumRawEvent.AppStartEvent -> {
@@ -228,7 +237,7 @@ internal class RumSessionScope(
 
     @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {
-        val nanoTime = System.nanoTime()
+        val nanoTime = sdkCore.timeProvider.getDeviceElapsedTimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID
 
         val timeSinceLastInteractionNs = nanoTime - lastUserInteractionNs.get()

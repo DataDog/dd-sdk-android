@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/rounded_white_background"
+    android:elevation="4dp"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/dd_round" />
+
+    <!--
+        layout_marginTop = (40 - 14) / 2 = 13: icon center
+        layout_marginStart = 40 + 8 = 48:  icon + Margin
+    -->
+    <TextView
+        android:id="@+id/view_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="13dp"
+        android:ellipsize="start"
+        android:singleLine="true"
+        android:includeFontPadding="false"
+        android:textColor="@color/widget_text"
+        android:textSize="14sp" />
+
+    <!--
+        layout_marginTop = (40 + 8) = 48:
+         icon
+         offset
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="48dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <include
+            android:id="@+id/vital_mem"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+        <include
+            android:id="@+id/vital_native"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+        <include
+            android:id="@+id/vital_gc"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!--
+    layout_marginTop = (40 + 8 + 44 + 8) = 100:
+     icon
+     offset
+     row
+     offset
+-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="100dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <include
+            android:id="@+id/vital_cpu"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_marginEnd="8dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+        <include
+            android:id="@+id/vital_threads"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:gravity="center" />
+
+        <include
+            android:id="@+id/vital_slow_frame_rate"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!--
+        layout_marginTop = (40 + 8 + 44 + 8 + 44 + 8) = 152
+        icon
+        offset
+        row
+        offset
+        row
+        offset
+    -->
+    <com.datadog.android.insights.internal.widgets.TimelineView
+        android:id="@+id/timeline"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/vital_bg"
+        android:layout_marginTop="152dp" />
+
+    <!--
+    layout_marginTop = (40 + 8 + 44 + 8 + 44 + 8 + 40 + 8) = 200
+    icon
+    offset
+    row
+    offset
+    row
+    offset
+    timeline
+    offset
+    legend
+-->
+    <TextView
+        android:id="@+id/timeline_legend"
+        android:layout_marginTop="200dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/widget_text"
+        android:gravity="center_horizontal"
+        android:textSize="11sp"
+
+        />
+
+</FrameLayout>

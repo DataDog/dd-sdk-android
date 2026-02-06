@@ -32,12 +32,13 @@ internal class FlagsPersistenceManager(
     internal fun saveFlagsState(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        currentTimestamp: Long,
         callback: DataStoreWriteCallback? = null
     ) {
         val entry = FlagsStateEntry(
             evaluationContext = context,
             flags = flags,
-            lastUpdateTimestamp = System.currentTimeMillis()
+            lastUpdateTimestamp = currentTimestamp
         )
 
         dataStore.setValue(

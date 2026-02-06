@@ -62,6 +62,7 @@ internal class FlagsFeatureTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
 
         // Setup mockContext with default release build (flags = 0)

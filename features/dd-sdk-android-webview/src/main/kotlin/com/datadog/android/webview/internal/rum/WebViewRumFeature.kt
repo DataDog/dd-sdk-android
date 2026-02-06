@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class WebViewRumFeature(
     private val sdkCore: FeatureSdkCore,
     override val requestFactory: RequestFactory,
-    internal val nativeRumViewsCache: NativeRumViewsCache = WebViewNativeRumViewsCache()
+    internal val nativeRumViewsCache: NativeRumViewsCache = WebViewNativeRumViewsCache(sdkCore.timeProvider)
 ) : StorageBackedFeature, FeatureContextUpdateReceiver {
 
     internal var dataWriter: DataWriter<JsonObject> = NoOpDataWriter()

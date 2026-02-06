@@ -9,10 +9,10 @@ package com.datadog.android.sessionreplay.internal.utils
 import android.content.Context
 import android.content.res.Resources.Theme
 import android.graphics.Point
-import android.os.Build
 import android.util.TypedValue
 import android.view.WindowManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -81,13 +81,16 @@ internal object MiscUtils {
         }
     }
 
-    fun resolveSystemInformation(context: Context): SystemInformation {
+    fun resolveSystemInformation(
+        context: Context,
+        buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    ): SystemInformation {
         val screenDensity = context.resources.displayMetrics.density
         val themeColorAsHexString = resolveThemeColor(context.theme)?.let {
             DefaultColorStringFormatter.formatColorAndAlphaAsHexString(it, OPAQUE_ALPHA_VALUE)
         }
         return SystemInformation(
-            screenBounds = resolveScreenBounds(context, screenDensity),
+            screenBounds = resolveScreenBounds(context, screenDensity, buildSdkVersionProvider),
             screenOrientation = context.resources.configuration.orientation,
             screenDensity = screenDensity,
             themeColor = themeColorAsHexString
@@ -95,12 +98,16 @@ internal object MiscUtils {
     }
 
     @Suppress("DEPRECATION")
-    private fun resolveScreenBounds(context: Context, screenDensity: Float): GlobalBounds {
+    private fun resolveScreenBounds(
+        context: Context,
+        screenDensity: Float,
+        buildSdkVersionProvider: BuildSdkVersionProvider
+    ): GlobalBounds {
         val windowManager = (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)
             ?: return GlobalBounds(0, 0, 0, 0)
         val screenHeight: Long
         val screenWidth: Long
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (buildSdkVersionProvider.isAtLeastR) {
             val currentWindowMetrics = windowManager.currentWindowMetrics
             val screenBounds = currentWindowMetrics.bounds
             screenHeight = (screenBounds.bottom - screenBounds.top).toLong()

@@ -20,7 +20,7 @@ internal class RumContextDataHandler(
 
     @MainThread
     internal fun createRumContextData(): RecordedQueuedItemContext? {
-        val timestamp = timeProvider.getDeviceTimestamp()
+        val timestamp = timeProvider.getDeviceTimestampMillis()
 
         val newRumContext = rumContextProvider.getRumContext()
 

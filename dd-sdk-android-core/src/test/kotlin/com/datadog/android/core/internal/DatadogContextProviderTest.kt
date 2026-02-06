@@ -88,9 +88,9 @@ internal class DatadogContextProviderTest {
 
         whenever(coreFeature.mockInstance.androidInfoProvider) doReturn fakeAndroidInfo
 
-        whenever(coreFeature.mockInstance.timeProvider.getDeviceTimestamp()) doReturn
+        whenever(coreFeature.mockInstance.timeProvider.getDeviceTimestampMillis()) doReturn
             fakeDeviceTimestamp
-        whenever(coreFeature.mockInstance.timeProvider.getServerTimestamp()) doReturn
+        whenever(coreFeature.mockInstance.timeProvider.getServerTimestampMillis()) doReturn
             fakeServerTimestamp
 
         whenever(coreFeature.mockInstance.trackingConsentProvider.getConsent()) doReturn

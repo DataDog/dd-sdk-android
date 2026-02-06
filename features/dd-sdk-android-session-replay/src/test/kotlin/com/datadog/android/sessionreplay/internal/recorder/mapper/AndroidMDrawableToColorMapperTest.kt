@@ -16,13 +16,10 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
-import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper.Companion.fillPaintField
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -42,8 +39,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
@@ -235,7 +231,6 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
     fun `M map RippleDrawable to first opaque layer's color ignoring mask W mapDrawableToColor()`(
         @IntForgery drawableColor: Int,
         @IntForgery maskDrawableColor: Int
@@ -266,7 +261,6 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
     fun `M map InsetDrawable to inner drawable's color W mapDrawableToColor()`(
         @IntForgery drawableColor: Int
     ) {

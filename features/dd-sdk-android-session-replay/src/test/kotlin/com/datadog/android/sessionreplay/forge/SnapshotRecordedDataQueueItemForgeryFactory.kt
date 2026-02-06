@@ -14,7 +14,8 @@ internal class SnapshotRecordedDataQueueItemForgeryFactory : ForgeryFactory<Snap
     override fun getForgery(forge: Forge): SnapshotRecordedDataQueueItem {
         val item = SnapshotRecordedDataQueueItem(
             recordedQueuedItemContext = forge.getForgery(),
-            systemInformation = forge.getForgery()
+            systemInformation = forge.getForgery(),
+            creationTimestampInNs = forge.aLong(min = 0)
         )
 
         item.pendingJobs.set(forge.anInt())

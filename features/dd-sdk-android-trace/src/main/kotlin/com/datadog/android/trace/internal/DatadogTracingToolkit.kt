@@ -6,6 +6,8 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration.Companion.createInstrumentation
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
@@ -103,5 +105,35 @@ object DatadogTracingToolkit {
         return Baggage.from(oldHeader)
             .mergeWith(Baggage.from(newHeader))
             .toString()
+    }
+
+    /**
+     * Creates an [ApmNetworkInstrumentation] instance from the provided configuration.
+     *
+     * @param name the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
+     * @param configuration the configuration containing tracing settings such as traced hosts,
+     *        sample rate, trace context injection behavior, and tracing scope.
+     * @return a new [ApmNetworkInstrumentation] instance configured with the provided settings.
+     */
+    fun createApmNetworkInstrumentation(
+        name: String,
+        configuration: ApmNetworkInstrumentationConfiguration
+    ): ApmNetworkInstrumentation = configuration.createInstrumentation(name)
+
+    /**
+     * Informs the APM instrumentation whether RUM network instrumentation is active
+     * for the same network integration. This affects span lifecycle management:
+     * when RUM network instrumentation is active and the RUM feature is registered,
+     * spans in [ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY] mode are dropped
+     * to avoid duplication with backend-synthesized spans from RUM resource attributes.
+     *
+     * @param active whether RUM network instrumentation is enabled for this network integration.
+     * @param configuration the APM configuration to update.
+     */
+    fun setRumInstrumentationActive(
+        active: Boolean,
+        configuration: ApmNetworkInstrumentationConfiguration
+    ) {
+        configuration.setRumInstrumentationActive(active)
     }
 }

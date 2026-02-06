@@ -163,7 +163,8 @@ object Rum {
                     sdkCore = sdkCore,
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )
-            }
+            },
+            insightsCollector = rumFeature.insightsCollector
         )
     }
 

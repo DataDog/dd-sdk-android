@@ -11,6 +11,7 @@ import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -25,6 +26,9 @@ internal class FlagsStateSerializerTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @LongForgery(min = 0L)
+    private var fakeTimestamp = 0L
 
     private lateinit var testedSerializer: FlagsStateSerializer
 
@@ -65,8 +69,7 @@ internal class FlagsStateSerializerTest {
             )
         )
 
-        val timestamp = System.currentTimeMillis()
-        val flagsState = FlagsStateEntry(evaluationContext, flags, timestamp)
+        val flagsState = FlagsStateEntry(evaluationContext, flags, fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)
@@ -78,7 +81,7 @@ internal class FlagsStateSerializerTest {
             .hasTargetingKey(targetingKey)
             .hasFlag("flag1")
             .hasFlag("flag2")
-            .hasTimestamp(timestamp)
+            .hasTimestamp(fakeTimestamp)
     }
 
     @Test
@@ -86,7 +89,7 @@ internal class FlagsStateSerializerTest {
         // Given
         val targetingKey = forge.anAlphabeticalString()
         val evaluationContext = EvaluationContext(targetingKey, emptyMap())
-        val flagsState = FlagsStateEntry(evaluationContext, emptyMap())
+        val flagsState = FlagsStateEntry(evaluationContext, emptyMap(), fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)
@@ -103,7 +106,7 @@ internal class FlagsStateSerializerTest {
         // Given
         // Create a state that could potentially cause serialization issues
         val evaluationContext = EvaluationContext("key", emptyMap())
-        val flagsState = FlagsStateEntry(evaluationContext, emptyMap())
+        val flagsState = FlagsStateEntry(evaluationContext, emptyMap(), fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)

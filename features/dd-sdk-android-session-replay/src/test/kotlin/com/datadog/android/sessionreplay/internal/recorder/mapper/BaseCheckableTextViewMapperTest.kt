@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
-import android.os.Build
 import android.widget.Checkable
 import android.widget.TextView
 import com.datadog.android.sessionreplay.ImagePrivacy
@@ -22,8 +21,6 @@ import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -54,8 +51,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -185,9 +181,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
 
     // region Unit Tests
 
-    @TestTargetApi(Build.VERSION_CODES.M)
     @Test
-    fun `M create ImageWireFrame W map() { checked, above M }`() {
+    fun `M create ImageWireFrame W map() { checked }`() {
         // Given
         val allowedMappingContext =
             fakeMappingContext.copy(
@@ -230,9 +225,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         )
     }
 
-    @TestTargetApi(Build.VERSION_CODES.M)
     @Test
-    fun `M create ImageWireFrame W map() { not checked, above M }`() {
+    fun `M create ImageWireFrame W map() { not checked }`() {
         // Given
         val allowedMappingContext = fakeMappingContext.copy(
             textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,

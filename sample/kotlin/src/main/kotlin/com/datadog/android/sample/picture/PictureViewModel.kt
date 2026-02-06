@@ -34,6 +34,7 @@ internal class PictureViewModel : ViewModel() {
 
     private fun buildImageLoader(type: ImageLoaderType) = when (type) {
         ImageLoaderType.COIL -> CoilImageLoader()
+        ImageLoaderType.COIL3 -> Coil3ImageLoader()
         ImageLoaderType.FRESCO -> FrescoImageLoader()
         ImageLoaderType.GLIDE -> GlideImageLoader()
         ImageLoaderType.PICASSO -> PicassoImageLoader()

@@ -18,8 +18,8 @@ import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.utils.resolveViewName
@@ -56,13 +56,13 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun register(activity: Activity, sdkCore: SdkCore) {
         this.sdkCore = sdkCore as FeatureSdkCore
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.isAtLeastO) {
             activity.fragmentManager.registerFragmentLifecycleCallbacks(this, true)
         }
     }
 
     override fun unregister(activity: Activity) {
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.isAtLeastO) {
             activity.fragmentManager.unregisterFragmentLifecycleCallbacks(this)
         }
     }

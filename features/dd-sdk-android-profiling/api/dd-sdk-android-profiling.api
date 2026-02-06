@@ -1,0 +1,164 @@
+public final class com/datadog/android/profiling/DdProfilingContentProvider : android/content/ContentProvider {
+	public fun <init> ()V
+	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
+	public fun getType (Landroid/net/Uri;)Ljava/lang/String;
+	public fun insert (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
+	public fun onCreate ()Z
+	public fun query (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
+}
+
+public abstract interface annotation class com/datadog/android/profiling/ExperimentalProfilingApi : java/lang/annotation/Annotation {
+}
+
+public final class com/datadog/android/profiling/Profiling {
+	public static final field INSTANCE Lcom/datadog/android/profiling/Profiling;
+	public static final fun enable ()V
+	public static final fun enable (Lcom/datadog/android/profiling/ProfilingConfiguration;)V
+	public static final fun enable (Lcom/datadog/android/profiling/ProfilingConfiguration;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/profiling/ProfilingConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+}
+
+public final class com/datadog/android/profiling/ProfilingConfiguration {
+	public static final field Companion Lcom/datadog/android/profiling/ProfilingConfiguration$Companion;
+	public final fun copy (Ljava/lang/String;F)Lcom/datadog/android/profiling/ProfilingConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/ProfilingConfiguration;Ljava/lang/String;FILjava/lang/Object;)Lcom/datadog/android/profiling/ProfilingConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/ProfilingConfiguration$Builder {
+	public fun <init> ()V
+	public final fun build ()Lcom/datadog/android/profiling/ProfilingConfiguration;
+	public final fun setApplicationLaunchSampleRate (F)Lcom/datadog/android/profiling/ProfilingConfiguration$Builder;
+	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/profiling/ProfilingConfiguration$Builder;
+}
+
+public final class com/datadog/android/profiling/ProfilingConfiguration$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/profiling/ProfilingConfiguration;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent {
+	public static final field Companion Lcom/datadog/android/profiling/model/ProfileEvent$Companion;
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/profiling/model/ProfileEvent$Application;Lcom/datadog/android/profiling/model/ProfileEvent$Session;Lcom/datadog/android/profiling/model/ProfileEvent$View;Lcom/datadog/android/profiling/model/ProfileEvent$Vital;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/profiling/model/ProfileEvent$Application;Lcom/datadog/android/profiling/model/ProfileEvent$Session;Lcom/datadog/android/profiling/model/ProfileEvent$View;Lcom/datadog/android/profiling/model/ProfileEvent$Vital;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component10 ()Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public final fun component11 ()Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public final fun component9 ()Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/profiling/model/ProfileEvent$Application;Lcom/datadog/android/profiling/model/ProfileEvent$Session;Lcom/datadog/android/profiling/model/ProfileEvent$View;Lcom/datadog/android/profiling/model/ProfileEvent$Vital;)Lcom/datadog/android/profiling/model/ProfileEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/model/ProfileEvent;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/profiling/model/ProfileEvent$Application;Lcom/datadog/android/profiling/model/ProfileEvent$Session;Lcom/datadog/android/profiling/model/ProfileEvent$View;Lcom/datadog/android/profiling/model/ProfileEvent$Vital;ILjava/lang/Object;)Lcom/datadog/android/profiling/model/ProfileEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent;
+	public final fun getApplication ()Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public final fun getAttachments ()Ljava/util/List;
+	public final fun getEnd ()Ljava/lang/String;
+	public final fun getFamily ()Ljava/lang/String;
+	public final fun getRuntime ()Ljava/lang/String;
+	public final fun getSession ()Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public final fun getStart ()Ljava/lang/String;
+	public final fun getTagsProfiler ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
+	public final fun getView ()Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public final fun getVital ()Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Application {
+	public static final field Companion Lcom/datadog/android/profiling/model/ProfileEvent$Application$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/model/ProfileEvent$Application;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public final fun getId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Application$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$Application;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Session {
+	public static final field Companion Lcom/datadog/android/profiling/model/ProfileEvent$Session$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/model/ProfileEvent$Session;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public final fun getId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Session$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$Session;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$View {
+	public static final field Companion Lcom/datadog/android/profiling/model/ProfileEvent$View$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/model/ProfileEvent$View;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$View$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$View;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$View;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Vital {
+	public static final field Companion Lcom/datadog/android/profiling/model/ProfileEvent$Vital$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/model/ProfileEvent$Vital;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public final fun getId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/model/ProfileEvent$Vital$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfileEvent$Vital;
+}
+

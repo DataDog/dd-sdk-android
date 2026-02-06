@@ -17,7 +17,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
-import java.lang.RuntimeException
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 

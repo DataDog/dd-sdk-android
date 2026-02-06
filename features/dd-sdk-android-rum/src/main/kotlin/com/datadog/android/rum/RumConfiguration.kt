@@ -9,11 +9,13 @@ package com.datadog.android.rum
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -22,8 +24,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -220,26 +223,38 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent]. You can use this interface implementation
-         * to modify the [RumVitalOperationStepEvent] attributes before serialisation.
+         * Sets the [EventMapper] for the RUM [VitalOperationStepEvent]. You can use this interface implementation
+         * to modify the [VitalOperationStepEvent] attributes before serialisation.
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        @Deprecated(message = "Use setVitalOperationStepEventMapper instead")
-        fun setVitalEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
+        @Deprecated(
+            message = "Use setVitalEventMapper(vitalOperationStepEventMapper, vitalAppLaunchEventMapper) instead.",
+            replaceWith = ReplaceWith(expression = "setVitalEventMapper(eventMapper, NoOpEventMapper())")
+        )
+        fun setVitalEventMapper(eventMapper: EventMapper<VitalOperationStepEvent>): Builder {
             @OptIn(ExperimentalRumApi::class)
-            return setVitalOperationStepEventMapper(eventMapper)
+            return setVitalEventMapper(vitalOperationStepEventMapper = eventMapper)
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [RumVitalOperationStepEvent]. You can use this interface implementation
-         * to modify the [RumVitalOperationStepEvent] attributes before serialisation.
+         * Sets the [EventMapper] for the RUM [VitalOperationStepEvent] and the
+         * RUM [VitalAppLaunchEvent]. You can use this interface implementation
+         * to modify the [VitalOperationStepEvent] attributes and the [VitalAppLaunchEvent]
+         * attributes before serialisation.
          *
-         * @param eventMapper the [EventMapper] implementation.
+         * @param vitalOperationStepEventMapper the [EventMapper] implementation for [VitalOperationStepEvent]
+         * @param vitalAppLaunchEventMapper the [EventMapper] implementation for [VitalAppLaunchEvent]
          */
         @ExperimentalRumApi
-        fun setVitalOperationStepEventMapper(eventMapper: EventMapper<RumVitalOperationStepEvent>): Builder {
-            rumConfig = rumConfig.copy(vitalOperationStepEventMapper = eventMapper)
+        fun setVitalEventMapper(
+            vitalOperationStepEventMapper: EventMapper<VitalOperationStepEvent> = NoOpEventMapper(),
+            vitalAppLaunchEventMapper: EventMapper<VitalAppLaunchEvent> = NoOpEventMapper()
+        ): Builder {
+            rumConfig = rumConfig.copy(
+                vitalOperationStepEventMapper = vitalOperationStepEventMapper,
+                vitalAppLaunchEventMapper = vitalAppLaunchEventMapper
+            )
             return this
         }
 
@@ -338,9 +353,10 @@ data class RumConfiguration internal constructor(
          * Assigning a null value to this property will disable the [SlowFramesListener] and stop the computation of the
          * associated rates.
          *
+         * [SlowFramesConfiguration.DEFAULT] is going to be used by default.
+         *
          * @param slowFramesConfiguration The configuration to be applied to the [SlowFramesListener].
          */
-        @ExperimentalRumApi
         fun setSlowFramesConfiguration(
             slowFramesConfiguration: SlowFramesConfiguration?
         ): Builder {
@@ -430,6 +446,17 @@ data class RumConfiguration internal constructor(
          */
         internal fun setDisableJankStats(disable: Boolean): Builder {
             rumConfig = rumConfig.copy(disableJankStats = disable)
+            return this
+        }
+
+        /**
+         * Sets the [InsightsCollector] to collect RUM Insights events, used inside the RUM Debug Widget.
+         *
+         * @param insightsCollector the [InsightsCollector] implementation.
+         * @return the [Builder] instance.
+         */
+        internal fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
+            rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
             return this
         }
     }

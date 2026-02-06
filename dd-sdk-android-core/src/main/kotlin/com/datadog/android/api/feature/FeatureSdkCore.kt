@@ -8,6 +8,7 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.time.TimeProvider
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import java.util.UUID
@@ -26,6 +27,11 @@ interface FeatureSdkCore : SdkCore {
      * Logger for the internal SDK purposes.
      */
     val internalLogger: InternalLogger
+
+    /**
+     * The [TimeProvider] used by this core instance for current timestamps.
+     */
+    val timeProvider: TimeProvider
 
     /**
      * Registers a feature to this instance of the Datadog SDK.

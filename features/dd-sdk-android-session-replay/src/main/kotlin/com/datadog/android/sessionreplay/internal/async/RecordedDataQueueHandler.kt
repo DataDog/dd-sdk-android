@@ -12,6 +12,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -31,6 +32,7 @@ internal class RecordedDataQueueHandler(
     private val internalLogger: InternalLogger,
     private val executorService: ExecutorService,
     internal val recordedDataQueue: Queue<RecordedDataQueueItem>,
+    private val timeProvider: TimeProvider,
     private val telemetrySampleRate: Float = TELEMETRY_SAMPLE_RATE_PERCENT,
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(telemetrySampleRate)
 ) : DataQueueHandler {
@@ -54,7 +56,8 @@ internal class RecordedDataQueueHandler(
             recordedQueuedItemContext = rumContextData,
             identifier = identifier,
             resourceData = resourceData,
-            mimeType
+            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos(),
+            mimeType = mimeType
         )
 
         insertIntoRecordedDataQueue(item)
@@ -71,6 +74,7 @@ internal class RecordedDataQueueHandler(
 
         val item = TouchEventRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
+            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos(),
             touchData = pointerInteractions
         )
 
@@ -86,7 +90,8 @@ internal class RecordedDataQueueHandler(
 
         val item = SnapshotRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
-            systemInformation = systemInformation
+            systemInformation = systemInformation,
+            creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos()
         )
 
         insertIntoRecordedDataQueue(item)
@@ -128,7 +133,7 @@ internal class RecordedDataQueueHandler(
             val nextItem = recordedDataQueue.peek()
 
             if (nextItem != null) {
-                val nextItemAgeInNs = System.nanoTime() - nextItem.creationTimeStampInNs
+                val nextItemAgeInNs = timeProvider.getDeviceElapsedTimeNanos() - nextItem.creationTimestampInNs
                 if (!nextItem.isValid()) {
                     if (sampler.sample(Unit)) {
                         logInvalidQueueItemException(nextItem)

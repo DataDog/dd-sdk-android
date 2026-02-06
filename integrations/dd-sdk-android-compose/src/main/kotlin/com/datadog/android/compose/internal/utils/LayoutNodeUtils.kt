@@ -59,7 +59,8 @@ internal class LayoutNodeUtils {
                             isClickable = true
                         }
 
-                        CLASS_NAME_TOGGLEABLE_ELEMENT -> {
+                        CLASS_NAME_TOGGLEABLE_ELEMENT,
+                        CLASS_NAME_TRI_STATE_TOGGLEABLE_ELEMENT -> {
                             isClickable = true
                         }
 
@@ -133,6 +134,8 @@ internal class LayoutNodeUtils {
             "androidx.compose.foundation.CombinedClickableElement"
         private const val CLASS_NAME_TOGGLEABLE_ELEMENT =
             "androidx.compose.foundation.selection.ToggleableElement"
+        private const val CLASS_NAME_TRI_STATE_TOGGLEABLE_ELEMENT =
+            "androidx.compose.foundation.selection.TriStateToggleableElement"
         private const val CLASS_NAME_SCROLLING_LAYOUT_ELEMENT =
             "androidx.compose.foundation.ScrollingLayoutElement"
         private const val CLASS_NAME_SCROLLABLE_ELEMENT =

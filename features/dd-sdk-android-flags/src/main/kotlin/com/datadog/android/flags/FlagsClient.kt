@@ -112,13 +112,29 @@ interface FlagsClient {
     fun resolveIntValue(flagKey: String, defaultValue: Int): Int
 
     /**
-     * Resolves a structured flag value as a JSON object.
+     * Resolves a structured flag value as a [JSONObject].
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The JSON object value of the flag, or the default value if unavailable.
      */
     fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
+
+    /**
+     * Resolves a structured flag value as a Map.
+     *
+     * The returned Map contains only primitives (String, Int, Long, Double, Boolean),
+     * null values, nested Maps, and Lists. All nested structures are recursively
+     * converted.
+     *
+     * This method is useful for integrations that prefer working with Kotlin collections
+     * over JSON types.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The map to return if the flag cannot be retrieved or parsed.
+     * @return The map value of the flag, or the default value if unavailable.
+     */
+    fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?>
 
     /**
      * Resolves a flag value with detailed resolution information.
@@ -363,7 +379,6 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
-        internal const val FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME = "flags-state-notifications"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -374,9 +389,6 @@ interface FlagsClient {
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
-            )
-            val stateNotificationExecutorService = featureSdkCore.createSingleThreadExecutorService(
-                executorContext = FLAGS_STATE_NOTIFICATION_EXECUTOR_NAME
             )
 
             val datadogContext = (featureSdkCore as InternalSdkCore).getDatadogContext()
@@ -429,9 +441,7 @@ interface FlagsClient {
                 val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
                 val flagStateManager = FlagsStateManager(
-                    DDCoreSubscription.create(),
-                    stateNotificationExecutorService,
-                    featureSdkCore.internalLogger
+                    DDCoreSubscription.create()
                 )
 
                 val evaluationsManager = EvaluationsManager(

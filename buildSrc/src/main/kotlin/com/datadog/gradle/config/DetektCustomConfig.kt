@@ -15,11 +15,13 @@ import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.JavaExec
+import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.register
 import java.io.File
 import java.util.Properties
 
 fun Project.detektCustomConfig() {
-    val ext = extensions.findByType(LibraryExtension::class.java)
+    val ext = extensions.findByType<LibraryExtension>()
 
     tasks.register("printDetektClasspath") {
         group = "datadog"
@@ -82,12 +84,12 @@ fun Project.detektCustomConfig() {
         }
     }
 
-    tasks.register("unzipAarForDetekt", Copy::class.java) {
+    tasks.register<Copy>("unzipAarForDetekt") {
         from(zipTree(layout.buildDirectory.file("outputs/aar/${project.name}-release.aar")))
         into(layout.buildDirectory.dir("extracted"))
     }
 
-    tasks.register("customDetektRules", JavaExec::class.java) {
+    tasks.register<JavaExec>("customDetektRules") {
         group = "datadog"
 
         classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.4-all.jar")

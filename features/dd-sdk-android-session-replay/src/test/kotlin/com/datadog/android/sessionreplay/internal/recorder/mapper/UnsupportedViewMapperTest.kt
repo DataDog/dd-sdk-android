@@ -14,7 +14,6 @@ import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.A
 import com.datadog.android.sessionreplay.internal.recorder.optionselectormocks.ToolbarCustomSubclass
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -35,7 +34,6 @@ import androidx.appcompat.widget.Toolbar as AppCompatToolbar
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)

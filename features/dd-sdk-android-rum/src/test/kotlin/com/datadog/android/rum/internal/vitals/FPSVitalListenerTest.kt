@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.vitals
 import android.os.Build
 import androidx.metrics.performance.FrameData
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregatorTest.Companion.MAX_FPS
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregatorTest.Companion.MIN_FPS
@@ -54,7 +54,7 @@ internal class FPSVitalListenerTest {
     lateinit var mockInternalLogger: InternalLogger
 
     private val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock {
-        on { version } doReturn Build.VERSION_CODES.VANILLA_ICE_CREAM
+        on { isAtLeastS } doReturn true
     }
 
     private lateinit var testedListener: FPSVitalListener
@@ -140,6 +140,7 @@ internal class FPSVitalListenerTest {
 
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
 
+        whenever(mockBuildSdkVersionProvider.isAtLeastS) doReturn false
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.R
 
         testedListener.onFrameMetricsData(

@@ -67,7 +67,8 @@ internal class SnapshotRecordedDataQueueItemTest {
         // Given
         testedItem = SnapshotRecordedDataQueueItem(
             fakeRecordedQueuedItemContext,
-            mockSystemInformation
+            mockSystemInformation,
+            fakeSnapshotRecordedDataQueueItem.creationTimestampInNs
         )
 
         // Then
@@ -85,7 +86,7 @@ internal class SnapshotRecordedDataQueueItemTest {
     }
 
     @Test
-    fun `M return false W isReady() { not finished traveral }`() {
+    fun `M return false W isReady() { not finished traversal }`() {
         // Given
         testedItem.pendingJobs.set(0)
         testedItem.isFinishedTraversal = false

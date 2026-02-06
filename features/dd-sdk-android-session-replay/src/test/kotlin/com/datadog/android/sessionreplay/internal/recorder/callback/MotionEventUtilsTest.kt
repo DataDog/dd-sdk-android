@@ -6,11 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.callback
 
-import android.os.Build
 import android.view.MotionEvent
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -22,22 +20,23 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class MotionEventUtilsTest {
 
-    lateinit var testeMotionEventUtils: MotionEventUtils
-
     @Mock
     lateinit var mockMotionEvent: MotionEvent
+
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     var pointerXExpectedValues = mutableListOf<Float>()
     var pointerYExpectedValues = mutableListOf<Float>()
@@ -57,21 +56,21 @@ internal class MotionEventUtilsTest {
             whenever(mockMotionEvent.getRawX(pointerIndex)).thenReturn(x)
             whenever(mockMotionEvent.getRawY(pointerIndex)).thenReturn(y)
         }
-        testeMotionEventUtils = MotionEventUtils
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M return the absoluteX pointer position W getPointerAbsoluteX{ from Q above }`(
         forge: Forge
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastQ) doReturn true
         val randomPointerIndex = forge.anInt(min = 0, max = mockMotionEvent.pointerCount)
 
         // When
-        val absolutePointerX = testeMotionEventUtils.getPointerAbsoluteX(
+        val absolutePointerX = MotionEventUtils.getPointerAbsoluteX(
             mockMotionEvent,
-            randomPointerIndex
+            randomPointerIndex,
+            mockBuildSdkVersionProvider
         )
 
         // Then
@@ -79,17 +78,18 @@ internal class MotionEventUtilsTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M return the absoluteY pointer position W getPointerAbsoluteY{ from Q above }`(
         forge: Forge
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastQ) doReturn true
         val randomPointerIndex = forge.anInt(min = 0, max = mockMotionEvent.pointerCount)
 
         // When
-        val absolutePointerY = testeMotionEventUtils.getPointerAbsoluteY(
+        val absolutePointerY = MotionEventUtils.getPointerAbsoluteY(
             mockMotionEvent,
-            randomPointerIndex
+            randomPointerIndex,
+            mockBuildSdkVersionProvider
         )
 
         // Then
@@ -104,7 +104,7 @@ internal class MotionEventUtilsTest {
         val randomPointerIndex = forge.anInt(min = 0, max = mockMotionEvent.pointerCount)
 
         // When
-        val absolutePointerX = testeMotionEventUtils.getPointerAbsoluteX(
+        val absolutePointerX = MotionEventUtils.getPointerAbsoluteX(
             mockMotionEvent,
             randomPointerIndex
         )
@@ -121,7 +121,7 @@ internal class MotionEventUtilsTest {
         val randomPointerIndex = forge.anInt(min = 0, max = mockMotionEvent.pointerCount)
 
         // When
-        val absolutePointerY = testeMotionEventUtils.getPointerAbsoluteY(
+        val absolutePointerY = MotionEventUtils.getPointerAbsoluteY(
             mockMotionEvent,
             randomPointerIndex
         )

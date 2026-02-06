@@ -115,6 +115,9 @@ internal class RecorderWindowCallbackTest {
     @Forgery
     lateinit var fakeRumContext: SessionReplayRumContext
 
+    @LongForgery(min = 0L)
+    private var fakeElapsedTimeNs: Long = 0L
+
     @BeforeEach
     fun `set up`() {
         val mockResources = mock<Resources> {
@@ -124,7 +127,8 @@ internal class RecorderWindowCallbackTest {
         whenever(mockRecordedDataQueueHandler.addTouchEventItem(any()))
             .thenReturn(fakeTouchEventRecordedDataQueueItem)
         whenever(mockContext.resources).thenReturn(mockResources)
-        whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeTimestamp)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { fakeElapsedTimeNs }
         whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
         whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
             .thenReturn(true)
@@ -281,10 +285,12 @@ internal class RecorderWindowCallbackTest {
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent2)
         // must skip 3 as the motion update delay was not reached
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS / 2
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS))
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent4)
 
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent5)
@@ -316,15 +322,15 @@ internal class RecorderWindowCallbackTest {
         testedWindowCallback.dispatchTouchEvent(fakeDownEvent)
 
         fakeMoveEventsBeforeFlush.forEachIndexed { index, event ->
-            if (index == fakeMoveEventsBeforeFlush.size - 1) {
-                Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS))
+            fakeElapsedTimeNs += if (index == fakeMoveEventsBeforeFlush.size - 1) {
+                TEST_FLUSH_BUFFER_THRESHOLD_NS
             } else {
-                Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS))
+                TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
             }
             testedWindowCallback.dispatchTouchEvent(event)
         }
         fakeMoveEventsAfterFlush.forEach {
-            Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS))
+            fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
             testedWindowCallback.dispatchTouchEvent(it)
         }
         testedWindowCallback.dispatchTouchEvent(fakeUpEvent)
@@ -364,9 +370,12 @@ internal class RecorderWindowCallbackTest {
 
         // When
         testedWindowCallback.dispatchTouchEvent(fakeGesture1DownEvent)
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(fakeGesture1MoveEvent)
         testedWindowCallback.dispatchTouchEvent(fakeGesture1UpEvent)
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(fakeGesture2DownEvent)
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(fakeGesture2MoveEvent)
         testedWindowCallback.dispatchTouchEvent(fakeGesture2UpEvent)
 
@@ -393,9 +402,9 @@ internal class RecorderWindowCallbackTest {
 
         // When
         testedWindowCallback.dispatchTouchEvent(fakeDownEvent)
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS))
+        fakeElapsedTimeNs += TEST_FLUSH_BUFFER_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(fakeMotion1Event)
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS))
+        fakeElapsedTimeNs += TEST_FLUSH_BUFFER_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(fakeMotion2Event)
 
         // Then
@@ -418,6 +427,7 @@ internal class RecorderWindowCallbackTest {
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent2)
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
 
@@ -462,6 +472,18 @@ internal class RecorderWindowCallbackTest {
         verifyNoInteractions(mockViewOnDrawInterceptor)
     }
 
+    @Test
+    fun `M delegate to wrapped callback W window focus changed`(forge: Forge) {
+        // Given
+        val fakeHasFocus = forge.aBool()
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(fakeHasFocus)
+
+        // Then
+        verify(mockWrappedCallback).onWindowFocusChanged(fakeHasFocus)
+    }
+
     // endregion
 
     // region touchPrivacy
@@ -498,6 +520,7 @@ internal class RecorderWindowCallbackTest {
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
+        fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent2)
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
 

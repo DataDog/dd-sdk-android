@@ -7,25 +7,26 @@
 package com.datadog.gradle.plugin.apisurface
 
 import com.datadog.gradle.plugin.CheckGeneratedFileTask
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
-import java.io.File
 import javax.inject.Inject
 
-open class CheckApiSurfaceTask @Inject constructor(
+abstract class CheckApiSurfaceTask @Inject constructor(
     execOperations: ExecOperations
 ) : CheckGeneratedFileTask(
     genTaskName = ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE,
     execOperations
 ) {
 
-    @InputFile
-    lateinit var kotlinSurfaceFile: File
+    @get:InputFile
+    abstract val kotlinSurfaceFile: RegularFileProperty
 
-    @InputFiles
-    lateinit var javaSurfaceFile: File
+    @get:Optional
+    @get:InputFile
+    abstract val javaSurfaceFile: RegularFileProperty
 
     init {
         group = "datadog"
@@ -36,14 +37,11 @@ open class CheckApiSurfaceTask @Inject constructor(
 
     @TaskAction
     fun applyTask() {
-        verifyGeneratedFileExists(kotlinSurfaceFile)
-        if (javaSurfaceFile.exists()) {
-            verifyGeneratedFileExists(javaSurfaceFile)
+        verifyGeneratedFileExists(kotlinSurfaceFile.get().asFile)
+        if (javaSurfaceFile.isPresent && javaSurfaceFile.get().asFile.exists()) {
+            verifyGeneratedFileExists(javaSurfaceFile.get().asFile)
         }
     }
-
-    @InputFile
-    fun getInputFile() = kotlinSurfaceFile
 
     // endregion
 }

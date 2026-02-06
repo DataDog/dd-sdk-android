@@ -4,26 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
-val generateTraceModelsTaskName = "generateTraceModelsFromJson"
-
-tasks.register(
-    generateTraceModelsTaskName,
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
+createJsonModelsGenerationTask("generateTraceModelsFromJson") {
     inputDirPath = "src/main/json/trace"
-    ignoredFiles = arrayOf(
+    ignoredFiles = listOf(
         "_common-schema.json"
     )
     targetPackageName = "com.datadog.android.trace.model"
-}
-
-afterEvaluate {
-    tasks.findByName(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
-        ?.dependsOn(generateTraceModelsTaskName)
-    tasks.withType(KotlinCompile::class.java).configureEach {
-        dependsOn(generateTraceModelsTaskName)
-    }
 }

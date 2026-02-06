@@ -62,6 +62,7 @@ internal class RumTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mock()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mock()

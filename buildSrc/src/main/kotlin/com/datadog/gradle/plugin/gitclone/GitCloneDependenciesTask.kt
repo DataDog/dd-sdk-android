@@ -108,7 +108,7 @@ open class GitCloneDependenciesTask @Inject constructor(
         if (parentFile.exists() || parentFile.mkdirs()) {
             copyFileWithCorrections(child, destFile)
         } else {
-            System.err.println("  x Unable to copy file $copyFromPath into $copyIntoPath")
+            logger.error("  x Unable to copy file $copyFromPath into $copyIntoPath")
         }
     }
 

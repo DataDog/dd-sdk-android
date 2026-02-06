@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
@@ -23,7 +24,8 @@ internal class LoggingScheduledThreadPoolExecutorTest :
 
     override fun createTestedExecutorService(
         forge: Forge,
-        backPressureStrategy: BackPressureStrategy
+        backPressureStrategy: BackPressureStrategy,
+        timeProvider: TimeProvider
     ): ScheduledThreadPoolExecutor {
         return LoggingScheduledThreadPoolExecutor(
             1,

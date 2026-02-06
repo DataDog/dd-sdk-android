@@ -3,13 +3,13 @@
 ## Getting Started 
 
 To include the Datadog integration for [SQLDelight][1] in your project, simply add the
-following to your application's `build.gradle` file.
+following to your application's `build.gradle.kts` file.
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-trace:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-sqldelight:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-rum:<latest-version>")
+    implementation("com.datadoghq:dd-sdk-android-trace:<latest-version>")
+    implementation("com.datadoghq:dd-sdk-android-sqldelight:<latest-version>")
 }
 ```
 

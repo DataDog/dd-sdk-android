@@ -45,7 +45,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { url } doReturn mockHttpUrl }
 
         // When
-        val result = OkHttpHttpRequestInfo(mockRequest).url
+        val result = OkHttpRequestInfo(mockRequest).url
 
         // Then
         assertThat(result).isEqualTo(fakeUrl)
@@ -57,7 +57,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { method } doReturn fakeMethod }
 
         // When
-        val result = OkHttpHttpRequestInfo(mockRequest).method
+        val result = OkHttpRequestInfo(mockRequest).method
 
         // Then
         assertThat(result).isEqualTo(fakeMethod)
@@ -71,7 +71,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { headers } doReturn mockHeaders }
 
         // When
-        val result = OkHttpHttpRequestInfo(mockRequest).headers
+        val result = OkHttpRequestInfo(mockRequest).headers
 
         // Then
         assertThat(result).isEqualTo(fakeHeaders)
@@ -87,7 +87,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { body } doReturn mockRequestBody }
 
         // When
-        val result = OkHttpHttpRequestInfo(mockRequest).contentType
+        val result = OkHttpRequestInfo(mockRequest).contentType
 
         // Then
         assertThat(result).isEqualTo(fakeContentType)
@@ -100,7 +100,7 @@ internal class OkHttpRequestInfoTest {
         }
 
         // When
-        val tag = OkHttpHttpRequestInfo(mockRequest).tag(String::class.java)
+        val tag = OkHttpRequestInfo(mockRequest).tag(String::class.java)
 
         // Then
         assertThat(tag).isEqualTo(fakeTag)
@@ -113,7 +113,7 @@ internal class OkHttpRequestInfoTest {
         val mockRequest = mock<Request> { on { body } doReturn mockRequestBody }
 
         // When
-        val result = OkHttpHttpRequestInfo(mockRequest).contentLength()
+        val result = OkHttpRequestInfo(mockRequest).contentLength()
 
         // Then
         assertThat(result).isEqualTo(fakeContentLength)

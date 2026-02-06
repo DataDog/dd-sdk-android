@@ -37,7 +37,7 @@ internal class NoOpFlagsClient(
 ) : FlagsClient {
 
     override val state: StateObservable = object : StateObservable {
-        override fun getCurrentState(): FlagsClientState = FlagsClientState.Error(null)
+        override fun getCurrentState(): FlagsClientState = FlagsClientState.NotReady
         override fun addListener(listener: FlagsStateListener) = Unit
         override fun removeListener(listener: FlagsStateListener) = Unit
     }
@@ -127,6 +127,17 @@ internal class NoOpFlagsClient(
      * @return The provided default value.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
+        logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
+        return defaultValue
+    }
+
+    /**
+     * Returns the provided default value without any flag evaluation.
+     * @param flagKey Ignored flag key.
+     * @param defaultValue The map to return.
+     * @return The provided default value.
+     */
+    override fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?> {
         logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
         return defaultValue
     }

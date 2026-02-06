@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.utils.retryWithDelay
+import com.datadog.android.internal.time.TimeProvider
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -19,7 +20,8 @@ import java.util.concurrent.TimeUnit
 internal class WipeDataMigrationOperation(
     internal val targetDir: File?,
     internal val fileMover: FileMover,
-    internal val internalLogger: InternalLogger
+    internal val internalLogger: InternalLogger,
+    internal val timeProvider: TimeProvider
 ) : DataMigrationOperation {
 
     @WorkerThread
@@ -31,7 +33,7 @@ internal class WipeDataMigrationOperation(
                 { WARN_NULL_DIR }
             )
         } else {
-            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger) {
+            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger, timeProvider) {
                 fileMover.delete(targetDir)
             }
         }

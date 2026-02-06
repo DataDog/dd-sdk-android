@@ -20,6 +20,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.enrichWithNonNullAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.time.DefaultTimeProvider
 
 internal class SdkInternalLogger(
     private val sdkCore: FeatureSdkCore?,
@@ -140,7 +141,8 @@ internal class SdkInternalLogger(
                     internalLogger = this,
                     operationName = operationName,
                     callerClass = callerClass,
-                    creationSampleRate = samplingRate
+                    creationSampleRate = samplingRate,
+                    timeProvider = sdkCore?.timeProvider ?: DefaultTimeProvider()
                 )
             }
         }

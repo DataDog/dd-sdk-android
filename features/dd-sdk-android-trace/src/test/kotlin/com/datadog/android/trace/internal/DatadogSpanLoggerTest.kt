@@ -9,6 +9,7 @@ import android.util.Log
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.DatadogTracingConstants
@@ -18,6 +19,7 @@ import com.datadog.android.trace.internal.DatadogSpanLogger.Companion.TRACE_LOGG
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -33,6 +35,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -57,8 +60,14 @@ class DatadogSpanLoggerTest {
     @Forgery
     lateinit var fakeSpan: DatadogSpan
 
+    @LongForgery(min = 0L)
+    var fakeTimestamp: Long = 0L
+
     @Mock
     lateinit var mockLogFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
 
     private lateinit var testedLogger: DatadogSpanLogger
 
@@ -67,6 +76,9 @@ class DatadogSpanLoggerTest {
         mockSdkCore = mock<FeatureSdkCore> {
             on { getFeature(Feature.LOGS_FEATURE_NAME) } doReturn mockLogFeatureScope
         }
+
+        whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
 
         testedLogger = DatadogSpanLogger(mockSdkCore)
     }

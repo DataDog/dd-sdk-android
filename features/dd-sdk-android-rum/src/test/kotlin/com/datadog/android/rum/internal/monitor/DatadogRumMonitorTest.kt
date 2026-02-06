@@ -47,6 +47,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME
@@ -143,6 +144,9 @@ internal class DatadogRumMonitorTest {
     lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 
     @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
@@ -215,8 +219,12 @@ internal class DatadogRumMonitorTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    private var eventTimeMs: Long = 0L
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        eventTimeMs = forge.aLong(min = 0L)
+
         whenever(mockExecutorService.execute(any<Runnable>())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
@@ -226,6 +234,8 @@ internal class DatadogRumMonitorTest {
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
+        whenever(mockSdkCore.timeProvider.getDeviceTimestampMillis()) doReturn eventTimeMs
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
         whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
@@ -233,7 +243,15 @@ internal class DatadogRumMonitorTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         whenever(
-            mockRumFeatureScope.withWriteContext(eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)), any())
+            mockRumFeatureScope.withWriteContext(
+                eq(
+                    setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.PROFILING_FEATURE_NAME
+                    )
+                ),
+                any()
+            )
         ) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
@@ -269,7 +287,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -300,7 +319,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -331,6 +351,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StartView
             assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -373,7 +394,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -415,7 +437,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -446,6 +469,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StopView
             assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -472,6 +496,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -498,6 +523,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isTrue
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -523,6 +549,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -550,6 +577,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.method).isEqualTo(method)
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -579,6 +607,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -606,6 +635,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -644,6 +674,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -685,6 +716,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stackTrace).isEqualTo(stackTrace)
             assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -715,6 +747,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -742,6 +775,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.method).isEqualTo(method)
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -771,6 +805,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -798,6 +833,8 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -836,6 +873,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -877,6 +915,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stackTrace).isEqualTo(stackTrace)
             assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -907,6 +946,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -938,6 +978,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -969,6 +1010,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1143,6 +1185,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isEqualTo(event.eventTime.nanoTime - appStartTimeNs)
             assertThat(event.attributes).isEmpty()
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1469,6 +1512,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.threads).isEqualTo(allThreads)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1566,6 +1610,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1604,6 +1649,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1655,6 +1701,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -2032,7 +2079,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -2071,7 +2119,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -2111,7 +2160,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2283,7 +2333,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumSessionScopeStartupManagerFactory = mock()
+            rumSessionScopeStartupManagerFactory = mock(),
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -2516,7 +2567,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M return empty map W addAttribute() + removeAttribtue() + getAttributes()`(
+    fun `M return empty map W addAttribute() + removeAttribute() + getAttributes()`(
         @StringForgery key: String,
         @StringForgery value: String
     ) {

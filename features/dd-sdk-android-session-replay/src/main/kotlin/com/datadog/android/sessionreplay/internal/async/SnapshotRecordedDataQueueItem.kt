@@ -13,8 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 internal class SnapshotRecordedDataQueueItem(
     recordedQueuedItemContext: RecordedQueuedItemContext,
-    internal val systemInformation: SystemInformation
-) : RecordedDataQueueItem(recordedQueuedItemContext) {
+    internal val systemInformation: SystemInformation,
+    creationTimestampInNs: Long
+) : RecordedDataQueueItem(recordedQueuedItemContext, creationTimestampInNs) {
     @Volatile internal var nodes = emptyList<Node>()
 
     @Volatile internal var isFinishedTraversal = false

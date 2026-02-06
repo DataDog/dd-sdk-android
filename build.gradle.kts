@@ -64,7 +64,7 @@ nexusPublishing {
     }
 }
 
-task<Delete>("clean") {
+tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
@@ -117,7 +117,8 @@ tasks.register("unitTestTools") {
         ":tools:detekt:test",
         ":tools:lint:test",
         ":tools:noopfactory:test",
-        ":tools:benchmark:test"
+        ":tools:benchmark:test",
+        ":tools:testserver:test"
     )
 }
 
@@ -136,6 +137,8 @@ registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyL
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
 
+registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompilerMetadataChanges")
+
 registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
 /**
@@ -144,6 +147,7 @@ registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTra
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkDependencyLicencesAll")
     dependsOn("checkApiSurfaceChangesAll")
+    dependsOn("checkCompilerMetadataChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")
 }
 

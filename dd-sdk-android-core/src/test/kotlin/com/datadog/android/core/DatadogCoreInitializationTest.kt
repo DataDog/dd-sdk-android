@@ -111,7 +111,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(fakeConfiguration.copy(crashReportsEnabled = crashReportsEnabled))
         }
@@ -187,7 +187,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(fakeConfiguration)
         }
@@ -210,7 +210,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -238,7 +238,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -267,7 +267,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -295,7 +295,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -354,7 +354,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(configuration)
         }
@@ -402,7 +402,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source)))
         }
@@ -420,7 +420,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source))
@@ -440,7 +440,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source))
@@ -460,7 +460,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(fakeConfiguration.copy(additionalConfig = customAttributes.nonNullData))
         }
@@ -478,7 +478,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -500,7 +500,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -522,7 +522,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -544,7 +544,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(fakeConfiguration.copy(additionalConfig = customAttributes.nonNullData))
         }
@@ -562,7 +562,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -584,10 +584,11 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
+                    version = null,
                     additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
                 )
             )
@@ -608,10 +609,11 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
         ).apply {
             initialize(
                 fakeConfiguration.copy(
+                    version = null,
                     additionalConfig = mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt())
                 )
             )
@@ -621,6 +623,28 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(
             appContext.fakeVersionName
         )
+    }
+
+    @Test
+    fun `M apply app version from config W initialize { version in config is not null }`(
+        @StringForgery appVersion: String
+    ) {
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    version = appVersion
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(appVersion)
     }
 
     // endregion

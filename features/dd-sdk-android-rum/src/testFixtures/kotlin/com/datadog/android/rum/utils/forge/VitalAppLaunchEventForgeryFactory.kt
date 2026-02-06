@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -14,66 +14,66 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-class VitalAppLaunchEventForgeryFactory : ForgeryFactory<RumVitalAppLaunchEvent> {
-    override fun getForgery(forge: Forge): RumVitalAppLaunchEvent {
-        return RumVitalAppLaunchEvent(
+class VitalAppLaunchEventForgeryFactory : ForgeryFactory<VitalAppLaunchEvent> {
+    override fun getForgery(forge: Forge): VitalAppLaunchEvent {
+        return VitalAppLaunchEvent(
             date = forge.aTimestamp(),
-            application = RumVitalAppLaunchEvent.Application(forge.getForgery<UUID>().toString()),
+            application = VitalAppLaunchEvent.Application(forge.getForgery<UUID>().toString()),
             service = forge.aNullable { anAlphabeticalString() },
-            session = RumVitalAppLaunchEvent.RumVitalAppLaunchEventSession(
+            session = VitalAppLaunchEvent.VitalAppLaunchEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = RumVitalAppLaunchEvent.RumVitalAppLaunchEventSessionType.USER,
+                type = VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
             source = forge.aNullable {
                 aValueFrom(
-                    RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource::class.java
+                    VitalAppLaunchEvent.VitalAppLaunchEventSource::class.java
                 )
             },
             ciTest = forge.aNullable {
-                RumVitalAppLaunchEvent.CiTest(anHexadecimalString())
+                VitalAppLaunchEvent.CiTest(anHexadecimalString())
             },
             os = forge.aNullable {
-                RumVitalAppLaunchEvent.Os(
+                VitalAppLaunchEvent.Os(
                     name = forge.aString(),
                     version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
                     versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
-                RumVitalAppLaunchEvent.Device(
+                VitalAppLaunchEvent.Device(
                     name = forge.aString(),
                     model = forge.aString(),
                     brand = forge.aString(),
-                    type = forge.aValueFrom(RumVitalAppLaunchEvent.DeviceType::class.java),
+                    type = forge.aValueFrom(VitalAppLaunchEvent.DeviceType::class.java),
                     architecture = forge.aString()
                 )
             },
             context = forge.aNullable {
-                RumVitalAppLaunchEvent.Context(
+                VitalAppLaunchEvent.Context(
                     additionalProperties = forge.exhaustiveAttributes()
                 )
             },
-            dd = RumVitalAppLaunchEvent.Dd(
-                session = forge.aNullable { RumVitalAppLaunchEvent.DdSession(getForgery()) },
+            dd = VitalAppLaunchEvent.Dd(
+                session = forge.aNullable { VitalAppLaunchEvent.DdSession(getForgery()) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             ),
             ddtags = forge.aNullable { ddTagsString() },
             view = forge.aNullable {
-                RumVitalAppLaunchEvent.RumVitalAppLaunchEventView(
+                VitalAppLaunchEvent.VitalAppLaunchEventView(
                     id = forge.getForgery<UUID>().toString(),
                     referrer = forge.aNullable { getForgery<URL>().toString() },
                     url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                     name = forge.aNullable { anAlphabeticalString() }
                 )
             },
-            vital = RumVitalAppLaunchEvent.Vital(
+            vital = VitalAppLaunchEvent.Vital(
                 id = forge.aString(),
                 name = forge.aNullable { aString() },
                 description = forge.aNullable { aString() },
-                appLaunchMetric = forge.aValueFrom(RumVitalAppLaunchEvent.AppLaunchMetric::class.java),
+                appLaunchMetric = forge.aValueFrom(VitalAppLaunchEvent.AppLaunchMetric::class.java),
                 duration = forge.aLong(),
-                startupType = forge.aValueFrom(RumVitalAppLaunchEvent.StartupType::class.java),
+                startupType = forge.aValueFrom(VitalAppLaunchEvent.StartupType::class.java),
                 isPrewarmed = forge.aNullable { aBool() },
                 hasSavedInstanceStateBundle = forge.aNullable { aBool() }
             )

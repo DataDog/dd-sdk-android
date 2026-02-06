@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.utils.buildDDTagsString
@@ -27,6 +28,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
+@Suppress("LongParameterList")
 internal class RumActionScope(
     override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
@@ -41,7 +43,8 @@ internal class RumActionScope(
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
-    private val rumSessionTypeOverride: RumSessionType?
+    private val rumSessionTypeOverride: RumSessionType?,
+    private val insightsCollector: InsightsCollector
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -274,6 +277,7 @@ internal class RumActionScope(
                 rumContext.viewId.orEmpty()
             )
 
+            insightsCollector.onAction()
             ActionEvent(
                 date = eventTimestamp,
                 action = ActionEvent.ActionEventAction(
@@ -387,7 +391,8 @@ internal class RumActionScope(
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean,
             sampleRate: Float,
-            rumSessionTypeOverride: RumSessionType?
+            rumSessionTypeOverride: RumSessionType?,
+            insightsCollector: InsightsCollector
         ): RumScope {
             return RumActionScope(
                 parentScope = parentScope,
@@ -401,7 +406,8 @@ internal class RumActionScope(
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
-                rumSessionTypeOverride = rumSessionTypeOverride
+                rumSessionTypeOverride = rumSessionTypeOverride,
+                insightsCollector = insightsCollector
             )
         }
     }

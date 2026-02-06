@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -64,6 +65,9 @@ internal class FeatureFileOrchestratorTest {
     @Mock
     lateinit var mockMetricsDispatcher: MetricsDispatcher
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @BeforeEach
     fun `set up`() {
         whenever(mockConsentProvider.getConsent()) doReturn fakeConsent
@@ -81,7 +85,8 @@ internal class FeatureFileOrchestratorTest {
             mockExecutorService,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockTimeProvider
         )
 
         // Then
@@ -103,7 +108,8 @@ internal class FeatureFileOrchestratorTest {
             mockExecutorService,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockTimeProvider
         )
 
         // Then
@@ -125,7 +131,8 @@ internal class FeatureFileOrchestratorTest {
             mockExecutorService,
             fakeFilePersistenceConfig,
             mockInternalLogger,
-            mockMetricsDispatcher
+            mockMetricsDispatcher,
+            mockTimeProvider
         )
 
         // Then

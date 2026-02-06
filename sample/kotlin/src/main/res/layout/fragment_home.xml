@@ -41,6 +41,18 @@
 
 
         <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_openfeature"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_openfeature"
+                android:drawableStart="@drawable/ic_flag_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_logs"/>
+
+
+        <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/navigation_crash"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -49,7 +61,7 @@
                 android:drawableStart="@drawable/ic_crash_black_24dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/navigation_logs"/>
+                app:layout_constraintTop_toBottomOf="@id/navigation_openfeature"/>
 
 
         <androidx.appcompat.widget.AppCompatButton

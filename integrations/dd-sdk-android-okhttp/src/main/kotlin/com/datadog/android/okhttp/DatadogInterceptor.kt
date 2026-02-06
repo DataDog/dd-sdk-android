@@ -29,6 +29,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -40,6 +41,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.Locale
+import java.util.UUID
 
 /**
  * Provides automatic RUM & APM integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -72,6 +74,7 @@ import java.util.Locale
  *         .build()
  * ```
  */
+@Suppress("TooManyFunctions")
 open class DatadogInterceptor internal constructor(
     sdkInstanceName: String?,
     tracedHosts: Map<String, Set<TracingHeaderType>>,
@@ -107,13 +110,20 @@ open class DatadogInterceptor internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
+        val request = chain.request()
+            .newBuilder()
+            .apply {
+                @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
+                tag(UUID::class.java, UUID.randomUUID())
+            }
+            .safeBuild() ?: chain.request()
+
         if (rumFeature != null) {
-            val request = chain.request()
             val url = request.url.toString()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
 
             @Suppress("DEPRECATION")
-            val requestId = request.buildResourceId(generateUuid = true)
+            val requestId = request.buildResourceId(generateUuid = false)
 
             (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.startResource(requestId, method, url)
         } else {
@@ -135,7 +145,7 @@ open class DatadogInterceptor internal constructor(
             originalChain = chain
         )
 
-        return super.intercept(localChain)
+        return doIntercept(localChain, request)
     }
 
     // endregion
@@ -261,6 +271,14 @@ open class DatadogInterceptor internal constructor(
             }
         } else {
             originalChain
+        }
+    }
+
+    private fun Request.Builder.safeBuild(): Request? {
+        return try {
+            build()
+        } catch (_: IllegalStateException) {
+            null
         }
     }
 

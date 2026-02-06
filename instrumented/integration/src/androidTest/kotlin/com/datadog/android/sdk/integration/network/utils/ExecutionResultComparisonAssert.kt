@@ -1,0 +1,145 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sdk.integration.network.utils
+
+import com.datadog.android.sdk.integration.network.models.ClientExecutionResult
+import com.datadog.android.trace.api.span.DatadogSpan
+import org.assertj.core.api.AbstractObjectAssert
+import org.assertj.core.api.Assertions.assertThat
+
+internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecutionResult>) :
+    AbstractObjectAssert<ExecutionResultComparisonAssert, Map<String, ClientExecutionResult>>(
+        actual,
+        ExecutionResultComparisonAssert::class.java
+    ) {
+
+    fun haveRequestMethod(expected: String) = apply {
+        actual.values.forEach {
+            assertThat(it.request?.method)
+                .overridingErrorMessage {
+                    "Expected client ${it.name} has request method: $expected but was ${it.request?.method}"
+                }
+                .isEqualTo(expected)
+        }
+    }
+
+    fun haveRequestUrl(expected: String) = apply {
+        actual.values.forEach {
+            assertThat(it.request?.url)
+                .overridingErrorMessage {
+                    "Expected client ${it.name} has request url: $expected but was ${it.request?.url}"
+                }
+                .isEqualTo(expected)
+        }
+    }
+
+    fun haveExpectedClients() = apply {
+        assertThat(actual.keys)
+            .overridingErrorMessage {
+                "Expected $ARGUMENT_NAME has clients:$EXPECTED_CLIENTS but was ${actual.keys}"
+            }
+            .containsAll(EXPECTED_CLIENTS)
+    }
+
+    fun haveResponseStatusCode(expected: Int) = apply {
+        actual.values.forEach {
+            assertThat(it.response?.statusCode)
+                .overridingErrorMessage {
+                    "Expected client ${it.name} has response status code: $expected but was ${it.response?.statusCode}"
+                }
+                .isEqualTo(expected)
+        }
+    }
+
+    fun haveSameStatusCode() = apply {
+        actual.values.forEachClientResultPair { client1Result, client2Result ->
+            assertThat(client1Result.response?.statusCode)
+                .overridingErrorMessage {
+                    "Expected that all ${ARGUMENT_NAME}s has same response status code, but discrepancy found:\n" +
+                        "${client1Result.name}=${client1Result.response?.statusCode}\n" +
+                        "${client2Result.name}=${client2Result.response?.statusCode}\n"
+                }
+                .isEqualTo(client2Result.response?.statusCode)
+        }
+    }
+
+    fun haveSameSpanCount() = apply {
+        actual.values.forEachClientResultPair { client1Result, client2Result ->
+            assertThat(client1Result.collectedSpans.size)
+                .overridingErrorMessage {
+                    "Expected that all ${ARGUMENT_NAME}s has same response status code, but discrepancy found:\n" +
+                        "${client1Result.name}=${client1Result.collectedSpans.size}\n" +
+                        "${client2Result.name}=${client2Result.collectedSpans.size}\n"
+                }
+                .isEqualTo(client2Result.collectedSpans.size)
+        }
+    }
+
+    fun haveSameSpanStructure() = apply {
+        actual.values.forEachClientResultPair { client1Result, client2Result ->
+            assertThat(client1Result.collectedSpans.hash())
+                .overridingErrorMessage {
+                    "Expected that all ${ARGUMENT_NAME}s has same span structure, but discrepancy found:\n" +
+                        "${client1Result.name}=${client1Result.collectedSpans.hash()}\n" +
+                        "${client2Result.name}=${client2Result.collectedSpans.hash()}\n"
+                }
+                .isEqualTo(client2Result.collectedSpans.hash())
+        }
+    }
+
+    private fun Collection<ClientExecutionResult>.forEachClientResultPair(
+        block: (ClientExecutionResult, ClientExecutionResult) -> Unit
+    ) = asSequence()
+        .windowed(2, 1)
+        .forEach { (client1Result, client2Result) -> block(client1Result, client2Result) }
+
+    companion object {
+        private val EXPECTED_CLIENTS = setOf("Cronet", "OkHttp")
+        private const val ARGUMENT_NAME = "composite execution result"
+
+        internal fun assertThat(actual: Map<String, ClientExecutionResult>) = ExecutionResultComparisonAssert(actual)
+
+        fun List<DatadogSpan>.associateById(): Map<Long, DatadogSpan> = associateBy { it.context().spanId }
+
+        fun Map<Long, DatadogSpan>.parentBySpanId(): Map<Long, DatadogSpan?> =
+            entries.associate { (spanId, span) ->
+                spanId to get(span.parentSpanId)
+            }
+
+        fun Map<Long, DatadogSpan>.childrenByParentId(): Map<Long, List<DatadogSpan>> =
+            values
+                .filter { containsKey(it.parentSpanId) }
+                .groupBy { checkNotNull(it.parentSpanId) }
+
+        fun DatadogSpan.hash(childrenByParentId: Map<Long, List<DatadogSpan>>): String {
+            val props = "{$resourceName,${if (isRootSpan) "root" else ""}}"
+            val childHashes = childrenByParentId[context().spanId].orEmpty()
+                .map { it.hash(childrenByParentId) }
+                .sorted()
+
+            return if (childHashes.isEmpty()) {
+                props
+            } else {
+                "$props[${childHashes.joinToString(", ")}]"
+            }
+        }
+
+        fun List<DatadogSpan>.hash(): String {
+            val spanById = associateById()
+            val childrenByParentId = spanById.childrenByParentId()
+
+            val roots = filter { span ->
+                span.parentSpanId == null || span.parentSpanId !in spanById
+            }
+
+            return roots
+                .map { it.hash(childrenByParentId) }
+                .sorted()
+                .joinToString(",")
+        }
+    }
+}

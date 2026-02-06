@@ -13,7 +13,6 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
@@ -21,6 +20,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Authenticator
@@ -39,7 +39,6 @@ import java.net.URL
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings
@@ -100,6 +99,22 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.crashReportsEnabled).isFalse
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `M build config with custom version W setVersion() and build()`(
+        @StringForgery(StringForgeryType.ALPHA_NUMERICAL) version: String
+    ) {
+        // When
+        val config = testedBuilder
+            .setVersion(version)
+            .build()
+
+        // Then
+        assertThat(config.version).isEqualTo(version)
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
 

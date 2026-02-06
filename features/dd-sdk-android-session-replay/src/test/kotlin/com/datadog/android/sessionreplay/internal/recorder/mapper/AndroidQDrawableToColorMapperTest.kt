@@ -10,12 +10,9 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.BlendModeColorFilter
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper.Companion.fillPaintField
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -34,8 +31,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
@@ -46,7 +42,6 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M map GradientDrawable to fill paint's color blend color W mapDrawableToColor()`(
         @IntForgery fillPaintColor: Int,
         @IntForgery blendFilterColor: Int,
@@ -80,7 +75,6 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M map GradientDrawable to fill paint's color blend color W mapDrawableToColor() {fully transparent}`(
         @IntForgery fillPaintColor: Int,
         @IntForgery blendFilterColor: Int,
@@ -112,7 +106,6 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
         @IntForgery fillPaintColor: Int,
         @IntForgery blendFilterColor: Int,
@@ -145,7 +138,6 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `M map GradientDrawable to fill paint's color W mapDrawableToColor() {fully transparent}`(
         @IntForgery fillPaintColor: Int,
         @IntForgery blendFilterColor: Int,

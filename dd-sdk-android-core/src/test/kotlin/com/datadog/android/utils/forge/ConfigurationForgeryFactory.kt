@@ -20,7 +20,8 @@ internal class ConfigurationForgeryFactory :
             variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
             service = forge.aStringMatching("[a-z]+(\\.[a-z]+)+"),
             crashReportsEnabled = forge.aBool(),
-            additionalConfig = forge.aMap { aString() to aString() }
+            additionalConfig = forge.aMap { aString() to aString() },
+            version = forge.aNullable { forge.anAlphaNumericalString() }
         )
     }
 }

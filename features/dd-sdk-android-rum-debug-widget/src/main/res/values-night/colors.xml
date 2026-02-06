@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<resources>
+    <color name="widget_text">#FFFFFF</color>
+    <color name="vital_bg">#373737</color>
+    <color name="vital_chart">#AAFF0000</color>
+    <color name="widget_bg">#292929</color>
+    <color name="timeline_action">#FFC0CB</color>
+    <color name="timeline_slow_frame">#FFFF00</color>
+    <color name="timeline_freeze_frame">#FF0000</color>
+    <color name="timeline_resource">#00FF00</color>
+</resources>

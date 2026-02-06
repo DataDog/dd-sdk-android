@@ -1,5 +1,5 @@
 include:
-  - 'https://gitlab-templates.ddbuild.io/slack-notifier/v1/template.yml'
+  - 'https://gitlab-templates.ddbuild.io/slack-notifier/v3-sdm/template.yml'
 
 # SETUP
 
@@ -13,6 +13,10 @@ stages:
   - notify
 
 .snippets:
+  source-secrets:
+    - source ./ci/scripts/vault_config.sh
+    - source ./ci/scripts/get-secret.sh
+
   # macOS AMI will already have cmdline-tools installed
   install-android-api-components:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
@@ -39,12 +43,21 @@ stages:
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - export GPG_PRIVATE_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_private_key --with-decryption --query "Parameter.Value" --out text)
-    - export GPG_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_passphrase --with-decryption --query "Parameter.Value" --out text)
-    - export CENTRAL_PUBLISHER_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.publishing.central_username --with-decryption --query "Parameter.Value" --out text)
-    - export CENTRAL_PUBLISHER_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.publishing.central_password --with-decryption --query "Parameter.Value" --out text)
-    - export GPG_PUBLIC_FINGERPRINT=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_public_key --with-decryption --query "Parameter.Value" --out text | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
+    - !reference [.snippets, source-secrets]
+    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
+    - export GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)
+    - export GPG_PASSWORD=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)
+    - export CENTRAL_PUBLISHER_USERNAME=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_USERNAME)
+    - export CENTRAL_PUBLISHER_PASSWORD=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD)
+    - export GPG_PUBLIC_FINGERPRINT=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
+
+.base-cache-pull-job:
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
 
 # CI IMAGE
 
@@ -89,6 +102,8 @@ static-analysis:
     strategy: depend
 
 analysis:detekt-custom:
+  extends:
+    - .base-cache-pull-job
   tags:
     - "arch:amd64"
   image: $CI_IMAGE_DOCKER
@@ -100,48 +115,19 @@ analysis:detekt-custom:
     - ./gradlew :tools:detekt:jar --stacktrace
     - ./gradlew printDetektClasspath --stacktrace
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
-    - ./gradlew :dd-sdk-android-core:customDetektRules
-    - ./gradlew :dd-sdk-android-internal:customDetektRules
-    - ./gradlew :features:dd-sdk-android-flags:customDetektRules
-    - ./gradlew :features:dd-sdk-android-logs:customDetektRules
-    - ./gradlew :features:dd-sdk-android-ndk:customDetektRules
-    - ./gradlew :features:dd-sdk-android-rum:customDetektRules
-    - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
-    - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
-    - ./gradlew :features:dd-sdk-android-session-replay-compose:customDetektRules
-    - ./gradlew :features:dd-sdk-android-trace-internal:customDetektRules
-    - ./gradlew :features:dd-sdk-android-trace:customDetektRules
-    - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
-    - ./gradlew :features:dd-sdk-android-webview:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-cronet:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-glide:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-okhttp:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-rx:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-sqldelight:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-timber:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:customDetektRules
-    - ./gradlew :integrations:dd-sdk-android-tv:customDetektRules
+    - ./gradlew customDetektRules
 
 
 # TODO RUM-1622 cleanup this section
 # TESTS
 
 test:debug:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -157,16 +143,12 @@ test:debug:
       junit: "**/build/test-results/testDebugUnitTest/*.xml"
 
 test:tools:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -183,12 +165,13 @@ test:kover:
       - cache/caches/
       - cache/notifications/
   script:
+    - !reference [.snippets, source-secrets]
     - pip3 install datadog
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
-    - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
-    - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
+    - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
+    - export DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)
+    - CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-core:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-internal:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportFeatures  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
@@ -204,6 +187,8 @@ test:kover:
 # the steps in this section should reflect our test pyramid strategy
 
 test-pyramid:core-it-min-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -217,6 +202,8 @@ test-pyramid:core-it-min-api:
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-latest-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -230,6 +217,8 @@ test-pyramid:core-it-latest-api:
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-median-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -243,16 +232,12 @@ test-pyramid:core-it-median-api:
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:single-fit-logs:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -264,16 +249,12 @@ test-pyramid:single-fit-logs:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-rum:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -285,16 +266,12 @@ test-pyramid:single-fit-rum:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-trace:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -306,16 +283,12 @@ test-pyramid:single-fit-trace:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
 test-pyramid:single-fit-okhttp:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-    policy: pull
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
@@ -329,6 +302,8 @@ test-pyramid:single-fit-okhttp:
 # RUN INSTRUMENTED TESTS ON MIN API (23), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -342,6 +317,8 @@ test-pyramid:legacy-integration-instrumented-min-api:
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-latest-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -355,6 +332,8 @@ test-pyramid:legacy-integration-instrumented-latest-api:
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-median-api:
+  extends:
+    - .base-cache-pull-job
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -368,22 +347,28 @@ test-pyramid:legacy-integration-instrumented-median-api:
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:detekt-api-coverage:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
   timeout: 1h
   script:
+    - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesDebug --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
-    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" --jvm-target 11 -cp $(cat sdk_classpath)
+    # Explicit includes to avoid OOM. Keep it in sync with includes for rules.
+    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
     # For now we just print the uncovered apis, eventually we will fail if it's not empty
     - grep -v -f apiUsage.log apiSurface.log
 
 test-pyramid:publish-e2e-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -391,14 +376,15 @@ test-pyramid:publish-e2e-synthetics:
   only:
     - develop
   script:
+    - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
-    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__E2E_CONFIG_JSON > ./config/us1.json
+    - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
+    - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_API_KEY)
+    - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_APP_KEY)
+    - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -411,6 +397,8 @@ test-pyramid:publish-e2e-synthetics:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
 
 test-pyramid:publish-webview-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -418,14 +406,15 @@ test-pyramid:publish-webview-synthetics:
   only:
     - develop
   script:
+    - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_config_json --with-decryption --query "Parameter.Value" --out text > ./config/us1.json
-    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.webview_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__WEBVIEW_CONFIG_JSON > ./config/us1.json
+    - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
+    - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_API_KEY)
+    - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_APP_KEY)
+    - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -438,6 +427,8 @@ test-pyramid:publish-webview-synthetics:
       - sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk
 
 test-pyramid:publish-staging-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -445,14 +436,15 @@ test-pyramid:publish-staging-synthetics:
   only:
     - develop
   script:
+    - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-android.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_config_json --with-decryption --query "Parameter.Value" --out text > ./config/staging.json
-    - export E2E_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export E2E_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.e2e_staging_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
+    - get_secret $DD_ANDROID_SECRET__E2E_STAGING_CONFIG_JSON > ./config/staging.json
+    - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
+    - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_API_KEY)
+    - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_KEY)
+    - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageStagingRelease --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -465,6 +457,8 @@ test-pyramid:publish-staging-synthetics:
       - sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk
 
 test-pyramid:publish-benchmark-synthetics:
+  extends:
+    - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -472,14 +466,15 @@ test-pyramid:publish-benchmark-synthetics:
   only:
     - develop
   script:
+    - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore --with-decryption --query "Parameter.Value" --out text | base64 -d > ./sample-benchmark.keystore
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_config_json --with-decryption --query "Parameter.Value" --out text > ./config/benchmark.json
-    - export BM_STORE_PASSWD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.keystore-password --with-decryption --query "Parameter.Value" --out text)
-    - export BM_DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_api_key --with-decryption --query "Parameter.Value" --out text)
-    - export BM_DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_app_key --with-decryption --query "Parameter.Value" --out text)
-    - export BM_MOBILE_APP_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.benchmark_mobile_app_id --with-decryption --query "Parameter.Value" --out text)
+    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
+    - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d >  ./sample-benchmark.keystore
+    - get_secret $DD_ANDROID_SECRET__BENCHMARK_CONFIG_JSON > ./config/benchmark.json
+    - export BM_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
+    - export BM_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_API_KEY)
+    - export BM_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_APP_KEY)
+    - export BM_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_MOBILE_APP_ID)
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:benchmark:packageRelease --stacktrace --no-daemon
     - npm update -g @datadog/datadog-ci
@@ -493,507 +488,23 @@ test-pyramid:publish-benchmark-synthetics:
 
 # PUBLISH ARTIFACTS ON MAVEN
 
-publish:release-core:
+publish:release-all:
   tags: [ "arch:amd64" ]
   only:
     - tags
     - develop
+    - tvaleev/feature/cronet-apm-snapshot
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :dd-sdk-android-core:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+    - ./gradlew publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
     paths:
-      - dd-sdk-android-core/verification-metadata.xml
-
-publish:release-internal:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [ .snippets, set-publishing-credentials ]
-    - ./gradlew :dd-sdk-android-internal:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - dd-sdk-android-internal/verification-metadata.xml
-
-# region Publish features/*
-
-publish:release-flags:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-flags:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-flags/verification-metadata.xml
-
-publish:release-trace-api:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-trace-api:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-trace-api/verification-metadata.xml
-
-
-publish:release-trace-internal:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [ .snippets, set-publishing-credentials ]
-    - ./gradlew :features:dd-sdk-android-trace-internal:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-trace-internal/verification-metadata.xml
-
-publish:release-trace:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-trace:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-trace/verification-metadata.xml
-
-publish:release-trace-otel:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-trace-otel:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-trace-otel/verification-metadata.xml
-
-publish:release-logs:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-logs:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-logs/verification-metadata.xml
-
-publish:release-rum:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-rum:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-rum/verification-metadata.xml
-
-publish:release-ndk:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-ndk/verification-metadata.xml
-
-publish:release-session-replay:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-session-replay/verification-metadata.xml
-
-publish:release-session-replay-material:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-session-replay-material/verification-metadata.xml
-
-publish:release-session-replay-compose:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-session-replay-compose:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-session-replay-compose/verification-metadata.xml
-
-publish:release-webview:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-webview:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - features/dd-sdk-android-webview/verification-metadata.xml
-
-# endregion
-
-# region Publish integrations/*
-
-publish:release-apollo:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-apollo:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-apollo/verification-metadata.xml
-
-publish:release-coil:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-coil/verification-metadata.xml
-
-publish:release-compose:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-compose/verification-metadata.xml
-
-publish:release-cronet:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-cronet:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-cronet/verification-metadata.xml
-
-publish:release-fresco:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-fresco/verification-metadata.xml
-
-publish:release-glide:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-glide/verification-metadata.xml
-
-publish:release-trace-coroutines:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-trace-coroutines/verification-metadata.xml
-
-publish:release-rum-coroutines:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-rum-coroutines/verification-metadata.xml
-
-publish:release-rx:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-rx/verification-metadata.xml
-
-publish:release-sqldelight:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-sqldelight/verification-metadata.xml
-
-publish:release-timber:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-timber/verification-metadata.xml
-
-publish:release-android-tv:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-tv/verification-metadata.xml
-
-publish:release-okhttp:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-okhttp/verification-metadata.xml
-
-publish:release-okhttp-otel:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - integrations/dd-sdk-android-okhttp-otel/verification-metadata.xml
-
-# endregion
-
-publish:release-benchmark:
-  tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
-  image: $CI_IMAGE_DOCKER
-  stage: publish
-  timeout: 30m
-  script:
-    - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :tools:benchmark:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
-  artifacts:
-    when: on_success
-    expire_in: 7 days
-    paths:
-      - tools/benchmark/verification-metadata.xml
+      - "**/verification-metadata.xml"
 
 
 # SLACK NOTIFICATIONS
@@ -1094,32 +605,7 @@ notify:merge-verification-metadata:
   stage: notify
   when: on_success
   dependencies:
-    - publish:release-core
-    - publish:release-internal
-    - publish:release-trace
-    - publish:release-trace-otel
-    - publish:release-logs
-    - publish:release-rum
-    - publish:release-ndk
-    - publish:release-session-replay
-    - publish:release-session-replay-material
-    - publish:release-session-replay-compose
-    - publish:release-webview
-    - publish:release-coil
-    - publish:release-compose
-    - publish:release-cronet
-    - publish:release-fresco
-    - publish:release-glide
-    - publish:release-trace-coroutines
-    - publish:release-rum-coroutines
-    - publish:release-rx
-    - publish:release-sqldelight
-    - publish:release-timber
-    - publish:release-android-tv
-    - publish:release-okhttp
-    - publish:release-okhttp-otel
-    - publish:release-benchmark
-    - publish:release-flags
+    - publish:release-all
   script:
     - python3 ./ci/scripts/merge_verification_metadata.py
   artifacts:

@@ -40,6 +40,11 @@ plugins {
 
 android {
     namespace = "com.datadog.android.cronet"
+    lint {
+        // Cronet library has experimental annotations that AndroidX lint checker
+        // cannot properly parse, causing "Failed to extract attribute 'level'" error
+        disable += "UnsafeOptInUsageError"
+    }
 }
 
 dependencies {
@@ -49,6 +54,7 @@ dependencies {
 
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-trace"))
 
     unmock(libs.robolectric)
     // Trying to add most recent lib version in order to test the instrumentation, see CronetApiInstrumentationTest
@@ -56,6 +62,7 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
+
     testImplementation(libs.elmyrJUnit4)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

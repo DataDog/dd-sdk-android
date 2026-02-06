@@ -10,10 +10,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -24,15 +22,16 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -45,16 +44,22 @@ internal class ThreadSafeReceiverTest {
     @Mock
     lateinit var mockIntentFilter: IntentFilter
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @BeforeEach
     fun `set up`() {
-        testedReceiver = TestableThreadSafeReceiver()
+        testedReceiver = TestableThreadSafeReceiver(mockBuildSdkVersionProvider)
     }
 
     // region registerReceiver
 
-    @TestTargetApi(Build.VERSION_CODES.O)
     @Test
     fun `M use the no export flag W registerReceiver { API version above 26}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn false
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
+
         // When
         testedReceiver.registerReceiver(mockContext, mockIntentFilter)
 
@@ -67,9 +72,11 @@ internal class ThreadSafeReceiverTest {
         assertThat(this.testedReceiver.isRegistered.get()).isTrue()
     }
 
-    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
     @Test
     fun `M use the no export flag W registerReceiver { API version above 33}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn true
+
         // When
         testedReceiver.registerReceiver(mockContext, mockIntentFilter)
 
@@ -83,9 +90,12 @@ internal class ThreadSafeReceiverTest {
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    @TestTargetApi(Build.VERSION_CODES.N)
     @Test
     fun `M not use the no export flag W registerReceiver { API version below 26}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn false
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn false
+
         // When
         testedReceiver.registerReceiver(mockContext, mockIntentFilter)
 
@@ -128,6 +138,7 @@ internal class ThreadSafeReceiverTest {
     // endregion
 }
 
-internal class TestableThreadSafeReceiver : ThreadSafeReceiver() {
+internal class TestableThreadSafeReceiver(buildSdkVersionProvider: BuildSdkVersionProvider) :
+    ThreadSafeReceiver(buildSdkVersionProvider) {
     override fun onReceive(context: Context?, intent: Intent?) {}
 }

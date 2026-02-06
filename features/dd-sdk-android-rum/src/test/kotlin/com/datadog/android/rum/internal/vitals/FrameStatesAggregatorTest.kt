@@ -18,7 +18,7 @@ import android.view.Window
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -92,6 +92,9 @@ internal class FrameStatesAggregatorTest {
 
     private val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock {
         on { version } doReturn Build.VERSION_CODES.VANILLA_ICE_CREAM
+        on { isAtLeastS } doReturn true
+        on { isAtLeastO } doReturn true
+        on { isAtLeastN } doReturn true
     }
 
     @BeforeEach
@@ -397,6 +400,7 @@ internal class FrameStatesAggregatorTest {
         // Given
         whenever(mockDecorView.isHardwareAccelerated) doReturn true
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastS) doReturn false
 
         // When
         testedJankListener.onActivityStarted(mockActivity)
@@ -416,6 +420,8 @@ internal class FrameStatesAggregatorTest {
         // Given
         whenever(mockDecorView.isHardwareAccelerated) doReturn true
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastS) doReturn true
+
         // When
         testedJankListener.onActivityStarted(mockActivity)
         argumentCaptor<Runnable> {
@@ -437,6 +443,7 @@ internal class FrameStatesAggregatorTest {
         // Given
         whenever(mockDecorView.isHardwareAccelerated) doReturn true
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastS) doReturn false
         testedJankListener.onActivityStarted(mockActivity)
         testedJankListener.activeActivities.clear()
 
@@ -458,6 +465,7 @@ internal class FrameStatesAggregatorTest {
         // Given
         whenever(mockDecorView.isHardwareAccelerated) doReturn true
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        whenever(mockBuildSdkVersionProvider.isAtLeastS) doReturn true
         testedJankListener.onActivityStarted(mockActivity)
         argumentCaptor<Runnable> {
             verify(mockDecorView).post(capture())

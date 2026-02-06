@@ -6,10 +6,12 @@
 package com.datadog.android.rum.internal.metric.slowframes
 
 import androidx.metrics.performance.FrameData
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
@@ -22,21 +24,23 @@ internal interface SlowFramesListener : FrameStateListener {
 
 internal class DefaultSlowFramesListener(
     internal val configuration: SlowFramesConfiguration,
-    internal val metricDispatcher: UISlownessMetricDispatcher
+    internal val metricDispatcher: UISlownessMetricDispatcher,
+    internal val insightsCollector: InsightsCollector,
+    timeProvider: TimeProvider
 ) : SlowFramesListener {
 
     @Volatile
     private var currentViewId: String? = null
 
     @Volatile
-    private var currentViewStartedTimeStampNs: Long = System.nanoTime()
+    private var currentViewStartedTimestampNs: Long = timeProvider.getDeviceElapsedTimeNanos()
 
     private val slowFramesRecords = ConcurrentHashMap<String, ViewUIPerformanceReport>()
 
     // Called from the main thread
     override fun onViewCreated(viewId: String, startedTimestampNs: Long) {
         currentViewId = viewId
-        currentViewStartedTimeStampNs = startedTimestampNs
+        currentViewStartedTimestampNs = startedTimestampNs
         metricDispatcher.onViewCreated(viewId)
     }
 
@@ -61,7 +65,7 @@ internal class DefaultSlowFramesListener(
     // Called from the background thread
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId
-        if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimeStampNs) {
+        if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimestampNs) {
             if (viewId != null) {
                 metricDispatcher.incrementMissedFrameCount(viewId)
             }
@@ -106,6 +110,7 @@ internal class DefaultSlowFramesListener(
                         frameStartedTimestampNs,
                         frameDurationNs
                     )
+                    insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
                 }
             } else {
                 // It's a continuous slow frame – increasing duration
@@ -113,6 +118,7 @@ internal class DefaultSlowFramesListener(
                     previousSlowFrameRecord.durationNs + frameDurationNs,
                     configuration.maxSlowFrameThresholdNs - 1
                 )
+                insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
             }
         }
     }
@@ -135,7 +141,7 @@ internal class DefaultSlowFramesListener(
 
     private fun getViewPerformanceReport(viewId: String) = slowFramesRecords.getOrPut(viewId) {
         ViewUIPerformanceReport(
-            currentViewStartedTimeStampNs,
+            currentViewStartedTimestampNs,
             configuration.maxSlowFramesAmount,
             minimumViewLifetimeThresholdNs = configuration.minViewLifetimeThresholdNs
         )

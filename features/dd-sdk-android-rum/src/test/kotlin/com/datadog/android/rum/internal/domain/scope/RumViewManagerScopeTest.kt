@@ -28,6 +28,7 @@ import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapsh
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -143,6 +144,9 @@ internal class RumViewManagerScopeTest {
     @Mock
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
@@ -184,7 +188,8 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            insightsCollector = mockInsightsCollector
         )
     }
 
@@ -348,19 +353,23 @@ internal class RumViewManagerScopeTest {
 
     @Test
     fun `M send gap message W handleEvent(StopView) + handleEvent(StartView)`(
-        @LongForgery(10, 30) fakeSleepMs: Long,
+        @LongForgery(10, 30) fakeGapMs: Long,
         forge: Forge
     ) {
         // Given
-        val firstViewEvent = forge.startViewEvent()
+        val baseTime = Time()
+        val firstViewEvent = forge.startViewEvent(eventTime = baseTime)
         testedScope.applicationDisplayed = true
         testedScope.handleEvent(firstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap())
+        val stopFirstViewEvent = RumRawEvent.StopView(firstViewEvent.key, emptyMap(), baseTime)
         testedScope.handleEvent(stopFirstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When
-        Thread.sleep(fakeSleepMs)
-        val secondViewEvent = forge.startViewEvent()
+        val secondViewTime = Time(
+            baseTime.timestamp + fakeGapMs,
+            baseTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(fakeGapMs)
+        )
+        val secondViewEvent = forge.startViewEvent(eventTime = secondViewTime)
         testedScope.handleEvent(secondViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -376,9 +385,8 @@ internal class RumViewManagerScopeTest {
 
         assertThat(additionalPropertiesCaptor.firstValue).containsKey(RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS)
         val gapNs = additionalPropertiesCaptor.firstValue[RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS] as Long
-        val minNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs)
-        val maxNs = TimeUnit.MILLISECONDS.toNanos(fakeSleepMs + 15)
-        assertThat(gapNs).isBetween(minNs, maxNs)
+        val expectedGapNs = TimeUnit.MILLISECONDS.toNanos(fakeGapMs)
+        assertThat(gapNs).isEqualTo(expectedGapNs)
         assertThat(messageBuilderCaptor.firstValue()).isEqualTo("[Mobile Metric] Gap between views")
     }
 
@@ -387,13 +395,17 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        val firstViewEvent = forge.startViewEvent()
+        val baseTime = Time()
+        val firstViewEvent = forge.startViewEvent(eventTime = baseTime)
         testedScope.applicationDisplayed = true
         testedScope.handleEvent(firstViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When
-        Thread.sleep(15)
-        val secondViewEvent = forge.startViewEvent()
+        val secondViewTime = Time(
+            baseTime.timestamp + 15,
+            baseTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(15)
+        )
+        val secondViewEvent = forge.startViewEvent(eventTime = secondViewTime)
         testedScope.handleEvent(secondViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -570,7 +582,8 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            insightsCollector = mockInsightsCollector
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -606,7 +619,8 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            insightsCollector = mockInsightsCollector
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -645,7 +659,8 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            insightsCollector = mockInsightsCollector
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -717,7 +732,8 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            insightsCollector = mockInsightsCollector
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -757,7 +773,8 @@ internal class RumViewManagerScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            insightsCollector = mockInsightsCollector
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()

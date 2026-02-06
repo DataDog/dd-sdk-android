@@ -11,5 +11,5 @@ import com.datadog.android.flags.model.EvaluationContext
 internal data class FlagsStateEntry(
     val evaluationContext: EvaluationContext,
     val flags: Map<String, PrecomputedFlag>,
-    val lastUpdateTimestamp: Long = System.currentTimeMillis()
+    val lastUpdateTimestamp: Long
 )

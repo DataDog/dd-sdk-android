@@ -450,42 +450,6 @@ internal class ConsentAwareFileOrchestratorTest {
 
     // endregion
 
-    // region getRootDirName
-
-    @Test
-    fun `M return null W getRootDirName() {initial consent}`(
-        @Forgery consent: TrackingConsent
-    ) {
-        // Given
-        instantiateTestedOrchestrator(consent)
-
-        // When
-        val result = testedOrchestrator.getRootDirName()
-
-        // Then
-        assertThat(result).isNull()
-        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
-    }
-
-    @Test
-    fun `M return null W getRootDirName() {updated consent}`(
-        @Forgery initialConsent: TrackingConsent,
-        @Forgery updatedConsent: TrackingConsent
-    ) {
-        // Given
-        instantiateTestedOrchestrator(initialConsent)
-
-        // When
-        testedOrchestrator.onConsentUpdated(initialConsent, updatedConsent)
-        val result = testedOrchestrator.getRootDirName()
-
-        // Then
-        assertThat(result).isNull()
-        verifyNoInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
-    }
-
-    // endregion
-
     // region getMetadataFile
 
     @Test

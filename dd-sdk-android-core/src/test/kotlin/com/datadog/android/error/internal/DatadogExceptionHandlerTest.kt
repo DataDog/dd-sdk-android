@@ -21,6 +21,8 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
+import com.datadog.android.internal.tests.stub.StubTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -31,6 +33,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -81,6 +84,11 @@ internal class DatadogExceptionHandlerTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    lateinit var stubTimeProvider: StubTimeProvider
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @Mock
     lateinit var mockLogsFeatureScope: FeatureScope
 
@@ -96,12 +104,18 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery
     lateinit var fakeInstanceName: String
 
+    @LongForgery(min = 0L)
+    var fakeElapsedTimeNs = 0L
+
     @BeforeEach
     fun `set up`() {
+        stubTimeProvider = StubTimeProvider(elapsedTimeNs = fakeElapsedTimeNs)
+
         whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.name) doReturn fakeInstanceName
+        whenever(mockSdkCore.timeProvider) doReturn stubTimeProvider
 
         CoreFeature.disableKronosBackgroundSync = true
 
@@ -164,7 +178,7 @@ internal class DatadogExceptionHandlerTest {
 
         // Then
         verify(mockScheduledThreadExecutor)
-            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS, mockInternalLogger)
+            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS, mockInternalLogger, stubTimeProvider)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -181,6 +195,11 @@ internal class DatadogExceptionHandlerTest {
             whenever(it.completedTaskCount).thenReturn(0)
         }
         whenever(mockSdkCore.getPersistenceExecutorService()) doReturn mockScheduledThreadExecutor
+        whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
+        val timeoutNs = DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS * 1_000_000L
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
+            .thenReturn(fakeElapsedTimeNs)
+            .thenReturn(fakeElapsedTimeNs + timeoutNs + 1)
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()

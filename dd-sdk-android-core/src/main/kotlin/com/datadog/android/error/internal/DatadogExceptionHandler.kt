@@ -57,7 +57,7 @@ internal class DatadogExceptionHandler(
         // give some time to the persistence executor service to finish its tasks
         if (sdkCore is InternalSdkCore) {
             val idled = (sdkCore.getPersistenceExecutorService() as? ThreadPoolExecutor)
-                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS, sdkCore.internalLogger) ?: true
+                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS, sdkCore.internalLogger, sdkCore.timeProvider) ?: true
             if (!idled) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,

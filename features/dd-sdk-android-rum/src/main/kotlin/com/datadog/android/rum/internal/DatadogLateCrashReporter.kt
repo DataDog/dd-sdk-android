@@ -29,6 +29,8 @@ import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
+import java.io.IOException
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 internal class DatadogLateCrashReporter(
@@ -150,12 +152,14 @@ internal class DatadogLateCrashReporter(
                     lastViewEvent
                 )
                 writeScope {
+                    // mark it before creating RUM events, so that we don't handle it again if code crashed after
+                    // RUM events are written
+                    sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
                     rumWriter.write(it, toSendErrorEvent, EventType.CRASH)
                     if (lastViewEvent.isWithinSessionAvailability) {
                         val updatedViewEvent = updateViewEvent(lastViewEvent)
                         rumWriter.write(it, updatedViewEvent, EventType.CRASH)
                     }
-                    sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
                 }
             }
         }
@@ -256,6 +260,7 @@ internal class DatadogLateCrashReporter(
             ),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),
             error = ErrorEvent.Error(
+                id = UUID.randomUUID().toString(),
                 message = errorLogMessage,
                 source = ErrorEvent.ErrorSource.SOURCE,
                 stack = stacktrace,
@@ -278,9 +283,20 @@ internal class DatadogLateCrashReporter(
         )
     }
 
+    @Suppress("ReturnCount")
     @RequiresApi(Build.VERSION_CODES.R)
     private fun readThreadsDump(anrExitInfo: ApplicationExitInfo): List<ThreadDump> {
-        val traceInputStream = anrExitInfo.traceInputStream
+        val traceInputStream = try {
+            anrExitInfo.traceInputStream
+        } catch (ioe: IOException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { OPEN_ANR_TRACE_ERROR },
+                ioe
+            )
+            return emptyList()
+        }
         if (traceInputStream == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -312,7 +328,7 @@ internal class DatadogLateCrashReporter(
 
     private val ViewEvent.isWithinSessionAvailability: Boolean
         get() {
-            val now = System.currentTimeMillis()
+            val now = sdkCore.timeProvider.getDeviceTimestampMillis()
             val sessionsTimeDifference = now - this.date
             return sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
         }
@@ -355,6 +371,7 @@ internal class DatadogLateCrashReporter(
                 " message, lastViewEvent) fields are either missing or have wrong type."
         internal const val MISSING_ANR_TRACE = "Last known exit reason has no trace information" +
             " attached, cannot report fatal ANR."
+        internal const val OPEN_ANR_TRACE_ERROR = "Cannot open trace for the last known exit reason."
 
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
     }

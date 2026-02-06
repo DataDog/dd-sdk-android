@@ -13,7 +13,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
-import android.os.Build
 import android.os.Process
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -36,6 +35,7 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
@@ -45,9 +45,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
@@ -68,7 +66,6 @@ import okhttp3.TlsVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -105,7 +102,6 @@ import kotlin.experimental.xor
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -129,6 +125,9 @@ internal class CoreFeatureTest {
     @Mock
     lateinit var mockAppStartTimeProvider: AppStartTimeProvider
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @Forgery
     lateinit var fakeConfig: Configuration
 
@@ -141,14 +140,18 @@ internal class CoreFeatureTest {
     @Forgery
     lateinit var fakeBuildId: UUID
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeVersion: String
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.disableKronosBackgroundSync = true
         testedFeature = CoreFeature(
             mockInternalLogger,
             mockAppStartTimeProvider,
-            executorServiceFactory = { _, _, _ -> mockPersistenceExecutorService },
-            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService }
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService },
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
@@ -158,6 +161,7 @@ internal class CoreFeatureTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        fakeConfig = fakeConfig.copy(version = fakeVersion)
     }
 
     @AfterEach
@@ -213,7 +217,6 @@ internal class CoreFeatureTest {
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize`() {
         // When
         testedFeature.initialize(
@@ -236,9 +239,10 @@ internal class CoreFeatureTest {
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    @TestTargetApi(Build.VERSION_CODES.N)
-    @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize {N}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
+
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -326,7 +330,7 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.packageVersionProvider.version).isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
@@ -336,8 +340,10 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
     fun `M initializes app info W initialize() { TIRAMISU }`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn true
+
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -349,7 +355,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageVersionProvider.version)
-            .isEqualTo(appContext.fakeVersionName)
+            .isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
@@ -371,8 +377,30 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageVersionProvider.version)
-            .isEqualTo(appContext.fakeVersionName)
+            .isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
+        assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
+    }
+
+    @Test
+    fun `M use app version W initialize() {null config version}`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig.copy(version = null),
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
+        assertThat(testedFeature.packageVersionProvider.version)
+            .isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
         assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
@@ -391,7 +419,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeConfig,
+            fakeConfig.copy(version = null),
             fakeConsent
         )
 
@@ -420,7 +448,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeConfig,
+            fakeConfig.copy(version = null),
             fakeConsent
         )
 
@@ -437,9 +465,9 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
     fun `M initializes app info W initialize() {unknown package name, TIRAMISU}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn true
         whenever(
             appContext.mockPackageManager.getPackageInfo(
                 appContext.fakePackageName,
@@ -454,7 +482,7 @@ internal class CoreFeatureTest {
         testedFeature.initialize(
             appContext.mockInstance,
             fakeSdkInstanceId,
-            fakeConfig,
+            fakeConfig.copy(version = null),
             fakeConsent
         )
 
@@ -728,7 +756,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
         assertThat(testedFeature.packageVersionProvider.version)
-            .isEqualTo(appContext.fakeVersionName)
+            .isEqualTo(fakeConfig.version)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)

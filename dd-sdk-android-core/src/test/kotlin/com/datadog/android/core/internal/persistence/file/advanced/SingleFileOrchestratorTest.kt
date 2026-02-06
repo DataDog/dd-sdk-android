@@ -21,7 +21,6 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.io.File
 
@@ -149,32 +148,6 @@ internal class SingleFileOrchestratorTest {
     fun `M return null W getRootDir()`() {
         // When
         val result = testedOrchestrator.getRootDir()
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    // endregion
-
-    // region getRootDirName
-
-    @Test
-    fun `M return file parent dirname W getRootDirName()`() {
-        // When
-        val result = testedOrchestrator.getRootDirName()
-
-        // Then
-        assertThat(result).isEqualTo(fakeParentDirName)
-    }
-
-    @Test
-    fun `M return null W getRootDirName() { parent dir is null }`() {
-        // Given
-        val fakeInvalidFile: File = mock()
-        testedOrchestrator = SingleFileOrchestrator(fakeInvalidFile, mockInternalLogger)
-
-        // When
-        val result = testedOrchestrator.getRootDirName()
 
         // Then
         assertThat(result).isNull()

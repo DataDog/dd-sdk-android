@@ -59,6 +59,7 @@ internal class PictureFragment :
         inflater.inflate(R.menu.image_loader, menu)
         val disabled = when (currentType) {
             ImageLoaderType.COIL -> R.id.image_loader_coil
+            ImageLoaderType.COIL3 -> R.id.image_loader_coil3
             ImageLoaderType.FRESCO -> R.id.image_loader_fresco
             ImageLoaderType.GLIDE -> R.id.image_loader_glide
             ImageLoaderType.PICASSO -> R.id.image_loader_picasso
@@ -70,6 +71,7 @@ internal class PictureFragment :
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val type = when (item.itemId) {
             R.id.image_loader_coil -> ImageLoaderType.COIL
+            R.id.image_loader_coil3 -> ImageLoaderType.COIL3
             R.id.image_loader_fresco -> ImageLoaderType.FRESCO
             R.id.image_loader_glide -> ImageLoaderType.GLIDE
             R.id.image_loader_picasso -> ImageLoaderType.PICASSO

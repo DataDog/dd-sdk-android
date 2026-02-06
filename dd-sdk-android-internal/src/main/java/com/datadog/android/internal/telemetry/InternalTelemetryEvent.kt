@@ -67,6 +67,10 @@ sealed class InternalTelemetryEvent {
                 FAIL
             }
         }
+
+        class TrackWebView(
+            additionalProperties: MutableMap<String, Any?> = mutableMapOf()
+        ) : ApiUsage(additionalProperties)
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()

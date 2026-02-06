@@ -53,6 +53,7 @@ internal class DefaultFlagsRepository(
         persistenceManager.saveFlagsState(
             context = context,
             flags = flags,
+            currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
             object : DataStoreWriteCallback {
                 override fun onSuccess() {
                 }
@@ -80,6 +81,20 @@ internal class DefaultFlagsRepository(
             { WARN_CONTEXT_NOT_SET }
         )
         return null
+    }
+
+    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
+        waitForPersistenceLoad()
+        val state = atomicState.get()
+        if (state != null) {
+            return state.flags
+        }
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { WARN_CONTEXT_NOT_SET }
+        )
+        return emptyMap()
     }
 
     override fun getEvaluationContext(): EvaluationContext? {

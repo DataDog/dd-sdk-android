@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.NoOpDataWriter
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.webview.internal.DatadogEventBridge
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
@@ -74,16 +75,19 @@ object WebViewTracking {
         @FloatRange(from = 0.0, to = 100.0) logsSampleRate: Float = 100f,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
+        val featureSdkCore = sdkCore as FeatureSdkCore
         if (!webView.settings.javaScriptEnabled) {
-            (sdkCore as FeatureSdkCore).internalLogger.log(
+            featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE }
             )
         }
-        val featureSdkCore = sdkCore as FeatureSdkCore
         // see Session Replay feature initialization regarding useContextThread=false
-        val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false)
+        val featureContext = featureSdkCore.getFeatureContext(
+            Feature.SESSION_REPLAY_FEATURE_NAME,
+            useContextThread = false
+        )
         val privacyLevel = resolvePrivacy(featureContext)
         val webViewEventConsumer = buildWebViewEventConsumer(
             featureSdkCore,
@@ -94,6 +98,9 @@ object WebViewTracking {
             DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel),
             DATADOG_EVENT_BRIDGE_NAME
         )
+        featureSdkCore.internalLogger.logApiUsage {
+            InternalTelemetryEvent.ApiUsage.TrackWebView()
+        }
     }
 
     private fun resolvePrivacy(featureContext: Map<String, Any?>): String {

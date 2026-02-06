@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.JsonSerializer.ITEM_SERIALIZATION_ERROR
 import com.datadog.android.core.internal.utils.JsonSerializer.safeMapValuesToJson
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -25,6 +26,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -62,16 +64,25 @@ internal class MiscUtilsTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @LongForgery(min = 0L)
+    var fakeCurrentTimeNs = 0L
+
+    @LongForgery(min = 0L, max = 2L)
+    var fakeDelaySeconds = 0L
+
     @Test
     fun `M repeat max N times W retryWithDelay { success = false }`(forge: Forge) {
         // Given
         val fakeTimes = forge.anInt(min = 1, max = 10)
-        val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
+        stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger)
+        val wasSuccessful = retryWithDelay(mockedBlock, fakeTimes, fakeDelayNs, mockInternalLogger, mockTimeProvider)
 
         // Then
         assertThat(wasSuccessful).isFalse()
@@ -85,9 +96,12 @@ internal class MiscUtilsTest {
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
 
         // When
-        val executionTime = measureNanoTime { retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger) }
+        val executionTime = measureNanoTime {
+            retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger, mockTimeProvider)
+        }
 
         // Then
         assertThat(executionTime).isCloseTo(
@@ -99,25 +113,24 @@ internal class MiscUtilsTest {
     @Test
     fun `M do nothing W retryWithDelay { times less or equal than 0 }`(forge: Forge) {
         // Given
-        val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
 
         // When
-        retryWithDelay(mockedBlock, forge.anInt(Int.MIN_VALUE, 1), fakeDelay, mockInternalLogger)
+        retryWithDelay(mockedBlock, forge.anInt(Int.MIN_VALUE, 1), fakeDelayNs, mockInternalLogger, mockTimeProvider)
 
         // Then
         verifyNoInteractions(mockedBlock)
     }
 
     @Test
-    fun `M repeat until success W retryWithDelay { result false }`(forge: Forge) {
+    fun `M repeat until success W retryWithDelay { result false }`() {
         // Given
-        val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false).thenReturn(true)
+        stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelay, mockInternalLogger)
+        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelayNs, mockInternalLogger, mockTimeProvider)
 
         // Then
         assertThat(wasSuccessful).isTrue()
@@ -126,16 +139,15 @@ internal class MiscUtilsTest {
 
     @Test
     fun `M repeat until success W retryWithDelay { exception }`(
-        @Forgery exception: Exception,
-        forge: Forge
+        @Forgery exception: Exception
     ) {
         // Given
-        val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenThrow(exception).thenReturn(true)
+        stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelay, mockInternalLogger)
+        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelayNs, mockInternalLogger, mockTimeProvider)
 
         // Then
         assertThat(wasSuccessful).isTrue()
@@ -312,6 +324,16 @@ internal class MiscUtilsTest {
                 .isEqualTo(kotlinObject.toString())
 
             else -> assertThat(jsonElement.asString).isEqualTo(kotlinObject.toString())
+        }
+    }
+
+    private val fakeDelayNs: Long
+        get() = TimeUnit.SECONDS.toNanos(fakeDelaySeconds)
+
+    private fun stubTimeProviderWithDelay() {
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
+            fakeCurrentTimeNs += fakeDelayNs
+            fakeCurrentTimeNs
         }
     }
 

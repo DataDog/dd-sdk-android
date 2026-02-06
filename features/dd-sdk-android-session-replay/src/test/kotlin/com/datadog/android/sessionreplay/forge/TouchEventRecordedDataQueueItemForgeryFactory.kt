@@ -14,6 +14,7 @@ internal class TouchEventRecordedDataQueueItemForgeryFactory : ForgeryFactory<To
     override fun getForgery(forge: Forge): TouchEventRecordedDataQueueItem {
         return TouchEventRecordedDataQueueItem(
             recordedQueuedItemContext = forge.getForgery(),
+            creationTimestampInNs = forge.aLong(min = 0),
             touchData = listOf(forge.getForgery())
         )
     }

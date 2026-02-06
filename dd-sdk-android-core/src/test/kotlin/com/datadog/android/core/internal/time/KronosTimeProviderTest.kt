@@ -59,7 +59,7 @@ internal class KronosTimeProviderTest {
 
     @Test
     fun `returns clock's time as server time`() {
-        val result = testedTimeProvider.getServerTimestamp()
+        val result = testedTimeProvider.getServerTimestampMillis()
 
         assertThat(result).isEqualTo(fakeDate.time)
     }
@@ -91,7 +91,7 @@ internal class KronosTimeProviderTest {
     @Test
     fun `returns device time`() {
         val now = System.currentTimeMillis()
-        val result = testedTimeProvider.getDeviceTimestamp()
+        val result = testedTimeProvider.getDeviceTimestampMillis()
 
         assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
     }
@@ -118,14 +118,16 @@ internal class KronosTimeProviderTest {
     }
 
     @Test
-    fun `M log and return System currentTimeMillis W getServerTimestamp { getCurrentTimeMs throws }`(forge: Forge) {
+    fun `M log and return System currentTimeMillis W getServerTimestampMillis { getCurrentTimeMs throws }`(
+        forge: Forge
+    ) {
         // Given
         val exception = forge.anException()
         whenever(mockClock.getCurrentTimeMs()) doThrow exception
 
         // When
         val now = System.currentTimeMillis()
-        val result = testedTimeProvider.getServerTimestamp()
+        val result = testedTimeProvider.getServerTimestampMillis()
 
         // Then
         internalLogger.verifyLog(

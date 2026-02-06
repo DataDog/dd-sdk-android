@@ -105,6 +105,7 @@ internal class SessionReplayFeatureTest {
         whenever(mockSampler.getSampleRate()).thenReturn(fakeSampleRate)
         fakeSessionId = UUID.randomUUID().toString()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
 
         testedFeature = SessionReplayFeature(

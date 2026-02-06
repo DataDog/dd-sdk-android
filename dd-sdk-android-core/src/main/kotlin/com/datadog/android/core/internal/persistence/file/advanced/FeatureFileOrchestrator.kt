@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -41,24 +42,28 @@ internal class FeatureFileOrchestrator(
         executorService: ExecutorService,
         filePersistenceConfig: FilePersistenceConfig,
         internalLogger: InternalLogger,
-        metricsDispatcher: MetricsDispatcher
+        metricsDispatcher: MetricsDispatcher,
+        timeProvider: TimeProvider
     ) : this(
         consentProvider,
         BatchFileOrchestrator(
             File(storageDir, PENDING_DIR.format(Locale.US, featureName)),
             filePersistenceConfig,
             internalLogger,
-            metricsDispatcher
+            metricsDispatcher,
+            timeProvider
         ),
         BatchFileOrchestrator(
             File(storageDir, GRANTED_DIR.format(Locale.US, featureName)),
             filePersistenceConfig,
             internalLogger,
-            metricsDispatcher
+            metricsDispatcher,
+            timeProvider
         ),
         ConsentAwareFileMigrator(
             FileMover(internalLogger),
-            internalLogger
+            internalLogger,
+            timeProvider
         ),
         executorService,
         internalLogger

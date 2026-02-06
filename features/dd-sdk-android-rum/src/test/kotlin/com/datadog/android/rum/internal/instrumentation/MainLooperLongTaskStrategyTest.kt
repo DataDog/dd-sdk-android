@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.instrumentation
 
 import android.os.Looper
+import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -31,14 +32,13 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -54,9 +54,17 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
     @Mock
     lateinit var mockMainLooper: Looper
 
+    lateinit var stubTimeProvider: StubTimeProvider
+
+    @LongForgery(min = 0L)
+    var fakeElapsedTimeNs = 0L
+
     @BeforeEach
     fun `set up`() {
         Looper::class.java.setStaticValue("sMainLooper", mockMainLooper)
+
+        stubTimeProvider = StubTimeProvider(elapsedTimeNs = fakeElapsedTimeNs)
+        whenever(rumMonitor.mockSdkCore.timeProvider) doReturn stubTimeProvider
 
         testedPrinter = MainLooperLongTaskStrategy(TEST_THRESHOLD_MS)
         testedPrinter.register(rumMonitor.mockSdkCore, mock())
@@ -103,40 +111,31 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     @Test
     fun `M report long task W print()`(
-        @LongForgery(min = MIN_LONG_TASK_DURATION_MS, max = 500) duration: Long,
+        @LongForgery(min = TEST_THRESHOLD_NS + 1) fakeDurationNs: Long,
         @StringForgery target: String,
         @StringForgery callback: String,
         @IntForgery what: Int
     ) {
-        // Given
-
         // When
         testedPrinter.println(">>>>> Dispatching to $target $callback: $what")
-        Thread.sleep(duration)
+        stubTimeProvider.elapsedTimeNs += fakeDurationNs
         testedPrinter.println("<<<<< Finished to $target $callback")
 
         // Then
-        argumentCaptor<Long> {
-            verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-                .addLongTask(capture(), eq("$target $callback: $what"))
-            val capturedMs = TimeUnit.NANOSECONDS.toMillis(firstValue)
-            assertThat(capturedMs)
-                .isBetween(duration, duration + 16L)
-        }
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .addLongTask(fakeDurationNs, "$target $callback: $what")
     }
 
     @Test
     fun `M do not report short task W print()`(
-        @LongForgery(min = 0, max = MAX_SHORT_TASK_DURATION_MS) duration: Long,
+        @LongForgery(min = 0, max = TEST_THRESHOLD_NS) fakeDurationNs: Long,
         @StringForgery target: String,
         @StringForgery callback: String,
         @IntForgery what: Int
     ) {
-        // Given
-
         // When
         testedPrinter.println(">>>>> Dispatching to $target $callback: $what")
-        Thread.sleep(duration / 4)
+        stubTimeProvider.elapsedTimeNs += fakeDurationNs
         testedPrinter.println("<<<<< Finished to $target $callback")
 
         // Then
@@ -163,8 +162,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     companion object {
         const val TEST_THRESHOLD_MS = 50L
-        const val MAX_SHORT_TASK_DURATION_MS = TEST_THRESHOLD_MS - 1L
-        const val MIN_LONG_TASK_DURATION_MS = TEST_THRESHOLD_MS + 1L
+        const val TEST_THRESHOLD_NS = TEST_THRESHOLD_MS * 1_000_000L
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 

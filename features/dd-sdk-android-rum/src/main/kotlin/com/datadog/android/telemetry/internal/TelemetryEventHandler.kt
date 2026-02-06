@@ -420,6 +420,9 @@ internal class TelemetryEventHandler(
                     noActiveView = event.noActiveView
                 )
             }
+            is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
+                TelemetryUsageEvent.Usage.TrackWebView()
+            }
         }
 
         return TelemetryUsageEvent(

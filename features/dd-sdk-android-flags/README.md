@@ -4,14 +4,14 @@ The Datadog Feature Flags SDK for Android allows you to evaluate feature flags a
 
 ## Getting started
 
-Add the Datadog Feature Flags SDK to your application's `build.gradle` file:
+Add the Datadog Feature Flags SDK to your application's `build.gradle.kts` file:
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-flags:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-flags:<latest-version>")
     
     // Recommended: RUM integration drives analysis and enriches RUM session data
-    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-rum:<latest-version>")
 }
 ```
 

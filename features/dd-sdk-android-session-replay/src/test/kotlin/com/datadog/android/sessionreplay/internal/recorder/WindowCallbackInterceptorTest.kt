@@ -12,7 +12,6 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -60,9 +59,6 @@ internal class WindowCallbackInterceptorTest {
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockRumContextProvider: RumContextProvider
 
     @Mock
@@ -88,7 +84,7 @@ internal class WindowCallbackInterceptorTest {
         testedInterceptor = WindowCallbackInterceptor(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
-            timeProvider = mockTimeProvider,
+            timeProvider = mock(),
             rumContextProvider = mockRumContextProvider,
             internalLogger = mockInternalLogger,
             imagePrivacy = fakeImagePrivacy,

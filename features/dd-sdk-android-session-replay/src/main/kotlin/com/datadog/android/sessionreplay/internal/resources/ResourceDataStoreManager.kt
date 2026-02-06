@@ -27,7 +27,7 @@ internal class ResourceDataStoreManager(
 ) {
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val knownResources = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
-    private val storedLastUpdateDateNs = AtomicLong(System.nanoTime())
+    private val storedLastUpdateDateNs = AtomicLong(featureSdkCore.timeProvider.getDeviceElapsedTimeNanos())
     private val isInitialized = AtomicBoolean(false) // has init finished executing its async actions
 
     init {
@@ -129,7 +129,7 @@ internal class ResourceDataStoreManager(
         )
 
     private fun didDataStoreExpire(lastUpdateDate: Long): Boolean =
-        System.nanoTime() - lastUpdateDate > DATASTORE_EXPIRATION_NS
+        featureSdkCore.timeProvider.getDeviceElapsedTimeNanos() - lastUpdateDate > DATASTORE_EXPIRATION_NS
 
     // endregion
 

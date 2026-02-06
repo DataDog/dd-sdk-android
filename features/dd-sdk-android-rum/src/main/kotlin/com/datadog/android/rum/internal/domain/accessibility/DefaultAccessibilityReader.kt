@@ -21,6 +21,7 @@ import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class DefaultAccessibilityReader(
     private val internalLogger: InternalLogger,
     private val applicationContext: Context,
+    private val timeProvider: TimeProvider,
     private val resources: Resources = applicationContext.resources,
     private val activityManager: ActivityManager? =
         applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager,
@@ -97,7 +99,7 @@ internal class DefaultAccessibilityReader(
 
     @Synchronized
     override fun getState(): AccessibilityInfo {
-        val currentTime = System.currentTimeMillis()
+        val currentTime = timeProvider.getDeviceTimestampMillis()
         val shouldPoll = currentTime - lastPollTime.get() >= POLL_THRESHOLD
         if (shouldPoll) {
             lastPollTime.set(currentTime)

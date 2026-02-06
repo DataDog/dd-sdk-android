@@ -3,12 +3,12 @@
 ## Getting Started 
 
 To include the Datadog integration for Timber in your project, simply add the
-following to your application's `build.gradle` file.
+following to your application's `build.gradle.kts` file.
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-logs:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-timber:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-logs:<latest-version>")
+    implementation("com.datadoghq:dd-sdk-android-timber:<latest-version>")
 }
 ```
 

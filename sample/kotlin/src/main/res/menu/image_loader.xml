@@ -17,6 +17,11 @@
             />
 
             <item
+                android:title="@string/choice_coil3"
+                android:id="@+id/image_loader_coil3"
+            />
+
+            <item
                 android:title="@string/choice_fresco"
                 android:id="@+id/image_loader_fresco"
             />

@@ -23,17 +23,23 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil3.request.ImageRequest
+import com.datadog.android.Datadog
+import com.datadog.android.coil3.DatadogCoilRequestListener
 import com.datadog.android.sample.R
+import coil3.compose.AsyncImage as AsyncImage3
 
 private const val SMALL_IMAGE_URL = "https://picsum.photos/100/100"
 
@@ -66,6 +72,9 @@ internal fun ImageSample() {
             }
             item {
                 CoilImage()
+            }
+            item {
+                Coil3Image()
             }
         }
     }
@@ -134,9 +143,31 @@ private fun CoilImage() {
             modifier = Modifier.imageModifier(),
             model = SMALL_IMAGE_URL,
             contentScale = ContentScale.Fit,
-            contentDescription = "Network Image"
+            contentDescription = "Network Image (Coil 2)"
         )
-        DescriptionText("Network Image")
+        DescriptionText("Network Image (Coil 2)")
+    }
+}
+
+@Composable
+private fun Coil3Image() {
+    val context = LocalContext.current
+    val listener = remember { DatadogCoilRequestListener(Datadog.getInstance()) }
+    val imageRequest = remember(context) {
+        ImageRequest.Builder(context)
+            .data(SMALL_IMAGE_URL)
+            .listener(listener)
+            .build()
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        AsyncImage3(
+            modifier = Modifier.imageModifier(),
+            model = imageRequest,
+            contentScale = ContentScale.Fit,
+            contentDescription = "Network Image (Coil 3)"
+        )
+        DescriptionText("Network Image (Coil 3)")
     }
 }
 

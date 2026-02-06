@@ -401,6 +401,17 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasLongTaskId(): LongTaskEventAssert {
+        assertThat(actual.longTask.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have long_task.id" +
+                    " but instead it was ${if (actual.longTask.id == null) "null" else "blank"}"
+            )
+            .isNotNull
+            .isNotBlank
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: LongTaskEvent): LongTaskEventAssert =

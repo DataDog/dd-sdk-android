@@ -366,7 +366,8 @@ internal class SdkFeature(
             executorService = coreFeature.persistenceExecutorService,
             filePersistenceConfig = filePersistenceConfig,
             internalLogger = internalLogger,
-            metricsDispatcher = metricsDispatcher
+            metricsDispatcher = metricsDispatcher,
+            timeProvider = coreFeature.timeProvider
         )
         this.fileOrchestrator = fileOrchestrator
 
@@ -398,7 +399,8 @@ internal class SdkFeature(
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider,
             executionTimer = GlobalBenchmark.createExecutionTimer(
-                track = wrappedFeature.name
+                track = wrappedFeature.name,
+                timeProvider = coreFeature.timeProvider
             )
         )
     }

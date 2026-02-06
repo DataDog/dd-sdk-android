@@ -20,7 +20,10 @@ import kotlin.math.sign
  * Stubbed version of a [ScheduledExecutorService].
  */
 @Suppress("UndocumentedPublicFunction")
-class StubScheduledExecutorService(executorContext: String) : ScheduledExecutorService {
+class StubScheduledExecutorService(
+    executorContext: String,
+    private val nowProvider: () -> Long
+) : ScheduledExecutorService {
 
     private var isShutdown = false
     private var isTerminated = false
@@ -97,10 +100,11 @@ class StubScheduledExecutorService(executorContext: String) : ScheduledExecutorS
     override fun schedule(command: Runnable?, delay: Long, unit: TimeUnit?): ScheduledFuture<*> {
         val futureTask = FutureTask(command, null)
         val delayMs = unit!!.toMillis(delay)
-        val triggerTimestamp = System.currentTimeMillis() + delayMs
+        val triggerTimestamp = nowProvider() + delayMs
         val scheduledFutureTask = ScheduledFutureTask(
             futureTask,
-            triggerTimestamp
+            triggerTimestamp,
+            nowProvider
         )
         Thread {
             Thread.sleep(delayMs)
@@ -112,10 +116,11 @@ class StubScheduledExecutorService(executorContext: String) : ScheduledExecutorS
     override fun <V : Any?> schedule(callable: Callable<V>?, delay: Long, unit: TimeUnit?): ScheduledFuture<V> {
         val futureTask = FutureTask(callable)
         val delayMs = unit!!.toMillis(delay)
-        val triggerTimestamp = System.currentTimeMillis() + delayMs
+        val triggerTimestamp = nowProvider() + delayMs
         val scheduledFutureTask = ScheduledFutureTask(
             futureTask,
-            triggerTimestamp
+            triggerTimestamp,
+            nowProvider
         )
         Thread {
             Thread.sleep(delayMs)
@@ -147,10 +152,12 @@ class StubScheduledExecutorService(executorContext: String) : ScheduledExecutorS
      * @param V the type of the task's result
      * @property delegate the delegate [FutureTask]
      * @property triggerTimestamp the timestamp at which the task should be triggered
+     * @property nowProvider a function that provides the current timestamp in milliseconds
      */
     class ScheduledFutureTask<V>(
         val delegate: FutureTask<V>,
-        val triggerTimestamp: Long
+        val triggerTimestamp: Long,
+        val nowProvider: () -> Long
     ) : RunnableFuture<V> by delegate, ScheduledFuture<V> {
         override fun compareTo(other: Delayed?): Int {
             val delay = getDelay(TimeUnit.MILLISECONDS)
@@ -159,7 +166,7 @@ class StubScheduledExecutorService(executorContext: String) : ScheduledExecutorS
         }
 
         override fun getDelay(unit: TimeUnit?): Long {
-            val delayMs = triggerTimestamp - System.currentTimeMillis()
+            val delayMs = triggerTimestamp - nowProvider()
             return unit!!.convert(delayMs, TimeUnit.MILLISECONDS)
         }
     }

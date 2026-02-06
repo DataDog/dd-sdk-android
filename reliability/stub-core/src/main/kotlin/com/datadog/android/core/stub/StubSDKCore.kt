@@ -10,6 +10,7 @@ import android.app.Application
 import android.content.ContentResolver
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.SystemClock
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
@@ -20,12 +21,14 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import org.mockito.kotlin.mock as kmock
 
 /**
@@ -43,6 +46,9 @@ class StubSDKCore(
 ) : InternalSdkCore by mockSdkCore {
 
     private val featureScopes = mutableMapOf<String, FeatureScope>()
+
+    private var currentTimestampMillis: Long = 0L
+    private var currentNanoTime: Long = 0L
 
     init {
         val mockResources = mock<Resources>()
@@ -108,6 +114,15 @@ class StubSDKCore(
     }
 
     /**
+     * Advances the current time by the specified duration.
+     * @param durationMs the duration to advance in milliseconds
+     */
+    fun advanceTimeBy(durationMs: Long) {
+        currentTimestampMillis += durationMs
+        currentNanoTime += TimeUnit.MILLISECONDS.toNanos(durationMs)
+    }
+
+    /**
      * Stubs a feature with a mock.
      * This is useful when a feature under tests checks for the presence of another one,
      * or sends events to another feature for cross feature communication.
@@ -159,6 +174,15 @@ class StubSDKCore(
 
     override val internalLogger: InternalLogger = StubInternalLogger()
 
+    override val timeProvider = object : TimeProvider {
+        override fun getDeviceTimestampMillis(): Long = currentTimestampMillis
+        override fun getServerTimestampMillis(): Long = 0L
+        override fun getDeviceElapsedTimeNanos(): Long = currentNanoTime
+        override fun getServerOffsetNanos(): Long = 0L
+        override fun getServerOffsetMillis(): Long = 0L
+        override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
+    }
+
     override fun registerFeature(feature: Feature) {
         stubFeatureScope(feature, StubFeatureScope(feature, { datadogContext }))
     }
@@ -187,7 +211,7 @@ class StubSDKCore(
     }
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
-        return StubScheduledExecutorService(executorContext)
+        return StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestampMillis)
     }
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {

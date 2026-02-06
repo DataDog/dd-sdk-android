@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -45,10 +46,10 @@ internal class DefaultFlagsRepositoryTest {
     lateinit var mockFeatureSdkCore: FeatureSdkCore
 
     @Mock
-    lateinit var mockDataStore: DataStoreHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockInternalLogger: InternalLogger
+    lateinit var mockDataStore: DataStoreHandler
 
     private lateinit var testedRepository: DefaultFlagsRepository
 
@@ -59,6 +60,7 @@ internal class DefaultFlagsRepositoryTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockFeatureSdkCore.timeProvider) doReturn mock()
         whenever(
             mockDataStore.value<FlagsStateEntry>(
                 key = any(),
@@ -290,6 +292,22 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(result).isFalse
         assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+    }
+
+    // endregion
+
+    // region getFlagsSnapshot
+
+    @Test
+    fun `M return flags map W getFlagsSnapshot() { flags state set }`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        // When
+        val result = testedRepository.getFlagsSnapshot()
+
+        // Then
+        assertThat(result).isEqualTo(multipleFlagsMap)
     }
 
     // endregion

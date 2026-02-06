@@ -29,6 +29,12 @@ class InternalApiUsageEventAssert(actual: InternalTelemetryEvent.ApiUsage) :
                     .isEqualTo(expected as InternalTelemetryEvent.ApiUsage.AddOperationStepVital)
             }
 
+            is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
+                InternalTrackWebViewEventAssert
+                    .assertThat(actual as InternalTelemetryEvent.ApiUsage.TrackWebView)
+                    .isEqualTo(expected as InternalTelemetryEvent.ApiUsage.TrackWebView)
+            }
+
             else -> {
                 failWithMessage("Unknown event type: ${actual::class.java.simpleName}")
             }

@@ -9,11 +9,11 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.os.Build
-import android.os.Build.VERSION
 import android.widget.ProgressBar
 import androidx.annotation.RequiresApi
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -33,7 +33,8 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper,
-    val showProgressWhenMaskUserInput: Boolean
+    val showProgressWhenMaskUserInput: Boolean,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : BaseAsyncBackgroundWireframeMapper<P>(
     viewIdentifierResolver,
     colorStringFormatter,
@@ -156,7 +157,7 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
     }
 
     private fun normalizedProgress(view: P): Float {
-        return if (VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        return if (buildSdkVersionProvider.isAtLeastO) {
             normalizedProgressAndroidO(view)
         } else {
             normalizedProgressLegacy(view)

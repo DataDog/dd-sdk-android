@@ -19,11 +19,12 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.TraceContext
-import com.datadog.android.okhttp.TraceContextInjection
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.GlobalDatadogTracer
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
@@ -33,6 +34,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
+import com.datadog.android.trace.internal.net.TraceContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -117,6 +119,17 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
+        return doIntercept(chain, chain.request())
+    }
+
+    /**
+     * This method is a part of Datadog SDK internal API. It is not meant for public use.
+     */
+    @InternalApi
+    protected fun doIntercept(
+        chain: Interceptor.Chain,
+        request: Request
+    ): Response {
         val sdkCore = sdkCoreReference.get()
         if (sdkCore == null) {
             val prefix = if (sdkInstanceName == null) {
@@ -129,15 +142,14 @@ internal constructor(
                 InternalLogger.Target.USER,
                 {
                     "$prefix for OkHttp instrumentation is not found, skipping" +
-                        " tracking of request with url=${chain.request().url}"
+                        " tracking of request with url=${request.url}"
                 }
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in method which allows throwing IOException
-            return chain.proceed(chain.request())
+            return chain.proceed(request)
         } else {
             val internalSdkCore = sdkCore as InternalSdkCore
             val tracer = resolveTracer(internalSdkCore)
-            val request = chain.request()
 
             return if (tracer == null || !isRequestTraceable(internalSdkCore, request)) {
                 intercept(internalSdkCore, chain, request)
@@ -856,14 +868,14 @@ internal constructor(
                 "but you did not specify any first party hosts. " +
                 "Your requests won't be traced.\n" +
                 "To set a list of known hosts, you can use the " +
-                "Configuration.Builder::setFirstPartyHosts() method."
+                "Configuration.Builder.setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you did not enable the TracingFeature. " +
                 "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you didn't register any AgentTracer.TracerAPI. " +
+                "but you didn't register any DatadogTracer. " +
                 "We automatically created a local tracer for you."
 
         internal const val ERROR_STACK_OVERFLOW =

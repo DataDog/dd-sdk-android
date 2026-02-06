@@ -6,14 +6,15 @@
 
 package com.datadog.android.flags.internal.model
 
+import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONObject
 
 internal data class PrecomputedFlag(
-    val variationType: String,
-    val variationValue: String,
-    val doLog: Boolean,
-    val allocationKey: String,
-    val variationKey: String,
-    val extraLogging: JSONObject,
-    val reason: String
-)
+    override val variationType: String,
+    override val variationValue: String,
+    override val doLog: Boolean,
+    override val allocationKey: String,
+    override val variationKey: String,
+    override val extraLogging: JSONObject,
+    override val reason: String
+) : UnparsedFlag

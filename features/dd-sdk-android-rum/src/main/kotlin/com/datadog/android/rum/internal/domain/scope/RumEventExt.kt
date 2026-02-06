@@ -22,9 +22,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalAppLaunchEvent
-import com.datadog.android.rum.model.RumVitalOperationStepEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 
 // region Resource.Method conversion
@@ -352,74 +352,74 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
     )
 }
 
-internal fun NetworkInfo.toVitalOperationStepConnectivity(): RumVitalOperationStepEvent.Connectivity {
+internal fun NetworkInfo.toVitalOperationStepConnectivity(): VitalOperationStepEvent.Connectivity {
     val status = if (isConnected()) {
-        RumVitalOperationStepEvent.Status.CONNECTED
+        VitalOperationStepEvent.Status.CONNECTED
     } else {
-        RumVitalOperationStepEvent.Status.NOT_CONNECTED
+        VitalOperationStepEvent.Status.NOT_CONNECTED
     }
     val interfaces = when (connectivity) {
-        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(RumVitalOperationStepEvent.Interface.ETHERNET)
-        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(RumVitalOperationStepEvent.Interface.WIFI)
-        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(RumVitalOperationStepEvent.Interface.WIMAX)
-        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(RumVitalOperationStepEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalOperationStepEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalOperationStepEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalOperationStepEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalOperationStepEvent.Interface.BLUETOOTH)
         NetworkInfo.Connectivity.NETWORK_2G,
         NetworkInfo.Connectivity.NETWORK_3G,
         NetworkInfo.Connectivity.NETWORK_4G,
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(RumVitalOperationStepEvent.Interface.CELLULAR)
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalOperationStepEvent.Interface.CELLULAR)
 
-        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(RumVitalOperationStepEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalOperationStepEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
 
     val cellular = if (cellularTechnology != null || carrierName != null) {
-        RumVitalOperationStepEvent.Cellular(
+        VitalOperationStepEvent.Cellular(
             technology = cellularTechnology,
             carrierName = carrierName
         )
     } else {
         null
     }
-    return RumVitalOperationStepEvent.Connectivity(
+    return VitalOperationStepEvent.Connectivity(
         status,
         interfaces,
         cellular = cellular
     )
 }
 
-internal fun NetworkInfo.toAppLaunchVitalConnectivity(): RumVitalAppLaunchEvent.Connectivity {
+internal fun NetworkInfo.toAppLaunchVitalConnectivity(): VitalAppLaunchEvent.Connectivity {
     val status = if (isConnected()) {
-        RumVitalAppLaunchEvent.ConnectivityStatus.CONNECTED
+        VitalAppLaunchEvent.ConnectivityStatus.CONNECTED
     } else {
-        RumVitalAppLaunchEvent.ConnectivityStatus.NOT_CONNECTED
+        VitalAppLaunchEvent.ConnectivityStatus.NOT_CONNECTED
     }
     val interfaces = when (connectivity) {
-        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(RumVitalAppLaunchEvent.Interface.ETHERNET)
-        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(RumVitalAppLaunchEvent.Interface.WIFI)
-        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(RumVitalAppLaunchEvent.Interface.WIMAX)
-        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(RumVitalAppLaunchEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalAppLaunchEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalAppLaunchEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalAppLaunchEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalAppLaunchEvent.Interface.BLUETOOTH)
         NetworkInfo.Connectivity.NETWORK_2G,
         NetworkInfo.Connectivity.NETWORK_3G,
         NetworkInfo.Connectivity.NETWORK_4G,
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(RumVitalAppLaunchEvent.Interface.CELLULAR)
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalAppLaunchEvent.Interface.CELLULAR)
 
-        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(RumVitalAppLaunchEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalAppLaunchEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
 
     val cellular = if (cellularTechnology != null || carrierName != null) {
-        RumVitalAppLaunchEvent.Cellular(
+        VitalAppLaunchEvent.Cellular(
             technology = cellularTechnology,
             carrierName = carrierName
         )
     } else {
         null
     }
-    return RumVitalAppLaunchEvent.Connectivity(
+    return VitalAppLaunchEvent.Connectivity(
         status,
         interfaces,
         cellular = cellular
@@ -494,27 +494,27 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
     }
 }
 
-internal fun DeviceType.toVitalOperationStepSchemaType(): RumVitalOperationStepEvent.DeviceType {
+internal fun DeviceType.toVitalOperationStepSchemaType(): VitalOperationStepEvent.DeviceType {
     return when (this) {
-        DeviceType.MOBILE -> RumVitalOperationStepEvent.DeviceType.MOBILE
-        DeviceType.TABLET -> RumVitalOperationStepEvent.DeviceType.TABLET
-        DeviceType.TV -> RumVitalOperationStepEvent.DeviceType.TV
-        DeviceType.DESKTOP -> RumVitalOperationStepEvent.DeviceType.DESKTOP
-        DeviceType.GAMING_CONSOLE -> RumVitalOperationStepEvent.DeviceType.GAMING_CONSOLE
-        DeviceType.BOT -> RumVitalOperationStepEvent.DeviceType.BOT
-        DeviceType.OTHER -> RumVitalOperationStepEvent.DeviceType.OTHER
+        DeviceType.MOBILE -> VitalOperationStepEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> VitalOperationStepEvent.DeviceType.TABLET
+        DeviceType.TV -> VitalOperationStepEvent.DeviceType.TV
+        DeviceType.DESKTOP -> VitalOperationStepEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> VitalOperationStepEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> VitalOperationStepEvent.DeviceType.BOT
+        DeviceType.OTHER -> VitalOperationStepEvent.DeviceType.OTHER
     }
 }
 
-internal fun DeviceType.toVitalAppLaunchSchemaType(): RumVitalAppLaunchEvent.DeviceType {
+internal fun DeviceType.toVitalAppLaunchSchemaType(): VitalAppLaunchEvent.DeviceType {
     return when (this) {
-        DeviceType.MOBILE -> RumVitalAppLaunchEvent.DeviceType.MOBILE
-        DeviceType.TABLET -> RumVitalAppLaunchEvent.DeviceType.TABLET
-        DeviceType.TV -> RumVitalAppLaunchEvent.DeviceType.TV
-        DeviceType.DESKTOP -> RumVitalAppLaunchEvent.DeviceType.DESKTOP
-        DeviceType.GAMING_CONSOLE -> RumVitalAppLaunchEvent.DeviceType.GAMING_CONSOLE
-        DeviceType.BOT -> RumVitalAppLaunchEvent.DeviceType.BOT
-        DeviceType.OTHER -> RumVitalAppLaunchEvent.DeviceType.OTHER
+        DeviceType.MOBILE -> VitalAppLaunchEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> VitalAppLaunchEvent.DeviceType.TABLET
+        DeviceType.TV -> VitalAppLaunchEvent.DeviceType.TV
+        DeviceType.DESKTOP -> VitalAppLaunchEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> VitalAppLaunchEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> VitalAppLaunchEvent.DeviceType.BOT
+        DeviceType.OTHER -> VitalAppLaunchEvent.DeviceType.OTHER
     }
 }
 
@@ -607,10 +607,10 @@ internal fun ResourceEvent.ResourceEventSource.Companion.tryFromSource(
     }
 }
 
-internal fun RumVitalOperationStepEvent.RumVitalOperationStepEventSource.Companion.tryFromSource(
+internal fun VitalOperationStepEvent.VitalOperationStepEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
-): RumVitalOperationStepEvent.RumVitalOperationStepEventSource? {
+): VitalOperationStepEvent.VitalOperationStepEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -624,10 +624,10 @@ internal fun RumVitalOperationStepEvent.RumVitalOperationStepEventSource.Compani
     }
 }
 
-internal fun RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource.Companion.tryFromSource(
+internal fun VitalAppLaunchEvent.VitalAppLaunchEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
-): RumVitalAppLaunchEvent.RumVitalAppLaunchEventSource? {
+): VitalAppLaunchEvent.VitalAppLaunchEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
@@ -718,50 +718,50 @@ internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTa
 // region FeatureOperation
 
 internal fun RumSessionScope.StartReason.toVitalOperationStepSessionPrecondition():
-    RumVitalOperationStepEvent.SessionPrecondition {
+    VitalOperationStepEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> RumVitalOperationStepEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> VitalOperationStepEvent.SessionPrecondition.USER_APP_LAUNCH
         RumSessionScope.StartReason.INACTIVITY_TIMEOUT
-        -> RumVitalOperationStepEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> RumVitalOperationStepEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> RumVitalOperationStepEvent.SessionPrecondition.EXPLICIT_STOP
+        -> VitalOperationStepEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> VitalOperationStepEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> VitalOperationStepEvent.SessionPrecondition.EXPLICIT_STOP
         RumSessionScope.StartReason.BACKGROUND_LAUNCH
-        -> RumVitalOperationStepEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> RumVitalOperationStepEvent.SessionPrecondition.PREWARM
+        -> VitalOperationStepEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> VitalOperationStepEvent.SessionPrecondition.PREWARM
         RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
-            RumVitalOperationStepEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+            VitalOperationStepEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
 internal fun RumSessionScope.StartReason.toVitalAppLaunchSessionPrecondition():
-    RumVitalAppLaunchEvent.SessionPrecondition {
+    VitalAppLaunchEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> RumVitalAppLaunchEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> VitalAppLaunchEvent.SessionPrecondition.USER_APP_LAUNCH
         RumSessionScope.StartReason.INACTIVITY_TIMEOUT
-        -> RumVitalAppLaunchEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> RumVitalAppLaunchEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> RumVitalAppLaunchEvent.SessionPrecondition.EXPLICIT_STOP
+        -> VitalAppLaunchEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> VitalAppLaunchEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> VitalAppLaunchEvent.SessionPrecondition.EXPLICIT_STOP
         RumSessionScope.StartReason.BACKGROUND_LAUNCH
-        -> RumVitalAppLaunchEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> RumVitalAppLaunchEvent.SessionPrecondition.PREWARM
+        -> VitalAppLaunchEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> VitalAppLaunchEvent.SessionPrecondition.PREWARM
         RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
-            RumVitalAppLaunchEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+            VitalAppLaunchEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun FailureReason.toSchemaFailureReason(): RumVitalOperationStepEvent.FailureReason {
+internal fun FailureReason.toSchemaFailureReason(): VitalOperationStepEvent.FailureReason {
     return when (this) {
-        FailureReason.ERROR -> RumVitalOperationStepEvent.FailureReason.ERROR
-        FailureReason.ABANDONED -> RumVitalOperationStepEvent.FailureReason.ABANDONED
-        FailureReason.OTHER -> RumVitalOperationStepEvent.FailureReason.OTHER
+        FailureReason.ERROR -> VitalOperationStepEvent.FailureReason.ERROR
+        FailureReason.ABANDONED -> VitalOperationStepEvent.FailureReason.ABANDONED
+        FailureReason.OTHER -> VitalOperationStepEvent.FailureReason.OTHER
     }
 }
 
-internal fun RumStartupScenario.toVitalAppLaunchStartupType(): RumVitalAppLaunchEvent.StartupType {
+internal fun RumStartupScenario.toVitalAppLaunchStartupType(): VitalAppLaunchEvent.StartupType {
     return when (this) {
-        is RumStartupScenario.Cold -> RumVitalAppLaunchEvent.StartupType.COLD_START
+        is RumStartupScenario.Cold -> VitalAppLaunchEvent.StartupType.COLD_START
         is RumStartupScenario.WarmAfterActivityDestroyed,
-        is RumStartupScenario.WarmFirstActivity -> RumVitalAppLaunchEvent.StartupType.WARM_START
+        is RumStartupScenario.WarmFirstActivity -> VitalAppLaunchEvent.StartupType.WARM_START
     }
 }
 // endregion

@@ -42,6 +42,7 @@ internal class TouchEventRecordedDataQueueItemTest {
         // Given
         testedItem = TouchEventRecordedDataQueueItem(
             recordedQueuedItemContext = fakeTouchEventRecordedDataQueueItem.recordedQueuedItemContext,
+            creationTimestampInNs = fakeTouchEventRecordedDataQueueItem.creationTimestampInNs,
             touchData = emptyList()
         )
 

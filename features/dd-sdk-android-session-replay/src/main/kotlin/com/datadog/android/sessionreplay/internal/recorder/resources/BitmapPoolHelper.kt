@@ -12,10 +12,10 @@ import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 internal class BitmapPoolHelper(
     private val invocationUtils: InvocationUtils = InvocationUtils()
 ) {
-    internal fun generateKey(bitmap: Bitmap) =
+    internal fun generateKey(bitmap: Bitmap): String =
         generateKey(bitmap.width, bitmap.height, bitmap.config)
 
-    internal fun generateKey(width: Int, height: Int, config: Bitmap.Config?) =
+    internal fun generateKey(width: Int, height: Int, config: Bitmap.Config?): String =
         "$width-$height-$config"
 
     internal fun <R> safeCall(call: () -> R): R? =

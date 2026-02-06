@@ -7,7 +7,10 @@
 package com.datadog.android.tests.elmyr
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.internal.net.HttpSpec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -29,13 +32,37 @@ class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
         override val headers: Map<String, List<String>>,
         override val contentType: String?,
         override val method: String,
-        private val contentLength: Long?,
-        private val tags: Map<Any, Any?>
-    ) : HttpRequestInfo, ExtendedRequestInfo {
+        internal val contentLength: Long?,
+        internal val tags: Map<Any, Any?>
+    ) : HttpRequestInfo, ExtendedRequestInfo, MutableHttpRequestInfo {
 
         @Suppress("UNCHECKED_CAST")
         override fun <T> tag(type: Class<out T>): T? = tags[type] as? T
 
         override fun contentLength(): Long? = contentLength
+        override fun newBuilder(): HttpRequestInfoBuilder = StubHttpRequestInfoBuilder(this.copy())
+    }
+
+    private data class StubHttpRequestInfoBuilder(private var request: StubRequestInfo) : HttpRequestInfoBuilder {
+        override fun setUrl(url: String) = apply { request = request.copy(url = url) }
+
+        override fun addHeader(key: String, vararg values: String) = apply {
+            request = request.copy(headers = request.headers.toMutableMap().also { it[key] = values.asList() })
+        }
+
+        override fun removeHeader(key: String) = apply {
+            request = request.copy(headers = request.headers.toMutableMap().also { it.remove(key) })
+        }
+
+        override fun <T> addTag(type: Class<in T>, tag: T?) = apply {
+            request = request.copy(tags = request.tags.toMutableMap().also { it[type] = tag })
+        }
+
+        override fun setMethod(
+            method: String,
+            body: HttpRequestBody?
+        ) = apply { request = request.copy(method = method) }
+
+        override fun build(): HttpRequestInfo = request.copy()
     }
 }

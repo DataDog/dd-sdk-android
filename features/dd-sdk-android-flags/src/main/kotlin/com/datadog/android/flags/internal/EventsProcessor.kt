@@ -6,11 +6,11 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface EventsProcessor {
-    fun processEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag)
+    fun processEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag)
 }

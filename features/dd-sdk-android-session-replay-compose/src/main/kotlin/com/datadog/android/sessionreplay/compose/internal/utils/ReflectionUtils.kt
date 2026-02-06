@@ -159,9 +159,8 @@ internal class ReflectionUtils {
     fun getCoil3AsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
         // Check if Coil3 ContentPainterNode is present first to optimize the performance
         // by skipping the node chain iteration
-        if (PainterNodeClass == null) {
-            return null
-        }
+        if (PainterNodeClass == null) return null
+
         val layoutNode = LayoutNodeField?.getSafe(semanticsNode)
         val nodeChain = NodesFieldOfLayoutNode?.getSafe(layoutNode)
         val headNode = HeadFieldOfNodeChain?.getSafe(nodeChain) as? Modifier.Node
@@ -176,8 +175,7 @@ internal class ReflectionUtils {
             currentNode = ChildFieldOfModifierNode?.getSafe(currentNode) as? Modifier.Node
         }
         val asyncImagePainter = PainterFieldOfPainterNode?.getSafe(painterNode)
-        val painter =
-            asyncImagePainter?.let { PainterMethodOfAsync3ImagePainter?.invoke(it) }
+        val painter = asyncImagePainter?.let { PainterMethodOfAsync3ImagePainter?.invoke(it) }
         return painter as? Painter
     }
 
@@ -205,9 +203,8 @@ internal class ReflectionUtils {
     fun getAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
         // Check if Coil AsyncImagePainter is present first to optimize the performance
         // by skipping the modifier iteration
-        if (AsyncImagePainterClass == null) {
-            return null
-        }
+        if (AsyncImagePainterClass == null) return null
+
         val asyncPainter = semanticsNode.layoutInfo.getModifierInfo().firstNotNullOfOrNull {
             if (ContentPainterModifierClass?.isInstance(it.modifier) == true) {
                 PainterFieldOfContentPainterModifier?.getSafe(it.modifier)

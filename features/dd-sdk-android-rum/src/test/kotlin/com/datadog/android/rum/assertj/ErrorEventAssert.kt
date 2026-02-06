@@ -649,6 +649,17 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasErrorId(): ErrorEventAssert {
+        assertThat(actual.error.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have error.id" +
+                    " but instead it was ${if (actual.error.id == null) "null" else "blank"}"
+            )
+            .isNotNull
+            .isNotBlank
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =

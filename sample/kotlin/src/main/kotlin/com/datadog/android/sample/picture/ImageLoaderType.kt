@@ -8,6 +8,7 @@ package com.datadog.android.sample.picture
 
 internal enum class ImageLoaderType {
     COIL,
+    COIL3,
     FRESCO,
     GLIDE,
     PICASSO

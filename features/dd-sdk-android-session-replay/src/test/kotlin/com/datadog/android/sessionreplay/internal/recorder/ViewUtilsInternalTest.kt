@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.view.Display
 import android.view.View
 import android.view.ViewStub
@@ -16,8 +15,6 @@ import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -37,8 +34,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -368,7 +364,6 @@ internal class ViewUtilsInternalTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
     fun `M return false W isOnSecondaryDisplay { invalid display }`(
         @Mock mockView: View
     ) {

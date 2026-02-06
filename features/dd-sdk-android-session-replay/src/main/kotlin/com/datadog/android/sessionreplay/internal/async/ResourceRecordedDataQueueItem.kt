@@ -12,8 +12,9 @@ internal class ResourceRecordedDataQueueItem(
     recordedQueuedItemContext: RecordedQueuedItemContext,
     val identifier: String,
     val resourceData: ByteArray,
+    creationTimestampInNs: Long,
     val mimeType: String? = null
-) : RecordedDataQueueItem(recordedQueuedItemContext) {
+) : RecordedDataQueueItem(recordedQueuedItemContext, creationTimestampInNs) {
 
     override fun isValid(): Boolean {
         return resourceData.isNotEmpty()

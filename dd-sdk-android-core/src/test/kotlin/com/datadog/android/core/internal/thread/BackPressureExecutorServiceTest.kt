@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -16,12 +17,14 @@ internal class BackPressureExecutorServiceTest :
 
     override fun createTestedExecutorService(
         forge: Forge,
-        backPressureStrategy: BackPressureStrategy
+        backPressureStrategy: BackPressureStrategy,
+        timeProvider: TimeProvider
     ): BackPressureExecutorService {
         return BackPressureExecutorService(
             mockInternalLogger,
             forge.anAlphabeticalString(),
-            backPressureStrategy
+            backPressureStrategy,
+            timeProvider
         )
     }
 
