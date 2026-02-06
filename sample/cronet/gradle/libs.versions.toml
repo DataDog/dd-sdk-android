@@ -5,7 +5,7 @@ coreKtx = "1.17.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.1"
 composeBom = "2025.12.01"
-datadogSdk = "3.5.0-SNAPSHOT"
+datadogSdk = "3.7.0-CRONET-SNAPSHOT"
 playServicesCronet = "18.1.1"
 
 [libraries]
@@ -19,6 +19,7 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 datadog-rum = { group = "com.datadoghq", name = "dd-sdk-android-rum", version.ref = "datadogSdk" }
 datadog-cronet = { group = "com.datadoghq", name = "dd-sdk-android-cronet", version.ref = "datadogSdk" }
+datadog-trace = { module = "com.datadoghq:dd-sdk-android-trace", version.ref = "datadogSdk" }
 play-services-cronet = { group = "com.google.android.gms", name = "play-services-cronet", version.ref = "playServicesCronet" }
 
 [bundles]
@@ -35,6 +36,7 @@ compose = [
 ]
 datadog = [
     "datadog-rum",
+    "datadog-trace",
     "datadog-cronet",
 ]
 

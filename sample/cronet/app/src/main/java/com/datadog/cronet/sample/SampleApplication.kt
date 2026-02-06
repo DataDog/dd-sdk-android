@@ -10,6 +10,9 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import org.chromium.net.CronetEngine
 
 class SampleApplication : Application() {
@@ -18,6 +21,7 @@ class SampleApplication : Application() {
     @OptIn(ExperimentalRumApi::class)
     override fun onCreate() {
         super.onCreate()
+        val tracedHosts = listOf("storage.googleapis.com")
         Datadog.initialize(
             context = this,
             trackingConsent = TrackingConsent.GRANTED,
@@ -26,7 +30,7 @@ class SampleApplication : Application() {
                     clientToken = BuildConfig.DD_API_TOKEN,
                     env = "env",
                 )
-                .setFirstPartyHosts(listOf("storage.googleapis.com"))
+                .setFirstPartyHosts(tracedHosts)
                 .setBatchSize(BatchSize.SMALL)
                 .setUploadFrequency(UploadFrequency.FREQUENT)
                 .build()
@@ -39,6 +43,14 @@ class SampleApplication : Application() {
 
         Rum.enable(rumConfig)
 
-        cronetEngine = DatadogCronetEngine.Builder(this).build()
+        Trace.enable(
+            TraceConfiguration.Builder()
+                .build()
+        )
+
+        cronetEngine = DatadogCronetEngine.Builder(this)
+            .enableRumInstrumentation()
+            .enableApmInstrumentation(ApmNetworkInstrumentationConfiguration(tracedHosts))
+            .build()
     }
 }
