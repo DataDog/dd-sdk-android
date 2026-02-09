@@ -217,7 +217,6 @@ internal class DatadogFlagsClient(
             context = context,
             variantKey = data?.variationKey,
             allocationKey = data?.allocationKey,
-            reason = data?.reason,
             errorCode = errorCode,
             errorMessage = errorMessage
         )

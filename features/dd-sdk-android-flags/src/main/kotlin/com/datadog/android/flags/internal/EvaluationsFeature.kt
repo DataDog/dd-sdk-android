@@ -72,13 +72,8 @@ internal class EvaluationsFeature(
             return
         }
 
-        // Register for context updates
+        // Register for context updates (will trigger onContextUpdate immediately if RUM has context)
         sdkCore.setContextUpdateReceiver(this)
-
-        // Get initial service from DatadogContext
-        val internalSdkCore = sdkCore as? InternalSdkCore
-        val initialService = internalSdkCore?.getDatadogContext()?.service
-        ddContext = DDContext(service = initialService, rumApplicationId = null, rumViewName = null)
 
         // Create the evaluation processor
         val executor = sdkCore.createScheduledExecutorService(EXECUTOR_NAME)
@@ -94,7 +89,7 @@ internal class EvaluationsFeature(
             flushIntervalMs = flagsConfiguration.evaluationFlushIntervalMs,
             aggregator = aggregator
         )
-        evaluationProcessor?.schedulePeriodicFlush()
+        evaluationProcessor?.reschedulePeriodicFlush()
 
         initialized.set(true)
     }
@@ -120,8 +115,11 @@ internal class EvaluationsFeature(
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
             val currentContext = ddContext
+            val service = currentContext?.service
+                ?: (sdkCore as? InternalSdkCore)?.getDatadogContext()?.service
+
             ddContext = DDContext(
-                service = currentContext?.service,
+                service = service,
                 rumApplicationId = context[RUM_APPLICATION_ID] as? String,
                 rumViewName = context[RUM_VIEW_NAME] as? String
             )
@@ -140,7 +138,6 @@ internal class EvaluationsFeature(
         context: EvaluationContext,
         variantKey: String?,
         allocationKey: String?,
-        reason: String?,
         errorCode: String?,
         errorMessage: String?
     ) {
@@ -155,7 +152,6 @@ internal class EvaluationsFeature(
             rumViewName = currentDdContext?.rumViewName,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            reason = reason,
             errorCode = errorCode,
             errorMessage = errorMessage
         )
