@@ -24,9 +24,9 @@ package com.datadog.android.flags.internal.aggregation
  */
 internal data class AggregationKey(
     val flagKey: String,
-    val variantKey: String? = null,
-    val allocationKey: String? = null,
+    val variantKey: String?,
+    val allocationKey: String?,
     val targetingKey: String?,
-    val viewName: String? = null,
-    val errorCode: String? = null
+    val viewName: String?,
+    val errorCode: String?
 )
