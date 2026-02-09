@@ -206,17 +206,18 @@ internal class DatadogFlagsClient(
     }
 
     private fun writeEvaluationEvent(
-        name: String,
-        data: UnparsedFlag?,
+        flagKey: String,
         context: EvaluationContext,
+        variantKey: String?,
+        allocationKey: String?,
         errorCode: String?,
         errorMessage: String?
     ) {
         evaluationsFeature?.processEvaluation(
-            flagKey = name,
+            flagKey = flagKey,
             context = context,
-            variantKey = data?.variationKey,
-            allocationKey = data?.allocationKey,
+            variantKey = variantKey,
+            allocationKey = allocationKey,
             errorCode = errorCode,
             errorMessage = errorMessage
         )
@@ -466,7 +467,14 @@ internal class DatadogFlagsClient(
 
         // Evaluation logging for all evaluations (when enabled)
         if (flagsConfiguration.trackEvaluations) {
-            writeEvaluationEvent(flagKey, flag, context, errorCode = null, errorMessage = null)
+            writeEvaluationEvent(
+                flagKey = flagKey,
+                context = context,
+                variantKey = flag.variationKey,
+                allocationKey = flag.allocationKey,
+                errorCode = null,
+                errorMessage = null
+            )
         }
     }
 
@@ -475,22 +483,13 @@ internal class DatadogFlagsClient(
             return
         }
 
-        // Create synthetic flag data for error evaluation
         val context = flagsRepository.getEvaluationContext() ?: EvaluationContext.EMPTY
-        val errorFlag = PrecomputedFlag(
-            variationType = "string",
-            variationValue = resolution.defaultValue.toString(),
-            doLog = false,
-            allocationKey = "",
-            variationKey = "",
-            extraLogging = org.json.JSONObject(),
-            reason = ResolutionReason.ERROR.name
-        )
 
         writeEvaluationEvent(
-            name = resolution.flagKey,
-            data = errorFlag,
+            flagKey = resolution.flagKey,
             context = context,
+            variantKey = null,
+            allocationKey = null,
             errorCode = resolution.errorCode.name,
             errorMessage = resolution.errorMessage
         )
