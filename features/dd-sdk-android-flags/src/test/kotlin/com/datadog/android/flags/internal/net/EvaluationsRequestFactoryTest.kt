@@ -105,8 +105,7 @@ internal class EvaluationsRequestFactoryTest {
     @Test
     fun `M build NDJSON payload W create() { multiple JSON events }`(
         @Forgery executionContext: RequestExecutionContext,
-        @StringForgery batchMetadata: String,
-        forge: Forge
+        @StringForgery batchMetadata: String
     ) {
         val json1 = """{"flag":{"key":"feature-a"},"timestamp":1000,"evaluation_count":5}"""
         val json2 = """{"flag":{"key":"feature-b"},"timestamp":2000,"evaluation_count":3}"""
