@@ -33,7 +33,6 @@ dependencies {
     implementation(libs.androidToolsGradlePlugin)
     implementation(libs.versionsGradlePlugin)
     implementation(libs.dokkaGradlePlugin)
-    implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)
 
     // check api surface

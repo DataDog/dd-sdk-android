@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("com.github.ben-manes.versions")
-    id("com.datadoghq.dependency-license")
 }
 
 dependencies {

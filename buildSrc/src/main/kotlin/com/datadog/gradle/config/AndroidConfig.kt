@@ -8,7 +8,6 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.CompileOptions
 import com.android.build.gradle.LibraryExtension
-import com.datadog.gradle.plugin.licenses.DependencyLicensesExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -91,9 +90,5 @@ fun Project.androidLibraryConfig() {
                 )
             }
         }
-    }
-
-    extensionConfig<DependencyLicensesExtension> {
-        transitiveDependencies = true
     }
 }
