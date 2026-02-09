@@ -9,12 +9,14 @@ package com.datadog.android.flags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
+import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
@@ -286,12 +288,16 @@ interface FlagsClient {
                     logWithPolicy = logWithPolicy
                 )
             }
+            val evaluationsFeature = sdkCore
+                .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
+                ?.unwrap<EvaluationsFeature>()
 
             return flagsFeature.getOrRegisterNewClient(name) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
+                    evaluationsFeature = evaluationsFeature,
                     name = name
                 )
             }
@@ -385,6 +391,7 @@ interface FlagsClient {
             configuration: FlagsConfiguration,
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
+            evaluationsFeature: EvaluationsFeature?,
             name: String
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
@@ -462,7 +469,7 @@ interface FlagsClient {
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
                     exposureProcessor = flagsFeature.processor,
-                    evaluationsFeature = flagsFeature.evaluationsFeature,
+                    evaluationsFeature = evaluationsFeature,
                     flagStateManager = flagStateManager
                 )
             }

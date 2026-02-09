@@ -34,8 +34,7 @@ internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
-    internal val flagsConfiguration: FlagsConfiguration,
-    internal val evaluationsFeature: EvaluationsFeature? = null
+    internal val flagsConfiguration: FlagsConfiguration
 ) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
