@@ -176,12 +176,15 @@ internal class EvaluationEventsProcessorTest {
     @Test
     fun `M cancel scheduled future W flush()`() {
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
-        testedProcessor.schedulePeriodicFlush()
+        val processor = createSchedulingEnabledProcessor()
 
-        processEval()
-        testedProcessor.flush()
+        processor.processEvaluation(
+            fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
+            fakeVariantKey, fakeAllocationKey, null, null
+        )
+        processor.flush()
 
-        verify(mockScheduledFuture).cancel(false)
+        verify(mockScheduledFuture, atLeastOnce()).cancel(false)
     }
 
     @Test
@@ -192,37 +195,40 @@ internal class EvaluationEventsProcessorTest {
             mockScheduledFuture
         }
 
-        testedProcessor.schedulePeriodicFlush()
+        val processor = createSchedulingEnabledProcessor()
         val initialCount = scheduleCount
 
-        processEval()
-        testedProcessor.flush()
+        processor.processEvaluation(
+            fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
+            fakeVariantKey, fakeAllocationKey, null, null
+        )
+        processor.flush()
 
         assertThat(scheduleCount).isGreaterThan(initialCount)
     }
 
     // endregion
 
-    // region schedulePeriodicFlush
+    // region reschedulePeriodicFlush
 
     @Test
-    fun `M schedule flush W schedulePeriodicFlush()`() {
+    fun `M schedule flush W reschedulePeriodicFlush()`() {
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
 
-        testedProcessor.schedulePeriodicFlush()
+        createSchedulingEnabledProcessor()
 
         verify(mockScheduledExecutor).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test
-    fun `M log warning W schedulePeriodicFlush() { executor rejects }`(forge: Forge) {
+    fun `M log warning W reschedulePeriodicFlush() { executor rejects }`(forge: Forge) {
         val exception = RejectedExecutionException(forge.anAlphabeticalString())
         whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
             .doReturn(mockScheduledFuture)
             .doThrow(exception)
 
-        testedProcessor.schedulePeriodicFlush()
-        testedProcessor.schedulePeriodicFlush()
+        val processor = createSchedulingEnabledProcessor()
+        processor.reschedulePeriodicFlush()
 
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
@@ -244,7 +250,7 @@ internal class EvaluationEventsProcessorTest {
             mockScheduledFuture
         }
 
-        testedProcessor.schedulePeriodicFlush()
+        createSchedulingEnabledProcessor()
         assertThat(scheduleCount).isEqualTo(1)
 
         checkNotNull(taskRunnable).run()
@@ -260,7 +266,7 @@ internal class EvaluationEventsProcessorTest {
             mockScheduledFuture
         }
 
-        testedProcessor.schedulePeriodicFlush()
+        createSchedulingEnabledProcessor()
         checkNotNull(taskRunnable).run()
 
         verify(mockWriter, never()).writeAll(any())
@@ -337,9 +343,9 @@ internal class EvaluationEventsProcessorTest {
             .doReturn(mockScheduledFuture)
             .doThrow(RejectedExecutionException("Executor shutdown"))
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
-        testedProcessor.schedulePeriodicFlush()
+        val processor = createSchedulingEnabledProcessor()
 
-        testedProcessor.stop()
+        processor.stop()
 
         val inOrder = inOrder(mockScheduledExecutor, mockScheduledFuture)
         inOrder.verify(mockScheduledExecutor).shutdown()
@@ -380,10 +386,10 @@ internal class EvaluationEventsProcessorTest {
         }
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
 
-        testedProcessor.schedulePeriodicFlush()
+        val processor = createSchedulingEnabledProcessor()
         val initialCount = scheduleCount
 
-        testedProcessor.stop()
+        processor.stop()
         checkNotNull(taskRunnable).run()
 
         assertThat(scheduleCount).isEqualTo(initialCount)
@@ -701,6 +707,18 @@ internal class EvaluationEventsProcessorTest {
     // endregion
 
     // region Helpers
+
+    private fun createSchedulingEnabledProcessor(
+        aggregator: EvaluationAggregator = testedAggregator
+    ): EvaluationEventsProcessor = EvaluationEventsProcessor(
+        writer = mockWriter,
+        timeProvider = mockTimeProvider,
+        scheduledExecutor = mockScheduledExecutor,
+        internalLogger = mockInternalLogger,
+        flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+        aggregator = aggregator,
+        periodicFlushEnabled = true
+    )
 
     private fun processEval(
         flagKey: String = fakeFlagKey,

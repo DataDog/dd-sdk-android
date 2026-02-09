@@ -338,20 +338,18 @@ internal class EvaluationAggregatorTest {
         variantKey: String? = fakeVariantKey,
         errorCode: String? = null,
         errorMessage: String? = null
-    ): List<FlagEvaluation>? {
-        return testedAggregator.record(
-            timestamp = timestamp,
-            flagKey = flagKey,
-            context = context,
-            service = null,
-            rumApplicationId = null,
-            rumViewName = null,
-            variantKey = variantKey,
-            allocationKey = null,
-            errorCode = errorCode,
-            errorMessage = errorMessage
-        )
-    }
+    ): List<FlagEvaluation>? = testedAggregator.record(
+        timestamp = timestamp,
+        flagKey = flagKey,
+        context = context,
+        service = null,
+        rumApplicationId = null,
+        rumViewName = null,
+        variantKey = variantKey,
+        allocationKey = null,
+        errorCode = errorCode,
+        errorMessage = errorMessage
+    )
 
     private fun runConcurrently(threadCount: Int, action: (Int) -> Unit) {
         val startLatch = CountDownLatch(1)

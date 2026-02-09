@@ -93,8 +93,10 @@ internal class EvaluationEventsProcessor(
 
     private fun flushInternal() {
         val events = aggregator.drain()
+
+        reschedulePeriodicFlush()
+
         if (events.isNotEmpty()) {
-            reschedulePeriodicFlush() // cancels any scheduled flush.
             writer.writeAll(events)
         }
     }
@@ -105,6 +107,7 @@ internal class EvaluationEventsProcessor(
         }
 
         // Cancel any scheduled before scheduling a new one.
+        @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
         schedulerMutex.withLock {
             scheduledFlushFuture?.cancel(false)
             try {

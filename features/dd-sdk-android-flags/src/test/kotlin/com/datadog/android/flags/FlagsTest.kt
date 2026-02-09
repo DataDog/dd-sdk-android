@@ -150,7 +150,6 @@ internal class FlagsTest {
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String,
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEvaluationEndpoint: String
-
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
