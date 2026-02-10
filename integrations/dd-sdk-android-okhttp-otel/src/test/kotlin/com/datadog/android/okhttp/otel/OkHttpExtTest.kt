@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp.otel
 
-import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.trace.api.DatadogTracingConstants
+import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery

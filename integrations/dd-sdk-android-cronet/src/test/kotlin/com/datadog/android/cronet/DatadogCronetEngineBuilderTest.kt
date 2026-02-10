@@ -10,7 +10,8 @@ import com.datadog.android.cronet.DatadogCronetEngine.Companion.CRONET_NETWORK_I
 import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.rum.internal.net.RumResourceInstrumentationAssert
+import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentationAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -338,47 +339,55 @@ internal class DatadogCronetEngineBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M propagate RumResourceAttributesProvider W setRumResourceAttributesProvider()`() {
+    fun `M propagate RumResourceAttributesProvider W enableRumInstrumentation()`() {
         // Given
         val customProvider = mock<RumResourceAttributesProvider>()
         whenever(mockBuilderDelegate.build()).thenReturn(mock())
+        val customConfig = RumNetworkInstrumentationConfiguration()
+            .setRumResourceAttributesProvider(customProvider)
 
         // When
-        val builder = testedBuilder.setRumResourceAttributesProvider(customProvider)
+        val builder = testedBuilder.enableRumInstrumentation(customConfig)
         val engine = builder.build()
 
         // Then
         assertThat(builder).isSameAs(testedBuilder)
         check(engine is DatadogCronetEngine)
-        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
+        RumNetworkInstrumentationAssert.assertThat(engine.rumNetworkInstrumentation!!)
             .hasRumResourceAttributesProvider(customProvider)
     }
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M propagate sdkInstanceName W setSdkInstanceName()`(@StringForgery sdkInstanceName: String) {
+    fun `M propagate sdkInstanceName W enableRumInstrumentation()`(@StringForgery sdkInstanceName: String) {
+        // Given
+        val customConfig = RumNetworkInstrumentationConfiguration()
+            .setSdkInstanceName(sdkInstanceName)
+
         // When
-        val builder = testedBuilder.setSdkInstanceName(sdkInstanceName)
+        val builder = testedBuilder.enableRumInstrumentation(customConfig)
         val engine = builder.build()
 
         // Then
         check(engine is DatadogCronetEngine)
         assertThat(builder).isSameAs(testedBuilder)
-        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
+        RumNetworkInstrumentationAssert.assertThat(engine.rumNetworkInstrumentation!!)
             .hasSdkInstanceName(sdkInstanceName)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M use Cronet as network layer name W build()`() {
         // Given
         whenever(mockBuilderDelegate.build()).thenReturn(mock())
+        testedBuilder.enableRumInstrumentation(RumNetworkInstrumentationConfiguration())
 
         // When
         val engine = testedBuilder.build()
 
         // Then
         check(engine is DatadogCronetEngine)
-        RumResourceInstrumentationAssert.assertThat(engine.rumResourceInstrumentation)
+        RumNetworkInstrumentationAssert.assertThat(engine.rumNetworkInstrumentation!!)
             .hasNetworkLayerName(CRONET_NETWORK_INSTRUMENTATION_NAME)
     }
 
@@ -387,6 +396,7 @@ internal class DatadogCronetEngineBuilderTest {
     fun `M propagate executor W setListenerExecutor()`() {
         // Given
         val customExecutor = mock<Executor>()
+        testedBuilder.enableRumInstrumentation(RumNetworkInstrumentationConfiguration())
 
         // When
         val builder = testedBuilder.setListenerExecutor(customExecutor)
@@ -398,7 +408,7 @@ internal class DatadogCronetEngineBuilderTest {
         argumentCaptor<DatadogRequestFinishedInfoListener> {
             verify(mockCronetEngine).addRequestFinishedListener(capture())
             assertThat(firstValue.executor).isSameAs(customExecutor)
-            assertThat(firstValue.rumResourceInstrumentation).isSameAs(engine.rumResourceInstrumentation)
+            assertThat(firstValue.rumNetworkInstrumentation).isSameAs(engine.rumNetworkInstrumentation)
         }
     }
 }

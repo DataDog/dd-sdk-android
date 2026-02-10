@@ -38,7 +38,7 @@ import java.util.UUID
  * @param rumResourceAttributesProvider provider for custom attributes to attach to RUM resources
  */
 @InternalApi
-class RumResourceInstrumentation(
+class RumNetworkInstrumentation internal constructor(
     internal val sdkInstanceName: String?,
     internal val networkInstrumentationName: String,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider
@@ -83,14 +83,19 @@ class RumResourceInstrumentation(
      * Stops tracking a network resource with a successful response.
      * @param requestInfo the request information
      * @param responseInfo the response information
+     * @param attributes additional attributes to attach to the resource event
      */
-    fun stopResource(requestInfo: HttpRequestInfo, responseInfo: HttpResponseInfo) = ifRumEnabled { sdkCore ->
+    fun stopResource(
+        requestInfo: HttpRequestInfo,
+        responseInfo: HttpResponseInfo,
+        attributes: Map<String, Any?> = emptyMap()
+    ) = ifRumEnabled { sdkCore ->
         sdkCore.networkMonitor?.stopResource(
             buildResourceId(requestInfo, generateUuid = false),
             responseInfo.statusCode,
             responseInfo.getBodyLength(),
             responseInfo.getRumResourceKind(),
-            rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null)
+            attributes + rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null)
         )
     }
 

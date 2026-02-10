@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.okhttp.internal.utils
+package com.datadog.android.trace.internal.net
 
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan

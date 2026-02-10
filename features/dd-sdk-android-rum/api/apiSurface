@@ -179,6 +179,10 @@ class com.datadog.android.rum._RumInternalProxy
     fun setRumSessionTypeOverride(com.datadog.android.rum.RumConfiguration.Builder, RumSessionType): com.datadog.android.rum.RumConfiguration.Builder
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
+    fun createRumNetworkInstrumentation(String, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration): com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+  fun setSdkInstanceName(String)
+  fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
@@ -220,12 +224,11 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
-class com.datadog.android.rum.internal.net.RumResourceInstrumentation
-  constructor(String?, String, com.datadog.android.rum.RumResourceAttributesProvider)
+class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun startResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
-  fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo)
+  fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Throwable)
   fun reportInstrumentationError(String)
   companion object 
