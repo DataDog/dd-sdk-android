@@ -581,6 +581,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasFeatureFlags(expected: ErrorEvent.Context?): ErrorEventAssert {
+        assertThat(actual.featureFlags?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected RUM ErrorEvent to have featureFlags: $expected" +
+                    " but instead was: ${actual.featureFlags}"
+            )
+            .isEqualTo(expected?.additionalProperties)
+        return this
+    }
+
     fun hasSampleRate(sampleRate: Float?): ErrorEventAssert {
         assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
             .overridingErrorMessage(

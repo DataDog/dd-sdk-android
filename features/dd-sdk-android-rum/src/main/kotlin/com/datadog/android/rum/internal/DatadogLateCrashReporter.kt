@@ -279,6 +279,9 @@ internal class DatadogLateCrashReporter(
                 timeSinceAppStart = timeSinceAppStartMs
             ),
             version = viewEvent.version,
+            featureFlags = viewEvent.featureFlags?.let {
+                ErrorEvent.Context(additionalProperties = it.additionalProperties)
+            },
             ddtags = buildDDTagsString(datadogContext)
         )
     }
