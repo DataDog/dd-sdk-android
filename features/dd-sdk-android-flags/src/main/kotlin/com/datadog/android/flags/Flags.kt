@@ -32,11 +32,11 @@ object Flags {
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         if (configuration.trackEvaluations) {
-            val feature = EvaluationsFeature(
+            val evaluationsFeature = EvaluationsFeature(
                 sdkCore = sdkCore as FeatureSdkCore,
                 flagsConfiguration = configuration
             )
-            sdkCore.registerFeature(feature)
+            sdkCore.registerFeature(evaluationsFeature)
         }
 
         val flagsFeature = FlagsFeature(
