@@ -110,7 +110,8 @@ internal class RumViewManagerScope(
         delegateToChildren(event, datadogContext, writeScope, writer)
 
         if (event is RumRawEvent.StartView && !stopped) {
-            startForegroundView(event, datadogContext, writeScope, writer)
+            startForegroundView(event)
+            sendViewUpdateToChildren(event, datadogContext, writeScope, writer)
             lastStoppedViewTime?.let {
                 val gap = event.eventTime.nanoTime - it.nanoTime
                 if (gap in 1 until THREE_SECONDS_GAP_NS) {
@@ -176,6 +177,15 @@ internal class RumViewManagerScope(
         applicationDisplayed = true
         viewScope.handleEvent(event, datadogContext, writeScope, writer)
         childrenScopes.add(viewScope)
+    }
+
+    private fun sendViewUpdateToChildren(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        childrenScopes.forEach { it.sendViewUpdate(event, datadogContext, writeScope, writer) }
     }
 
     @WorkerThread
@@ -264,10 +274,7 @@ internal class RumViewManagerScope(
 
     @WorkerThread
     private fun startForegroundView(
-        event: RumRawEvent.StartView,
-        datadogContext: DatadogContext,
-        writeScope: EventWriteScope,
-        writer: DataWriter<Any>
+        event: RumRawEvent.StartView
     ) {
         val viewScope = RumViewScope.fromEvent(
             parentScope = this,
@@ -292,7 +299,6 @@ internal class RumViewManagerScope(
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
-        viewScope.handleEvent(RumRawEvent.KeepAlive(), datadogContext, writeScope, writer)
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 key = event.key,
@@ -433,7 +439,6 @@ internal class RumViewManagerScope(
 
         internal val silentOrphanEventTypes = arrayOf<Class<*>>(
             RumRawEvent.ApplicationStarted::class.java,
-            RumRawEvent.KeepAlive::class.java,
             RumRawEvent.ResetSession::class.java,
             RumRawEvent.StopView::class.java,
             RumRawEvent.ActionDropped::class.java,
