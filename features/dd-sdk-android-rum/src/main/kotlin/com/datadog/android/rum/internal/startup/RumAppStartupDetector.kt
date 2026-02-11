@@ -11,6 +11,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTimeNs
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 
 internal interface RumAppStartupDetector {
     interface Listener {
@@ -23,14 +24,16 @@ internal interface RumAppStartupDetector {
         fun create(
             application: Application,
             sdkCore: InternalSdkCore,
-            listener: Listener
+            listener: Listener,
+            appStartupActivityPredicate: AppStartupActivityPredicate
         ): RumAppStartupDetector {
             return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs.asTimeNs() },
                 timeProvider = { Time() },
-                listener
+                listener = listener,
+                appStartupActivityPredicate = appStartupActivityPredicate
             )
         }
     }
