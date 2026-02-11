@@ -11,6 +11,7 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.seconds
 
@@ -19,10 +20,12 @@ internal class RumAppStartupDetectorImpl(
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
     private val appStartupTimeProvider: () -> Time,
     private val timeProvider: () -> Time,
-    private val listener: RumAppStartupDetector.Listener
+    private val listener: RumAppStartupDetector.Listener,
+    private val appStartupActivityPredicate: AppStartupActivityPredicate
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
     private var numberOfActivities: Int = 0
+    private var numberOfStartupActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
 
@@ -44,6 +47,12 @@ internal class RumAppStartupDetectorImpl(
 
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
+
+        // Only decrement startup activities counter if this activity was counted
+        if (appStartupActivityPredicate.shouldTrackStartup(activity)) {
+            numberOfStartupActivities--
+        }
+
         if (numberOfActivities == 0) {
             isChangingConfigurations = activity.isChangingConfigurations
         }
@@ -68,7 +77,13 @@ internal class RumAppStartupDetectorImpl(
         numberOfActivities++
         val now = timeProvider()
 
-        if (numberOfActivities == 1 && !isChangingConfigurations) {
+        val shouldTrackStartup = appStartupActivityPredicate.shouldTrackStartup(activity)
+
+        if (shouldTrackStartup) {
+            numberOfStartupActivities++
+        }
+
+        if (numberOfStartupActivities == 1 && !isChangingConfigurations && shouldTrackStartup) {
             val processStartTime = appStartupTimeProvider()
 
             val gapNs = now.nanoTime - processStartTime.nanoTime
@@ -100,9 +115,8 @@ internal class RumAppStartupDetectorImpl(
             }
 
             listener.onAppStartupDetected(scenario)
+            isFirstActivityForProcess = false
         }
-
-        isFirstActivityForProcess = false
     }
 
     override fun destroy() {
