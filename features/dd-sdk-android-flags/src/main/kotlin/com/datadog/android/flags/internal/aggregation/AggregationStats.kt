@@ -22,51 +22,22 @@ import com.datadog.android.flags.model.FlagEvaluation
  * Thread Safe
  *
  * @param aggregationKey the aggregation key for this stats bundle.
- * @param firstTimestamp the timestamp of the first evaluation
+ * @param firstEvaluation the timestamp of the first evaluation
  * @param context the evaluation context
  * @param service the service name from DatadogContext
  * @param rumApplicationId the RUM application ID (null if RUM not active)
  * @param errorMessage optional error message (detailed, for logging)
  */
-internal class AggregationStats(
+internal data class AggregationStats(
     private val aggregationKey: AggregationKey,
-    firstTimestamp: Long,
+    internal val count: Int,
+    private val firstEvaluation: Long,
+    internal val lastEvaluation: Long,
     private val context: EvaluationContext,
     private val service: String?,
     private val rumApplicationId: String?,
-    errorMessage: String?
+    internal val errorMessage: String?
 ) {
-    // All field access is synchronized - see recordEvaluation() and toEvaluationEvent()
-    private var count: Int = 1
-    private var firstEvaluation: Long = firstTimestamp
-    private var lastEvaluation: Long = firstTimestamp
-    private var lastErrorMessage: String? = errorMessage
-
-    /**
-     * Records an additional evaluation at the given timestamp.
-     *
-     * Updates the last error message to the most recent one.
-     * Updates the first and last evaluation timestamps as necessary.
-     * Thread-safe: can be called concurrently from multiple threads.
-     *
-     * @param timestamp the timestamp of the evaluation
-     * @param errorMessage the error message for this evaluation (updates to latest)
-     */
-    fun recordEvaluation(timestamp: Long, errorMessage: String?) {
-        synchronized(this) {
-            count++
-
-            if (timestamp < firstEvaluation) {
-                firstEvaluation = timestamp
-            }
-            if (timestamp > lastEvaluation) {
-                lastEvaluation = timestamp
-            }
-
-            lastErrorMessage = errorMessage
-        }
-    }
-
     /**
      * Converts the aggregated statistics to a FlagEvaluation.
      *
@@ -75,18 +46,6 @@ internal class AggregationStats(
      * @return the flag evaluation event
      */
     fun toEvaluationEvent(): FlagEvaluation {
-        // Take atomic snapshot of statistics
-        val snapshotCount: Int
-        val snapshotFirst: Long
-        val snapshotLast: Long
-        val snapshotMessage: String?
-        synchronized(this) {
-            snapshotCount = count
-            snapshotFirst = firstEvaluation
-            snapshotLast = lastEvaluation
-            snapshotMessage = lastErrorMessage
-        }
-
         // Build context with Datadog-specific information
         val eventContext = FlagEvaluation.Context(
             evaluation = null, // Evaluation context reserved for future use
@@ -104,17 +63,17 @@ internal class AggregationStats(
         )
 
         return FlagEvaluation(
-            timestamp = snapshotFirst,
+            timestamp = firstEvaluation,
             flag = FlagEvaluation.Identifier(aggregationKey.flagKey),
             variant = aggregationKey.variantKey?.let { FlagEvaluation.Identifier(it) },
             allocation = aggregationKey.allocationKey?.let { FlagEvaluation.Identifier(it) },
             targetingRule = null, // Not applicable
             targetingKey = aggregationKey.targetingKey,
             context = eventContext,
-            error = snapshotMessage?.let { FlagEvaluation.Error(message = it) },
-            evaluationCount = snapshotCount.toLong(),
-            firstEvaluation = snapshotFirst,
-            lastEvaluation = snapshotLast,
+            error = errorMessage?.let { FlagEvaluation.Error(message = it) },
+            evaluationCount = count.toLong(),
+            firstEvaluation = firstEvaluation,
+            lastEvaluation = lastEvaluation,
             runtimeDefaultUsed = aggregationKey.variantKey == null
         )
     }

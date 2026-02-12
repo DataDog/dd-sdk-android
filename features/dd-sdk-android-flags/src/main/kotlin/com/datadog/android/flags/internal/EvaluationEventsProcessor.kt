@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -27,13 +28,19 @@ internal class EvaluationEventsProcessor(
     private val internalLogger: InternalLogger,
     private val flushIntervalMs: Long,
     private val aggregator: EvaluationAggregator,
-    @Volatile private var periodicFlushEnabled: Boolean = true
+    periodicFlushEnabled: Boolean = true
 ) {
     private val flushMutex = ReentrantLock()
+    private var scheduledFlushFuture: ScheduledFuture<*>? = null
 
     @Volatile
-    private var scheduledFlushFuture: ScheduledFuture<*>? = null
-    private val schedulerMutex = ReentrantLock()
+    private var periodicFlushEnabled: Boolean = periodicFlushEnabled
+        set(value) {
+            field = value
+            if (value) {
+                reschedulePeriodicFlush()
+            }
+        }
 
     init {
         reschedulePeriodicFlush()
@@ -63,17 +70,7 @@ internal class EvaluationEventsProcessor(
             errorMessage = errorMessage
         )
 
-        if (drainedEvents != null) {
-            // If no flush is in process, restart the periodic flush schedule.
-            if (flushMutex.tryLock()) {
-                try {
-                    reschedulePeriodicFlush()
-                } finally {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // safe - called after lock()
-                    flushMutex.unlock()
-                }
-            }
-
+        if (drainedEvents.isNotEmpty()) {
             writer.writeAll(drainedEvents)
         }
     }
@@ -83,18 +80,14 @@ internal class EvaluationEventsProcessor(
             return
         }
 
+        val events: List<FlagEvaluation>
         try {
-            flushInternal()
+            events = aggregator.drain()
+            reschedulePeriodicFlush()
         } finally {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - only called after successful tryLock()
             flushMutex.unlock()
         }
-    }
-
-    private fun flushInternal() {
-        val events = aggregator.drain()
-
-        reschedulePeriodicFlush()
 
         if (events.isNotEmpty()) {
             writer.writeAll(events)
@@ -108,7 +101,7 @@ internal class EvaluationEventsProcessor(
 
         // Cancel any scheduled before scheduling a new one.
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
-        schedulerMutex.withLock {
+        flushMutex.withLock {
             scheduledFlushFuture?.cancel(false)
             try {
                 @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
@@ -133,12 +126,16 @@ internal class EvaluationEventsProcessor(
 
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - does not throw in Android
         scheduledExecutor.shutdown()
-        scheduledFlushFuture?.cancel(false)
 
+        // Wait for any in-progress flush to complete, then drain any remaining events.
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
-        // Wait for any in-progress flush to complete, then flush any remaining events.
-        flushMutex.withLock {
-            flushInternal()
+        val events = flushMutex.withLock {
+            scheduledFlushFuture?.cancel(false)
+            aggregator.drain()
+        }
+
+        if (events.isNotEmpty()) {
+            writer.writeAll(events)
         }
 
         try {

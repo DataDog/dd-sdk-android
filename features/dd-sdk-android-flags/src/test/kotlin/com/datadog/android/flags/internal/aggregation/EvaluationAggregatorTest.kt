@@ -49,16 +49,16 @@ internal class EvaluationAggregatorTest {
     // region record - threshold
 
     @Test
-    fun `M return null W record() { below threshold }`() {
+    fun `M return empty list W record() { below threshold }`() {
         val result = record()
 
-        assertThat(result).isNull()
+        assertThat(result).isEmpty()
     }
 
     @Test
     fun `M return drained events W record() { at threshold }`() {
         val aggregator = EvaluationAggregator(maxAggregations = 5)
-        var lastResult: List<FlagEvaluation>? = null
+        var lastResult: List<FlagEvaluation> = emptyList()
 
         repeat(5) { index ->
             lastResult = aggregator.record(
@@ -75,9 +75,9 @@ internal class EvaluationAggregatorTest {
             )
         }
 
-        assertThat(lastResult).isNotNull()
+        assertThat(lastResult).isNotEmpty()
         assertThat(lastResult).hasSize(5)
-        assertThat(lastResult!!.map { it.flag.key }).containsExactlyInAnyOrder(
+        assertThat(lastResult.map { it.flag.key }).containsExactlyInAnyOrder(
             "flag-0",
             "flag-1",
             "flag-2",
@@ -87,7 +87,7 @@ internal class EvaluationAggregatorTest {
     }
 
     @Test
-    fun `M return null for subsequent records W record() { after threshold drain }`() {
+    fun `M return empty list for subsequent records W record() { after threshold drain }`() {
         val aggregator = EvaluationAggregator(maxAggregations = 3)
 
         // Fill to threshold - should drain
@@ -106,7 +106,7 @@ internal class EvaluationAggregatorTest {
             )
         }
 
-        // Next record should return null (map was drained)
+        // Next record should return empty list (map was drained)
         val result = aggregator.record(
             timestamp = fakeTimestamp,
             flagKey = "new-flag",
@@ -120,7 +120,7 @@ internal class EvaluationAggregatorTest {
             errorMessage = null
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isEmpty()
     }
 
     // endregion
@@ -272,7 +272,7 @@ internal class EvaluationAggregatorTest {
         runConcurrently(threadCount) { threadId ->
             repeat(keysPerThread) { index ->
                 val drained = record(flagKey = "thread-$threadId-flag-$index")
-                if (drained != null) {
+                if (drained.isNotEmpty()) {
                     allDrained.addAll(drained)
                 }
             }
@@ -300,7 +300,7 @@ internal class EvaluationAggregatorTest {
                 startLatch.await()
                 repeat(recordsPerThread) { index ->
                     val drained = record(flagKey = "thread-$threadId-flag-$index")
-                    if (drained != null) {
+                    if (drained.isNotEmpty()) {
                         allDrained.addAll(drained.map { it.evaluationCount })
                     }
                 }
@@ -338,7 +338,7 @@ internal class EvaluationAggregatorTest {
         variantKey: String? = fakeVariantKey,
         errorCode: String? = null,
         errorMessage: String? = null
-    ): List<FlagEvaluation>? = testedAggregator.record(
+    ): List<FlagEvaluation> = testedAggregator.record(
         timestamp = timestamp,
         flagKey = flagKey,
         context = context,

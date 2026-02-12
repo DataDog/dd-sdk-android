@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.aggregation
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -17,15 +18,19 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicInteger
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class AggregationStatsTest {
 
     @LongForgery(min = 1000000L)
-    var fakeTimestamp = 0L
+    var fakeFirstTimestamp = 0L
+
+    @LongForgery(min = 1000000L)
+    var fakeLastTimestamp = 0L
+
+    @IntForgery(min = 1)
+    var fakeCount = 0
 
     @StringForgery
     lateinit var fakeTargetingKey: String
@@ -35,9 +40,6 @@ internal class AggregationStatsTest {
 
     @StringForgery
     lateinit var fakeAllocationKey: String
-
-    @StringForgery
-    lateinit var fakeValue: String
 
     @StringForgery
     lateinit var fakeFlagName: String
@@ -65,134 +67,31 @@ internal class AggregationStatsTest {
             viewName = fakeViewName,
             errorCode = null
         )
-    }
-
-    // region recordEvaluation
-
-    @Test
-    fun `M increment count W recordEvaluation()`() {
-        // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-
-        // When
-        stats.recordEvaluation(fakeTimestamp + 1000, null)
-        stats.recordEvaluation(fakeTimestamp + 2000, null)
-
-        // Then
-        val event = stats.toEvaluationEvent()
-        assertThat(event.evaluationCount).isEqualTo(3L)
-    }
-
-    @Test
-    fun `M update timestamps W recordEvaluation() and toEvaluationEvent()`() {
-        // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-        val laterTimestamp = fakeTimestamp + 5000
-
-        // When
-        stats.recordEvaluation(laterTimestamp, null)
-
-        // Then - lastEvaluation updated, firstEvaluation unchanged, timestamp equals firstEvaluation
-        val event = stats.toEvaluationEvent()
-        assertThat(event.lastEvaluation).isEqualTo(laterTimestamp)
-        assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
-        assertThat(event.timestamp).isEqualTo(event.firstEvaluation)
-    }
-
-    @Test
-    fun `M preserve first evaluation timestamp W recordEvaluation() { multiple calls }`() {
-        // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-
-        // When
-        repeat(10) { index ->
-            stats.recordEvaluation(fakeTimestamp + (index + 1) * 1000, null)
+        // Ensure lastTimestamp >= firstTimestamp
+        if (fakeLastTimestamp < fakeFirstTimestamp) {
+            fakeLastTimestamp = fakeFirstTimestamp + 1000
         }
-
-        // Then
-        val event = stats.toEvaluationEvent()
-        assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
     }
-
-    @Test
-    fun `M update error message and count W recordEvaluation() { multiple errors same code }`(forge: Forge) {
-        // Given
-        val errorMessage1 = "First error: ${forge.anAlphabeticalString()}"
-        val errorMessage2 = "Second error: ${forge.anAlphabeticalString()}"
-        val errorMessage3 = "Third error: ${forge.anAlphabeticalString()}"
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                errorMessage1
-            )
-
-        // When
-        stats.recordEvaluation(fakeTimestamp + 1000, errorMessage2)
-        stats.recordEvaluation(fakeTimestamp + 2000, errorMessage3)
-
-        // Then - last error message and aggregated count
-        val event = stats.toEvaluationEvent()
-        assertThat(event.error?.message).isEqualTo(errorMessage3)
-        assertThat(event.evaluationCount).isEqualTo(3L)
-    }
-
-    // endregion
 
     // region toEvaluationEvent
 
     @Test
     fun `M create event with correct fields W toEvaluationEvent() { successful match }`() {
         // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats()
 
         // When
         val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(event.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(event.timestamp).isEqualTo(fakeFirstTimestamp)
         assertThat(event.flag.key).isEqualTo(fakeFlagName)
         assertThat(event.variant?.key).isEqualTo(fakeVariantKey)
         assertThat(event.allocation?.key).isEqualTo(fakeAllocationKey)
         assertThat(event.targetingKey).isEqualTo(fakeTargetingKey)
-        assertThat(event.evaluationCount).isEqualTo(1L)
-        assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
-        assertThat(event.lastEvaluation).isEqualTo(fakeTimestamp)
+        assertThat(event.evaluationCount).isEqualTo(fakeCount.toLong())
+        assertThat(event.firstEvaluation).isEqualTo(fakeFirstTimestamp)
+        assertThat(event.lastEvaluation).isEqualTo(fakeLastTimestamp)
         assertThat(event.runtimeDefaultUsed).isFalse()
         assertThat(event.error).isNull()
         assertThat(event.targetingRule).isNull()
@@ -206,23 +105,15 @@ internal class AggregationStatsTest {
     fun `M set runtime default true W toEvaluationEvent() { null variantKey }`() {
         // Given - null variantKey indicates runtime default was used
         val keyWithoutVariant = fakeAggregationKey.copy(variantKey = null, allocationKey = null)
-        val defaultStats =
-            AggregationStats(
-                keyWithoutVariant,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats(aggregationKey = keyWithoutVariant)
 
         // When
-        val defaultEvent = defaultStats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(defaultEvent.runtimeDefaultUsed).isTrue()
-        assertThat(defaultEvent.variant).isNull()
-        assertThat(defaultEvent.allocation).isNull()
+        assertThat(event.runtimeDefaultUsed).isTrue()
+        assertThat(event.variant).isNull()
+        assertThat(event.allocation).isNull()
     }
 
     @Test
@@ -234,56 +125,35 @@ internal class AggregationStatsTest {
             allocationKey = null,
             errorCode = "FLAG_NOT_FOUND"
         )
-        val errorStats =
-            AggregationStats(
-                keyWithError,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                errorMessage
-            )
+        val stats = createStats(
+            aggregationKey = keyWithError,
+            errorMessage = errorMessage
+        )
 
         // When
-        val errorEvent = errorStats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(errorEvent.runtimeDefaultUsed).isTrue()
-        assertThat(errorEvent.error?.message).isEqualTo(errorMessage)
+        assertThat(event.runtimeDefaultUsed).isTrue()
+        assertThat(event.error?.message).isEqualTo(errorMessage)
     }
 
     @Test
     fun `M set runtime default false W toEvaluationEvent() { MATCHED reason }`() {
         // Given
-        val matchedStats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats()
 
         // When
-        val matchedEvent = matchedStats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(matchedEvent.runtimeDefaultUsed).isFalse()
+        assertThat(event.runtimeDefaultUsed).isFalse()
     }
 
     @Test
     fun `M set runtime default false W toEvaluationEvent() { non-null variantKey }`() {
         // Given - non-null variantKey indicates a variant was assigned
-        val stats =
-            AggregationStats(
-                fakeAggregationKey, // has non-null variantKey
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats() // fakeAggregationKey has non-null variantKey
 
         // When
         val event = stats.toEvaluationEvent()
@@ -296,55 +166,31 @@ internal class AggregationStatsTest {
     fun `M include error message W toEvaluationEvent() { error provided }`(forge: Forge) {
         // Given
         val errorMessage = forge.anAlphabeticalString()
-        val statsWithError =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                errorMessage
-            )
+        val stats = createStats(errorMessage = errorMessage)
 
         // When
-        val eventWithError = statsWithError.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(eventWithError.error?.message).isEqualTo(errorMessage)
+        assertThat(event.error?.message).isEqualTo(errorMessage)
     }
 
     @Test
     fun `M omit error W toEvaluationEvent() { no error }`() {
         // Given
-        val statsWithoutError =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats(errorMessage = null)
 
         // When
-        val eventWithoutError = statsWithoutError.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(eventWithoutError.error).isNull()
+        assertThat(event.error).isNull()
     }
 
     @Test
     fun `M use aggregation key fields W toEvaluationEvent() { key fields provided }`() {
         // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats()
 
         // When
         val event = stats.toEvaluationEvent()
@@ -359,331 +205,145 @@ internal class AggregationStatsTest {
     fun `M handle null variant W toEvaluationEvent() { key has null variant }`() {
         // Given
         val keyWithNullVariant = fakeAggregationKey.copy(variantKey = null)
-        val stats =
-            AggregationStats(
-                keyWithNullVariant,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats(aggregationKey = keyWithNullVariant)
 
         // When
-        val eventWithNullVariant = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(eventWithNullVariant.variant).isNull()
+        assertThat(event.variant).isNull()
     }
 
     @Test
     fun `M handle null allocation W toEvaluationEvent() { key has null allocation }`() {
         // Given
         val keyWithNullAllocation = fakeAggregationKey.copy(allocationKey = null)
-        val stats =
-            AggregationStats(
-                keyWithNullAllocation,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
+        val stats = createStats(aggregationKey = keyWithNullAllocation)
 
         // When
-        val eventWithNullAllocation = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent()
 
         // Then
-        assertThat(eventWithNullAllocation.allocation).isNull()
+        assertThat(event.allocation).isNull()
+    }
+
+    @Test
+    fun `M use firstEvaluation as timestamp W toEvaluationEvent()`() {
+        // Given
+        val stats = createStats()
+
+        // When
+        val event = stats.toEvaluationEvent()
+
+        // Then
+        assertThat(event.timestamp).isEqualTo(fakeFirstTimestamp)
+        assertThat(event.timestamp).isEqualTo(event.firstEvaluation)
+    }
+
+    @Test
+    fun `M include correct count W toEvaluationEvent()`() {
+        // Given
+        val stats = createStats(count = 42)
+
+        // When
+        val event = stats.toEvaluationEvent()
+
+        // Then
+        assertThat(event.evaluationCount).isEqualTo(42L)
+    }
+
+    @Test
+    fun `M handle null RUM application ID W toEvaluationEvent()`() {
+        // Given
+        val stats = createStats(rumApplicationId = null)
+
+        // When
+        val event = stats.toEvaluationEvent()
+
+        // Then
+        assertThat(event.context?.dd?.rum).isNull()
+    }
+
+    @Test
+    fun `M handle null view name W toEvaluationEvent() { RUM app ID present }`() {
+        // Given
+        val keyWithoutView = fakeAggregationKey.copy(viewName = null)
+        val stats = createStats(aggregationKey = keyWithoutView)
+
+        // When
+        val event = stats.toEvaluationEvent()
+
+        // Then
+        assertThat(event.context?.dd?.rum?.application?.id).isEqualTo(fakeApplicationId)
+        assertThat(event.context?.dd?.rum?.view).isNull()
     }
 
     // endregion
 
-    // region Thread Safety
+    // region copy (immutability)
 
     @Test
-    fun `M handle concurrent recordEvaluation calls W recordEvaluation() { multiple threads }`() {
+    fun `M create new instance W copy() { count updated }`() {
         // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-        val threadCount = 10
-        val executionsPerThread = 100
-        val expectedCount = threadCount * executionsPerThread + 1 // +1 for initial construction
-
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
+        val original = createStats(count = 1)
 
         // When
-        val threads = (1..threadCount).map { threadIndex ->
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) { executionIndex ->
-                    stats.recordEvaluation(
-                        fakeTimestamp + (threadIndex * 1000) + executionIndex,
-                        null
-                    )
-                }
-                finishLatch.countDown()
-            }
-        }
+        val updated = original.copy(count = 5)
 
-        threads.forEach { it.start() }
-        startLatch.countDown() // Start all threads at once
-        finishLatch.await()
-
-        // Then
-        val event = stats.toEvaluationEvent()
-        assertThat(event.evaluationCount).isEqualTo(expectedCount.toLong())
+        // Then - original unchanged
+        assertThat(original.count).isEqualTo(1)
+        assertThat(updated.count).isEqualTo(5)
     }
 
     @Test
-    fun `M produce consistent snapshot W toEvaluationEvent() { called during concurrent updates }`() {
+    fun `M create new instance W copy() { lastEvaluation updated }`() {
         // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-        val updateThreadCount = 5
-        val snapshotThreadCount = 5
-        val executionsPerThread = 100
-
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(updateThreadCount + snapshotThreadCount)
-        val inconsistentSnapshots = AtomicInteger(0)
+        val original = createStats(lastEvaluation = 1000L)
 
         // When
-        val updateThreads = (1..updateThreadCount).map {
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) { index ->
-                    stats.recordEvaluation(fakeTimestamp + index, null)
-                }
-                finishLatch.countDown()
-            }
-        }
+        val updated = original.copy(lastEvaluation = 5000L)
 
-        val snapshotThreads = (1..snapshotThreadCount).map {
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) {
-                    val event = stats.toEvaluationEvent()
-                    // Verify snapshot consistency
-                    if (event.firstEvaluation > event.lastEvaluation) {
-                        inconsistentSnapshots.incrementAndGet()
-                    }
-                    if (event.timestamp != event.firstEvaluation) {
-                        inconsistentSnapshots.incrementAndGet()
-                    }
-                }
-                finishLatch.countDown()
-            }
-        }
-
-        val allThreads = updateThreads + snapshotThreads
-        allThreads.forEach { it.start() }
-        startLatch.countDown()
-        finishLatch.await()
-
-        // Then
-        assertThat(inconsistentSnapshots.get()).isEqualTo(0)
+        // Then - original unchanged
+        assertThat(original.lastEvaluation).isEqualTo(1000L)
+        assertThat(updated.lastEvaluation).isEqualTo(5000L)
     }
 
     @Test
-    fun `M handle concurrent error message updates W recordEvaluation() { multiple threads }`(forge: Forge) {
+    fun `M create new instance W copy() { errorMessage updated }`() {
         // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-        val threadCount = 10
-        val executionsPerThread = 50
-
-        val errorMessages = (1..threadCount).map { "Error from thread $it: ${forge.anAlphabeticalString()}" }
-
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
+        val original = createStats(errorMessage = "first error")
 
         // When
-        val threads = (1..threadCount).map { threadIndex ->
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) { executionIndex ->
-                    stats.recordEvaluation(
-                        fakeTimestamp + (threadIndex * 1000) + executionIndex,
-                        errorMessages[threadIndex - 1]
-                    )
-                }
-                finishLatch.countDown()
-            }
-        }
+        val updated = original.copy(errorMessage = "second error")
 
-        threads.forEach { it.start() }
-        startLatch.countDown()
-        finishLatch.await()
-
-        // Then
-        val event = stats.toEvaluationEvent()
-        // Last error message should be one of the error messages
-        assertThat(errorMessages).contains(event.error?.message)
+        // Then - original unchanged
+        assertThat(original.errorMessage).isEqualTo("first error")
+        assertThat(updated.errorMessage).isEqualTo("second error")
     }
 
     // endregion
 
-    // region Out of order timestamps
+    // region Helpers
 
-    @Test
-    fun `M maintain correct range W recordEvaluation() { out of order arrival }`() {
-        // Given - initial timestamp at 5000ms
-        val initialTimestamp = 5000L
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                initialTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-
-        // When - events arrive out of order
-        stats.recordEvaluation(10000L, null) // Late event
-        stats.recordEvaluation(2000L, null) // Early event (out of order)
-        stats.recordEvaluation(7000L, null) // Middle event (out of order)
-
-        // Then - should track actual min and max
-        val event = stats.toEvaluationEvent()
-        assertThat(event.firstEvaluation).isEqualTo(2000L) // Minimum
-        assertThat(event.lastEvaluation).isEqualTo(10000L) // Maximum
-        assertThat(event.evaluationCount).isEqualTo(4L)
-    }
-
-    @Test
-    fun `M handle same timestamp W recordEvaluation() { multiple evaluations at same time }`() {
-        // Given
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                fakeTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-
-        // When - multiple evaluations at exact same timestamp
-        repeat(5) {
-            stats.recordEvaluation(fakeTimestamp, null)
-        }
-
-        // Then - timestamps shouldn't change, but count should increment
-        val event = stats.toEvaluationEvent()
-        assertThat(event.firstEvaluation).isEqualTo(fakeTimestamp)
-        assertThat(event.lastEvaluation).isEqualTo(fakeTimestamp)
-        assertThat(event.evaluationCount).isEqualTo(6L) // 1 initial + 5 recorded
-    }
-
-    @Test
-    fun `M handle large time jumps W recordEvaluation() { forward and backward }`() {
-        // Given - test both forward and backward large jumps
-        val stats = AggregationStats(
-            fakeAggregationKey,
-            50000L,
-            fakeContext,
-            fakeService,
-            fakeApplicationId,
-            null
-        )
-
-        // When - large time jump forward (e.g., NTP sync, time zone change)
-        val futureTimestamp = 1000000000L
-        stats.recordEvaluation(futureTimestamp, null)
-
-        // Then - lastEvaluation should update
-        val eventAfterForward = stats.toEvaluationEvent()
-        assertThat(eventAfterForward.lastEvaluation).isEqualTo(futureTimestamp)
-
-        // When - large time jump backward (e.g., clock adjustment)
-        val pastTimestamp = 1000L
-        stats.recordEvaluation(pastTimestamp, null)
-
-        // Then - firstEvaluation should update, lastEvaluation unchanged
-        val eventAfterBackward = stats.toEvaluationEvent()
-        assertThat(eventAfterBackward.firstEvaluation).isEqualTo(pastTimestamp)
-        assertThat(eventAfterBackward.lastEvaluation).isEqualTo(futureTimestamp)
-        assertThat(eventAfterBackward.evaluationCount).isEqualTo(3L)
-    }
-
-    @Test
-    fun `M handle concurrent out-of-order evaluations W recordEvaluation() { thread safety }`() {
-        // Given
-        val initialTimestamp = 50000L
-        val stats =
-            AggregationStats(
-                fakeAggregationKey,
-                initialTimestamp,
-                fakeContext,
-                fakeService,
-                fakeApplicationId,
-                null
-            )
-        val threadCount = 10
-        val executionsPerThread = 100
-
-        val startLatch = CountDownLatch(1)
-        val finishLatch = CountDownLatch(threadCount)
-
-        // When - threads send evaluations with intentionally out-of-order timestamps
-        val threads = (1..threadCount).map { threadIndex ->
-            Thread {
-                startLatch.await()
-                repeat(executionsPerThread) { executionIndex ->
-                    // Some threads go backwards, some forward, creating complex out-of-order scenario
-                    val timestamp = if (threadIndex % 2 == 0) {
-                        // Even threads: go backwards from initial
-                        initialTimestamp - (threadIndex * 1000L) - executionIndex
-                    } else {
-                        // Odd threads: go forwards from initial
-                        initialTimestamp + (threadIndex * 1000L) + executionIndex
-                    }
-                    stats.recordEvaluation(timestamp, null)
-                }
-                finishLatch.countDown()
-            }
-        }
-
-        threads.forEach { it.start() }
-        startLatch.countDown()
-        finishLatch.await()
-
-        // Then - should have correct min/max despite chaos
-        val event = stats.toEvaluationEvent()
-
-        // Calculate expected min and max
-        val minTimestamp = initialTimestamp - (10 * 1000L) - 99 // Thread 10, last execution
-        val maxTimestamp = initialTimestamp + (9 * 1000L) + 99 // Thread 9, last execution
-
-        assertThat(event.firstEvaluation).isEqualTo(minTimestamp)
-        assertThat(event.lastEvaluation).isEqualTo(maxTimestamp)
-        assertThat(event.firstEvaluation).isLessThan(event.lastEvaluation)
-        assertThat(event.evaluationCount).isEqualTo((threadCount * executionsPerThread + 1).toLong())
-    }
+    private fun createStats(
+        aggregationKey: AggregationKey = fakeAggregationKey,
+        count: Int = fakeCount,
+        firstEvaluation: Long = fakeFirstTimestamp,
+        lastEvaluation: Long = fakeLastTimestamp,
+        context: EvaluationContext = fakeContext,
+        service: String? = fakeService,
+        rumApplicationId: String? = fakeApplicationId,
+        errorMessage: String? = null
+    ): AggregationStats = AggregationStats(
+        aggregationKey = aggregationKey,
+        count = count,
+        firstEvaluation = firstEvaluation,
+        lastEvaluation = lastEvaluation,
+        context = context,
+        service = service,
+        rumApplicationId = rumApplicationId,
+        errorMessage = errorMessage
+    )
 
     // endregion
 }
