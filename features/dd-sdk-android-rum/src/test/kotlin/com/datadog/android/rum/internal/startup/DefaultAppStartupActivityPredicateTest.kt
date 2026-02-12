@@ -16,24 +16,12 @@ internal class DefaultAppStartupActivityPredicateTest {
     @Test
     fun `M return true W shouldTrackStartup()`() {
         // Given
-        val predicate = DefaultAppStartupActivityPredicate()
         val activity = mock<Activity>()
 
         // When
-        val result = predicate.shouldTrackStartup(activity)
+        val result = DefaultAppStartupActivityPredicate.shouldTrackStartup(activity)
 
         // Then
         assertThat(result).isTrue()
-    }
-
-    @Test
-    fun `M be equal W equals() with same type`() {
-        // Given
-        val predicate1 = DefaultAppStartupActivityPredicate()
-        val predicate2 = DefaultAppStartupActivityPredicate()
-
-        // When & Then
-        assertThat(predicate1).isEqualTo(predicate2)
-        assertThat(predicate1.hashCode()).isEqualTo(predicate2.hashCode())
     }
 }

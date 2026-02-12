@@ -13,14 +13,6 @@ import com.datadog.android.rum.startup.AppStartupActivityPredicate
  * Default implementation of [AppStartupActivityPredicate] that allows all Activities
  * to be tracked for app startup TTID measurement.
  */
-internal class DefaultAppStartupActivityPredicate : AppStartupActivityPredicate {
+internal object DefaultAppStartupActivityPredicate : AppStartupActivityPredicate {
     override fun shouldTrackStartup(activity: Activity): Boolean = true
-
-    override fun equals(other: Any?): Boolean {
-        return other is DefaultAppStartupActivityPredicate
-    }
-
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
 }

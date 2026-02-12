@@ -818,7 +818,7 @@ internal class RumFeature(
             collectAccessibility = false,
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
-            appStartupActivityPredicate = DefaultAppStartupActivityPredicate()
+            appStartupActivityPredicate = DefaultAppStartupActivityPredicate
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
