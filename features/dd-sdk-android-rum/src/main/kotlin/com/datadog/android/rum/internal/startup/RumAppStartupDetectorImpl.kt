@@ -13,6 +13,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
+import java.util.WeakHashMap
 import kotlin.time.Duration.Companion.seconds
 
 internal class RumAppStartupDetectorImpl(
@@ -28,6 +29,7 @@ internal class RumAppStartupDetectorImpl(
     private var numberOfStartupActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
+    private val trackedActivities = WeakHashMap<Activity, Boolean>()
 
     init {
         application.registerActivityLifecycleCallbacks(this)
@@ -48,8 +50,9 @@ internal class RumAppStartupDetectorImpl(
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
 
-        // Only decrement startup activities counter if this activity was counted
-        if (appStartupActivityPredicate.shouldTrackStartup(activity)) {
+        // Use stored result instead of re-evaluating predicate to prevent counter corruption
+        // if predicate depends on mutable state (e.g., activity flags, runtime toggles)
+        if (trackedActivities.remove(activity) == true) {
             numberOfStartupActivities--
         }
 
@@ -78,6 +81,8 @@ internal class RumAppStartupDetectorImpl(
         val now = timeProvider()
 
         val shouldTrackStartup = appStartupActivityPredicate.shouldTrackStartup(activity)
+
+        trackedActivities[activity] = shouldTrackStartup
 
         if (shouldTrackStartup) {
             numberOfStartupActivities++

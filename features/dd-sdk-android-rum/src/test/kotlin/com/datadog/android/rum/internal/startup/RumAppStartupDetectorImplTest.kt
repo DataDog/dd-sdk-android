@@ -597,6 +597,78 @@ internal class RumAppStartupDetectorImplTest {
         verifyNoMoreInteractions(listener)
     }
 
+    @Test
+    fun `M maintain counter consistency W mutable predicate changes between create and destroy`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given - a mutable predicate that changes its result
+        val activity1 = mock<Activity>()
+        val activity2 = mock<Activity>()
+        var shouldTrackActivity1 = true
+
+        val mutablePredicate = AppStartupActivityPredicate { activity ->
+            if (activity == activity1) shouldTrackActivity1 else true
+        }
+
+        val detector = createDetector(appStartupActivityPredicate = mutablePredicate)
+
+        currentTime += 3.seconds
+
+        // When - activity created with predicate returning true
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity1,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then - scenario detected
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = activity1.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        // When - predicate changes to return false for activity1
+        shouldTrackActivity1 = false
+
+        // And - activity is destroyed (predicate now returns false, but stored value was true)
+        detector.onActivityStarted(activity1)
+        detector.onActivityResumed(activity1)
+        detector.onActivityPaused(activity1)
+        detector.onActivityStopped(activity1)
+        detector.onActivityDestroyed(activity1)
+
+        // When - second activity is created
+        currentTime += 1.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity2,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - scenario detected because counter correctly went from 1 -> 0 -> 1
+        // (not stuck at 1 due to predicate mismatch)
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmAfterActivityDestroyed(
+                initialTime = Time(
+                    timestamp = 4.seconds.inWholeMilliseconds,
+                    nanoTime = 4.seconds.inWholeNanoseconds
+                ),
+                hasSavedInstanceStateBundle = false,
+                activity = activity2.wrapWeak()
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
     private fun createDetector(
         appStartupActivityPredicate: AppStartupActivityPredicate = AppStartupActivityPredicate { true }
     ): RumAppStartupDetectorImpl {
