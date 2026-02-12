@@ -38,6 +38,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -96,9 +97,26 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
+    @OptIn(ExperimentalRumApi::class)
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(
             DatadogInterceptor.Builder(tracedHosts)
+                .trackResourceHeaders(
+                    ResourceHeadersConfiguration.Builder()
+                        .captureHeaders(
+                            listOf(
+                                "accept-ranges",
+                                "cache-control",
+                                "content-disposition",
+                                "server",
+                                "user-agent",
+                                "via",
+                                "x-cache-hits",
+                                "x-served-by"
+                            )
+                        )
+                        .build()
+                )
                 .build()
         )
         .addNetworkInterceptor(

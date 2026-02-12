@@ -153,6 +153,16 @@ object RumAttributes {
      */
     const val GRAPHQL_ERRORS: String = "_dd.graphql.errors"
 
+    /**
+     * The request headers of the resource. (Map<String, String>)
+     */
+    const val REQUEST_HEADERS: String = "_dd.request_headers"
+
+    /**
+     * The response headers of the resource. (Map<String, String>)
+     */
+    const val RESPONSE_HEADERS: String = "_dd.response_headers"
+
     // endregion
 
     // region Error

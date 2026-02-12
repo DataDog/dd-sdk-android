@@ -269,6 +269,19 @@ internal class RumResourceScope(
             errors = graphqlErrors
         )
 
+        @Suppress("UNCHECKED_CAST")
+        val requestHeaders = resourceAttributes.remove(RumAttributes.REQUEST_HEADERS) as? Map<String, String>
+
+        @Suppress("UNCHECKED_CAST")
+        val responseHeaders = resourceAttributes.remove(RumAttributes.RESPONSE_HEADERS) as? Map<String, String>
+
+        val request = requestHeaders?.takeIf { it.isNotEmpty() }?.let {
+            ResourceEvent.Request(headers = ResourceEvent.RequestHeaders(it.toMutableMap()))
+        }
+        val response = responseHeaders?.takeIf { it.isNotEmpty() }?.let {
+            ResourceEvent.Response(headers = ResourceEvent.RequestHeaders(it.toMutableMap()))
+        }
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -293,6 +306,8 @@ internal class RumResourceScope(
                     firstByte = finalTiming?.firstByte(),
                     download = finalTiming?.download(),
                     provider = resolveResourceProvider(),
+                    request = request,
+                    response = response,
                     graphql = graphql
                 ),
                 action = rumContext.actionId?.let { ResourceEvent.Action(listOf(it)) },

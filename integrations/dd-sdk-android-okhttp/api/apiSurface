@@ -25,6 +25,7 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
     constructor(List<String>)
     override fun build(): DatadogInterceptor
     fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
+    fun trackResourceHeaders(com.datadog.android.rum.configuration.ResourceHeadersConfiguration = ResourceHeadersConfiguration.Builder().build()): Builder
 DEPRECATED data class com.datadog.android.okhttp.TraceContext
   constructor(String, String, Int)
 DEPRECATED enum com.datadog.android.okhttp.TraceContextInjection
