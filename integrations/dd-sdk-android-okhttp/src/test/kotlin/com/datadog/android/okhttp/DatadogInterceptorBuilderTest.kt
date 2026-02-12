@@ -10,8 +10,10 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -43,7 +45,7 @@ import org.mockito.quality.Strictness
 internal class DatadogInterceptorBuilderTest {
 
     @StringForgery
-    lateinit var fakeSdkInstaceName: String
+    lateinit var fakeSdkInstanceName: String
 
     private lateinit var fakeTraceContextInjection: TraceContextInjection
 
@@ -121,13 +123,13 @@ internal class DatadogInterceptorBuilderTest {
     fun `M set sdkInstanceName W build { setSdkInstanceName }`() {
         // When
         val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType)
-            .setSdkInstanceName(fakeSdkInstaceName)
+            .setSdkInstanceName(fakeSdkInstanceName)
             .build()
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
-        assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstaceName)
+        assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstanceName)
         assertThat(
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
@@ -241,5 +243,43 @@ internal class DatadogInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isSameAs(mockSampler)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
+    }
+
+    @Test
+    fun `M have null resourceHeadersExtractor by default W build()`() {
+        // When
+        val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType).build()
+
+        // Then
+        assertThat(interceptor.resourceHeadersExtractor).isNull()
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M store default extractor W build { trackResourceHeaders() }`() {
+        // When
+        val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType)
+            .trackResourceHeaders()
+            .build()
+
+        // Then
+        assertThat(interceptor.resourceHeadersExtractor).isNotNull
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M store custom extractor W build { trackResourceHeaders(config) }`() {
+        // Given
+        val customConfig = ResourceHeadersConfiguration.Builder(includeDefaults = false)
+            .captureHeaders(listOf("x-request-id"))
+            .build()
+
+        // When
+        val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType)
+            .trackResourceHeaders(customConfig)
+            .build()
+
+        // Then
+        assertThat(interceptor.resourceHeadersExtractor).isNotNull
     }
 }

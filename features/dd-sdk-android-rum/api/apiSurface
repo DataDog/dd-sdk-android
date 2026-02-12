@@ -33,6 +33,8 @@ object com.datadog.android.rum.RumAttributes
   const val GRAPHQL_PAYLOAD: String
   const val GRAPHQL_VARIABLES: String
   const val GRAPHQL_ERRORS: String
+  const val REQUEST_HEADERS: String
+  const val RESPONSE_HEADERS: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
@@ -182,6 +184,16 @@ class com.datadog.android.rum._RumInternalProxy
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
     fun createRumNetworkInstrumentation(String, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration): com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+class com.datadog.android.rum.configuration.ResourceHeadersConfiguration
+  class Builder
+    constructor(Boolean = true)
+    fun captureHeaders(List<String>): Builder
+    fun build(): ResourceHeadersConfiguration
+  companion object 
+    val DEFAULT_REQUEST_HEADERS: List<String>
+    val DEFAULT_RESPONSE_HEADERS: List<String>
+    val SECURITY_PATTERN: Regex
+    const val HEADER_SIZE_LIMIT_BYTES: Int
 class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
@@ -226,6 +238,11 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+class com.datadog.android.rum.internal.net.ResourceHeadersExtractor
+  constructor(com.datadog.android.rum.configuration.ResourceHeadersConfiguration)
+  fun extractRequestHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
+  fun extractResponseHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
+  companion object 
 class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
