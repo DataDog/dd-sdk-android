@@ -38,7 +38,8 @@ import org.json.JSONObject
  * @param flagsRepository local storage for precomputed flag values
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
- * @param processor responsible for writing exposure batches to be sent to flags backend.
+ * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
+ * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
@@ -48,7 +49,8 @@ internal class DatadogFlagsClient(
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
     private val rumEvaluationLogger: RumEvaluationLogger,
-    private val processor: EventsProcessor,
+    private val exposureProcessor: EventsProcessor,
+    private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
 
@@ -196,10 +198,28 @@ internal class DatadogFlagsClient(
         resolveTracked(readAndParseAssignment(flagKey, defaultValue))
 
     private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
-        processor.processEvent(
+        exposureProcessor.processEvent(
             flagName = name,
             context = context,
             data = data
+        )
+    }
+
+    private fun writeEvaluationEvent(
+        flagKey: String,
+        context: EvaluationContext,
+        variantKey: String?,
+        allocationKey: String?,
+        errorCode: String?,
+        errorMessage: String?
+    ) {
+        evaluationsFeature?.processEvaluation(
+            flagKey = flagKey,
+            context = context,
+            variantKey = variantKey,
+            allocationKey = allocationKey,
+            errorCode = errorCode,
+            errorMessage = errorMessage
         )
     }
 
@@ -356,6 +376,10 @@ internal class DatadogFlagsClient(
                     { "Flag '${resolution.flagKey}': ${resolution.errorMessage}" }
                 )
             }
+
+            // Log evaluation events for errors
+            trackErrorResolution(resolution)
+
             resolution.defaultValue
         }
     }
@@ -431,6 +455,7 @@ internal class DatadogFlagsClient(
         flagValue: T,
         context: EvaluationContext
     ) {
+        // Exposure logging (only when doLog=true)
         if (flag.doLog) {
             if (flagsConfiguration.trackExposures) {
                 writeExposureEvent(flagKey, flag, context)
@@ -439,6 +464,35 @@ internal class DatadogFlagsClient(
                 logEvaluation(flagKey, flagValue)
             }
         }
+
+        // Evaluation logging for all evaluations (when enabled)
+        if (flagsConfiguration.trackEvaluations) {
+            writeEvaluationEvent(
+                flagKey = flagKey,
+                context = context,
+                variantKey = flag.variationKey,
+                allocationKey = flag.allocationKey,
+                errorCode = null,
+                errorMessage = null
+            )
+        }
+    }
+
+    private fun <T : Any> trackErrorResolution(resolution: InternalResolution.Error<T>) {
+        if (!flagsConfiguration.trackEvaluations) {
+            return
+        }
+
+        val context = flagsRepository.getEvaluationContext() ?: EvaluationContext.EMPTY
+
+        writeEvaluationEvent(
+            flagKey = resolution.flagKey,
+            context = context,
+            variantKey = null,
+            allocationKey = null,
+            errorCode = resolution.errorCode.name,
+            errorMessage = resolution.errorMessage
+        )
     }
 
     // endregion
