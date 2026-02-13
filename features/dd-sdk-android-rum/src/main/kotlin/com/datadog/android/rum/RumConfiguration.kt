@@ -404,6 +404,7 @@ data class RumConfiguration internal constructor(
          * should be measured for app startup TTID.
          * @see [AppStartupActivityPredicate]
          */
+        @ExperimentalRumApi
         fun setAppStartupActivityPredicate(predicate: AppStartupActivityPredicate): Builder {
             rumConfig = rumConfig.copy(appStartupActivityPredicate = predicate)
             return this
