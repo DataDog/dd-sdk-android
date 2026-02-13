@@ -52,7 +52,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
             errorCode = errorCode
         )
 
-        val mapSize = mapLock.withLock {
+        val drained = mapLock.withLock {
             @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
             val existing = aggregationMap.get(key) ?: AggregationStats(
                 aggregationKey = key,
@@ -74,17 +74,10 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                     errorMessage = errorMessage
                 )
             )
-            aggregationMap.size
-        }
 
-        if (mapSize < maxAggregations) {
-            return emptyList()
-        }
-
-        // Re-check inside lock to ensure only one thread drains
-        val drained = mapLock.withLock {
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()
         }
+
         return drained.map { it.value.toEvaluationEvent() }
     }
 
