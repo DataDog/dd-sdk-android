@@ -12,12 +12,12 @@ import android.app.Activity
  * Predicate to determine which Activities should be considered for app startup
  * Time To Initial Display (TTID) reporting.
  *
- * Use this to exclude "interstitial Activities" - Activities that are launched during
- * app startup but immediately launch another Activity in their `onCreate()` method
- * and call `finish()` on themselves (e.g., splash screens, authentication screens).
- *
- * These interstitial Activities may never draw a frame, which can prevent TTID from
- * being reported when the actual main Activity is displayed.
+ * During application launch the SDK tracks the first `Activity` that is created and uses
+ * the time it draws its first frame to compute the TTID value. Use this if you want to skip
+ * some Activities and instead make the SDK consider the 2nd, 3rd Activity's first frame.
+ * Example use cases are:
+ * 1. Splash screens implemented as `Activity`.
+ * 2. Activities that launch another Activity in their `onCreate()` method and call `finish()` on themselves.
  *
  * **Performance Note:** This predicate is called for every Activity during app startup.
  * Ensure the implementation is lightweight and doesn't perform expensive operations
