@@ -13,6 +13,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
+import java.util.Collections
 import java.util.WeakHashMap
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,10 +27,9 @@ internal class RumAppStartupDetectorImpl(
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
     private var numberOfActivities: Int = 0
-    private var numberOfStartupActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
-    private val trackedActivities = WeakHashMap<Activity, Boolean>()
+    private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
 
     init {
         application.registerActivityLifecycleCallbacks(this)
@@ -49,12 +49,7 @@ internal class RumAppStartupDetectorImpl(
 
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
-
-        // Use stored result instead of re-evaluating predicate to prevent counter corruption
-        // if predicate depends on mutable state (e.g., activity flags, runtime toggles)
-        if (trackedActivities.remove(activity) == true) {
-            numberOfStartupActivities--
-        }
+        trackedActivities.remove(activity)
 
         if (numberOfActivities == 0) {
             isChangingConfigurations = activity.isChangingConfigurations
@@ -82,13 +77,11 @@ internal class RumAppStartupDetectorImpl(
 
         val shouldTrackStartup = appStartupActivityPredicate.shouldTrackStartup(activity)
 
-        trackedActivities[activity] = shouldTrackStartup
-
         if (shouldTrackStartup) {
-            numberOfStartupActivities++
+            trackedActivities.add(activity)
         }
 
-        if (numberOfStartupActivities == 1 && !isChangingConfigurations && shouldTrackStartup) {
+        if (trackedActivities.size == 1 && !isChangingConfigurations && shouldTrackStartup) {
             val processStartTime = appStartupTimeProvider()
 
             val gapNs = now.nanoTime - processStartTime.nanoTime
