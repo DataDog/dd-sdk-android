@@ -80,7 +80,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
         if (mapSize < maxAggregations) {
             return emptyList()
         }
-    
+
         // Re-check inside lock to ensure only one thread drains
         val drained = mapLock.withLock {
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()
