@@ -71,8 +71,8 @@ internal class EvaluationEventsProcessor(
         )
 
         if (drainedEvents.isNotEmpty()) {
-            writer.writeAll(drainedEvents)
             reschedulePeriodicFlush()
+            writer.writeAll(drainedEvents)
         }
     }
 
