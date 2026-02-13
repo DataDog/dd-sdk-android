@@ -76,7 +76,12 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
             aggregationMap.size
         }
 
-        val drained = if (mapSize < maxAggregations) emptyMap() else drainAggregationStats()
+        if (mapSize < maxAggregations) {
+            return emptyList()
+        }
+    
+        // check map size again inside lock to ensure only one thread drains the map
+        val drained = mapLock.withLock { if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats() }
         return drained.map { it.value.toEvaluationEvent() }
     }
 
@@ -87,7 +92,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
      * @return list of aggregated events, or empty list if none
      */
     fun drain(): List<FlagEvaluation> {
-        val drained = drainAggregationStats()
+        val drained = mapLock.withLock { drainAggregationStats() }
         return drained.map { it.value.toEvaluationEvent() }
     }
 
