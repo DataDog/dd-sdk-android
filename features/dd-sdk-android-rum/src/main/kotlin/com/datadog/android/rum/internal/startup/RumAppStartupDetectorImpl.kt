@@ -29,6 +29,8 @@ internal class RumAppStartupDetectorImpl(
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
 
     init {
