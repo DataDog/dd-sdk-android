@@ -31,7 +31,7 @@ import com.datadog.android.flags.model.FlagEvaluation
 internal data class AggregationStats(
     private val aggregationKey: AggregationKey,
     internal val count: Int,
-    private val firstEvaluation: Long,
+    internal val firstEvaluation: Long,
     internal val lastEvaluation: Long,
     private val context: EvaluationContext,
     private val service: String?,

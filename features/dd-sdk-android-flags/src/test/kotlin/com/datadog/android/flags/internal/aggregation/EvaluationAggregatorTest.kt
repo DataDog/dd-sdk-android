@@ -207,6 +207,22 @@ internal class EvaluationAggregatorTest {
         assertThat(event.lastEvaluation).isEqualTo(timestamps.last())
     }
 
+    @Test
+    fun `M track timestamps W record() { out of order timestamps }`() {
+        // Record timestamps out of order: middle, earliest, latest
+        val earliest = fakeTimestamp
+        val middle = fakeTimestamp + 1000
+        val latest = fakeTimestamp + 2000
+
+        record(timestamp = middle)
+        record(timestamp = earliest)
+        record(timestamp = latest)
+
+        val event = testedAggregator.drain().first()
+        assertThat(event.firstEvaluation).isEqualTo(earliest)
+        assertThat(event.lastEvaluation).isEqualTo(latest)
+    }
+
     // endregion
 
     // region drain

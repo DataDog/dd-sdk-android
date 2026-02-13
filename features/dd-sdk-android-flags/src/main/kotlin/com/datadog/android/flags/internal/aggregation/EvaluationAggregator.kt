@@ -68,7 +68,8 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 key,
                 existing.copy(
                     count = existing.count + 1,
-                    lastEvaluation = timestamp,
+                    firstEvaluation = minOf(existing.firstEvaluation, timestamp),
+                    lastEvaluation = maxOf(existing.lastEvaluation, timestamp),
                     errorMessage = errorMessage
                 )
             )
