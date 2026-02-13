@@ -25,10 +25,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
     /**
      * Records a flag evaluation. Concurrent calls are allowed.
      *
-     * Uses double-check locking to avoid spurious flushes when multiple threads
-     * reach the threshold simultaneously. The size is checked without a lock first
-     * (fast path), then re-checked while holding the write lock before draining.
-     *
+     * Drains the aggregation map if the size exceeds the threshold and returns the drained events.
      * @return list of drained events if threshold was reached, empty otherwise
      */
     fun record(
