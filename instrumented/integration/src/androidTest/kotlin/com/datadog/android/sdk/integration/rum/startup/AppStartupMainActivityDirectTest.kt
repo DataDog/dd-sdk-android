@@ -63,13 +63,15 @@ internal class AppStartupMainActivityDirectTest :
         // TTID should be reported when MainContentActivity draws
         expectedEvents.add(
             ExpectedVitalAppLaunchEvent(
-                appLaunchMetric = AppLaunchMetric.TTID
+                appLaunchMetric = AppLaunchMetric.TTID,
+                viewArguments = mapOf("name" to MainContentActivity::class.java.canonicalName)
             )
         )
 
         expectedEvents.add(
             ExpectedVitalAppLaunchEvent(
-                appLaunchMetric = AppLaunchMetric.TTFD
+                appLaunchMetric = AppLaunchMetric.TTFD,
+                viewArguments = mapOf("name" to MainContentActivity::class.java.canonicalName)
             )
         )
 
