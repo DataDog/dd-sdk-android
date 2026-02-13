@@ -27,7 +27,5 @@ internal class EvaluationsRequestFactory(
         executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request? {
-        return null
-    }
+    ): Request? = null
 }
