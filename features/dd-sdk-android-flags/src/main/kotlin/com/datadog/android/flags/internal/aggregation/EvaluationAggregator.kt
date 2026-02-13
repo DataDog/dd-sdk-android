@@ -64,6 +64,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 rumApplicationId = rumApplicationId,
                 errorMessage = errorMessage
             )
+            @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
             aggregationMap.put(
                 key,
                 existing.copy(
@@ -80,8 +81,10 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
             return emptyList()
         }
     
-        // check map size again inside lock to ensure only one thread drains the map
-        val drained = mapLock.withLock { if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats() }
+        // Re-check inside lock to ensure only one thread drains
+        val drained = mapLock.withLock {
+            if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()
+        }
         return drained.map { it.value.toEvaluationEvent() }
     }
 

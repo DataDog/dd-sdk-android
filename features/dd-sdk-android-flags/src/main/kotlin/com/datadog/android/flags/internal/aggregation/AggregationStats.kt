@@ -10,23 +10,16 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
 
 /**
- * Aggregation statistics for evaluation logging.
+ * Immutable aggregation statistics for evaluation logging.
  *
- * Tracks aggregated statistics for multiple evaluations of the same flag configuration:
- * - Evaluation count
- * - First/last timestamps
- * - Last error message (updated on each evaluation)
- * - Runtime default usage
- * - Datadog context (service, RUM application/view)
- *
- * Thread Safe
- *
- * @param aggregationKey the aggregation key for this stats bundle.
- * @param firstEvaluation the timestamp of the first evaluation
+ * @param aggregationKey the aggregation key for this stats bundle
+ * @param count the number of evaluations aggregated
+ * @param firstEvaluation timestamp of the earliest evaluation
+ * @param lastEvaluation timestamp of the latest evaluation
  * @param context the evaluation context
  * @param service the service name from DatadogContext
  * @param rumApplicationId the RUM application ID (null if RUM not active)
- * @param errorMessage optional error message (detailed, for logging)
+ * @param errorMessage the most recent error message (null if no error)
  */
 internal data class AggregationStats(
     private val aggregationKey: AggregationKey,
@@ -39,11 +32,7 @@ internal data class AggregationStats(
     internal val errorMessage: String?
 ) {
     /**
-     * Converts the aggregated statistics to a FlagEvaluation.
-     *
-     * Thread-safe: synchronizes to create consistent snapshot of statistics.
-     *
-     * @return the flag evaluation event
+     * Converts the aggregated statistics to a [FlagEvaluation].
      */
     fun toEvaluationEvent(): FlagEvaluation {
         // Build context with Datadog-specific information
