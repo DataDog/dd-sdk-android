@@ -455,13 +455,16 @@ internal class LogEventSerializerTest {
         val deviceName = deviceInfo.name
         val deviceModel = deviceInfo.model
         val deviceBrand = deviceInfo.brand
-        val deviceArhitecture = deviceInfo.architecture
+        val deviceArchitecture = deviceInfo.architecture
         val deviceLocale = deviceInfo.locale
         val deviceLocales = deviceInfo.locales
         val deviceTimezone = deviceInfo.timeZone
         val deviceBatteryLevel = deviceInfo.batteryLevel
         val devicePowerSavingMode = deviceInfo.powerSavingMode
         val deviceBrightnessLevel = deviceInfo.brightnessLevel
+        val deviceLogicalCpuCount = deviceInfo.logicalCpuCount
+        val deviceTotalRam = deviceInfo.totalRam
+        val deviceIsLowRam = deviceInfo.isLowRam
         if (deviceType != null) {
             hasField(KEY_TYPE, deviceType.name.lowercase(Locale.US))
         } else {
@@ -482,8 +485,8 @@ internal class LogEventSerializerTest {
         } else {
             doesNotHaveField(KEY_BRAND)
         }
-        if (deviceArhitecture != null) {
-            hasField(KEY_ARCHITECTURE, deviceArhitecture)
+        if (deviceArchitecture != null) {
+            hasField(KEY_ARCHITECTURE, deviceArchitecture)
         } else {
             doesNotHaveField(KEY_ARCHITECTURE)
         }
@@ -516,6 +519,21 @@ internal class LogEventSerializerTest {
             hasField(KEY_BRIGHTNESS_LEVEL, deviceBrightnessLevel)
         } else {
             doesNotHaveField(KEY_BRIGHTNESS_LEVEL)
+        }
+        if (deviceLogicalCpuCount != null) {
+            hasField(KEY_LOGICAL_CPU_COUNT, deviceLogicalCpuCount)
+        } else {
+            doesNotHaveField(KEY_LOGICAL_CPU_COUNT)
+        }
+        if (deviceTotalRam != null) {
+            hasField(KEY_TOTAL_RAM, deviceTotalRam)
+        } else {
+            doesNotHaveField(KEY_TOTAL_RAM)
+        }
+        if (deviceIsLowRam != null) {
+            hasField(KEY_IS_LOW_RAM, deviceIsLowRam)
+        } else {
+            doesNotHaveField(KEY_IS_LOW_RAM)
         }
     }
 
@@ -567,5 +585,8 @@ internal class LogEventSerializerTest {
         private const val KEY_BATTERY_LEVEL = "battery_level"
         private const val KEY_POWER_SAVING_MODE = "power_saving_mode"
         private const val KEY_BRIGHTNESS_LEVEL = "brightness_level"
+        private const val KEY_IS_LOW_RAM = "is_low_ram"
+        private const val KEY_LOGICAL_CPU_COUNT = "logical_cpu_count"
+        private const val KEY_TOTAL_RAM = "total_ram"
     }
 }

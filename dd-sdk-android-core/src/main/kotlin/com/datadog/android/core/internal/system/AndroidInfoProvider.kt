@@ -35,4 +35,10 @@ internal interface AndroidInfoProvider {
     val currentLocale: String
 
     val timeZone: String
+
+    val logicalCpuCount: Int
+
+    val totalRam: Int?
+
+    val isLowRam: Boolean?
 }

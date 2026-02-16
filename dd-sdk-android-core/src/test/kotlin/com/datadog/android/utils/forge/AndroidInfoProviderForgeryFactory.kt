@@ -27,6 +27,9 @@ internal class AndroidInfoProviderForgeryFactory : ForgeryFactory<AndroidInfoPro
         val locales = forge.aList { forge.aString() }
         val currentLocale = forge.aString()
         val timeZone = forge.aString()
+        val logicalCpuCount = forge.anInt()
+        val totalRam = forge.anInt()
+        val isLowRam = forge.aBool()
 
         return object : AndroidInfoProvider {
             override val deviceName = deviceName
@@ -42,6 +45,9 @@ internal class AndroidInfoProviderForgeryFactory : ForgeryFactory<AndroidInfoPro
             override val locales: List<String> = locales
             override val currentLocale: String = currentLocale
             override val timeZone: String = timeZone
+            override val logicalCpuCount: Int = logicalCpuCount
+            override val totalRam: Int? = totalRam
+            override val isLowRam: Boolean? = isLowRam
         }
     }
 }
