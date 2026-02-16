@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -104,6 +105,7 @@ internal class AppStartupActivityPredicateTest :
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
     ) {
+        @OptIn(ExperimentalRumApi::class)
         override fun beforeActivityLaunched() {
             super.beforeActivityLaunched()
             val config = RuntimeConfig.configBuilder()
