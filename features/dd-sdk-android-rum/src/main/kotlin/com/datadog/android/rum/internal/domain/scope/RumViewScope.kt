@@ -559,7 +559,9 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        stopScope(event, datadogContext, writeScope, writer)
+        stopScope(event, datadogContext, writeScope, writer) {
+            memoizedParentAttributes = parentScope.getCustomAttributes().toMap()
+        }
     }
 
     @WorkerThread
