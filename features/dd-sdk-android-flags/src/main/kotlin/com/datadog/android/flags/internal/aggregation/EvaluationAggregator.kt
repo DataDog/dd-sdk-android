@@ -25,10 +25,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
     /**
      * Records a flag evaluation. Concurrent calls are allowed.
      *
-     * Uses double-check locking to avoid spurious flushes when multiple threads
-     * reach the threshold simultaneously. The size is checked without a lock first
-     * (fast path), then re-checked while holding the write lock before draining.
-     *
+     * Drains the aggregation map if the size exceeds the threshold and returns the drained events.
      * @return list of drained events if threshold was reached, empty otherwise
      */
     fun record(
@@ -52,7 +49,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
             errorCode = errorCode
         )
 
-        val mapSize = mapLock.withLock {
+        val drained = mapLock.withLock {
             @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
             val existing = aggregationMap.get(key) ?: AggregationStats(
                 aggregationKey = key,
@@ -74,17 +71,10 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                     errorMessage = errorMessage
                 )
             )
-            aggregationMap.size
-        }
 
-        if (mapSize < maxAggregations) {
-            return emptyList()
-        }
-
-        // Re-check inside lock to ensure only one thread drains
-        val drained = mapLock.withLock {
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()
         }
+
         return drained.map { it.value.toEvaluationEvent() }
     }
 
