@@ -13,8 +13,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
-import java.util.Collections
-import java.util.WeakHashMap
 import kotlin.time.Duration.Companion.seconds
 
 internal class RumAppStartupDetectorImpl(
@@ -32,8 +30,7 @@ internal class RumAppStartupDetectorImpl(
     private var pendingStartupScenario: RumStartupScenario? = null
     private var startupTTIDReported: Boolean = false
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
-    private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
+    private val trackedActivities = mutableListOf<WeakReference<Activity>>()
 
     init {
         application.registerActivityLifecycleCallbacks(this)
@@ -53,11 +50,11 @@ internal class RumAppStartupDetectorImpl(
 
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
-        trackedActivities.remove(activity)
+        trackedActivities.removeAll { it.get() === activity || it.get() == null }
 
         val pending = pendingStartupScenario
         if (pending != null && isStartupActivityDestroyedBeforeFirstDraw(pending, activity)) {
-            val nextActivity = trackedActivities.firstOrNull()
+            val nextActivity = trackedActivities.firstOrNull { it.get() != null }?.get()
             if (nextActivity != null) {
                 val forwarded = pending.forwardTo(WeakReference(nextActivity))
                 pendingStartupScenario = forwarded
@@ -103,10 +100,11 @@ internal class RumAppStartupDetectorImpl(
         val shouldTrackStartup = appStartupActivityPredicate.shouldTrackStartup(activity)
 
         if (shouldTrackStartup) {
-            trackedActivities.add(activity)
+            trackedActivities.add(WeakReference(activity))
         }
 
-        if (trackedActivities.size == 1 && !isChangingConfigurations && shouldTrackStartup) {
+        val isFirstTrackedActivity = shouldTrackStartup && trackedActivities.count { it.get() != null } == 1
+        if (isFirstTrackedActivity && !isChangingConfigurations) {
             val processStartTime = appStartupTimeProvider()
 
             val gapNs = now.nanoTime - processStartTime.nanoTime
