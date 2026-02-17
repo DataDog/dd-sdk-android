@@ -735,7 +735,7 @@ internal class RumFeature(
                         }
                     }
 
-                    if (wasForwarded && activity.window.peekDecorView() != null) {
+                    if (wasForwarded && activity.window.peekDecorView()?.isLaidOut == true) {
                         // The forwarded activity has already drawn its first frame.
                         // Invoke the callback directly instead of subscribing to
                         // OnDrawListener, which would require forcing a redraw.
