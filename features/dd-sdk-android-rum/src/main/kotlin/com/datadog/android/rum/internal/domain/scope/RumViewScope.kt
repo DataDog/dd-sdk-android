@@ -25,8 +25,13 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.event.viewupdate.RumEventWriterAdapter
+import com.datadog.android.rum.internal.domain.event.viewupdate.ViewDiffComputer
+import com.datadog.android.rum.internal.domain.event.viewupdate.ViewEventConverter
+import com.datadog.android.rum.internal.domain.event.viewupdate.ViewEventTracker
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
@@ -133,6 +138,12 @@ internal open class RumViewScope(
     internal var hasReplay = false
 
     internal var stopped: Boolean = false
+
+    /**
+     * Optional ViewEventTracker for partial view updates.
+     * Lazy initialized when feature is enabled on first sendViewUpdate call.
+     */
+    private var viewEventTracker: ViewEventTracker? = null
 
     // region Vitals Fields
 
@@ -1110,6 +1121,9 @@ internal open class RumViewScope(
             memoryVitalMonitor.unregister(memoryVitalListener)
             frameRateVitalMonitor.unregister(frameRateVitalListener)
             networkSettledMetricResolver.viewWasStopped()
+
+            // Cleanup ViewEventTracker state
+            onViewEnded()
         }
     }
 
@@ -1223,27 +1237,37 @@ internal open class RumViewScope(
             currentViewId
         )
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
-            val user = datadogContext.userInfo
-            val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
-            val syntheticsAttribute = if (
-                rumContext.syntheticsTestId.isNullOrBlank() ||
-                rumContext.syntheticsResultId.isNullOrBlank()
-            ) {
-                null
-            } else {
-                ViewEvent.Synthetics(
-                    testId = rumContext.syntheticsTestId,
-                    resultId = rumContext.syntheticsResultId
-                )
-            }
+        // Initialize ViewEventTracker if feature is enabled (lazy initialization)
+        if (viewEventTracker == null && isPartialViewUpdatesEnabled()) {
+            viewEventTracker = ViewEventTracker(
+                config = getRumConfiguration(),
+                writer = RumEventWriterAdapter(writeScope, writer),
+                diffComputer = ViewDiffComputer()
+            )
+        }
 
-            val sessionType = when {
-                rumSessionTypeOverride != null -> rumSessionTypeOverride.toView()
-                syntheticsAttribute == null -> ViewEvent.ViewEventSessionType.USER
-                else -> ViewEvent.ViewEventSessionType.SYNTHETICS
-            }
-            ViewEvent(
+        // Build the ViewEvent
+        val user = datadogContext.userInfo
+        val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
+        val syntheticsAttribute = if (
+            rumContext.syntheticsTestId.isNullOrBlank() ||
+            rumContext.syntheticsResultId.isNullOrBlank()
+        ) {
+            null
+        } else {
+            ViewEvent.Synthetics(
+                testId = rumContext.syntheticsTestId,
+                resultId = rumContext.syntheticsResultId
+            )
+        }
+
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toView()
+            syntheticsAttribute == null -> ViewEvent.ViewEventSessionType.USER
+            else -> ViewEvent.ViewEventSessionType.SYNTHETICS
+        }
+
+        val viewEvent = ViewEvent(
                 date = eventTimestamp,
                 featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
                 view = ViewEvent.ViewEventView(
@@ -1351,10 +1375,22 @@ internal open class RumViewScope(
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
-            ).apply {
-                sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
-            }
-        }.submit()
+        ).apply {
+            sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
+        }
+
+        // Check if we should use partial updates
+        val tracker = viewEventTracker
+        if (tracker != null) {
+            // Use ViewEventTracker for partial updates
+            val eventMap = ViewEventConverter.toMap(viewEvent)
+            tracker.sendViewUpdate(viewId, eventMap)
+        } else {
+            // Use existing flow when feature is disabled
+            sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
+                viewEvent
+            }.submit()
+        }
     }
 
     private fun resolveViewDuration(event: RumRawEvent) {
@@ -1618,6 +1654,45 @@ internal open class RumViewScope(
     }
 
     // endregion
+
+    /**
+     * Returns true if partial view updates feature is enabled in configuration.
+     */
+    private fun isPartialViewUpdatesEnabled(): Boolean {
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+        return rumFeature?.configuration?.enablePartialViewUpdates == true
+    }
+
+    /**
+     * Gets the RUM configuration from the RUM feature.
+     * Returns a configuration with partial updates disabled if feature is not available.
+     */
+    private fun getRumConfiguration(): com.datadog.android.rum.RumConfiguration {
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+
+        val appId = getRumContext().applicationId
+
+        // Create a minimal configuration for ViewEventTracker
+        // We only need the featureConfiguration.enablePartialViewUpdates flag
+        return if (rumFeature != null) {
+            com.datadog.android.rum.RumConfiguration(
+                applicationId = appId,
+                featureConfiguration = rumFeature.configuration
+            )
+        } else {
+            // Fallback: create default configuration with feature disabled
+            com.datadog.android.rum.RumConfiguration.Builder(appId).build()
+        }
+    }
+
+    /**
+     * Cleanup ViewEventTracker state when view ends.
+     */
+    private fun onViewEnded() {
+        viewEventTracker?.onViewEnded(viewId)
+    }
 
     companion object {
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
