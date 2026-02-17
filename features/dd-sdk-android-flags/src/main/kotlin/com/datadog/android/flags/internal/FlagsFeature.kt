@@ -32,8 +32,10 @@ import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
  */
 internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 
-internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val flagsConfiguration: FlagsConfiguration) :
-    StorageBackedFeature,
+internal class FlagsFeature(
+    private val sdkCore: FeatureSdkCore,
+    internal val flagsConfiguration: FlagsConfiguration
+) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
     @Volatile
@@ -61,21 +63,19 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
-    // region Domain Objects
+    // region Storage Feature
 
-    /**
-     * Uses the default storage configuration with standard batch size (500 items per batch).
-     */
-    override val storageConfiguration =
-        FeatureStorageConfiguration.DEFAULT.copy(
-            maxItemsPerBatch = MAX_ITEMS_PER_BATCH
-        )
+    override val storageConfiguration = FeatureStorageConfiguration.DEFAULT
 
     override val requestFactory =
         ExposuresRequestFactory(
             internalLogger = sdkCore.internalLogger,
             customExposureEndpoint = flagsConfiguration.customExposureEndpoint
         )
+
+    // endregion
+
+    // region Domain Objects
 
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
@@ -214,7 +214,6 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
     }
 
     internal companion object {
-        const val MAX_ITEMS_PER_BATCH = 500
         private const val LOG_TAG = "[Datadog Flags]"
     }
 }

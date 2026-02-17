@@ -15,6 +15,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.api.logToUser
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
@@ -125,17 +126,9 @@ internal class DatadogRumMonitor(
         insightsCollector = insightsCollector
     )
 
-    internal val keepAliveRunnable = Runnable {
-        handleEvent(RumRawEvent.KeepAlive())
-    }
-
     internal var debugListener: RumDebugListener? = null
 
     private val internalProxy = _RumInternalProxy(this)
-
-    init {
-        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
-    }
 
     private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
 
@@ -264,6 +257,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithError(
                 key,
@@ -271,7 +265,8 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -285,6 +280,7 @@ internal class DatadogRumMonitor(
         errorType: String?,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithStackTrace(
                 key,
@@ -293,7 +289,8 @@ internal class DatadogRumMonitor(
                 source,
                 stackTrace,
                 errorType,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -338,6 +335,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithError(
                 key,
@@ -345,7 +343,8 @@ internal class DatadogRumMonitor(
                 message,
                 source,
                 throwable,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -359,6 +358,7 @@ internal class DatadogRumMonitor(
         errorType: String?,
         attributes: Map<String, Any?>
     ) {
+        val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopResourceWithStackTrace(
                 key,
@@ -367,7 +367,8 @@ internal class DatadogRumMonitor(
                 source,
                 stackTrace,
                 errorType,
-                attributes.toMap()
+                attributes.toMap(),
+                eventTime
             )
         )
     }
@@ -517,7 +518,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
-        val now = Time()
+        val now = getCurrentTime()
         val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
@@ -542,7 +543,7 @@ internal class DatadogRumMonitor(
 
     @ExperimentalRumApi
     override fun addViewLoadingTime(overwrite: Boolean) {
-        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite))
+        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite, getCurrentTime()))
     }
 
     override fun addViewAttributes(attributes: Map<String, Any?>) {
@@ -807,10 +808,12 @@ internal class DatadogRumMonitor(
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)
         } else {
-            handler.removeCallbacks(keepAliveRunnable)
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.withWriteContext(
-                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                    withFeatureContexts = setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.PROFILING_FEATURE_NAME
+                    )
                 ) { datadogContext, writeScope ->
                     // avoid trowing a RejectedExecutionException
                     if (!executorService.isShutdown) {
@@ -825,7 +828,6 @@ internal class DatadogRumMonitor(
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
                                 }
-                                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                                 currentRumContext()
                             }
                         )
@@ -888,10 +890,6 @@ internal class DatadogRumMonitor(
         return context
     }
 
-    internal fun stopKeepAliveCallback() {
-        handler.removeCallbacks(keepAliveRunnable)
-    }
-
     internal fun notifyDebugListenerWithState() {
         debugListener?.let {
             val sessionScope = rootScope.activeSession
@@ -907,8 +905,11 @@ internal class DatadogRumMonitor(
     }
 
     private fun getEventTime(attributes: Map<String, Any?>): Time {
-        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: Time()
+        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: getCurrentTime()
     }
+
+    private fun getCurrentTime() =
+        Time(sdkCore.timeProvider.getDeviceTimestampMillis(), sdkCore.timeProvider.getDeviceElapsedTimeNanos())
 
     private fun getErrorType(attributes: Map<String, Any?>): String? {
         return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
@@ -931,7 +932,6 @@ internal class DatadogRumMonitor(
     // endregion
 
     companion object {
-        internal val KEEP_ALIVE_MS = TimeUnit.MINUTES.toMillis(5)
 
         // should be aligned with CoreFeature#DRAIN_WAIT_SECONDS, but not a requirement
         internal const val DRAIN_WAIT_SECONDS = 10L
@@ -947,15 +947,6 @@ internal class DatadogRumMonitor(
 
         internal const val FO_ERROR_INVALID_OPERATION_KEY =
             "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
-
-        private fun InternalLogger.logToUser(
-            level: InternalLogger.Level,
-            messageProvider: () -> String
-        ) = log(
-            level = level,
-            target = InternalLogger.Target.USER,
-            messageBuilder = messageProvider
-        )
 
         private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)

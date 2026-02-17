@@ -53,6 +53,7 @@ interface com.datadog.android.api.InternalLogger
   fun logApiUsage(Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
   companion object 
     val UNBOUND: InternalLogger
+fun InternalLogger.logToUser(InternalLogger.Level, Boolean = false, () -> String)
 interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
@@ -71,7 +72,7 @@ data class com.datadog.android.api.context.AccountInfo
 data class com.datadog.android.api.context.DatadogContext
   constructor(com.datadog.android.DatadogSite, String, String, String, String, Int, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo)
+  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo, Int, Int?, Boolean?)
 enum com.datadog.android.api.context.DeviceType
   - MOBILE
   - TABLET
@@ -112,10 +113,12 @@ interface com.datadog.android.api.feature.Feature
     const val LOGS_FEATURE_NAME: String
     const val RUM_FEATURE_NAME: String
     const val FLAGS_FEATURE_NAME: String
+    const val FLAGS_EVALUATIONS_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
+    const val PROFILING_FEATURE_NAME: String
 interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
   fun onContextUpdate(String, Map<String, Any?>)
 interface com.datadog.android.api.feature.FeatureEventReceiver
@@ -151,18 +154,28 @@ interface com.datadog.android.api.feature.StorageBackedFeature : Feature
 interface com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
   fun <T> tag(Class<T>): T?
 fun <T> HttpRequestInfo.tag(Class<T>): T?
+interface com.datadog.android.api.instrumentation.network.HttpRequestBody
 interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val url: String
   val headers: Map<String, List<String>>
   val contentType: String?
   val method: String
   fun contentLength(): Long?
+interface com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+  fun setUrl(String): HttpRequestInfoBuilder
+  fun addHeader(String, String): HttpRequestInfoBuilder
+  fun removeHeader(String): HttpRequestInfoBuilder
+  fun replaceHeader(String, String): HttpRequestInfoBuilder
+  fun <T> addTag(Class<T>, T?): HttpRequestInfoBuilder
+  fun build(): HttpRequestInfo
 interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
   val statusCode: Int
   val headers: Map<String, List<String>>
   val contentType: String?
   val contentLength: Long?
+interface com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
+  fun newBuilder(): HttpRequestInfoBuilder
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext
@@ -265,6 +278,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setCrashReportsEnabled(Boolean): Builder
     fun setBackpressureStrategy(BackPressureStrategy): Builder
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
+    fun setVersion(String): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
@@ -335,7 +349,9 @@ interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: 
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.listFilesSafe(com.datadog.android.api.InternalLogger, java.io.FilenameFilter): Array<java.io.File>?
+fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
+fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)

@@ -2,13 +2,13 @@
 
 ## Getting started
 
-To include the Datadog SDK for Android in your project, simply add any product you want to use to your application's `build.gradle` file.
+To include the Datadog SDK for Android in your project, simply add any product you want to use to your application's `build.gradle.kts` file.
 
 For example, in case of RUM:
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-rum:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-rum:<latest-version>")
 }
 ```
 

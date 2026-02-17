@@ -80,7 +80,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeThrowable = forge.aNullable { forge.aThrowable() }
         testedProvider = RumResourceAttributesProviderCompatibilityAdapter(mockDelegate, mockSdkReference)
-        requestInfo = OkHttpHttpRequestInfo(mockOkHttpRequest)
+        requestInfo = OkHttpRequestInfo(mockOkHttpRequest)
         responseInfo = OkHttpHttpResponseInfo(mockOkHttpResponse, mockInternalLogger)
     }
 
@@ -107,7 +107,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
             .thenReturn(emptyMap())
         whenever(
             mockDelegate.onProvideAttributes(
-                any<OkHttpHttpRequestInfo>(),
+                any<OkHttpRequestInfo>(),
                 anyOrNull<OkHttpHttpResponseInfo>(),
                 anyOrNull<Throwable>()
             )
@@ -120,7 +120,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         assertThat(attributes).isEqualTo(fakeAttributes)
         verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verify(mockDelegate).onProvideAttributes(
-            any<OkHttpHttpRequestInfo>(),
+            any<OkHttpRequestInfo>(),
             anyOrNull<OkHttpHttpResponseInfo>(),
             anyOrNull<Throwable>()
         )
@@ -135,7 +135,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
 
         whenever(
             mockDelegate.onProvideAttributes(
-                any<OkHttpHttpRequestInfo>(),
+                any<OkHttpRequestInfo>(),
                 anyOrNull<OkHttpHttpResponseInfo>(),
                 anyOrNull<Throwable>()
             )
@@ -148,7 +148,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         assertThat(attributes).isEmpty()
         verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verify(mockDelegate).onProvideAttributes(
-            any<OkHttpHttpRequestInfo>(),
+            any<OkHttpRequestInfo>(),
             anyOrNull<OkHttpHttpResponseInfo>(),
             anyOrNull<Throwable>()
         )

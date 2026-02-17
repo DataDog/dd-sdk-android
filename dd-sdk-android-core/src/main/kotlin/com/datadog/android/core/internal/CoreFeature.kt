@@ -510,13 +510,14 @@ internal class CoreFeature(
     private fun readApplicationInformation(appContext: Context, configuration: Configuration) {
         val packageInfo = getPackageInfo(appContext)
 
-        val versionName = packageInfo?.versionName
-
         @Suppress("DEPRECATION")
         val versionCode = packageInfo?.versionCode
 
+        val versionName =
+            configuration.version ?: packageInfo?.versionName ?: versionCode?.toString() ?: DEFAULT_APP_VERSION
+
         packageVersionProvider = DefaultAppVersionProvider(
-            initialVersion = versionName ?: versionCode?.toString() ?: DEFAULT_APP_VERSION,
+            initialVersion = versionName,
             versionCode = versionCode ?: 0
         )
         clientToken = configuration.clientToken

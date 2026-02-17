@@ -61,6 +61,7 @@ fun Project.createJsonModelsGenerationTask(
         ignoredFiles.convention(emptyList())
         inputDirPath.convention("")
         targetPackageName.convention("")
+        extraInputWatchDir.convention(null)
 
         action()
 

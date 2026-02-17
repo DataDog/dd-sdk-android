@@ -8,9 +8,9 @@ As shown in the screenshot below, the widget provides a floating overlay that di
 
 ## Getting Started
 
-Add the dependency to your application's `build.gradle` file:
+Add the dependency to your application's `build.gradle.kts` file:
 
-```groovy
+```kotlin
 dependencies {
     implementation("com.datadoghq:dd-sdk-android-rum-debug-widget:<latest-version>")
 }
@@ -42,7 +42,7 @@ RumConfiguration.Builder(...)
 
 Remember to remove or comment out the dependency and the `enableRumDebugWidget` call before releasing to production:
 
-```groovy
+```kotlin
 dependencies {
     // Remove before release
     // implementation("com.datadoghq:dd-sdk-android-rum-debug-widget:<latest-version>")

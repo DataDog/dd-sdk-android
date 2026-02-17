@@ -132,6 +132,17 @@ internal class NoOpFlagsClient(
     }
 
     /**
+     * Returns the provided default value without any flag evaluation.
+     * @param flagKey Ignored flag key.
+     * @param defaultValue The map to return.
+     * @return The provided default value.
+     */
+    override fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?> {
+        logOperation("resolveStructureValue for flag '$flagKey'", InternalLogger.Level.WARN)
+        return defaultValue
+    }
+
+    /**
      * Logs an operation call on this NoOpFlagsClient using the policy-aware logging function.
      * This ensures visibility in both debug builds (MAINTAINER) and production (USER, if verbosity allows).
      *

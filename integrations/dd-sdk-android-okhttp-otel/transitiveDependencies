@@ -7,7 +7,7 @@ io.opentelemetry:opentelemetry-context:1.40.0                   :   46 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
 
 Total transitive dependencies size                              :    2 Mb
 

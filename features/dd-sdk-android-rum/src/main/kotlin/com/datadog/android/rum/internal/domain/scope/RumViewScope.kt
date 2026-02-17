@@ -231,7 +231,6 @@ internal open class RumViewScope(
             )
 
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, datadogContext, writeScope, writer)
-            is RumRawEvent.KeepAlive -> onKeepAlive(event, datadogContext, writeScope, writer)
 
             is RumRawEvent.StopSession -> onStopSession(event, datadogContext, writeScope, writer)
 
@@ -397,7 +396,10 @@ internal open class RumViewScope(
                 timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                 batteryLevel = batteryInfo.batteryLevel,
                 powerSavingMode = batteryInfo.lowPowerMode,
-                brightnessLevel = displayInfo.screenBrightness
+                brightnessLevel = displayInfo.screenBrightness,
+                logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                totalRam = datadogContext.deviceInfo.totalRam,
+                isLowRam = datadogContext.deviceInfo.isLowRam
             ),
             os = VitalOperationStepEvent.Os(
                 name = datadogContext.deviceInfo.osName,
@@ -560,7 +562,9 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        stopScope(event, datadogContext, writeScope, writer)
+        stopScope(event, datadogContext, writeScope, writer) {
+            memoizedParentAttributes = parentScope.getCustomAttributes().toMap()
+        }
     }
 
     @WorkerThread
@@ -795,7 +799,10 @@ internal open class RumViewScope(
                     timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                     batteryLevel = batteryInfo.batteryLevel,
                     powerSavingMode = batteryInfo.lowPowerMode,
-                    brightnessLevel = displayInfo.screenBrightness
+                    brightnessLevel = displayInfo.screenBrightness,
+                    logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
                 context = ErrorEvent.Context(additionalProperties = errorCustomAttributes),
                 dd = ErrorEvent.Dd(
@@ -905,19 +912,6 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         stopScope(event, datadogContext, writeScope, writer)
-    }
-
-    @WorkerThread
-    private fun onKeepAlive(
-        event: RumRawEvent.KeepAlive,
-        datadogContext: DatadogContext,
-        writeScope: EventWriteScope,
-        writer: DataWriter<Any>
-    ) {
-        delegateEventToChildren(event, datadogContext, writeScope, writer)
-        if (stopped) return
-
-        sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
     @WorkerThread
@@ -1120,7 +1114,7 @@ internal open class RumViewScope(
     }
 
     @Suppress("LongMethod", "ComplexMethod")
-    private fun sendViewUpdate(
+    internal fun sendViewUpdate(
         event: RumRawEvent,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
@@ -1337,7 +1331,10 @@ internal open class RumViewScope(
                     timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                     batteryLevel = batteryInfo.batteryLevel,
                     powerSavingMode = batteryInfo.lowPowerMode,
-                    brightnessLevel = displayInfo.screenBrightness
+                    brightnessLevel = displayInfo.screenBrightness,
+                    logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
                 context = ViewEvent.Context(additionalProperties = viewCustomAttributes),
                 dd = ViewEvent.Dd(
@@ -1365,7 +1362,9 @@ internal open class RumViewScope(
         val duration = stoppedNanos - startedNanos
         viewEndedMetricDispatcher.onDurationResolved(duration)
         if (duration == 0L) {
-            if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
+            val isFatalBackgroundEvent = type == RumViewType.BACKGROUND &&
+                event is RumRawEvent.AddError && event.isFatal
+            if (isFatalBackgroundEvent || event is RumRawEvent.StartView) {
                 // This is a legitimate empty duration, no-op
             } else {
                 sdkCore.internalLogger.log(
@@ -1510,7 +1509,10 @@ internal open class RumViewScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
                 context = LongTaskEvent.Context(additionalProperties = longTaskCustomAttributes),
                 dd = LongTaskEvent.Dd(
@@ -1703,8 +1705,17 @@ internal open class RumViewScope(
             )
         }
 
-        private fun RumRawEvent.StartView.tryResolveInstrumentationType() =
-            attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()] as? ViewScopeInstrumentationType
+        private fun RumRawEvent.StartView.tryResolveInstrumentationType(): ViewScopeInstrumentationType? {
+            // First check for cross-platform string attribute (highest priority)
+            val crossPlatformType = attributes[RumAttributes.INTERNAL_INSTRUMENTATION_TYPE] as? String
+            if (!crossPlatformType.isNullOrBlank()) {
+                return ViewScopeInstrumentationType.Custom.create(crossPlatformType)
+            }
+
+            // Fall back to native enum-based instrumentation type
+            return attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()]
+                as? ViewScopeInstrumentationType
+        }
 
         @Suppress("CommentOverPrivateFunction")
         /**

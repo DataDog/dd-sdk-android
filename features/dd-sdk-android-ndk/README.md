@@ -6,14 +6,14 @@ Send crash report for issues rising from the C/C++ code in your application.
 
 ## Setup
 
-```groovy
+```kotlin
 dependencies {
     // if you want to send native crash reports to RUM product
-    implementation "com.datadoghq:dd-sdk-android-rum:x.x.x"
+    implementation("com.datadoghq:dd-sdk-android-rum:x.x.x")
     // if you want to send native crash reports to Logs product
-    implementation "com.datadoghq:dd-sdk-android-logs:x.x.x"
+    implementation("com.datadoghq:dd-sdk-android-logs:x.x.x")
 
-    implementation "com.datadoghq:dd-sdk-android-ndk:x.x.x"
+    implementation("com.datadoghq:dd-sdk-android-ndk:x.x.x")
 }
 ```
 

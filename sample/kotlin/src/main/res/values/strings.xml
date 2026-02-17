@@ -215,4 +215,20 @@
     <string name="nav_item_search">Search</string>
     <string name="nav_item_suggested_edits">Edits</string>
     <string name="nav_item_more">More</string>
+
+    <string name="title_openfeature">OpenFeature Flags</string>
+    <string name="description_openfeature">Evaluate feature flags using the OpenFeature SDK integrated with Datadog Flags.</string>
+    <string name="hint_flag_key">Flag Key</string>
+    <string name="hint_default_value">Default Value</string>
+    <string name="button_evaluate_flag">Evaluate Flag</string>
+    <string name="label_result">Result:</string>
+    <string name="label_provider_state">Provider State:</string>
+
+    <string-array name="flag_types">
+        <item>Boolean</item>
+        <item>String</item>
+        <item>Integer</item>
+        <item>Double</item>
+    </string-array>
+
 </resources>

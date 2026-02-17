@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
+import java.nio.file.Paths
 
 createJsonModelsGenerationTask("generateLogModelsFromJson") {
     inputDirPath = "src/main/json/log"
@@ -12,4 +13,7 @@ createJsonModelsGenerationTask("generateLogModelsFromJson") {
         "_common-schema.json"
     )
     targetPackageName = "com.datadog.android.log.model"
+    extraInputWatchDir = project.layout.projectDirectory.dir(
+        Paths.get("../dd-sdk-android-rum/src/main/json/rum").toString()
+    )
 }

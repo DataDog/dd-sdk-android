@@ -9,12 +9,14 @@ package com.datadog.android.flags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
+import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
@@ -112,13 +114,29 @@ interface FlagsClient {
     fun resolveIntValue(flagKey: String, defaultValue: Int): Int
 
     /**
-     * Resolves a structured flag value as a JSON object.
+     * Resolves a structured flag value as a [JSONObject].
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The JSON object value of the flag, or the default value if unavailable.
      */
     fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
+
+    /**
+     * Resolves a structured flag value as a Map.
+     *
+     * The returned Map contains only primitives (String, Int, Long, Double, Boolean),
+     * null values, nested Maps, and Lists. All nested structures are recursively
+     * converted.
+     *
+     * This method is useful for integrations that prefer working with Kotlin collections
+     * over JSON types.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The map to return if the flag cannot be retrieved or parsed.
+     * @return The map value of the flag, or the default value if unavailable.
+     */
+    fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?>
 
     /**
      * Resolves a flag value with detailed resolution information.
@@ -270,12 +288,16 @@ interface FlagsClient {
                     logWithPolicy = logWithPolicy
                 )
             }
+            val evaluationsFeature = sdkCore
+                .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
+                ?.unwrap<EvaluationsFeature>()
 
             return flagsFeature.getOrRegisterNewClient(name) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
+                    evaluationsFeature = evaluationsFeature,
                     name = name
                 )
             }
@@ -369,6 +391,7 @@ interface FlagsClient {
             configuration: FlagsConfiguration,
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
+            evaluationsFeature: EvaluationsFeature?,
             name: String
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
@@ -445,7 +468,8 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
-                    processor = flagsFeature.processor,
+                    exposureProcessor = flagsFeature.processor,
+                    evaluationsFeature = evaluationsFeature,
                     flagStateManager = flagStateManager
                 )
             }

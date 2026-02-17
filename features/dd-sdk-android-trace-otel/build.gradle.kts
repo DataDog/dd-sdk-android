@@ -32,7 +32,6 @@ plugins {
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
-    id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")

@@ -9,6 +9,7 @@ package com.datadog.android.flags
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
 
 /**
@@ -30,11 +31,18 @@ object Flags {
         configuration: FlagsConfiguration = FlagsConfiguration.default,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
+        if (configuration.trackEvaluations) {
+            val evaluationsFeature = EvaluationsFeature(
+                sdkCore = sdkCore as FeatureSdkCore,
+                flagsConfiguration = configuration
+            )
+            sdkCore.registerFeature(evaluationsFeature)
+        }
+
         val flagsFeature = FlagsFeature(
             sdkCore = sdkCore as FeatureSdkCore,
             flagsConfiguration = configuration
         )
-
         sdkCore.registerFeature(flagsFeature)
     }
 }

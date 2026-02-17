@@ -60,8 +60,11 @@ internal class FlagsClientTest {
         whenever(mockSdkCore.name).thenReturn("test-sdk")
         whenever(mockSecondSdkCore.name).thenReturn("test-sdk-2")
 
+        // Tracke Evaluations turned off to avoid verifying the EvaluationsFeature for now.
+        val configuration = FlagsConfiguration.Builder().trackEvaluations(false).build()
+
         // Enable the Flags Feature for first SDK core
-        Flags.enable(sdkCore = mockSdkCore)
+        Flags.enable(configuration, mockSdkCore)
 
         // Capture the registered feature and mock getFeature() to return a FeatureScope wrapping it
         argumentCaptor<Feature> {
@@ -76,7 +79,7 @@ internal class FlagsClientTest {
         }
 
         // Enable the Flags Feature for second SDK core
-        Flags.enable(sdkCore = mockSecondSdkCore)
+        Flags.enable(configuration, mockSecondSdkCore)
 
         // Capture the second registered feature
         argumentCaptor<Feature> {

@@ -3,12 +3,12 @@
 ## Getting started
 
 To include the Datadog Trace extensions for Kotlin Coroutines in your project, simply add the
-following to your application's `build.gradle` file:
+following to your application's `build.gradle.kts` file:
 
-```groovy
+```kotlin
 dependencies {
-    implementation "com.datadoghq:dd-sdk-android-trace:<latest-version>"
-    implementation "com.datadoghq:dd-sdk-android-trace-coroutines:<latest-version>"
+    implementation("com.datadoghq:dd-sdk-android-trace:<latest-version>")
+    implementation("com.datadoghq:dd-sdk-android-trace-coroutines:<latest-version>")
 }
 ```
 

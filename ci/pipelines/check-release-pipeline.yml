@@ -1,5 +1,5 @@
 include:
-  - 'https://gitlab-templates.ddbuild.io/slack-notifier/v1/template.yml'
+  - 'https://gitlab-templates.ddbuild.io/slack-notifier/v3-sdm/template.yml'
 
 stages:
   - check-release

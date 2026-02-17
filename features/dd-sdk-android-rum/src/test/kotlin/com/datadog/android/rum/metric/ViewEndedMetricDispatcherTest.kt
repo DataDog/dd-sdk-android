@@ -70,7 +70,7 @@ internal class ViewEndedMetricDispatcherTest {
     private lateinit var fakeViewType: RumViewType
     private lateinit var fakeInvState: ViewInitializationMetricsState
     private lateinit var fakeTnsState: ViewInitializationMetricsState
-    private var fakeInstrumentationType: String? = null
+    private var fakeInstrumentationType: ViewScopeInstrumentationType? = null
 
     private lateinit var dispatcherUnderTest: ViewEndedMetricDispatcher
 
@@ -79,22 +79,20 @@ internal class ViewEndedMetricDispatcherTest {
         fakeViewType = forge.aValueFrom(RumViewType::class.java)
         fakeTnsState = forge.aViewInitializationMetricsState(NoValueReason.TimeToNetworkSettle::class.java)
         fakeInvState = forge.aViewInitializationMetricsState(NoValueReason.InteractionToNextView::class.java)
-        val instrumentationType = forge.aNullable {
+        fakeInstrumentationType = forge.aNullable {
             anElementFrom(
-                ViewScopeInstrumentationType.COMPOSE,
-                ViewScopeInstrumentationType.MANUAL,
-                ViewScopeInstrumentationType.ACTIVITY,
-                ViewScopeInstrumentationType.FRAGMENT
+                ViewScopeInstrumentationType.Native.COMPOSE,
+                ViewScopeInstrumentationType.Native.MANUAL,
+                ViewScopeInstrumentationType.Native.ACTIVITY,
+                ViewScopeInstrumentationType.Native.FRAGMENT
             )
         }
-
-        fakeInstrumentationType = instrumentationType?.name?.lowercase()
 
         dispatcherUnderTest = ViewEndedMetricDispatcher(
             viewType = fakeViewType,
             internalLogger = mockInternalLogger,
             samplingRate = fakeSampleRate,
-            instrumentationType = instrumentationType
+            instrumentationType = fakeInstrumentationType
         )
     }
 
@@ -231,13 +229,62 @@ internal class ViewEndedMetricDispatcherTest {
         }
     }
 
+    @Test
+    fun `M send custom instrumentation type W sendViewEnded() { cross-platform type }`() {
+        // Given
+        val customInstrumentationType = ViewScopeInstrumentationType.Custom.create("cross_platform_navigator")
+        val dispatcher = ViewEndedMetricDispatcher(
+            viewType = fakeViewType,
+            internalLogger = mockInternalLogger,
+            instrumentationType = customInstrumentationType,
+            samplingRate = fakeSampleRate
+        )
+        dispatcher.onDurationResolved(fakeDuration)
+        dispatcher.onViewLoadingTimeResolved(fakeLoadingTime)
+
+        // When
+        dispatcher.sendViewEnded(fakeInvState, fakeTnsState)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
+            additionalProperties = eq(expectedAttributes(instrumentationType = "cross_platform_navigator")),
+            samplingRate = eq(fakeSampleRate),
+            creationSampleRate = eq(null)
+        )
+    }
+
+    @Test
+    fun `M default to manual W sendViewEnded() { null instrumentation type }`() {
+        // Given
+        val dispatcher = ViewEndedMetricDispatcher(
+            viewType = fakeViewType,
+            internalLogger = mockInternalLogger,
+            instrumentationType = null,
+            samplingRate = fakeSampleRate
+        )
+        dispatcher.onDurationResolved(fakeDuration)
+        dispatcher.onViewLoadingTimeResolved(fakeLoadingTime)
+
+        // When
+        dispatcher.sendViewEnded(fakeInvState, fakeTnsState)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
+            additionalProperties = eq(expectedAttributes(instrumentationType = "manual")),
+            samplingRate = eq(fakeSampleRate),
+            creationSampleRate = eq(null)
+        )
+    }
+
     private fun expectedAttributes(
         duration: Long? = fakeDuration,
         loadingTime: Long? = fakeLoadingTime,
         viewType: RumViewType = fakeViewType,
         invState: ViewInitializationMetricsState = fakeInvState,
         tnsState: ViewInitializationMetricsState = fakeTnsState,
-        instrumentationType: String? = fakeInstrumentationType
+        instrumentationType: String? = fakeInstrumentationType?.value
     ) = buildAttributesMap(
         duration = duration,
         loadingTime = loadingTime,

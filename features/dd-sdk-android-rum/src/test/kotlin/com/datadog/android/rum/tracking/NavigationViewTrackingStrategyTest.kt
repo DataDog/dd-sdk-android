@@ -314,7 +314,10 @@ internal class NavigationViewTrackingStrategyTest {
         verify(rumMonitor.mockInstance).startView(
             mockNavDestination,
             fakeDestinationName,
-            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+            mapOf(
+                ViewScopeInstrumentationType.Native.FRAGMENT.key.toString()
+                    to ViewScopeInstrumentationType.Native.FRAGMENT
+            )
         )
     }
 
@@ -341,7 +344,10 @@ internal class NavigationViewTrackingStrategyTest {
         verify(rumMonitor.mockInstance).startView(
             mockNavDestination,
             customName,
-            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+            mapOf(
+                ViewScopeInstrumentationType.Native.FRAGMENT.key.toString()
+                    to ViewScopeInstrumentationType.Native.FRAGMENT
+            )
         )
     }
 
@@ -352,7 +358,8 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         val arguments = Bundle()
         val expectedAttrs = mutableMapOf<String, Any?>(
-            ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT
+            ViewScopeInstrumentationType.Native.FRAGMENT.key.toString()
+                to ViewScopeInstrumentationType.Native.FRAGMENT
         )
         repeat(10) {
             val key = forge.anAlphabeticalString()
@@ -391,7 +398,10 @@ internal class NavigationViewTrackingStrategyTest {
         verify(rumMonitor.mockInstance).startView(
             mockNavDestination,
             fakeDestinationName,
-            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+            mapOf(
+                ViewScopeInstrumentationType.Native.FRAGMENT.key.toString()
+                    to ViewScopeInstrumentationType.Native.FRAGMENT
+            )
         )
     }
 
@@ -413,12 +423,18 @@ internal class NavigationViewTrackingStrategyTest {
             verify(rumMonitor.mockInstance).startView(
                 mockNavDestination,
                 fakeDestinationName,
-                mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+                mapOf(
+                    ViewScopeInstrumentationType.Native.FRAGMENT.key.toString()
+                        to ViewScopeInstrumentationType.Native.FRAGMENT
+                )
             )
             verify(rumMonitor.mockInstance).startView(
                 newDestination,
                 newDestinationName,
-                mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+                mapOf(
+                    ViewScopeInstrumentationType.Native.FRAGMENT.key.toString()
+                        to ViewScopeInstrumentationType.Native.FRAGMENT
+                )
             )
         }
     }

@@ -3,6 +3,8 @@ datadog:
     knownThrowingCalls:
       # region Android
       - "android.app.ActivityManager.getHistoricalProcessExitReasons(kotlin.String?, kotlin.Int, kotlin.Int):java.lang.RuntimeException"
+      - "android.app.ActivityManager.MemoryInfo.constructor():java.lang.RuntimeException"
+      - "android.app.ActivityManager.getMemoryInfo(android.app.ActivityManager.MemoryInfo?):java.lang.RuntimeException"
       - "android.app.ApplicationExitInfo.getTraceInputStream():java.io.IOException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
@@ -12,6 +14,9 @@ datadog:
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.SharedPreferences.getBoolean(kotlin.String?, kotlin.Boolean):java.lang.ClassCastException"
       - "android.content.SharedPreferences.getFloat(kotlin.String?, kotlin.Float):java.lang.ClassCastException"
+      - "android.content.SharedPreferences.getInt(kotlin.String?, kotlin.Int):java.lang.ClassCastException"
+      - "android.content.SharedPreferences.getString(kotlin.String?, kotlin.String?):java.lang.ClassCastException"
+      - "android.content.SharedPreferences.getStringSet(kotlin.String?,kotlin.collections.MutableSet?):java.lang.ClassCastException"
       - "android.database.sqlite.SQLiteDatabase.beginTransaction():java.lang.IllegalStateException"
       - "android.database.sqlite.SQLiteDatabase.beginTransactionNonExclusive():java.lang.IllegalStateException"
       - "android.database.sqlite.SQLiteDatabase.endTransaction():java.lang.IllegalStateException"
@@ -154,11 +159,11 @@ datadog:
       - "java.net.URL.constructor(kotlin.String?):java.net.MalformedURLException"
       - "java.security.MessageDigest.digest(kotlin.ByteArray?):java.security.DigestException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.security.MessageDigest.getInstance(kotlin.String?):java.security.NoSuchAlgorithmException"
-      - "java.text.SimpleDateFormat.constructor(kotlin.String, java.util.Locale):java.lang.NullPointerException"
-      - "java.text.SimpleDateFormat.format(java.util.Date):java.lang.NullPointerException"
+      - "java.text.SimpleDateFormat.constructor(kotlin.String?, java.util.Locale?):java.lang.NullPointerException"
+      - "java.text.SimpleDateFormat.format(java.util.Date?):java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.format(kotlin.Any):java.lang.IllegalArgumentException,java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.parse(kotlin.String):java.text.ParseException,java.lang.NullPointerException"
-      - "java.util.TimeZone.getTimeZone(kotlin.String):java.lang.NullPointerException"
+      - "java.util.TimeZone.getTimeZone(kotlin.String?):java.lang.NullPointerException"
       # endregion
       # region Java Collections
       - "java.util.Collections.newSetFromMap(kotlin.collections.MutableMap?):java.lang.IllegalArgumentException"
