@@ -23,6 +23,7 @@ include(":features:dd-sdk-android-session-replay-material")
 include(":features:dd-sdk-android-trace-otel")
 include(":features:dd-sdk-android-flags")
 include(":features:dd-sdk-android-flags-openfeature")
+include(":features:dd-sdk-android-profiling")
 
 // INTEGRATION LIBRARIES
 include(":integrations:dd-sdk-android-apollo")
@@ -72,3 +73,4 @@ include(":tools:noopfactory")
 include(":tools:javabackport")
 include(":tools:lint")
 include(":tools:benchmark")
+include(":tools:testserver")

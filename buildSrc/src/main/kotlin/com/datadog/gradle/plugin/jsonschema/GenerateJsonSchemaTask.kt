@@ -15,7 +15,9 @@ import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -56,6 +58,13 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
             }
             .toList()
     }
+
+    // this is kind of hack: sometimes json can reference other json outside of the module,
+    // so we need just to watch such external dir for changes, otherwise task is cached when external changes not seen
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:Optional
+    @get:InputDirectory
+    abstract val extraInputWatchDir: DirectoryProperty
 
     /**
      * The directory from which to read the files json schema files.

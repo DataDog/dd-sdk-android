@@ -441,10 +441,7 @@ internal class RumFeature(
 
             TELEMETRY_SESSION_REPLAY_SKIP_FRAME -> addSessionReplaySkippedFrame()
             FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE -> {
-                (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
-                    it.stopKeepAliveCallback()
-                    it.drainExecutorService()
-                }
+                (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.drainExecutorService()
             }
 
             else -> {
@@ -710,10 +707,12 @@ internal class RumFeature(
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
+                            val durationNs = timestampNs - scenario.initialTime.nanoTime
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = timestampNs - scenario.initialTime.nanoTime
+                                durationNs = durationNs
                             )
+
                             rumMonitor.sendTTIDEvent(info)
                         }
                     }

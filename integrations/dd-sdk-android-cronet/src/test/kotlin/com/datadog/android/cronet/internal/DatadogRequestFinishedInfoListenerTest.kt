@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener.Companion.minus
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.StubRequestFinishedInfoMetrics
 import fr.xgouchet.elmyr.Forge
@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
 internal class DatadogRequestFinishedInfoListenerTest {
 
     @Mock
-    private lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
+    private lateinit var mockRumNetworkInstrumentation: RumNetworkInstrumentation
 
     @Mock
     private lateinit var mockRequestFinishedInfo: RequestFinishedInfo
@@ -62,7 +62,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
     fun `set up`() {
         testedListener = DatadogRequestFinishedInfoListener(
             executor = mock(),
-            rumResourceInstrumentation = mockRumResourceInstrumentation
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation
         )
 
         whenever(mockRequestFinishedInfo.responseInfo).thenReturn(mockResponseInfo)
@@ -81,7 +81,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
         testedListener.onRequestFinished(mockRequestFinishedInfo)
 
         // Then
-        verify(mockRumResourceInstrumentation).stopResourceWithError(
+        verify(mockRumNetworkInstrumentation).stopResourceWithError(
             requestInfo = eq(fakeRequestInfo),
             throwable = eq(fakeException)
         )
@@ -98,7 +98,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
 
         // Then
         argumentCaptor<IOException> {
-            verify(mockRumResourceInstrumentation).stopResourceWithError(
+            verify(mockRumNetworkInstrumentation).stopResourceWithError(
                 requestInfo = eq(fakeRequestInfo),
                 throwable = capture()
             )
@@ -116,7 +116,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
 
         // Then
         argumentCaptor<IOException> {
-            verify(mockRumResourceInstrumentation).stopResourceWithError(
+            verify(mockRumNetworkInstrumentation).stopResourceWithError(
                 requestInfo = eq(fakeRequestInfo),
                 throwable = capture()
             )
@@ -133,7 +133,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
         testedListener.onRequestFinished(mockRequestFinishedInfo)
 
         // Then
-        verify(mockRumResourceInstrumentation).stopResource(
+        verify(mockRumNetworkInstrumentation).stopResource(
             requestInfo = fakeRequestInfo,
             responseInfo = CronetHttpResponseInfo(mockResponseInfo)
         )
@@ -150,7 +150,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
 
         // Then
         argumentCaptor<IllegalStateException> {
-            verify(mockRumResourceInstrumentation).stopResourceWithError(
+            verify(mockRumNetworkInstrumentation).stopResourceWithError(
                 requestInfo = eq(fakeRequestInfo),
                 throwable = capture()
             )
@@ -169,7 +169,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
         testedListener.onRequestFinished(mockRequestFinishedInfo)
 
         // Then
-        verify(mockRumResourceInstrumentation).sendTiming(
+        verify(mockRumNetworkInstrumentation).sendTiming(
             eq(fakeRequestInfo),
             any<ResourceTiming>()
         )
@@ -186,7 +186,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
         testedListener.onRequestFinished(mockRequestFinishedInfo)
 
         // Then
-        verify(mockRumResourceInstrumentation).reportInstrumentationError(NO_REQUEST_INFO_MESSAGE)
+        verify(mockRumNetworkInstrumentation).reportInstrumentationError(NO_REQUEST_INFO_MESSAGE)
     }
 
     @Test
@@ -225,7 +225,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
 
         // Then
         argumentCaptor<ResourceTiming> {
-            verify(mockRumResourceInstrumentation).sendTiming(eq(fakeRequestInfo), capture())
+            verify(mockRumNetworkInstrumentation).sendTiming(eq(fakeRequestInfo), capture())
             assertThat(firstValue.connectStart).isEqualTo(expectedConnectStart)
             assertThat(firstValue.connectDuration).isEqualTo(expectedConnectDuration)
             assertThat(firstValue.dnsStart).isEqualTo(expectedDnsStart)
@@ -251,7 +251,7 @@ internal class DatadogRequestFinishedInfoListenerTest {
 
         // Then
         argumentCaptor<ResourceTiming> {
-            verify(mockRumResourceInstrumentation).sendTiming(eq(fakeRequestInfo), capture())
+            verify(mockRumNetworkInstrumentation).sendTiming(eq(fakeRequestInfo), capture())
 
             assertThat(firstValue.connectStart).isEqualTo(0L)
             assertThat(firstValue.connectDuration).isEqualTo(0L)

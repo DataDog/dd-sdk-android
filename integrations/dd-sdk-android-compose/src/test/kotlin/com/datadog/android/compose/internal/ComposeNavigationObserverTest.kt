@@ -79,7 +79,7 @@ internal class ComposeNavigationObserverTest {
         // Given
         val arguments = Bundle()
         val expectedAttrs = mutableMapOf<String, Any?>(
-            LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString() to ViewScopeInstrumentationType.COMPOSE
+            LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString() to ViewScopeInstrumentationType.Native.COMPOSE
         )
         repeat(10) {
             val key = forge.anAlphabeticalString()
@@ -113,7 +113,7 @@ internal class ComposeNavigationObserverTest {
 
         val arguments = Bundle()
         val expectedAttrs = mutableMapOf<String, Any?>(
-            LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString() to ViewScopeInstrumentationType.COMPOSE
+            LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString() to ViewScopeInstrumentationType.Native.COMPOSE
         )
         repeat(10) {
             val key = forge.anAlphabeticalString()
@@ -164,7 +164,10 @@ internal class ComposeNavigationObserverTest {
         verify(mockRumMonitor).startView(
             mockNavDestination.route!!,
             mockNavDestination.route!!,
-            mapOf(LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString() to ViewScopeInstrumentationType.COMPOSE)
+            mapOf(
+                LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()
+                    to ViewScopeInstrumentationType.Native.COMPOSE
+            )
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }

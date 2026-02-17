@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
+import java.nio.file.Paths
 
 createJsonModelsGenerationTask("generateTraceModelsFromJson") {
     inputDirPath = "src/main/json/trace"
@@ -12,4 +13,7 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
         "_common-schema.json"
     )
     targetPackageName = "com.datadog.android.trace.model"
+    extraInputWatchDir = project.layout.projectDirectory.dir(
+        Paths.get("../dd-sdk-android-rum/src/main/json/rum").toString()
+    )
 }

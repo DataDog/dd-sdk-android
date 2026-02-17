@@ -23,17 +23,17 @@ import java.util.TreeMap;
 import com.datadog.android.trace.internal.compat.function.Supplier;
 
 /** A codec designed for HTTP transport via headers using B3 headers */
-class B3HttpCodec {
+public class B3HttpCodec {
 
   private static final Logger log = LoggerFactory.getLogger(B3HttpCodec.class);
 
   private static final String B3_TRACE_ID = "b3.traceid";
   private static final String B3_SPAN_ID = "b3.spanid";
-  static final String TRACE_ID_KEY = "X-B3-TraceId";
-  static final String SPAN_ID_KEY = "X-B3-SpanId";
-  private static final String SAMPLING_PRIORITY_KEY = "X-B3-Sampled";
+  public static final String TRACE_ID_KEY = "X-B3-TraceId";
+  public static final String SPAN_ID_KEY = "X-B3-SpanId";
+  public static final String SAMPLING_PRIORITY_KEY = "X-B3-Sampled";
   // See https://github.com/openzipkin/b3-propagation#single-header for b3 header documentation
-  private static final String B3_KEY = "b3";
+  public static final String B3_KEY = "b3";
   private static final String SAMPLING_PRIORITY_ACCEPT = String.valueOf(1);
   private static final String SAMPLING_PRIORITY_DROP = String.valueOf(0);
 

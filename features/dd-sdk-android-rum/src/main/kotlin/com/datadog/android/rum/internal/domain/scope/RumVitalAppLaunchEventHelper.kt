@@ -37,7 +37,8 @@ internal class RumVitalAppLaunchEventHelper(
         rumContext: RumContext,
         durationNs: Long,
         scenario: RumStartupScenario,
-        appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric
+        appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric,
+        profilingStatus: VitalAppLaunchEvent.ProfilingStatus?
     ): VitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -86,7 +87,10 @@ internal class RumVitalAppLaunchEventHelper(
                 session = VitalAppLaunchEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalAppLaunchSessionPrecondition()
                 ),
-                configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
+                profiling = VitalAppLaunchEvent.Profiling(
+                    status = profilingStatus
+                )
             ),
             application = VitalAppLaunchEvent.Application(
                 id = rumContext.applicationId,
@@ -131,7 +135,10 @@ internal class RumVitalAppLaunchEventHelper(
                 timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                 batteryLevel = batteryInfo.batteryLevel,
                 powerSavingMode = batteryInfo.lowPowerMode,
-                brightnessLevel = displayInfo.screenBrightness
+                brightnessLevel = displayInfo.screenBrightness,
+                isLowRam = datadogContext.deviceInfo.isLowRam,
+                logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                totalRam = datadogContext.deviceInfo.totalRam
             ),
             os = VitalAppLaunchEvent.Os(
                 name = datadogContext.deviceInfo.osName,

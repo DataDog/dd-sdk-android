@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp.internal
 
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -250,8 +250,8 @@ internal class OkHttpRequestResourceIdentifierTest {
     }
 
     private val Request.uniqueId: String
-        get() = RumResourceInstrumentation.Companion.buildResourceId(
-            request = OkHttpHttpRequestInfo(this),
+        get() = RumNetworkInstrumentation.buildResourceId(
+            request = OkHttpRequestInfo(this),
             generateUuid = false
         ).key
 }
