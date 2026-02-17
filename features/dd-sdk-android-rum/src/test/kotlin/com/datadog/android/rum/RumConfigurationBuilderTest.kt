@@ -739,4 +739,71 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration.insightsCollector)
             .isInstanceOf(NoOpInsightsCollector::class.java)
     }
+
+    @Test
+    fun `M disable partial updates by default W build() is called`() {
+        // Given
+        val builder = RumConfiguration.Builder(fakeApplicationId.toString())
+
+        // When
+        val config = builder.build()
+
+        // Then
+        assertThat(config.featureConfiguration.enablePartialViewUpdates).isFalse()
+    }
+
+    @Test
+    fun `M enable partial updates W setEnablePartialViewUpdates(true)`() {
+        // Given
+        val builder = RumConfiguration.Builder(fakeApplicationId.toString())
+
+        // When
+        val config = builder
+            .setEnablePartialViewUpdates(true)
+            .build()
+
+        // Then
+        assertThat(config.featureConfiguration.enablePartialViewUpdates).isTrue()
+    }
+
+    @Test
+    fun `M disable partial updates W setEnablePartialViewUpdates(false)`() {
+        // Given
+        val builder = RumConfiguration.Builder(fakeApplicationId.toString())
+
+        // When
+        val config = builder
+            .setEnablePartialViewUpdates(false)
+            .build()
+
+        // Then
+        assertThat(config.featureConfiguration.enablePartialViewUpdates).isFalse()
+    }
+
+    @Test
+    fun `M return builder instance W setEnablePartialViewUpdates()`() {
+        // Given
+        val builder = RumConfiguration.Builder(fakeApplicationId.toString())
+
+        // When
+        val returnedBuilder = builder.setEnablePartialViewUpdates(true)
+
+        // Then
+        assertThat(returnedBuilder).isSameAs(builder)
+    }
+
+    @Test
+    fun `M chain configuration calls W setEnablePartialViewUpdates()`() {
+        // Given / When
+        val config = RumConfiguration.Builder(fakeApplicationId.toString())
+            .setEnablePartialViewUpdates(true)
+            .setSessionSampleRate(50f)
+            .trackBackgroundEvents(false)
+            .build()
+
+        // Then
+        assertThat(config.featureConfiguration.enablePartialViewUpdates).isTrue()
+        assertThat(config.featureConfiguration.sampleRate).isEqualTo(50f)
+        assertThat(config.featureConfiguration.backgroundEventTracking).isFalse()
+    }
 }

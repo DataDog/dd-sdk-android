@@ -377,6 +377,25 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Enables partial view updates to reduce bandwidth and I/O operations.
+         *
+         * When enabled, the SDK will send only changed fields in view update events
+         * rather than resending the complete view state. This significantly reduces
+         * bandwidth usage and disk I/O on mobile devices.
+         *
+         * This feature requires backend support for the `view_update` event type.
+         *
+         * Default: false (opt-in feature)
+         *
+         * @param enabled true to enable partial view updates, false to disable
+         * @return this Builder instance
+         */
+        fun setEnablePartialViewUpdates(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(enablePartialViewUpdates = enabled)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {

@@ -760,7 +760,13 @@ internal class RumFeature(
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
-        val insightsCollector: InsightsCollector
+        val insightsCollector: InsightsCollector,
+        /**
+         * Enables partial view updates to reduce bandwidth and I/O.
+         * When enabled, the SDK sends only changed fields in view update events.
+         * Default: false (opt-in feature)
+         */
+        val enablePartialViewUpdates: Boolean
     )
 
     internal companion object {
@@ -813,7 +819,8 @@ internal class RumFeature(
             rumSessionTypeOverride = null,
             collectAccessibility = false,
             disableJankStats = false,
-            insightsCollector = NoOpInsightsCollector()
+            insightsCollector = NoOpInsightsCollector(),
+            enablePartialViewUpdates = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
