@@ -572,6 +572,67 @@ internal class RumViewScopeAttributePropagationTest {
 
     // endregion
 
+    @Test
+    fun `M copy parent custom attributes to memoizedParentAttributes W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val parentAttributes = forge.exhaustiveAttributes(excludedKeys = fakeViewAttributes.keys)
+        val newParentAttributes = forge.exhaustiveAttributes(excludedKeys = parentAttributes.keys)
+        whenever(mockParentScope.getCustomAttributes()) doReturn parentAttributes.toMutableMap()
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then - change parent attributes after stopping
+        whenever(mockParentScope.getCustomAttributes()) doReturn newParentAttributes.toMutableMap()
+        val customAttributes = testedScope.getCustomAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(parentAttributes)
+        expectedAttributes.putAll(fakeViewAttributes)
+
+        // Verify that memoized parent attributes are used (original parent attributes, not new ones)
+        assertThat(customAttributes)
+            .containsExactlyInAnyOrderEntriesOf(expectedAttributes)
+    }
+
+    @Test
+    fun `M copy parent custom attributes to memoizedParentAttributes W handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // Given
+        val parentAttributes = forge.exhaustiveAttributes(excludedKeys = fakeViewAttributes.keys)
+        val newParentAttributes = forge.exhaustiveAttributes(excludedKeys = parentAttributes.keys)
+        val newViewKey: RumScopeKey = forge.getForgery()
+        whenever(mockParentScope.getCustomAttributes()) doReturn parentAttributes.toMutableMap()
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(newViewKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then - change parent attributes after stopping
+        whenever(mockParentScope.getCustomAttributes()) doReturn newParentAttributes.toMutableMap()
+        val customAttributes = testedScope.getCustomAttributes()
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(parentAttributes)
+        expectedAttributes.putAll(fakeViewAttributes)
+
+        // Verify that memoized parent attributes are used (original parent attributes, not new ones)
+        assertThat(customAttributes)
+            .containsExactlyInAnyOrderEntriesOf(expectedAttributes)
+    }
+
     // region Helper
 
     private fun newRumViewScope(
