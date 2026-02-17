@@ -16,7 +16,10 @@ import com.datadog.android.rum.startup.AppStartupActivityPredicate
 internal interface RumAppStartupDetector {
     interface Listener {
         fun onAppStartupDetected(scenario: RumStartupScenario)
+        fun onAppStartupRetargeted(scenario: RumStartupScenario)
     }
+
+    fun notifyStartupTTIDReported()
 
     fun destroy()
 

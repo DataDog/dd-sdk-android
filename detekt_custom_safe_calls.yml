@@ -987,6 +987,7 @@ datadog:
       - "kotlin.collections.MutableSet.contains(kotlin.String)"
       - "kotlin.collections.MutableSet.contains(kotlin.String?)"
       - "kotlin.collections.MutableSet.filter(kotlin.Function1)"
+      - "kotlin.collections.MutableSet.firstOrNull()"
       - "kotlin.collections.MutableSet.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableSet.flatMap(kotlin.Function1)"
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"

@@ -220,7 +220,8 @@ internal class RumSessionScopeStartupManagerTest {
         // Given
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(
@@ -259,7 +260,8 @@ internal class RumSessionScopeStartupManagerTest {
         // Given
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(
@@ -309,7 +311,8 @@ internal class RumSessionScopeStartupManagerTest {
         // Given
         val info1 = RumTTIDInfo(
             scenario = scenario1,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val event1 = RumRawEvent.AppStartTTIDEvent(
@@ -318,7 +321,8 @@ internal class RumSessionScopeStartupManagerTest {
 
         val info2 = RumTTIDInfo(
             scenario = scenario2,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val event2 = RumRawEvent.AppStartTTIDEvent(
@@ -369,7 +373,8 @@ internal class RumSessionScopeStartupManagerTest {
         // Given
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
@@ -425,12 +430,14 @@ internal class RumSessionScopeStartupManagerTest {
 
         val info1 = RumTTIDInfo(
             scenario = scenario1,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val info2 = RumTTIDInfo(
             scenario = scenario2,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val ttidEvent1 = RumRawEvent.AppStartTTIDEvent(info = info1)
@@ -563,7 +570,8 @@ internal class RumSessionScopeStartupManagerTest {
         // Given
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(
@@ -621,7 +629,8 @@ internal class RumSessionScopeStartupManagerTest {
             scenario = scenario,
             durationNs = forge.aLong(
                 min = RumSessionScopeStartupManagerImpl.MAX_TTID_DURATION_NS + 1
-            )
+            ),
+            wasForwarded = false
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(
@@ -662,7 +671,8 @@ internal class RumSessionScopeStartupManagerTest {
         // Given
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)

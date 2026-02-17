@@ -15,25 +15,36 @@ internal sealed interface RumStartupScenario {
     val hasSavedInstanceStateBundle: Boolean
     val activity: WeakReference<Activity>
 
-    class Cold(
+    fun forwardTo(newActivity: WeakReference<Activity>): RumStartupScenario
+
+    data class Cold(
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>,
         val appStartActivityOnCreateGapNs: Long,
         override val initialTime: Time
-    ) : RumStartupScenario
+    ) : RumStartupScenario {
+        override fun forwardTo(newActivity: WeakReference<Activity>): Cold =
+            copy(activity = newActivity)
+    }
 
-    class WarmFirstActivity(
+    data class WarmFirstActivity(
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>,
         val appStartActivityOnCreateGapNs: Long,
         override val initialTime: Time
-    ) : RumStartupScenario
+    ) : RumStartupScenario {
+        override fun forwardTo(newActivity: WeakReference<Activity>): WarmFirstActivity =
+            copy(activity = newActivity)
+    }
 
-    class WarmAfterActivityDestroyed(
+    data class WarmAfterActivityDestroyed(
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>,
         override val initialTime: Time
-    ) : RumStartupScenario
+    ) : RumStartupScenario {
+        override fun forwardTo(newActivity: WeakReference<Activity>): WarmAfterActivityDestroyed =
+            copy(activity = newActivity)
+    }
 }
 
 internal val RumStartupScenario.name: String get() = when (this) {

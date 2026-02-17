@@ -13,7 +13,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.DdRumContentProvider
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -29,29 +28,28 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Instrumented test verifying that AppStartupActivityPredicate correctly filters
- * activities that DO draw a frame from TTID measurement.
+ * Instrumented test verifying that TTID auto-forwarding works without any predicate
+ * configuration.
  *
- * Unlike non-drawing interstitials (handled automatically by TTID forwarding),
- * this test covers the case where a splash activity renders visible content
- * (e.g., a logo or loading indicator) before navigating to the main activity.
- * The predicate is needed to exclude such drawing activities from TTID reporting.
+ * This is the "just works" scenario: an interstitial activity that never draws a frame
+ * (calls startActivity + finish in onCreate without setContentView) is automatically
+ * detected, and the TTID measurement is forwarded to the next activity.
  *
  * This test:
- * 1. Launches DrawingSplashActivity (which draws a layout, then starts MainContentActivity)
- * 2. Configures predicate to exclude DrawingSplashActivity
- * 3. Verifies TTID is reported for MainContentActivity, not the splash
+ * 1. Launches InterstitialSplashActivity (which never draws, starts MainContentActivity and finishes)
+ * 2. Does NOT configure any predicate (default behavior)
+ * 3. Verifies TTID is reported for MainContentActivity through auto-forwarding
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-internal class AppStartupActivityPredicateTest :
-    RumTest<DrawingSplashActivity, AppStartupActivityPredicateTest.AppStartupPredicateTestRule>() {
+internal class AppStartupAutoForwardingTest :
+    RumTest<InterstitialSplashActivity, AppStartupAutoForwardingTest.AutoForwardingTestRule>() {
 
     @get:Rule
-    val mockServerRule = AppStartupPredicateTestRule()
+    val mockServerRule = AutoForwardingTestRule()
 
     override fun runInstrumentationScenario(
-        mockServerRule: AppStartupPredicateTestRule
+        mockServerRule: AutoForwardingTestRule
     ): MutableList<ExpectedEvent> {
         val expectedEvents = mutableListOf<ExpectedEvent>()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -59,15 +57,15 @@ internal class AppStartupActivityPredicateTest :
         instrumentation.waitForIdleSync()
         waitForPendingRUMEvents()
 
-        // Expect application launch view for MainContentActivity (not DrawingSplashActivity)
+        // Expect application launch view for MainContentActivity
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
                 docVersion = 2
             )
         )
 
-        // Expect TTID to be reported for MainContentActivity
-        // (drawing splash was excluded by predicate)
+        // TTID should be reported for MainContentActivity via auto-forwarding
+        // (InterstitialSplashActivity was detected as non-drawing and skipped automatically)
         expectedEvents.add(
             ExpectedVitalAppLaunchEvent(
                 appLaunchMetric = AppLaunchMetric.TTID,
@@ -88,7 +86,7 @@ internal class AppStartupActivityPredicateTest :
     }
 
     @Test
-    fun verifyTTIDReportedForMainActivityWhenDrawingSplashExcludedByPredicate() {
+    fun verifyTTIDAutoForwardedToMainActivityWhenSplashDoesNotDraw() {
         val expectedEvents = runInstrumentationScenario(mockServerRule)
 
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
@@ -103,16 +101,15 @@ internal class AppStartupActivityPredicateTest :
     }
 
     /**
-     * Test rule that configures RUM with a predicate excluding DrawingSplashActivity.
-     * The splash activity draws a layout before navigating, so auto-forwarding
-     * does not apply — the predicate is required to skip it.
+     * Test rule that launches InterstitialSplashActivity WITHOUT any predicate.
+     * This verifies the auto-forwarding mechanism detects the non-drawing activity
+     * and forwards TTID measurement to MainContentActivity automatically.
      */
-    internal class AppStartupPredicateTestRule : RumMockServerActivityTestRule<DrawingSplashActivity>(
-        activityClass = DrawingSplashActivity::class.java,
+    internal class AutoForwardingTestRule : RumMockServerActivityTestRule<InterstitialSplashActivity>(
+        activityClass = InterstitialSplashActivity::class.java,
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
     ) {
-        @OptIn(ExperimentalRumApi::class)
         override fun beforeActivityLaunched() {
             super.beforeActivityLaunched()
             val config = RuntimeConfig.configBuilder()
@@ -129,10 +126,7 @@ internal class AppStartupActivityPredicateTest :
                 .trackUserInteractions()
                 .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
-                // Exclude DrawingSplashActivity from TTID measurement
-                .setAppStartupActivityPredicate { activity ->
-                    activity !is DrawingSplashActivity
-                }
+                // No predicate configured — auto-forwarding should handle this
                 .build()
             Rum.enable(rumConfig, sdkCore)
             DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND

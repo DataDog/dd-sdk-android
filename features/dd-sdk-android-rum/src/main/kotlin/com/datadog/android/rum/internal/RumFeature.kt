@@ -702,27 +702,51 @@ internal class RumFeature(
                 private val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(sdkCore = sdkCore)
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
-                    val activity = scenario.activity.get() ?: return
                     val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
 
                     rumMonitor.sendAppStartEvent(scenario)
+                    subscribeToFirstFrame(scenario, rumMonitor, wasForwarded = false)
+                }
+
+                override fun onAppStartupRetargeted(scenario: RumStartupScenario) {
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+
+                    subscribeToFirstFrame(scenario, rumMonitor, wasForwarded = true)
+                }
+
+                private fun subscribeToFirstFrame(
+                    scenario: RumStartupScenario,
+                    rumMonitor: AdvancedRumMonitor,
+                    wasForwarded: Boolean
+                ) {
+                    val activity = scenario.activity.get() ?: return
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
                             val durationNs = timestampNs - scenario.initialTime.nanoTime
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = durationNs
+                                durationNs = durationNs,
+                                wasForwarded = wasForwarded
                             )
 
                             rumMonitor.sendTTIDEvent(info)
+                            rumAppStartupDetector?.notifyStartupTTIDReported()
                         }
                     }
 
-                    rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
-                        activity = activity,
-                        callback = callback
-                    )
+                    if (wasForwarded && activity.window.peekDecorView() != null) {
+                        // The forwarded activity has already drawn its first frame.
+                        // Invoke the callback directly instead of subscribing to
+                        // OnDrawListener, which would require forcing a redraw.
+                        val timestampNs = sdkCore.timeProvider.getDeviceElapsedTimeNanos()
+                        callback.onFirstFrameDrawn(timestampNs)
+                    } else {
+                        rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
+                            activity = activity,
+                            callback = callback
+                        )
+                    }
                 }
             },
             appStartupActivityPredicate = configuration.appStartupActivityPredicate

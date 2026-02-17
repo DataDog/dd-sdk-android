@@ -8,5 +8,6 @@ package com.datadog.android.rum.internal.startup
 
 internal data class RumTTIDInfo(
     val scenario: RumStartupScenario,
-    val durationNs: Long
+    val durationNs: Long,
+    val wasForwarded: Boolean
 )

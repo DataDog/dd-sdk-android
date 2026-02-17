@@ -1563,7 +1563,8 @@ internal class RumSessionScopeTest {
         // Given
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = false
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(info = info)

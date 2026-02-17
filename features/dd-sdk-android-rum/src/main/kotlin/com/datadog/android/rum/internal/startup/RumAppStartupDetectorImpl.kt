@@ -29,6 +29,8 @@ internal class RumAppStartupDetectorImpl(
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
+    private var pendingStartupScenario: RumStartupScenario? = null
+    private var startupTTIDReported: Boolean = false
 
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
@@ -53,6 +55,18 @@ internal class RumAppStartupDetectorImpl(
         numberOfActivities--
         trackedActivities.remove(activity)
 
+        val pending = pendingStartupScenario
+        if (pending != null && isStartupActivityDestroyedBeforeFirstDraw(pending, activity)) {
+            val nextActivity = trackedActivities.firstOrNull()
+            if (nextActivity != null) {
+                val forwarded = pending.forwardTo(WeakReference(nextActivity))
+                pendingStartupScenario = forwarded
+                listener.onAppStartupRetargeted(forwarded)
+            } else {
+                pendingStartupScenario = null
+            }
+        }
+
         if (numberOfActivities == 0) {
             isChangingConfigurations = activity.isChangingConfigurations
         }
@@ -71,6 +85,15 @@ internal class RumAppStartupDetectorImpl(
     }
 
     override fun onActivityStopped(activity: Activity) {
+    }
+
+    private fun isStartupActivityDestroyedBeforeFirstDraw(
+        pending: RumStartupScenario,
+        activity: Activity
+    ): Boolean {
+        return !startupTTIDReported &&
+            pending.activity.get() === activity &&
+            !activity.isChangingConfigurations
     }
 
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -114,9 +137,16 @@ internal class RumAppStartupDetectorImpl(
                 )
             }
 
+            pendingStartupScenario = scenario
+            startupTTIDReported = false
             listener.onAppStartupDetected(scenario)
             isFirstActivityForProcess = false
         }
+    }
+
+    override fun notifyStartupTTIDReported() {
+        startupTTIDReported = true
+        pendingStartupScenario = null
     }
 
     override fun destroy() {
