@@ -70,7 +70,8 @@ internal class PrecomputedAssignmentsDownloaderTest {
             clientToken = forge.anAlphabeticalString(),
             applicationId = forge.anAlphabeticalString(),
             site = DatadogSite.US1,
-            env = "test"
+            env = "test",
+            sdkVersion = forge.anAlphabeticalString()
         )
 
         fakeEvaluationContext = EvaluationContext(

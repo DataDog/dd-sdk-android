@@ -32,8 +32,10 @@ import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
  */
 internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 
-internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val flagsConfiguration: FlagsConfiguration) :
-    StorageBackedFeature,
+internal class FlagsFeature(
+    private val sdkCore: FeatureSdkCore,
+    internal val flagsConfiguration: FlagsConfiguration
+) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
     @Volatile

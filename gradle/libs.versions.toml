@@ -22,7 +22,7 @@ androidXComposeBom = "2023.10.01" # Next version will bring coroutines
 androidXComposeNavigation = "2.6.0"
 androidXComposeRuntime = "1.5.14"
 androidXConstraintLayout = "2.0.4"
-androidXCore = "1.3.1"
+androidXCore = "1.17.0"
 androidXFragment = "1.2.4"
 androidXLeanback = "1.0.0"
 androidXLifecycle = "2.8.7"
@@ -68,13 +68,13 @@ androidLint = "31.0.2"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.21.0"
+datadogPlugin = "1.23.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "41b00c0"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.17.0"
-dependencyLicense = "0.4.0"
+dependencyLicense = "0.5.0"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations
@@ -118,7 +118,6 @@ dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", versio
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
-dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 kotlinxSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 
@@ -384,3 +383,4 @@ nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", versi
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
 composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 apolloPlugin = { id = "com.apollographql.apollo", version.ref = "apollo" }
+dependencyLicenseGradlePlugin = { id = "com.datadoghq.dependency-license", version.ref = "dependencyLicense" }

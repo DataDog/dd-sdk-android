@@ -7,26 +7,50 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.trace.internal.net.RequestTraceState
 import org.chromium.net.UploadDataProvider
+import org.chromium.net.UrlRequest
 import java.io.IOException
 
 internal data class CronetHttpRequestInfo(
-    override val url: String,
-    override val method: String,
-    override val headers: Map<String, List<String>>,
-    private val uploadDataProvider: UploadDataProvider?,
-    private val annotations: List<Any>
-) : HttpRequestInfo, ExtendedRequestInfo {
+    private val requestContext: DatadogCronetRequestContext
+) : HttpRequestInfo, ExtendedRequestInfo, MutableHttpRequestInfo {
 
-    override val contentType: String? get() = headers[HttpSpec.Headers.CONTENT_TYPE]?.firstOrNull()
+    override val url: String
+        get() = requestContext.url
+
+    override val method: String
+        get() = requestContext.method
+
+    private val annotations: List<Any>
+        get() = requestContext.annotations
+
+    override val headers: Map<String, List<String>>
+        get() = requestContext.headers
+
+    override val contentType: String?
+        get() = headers[HttpSpec.Headers.CONTENT_TYPE]?.firstOrNull()
 
     @Suppress("UNCHECKED_CAST")
     override fun <T> tag(type: Class<out T>): T? = annotations.firstOrNull { type.isInstanceOf(it) } as? T
 
     override fun contentLength(): Long? = headers[HttpSpec.Headers.CONTENT_LENGTH]
         ?.firstOrNull()?.toLongOrNull()
-        ?: uploadDataProvider?.contentLength()
+        ?: requestContext.uploadDataProvider?.contentLength()
+
+    override fun newBuilder() = CronetHttpRequestInfoBuilder(requestContext.copy())
+
+    /**
+     * Builds the underlying delegate UrlRequest.
+     * This applies all accumulated headers to the delegate and calls delegate.build().
+     * Should be called from DatadogUrlRequest.start() after tracing headers have been added.
+     */
+    internal fun buildCronetRequest(
+        tracingState: RequestTraceState?
+    ): UrlRequest = requestContext.buildCronetRequest(this, tracingState)
 
     // We have to override toString in order to prevent StackOverflowException,
     // as annotations could hold a link to this CronetHttpRequestInfo instance itself.
@@ -34,7 +58,7 @@ internal data class CronetHttpRequestInfo(
         "url='$url', " +
         "method='$method', " +
         "headers=$headers, " +
-        "provider=$uploadDataProvider, " +
+        "provider=${requestContext.uploadDataProvider}, " +
         "annotations=${annotations.size}" +
         ")"
 
@@ -55,4 +79,28 @@ internal data class CronetHttpRequestInfo(
         Double::class.javaPrimitiveType -> value is Double
         else -> this.isInstance(value)
     }
+}
+
+internal class CronetHttpRequestInfoBuilder(
+    private val requestContext: DatadogCronetRequestContext
+) : HttpRequestInfoBuilder {
+
+    override fun setUrl(url: String): HttpRequestInfoBuilder = apply {
+        requestContext.url = url
+    }
+
+    override fun addHeader(key: String, vararg values: String) = apply {
+        requestContext.addHeader(key, *values)
+    }
+
+    override fun removeHeader(key: String) = apply {
+        // Cronet doesn't support removing headers, but we track it in requestContext
+        requestContext.removeHeader(key)
+    }
+
+    override fun <T> addTag(type: Class<in T>, tag: T?) = apply {
+        requestContext.setTag(type, tag)
+    }
+
+    override fun build() = requestContext.buildRequestInfo()
 }

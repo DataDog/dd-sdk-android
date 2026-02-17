@@ -127,6 +127,11 @@ public final class com/datadog/android/api/InternalLogger$Target : java/lang/Enu
 	public static fun values ()[Lcom/datadog/android/api/InternalLogger$Target;
 }
 
+public final class com/datadog/android/api/InternalLoggerKt {
+	public static final fun logToUser (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;ZLkotlin/jvm/functions/Function0;)V
+	public static synthetic fun logToUser$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;ZLkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+}
+
 public abstract interface class com/datadog/android/api/SdkCore {
 	public abstract fun addAccountExtraInfo (Ljava/util/Map;)V
 	public abstract fun addUserProperties (Ljava/util/Map;)V
@@ -209,10 +214,13 @@ public final class com/datadog/android/api/context/DatadogContext {
 }
 
 public final class com/datadog/android/api/context/DeviceInfo {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/context/LocaleInfo;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/context/LocaleInfo;ILjava/lang/Integer;Ljava/lang/Boolean;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/lang/Integer;
 	public final fun component11 ()Lcom/datadog/android/api/context/LocaleInfo;
+	public final fun component12 ()I
+	public final fun component13 ()Ljava/lang/Integer;
+	public final fun component14 ()Ljava/lang/Boolean;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Lcom/datadog/android/api/context/DeviceType;
@@ -221,8 +229,8 @@ public final class com/datadog/android/api/context/DeviceInfo {
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/context/LocaleInfo;)Lcom/datadog/android/api/context/DeviceInfo;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/context/DeviceInfo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/context/LocaleInfo;ILjava/lang/Object;)Lcom/datadog/android/api/context/DeviceInfo;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/context/LocaleInfo;ILjava/lang/Integer;Ljava/lang/Boolean;)Lcom/datadog/android/api/context/DeviceInfo;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/context/DeviceInfo;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lcom/datadog/android/api/context/LocaleInfo;ILjava/lang/Integer;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/api/context/DeviceInfo;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getArchitecture ()Ljava/lang/String;
 	public final fun getDeviceBrand ()Ljava/lang/String;
@@ -231,11 +239,14 @@ public final class com/datadog/android/api/context/DeviceInfo {
 	public final fun getDeviceName ()Ljava/lang/String;
 	public final fun getDeviceType ()Lcom/datadog/android/api/context/DeviceType;
 	public final fun getLocaleInfo ()Lcom/datadog/android/api/context/LocaleInfo;
+	public final fun getLogicalCpuCount ()I
 	public final fun getNumberOfDisplays ()Ljava/lang/Integer;
 	public final fun getOsMajorVersion ()Ljava/lang/String;
 	public final fun getOsName ()Ljava/lang/String;
 	public final fun getOsVersion ()Ljava/lang/String;
+	public final fun getTotalRam ()Ljava/lang/Integer;
 	public fun hashCode ()I
+	public final fun isLowRam ()Ljava/lang/Boolean;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -368,6 +379,7 @@ public abstract interface class com/datadog/android/api/feature/Feature {
 	public static final field FLAGS_FEATURE_NAME Ljava/lang/String;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
 	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
+	public static final field PROFILING_FEATURE_NAME Ljava/lang/String;
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_RESOURCES_FEATURE_NAME Ljava/lang/String;
@@ -382,6 +394,7 @@ public final class com/datadog/android/api/feature/Feature$Companion {
 	public static final field FLAGS_FEATURE_NAME Ljava/lang/String;
 	public static final field LOGS_FEATURE_NAME Ljava/lang/String;
 	public static final field NDK_CRASH_REPORTS_FEATURE_NAME Ljava/lang/String;
+	public static final field PROFILING_FEATURE_NAME Ljava/lang/String;
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_RESOURCES_FEATURE_NAME Ljava/lang/String;
@@ -454,6 +467,9 @@ public final class com/datadog/android/api/instrumentation/network/ExtendedReque
 	public static final fun tag (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Class;)Ljava/lang/Object;
 }
 
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestBody {
+}
+
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestInfo {
 	public abstract fun contentLength ()Ljava/lang/Long;
 	public abstract fun getContentType ()Ljava/lang/String;
@@ -462,12 +478,29 @@ public abstract interface class com/datadog/android/api/instrumentation/network/
 	public abstract fun getUrl ()Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder {
+	public abstract fun addHeader (Ljava/lang/String;[Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public abstract fun addTag (Ljava/lang/Class;Ljava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public abstract fun build ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;
+	public abstract fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public abstract fun replaceHeader (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public abstract fun setUrl (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder$DefaultImpls {
+	public static fun replaceHeader (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+}
+
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpResponseInfo {
 	public abstract fun getContentLength ()Ljava/lang/Long;
 	public abstract fun getContentType ()Ljava/lang/String;
 	public abstract fun getHeaders ()Ljava/util/Map;
 	public abstract fun getStatusCode ()I
 	public abstract fun getUrl ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/api/instrumentation/network/MutableHttpRequestInfo {
+	public abstract fun newBuilder ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 }
 
 public final class com/datadog/android/api/net/Request {
@@ -702,8 +735,8 @@ public final class com/datadog/android/core/configuration/BatchSize : java/lang/
 
 public final class com/datadog/android/core/configuration/Configuration {
 	public static final field Companion Lcom/datadog/android/core/configuration/Configuration$Companion;
-	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;)Lcom/datadog/android/core/configuration/Configuration;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
+	public final fun copy (Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/String;)Lcom/datadog/android/core/configuration/Configuration;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/configuration/Configuration;Lcom/datadog/android/core/configuration/Configuration$Core;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/core/configuration/Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -728,6 +761,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 	public final fun setUploadFrequency (Lcom/datadog/android/core/configuration/UploadFrequency;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUploadSchedulerStrategy (Lcom/datadog/android/core/configuration/UploadSchedulerStrategy;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun setUseDeveloperModeWhenDebuggable (Z)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setVersion (Ljava/lang/String;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 	public final fun useSite (Lcom/datadog/android/DatadogSite;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 }
 
@@ -867,7 +901,9 @@ public abstract interface class com/datadog/android/core/internal/persistence/De
 public final class com/datadog/android/core/internal/persistence/file/FileExtKt {
 	public static final fun canReadSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
 	public static final fun existsSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
+	public static final fun lengthSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)J
 	public static final fun listFilesSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;Ljava/io/FilenameFilter;)[Ljava/io/File;
+	public static final fun readBytesSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)[B
 	public static final fun readLinesSafe (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
 	public static synthetic fun readLinesSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/util/List;
 	public static final fun readTextSafe (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/String;

@@ -4,6 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+// TODO RUM-11898 Migrate deprecated GestureDetectorCompat
+
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context

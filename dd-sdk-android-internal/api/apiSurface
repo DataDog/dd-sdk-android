@@ -10,18 +10,53 @@ interface com.datadog.android.internal.attributes.LocalAttribute
 fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
 fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
 fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
-enum com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
-  - MANUAL
-  - COMPOSE
-  - ACTIVITY
-  - FRAGMENT
-  override val key: LocalAttribute.Key
+sealed interface com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  val value: String
+  enum Native : ViewScopeInstrumentationType
+    constructor(String)
+    - MANUAL
+    - COMPOSE
+    - ACTIVITY
+    - FRAGMENT
+    override val key: LocalAttribute.Key
+  class Custom : ViewScopeInstrumentationType
+    override val value: String
+    override val key: LocalAttribute.Key
+    companion object 
+      fun create(String): Custom
 class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
   constructor(Int = Int.MAX_VALUE)
   override val size: Int
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+interface com.datadog.android.internal.data.PreferencesStorage
+  fun putFloat(String, Float)
+  fun getFloat(String, Float = 0f): Float
+  fun putInt(String, Int)
+  fun getInt(String, Int = 0): Int
+  fun getString(String, String? = null): String?
+  fun putString(String, String)
+  fun getStringSet(String, Set<String> = emptySet()): Set<String>
+  fun putStringSet(String, Set<String>)
+  fun putBoolean(String, Boolean)
+  fun getBoolean(String, Boolean = false): Boolean
+  fun remove(String)
+  fun clear()
+class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesStorage
+  constructor(android.content.Context)
+  override fun putFloat(String, Float)
+  override fun getFloat(String, Float): Float
+  override fun putInt(String, Int)
+  override fun getInt(String, Int): Int
+  override fun getString(String, String?): String?
+  override fun putString(String, String)
+  override fun getStringSet(String, Set<String>): Set<String>
+  override fun putStringSet(String, Set<String>)
+  override fun putBoolean(String, Boolean)
+  override fun getBoolean(String, Boolean): Boolean
+  override fun remove(String)
+  override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
 enum com.datadog.android.internal.network.GraphQLHeaders
@@ -30,29 +65,6 @@ enum com.datadog.android.internal.network.GraphQLHeaders
   - DD_GRAPHQL_VARIABLES_HEADER
   - DD_GRAPHQL_TYPE_HEADER
   - DD_GRAPHQL_PAYLOAD_HEADER
-object com.datadog.android.internal.network.HttpSpec
-  object Method
-    const val GET: String
-    const val POST: String
-    const val PATCH: String
-    const val PUT: String
-    const val HEAD: String
-    const val DELETE: String
-    const val TRACE: String
-    const val OPTIONS: String
-    const val CONNECT: String
-    fun values()
-  object Headers
-    const val CONTENT_TYPE: String
-    const val CONTENT_LENGTH: String
-    const val WEBSOCKET_ACCEPT_HEADER: String
-  object ContentType
-    const val TEXT_PLAIN: String
-    const val TEXT_EVENT_STREAM: String
-    const val APPLICATION_GRPC: String
-    const val APPLICATION_GRPC_PROTO: String
-    const val APPLICATION_GRPC_JSON: String
-    fun isStream(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
@@ -77,6 +89,11 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
+sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
+  data class TTID : ProfilerStopEvent
+    constructor(TTIDRumContext? = null)
+data class com.datadog.android.internal.profiling.TTIDRumContext
+  constructor(String, String, String, String?, String?)
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
@@ -168,6 +185,7 @@ fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+fun formatIsoUtc(Long): String
 class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
   override fun onCreate(): Boolean
   override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?

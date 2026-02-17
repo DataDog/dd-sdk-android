@@ -128,7 +128,7 @@ constructor(
         }
 
         attributes.putAll(intent.safeExtras.convertToRumViewAttributes())
-        attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.ACTIVITY)
+        attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.ACTIVITY)
 
         return attributes
     }

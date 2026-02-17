@@ -15,6 +15,7 @@ import java.util.Properties
 plugins {
     `maven-publish`
     alias(libs.plugins.nexusPublishGradlePlugin)
+    alias(libs.plugins.dependencyLicenseGradlePlugin)
 }
 
 version = AndroidConfig.VERSION.name
@@ -62,6 +63,10 @@ nexusPublishing {
             snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
         }
     }
+}
+
+dependencyLicenses {
+    transitiveDependencies = true
 }
 
 tasks.register<Delete>("clean") {
@@ -132,7 +137,13 @@ tasks.register("unitTestAll") {
 registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
     dependsOn(":tools:lint:lint")
 }
-registerSubModuleAggregationTask("checkDependencyLicencesAll", "checkDependencyLicenses")
+
+registerSubModuleAggregationTask(
+    "checkDependencyLicencesAll",
+    "checkDependencyLicenses",
+    // check licenses for all modules, not only for published ones
+    subModuleNamePrefix = ""
+)
 
 registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceChanges")
 

@@ -6,8 +6,10 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.trace.internal.net.RequestTraceState
 import org.chromium.net.RequestFinishedInfo
 import java.io.IOException
 import java.util.Date
@@ -16,32 +18,32 @@ import java.util.concurrent.TimeUnit
 
 internal class DatadogRequestFinishedInfoListener(
     executor: Executor,
-    internal val rumResourceInstrumentation: RumResourceInstrumentation
+    internal val rumNetworkInstrumentation: RumNetworkInstrumentation
 ) : RequestFinishedInfo.Listener(executor) {
 
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
         val requestInfo = finishedInfo.annotations?.filterIsInstance<HttpRequestInfo>()?.firstOrNull()
-
+        val traceInfo = finishedInfo.annotations?.filterIsInstance<RequestTraceState>()?.firstOrNull()
         if (requestInfo == null) {
-            rumResourceInstrumentation.reportInstrumentationError(
+            rumNetworkInstrumentation.reportInstrumentationError(
                 "Unable to instrument RUM resource without the request info"
             )
             return
         }
 
         val resourceTiming = buildTiming(finishedInfo.metrics)
-        rumResourceInstrumentation.sendTiming(requestInfo, resourceTiming)
+        rumNetworkInstrumentation.sendTiming(requestInfo, resourceTiming)
 
         when (finishedInfo.finishedReason) {
             RequestFinishedInfo.FAILED -> {
-                rumResourceInstrumentation.stopResourceWithError(
+                rumNetworkInstrumentation.stopResourceWithError(
                     requestInfo = requestInfo,
                     throwable = finishedInfo.exception ?: IOException("Request failed")
                 )
             }
 
             RequestFinishedInfo.CANCELED -> {
-                rumResourceInstrumentation.stopResourceWithError(
+                rumNetworkInstrumentation.stopResourceWithError(
                     requestInfo = requestInfo,
                     throwable = IOException("Request was cancelled")
                 )
@@ -51,19 +53,30 @@ internal class DatadogRequestFinishedInfoListener(
                 val responseInfo = finishedInfo.responseInfo?.let { CronetHttpResponseInfo(it) }
 
                 if (responseInfo == null) {
-                    rumResourceInstrumentation.stopResourceWithError(
+                    rumNetworkInstrumentation.stopResourceWithError(
                         requestInfo = requestInfo,
                         throwable = IllegalStateException("Received null response")
                     )
                 } else {
-                    rumResourceInstrumentation.stopResource(
+                    rumNetworkInstrumentation.stopResource(
                         requestInfo = requestInfo,
-                        responseInfo = responseInfo
+                        responseInfo = responseInfo,
+                        attributes = traceInfo?.toAttributes().orEmpty()
                     )
                 }
             }
         }
     }
+
+    private fun RequestTraceState.toAttributes(): Map<String, Any?>? = span
+        ?.takeIf { isSampled }
+        ?.let { span ->
+            buildMap {
+                put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
+                put(RumAttributes.SPAN_ID, span.context().spanId.toString())
+                put(RumAttributes.RULE_PSR, (sampleRate ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
+            }
+        }
 
     private fun buildTiming(metrics: RequestFinishedInfo.Metrics): ResourceTiming {
         val connectStartMs = metrics.connectStart - metrics.requestStart
@@ -113,13 +126,12 @@ internal class DatadogRequestFinishedInfoListener(
 
     companion object {
 
-        internal operator fun Long?.plus(other: Long?): Long? {
-            return if (this == null || other == null) null else this + other
-        }
+        private const val ALL_IN_SAMPLE_RATE: Float = 100f
+        private const val ZERO_SAMPLE_RATE: Float = 0f
 
-        internal operator fun Long?.minus(other: Long?): Long {
-            return if (this == null || other == null) 0L else this - other
-        }
+        internal operator fun Long?.plus(other: Long?) = if (this == null || other == null) null else this + other
+
+        internal operator fun Long?.minus(other: Long?) = if (this == null || other == null) 0L else this - other
 
         internal operator fun Date?.minus(other: Date?): Long {
             val thisTime = this?.time

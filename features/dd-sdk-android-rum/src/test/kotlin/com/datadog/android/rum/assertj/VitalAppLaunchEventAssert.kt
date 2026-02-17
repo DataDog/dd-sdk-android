@@ -218,7 +218,10 @@ internal class VitalAppLaunchEventAssert(
         model: String,
         brand: String,
         type: VitalAppLaunchEvent.DeviceType,
-        architecture: String
+        architecture: String,
+        isLowRam: Boolean?,
+        logicalCpuCount: Number?,
+        totalRam: Number?
     ) = apply {
         assertThat(actual.device?.name)
             .overridingErrorMessage(
@@ -246,6 +249,21 @@ internal class VitalAppLaunchEventAssert(
                     " but was ${actual.device?.architecture}"
             )
             .isEqualTo(architecture)
+        assertThat(actual.device?.isLowRam)
+            .overridingErrorMessage(
+                "Expected event data to have device.isLowRam $isLowRam" +
+                    " but was ${actual.device?.isLowRam}"
+            ).isEqualTo(isLowRam)
+        assertThat(actual.device?.logicalCpuCount)
+            .overridingErrorMessage(
+                "Expected event data to have device.logicalCpuCount $logicalCpuCount" +
+                    " but was ${actual.device?.logicalCpuCount}"
+            ).isEqualTo(logicalCpuCount)
+        assertThat(actual.device?.totalRam)
+            .overridingErrorMessage(
+                "Expected event data to have device.totalRam $totalRam" +
+                    " but was ${actual.device?.totalRam}"
+            ).isEqualTo(totalRam)
     }
 
     fun hasOsInfo(
@@ -350,6 +368,33 @@ internal class VitalAppLaunchEventAssert(
                     " but instead was: ${actual.ddtags}"
             )
             .isEqualTo(ddTags)
+    }
+
+    fun hasProfilingStatus(profilingStatus: VitalAppLaunchEvent.ProfilingStatus?) = apply {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+    }
+
+    fun hasNoProfilingStatus() = apply {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling status" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isNull()
+    }
+
+    fun hasNoProfilingErrorReason() = apply {
+        assertThat(actual.dd.profiling?.errorReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling error reason" +
+                    " but instead was: ${actual.dd.profiling?.errorReason}"
+            )
+            .isNull()
     }
 
     companion object {

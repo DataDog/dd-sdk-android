@@ -264,7 +264,6 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
         listOf(
             RumRawEvent.ApplicationStarted(Time(), aLong()),
             RumRawEvent.ResetSession(),
-            RumRawEvent.KeepAlive(),
             RumRawEvent.StopView(getForgery(), emptyMap()),
             RumRawEvent.ActionSent(
                 fakeId,

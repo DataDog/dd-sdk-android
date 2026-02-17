@@ -6,21 +6,58 @@
 package com.datadog.android.internal.attributes
 
 /**
- * A set of constants describing the instrumentation that were used to define the view scope.
+ * Describes the instrumentation used to define a RUM view scope.
+ *
+ * Supports both native Android instrumentation types (Activity, Fragment, Compose, Manual)
+ * and custom types from cross-platform SDKs (Flutter, React Native, Unity, etc.).
  */
-enum class ViewScopeInstrumentationType : LocalAttribute.Constant {
-    /** Tracked manually through the RUMMonitor API. */
-    MANUAL,
+sealed interface ViewScopeInstrumentationType : LocalAttribute.Constant {
 
-    /** Tracked through ComposeNavigationObserver instrumentation. */
-    COMPOSE,
+    /**
+     * The string value sent in telemetry for this instrumentation type.
+     */
+    val value: String
 
-    /** Tracked through ActivityViewTrackingStrategy instrumentation. */
-    ACTIVITY,
+    /**
+     * Native Android instrumentation types tracked by the SDK.
+     */
+    enum class Native(override val value: String) : ViewScopeInstrumentationType {
+        /** Tracked manually through the RumMonitor API. */
+        MANUAL("manual"),
 
-    /** Tracked through FragmentViewTrackingStrategy instrumentation. */
-    FRAGMENT;
+        /** Tracked through ComposeNavigationObserver instrumentation. */
+        COMPOSE("compose"),
 
-    /** @inheritdoc */
-    override val key: LocalAttribute.Key = LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE
+        /** Tracked through ActivityViewTrackingStrategy instrumentation. */
+        ACTIVITY("activity"),
+
+        /** Tracked through FragmentViewTrackingStrategy instrumentation. */
+        FRAGMENT("fragment");
+
+        override val key: LocalAttribute.Key = LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE
+    }
+
+    /**
+     * Custom instrumentation type for cross-platform SDKs.
+     *
+     * Used when cross-platform frameworks (Flutter, React Native, Unity, etc.)
+     * need to report their specific navigation/instrumentation patterns.
+     */
+    class Custom internal constructor(private val customValue: String) : ViewScopeInstrumentationType {
+
+        override val value: String get() = customValue
+
+        override val key: LocalAttribute.Key get() = LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE
+
+        companion object {
+            /**
+             * Creates a custom instrumentation type.
+             *
+             * @param type The custom type identifier
+             */
+            fun create(type: String): Custom {
+                return Custom(type.trim())
+            }
+        }
+    }
 }
