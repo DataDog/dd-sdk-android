@@ -21,7 +21,7 @@ The phases are designed to:
 - [x] [Phase 2: Diff Computation Engine](phases/02-diff-computation-engine.md)
 - [x] [Phase 3: Event Flow Integration](phases/03-event-flow-integration.md)
 - [x] [Phase 4: RumViewScope Integration](phases/04-rumviewscope-integration.md)
-- [ ] [Phase 5: Testing & Documentation](phases/05-testing-documentation.md)
+- [x] [Phase 5: Testing & Documentation](phases/05-testing-documentation.md)
 
 ## Dependencies
 
