@@ -72,14 +72,15 @@ internal class FlagsStateManager(private val subscription: DDCoreSubscription<Fl
     }
 
     override fun addListener(listener: FlagsStateListener) {
-        // Use a write lock to ensure that the listener is added to the subscription without the state changing.
-        stateLock.write {
+        stateLock.read {
             listener.onStateChanged(currentState)
             subscription.addListener(listener)
         }
     }
 
     override fun removeListener(listener: FlagsStateListener) {
-        subscription.removeListener(listener)
+        stateLock.read {
+            subscription.removeListener(listener)
+        }
     }
 }
