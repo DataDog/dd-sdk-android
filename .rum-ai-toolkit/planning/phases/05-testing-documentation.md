@@ -1,8 +1,8 @@
-# Phase 4: Testing & Documentation
+# Phase 5: Testing & Documentation
 
 **Status:** Not Started
 **Estimated Effort:** 2-3 days
-**Dependencies:** Phase 3 (requires complete implementation)
+**Dependencies:** Phase 4 (requires RumViewScope integration complete)
 
 ## Objective
 

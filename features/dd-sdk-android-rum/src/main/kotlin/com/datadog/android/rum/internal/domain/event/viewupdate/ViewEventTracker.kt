@@ -15,16 +15,16 @@ import com.datadog.android.rum.RumConfiguration
  * - Storing the last sent event data per view
  * - Tracking document version counters per view
  * - Determining when to send full view vs partial view_update events
- *
- * The implementation is split across phases:
- * - Phase 1: Data structures and skeleton (current)
- * - Phase 2: Integration with diff computation
- * - Phase 3: Complete event flow and integration
+ * - Computing diffs and building minimal view_update events
  *
  * @param config The RUM configuration containing feature flags
+ * @param writer The event writer for persisting events
+ * @param diffComputer The diff computation engine (defaults to new instance)
  */
 internal class ViewEventTracker(
-    private val config: RumConfiguration
+    private val config: RumConfiguration,
+    private val writer: EventWriter,
+    private val diffComputer: ViewDiffComputer = ViewDiffComputer()
 ) {
 
     /**
@@ -55,11 +55,31 @@ internal class ViewEventTracker(
      *
      * @param viewId The unique identifier for this view
      * @param currentViewData Complete current view state
-     *
-     * TODO(Phase 3): Implement event sending logic
      */
     fun sendViewUpdate(viewId: String, currentViewData: Map<String, Any?>) {
-        TODO("Phase 3: Implement event sending logic")
+        if (!isPartialUpdatesEnabled()) {
+            // Feature disabled: use legacy behavior (full view events)
+            sendFullViewEvent(viewId, currentViewData)
+            return
+        }
+
+        val lastSent = lastSentEvents[viewId]
+        if (lastSent == null) {
+            // First event: send full view
+            sendFullViewEvent(viewId, currentViewData)
+            return
+        }
+
+        // Compute diff
+        val changes = diffComputer.computeDiff(lastSent, currentViewData)
+
+        if (changes.isEmpty()) {
+            // No changes: skip sending event
+            return
+        }
+
+        // Send view_update with only changed fields
+        sendPartialViewUpdate(viewId, changes, currentViewData)
     }
 
     /**
@@ -68,28 +88,107 @@ internal class ViewEventTracker(
      *
      * @param viewId The unique identifier for this view
      * @param viewData Complete view state to send
-     *
-     * TODO(Phase 3): Implement full view event sending
      */
     private fun sendFullViewEvent(viewId: String, viewData: Map<String, Any?>) {
-        TODO("Phase 3: Implement full view event sending")
+        val version = incrementDocumentVersion(viewId)
+
+        // Build event with type and version
+        val event = viewData.toMutableMap().apply {
+            put("type", "view")
+            // Merge or add _dd section
+            @Suppress("UNCHECKED_CAST")
+            val existingDd = this["_dd"] as? Map<String, Any?>
+            val updatedDd = mutableMapOf<String, Any?>().apply {
+                if (existingDd != null) {
+                    putAll(existingDd)
+                }
+                put("document_version", version)
+            }
+            put("_dd", updatedDd)
+        }
+
+        // Write to storage
+        writer.write(event)
+
+        // Store for next diff
+        lastSentEvents[viewId] = viewData
+    }
+
+    /**
+     * Increments and returns the document version for a view.
+     * Version starts at 1 for first event.
+     *
+     * @param viewId The view identifier
+     * @return The new document version
+     */
+    private fun incrementDocumentVersion(viewId: String): Int {
+        val currentVersion = documentVersions.getOrDefault(viewId, 0)
+        val newVersion = currentVersion + 1
+        documentVersions[viewId] = newVersion
+        return newVersion
     }
 
     /**
      * Sends a partial view_update event with only changed fields.
      *
+     * The event includes:
+     * - Required fields: application.id, session.id, view.id
+     * - Changed fields from diff
+     * - type="view_update"
+     * - _dd.document_version
+     *
      * @param viewId The unique identifier for this view
      * @param changes Map of changed fields from diff computation
      * @param fullCurrentState Complete current state (stored for next diff)
-     *
-     * TODO(Phase 3): Implement partial view_update sending
      */
     private fun sendPartialViewUpdate(
         viewId: String,
         changes: Map<String, Any?>,
         fullCurrentState: Map<String, Any?>
     ) {
-        TODO("Phase 3: Implement partial view_update sending")
+        val version = incrementDocumentVersion(viewId)
+
+        // Build event starting with changed fields
+        val event = changes.toMutableMap().apply {
+            // Ensure required fields are present (if not in changes)
+            if (!containsKey("application")) {
+                put("application", fullCurrentState["application"])
+            }
+            if (!containsKey("session")) {
+                put("session", fullCurrentState["session"])
+            }
+            if (!containsKey("view") || (this["view"] as? Map<*, *>)?.containsKey("id") != true) {
+                // Merge view.id if needed
+                @Suppress("UNCHECKED_CAST")
+                val currentView = this["view"] as? MutableMap<String, Any?> ?: mutableMapOf()
+                @Suppress("UNCHECKED_CAST")
+                val fullView = fullCurrentState["view"] as? Map<String, Any?>
+                if (fullView != null && !currentView.containsKey("id")) {
+                    currentView["id"] = fullView["id"]
+                }
+                put("view", currentView)
+            }
+
+            // Set event type
+            put("type", "view_update")
+
+            // Merge or add _dd section with document_version
+            @Suppress("UNCHECKED_CAST")
+            val existingDd = this["_dd"] as? Map<String, Any?>
+            val updatedDd = mutableMapOf<String, Any?>().apply {
+                if (existingDd != null) {
+                    putAll(existingDd)
+                }
+                put("document_version", version)
+            }
+            put("_dd", updatedDd)
+        }
+
+        // Write to storage
+        writer.write(event)
+
+        // Store full current state for next diff
+        lastSentEvents[viewId] = fullCurrentState
     }
 
     /**

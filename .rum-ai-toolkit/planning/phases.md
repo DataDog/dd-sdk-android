@@ -7,7 +7,7 @@
 
 ## Overview
 
-This phased implementation approach breaks down the partial view updates feature into four discrete, testable milestones. Each phase builds on the previous one, allowing for incremental development and validation.
+This phased implementation approach breaks down the partial view updates feature into five discrete, testable milestones. Each phase builds on the previous one, allowing for incremental development and validation.
 
 The phases are designed to:
 - Enable independent testing at each stage
@@ -19,8 +19,9 @@ The phases are designed to:
 
 - [x] [Phase 1: Foundation & Configuration](phases/01-foundation-configuration.md)
 - [x] [Phase 2: Diff Computation Engine](phases/02-diff-computation-engine.md)
-- [ ] [Phase 3: Event Flow Integration](phases/03-event-flow-integration.md)
-- [ ] [Phase 4: Testing & Documentation](phases/04-testing-documentation.md)
+- [x] [Phase 3: Event Flow Integration](phases/03-event-flow-integration.md)
+- [ ] [Phase 4: RumViewScope Integration](phases/04-rumviewscope-integration.md)
+- [ ] [Phase 5: Testing & Documentation](phases/05-testing-documentation.md)
 
 ## Dependencies
 
@@ -31,7 +32,9 @@ Phase 2: Diff Computation Engine (can start after Phase 1 data structures exist)
     ↓
 Phase 3: Event Flow Integration (requires Phase 1 & 2 complete)
     ↓
-Phase 4: Testing & Documentation (requires Phase 3 complete)
+Phase 4: RumViewScope Integration (requires Phase 3 complete)
+    ↓
+Phase 5: Testing & Documentation (requires Phase 4 complete)
 ```
 
 **Note:** Phases 1 and 2 have minimal dependencies - Phase 2 can begin once Phase 1's data structures are defined, allowing some parallelization if desired.
@@ -40,10 +43,11 @@ Phase 4: Testing & Documentation (requires Phase 3 complete)
 
 - **Phase 1:** 2-3 days (foundational work, configuration)
 - **Phase 2:** 3-5 days (core diff logic, comprehensive testing)
-- **Phase 3:** 3-4 days (integration with existing pipeline)
-- **Phase 4:** 2-3 days (testing, documentation, polish)
+- **Phase 3:** 3-4 days (event tracker implementation)
+- **Phase 4:** 1-2 days (RumViewScope integration)
+- **Phase 5:** 2-3 days (testing, documentation, polish)
 
-**Total:** ~10-15 days for complete implementation
+**Total:** ~11-17 days for complete implementation
 
 ## Key Decisions
 
