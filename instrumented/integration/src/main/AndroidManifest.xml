@@ -108,6 +108,9 @@
         <activity android:name=".rum.startup.DrawingSplashActivity"
             android:label="@string/activity_app_launch"
             android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".rum.startup.AsyncInterstitialSplashActivity"
+            android:label="@string/activity_app_launch"
+            android:windowSoftInputMode="adjustResize"/>
         <activity android:name=".rum.startup.MainContentActivity"
             android:label="@string/activity_app_launch"
             android:windowSoftInputMode="adjustResize"/>

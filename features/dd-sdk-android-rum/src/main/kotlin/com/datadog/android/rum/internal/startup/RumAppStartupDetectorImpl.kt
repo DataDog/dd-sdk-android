@@ -29,6 +29,7 @@ internal class RumAppStartupDetectorImpl(
     private var isFirstActivityForProcess: Boolean = true
     private var pendingStartupScenario: RumStartupScenario? = null
     private var startupTTIDReported: Boolean = false
+    private var awaitingRetargetSinceNs: Long? = null
 
     private val trackedActivities = mutableListOf<WeakReference<Activity>>()
 
@@ -60,7 +61,7 @@ internal class RumAppStartupDetectorImpl(
                 pendingStartupScenario = forwarded
                 listener.onAppStartupRetargeted(forwarded)
             } else {
-                pendingStartupScenario = null
+                awaitingRetargetSinceNs = timeProvider().nanoTime
             }
         }
 
@@ -103,6 +104,27 @@ internal class RumAppStartupDetectorImpl(
             trackedActivities.add(WeakReference(activity))
         }
 
+        // Case 1: Deferred retarget — startup activity died without drawing,
+        // no next candidate existed at destroy time, this is the first eligible replacement
+        val pending = pendingStartupScenario
+        val retargetSince = awaitingRetargetSinceNs
+        val canRetarget = shouldTrackStartup && !startupTTIDReported
+        if (retargetSince != null && canRetarget && pending != null) {
+            val elapsed = now.nanoTime - retargetSince
+            if (elapsed < RETARGET_TIMEOUT_NS) {
+                awaitingRetargetSinceNs = null
+                val forwarded = pending.forwardTo(WeakReference(activity))
+                pendingStartupScenario = forwarded
+                listener.onAppStartupRetargeted(forwarded)
+                return
+            } else {
+                // Stale scenario — too long since startup, fall through to create new scenario
+                awaitingRetargetSinceNs = null
+                pendingStartupScenario = null
+            }
+        }
+
+        // Case 2: First tracked activity — detect new startup scenario
         val isFirstTrackedActivity = shouldTrackStartup && trackedActivities.count { it.get() != null } == 1
         if (isFirstTrackedActivity && !isChangingConfigurations) {
             val processStartTime = appStartupTimeProvider()
@@ -145,6 +167,7 @@ internal class RumAppStartupDetectorImpl(
     override fun notifyStartupTTIDReported() {
         startupTTIDReported = true
         pendingStartupScenario = null
+        awaitingRetargetSinceNs = null
     }
 
     override fun destroy() {
@@ -153,5 +176,6 @@ internal class RumAppStartupDetectorImpl(
 
     companion object {
         private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
+        private val RETARGET_TIMEOUT_NS = 1.seconds.inWholeNanoseconds
     }
 }

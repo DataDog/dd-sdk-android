@@ -406,6 +406,189 @@ internal class RumAppStartupDetectorImplForwardingTest {
     }
 
     @Test
+    fun `M forward to next activity W startup destroyed before next activity created`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given
+        val splashActivity = mock<Activity>()
+        val mainActivity = mock<Activity>()
+        val detector = createDetector()
+
+        currentTime += 3.seconds
+
+        // When - splash created (Cold startup detected)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = splashActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Splash destroyed with no other tracked activities (awaitingRetarget = true)
+        detector.onActivityDestroyed(splashActivity)
+
+        // Short delay (100ms) then main created
+        currentTime += 100_000_000.nanoseconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = mainActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = splashActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        listener.verifyScenarioRetargeted(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = mainActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M forward to next activity W deferred retarget and predicate excludes intermediate activity`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given
+        val splashActivity = mock<Activity>()
+        val untrackedActivity = mock<Activity>()
+        val trackedActivity = mock<Activity>()
+
+        val predicate = AppStartupActivityPredicate { activity ->
+            activity != untrackedActivity
+        }
+
+        val detector = createDetector(appStartupActivityPredicate = predicate)
+
+        currentTime += 3.seconds
+
+        // Splash created (Cold startup detected)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = splashActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Splash destroyed with no other tracked activities (awaitingRetarget = true)
+        detector.onActivityDestroyed(splashActivity)
+
+        // Untracked activity created — should NOT trigger retarget
+        currentTime += 50_000_000.nanoseconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = untrackedActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Tracked activity created — should trigger deferred retarget
+        currentTime += 50_000_000.nanoseconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = trackedActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = splashActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        listener.verifyScenarioRetargeted(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = trackedActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M detect warm start W deferred retarget expires after threshold`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean
+    ) {
+        // Given
+        val splashActivity = mock<Activity>()
+        val detector = createDetector()
+
+        currentTime += 3.seconds
+
+        // Splash created (Cold startup detected)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = splashActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Splash destroyed with no other tracked activities (awaitingRetarget = true)
+        detector.onActivityDestroyed(splashActivity)
+
+        // Advance time past RETARGET_TIMEOUT_NS (1 second) — 2 seconds total
+        currentTime += 2.seconds
+
+        // New activity created — stale scenario, should detect WarmAfterActivityDestroyed
+        val nextActivity = mock<Activity>()
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = nextActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = splashActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmAfterActivityDestroyed(
+                initialTime = Time(
+                    nanoTime = currentTime.inWholeNanoseconds,
+                    timestamp = currentTime.inWholeMilliseconds
+                ),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+                activity = nextActivity.wrapWeak()
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
     fun `M detect normal warm start W forwarding cycle completes and new activity created`(
         forge: Forge,
         @BoolForgery hasSavedInstanceStateBundle: Boolean,
