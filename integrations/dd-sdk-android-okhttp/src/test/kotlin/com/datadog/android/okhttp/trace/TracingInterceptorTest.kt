@@ -1524,6 +1524,7 @@ internal open class TracingInterceptorTest {
         // need this setup, otherwise #intercept actually throws NPE, which pollutes the log
         val localSpanBuilder: DatadogSpanBuilder = mock()
         val localSpan: DatadogSpan = mock()
+        whenever(localSpanBuilder.withOrigin(anyOrNull())) doReturn localSpanBuilder
         whenever(localSpanBuilder.withParentContext(null as DatadogSpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext
