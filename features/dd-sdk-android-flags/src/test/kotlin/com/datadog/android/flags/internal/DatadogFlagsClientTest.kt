@@ -976,6 +976,100 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
+    fun `M track error evaluation W resolve() { flag not found and trackEvaluations enabled }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+
+        val clientWithEvaluationTracking = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackEvaluations = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        val result = clientWithEvaluationTracking.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
+
+        // Verify error evaluation was tracked
+        verify(mockEvaluationsFeature).processEvaluation(
+            flagKey = eq(fakeFlagKey),
+            context = eq(fakeContext),
+            variantKey = isNull(),
+            allocationKey = isNull(),
+            errorCode = eq(ErrorCode.FLAG_NOT_FOUND.name),
+            errorMessage = eq("Flag not found")
+        )
+    }
+
+    @Test
+    fun `M track error evaluation W resolve() { type mismatch and trackEvaluations enabled }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = "some-string"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+
+        val clientWithEvaluationTracking = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackEvaluations = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        val result = clientWithEvaluationTracking.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
+
+        // Verify error evaluation was tracked
+        verify(mockEvaluationsFeature).processEvaluation(
+            flagKey = eq(fakeFlagKey),
+            context = eq(fakeContext),
+            variantKey = isNull(),
+            allocationKey = isNull(),
+            errorCode = eq(ErrorCode.TYPE_MISMATCH.name),
+            errorMessage = eq("Flag has type 'string' but Boolean was requested")
+        )
+    }
+
+    @Test
     fun `M track exposure W resolve() { successful resolution and trackExposures enabled }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
