@@ -81,7 +81,7 @@ internal class DefaultInsightsOverlay(
             }
 
             fab = overlayView.findViewById(R.id.fab)
-            cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (tics/s)")
+            cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (ticks/s)")
             vmMemoryValue = overlayView.setupChartView(R.id.vital_mem, "MEM (mb)")
             nativeMemoryValue = overlayView.setupChartView(R.id.vital_native, "Native (mb)")
             threadsValue = overlayView.setupChartView(
