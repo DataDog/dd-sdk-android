@@ -24,6 +24,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
@@ -204,24 +205,22 @@ internal class FlagsStateManagerTest {
     @Test
     fun `M block updateState calls W addListener() { slow listener notification }`() {
         // Given
-        val oldState = FlagsClientState.NotReady
-        val stateNew = FlagsClientState.Ready
+        val initialState = FlagsClientState.NotReady
+        val updatedState = FlagsClientState.Ready
 
-        val receivedStates = mutableListOf<Pair<FlagsClientState, Long>>()
+        val receivedStates = CopyOnWriteArrayList<Pair<FlagsClientState, Long>>()
         val addListenerStarted = CountDownLatch(1)
         val addListenerSlowCallbackStarted = CountDownLatch(1)
 
         // Listener that is slow to process the initial state notification
         val slowListener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                synchronized(receivedStates) {
-                    receivedStates.add(newState to System.nanoTime())
-                }
+                receivedStates.add(newState to System.nanoTime())
 
                 // If this is the first notification (from addListener), be slow
-                if (newState == oldState) {
+                if (newState == initialState) {
                     addListenerSlowCallbackStarted.countDown()
-                    // Hold up the write lock by sleeping
+                    // Hold the read lock by sleeping, blocking updateState's write lock
                     Thread.sleep(10)
                 }
             }
@@ -230,12 +229,7 @@ internal class FlagsStateManagerTest {
         // When
         val addListenerThread = Thread {
             addListenerStarted.countDown()
-            // This will:
-            // 1. Acquire write lock
-            // 2. Read currentState (NotReady)
-            // 3. Call listener.onStateChanged(NotReady) - SLOW (sleeps 10ms)
-            // 4. Add listener to subscription
-            // 5. Release write lock
+            // addListener acquires read lock, blocking updateState's write lock
             testedManager.addListener(slowListener)
         }
 
@@ -243,7 +237,7 @@ internal class FlagsStateManagerTest {
             // Wait for addListener to start its slow callback
             addListenerSlowCallbackStarted.await()
             // Try to update state - this will BLOCK waiting for write lock
-            testedManager.updateState(stateNew)
+            testedManager.updateState(updatedState)
         }
 
         addListenerThread.start()
@@ -254,38 +248,36 @@ internal class FlagsStateManagerTest {
         updateStateThread.join(5000)
 
         // Then
-        synchronized(receivedStates) {
-            assertThat(receivedStates.map { it.first }).containsExactly(
-                oldState, // From addListener's initial notification (slow)
-                stateNew // From updateState (blocked until addListener completes)
-            )
+        assertThat(receivedStates.map { it.first }).containsExactly(
+            initialState, // From addListener's initial notification (slow)
+            updatedState // From updateState (blocked until addListener completes)
+        )
 
-            val oldStateTime = receivedStates[0].second
-            val newStateTime = receivedStates[1].second
+        val initialStateTime = receivedStates[0].second
+        val updatedStateTime = receivedStates[1].second
 
-            // updateState should have been delayed by at least the sleep time
-            assertThat(newStateTime - oldStateTime).isGreaterThan(10_000_000) // ~10ms in nanoseconds
-            assertThat(oldStateTime).isLessThan(newStateTime)
-        }
+        // updateState should have been delayed by at least the sleep time
+        assertThat(updatedStateTime - initialStateTime).isGreaterThan(10_000_000) // ~10ms in nanoseconds
+        assertThat(initialStateTime).isLessThan(updatedStateTime)
 
-        assertThat(testedManager.getCurrentState()).isEqualTo(stateNew)
+        assertThat(testedManager.getCurrentState()).isEqualTo(updatedState)
     }
 
     @Test
     fun `M not notify listener after removeListener returns W concurrent updateState`() {
         // Given
-        val stateNew = FlagsClientState.Ready
+        val updatedState = FlagsClientState.Ready
 
         val updateStateStarted = CountDownLatch(1)
         val slowCallbackStarted = CountDownLatch(1)
         val removeListenerCompleted = CountDownLatch(1)
 
-        val notificationsAfterRemove = mutableListOf<FlagsClientState>()
+        val notificationsAfterRemove = CopyOnWriteArrayList<FlagsClientState>()
 
         // Listener that is slow during updateState notification
         val slowListener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                if (newState == stateNew) {
+                if (newState == updatedState) {
                     slowCallbackStarted.countDown()
                     // Hold the write lock by sleeping
                     Thread.sleep(50)
@@ -298,9 +290,7 @@ internal class FlagsStateManagerTest {
             override fun onStateChanged(newState: FlagsClientState) {
                 // Only track notifications that happen after removeListener completed
                 if (removeListenerCompleted.count == 0L) {
-                    synchronized(notificationsAfterRemove) {
-                        notificationsAfterRemove.add(newState)
-                    }
+                    notificationsAfterRemove.add(newState)
                 }
             }
         }
@@ -312,7 +302,7 @@ internal class FlagsStateManagerTest {
         val updateStateThread = Thread {
             updateStateStarted.countDown()
             // This will hold the write lock while notifying slowListener
-            testedManager.updateState(stateNew)
+            testedManager.updateState(updatedState)
         }
 
         val removeListenerThread = Thread {
@@ -332,11 +322,9 @@ internal class FlagsStateManagerTest {
 
         // Then
         // After removeListener returns, no more notifications should be received
-        synchronized(notificationsAfterRemove) {
-            assertThat(notificationsAfterRemove).isEmpty()
-        }
+        assertThat(notificationsAfterRemove).isEmpty()
 
-        assertThat(testedManager.getCurrentState()).isEqualTo(stateNew)
+        assertThat(testedManager.getCurrentState()).isEqualTo(updatedState)
     }
 
     // endregion
