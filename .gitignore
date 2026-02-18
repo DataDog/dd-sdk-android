@@ -33,5 +33,6 @@ config/*
 gh_token
 sdk_classpath
 detekt_classpath
+detekt-cli-*-all.jar
 **/verification-metadata.xml
 !gradle/verification-metadata.xml
