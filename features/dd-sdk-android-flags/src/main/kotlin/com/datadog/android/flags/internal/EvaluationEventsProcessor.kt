@@ -7,9 +7,9 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -49,7 +49,6 @@ internal class EvaluationEventsProcessor(
     fun processEvaluation(
         flagKey: String,
         context: EvaluationContext,
-        service: String?,
         rumApplicationId: String?,
         rumViewName: String?,
         variantKey: String?,
@@ -61,7 +60,6 @@ internal class EvaluationEventsProcessor(
             timestamp = timeProvider.getDeviceTimestampMillis(),
             flagKey = flagKey,
             context = context,
-            service = service,
             rumApplicationId = rumApplicationId,
             rumViewName = rumViewName,
             variantKey = variantKey,
@@ -81,7 +79,7 @@ internal class EvaluationEventsProcessor(
             return
         }
 
-        val events: List<FlagEvaluation>
+        val events: List<EvaluationAggregationStats>
         try {
             events = aggregator.drain()
             reschedulePeriodicFlush()

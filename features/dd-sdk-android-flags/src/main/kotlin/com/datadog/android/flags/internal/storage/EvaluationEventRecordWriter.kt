@@ -11,7 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.flags.internal.EvaluationEventWriter
-import com.datadog.android.flags.model.FlagEvaluation
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
 
 /**
  * Persists serialized flag evaluation events to SDK Core storage.
@@ -20,14 +20,17 @@ import com.datadog.android.flags.model.FlagEvaluation
  * to the EVP intake endpoint by the SDK Core's upload mechanism.
  */
 internal class EvaluationEventRecordWriter(private val sdkCore: FeatureSdkCore) : EvaluationEventWriter {
-    override fun writeAll(events: List<FlagEvaluation>) {
+    override fun writeAll(events: List<EvaluationAggregationStats>) {
         if (events.isEmpty()) return
 
         sdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
-            ?.withWriteContext { _, writeScope ->
+            ?.withWriteContext { datadogContext, writeScope ->
                 writeScope { batchWriter ->
                     for (event in events) {
-                        val serializedRecord = event.toJson().toString().toByteArray(Charsets.UTF_8)
+                        val serializedRecord = event.toEvaluationEvent(datadogContext)
+                            .toJson()
+                            .toString()
+                            .toByteArray(Charsets.UTF_8)
                         val rawBatchEvent = RawBatchEvent(data = serializedRecord)
                         batchWriter.write(
                             event = rawBatchEvent,

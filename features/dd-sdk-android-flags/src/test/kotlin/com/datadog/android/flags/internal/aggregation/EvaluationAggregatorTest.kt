@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -58,14 +57,13 @@ internal class EvaluationAggregatorTest {
     @Test
     fun `M return drained events W record() { at threshold }`() {
         val aggregator = EvaluationAggregator(maxAggregations = 5)
-        var lastResult: List<FlagEvaluation> = emptyList()
+        var lastResult: List<EvaluationAggregationStats> = emptyList()
 
         repeat(5) { index ->
             lastResult = aggregator.record(
                 timestamp = fakeTimestamp,
                 flagKey = "flag-$index",
                 context = fakeContext,
-                service = null,
                 rumApplicationId = null,
                 rumViewName = null,
                 variantKey = fakeVariantKey,
@@ -77,7 +75,7 @@ internal class EvaluationAggregatorTest {
 
         assertThat(lastResult).isNotEmpty()
         assertThat(lastResult).hasSize(5)
-        assertThat(lastResult.map { it.flag.key }).containsExactlyInAnyOrder(
+        assertThat(lastResult.map { it.aggregationKey.flagKey }).containsExactlyInAnyOrder(
             "flag-0",
             "flag-1",
             "flag-2",
@@ -96,7 +94,6 @@ internal class EvaluationAggregatorTest {
                 timestamp = fakeTimestamp,
                 flagKey = "flag-$index",
                 context = fakeContext,
-                service = null,
                 rumApplicationId = null,
                 rumViewName = null,
                 variantKey = fakeVariantKey,
@@ -111,7 +108,6 @@ internal class EvaluationAggregatorTest {
             timestamp = fakeTimestamp,
             flagKey = "new-flag",
             context = fakeContext,
-            service = null,
             rumApplicationId = null,
             rumViewName = null,
             variantKey = fakeVariantKey,
@@ -135,7 +131,7 @@ internal class EvaluationAggregatorTest {
 
         val events = testedAggregator.drain()
         assertThat(events).hasSize(1)
-        assertThat(events.first().evaluationCount).isEqualTo(10L)
+        assertThat(events.first().count).isEqualTo(10)
     }
 
     @Test
@@ -190,8 +186,8 @@ internal class EvaluationAggregatorTest {
 
         val events = testedAggregator.drain()
         assertThat(events).hasSize(1)
-        assertThat(events.first().evaluationCount).isEqualTo(3L)
-        assertThat(events.first().error?.message).isEqualTo("msg3")
+        assertThat(events.first().count).isEqualTo(3)
+        assertThat(events.first().errorMessage).isEqualTo("msg3")
     }
 
     @Test
@@ -252,7 +248,7 @@ internal class EvaluationAggregatorTest {
         val events = testedAggregator.drain()
 
         assertThat(events).hasSize(10)
-        assertThat(events.map { it.flag.key }).containsExactlyInAnyOrder(
+        assertThat(events.map { it.aggregationKey.flagKey }).containsExactlyInAnyOrder(
             "flag-0", "flag-1", "flag-2", "flag-3", "flag-4",
             "flag-5", "flag-6", "flag-7", "flag-8", "flag-9"
         )
@@ -275,7 +271,7 @@ internal class EvaluationAggregatorTest {
 
         val events = testedAggregator.drain()
         assertThat(events).hasSize(1)
-        assertThat(events.first().evaluationCount).isEqualTo((threadCount * recordsPerThread).toLong())
+        assertThat(events.first().count).isEqualTo(threadCount * recordsPerThread)
     }
 
     @Test
@@ -283,7 +279,7 @@ internal class EvaluationAggregatorTest {
         val threadCount = 10
         val keysPerThread = 50
         val expectedTotal = threadCount * keysPerThread
-        val allDrained = CopyOnWriteArrayList<FlagEvaluation>()
+        val allDrained = CopyOnWriteArrayList<EvaluationAggregationStats>()
 
         runConcurrently(threadCount) { threadId ->
             repeat(keysPerThread) { index ->
@@ -309,7 +305,7 @@ internal class EvaluationAggregatorTest {
 
         val startLatch = CountDownLatch(1)
         val finishLatch = CountDownLatch(recordThreads + 1)
-        val allDrained = CopyOnWriteArrayList<Long>()
+        val allDrained = CopyOnWriteArrayList<Int>()
 
         val recorders = (1..recordThreads).map { threadId ->
             Thread {
@@ -317,7 +313,7 @@ internal class EvaluationAggregatorTest {
                 repeat(recordsPerThread) { index ->
                     val drained = record(flagKey = "thread-$threadId-flag-$index")
                     if (drained.isNotEmpty()) {
-                        allDrained.addAll(drained.map { it.evaluationCount })
+                        allDrained.addAll(drained.map { it.count })
                     }
                 }
                 finishLatch.countDown()
@@ -328,7 +324,7 @@ internal class EvaluationAggregatorTest {
             startLatch.await()
             repeat(drainCount) {
                 Thread.sleep(1)
-                allDrained.addAll(testedAggregator.drain().map { it.evaluationCount })
+                allDrained.addAll(testedAggregator.drain().map { it.count })
             }
             finishLatch.countDown()
         }
@@ -338,7 +334,7 @@ internal class EvaluationAggregatorTest {
         startLatch.countDown()
         finishLatch.await()
 
-        allDrained.addAll(testedAggregator.drain().map { it.evaluationCount })
+        allDrained.addAll(testedAggregator.drain().map { it.count })
 
         assertThat(allDrained.sum()).isEqualTo(expectedTotal.toLong())
     }
@@ -354,11 +350,10 @@ internal class EvaluationAggregatorTest {
         variantKey: String? = fakeVariantKey,
         errorCode: String? = null,
         errorMessage: String? = null
-    ): List<FlagEvaluation> = testedAggregator.record(
+    ): List<EvaluationAggregationStats> = testedAggregator.record(
         timestamp = timestamp,
         flagKey = flagKey,
         context = context,
-        service = null,
         rumApplicationId = null,
         rumViewName = null,
         variantKey = variantKey,

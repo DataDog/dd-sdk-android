@@ -6,9 +6,11 @@
 
 package com.datadog.android.flags.internal.aggregation
 
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -21,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class AggregationStatsTest {
+internal class EvaluationAggregationStatsTest {
 
     @LongForgery(min = 1000000L)
     var fakeFirstTimestamp = 0L
@@ -45,21 +47,21 @@ internal class AggregationStatsTest {
     lateinit var fakeFlagName: String
 
     @StringForgery
-    lateinit var fakeService: String
-
-    @StringForgery
     lateinit var fakeApplicationId: String
 
     @StringForgery
     lateinit var fakeViewName: String
 
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
     private lateinit var fakeContext: EvaluationContext
-    private lateinit var fakeAggregationKey: AggregationKey
+    private lateinit var fakeEvaluationAggregationKey: EvaluationAggregationKey
 
     @BeforeEach
     fun `set up`() {
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        fakeAggregationKey = AggregationKey(
+        fakeEvaluationAggregationKey = EvaluationAggregationKey(
             flagKey = fakeFlagName,
             variantKey = fakeVariantKey,
             allocationKey = fakeAllocationKey,
@@ -81,7 +83,7 @@ internal class AggregationStatsTest {
         val stats = createStats()
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.timestamp).isEqualTo(fakeFirstTimestamp)
@@ -96,7 +98,7 @@ internal class AggregationStatsTest {
         assertThat(event.error).isNull()
         assertThat(event.targetingRule).isNull()
         assertThat(event.context).isNotNull()
-        assertThat(event.context?.dd?.service).isEqualTo(fakeService)
+        assertThat(event.context?.dd?.service).isEqualTo(fakeDatadogContext.service)
         assertThat(event.context?.dd?.rum?.application?.id).isEqualTo(fakeApplicationId)
         assertThat(event.context?.dd?.rum?.view?.url).isEqualTo(fakeViewName)
     }
@@ -104,11 +106,11 @@ internal class AggregationStatsTest {
     @Test
     fun `M set runtime default true W toEvaluationEvent() { null variantKey }`() {
         // Given - null variantKey indicates runtime default was used
-        val keyWithoutVariant = fakeAggregationKey.copy(variantKey = null, allocationKey = null)
-        val stats = createStats(aggregationKey = keyWithoutVariant)
+        val keyWithoutVariant = fakeEvaluationAggregationKey.copy(variantKey = null, allocationKey = null)
+        val stats = createStats(evaluationAggregationKey = keyWithoutVariant)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.runtimeDefaultUsed).isTrue()
@@ -120,18 +122,18 @@ internal class AggregationStatsTest {
     fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`(forge: Forge) {
         // Given - ERROR reason (reason = null, no flag data)
         val errorMessage = forge.anAlphabeticalString()
-        val keyWithError = fakeAggregationKey.copy(
+        val keyWithError = fakeEvaluationAggregationKey.copy(
             variantKey = null,
             allocationKey = null,
             errorCode = "FLAG_NOT_FOUND"
         )
         val stats = createStats(
-            aggregationKey = keyWithError,
+            evaluationAggregationKey = keyWithError,
             errorMessage = errorMessage
         )
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.runtimeDefaultUsed).isTrue()
@@ -144,7 +146,7 @@ internal class AggregationStatsTest {
         val stats = createStats()
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.runtimeDefaultUsed).isFalse()
@@ -156,7 +158,7 @@ internal class AggregationStatsTest {
         val stats = createStats() // fakeAggregationKey has non-null variantKey
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.runtimeDefaultUsed).isFalse()
@@ -169,7 +171,7 @@ internal class AggregationStatsTest {
         val stats = createStats(errorMessage = errorMessage)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.error?.message).isEqualTo(errorMessage)
@@ -181,7 +183,7 @@ internal class AggregationStatsTest {
         val stats = createStats(errorMessage = null)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.error).isNull()
@@ -193,22 +195,22 @@ internal class AggregationStatsTest {
         val stats = createStats()
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
-        assertThat(event.variant?.key).isEqualTo(fakeAggregationKey.variantKey)
-        assertThat(event.allocation?.key).isEqualTo(fakeAggregationKey.allocationKey)
-        assertThat(event.targetingKey).isEqualTo(fakeAggregationKey.targetingKey)
+        assertThat(event.variant?.key).isEqualTo(fakeEvaluationAggregationKey.variantKey)
+        assertThat(event.allocation?.key).isEqualTo(fakeEvaluationAggregationKey.allocationKey)
+        assertThat(event.targetingKey).isEqualTo(fakeEvaluationAggregationKey.targetingKey)
     }
 
     @Test
     fun `M handle null variant W toEvaluationEvent() { key has null variant }`() {
         // Given
-        val keyWithNullVariant = fakeAggregationKey.copy(variantKey = null)
-        val stats = createStats(aggregationKey = keyWithNullVariant)
+        val keyWithNullVariant = fakeEvaluationAggregationKey.copy(variantKey = null)
+        val stats = createStats(evaluationAggregationKey = keyWithNullVariant)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.variant).isNull()
@@ -217,11 +219,11 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle null allocation W toEvaluationEvent() { key has null allocation }`() {
         // Given
-        val keyWithNullAllocation = fakeAggregationKey.copy(allocationKey = null)
-        val stats = createStats(aggregationKey = keyWithNullAllocation)
+        val keyWithNullAllocation = fakeEvaluationAggregationKey.copy(allocationKey = null)
+        val stats = createStats(evaluationAggregationKey = keyWithNullAllocation)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.allocation).isNull()
@@ -233,7 +235,7 @@ internal class AggregationStatsTest {
         val stats = createStats()
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.timestamp).isEqualTo(fakeFirstTimestamp)
@@ -246,7 +248,7 @@ internal class AggregationStatsTest {
         val stats = createStats(count = 42)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.evaluationCount).isEqualTo(42L)
@@ -258,7 +260,7 @@ internal class AggregationStatsTest {
         val stats = createStats(rumApplicationId = null)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.context?.dd?.rum).isNull()
@@ -267,11 +269,11 @@ internal class AggregationStatsTest {
     @Test
     fun `M handle null view name W toEvaluationEvent() { RUM app ID present }`() {
         // Given
-        val keyWithoutView = fakeAggregationKey.copy(viewName = null)
-        val stats = createStats(aggregationKey = keyWithoutView)
+        val keyWithoutView = fakeEvaluationAggregationKey.copy(viewName = null)
+        val stats = createStats(evaluationAggregationKey = keyWithoutView)
 
         // When
-        val event = stats.toEvaluationEvent()
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
         assertThat(event.context?.dd?.rum?.application?.id).isEqualTo(fakeApplicationId)
@@ -326,21 +328,19 @@ internal class AggregationStatsTest {
     // region Helpers
 
     private fun createStats(
-        aggregationKey: AggregationKey = fakeAggregationKey,
+        evaluationAggregationKey: EvaluationAggregationKey = fakeEvaluationAggregationKey,
         count: Int = fakeCount,
         firstEvaluation: Long = fakeFirstTimestamp,
         lastEvaluation: Long = fakeLastTimestamp,
         context: EvaluationContext = fakeContext,
-        service: String? = fakeService,
         rumApplicationId: String? = fakeApplicationId,
         errorMessage: String? = null
-    ): AggregationStats = AggregationStats(
-        aggregationKey = aggregationKey,
+    ): EvaluationAggregationStats = EvaluationAggregationStats(
+        aggregationKey = evaluationAggregationKey,
         count = count,
         firstEvaluation = firstEvaluation,
         lastEvaluation = lastEvaluation,
         context = context,
-        service = service,
         rumApplicationId = rumApplicationId,
         errorMessage = errorMessage
     )

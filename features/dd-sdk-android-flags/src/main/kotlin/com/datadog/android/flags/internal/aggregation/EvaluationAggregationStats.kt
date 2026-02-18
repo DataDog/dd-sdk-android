@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.aggregation
 
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
 
@@ -17,29 +18,27 @@ import com.datadog.android.flags.model.FlagEvaluation
  * @param firstEvaluation timestamp of the earliest evaluation
  * @param lastEvaluation timestamp of the latest evaluation
  * @param context the evaluation context
- * @param service the service name from DatadogContext
  * @param rumApplicationId the RUM application ID (null if RUM not active)
  * @param errorMessage the most recent error message (null if no error)
  */
-internal data class AggregationStats(
-    private val aggregationKey: AggregationKey,
+internal data class EvaluationAggregationStats(
+    internal val aggregationKey: EvaluationAggregationKey,
     internal val count: Int,
     internal val firstEvaluation: Long,
     internal val lastEvaluation: Long,
     private val context: EvaluationContext,
-    private val service: String?,
     private val rumApplicationId: String?,
     internal val errorMessage: String?
 ) {
     /**
      * Converts the aggregated statistics to a [FlagEvaluation].
      */
-    fun toEvaluationEvent(): FlagEvaluation {
+    fun toEvaluationEvent(datadogContext: DatadogContext): FlagEvaluation {
         // Build context with Datadog-specific information
         val eventContext = FlagEvaluation.Context(
             evaluation = null, // Evaluation context reserved for future use
             dd = FlagEvaluation.Dd(
-                service = service,
+                service = datadogContext.service,
                 rum = rumApplicationId?.let { appId ->
                     FlagEvaluation.Rum(
                         application = FlagEvaluation.Application(id = appId),

@@ -22,7 +22,7 @@ package com.datadog.android.flags.internal.aggregation
  *
  * Context aggregation is reserved for future use and not implemented.
  */
-internal data class AggregationKey(
+internal data class EvaluationAggregationKey(
     val flagKey: String,
     val variantKey: String?,
     val allocationKey: String?,

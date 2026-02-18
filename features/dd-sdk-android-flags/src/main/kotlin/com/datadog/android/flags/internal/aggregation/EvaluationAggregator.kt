@@ -18,7 +18,7 @@ import kotlin.concurrent.withLock
  * ensuring exclusive access during [drain].
  */
 internal class EvaluationAggregator(private val maxAggregations: Int) {
-    private var aggregationMap = mutableMapOf<AggregationKey, AggregationStats>()
+    private var aggregationMap = mutableMapOf<EvaluationAggregationKey, EvaluationAggregationStats>()
 
     private val mapLock = ReentrantLock()
 
@@ -32,15 +32,14 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
         timestamp: Long,
         flagKey: String,
         context: EvaluationContext,
-        service: String?,
         rumApplicationId: String?,
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
         errorMessage: String?
-    ): List<FlagEvaluation> {
-        val key = AggregationKey(
+    ): List<EvaluationAggregationStats> {
+        val key = EvaluationAggregationKey(
             flagKey = flagKey,
             variantKey = variantKey,
             allocationKey = allocationKey,
@@ -51,13 +50,12 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
 
         val drained = mapLock.withLock {
             @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
-            val existing = aggregationMap.get(key) ?: AggregationStats(
+            val existing = aggregationMap.get(key) ?: EvaluationAggregationStats(
                 aggregationKey = key,
                 count = 0,
                 firstEvaluation = timestamp,
                 lastEvaluation = timestamp,
                 context = context,
-                service = service,
                 rumApplicationId = rumApplicationId,
                 errorMessage = errorMessage
             )
@@ -75,7 +73,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()
         }
 
-        return drained.map { it.value.toEvaluationEvent() }
+        return drained.values.toList()
     }
 
     /**
@@ -84,9 +82,9 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
      *
      * @return list of aggregated events, or empty list if none
      */
-    fun drain(): List<FlagEvaluation> {
+    fun drain(): List<EvaluationAggregationStats> {
         val drained = mapLock.withLock { drainAggregationStats() }
-        return drained.map { it.value.toEvaluationEvent() }
+        return drained.values.toList()
     }
 
     /**
@@ -95,7 +93,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
      *
      * @return the old map, or null if empty
      */
-    private fun drainAggregationStats(): Map<AggregationKey, AggregationStats> = mapLock.withLock {
+    private fun drainAggregationStats(): Map<EvaluationAggregationKey, EvaluationAggregationStats> = mapLock.withLock {
         val toDrain = aggregationMap
         aggregationMap = mutableMapOf()
         toDrain
