@@ -13,7 +13,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.internal.net.EvaluationsRequestFactory
@@ -37,7 +36,7 @@ internal class EvaluationsFeature(
     /**
      * Cached Datadog context information for evaluation events.
      */
-    private data class DDContext(val service: String?, val rumApplicationId: String?, val rumViewName: String?)
+    private data class RumContext(val rumApplicationId: String?, val rumViewName: String?)
 
     internal val initialized = AtomicBoolean(false)
 
@@ -55,7 +54,7 @@ internal class EvaluationsFeature(
      * Updated when RUM context changes via [onContextUpdate].
      */
     @Volatile
-    private var ddContext: DDContext? = null
+    private var rumContext: RumContext? = null
 
     // region Feature
 
@@ -104,7 +103,7 @@ internal class EvaluationsFeature(
         scheduledExecutor?.shutdown()
         scheduledExecutor = null
 
-        ddContext = null
+        rumContext = null
         initialized.set(false)
     }
 
@@ -114,12 +113,7 @@ internal class EvaluationsFeature(
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
-            val currentContext = ddContext
-            val service = currentContext?.service
-                ?: (sdkCore as? InternalSdkCore)?.getDatadogContext()?.service
-
-            ddContext = DDContext(
-                service = service,
+            rumContext = RumContext(
                 rumApplicationId = context[RUM_APPLICATION_ID] as? String,
                 rumViewName = context[RUM_VIEW_NAME] as? String
             )
@@ -142,12 +136,11 @@ internal class EvaluationsFeature(
         errorMessage: String?
     ) {
         val processor = evaluationProcessor ?: return
-        val currentDdContext = ddContext
+        val currentDdContext = rumContext
 
         processor.processEvaluation(
             flagKey = flagKey,
             context = context,
-            service = currentDdContext?.service,
             rumApplicationId = currentDdContext?.rumApplicationId,
             rumViewName = currentDdContext?.rumViewName,
             variantKey = variantKey,

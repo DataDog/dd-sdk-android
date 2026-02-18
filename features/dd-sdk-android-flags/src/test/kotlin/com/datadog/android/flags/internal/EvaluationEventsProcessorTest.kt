@@ -7,9 +7,9 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagEvaluation
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
@@ -85,13 +85,11 @@ internal class EvaluationEventsProcessorTest {
     private lateinit var testedProcessor: EvaluationEventsProcessor
     private lateinit var testedAggregator: EvaluationAggregator
     private lateinit var fakeContext: EvaluationContext
-    private lateinit var fakeService: String
     private lateinit var fakeApplicationId: String
     private lateinit var fakeViewName: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeService = forge.anAlphabeticalString()
         fakeApplicationId = forge.anAlphabeticalString()
         fakeViewName = forge.anAlphabeticalString()
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
@@ -119,7 +117,7 @@ internal class EvaluationEventsProcessorTest {
 
         val events = captureWrittenEvents()
         assertThat(events).hasSize(1)
-        assertThat(events.first().flag.key).isEqualTo(fakeFlagKey)
+        assertThat(events.first().aggregationKey.flagKey).isEqualTo(fakeFlagKey)
     }
 
     @Test
@@ -139,9 +137,12 @@ internal class EvaluationEventsProcessorTest {
             processor.processEvaluation(
                 fakeFlagKey,
                 EvaluationContext(targetingKey = "user-$index"),
-                fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey,
-                null, null
+                fakeApplicationId,
+                fakeViewName,
+                fakeVariantKey,
+                fakeAllocationKey,
+                null,
+                null
             )
         }
 
@@ -168,7 +169,7 @@ internal class EvaluationEventsProcessorTest {
         processEval()
         testedProcessor.flush()
 
-        val captor = argumentCaptor<List<FlagEvaluation>>()
+        val captor = argumentCaptor<List<EvaluationAggregationStats>>()
         verify(mockWriter, times(2)).writeAll(captor.capture())
         assertThat(captor.allValues.flatten()).hasSize(2)
     }
@@ -179,8 +180,14 @@ internal class EvaluationEventsProcessorTest {
         val processor = createSchedulingEnabledProcessor()
 
         processor.processEvaluation(
-            fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
-            fakeVariantKey, fakeAllocationKey, null, null
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
         )
         processor.flush()
 
@@ -199,8 +206,14 @@ internal class EvaluationEventsProcessorTest {
         val initialCount = scheduleCount
 
         processor.processEvaluation(
-            fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
-            fakeVariantKey, fakeAllocationKey, null, null
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
         )
         processor.flush()
 
@@ -324,7 +337,7 @@ internal class EvaluationEventsProcessorTest {
 
         verify(mockScheduledExecutor).shutdown()
         val events = captureWrittenEvents()
-        assertThat(events.first().flag.key).isEqualTo(fakeFlagKey)
+        assertThat(events.first().aggregationKey.flagKey).isEqualTo(fakeFlagKey)
     }
 
     @Test
@@ -412,7 +425,7 @@ internal class EvaluationEventsProcessorTest {
 
         val events = captureWrittenEvents()
         assertThat(events).hasSize(1)
-        assertThat(events.first().evaluationCount).isEqualTo((threadCount * executionsPerThread).toLong())
+        assertThat(events.first().count).isEqualTo((threadCount * executionsPerThread).toLong())
     }
 
     @Test
@@ -425,9 +438,12 @@ internal class EvaluationEventsProcessorTest {
                 testedProcessor.processEvaluation(
                     fakeFlagKey,
                     EvaluationContext(targetingKey = "thread-$threadIndex-exec-$execIndex"),
-                    fakeService, fakeApplicationId, fakeViewName,
-                    fakeVariantKey, fakeAllocationKey,
-                    null, null
+                    fakeApplicationId,
+                    fakeViewName,
+                    fakeVariantKey,
+                    fakeAllocationKey,
+                    null,
+                    null
                 )
             }
         }
@@ -454,9 +470,12 @@ internal class EvaluationEventsProcessorTest {
                     testedProcessor.processEvaluation(
                         fakeFlagKey,
                         EvaluationContext(targetingKey = "user-$threadIndex-$execIndex"),
-                        fakeService, fakeApplicationId, fakeViewName,
-                        fakeVariantKey, fakeAllocationKey,
-                        null, null
+                        fakeApplicationId,
+                        fakeViewName,
+                        fakeVariantKey,
+                        fakeAllocationKey,
+                        null,
+                        null
                     )
                 }
                 finishLatch.countDown()
@@ -479,7 +498,7 @@ internal class EvaluationEventsProcessorTest {
         finishLatch.await()
         testedProcessor.flush()
 
-        val captor = argumentCaptor<List<FlagEvaluation>>()
+        val captor = argumentCaptor<List<EvaluationAggregationStats>>()
         verify(mockWriter, atLeast(1)).writeAll(captor.capture())
         assertThat(captor.allValues.sumOf { it.size }).isEqualTo(processingThreads * executionsPerThread)
     }
@@ -491,7 +510,7 @@ internal class EvaluationEventsProcessorTest {
         var writeCount = 0
 
         val slowWriter = object : EvaluationEventWriter {
-            override fun writeAll(events: List<FlagEvaluation>) {
+            override fun writeAll(events: List<EvaluationAggregationStats>) {
                 writeCount++
                 writeStarted.countDown()
                 blockWrite.await()
@@ -508,8 +527,14 @@ internal class EvaluationEventsProcessorTest {
         )
 
         processor.processEvaluation(
-            fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
-            fakeVariantKey, fakeAllocationKey, null, null
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
         )
 
         val flushThread = Thread { processor.flush() }
@@ -530,10 +555,10 @@ internal class EvaluationEventsProcessorTest {
     fun `M not lose events W stop() { flush in progress }`() {
         val writeStarted = CountDownLatch(1)
         val continueWrite = CountDownLatch(1)
-        val writtenEvents = CopyOnWriteArrayList<FlagEvaluation>()
+        val writtenEvents = CopyOnWriteArrayList<EvaluationAggregationStats>()
 
         val slowWriter = object : EvaluationEventWriter {
-            override fun writeAll(events: List<FlagEvaluation>) {
+            override fun writeAll(events: List<EvaluationAggregationStats>) {
                 if (writtenEvents.isEmpty()) {
                     writeStarted.countDown()
                     continueWrite.await()
@@ -555,9 +580,14 @@ internal class EvaluationEventsProcessorTest {
 
         repeat(10) { index ->
             processor.processEvaluation(
-                fakeFlagKey, EvaluationContext(targetingKey = "initial-$index"),
-                fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, null, null
+                fakeFlagKey,
+                EvaluationContext(targetingKey = "initial-$index"),
+                fakeApplicationId,
+                fakeViewName,
+                fakeVariantKey,
+                fakeAllocationKey,
+                null,
+                null
             )
         }
 
@@ -567,9 +597,14 @@ internal class EvaluationEventsProcessorTest {
 
         repeat(5) { index ->
             processor.processEvaluation(
-                fakeFlagKey, EvaluationContext(targetingKey = "during-flush-$index"),
-                fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, null, null
+                fakeFlagKey,
+                EvaluationContext(targetingKey = "during-flush-$index"),
+                fakeApplicationId,
+                fakeViewName,
+                fakeVariantKey,
+                fakeAllocationKey,
+                null,
+                null
             )
         }
 
@@ -589,8 +624,8 @@ internal class EvaluationEventsProcessorTest {
         val totalWritten = AtomicInteger(0)
 
         val trackingWriter = object : EvaluationEventWriter {
-            override fun writeAll(events: List<FlagEvaluation>) {
-                totalWritten.addAndGet(events.sumOf { it.evaluationCount.toInt() })
+            override fun writeAll(events: List<EvaluationAggregationStats>) {
+                totalWritten.addAndGet(events.sumOf { it.count })
             }
         }
 
@@ -617,8 +652,14 @@ internal class EvaluationEventsProcessorTest {
                 startLatch.await()
                 repeat(evaluationsPerThread) {
                     processor.processEvaluation(
-                        fakeFlagKey, fakeContext, fakeService, fakeApplicationId, fakeViewName,
-                        fakeVariantKey, fakeAllocationKey, null, null
+                        fakeFlagKey,
+                        fakeContext,
+                        fakeApplicationId,
+                        fakeViewName,
+                        fakeVariantKey,
+                        fakeAllocationKey,
+                        null,
+                        null
                     )
                 }
                 finishLatch.countDown()
@@ -653,7 +694,7 @@ internal class EvaluationEventsProcessorTest {
         val firstCall = AtomicBoolean(true)
 
         val slowWriter = object : EvaluationEventWriter {
-            override fun writeAll(events: List<FlagEvaluation>) {
+            override fun writeAll(events: List<EvaluationAggregationStats>) {
                 val isFirst = firstCall.compareAndSet(true, false)
                 writeCount.addAndGet(events.size)
                 if (isFirst) {
@@ -674,9 +715,14 @@ internal class EvaluationEventsProcessorTest {
 
         repeat(50) { index ->
             processor.processEvaluation(
-                fakeFlagKey, EvaluationContext(targetingKey = "initial-$index"),
-                fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, null, null
+                fakeFlagKey,
+                EvaluationContext(targetingKey = "initial-$index"),
+                fakeApplicationId,
+                fakeViewName,
+                fakeVariantKey,
+                fakeAllocationKey,
+                null,
+                null
             )
         }
 
@@ -690,9 +736,14 @@ internal class EvaluationEventsProcessorTest {
 
         repeat(25) { index ->
             processor.processEvaluation(
-                fakeFlagKey, EvaluationContext(targetingKey = "during-flush-$index"),
-                fakeService, fakeApplicationId, fakeViewName,
-                fakeVariantKey, fakeAllocationKey, null, null
+                fakeFlagKey,
+                EvaluationContext(targetingKey = "during-flush-$index"),
+                fakeApplicationId,
+                fakeViewName,
+                fakeVariantKey,
+                fakeAllocationKey,
+                null,
+                null
             )
         }
 
@@ -729,15 +780,21 @@ internal class EvaluationEventsProcessorTest {
         errorMessage: String? = null
     ) {
         testedProcessor.processEvaluation(
-            flagKey, context, fakeService, fakeApplicationId, fakeViewName,
-            variantKey, allocationKey, errorCode, errorMessage
+            flagKey,
+            context,
+            fakeApplicationId,
+            fakeViewName,
+            variantKey,
+            allocationKey,
+            errorCode,
+            errorMessage
         )
     }
 
-    private fun captureWrittenEvents(): List<FlagEvaluation> {
-        val captor = argumentCaptor<List<FlagEvaluation>>()
+    private fun captureWrittenEvents(): List<EvaluationAggregationStats> {
+        val captor = argumentCaptor<List<EvaluationAggregationStats>>()
         verify(mockWriter).writeAll(captor.capture())
-        return captor.firstValue
+        return captor.allValues.flatten()
     }
 
     private fun runConcurrently(threadCount: Int, action: (Int) -> Unit) {

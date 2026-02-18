@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.internal
 
-import com.datadog.android.flags.model.FlagEvaluation
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -32,5 +32,5 @@ internal interface EvaluationEventWriter {
      *
      * @param events the evaluation events to write to storage
      */
-    fun writeAll(events: List<FlagEvaluation>)
+    fun writeAll(events: List<EvaluationAggregationStats>)
 }

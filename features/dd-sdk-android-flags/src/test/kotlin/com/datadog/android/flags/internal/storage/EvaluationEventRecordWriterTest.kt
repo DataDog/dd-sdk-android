@@ -14,7 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.flags.model.FlagEvaluation
+import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -29,7 +29,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -48,6 +47,9 @@ internal class EvaluationEventRecordWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
     private lateinit var testedWriter: EvaluationEventRecordWriter
 
     @BeforeEach
@@ -59,19 +61,14 @@ internal class EvaluationEventRecordWriterTest {
 
     @Test
     fun `M write all events to storage W writeAll() { multiple events }`(
-        @Forgery event1: FlagEvaluation,
-        @Forgery event2: FlagEvaluation,
-        @Forgery event3: FlagEvaluation
+        @Forgery events: List<EvaluationAggregationStats>
     ) {
         // Given
-        val events = listOf(event1, event2, event3)
-
         whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(mockFeature)
         whenever(mockFeature.withWriteContext(any(), any()))
             .thenAnswer { invocation ->
                 val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-                val mockContext = mock<DatadogContext>()
-                callback.invoke(mockContext) { writerScope ->
+                callback.invoke(fakeDatadogContext) { writerScope ->
                     writerScope.invoke(mockEventBatchWriter)
                 }
             }
@@ -79,25 +76,21 @@ internal class EvaluationEventRecordWriterTest {
         // When
         testedWriter.writeAll(events)
 
-        // Then - all 3 events should be written
+        // Then
         val eventCaptor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter, times(3)).write(
+        verify(mockEventBatchWriter, times(events.size)).write(
             event = eventCaptor.capture(),
             batchMetadata = isNull(),
             eventType = eq(EventType.DEFAULT)
         )
 
-        // Verify each event was serialized correctly
         val capturedEvents = eventCaptor.allValues
-        assertThat(capturedEvents).hasSize(3)
+        assertThat(capturedEvents).hasSize(events.size)
 
-        val expectedJson1 = event1.toJson().toString()
-        val expectedJson2 = event2.toJson().toString()
-        val expectedJson3 = event3.toJson().toString()
-
-        assertThat(String(capturedEvents[0].data, Charsets.UTF_8)).isEqualTo(expectedJson1)
-        assertThat(String(capturedEvents[1].data, Charsets.UTF_8)).isEqualTo(expectedJson2)
-        assertThat(String(capturedEvents[2].data, Charsets.UTF_8)).isEqualTo(expectedJson3)
+        events.withIndex().forEach {
+            val expectedJson = events[it.index].toEvaluationEvent(fakeDatadogContext).toJson().toString()
+            assertThat(String(capturedEvents[it.index].data, Charsets.UTF_8)).isEqualTo(expectedJson)
+        }
     }
 
     @Test
@@ -105,24 +98,22 @@ internal class EvaluationEventRecordWriterTest {
         // When
         testedWriter.writeAll(emptyList())
 
-        // Then - should not interact with SDK Core at all
+        // Then
         verifyNoInteractions(mockSdkCore)
         verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test
     fun `M do nothing W writeAll() { feature not available }`(
-        @Forgery event1: FlagEvaluation,
-        @Forgery event2: FlagEvaluation
+        @Forgery events: List<EvaluationAggregationStats>
     ) {
         // Given
-        val events = listOf(event1, event2)
         whenever(mockSdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(null)
 
         // When
         testedWriter.writeAll(events)
 
-        // Then - should not write anything
+        // Then
         verify(mockSdkCore).getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
         verifyNoInteractions(mockEventBatchWriter)
     }

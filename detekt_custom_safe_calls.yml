@@ -769,6 +769,7 @@ datadog:
       - "kotlin.collections.Collection.forEach(kotlin.Function1)"
       - "kotlin.collections.Collection.isNotEmpty()"
       - "kotlin.collections.Collection.sumOf(kotlin.Function1)"
+      - "kotlin.collections.Collection.toList()"
       - "kotlin.collections.Collection.withIndex()"
       - "kotlin.collections.HashMap()"
       - "kotlin.collections.HashSet()"
