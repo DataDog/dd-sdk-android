@@ -1,0 +1,20 @@
+logs:
+  - id: inv_negative_difference
+    message: "[ViewNetworkSettledMetric] The difference between the last interaction and the current view is negative for viewId:%s"
+    type: log
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      view_id:
+        type: string
+
+  - id: inv_view_not_created
+    message: "[ViewNetworkSettledMetric] The view was not yet created for this viewId:%s"
+    type: log
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      view_id:
+        type: string

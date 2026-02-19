@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.metric.interactiontonextview
 
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
@@ -21,6 +22,7 @@ internal class InteractionToNextViewMetricResolver(
     private val ingestionValidator: InteractionIngestionValidator = ActionTypeInteractionValidator(),
     private val lastInteractionIdentifier: LastInteractionIdentifier? = TimeBasedInteractionIdentifier()
 ) {
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
     private val lastInteractions = LinkedHashMap<String, InternalInteractionContext>()
     private val lastViewCreatedTimestamps = LinkedHashMap<String, Long>()
 
@@ -57,14 +59,7 @@ internal class InteractionToNextViewMetricResolver(
             if (difference > 0) {
                 return difference
             } else {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    {
-                        "[ViewNetworkSettledMetric] The difference between the last interaction " +
-                            "and the current view is negative for viewId:$viewId"
-                    }
-                )
+                logger.logInvNegativeDifference(viewId = viewId)
                 return null
             }
         }
@@ -123,11 +118,7 @@ internal class InteractionToNextViewMetricResolver(
     private fun resolveCurrentViewCreationTimestamp(viewId: String): Long? {
         val currentViewCreationTimestamp = lastViewCreatedTimestamps[viewId]
         if (currentViewCreationTimestamp == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "[ViewNetworkSettledMetric] The view was not yet created for this viewId:$viewId" }
-            )
+            logger.logInvViewNotCreated(viewId = viewId)
         }
         return currentViewCreationTimestamp
     }
