@@ -72,3 +72,10 @@ logs:
                   - disabled
           instrumentation_type:
             type: string
+
+  - id: view_ended_sent_twice
+    message: "Trying to send 'view ended' more than once"
+    type: log
+    level: warn
+    targets:
+      - telemetry

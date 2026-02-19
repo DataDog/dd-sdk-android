@@ -6,7 +6,6 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
@@ -29,11 +28,7 @@ internal class ViewEndedMetricDispatcher(
 
     override fun sendViewEnded(invState: ViewInitializationMetricsState, tnsState: ViewInitializationMetricsState) {
         if (metricSent) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                target = Target.TELEMETRY,
-                messageBuilder = { "Trying to send 'view ended' more than once" }
-            )
+            logger.logViewEndedSentTwice()
             return
         }
 
