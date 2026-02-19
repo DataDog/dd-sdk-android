@@ -46,6 +46,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -174,74 +175,33 @@ internal class EvaluationEventsProcessorTest {
         assertThat(captor.allValues.flatten()).hasSize(2)
     }
 
-    @Test
-    fun `M cancel scheduled future W flush()`() {
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
-        val processor = createSchedulingEnabledProcessor()
-
-        processor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeApplicationId,
-            fakeViewName,
-            fakeVariantKey,
-            fakeAllocationKey,
-            null,
-            null
-        )
-        processor.flush()
-
-        verify(mockScheduledFuture, atLeastOnce()).cancel(false)
-    }
-
-    @Test
-    fun `M reschedule W flush() { periodic flush enabled }`() {
-        var scheduleCount = 0
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
-            scheduleCount++
-            mockScheduledFuture
-        }
-
-        val processor = createSchedulingEnabledProcessor()
-        val initialCount = scheduleCount
-
-        processor.processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeApplicationId,
-            fakeViewName,
-            fakeVariantKey,
-            fakeAllocationKey,
-            null,
-            null
-        )
-        processor.flush()
-
-        assertThat(scheduleCount).isGreaterThan(initialCount)
-    }
-
     // endregion
 
-    // region reschedulePeriodicFlush
+    // region periodic flush
 
     @Test
-    fun `M schedule flush W reschedulePeriodicFlush()`() {
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
+    fun `M schedule periodic flush W constructor()`() {
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ) doReturn mockScheduledFuture
 
         createSchedulingEnabledProcessor()
 
-        verify(mockScheduledExecutor).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
+        verify(mockScheduledExecutor).scheduleAtFixedRate(
+            any<Runnable>(),
+            eq(TEST_FLUSH_INTERVAL_MS),
+            eq(TEST_FLUSH_INTERVAL_MS),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
-    fun `M log warning W reschedulePeriodicFlush() { executor rejects }`(forge: Forge) {
+    fun `M log warning W startPeriodicFlush() { executor rejects }`(forge: Forge) {
         val exception = RejectedExecutionException(forge.anAlphabeticalString())
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
-            .doReturn(mockScheduledFuture)
+        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any()))
             .doThrow(exception)
 
-        val processor = createSchedulingEnabledProcessor()
-        processor.reschedulePeriodicFlush()
+        createSchedulingEnabledProcessor()
 
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
@@ -254,39 +214,138 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M reschedule W scheduled task executes()`() {
+    fun `M flush W periodic task executes { interval elapsed }`() {
         var taskRunnable: Runnable? = null
-        var scheduleCount = 0
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
-            scheduleCount++
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
         }
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
 
-        createSchedulingEnabledProcessor()
-        assertThat(scheduleCount).isEqualTo(1)
+        val processor = createSchedulingEnabledProcessor()
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
+        )
+        processor.flush()
 
+        // Simulate time passing
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn (fakeTimestamp + TEST_FLUSH_INTERVAL_MS)
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
+        )
+
+        // Run periodic task - should flush since interval has elapsed
         checkNotNull(taskRunnable).run()
 
-        assertThat(scheduleCount).isEqualTo(2)
+        val captor = argumentCaptor<List<EvaluationAggregationStats>>()
+        verify(mockWriter, times(2)).writeAll(captor.capture())
     }
 
     @Test
-    fun `M reschedule W scheduled task executes() { empty flush }`() {
+    fun `M skip flush W periodic task executes { interval not elapsed }`() {
         var taskRunnable: Runnable? = null
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
         }
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
+
+        val processor = createSchedulingEnabledProcessor()
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
+        )
+        processor.flush()
+
+        // Simulate time passing but less than interval
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn (fakeTimestamp + TEST_FLUSH_INTERVAL_MS - 1)
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
+        )
+
+        // Run periodic task - should NOT flush since interval hasn't elapsed
+        checkNotNull(taskRunnable).run()
+
+        // Only one writeAll from the explicit flush()
+        verify(mockWriter, times(1)).writeAll(any())
+    }
+
+    @Test
+    fun `M flush W periodic task executes { no previous flush }`() {
+        var taskRunnable: Runnable? = null
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ).thenAnswer {
+            taskRunnable = it.getArgument(0)
+            mockScheduledFuture
+        }
+        // Set time to be greater than flush interval (simulating first run after startup)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn TEST_FLUSH_INTERVAL_MS
+
+        val processor = createSchedulingEnabledProcessor()
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
+        )
+
+        // Run periodic task - should flush since lastFlushTimeMs is 0
+        checkNotNull(taskRunnable).run()
+
+        verify(mockWriter).writeAll(any())
+    }
+
+    @Test
+    fun `M not write W periodic task executes { empty aggregations }`() {
+        var taskRunnable: Runnable? = null
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ).thenAnswer {
+            taskRunnable = it.getArgument(0)
+            mockScheduledFuture
+        }
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn TEST_FLUSH_INTERVAL_MS
 
         createSchedulingEnabledProcessor()
         checkNotNull(taskRunnable).run()
 
         verify(mockWriter, never()).writeAll(any())
-        verify(
-            mockScheduledExecutor,
-            times(2)
-        ).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
     }
 
     // endregion
@@ -295,7 +354,9 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M auto-schedule W constructor { periodicFlushEnabled = true (default) }`() {
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ) doReturn mockScheduledFuture
 
         EvaluationEventsProcessor(
             writer = mockWriter,
@@ -306,7 +367,12 @@ internal class EvaluationEventsProcessorTest {
             aggregator = testedAggregator
         )
 
-        verify(mockScheduledExecutor).schedule(any<Runnable>(), eq(TEST_FLUSH_INTERVAL_MS), eq(TimeUnit.MILLISECONDS))
+        verify(mockScheduledExecutor).scheduleAtFixedRate(
+            any<Runnable>(),
+            eq(TEST_FLUSH_INTERVAL_MS),
+            eq(TEST_FLUSH_INTERVAL_MS),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 
     @Test
@@ -321,7 +387,7 @@ internal class EvaluationEventsProcessorTest {
             periodicFlushEnabled = false
         )
 
-        verify(mockScheduledExecutor, never()).schedule(any<Runnable>(), any(), any())
+        verify(mockScheduledExecutor, never()).scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
     }
 
     // endregion
@@ -352,9 +418,8 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M shutdown before cancel W stop()`() {
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any()))
+        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any()))
             .doReturn(mockScheduledFuture)
-            .doThrow(RejectedExecutionException("Executor shutdown"))
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
         val processor = createSchedulingEnabledProcessor()
 
@@ -389,23 +454,15 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M prevent reschedule W stop() { task runs after stop }`() {
-        var taskRunnable: Runnable? = null
-        var scheduleCount = 0
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())).thenAnswer {
-            scheduleCount++
-            taskRunnable = it.getArgument(0)
-            mockScheduledFuture
-        }
+    fun `M cancel scheduled task W stop()`() {
+        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any()))
+            .doReturn(mockScheduledFuture)
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
 
         val processor = createSchedulingEnabledProcessor()
-        val initialCount = scheduleCount
-
         processor.stop()
-        checkNotNull(taskRunnable).run()
 
-        assertThat(scheduleCount).isEqualTo(initialCount)
+        verify(mockScheduledFuture).cancel(false)
     }
 
     // endregion
@@ -686,7 +743,9 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M accept evaluations W flush() { during flush operation }`() {
-        whenever(mockScheduledExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
+        whenever(
+            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        ) doReturn mockScheduledFuture
 
         val flushInProgress = CountDownLatch(1)
         val continueFlush = CountDownLatch(1)
@@ -753,6 +812,95 @@ internal class EvaluationEventsProcessorTest {
         processor.flush()
 
         assertThat(writeCount.get()).isEqualTo(75)
+    }
+
+    @Test
+    fun `M correctly track flush time W periodicFlushTask() { concurrent with manual flush }`() {
+        val writeCount = AtomicInteger(0)
+        val trackingWriter = object : EvaluationEventWriter {
+            override fun writeAll(events: List<EvaluationAggregationStats>) {
+                writeCount.addAndGet(events.sumOf { it.count }.toInt())
+            }
+        }
+
+        val currentTime = AtomicLong(0L)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenAnswer { currentTime.get() }
+
+        var periodicTask: Runnable? = null
+        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())).thenAnswer {
+            periodicTask = it.getArgument(0)
+            mockScheduledFuture
+        }
+        whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
+
+        val aggregator = EvaluationAggregator(Int.MAX_VALUE)
+        val processor = EvaluationEventsProcessor(
+            writer = trackingWriter,
+            timeProvider = mockTimeProvider,
+            scheduledExecutor = mockScheduledExecutor,
+            internalLogger = mockInternalLogger,
+            flushIntervalMs = TEST_FLUSH_INTERVAL_MS,
+            aggregator = aggregator
+        )
+
+        val threadCount = 5
+        val iterationsPerThread = 50
+        val startLatch = CountDownLatch(1)
+        val finishLatch = CountDownLatch(threadCount + 1)
+
+        // Threads that add evaluations and manually flush
+        val evalThreads = (1..threadCount).map { threadIndex ->
+            Thread {
+                startLatch.await()
+                repeat(iterationsPerThread) { iteration ->
+                    // Advance time slightly
+                    currentTime.addAndGet(10)
+
+                    processor.processEvaluation(
+                        fakeFlagKey,
+                        EvaluationContext(targetingKey = "user-$threadIndex-$iteration"),
+                        fakeApplicationId,
+                        fakeViewName,
+                        fakeVariantKey,
+                        fakeAllocationKey,
+                        null,
+                        null
+                    )
+
+                    // Occasionally do a manual flush
+                    if (iteration % 10 == 0) {
+                        processor.flush()
+                    }
+                }
+                finishLatch.countDown()
+            }
+        }
+
+        // Thread that runs the periodic task repeatedly
+        val periodicThread = Thread {
+            startLatch.await()
+            repeat(iterationsPerThread * 2) {
+                // Advance time past flush interval sometimes
+                if (it % 5 == 0) {
+                    currentTime.addAndGet(TEST_FLUSH_INTERVAL_MS)
+                }
+                checkNotNull(periodicTask).run()
+                Thread.sleep(1)
+            }
+            finishLatch.countDown()
+        }
+
+        evalThreads.forEach { it.start() }
+        periodicThread.start()
+        startLatch.countDown()
+        finishLatch.await()
+
+        // Final flush to get any remaining
+        currentTime.addAndGet(TEST_FLUSH_INTERVAL_MS)
+        processor.stop()
+
+        // All evaluations should be written exactly once
+        assertThat(writeCount.get()).isEqualTo(threadCount * iterationsPerThread)
     }
 
     // endregion

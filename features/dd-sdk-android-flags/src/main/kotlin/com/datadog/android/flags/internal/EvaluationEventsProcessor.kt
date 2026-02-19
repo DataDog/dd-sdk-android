@@ -34,16 +34,19 @@ internal class EvaluationEventsProcessor(
     private var scheduledFlushFuture: ScheduledFuture<*>? = null
 
     @Volatile
+    private var lastFlushTimeMs: Long = 0L
+
+    @Volatile
     private var periodicFlushEnabled: Boolean = periodicFlushEnabled
         set(value) {
             field = value
             if (value) {
-                reschedulePeriodicFlush()
+                startPeriodicFlush()
             }
         }
 
     init {
-        reschedulePeriodicFlush()
+        startPeriodicFlush()
     }
 
     fun processEvaluation(
@@ -69,7 +72,7 @@ internal class EvaluationEventsProcessor(
         )
 
         if (drainedEvents.isNotEmpty()) {
-            reschedulePeriodicFlush()
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
             writer.writeAll(drainedEvents)
         }
     }
@@ -82,41 +85,50 @@ internal class EvaluationEventsProcessor(
         val events: List<EvaluationAggregationStats>
         try {
             events = aggregator.drain()
-            reschedulePeriodicFlush()
         } finally {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - only called after successful tryLock()
             flushMutex.unlock()
         }
 
         if (events.isNotEmpty()) {
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
             writer.writeAll(events)
         }
     }
 
-    fun reschedulePeriodicFlush() {
+    private fun startPeriodicFlush() {
         if (!periodicFlushEnabled) {
             return
         }
 
-        // Cancel any scheduled before scheduling a new one.
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
         flushMutex.withLock {
-            scheduledFlushFuture?.cancel(false)
-            try {
-                @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-                scheduledFlushFuture = scheduledExecutor.schedule(
-                    { flush() },
-                    flushIntervalMs,
-                    TimeUnit.MILLISECONDS
-                )
-            } catch (e: RejectedExecutionException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { "Failed to schedule evaluation flush" },
-                    e
-                )
+            val currentFuture = scheduledFlushFuture
+            if (currentFuture == null || currentFuture.isCancelled || currentFuture.isDone) {
+                try {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
+                    scheduledFlushFuture = scheduledExecutor.scheduleAtFixedRate(
+                        { periodicFlushTask() },
+                        flushIntervalMs,
+                        flushIntervalMs,
+                        TimeUnit.MILLISECONDS
+                    )
+                } catch (e: RejectedExecutionException) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                        { "Failed to schedule evaluation flush" },
+                        e
+                    )
+                }
             }
+        }
+    }
+
+    private fun periodicFlushTask() {
+        val now = timeProvider.getDeviceTimestampMillis()
+        if (now - lastFlushTimeMs >= flushIntervalMs) {
+            flush()
         }
     }
 
