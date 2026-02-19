@@ -1,0 +1,14 @@
+logs:
+  - id: cannot_write_crash_write_context_unavailable
+    message: "Cannot write JVM crash, because write context is not available."
+    type: log
+    level: warn
+    targets:
+      - user
+
+  - id: waiting_for_pending_rum_events_interrupted
+    message: "Waiting for pending RUM events was interrupted"
+    type: log
+    level: warn
+    targets:
+      - maintainer

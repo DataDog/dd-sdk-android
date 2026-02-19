@@ -2906,7 +2906,7 @@ internal class RumResourceScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
+            "The computed duration for your resource: %s was 0 or negative. In order to keep the resource event we forced it to 1ns.".format(Locale.US, fakeUrl)
         )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
@@ -2979,7 +2979,7 @@ internal class RumResourceScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
+            "The computed duration for your resource: %s was 0 or negative. In order to keep the resource event we forced it to 1ns.".format(Locale.US, fakeUrl)
         )
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)

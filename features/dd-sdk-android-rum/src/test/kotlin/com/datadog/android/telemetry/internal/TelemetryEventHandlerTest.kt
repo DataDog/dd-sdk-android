@@ -861,7 +861,7 @@ internal class TelemetryEventHandlerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            TelemetryEventHandler.ALREADY_SEEN_EVENT_MESSAGE.format(
+            "Already seen telemetry event with identity=%s, rejecting.".format(
                 Locale.US,
                 internalTelemetryEvent.identity
             )
@@ -941,7 +941,7 @@ internal class TelemetryEventHandlerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.MAINTAINER,
-            message = TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+            message = "Max number of telemetry events per session reached, rejecting."
         )
     }
 
@@ -1123,7 +1123,7 @@ internal class TelemetryEventHandlerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.MAINTAINER,
-            message = TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+            message = "Max number of telemetry events per session reached, rejecting."
         )
     }
 

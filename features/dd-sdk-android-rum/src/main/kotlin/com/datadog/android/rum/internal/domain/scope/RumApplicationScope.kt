@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
@@ -30,6 +29,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import java.util.concurrent.TimeUnit
 
@@ -88,15 +88,13 @@ internal class RumApplicationScope(
         )
     )
 
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
+
     val activeSession: RumSessionScope?
         get() {
             val activeSessions = childScopes.filter { it.isActive() }
             if (activeSessions.size > 1) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { MULTIPLE_ACTIVE_SESSIONS_ERROR }
-                )
+                logger.logMultipleActiveSessions()
             }
             return activeSessions.lastOrNull()
         }
@@ -221,11 +219,7 @@ internal class RumApplicationScope(
 
         // Confidence telemetry, only end up with one active session
         if (childScopes.filter { it.isActive() }.size > 1) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { MULTIPLE_ACTIVE_SESSIONS_SESSION_START_ERROR }
-            )
+            logger.logMultipleActiveSessionsSessionStart()
         }
     }
 
@@ -261,11 +255,4 @@ internal class RumApplicationScope(
     }
 
     // endregion
-
-    companion object {
-        internal const val MULTIPLE_ACTIVE_SESSIONS_SESSION_START_ERROR = "Application has multiple active " +
-            "sessions when starting a new session"
-        internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
-            "sessions, this shouldn't happen."
-    }
 }

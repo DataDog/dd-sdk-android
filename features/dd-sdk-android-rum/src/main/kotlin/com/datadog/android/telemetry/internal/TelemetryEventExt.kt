@@ -7,11 +7,11 @@
 package com.datadog.android.telemetry.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
-import java.util.Locale
 
 internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(
     source: String,
@@ -20,12 +20,7 @@ internal fun TelemetryDebugEvent.Source.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSource(source = source, throwable = e)
         null
     }
 }
@@ -37,12 +32,7 @@ internal fun TelemetryErrorEvent.Source.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSource(source = source, throwable = e)
         null
     }
 }
@@ -54,12 +44,7 @@ internal fun TelemetryUsageEvent.Source.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSource(source = source, throwable = e)
         null
     }
 }
@@ -71,15 +56,7 @@ internal fun TelemetryConfigurationEvent.Source.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSource(source = source, throwable = e)
         null
     }
 }
-
-internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
-    "source %s for your events"

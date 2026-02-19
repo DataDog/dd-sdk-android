@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.utils
 
-import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -26,6 +26,7 @@ internal class WriteOperation(
     private val eventType: EventType,
     private val eventSource: () -> Any
 ) {
+    private val logger = DdSdkAndroidRumLogger(sdkCore.internalLogger)
     private val advancedRumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
     private var onError: EventOutcomeAction = NO_OP_EVENT_OUTCOME_ACTION
     private var onSuccess: EventOutcomeAction = NO_OP_EVENT_OUTCOME_ACTION
@@ -49,11 +50,7 @@ internal class WriteOperation(
     fun submit() {
         writeScope {
             if (rumDataWriter is NoOpDataWriter) {
-                sdkCore.internalLogger.log(
-                    level = InternalLogger.Level.INFO,
-                    target = InternalLogger.Target.USER,
-                    messageBuilder = { WRITE_OPERATION_IGNORED }
-                )
+                logger.logWriteOperationIgnored()
                 advancedRumMonitor?.let { onError(it) }
             } else {
                 try {
@@ -74,35 +71,17 @@ internal class WriteOperation(
     }
 
     private fun notifyEventWriteFailure(exception: Exception? = null) {
-        val targets = mutableListOf(InternalLogger.Target.USER).apply {
-            // if no exception, no need to notify telemetry, probably we already handled failure
-            // internally and sent it to telemetry
-            if (exception != null) add(InternalLogger.Target.TELEMETRY)
-        }
-        sdkCore.internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            targets = targets,
-            messageBuilder = { WRITE_OPERATION_FAILED_ERROR },
-            throwable = exception
-        )
+        logger.logWriteOperationFailed(throwable = exception)
 
         advancedRumMonitor?.let {
             if (onError == NO_OP_EVENT_OUTCOME_ACTION) {
-                sdkCore.internalLogger.log(
-                    level = InternalLogger.Level.WARN,
-                    target = InternalLogger.Target.MAINTAINER,
-                    { NO_ERROR_CALLBACK_PROVIDED_WARNING }
-                )
+                logger.logNoErrorCallbackProvided()
             }
             onError(it)
         }
     }
 
     internal companion object {
-        const val WRITE_OPERATION_IGNORED = "Write operation ignored, session is expired or RUM feature is disabled."
-        const val WRITE_OPERATION_FAILED_ERROR = "Write operation failed."
-        const val NO_ERROR_CALLBACK_PROVIDED_WARNING =
-            "Write operation failed, but no onError callback was provided."
         val NO_OP_EVENT_OUTCOME_ACTION: EventOutcomeAction = {}
     }
 }

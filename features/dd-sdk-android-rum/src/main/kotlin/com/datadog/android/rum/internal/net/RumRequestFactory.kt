@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import java.security.DigestException
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -25,6 +26,8 @@ internal class RumRequestFactory(
     private val viewEventFilter: RumViewEventFilter,
     private val internalLogger: InternalLogger
 ) : RequestFactory {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     override fun create(
         context: DatadogContext,
@@ -103,33 +106,13 @@ internal class RumRequestFactory(
             val hashBytes = digest.digest(byteArray)
             return hashBytes.toHexString()
         } catch (e: DigestException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { SHA1_GENERATION_ERROR_MESSAGE },
-                e
-            )
+            logger.logSha1GenerationError(throwable = e)
         } catch (e: IllegalArgumentException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { SHA1_GENERATION_ERROR_MESSAGE },
-                e
-            )
+            logger.logSha1GenerationError(throwable = e)
         } catch (e: NoSuchAlgorithmException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { SHA1_NO_SUCH_ALGORITHM_EXCEPTION },
-                e
-            )
+            logger.logSha1NoSuchAlgorithm(throwable = e)
         } catch (e: NullPointerException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { SHA1_GENERATION_ERROR_MESSAGE },
-                e
-            )
+            logger.logSha1GenerationError(throwable = e)
         }
         return null
     }
@@ -138,7 +121,5 @@ internal class RumRequestFactory(
         private val PAYLOAD_SEPARATOR = "\n".toByteArray(Charsets.UTF_8)
         internal const val RETRY_COUNT_KEY = "retry_count"
         internal const val LAST_FAILURE_STATUS_KEY = "last_failure_status"
-        private const val SHA1_GENERATION_ERROR_MESSAGE = "Cannot generate SHA-1 hash for rum request idempotency key."
-        private const val SHA1_NO_SUCH_ALGORITHM_EXCEPTION = "SHA-1 algorithm could not be found in MessageDigest."
     }
 }

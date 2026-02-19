@@ -31,6 +31,7 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toResource
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
@@ -40,7 +41,6 @@ import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CoderMalfunctionError
 import java.nio.charset.StandardCharsets
-import java.util.Locale
 import java.util.UUID
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -60,6 +60,8 @@ internal class RumResourceScope(
     private val rumSessionTypeOverride: RumSessionType?,
     internal val insightsCollector: InsightsCollector
 ) : RumScope {
+
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     internal val resourceId: String = UUID.randomUUID().toString()
     internal val resourceAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
@@ -377,11 +379,7 @@ internal class RumResourceScope(
     private fun resolveResourceDuration(eventTime: Time): Long {
         val duration = eventTime.nanoTime - startedNanos
         return if (duration <= 0) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url) }
-            )
+            logger.logNegativeDuration(url = url)
             1
         } else {
             duration
@@ -611,23 +609,13 @@ internal class RumResourceScope(
     }
 
     private fun logPayloadTruncationFailure(e: Throwable) {
-        val logger = sdkCore.internalLogger
-        logger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { "Failed to truncate payload" },
-            throwable = e
-        )
+        logger.logPayloadTruncationFailure(throwable = e)
     }
 
     // endregion
 
     companion object {
         internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
-
-        internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
-            "resource: %s was 0 or negative. In order to keep the resource event" +
-            " we forced it to 1ns."
 
         @Suppress("LongParameterList")
         fun fromEvent(

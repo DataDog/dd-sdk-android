@@ -241,7 +241,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
+            "RumEventMapper: there was no EventMapper assigned for RUM event type: %s"
                 .format(Locale.US, fakeRumEvent.javaClass.simpleName)
         )
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
@@ -315,7 +315,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped ViewEvent was null. The original event object will be used instead: %s".format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -334,7 +334,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was null. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -357,7 +357,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeNoCrashEvent)
+            "RumEventMapper: the returned mapped object was null. This event will be dropped: %s".format(Locale.US, fakeNoCrashEvent)
 
         )
     }
@@ -382,7 +382,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NO_DROPPING_FATAL_ERRORS_WARNING_MESSAGE
+            "RumEventMapper: the return from the ErrorEvent mapper was null for a crash. Dropping crashes in from the event mapper is not supported. The original event object will be used instead."
         )
     }
 
@@ -401,7 +401,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was null. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -420,7 +420,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was null. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -440,7 +440,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was null. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -460,7 +460,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was null. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -479,7 +479,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped ViewEvent was null. The original event object will be used instead: %s".format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -498,7 +498,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -523,7 +523,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s"
                 .format(Locale.US, fakeNoCrashEvent)
         )
     }
@@ -543,7 +543,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -563,7 +563,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -583,7 +583,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -603,7 +603,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -622,7 +622,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped ViewEvent was null. The original event object will be used instead: %s".format(Locale.US, fakeRumEvent)
         )
     }
 
@@ -641,7 +641,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -665,7 +665,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s"
                 .format(Locale.US, fakeNoCrashEvent)
         )
     }
@@ -685,7 +685,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -705,7 +705,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -725,7 +725,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
 
         )
     }
@@ -745,7 +745,7 @@ internal class RumEventMapperTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s".format(Locale.US, fakeRumEvent)
         )
     }
 }

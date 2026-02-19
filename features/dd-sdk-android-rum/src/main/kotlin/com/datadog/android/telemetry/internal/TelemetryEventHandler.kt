@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.RumFeature.Configuration
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.utils.HUNDRED
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
@@ -37,7 +38,6 @@ import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent.ActionType
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
@@ -50,6 +50,8 @@ internal class TelemetryEventHandler(
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
+
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     private var trackNetworkRequests = false
 
@@ -168,20 +170,12 @@ internal class TelemetryEventHandler(
         val eventIdentity = event.identity
 
         if (isLog(event) && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                { ALREADY_SEEN_EVENT_MESSAGE.format(Locale.US, eventIdentity) }
-            )
+            logger.logAlreadySeenEvent(eventIdentity = eventIdentity)
             return false
         }
 
         if (totalEventsSeenInCurrentSession >= maxEventCountPerSession) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                { MAX_EVENT_NUMBER_REACHED_MESSAGE }
-            )
+            logger.logMaxEventNumberReached()
             return false
         }
 
@@ -479,15 +473,7 @@ internal class TelemetryEventHandler(
                 val holderInstance = globalDatadogTracer.getDeclaredField("INSTANCE").get(null)
                 globalDatadogTracer.getDeclaredMethod("getOrNull").invoke(holderInstance) != null
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.TELEMETRY,
-                    {
-                        "GlobalDatadogTracer class exists in the runtime classpath, " +
-                            "but there is an error invoking isRegistered method"
-                    },
-                    t
-                )
+                logger.logGlobalDatadogTracerInvokeError(throwable = t)
                 false
             }
         } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") t: Throwable) {
@@ -566,10 +552,6 @@ internal class TelemetryEventHandler(
     companion object {
         const val MAX_EVENTS_PER_SESSION = 100
         const val DEFAULT_CONFIGURATION_SAMPLE_RATE = 20f
-        const val ALREADY_SEEN_EVENT_MESSAGE =
-            "Already seen telemetry event with identity=%s, rejecting."
-        const val MAX_EVENT_NUMBER_REACHED_MESSAGE =
-            "Max number of telemetry events per session reached, rejecting."
         const val TELEMETRY_SERVICE_NAME = "dd-sdk-android"
         internal const val IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY = "is_opentelemetry_enabled"
         internal const val OPENTELEMETRY_API_VERSION_CONTEXT_KEY = "opentelemetry_api_version"
