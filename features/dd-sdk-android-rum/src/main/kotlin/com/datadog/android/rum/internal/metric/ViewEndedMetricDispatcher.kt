@@ -9,8 +9,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
-import com.datadog.android.rum.internal.generated.RumViewEndedLog
-import com.datadog.android.rum.internal.generated.logRumViewEnded
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 
 internal class ViewEndedMetricDispatcher(
     private val viewType: RumViewType,
@@ -20,6 +19,8 @@ internal class ViewEndedMetricDispatcher(
 
     private val instrumentationType: ViewScopeInstrumentationType =
         instrumentationType ?: ViewScopeInstrumentationType.Native.MANUAL
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     private var duration: Long? = null
 
@@ -36,12 +37,12 @@ internal class ViewEndedMetricDispatcher(
             return
         }
 
-        internalLogger.logRumViewEnded(
-            rve = RumViewEndedLog.Rve(
+        logger.logRumViewEnded(
+            rve = DdSdkAndroidRumLogger.Rve(
                 duration = duration,
-                loadingTime = loadingTime?.let { RumViewEndedLog.Rve.LoadingTime(it) },
+                loadingTime = loadingTime?.let { DdSdkAndroidRumLogger.Rve.LoadingTime(it) },
                 viewType = toGeneratedViewType(viewType),
-                tns = RumViewEndedLog.Rve.Tns(
+                tns = DdSdkAndroidRumLogger.Rve.Tns(
                     value = tnsState.initializationTime,
                     config = toGeneratedTnsConfig(tnsState.config),
                     noValueReason = if (tnsState.initializationTime == null) {
@@ -50,7 +51,7 @@ internal class ViewEndedMetricDispatcher(
                         null
                     }
                 ),
-                inv = RumViewEndedLog.Rve.Inv(
+                inv = DdSdkAndroidRumLogger.Rve.Inv(
                     value = invState.initializationTime,
                     config = toGeneratedInvConfig(invState.config),
                     noValueReason = if (invState.initializationTime == null) {
@@ -80,56 +81,56 @@ internal class ViewEndedMetricDispatcher(
 
         private fun toGeneratedViewType(
             viewType: RumViewType
-        ): RumViewEndedLog.Rve.ViewType = when (viewType) {
+        ): DdSdkAndroidRumLogger.Rve.ViewType = when (viewType) {
             RumViewType.NONE,
-            RumViewType.FOREGROUND -> RumViewEndedLog.Rve.ViewType.CUSTOM
-            RumViewType.BACKGROUND -> RumViewEndedLog.Rve.ViewType.BACKGROUND
-            RumViewType.APPLICATION_LAUNCH -> RumViewEndedLog.Rve.ViewType.APPLICATION_LAUNCH
+            RumViewType.FOREGROUND -> DdSdkAndroidRumLogger.Rve.ViewType.CUSTOM
+            RumViewType.BACKGROUND -> DdSdkAndroidRumLogger.Rve.ViewType.BACKGROUND
+            RumViewType.APPLICATION_LAUNCH -> DdSdkAndroidRumLogger.Rve.ViewType.APPLICATION_LAUNCH
         }
 
         private fun toGeneratedTnsConfig(
             config: ViewInitializationMetricsConfig
-        ): RumViewEndedLog.Rve.Tns.Config = when (config) {
-            ViewInitializationMetricsConfig.DISABLED -> RumViewEndedLog.Rve.Tns.Config.DISABLED
-            ViewInitializationMetricsConfig.CUSTOM -> RumViewEndedLog.Rve.Tns.Config.CUSTOM
-            ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> RumViewEndedLog.Rve.Tns.Config.TIME_BASED_DEFAULT
-            ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> RumViewEndedLog.Rve.Tns.Config.TIME_BASED_CUSTOM
+        ): DdSdkAndroidRumLogger.Rve.Tns.Config = when (config) {
+            ViewInitializationMetricsConfig.DISABLED -> DdSdkAndroidRumLogger.Rve.Tns.Config.DISABLED
+            ViewInitializationMetricsConfig.CUSTOM -> DdSdkAndroidRumLogger.Rve.Tns.Config.CUSTOM
+            ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> DdSdkAndroidRumLogger.Rve.Tns.Config.TIME_BASED_DEFAULT
+            ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> DdSdkAndroidRumLogger.Rve.Tns.Config.TIME_BASED_CUSTOM
         }
 
         private fun toGeneratedInvConfig(
             config: ViewInitializationMetricsConfig
-        ): RumViewEndedLog.Rve.Inv.Config = when (config) {
-            ViewInitializationMetricsConfig.DISABLED -> RumViewEndedLog.Rve.Inv.Config.DISABLED
-            ViewInitializationMetricsConfig.CUSTOM -> RumViewEndedLog.Rve.Inv.Config.CUSTOM
-            ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> RumViewEndedLog.Rve.Inv.Config.TIME_BASED_DEFAULT
-            ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> RumViewEndedLog.Rve.Inv.Config.TIME_BASED_CUSTOM
+        ): DdSdkAndroidRumLogger.Rve.Inv.Config = when (config) {
+            ViewInitializationMetricsConfig.DISABLED -> DdSdkAndroidRumLogger.Rve.Inv.Config.DISABLED
+            ViewInitializationMetricsConfig.CUSTOM -> DdSdkAndroidRumLogger.Rve.Inv.Config.CUSTOM
+            ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> DdSdkAndroidRumLogger.Rve.Inv.Config.TIME_BASED_DEFAULT
+            ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> DdSdkAndroidRumLogger.Rve.Inv.Config.TIME_BASED_CUSTOM
         }
 
         private fun toGeneratedTnsNoValueReason(
             reason: NoValueReason?
-        ): RumViewEndedLog.Rve.Tns.NoValueReason = when (reason) {
-            null -> RumViewEndedLog.Rve.Tns.NoValueReason.UNKNOWN
+        ): DdSdkAndroidRumLogger.Rve.Tns.NoValueReason = when (reason) {
+            null -> DdSdkAndroidRumLogger.Rve.Tns.NoValueReason.UNKNOWN
             is NoValueReason.TimeToNetworkSettle -> when (reason) {
-                NoValueReason.TimeToNetworkSettle.UNKNOWN -> RumViewEndedLog.Rve.Tns.NoValueReason.UNKNOWN
-                NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> RumViewEndedLog.Rve.Tns.NoValueReason.NOT_SETTLED_YET
-                NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> RumViewEndedLog.Rve.Tns.NoValueReason.NO_RESOURCES
-                NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> RumViewEndedLog.Rve.Tns.NoValueReason.NO_INITIAL_RESOURCES
+                NoValueReason.TimeToNetworkSettle.UNKNOWN -> DdSdkAndroidRumLogger.Rve.Tns.NoValueReason.UNKNOWN
+                NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> DdSdkAndroidRumLogger.Rve.Tns.NoValueReason.NOT_SETTLED_YET
+                NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> DdSdkAndroidRumLogger.Rve.Tns.NoValueReason.NO_RESOURCES
+                NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> DdSdkAndroidRumLogger.Rve.Tns.NoValueReason.NO_INITIAL_RESOURCES
             }
-            else -> RumViewEndedLog.Rve.Tns.NoValueReason.UNKNOWN
+            else -> DdSdkAndroidRumLogger.Rve.Tns.NoValueReason.UNKNOWN
         }
 
         private fun toGeneratedInvNoValueReason(
             reason: NoValueReason?
-        ): RumViewEndedLog.Rve.Inv.NoValueReason = when (reason) {
-            null -> RumViewEndedLog.Rve.Inv.NoValueReason.UNKNOWN
+        ): DdSdkAndroidRumLogger.Rve.Inv.NoValueReason = when (reason) {
+            null -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.UNKNOWN
             is NoValueReason.InteractionToNextView -> when (reason) {
-                NoValueReason.InteractionToNextView.UNKNOWN -> RumViewEndedLog.Rve.Inv.NoValueReason.UNKNOWN
-                NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> RumViewEndedLog.Rve.Inv.NoValueReason.NO_PREVIOUS_VIEW
-                NoValueReason.InteractionToNextView.NO_ACTION -> RumViewEndedLog.Rve.Inv.NoValueReason.NO_ACTION
-                NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> RumViewEndedLog.Rve.Inv.NoValueReason.NO_ELIGIBLE_ACTION
-                NoValueReason.InteractionToNextView.DISABLED -> RumViewEndedLog.Rve.Inv.NoValueReason.DISABLED
+                NoValueReason.InteractionToNextView.UNKNOWN -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.UNKNOWN
+                NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.NO_PREVIOUS_VIEW
+                NoValueReason.InteractionToNextView.NO_ACTION -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.NO_ACTION
+                NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.NO_ELIGIBLE_ACTION
+                NoValueReason.InteractionToNextView.DISABLED -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.DISABLED
             }
-            else -> RumViewEndedLog.Rve.Inv.NoValueReason.UNKNOWN
+            else -> DdSdkAndroidRumLogger.Rve.Inv.NoValueReason.UNKNOWN
         }
     }
 }

@@ -32,6 +32,9 @@ abstract class GenerateLogsConfigTask : DefaultTask() {
     @get:Input
     abstract val targetPackageName: Property<String>
 
+    @get:Input
+    abstract val loggerClassName: Property<String>
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
@@ -44,9 +47,12 @@ abstract class GenerateLogsConfigTask : DefaultTask() {
         logger.info("Found ${config.logs.size} log entries")
 
         val outputDir = outputDirectory.get().asFile
-        val generator = LogsConfigCodeGenerator(targetPackageName.get())
+        val generator = LogsConfigCodeGenerator(
+            packageName = targetPackageName.get(),
+            className = loggerClassName.get()
+        )
         generator.generate(config, outputDir)
 
-        logger.info("Generated logs config code in: ${outputDir.absolutePath}")
+        logger.info("Generated ${loggerClassName.get()} in: ${outputDir.absolutePath}")
     }
 }

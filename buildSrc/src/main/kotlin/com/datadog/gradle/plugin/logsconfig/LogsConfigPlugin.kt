@@ -29,9 +29,12 @@ class LogsConfigPlugin : Plugin<Project> {
         val genDir = target.layout.buildDirectory
             .dir(Paths.get(GEN_DIR, "main", "kotlin").toString())
 
+        val derivedClassName = LogsConfigCodeGenerator.moduleNameToClassName(target.name)
+
         val generateTask = target.tasks.register<GenerateLogsConfigTask>(TASK_NAME) {
             inputFile.set(yamlFile)
             targetPackageName.convention(extension.packageName)
+            loggerClassName.convention(derivedClassName)
             outputDirectory.set(genDir)
         }
 

@@ -23,38 +23,51 @@ import com.squareup.kotlinpoet.asTypeName
 import java.io.File
 
 internal class LogsConfigCodeGenerator(
-    private val packageName: String
+    private val packageName: String,
+    private val className: String
 ) {
 
+    private val internalLoggerClass = ClassName(
+        "com.datadog.android.api",
+        "InternalLogger"
+    )
+
     fun generate(config: LogsConfig, outputDir: File) {
-        for (entry in config.logs) {
-            generateLogEntry(entry, outputDir)
-        }
-    }
+        val enclosingNames = listOf(className)
 
-    private fun generateLogEntry(entry: LogEntry, outputDir: File) {
-        val containerName = toPascalCase(entry.id) + "Log"
-        val enclosingNames = listOf(containerName)
-
-        val containerObject = TypeSpec.objectBuilder(containerName)
+        val classBuilder = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.INTERNAL)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter("internalLogger", internalLoggerClass)
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("internalLogger", internalLoggerClass)
+                    .initializer("internalLogger")
+                    .addModifiers(KModifier.PRIVATE)
+                    .build()
+            )
 
-        val nonConstProperties = entry.properties.filter { (_, prop) ->
-            prop !is PropertyDefinition.Const
-        }
-
-        for ((propName, propDef) in nonConstProperties) {
-            val nestedType = generateTypeSpec(propName, propDef, enclosingNames)
-            if (nestedType != null) {
-                containerObject.addType(nestedType)
+        for (entry in config.logs) {
+            val nonConstProperties = entry.properties.filter { (_, prop) ->
+                prop !is PropertyDefinition.Const
             }
+
+            for ((propName, propDef) in nonConstProperties) {
+                val nestedType = generateTypeSpec(propName, propDef, enclosingNames)
+                if (nestedType != null) {
+                    classBuilder.addType(nestedType)
+                }
+            }
+
+            classBuilder.addFunction(
+                generateLogFunction(entry, enclosingNames, nonConstProperties)
+            )
         }
 
-        val extensionFun = generateExtensionFunction(entry, enclosingNames, nonConstProperties)
-
-        val fileSpec = FileSpec.builder(packageName, containerName)
-            .addType(containerObject.build())
-            .addFunction(extensionFun)
+        val fileSpec = FileSpec.builder(packageName, className)
+            .addType(classBuilder.build())
             .addFunction(generatePutNonNullHelper())
             .indent("    ")
             .build()
@@ -80,9 +93,9 @@ internal class LogsConfigCodeGenerator(
         objDef: PropertyDefinition.ObjectDef,
         enclosingNames: List<String>
     ): TypeSpec {
-        val className = toPascalCase(name)
-        val childEnclosingNames = enclosingNames + className
-        val classBuilder = TypeSpec.classBuilder(className)
+        val typeName = toPascalCase(name)
+        val childEnclosingNames = enclosingNames + typeName
+        val classBuilder = TypeSpec.classBuilder(typeName)
             .addModifiers(KModifier.INTERNAL, KModifier.DATA)
 
         val constructorBuilder = FunSpec.constructorBuilder()
@@ -91,8 +104,8 @@ internal class LogsConfigCodeGenerator(
             if (propDef is PropertyDefinition.Const) continue
 
             val kotlinName = toCamelCase(propName)
-            val typeName = resolveTypeName(propName, propDef, childEnclosingNames)
-            val finalType = if (propDef.nullable) typeName.copy(nullable = true) else typeName
+            val resolvedType = resolveTypeName(propName, propDef, childEnclosingNames)
+            val finalType = if (propDef.nullable) resolvedType.copy(nullable = true) else resolvedType
 
             constructorBuilder.addParameter(
                 ParameterSpec.builder(kotlinName, finalType).build()
@@ -120,8 +133,8 @@ internal class LogsConfigCodeGenerator(
     }
 
     private fun generateEnumClass(name: String, enumDef: PropertyDefinition.EnumDef): TypeSpec {
-        val className = toPascalCase(name)
-        val enumBuilder = TypeSpec.enumBuilder(className)
+        val typeName = toPascalCase(name)
+        val enumBuilder = TypeSpec.enumBuilder(typeName)
             .addModifiers(KModifier.INTERNAL)
 
         enumBuilder.primaryConstructor(
@@ -218,30 +231,24 @@ internal class LogsConfigCodeGenerator(
         }
     }
 
-    private fun generateExtensionFunction(
+    private fun generateLogFunction(
         entry: LogEntry,
         enclosingNames: List<String>,
         nonConstProperties: Map<String, PropertyDefinition>
     ): FunSpec {
-        val internalLoggerClass = ClassName(
-            "com.datadog.android.api",
-            "InternalLogger"
-        )
-
         val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
             .addModifiers(KModifier.INTERNAL)
-            .receiver(internalLoggerClass)
 
         for ((propName, propDef) in nonConstProperties) {
             val kotlinName = toCamelCase(propName)
-            val typeName = resolveTypeName(propName, propDef, enclosingNames)
-            val finalType = if (propDef.nullable) typeName.copy(nullable = true) else typeName
+            val resolvedType = resolveTypeName(propName, propDef, enclosingNames)
+            val finalType = if (propDef.nullable) resolvedType.copy(nullable = true) else resolvedType
             funBuilder.addParameter(ParameterSpec.builder(kotlinName, finalType).build())
         }
 
         val buildMap = MemberName("kotlin.collections", "buildMap")
         val codeBuilder = CodeBlock.builder()
-        codeBuilder.add("logMetric(\n")
+        codeBuilder.add("internalLogger.logMetric(\n")
         codeBuilder.indent()
         codeBuilder.addStatement("messageBuilder = { %S },", entry.message)
         codeBuilder.add("additionalProperties = %M {\n", buildMap)
@@ -323,6 +330,12 @@ internal class LogsConfigCodeGenerator(
 
         internal fun toUpperSnakeCase(snakeCase: String): String {
             return snakeCase.uppercase()
+        }
+
+        internal fun moduleNameToClassName(moduleName: String): String {
+            return moduleName.split("-").joinToString("") { part ->
+                part.replaceFirstChar { it.uppercase() }
+            } + "Logger"
         }
     }
 }
