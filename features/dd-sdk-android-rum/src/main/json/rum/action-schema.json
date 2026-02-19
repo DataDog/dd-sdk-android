@@ -12,7 +12,7 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "view", "action"],
+      "required": ["type", "action"],
       "properties": {
         "type": {
           "type": "string",
@@ -178,6 +178,11 @@
                     "selector": {
                       "type": "string",
                       "description": "CSS selector path of the target element",
+                      "readOnly": true
+                    },
+                    "permanent_id": {
+                      "type": "string",
+                      "description": "Mobile-only: a globally unique and stable identifier for this UI element, computed as the hash of the element's path (32 lowercase hex characters). Used to correlate actions with mobile session replay wireframes.",
                       "readOnly": true
                     },
                     "width": {

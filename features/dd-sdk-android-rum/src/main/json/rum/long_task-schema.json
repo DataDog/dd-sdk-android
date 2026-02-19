@@ -16,16 +16,13 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "view", "long_task"],
+      "required": ["type", "long_task"],
       "properties": {
         "type": {
           "type": "string",
           "description": "RUM event type",
           "const": "long_task",
           "readOnly": true
-        },
-        "view": {
-          "type": "object"
         },
         "long_task": {
           "type": "object",

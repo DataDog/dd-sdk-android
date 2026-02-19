@@ -12,6 +12,9 @@
       "$ref": "_view-container-schema.json"
     },
     {
+      "$ref": "_stream-schema.json"
+    },
+    {
       "required": ["type", "view", "_dd"],
       "properties": {
         "type": {
@@ -23,7 +26,7 @@
         "view": {
           "type": "object",
           "description": "View properties",
-          "required": ["id", "url", "time_spent", "action", "error", "resource"],
+          "required": ["time_spent", "action", "error", "resource"],
           "properties": {
             "loading_time": {
               "type": "integer",
