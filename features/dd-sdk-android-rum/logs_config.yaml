@@ -159,7 +159,6 @@ logs:
     message: "[Mobile Metric] RUM Session Ended"
     type: metric
     sampleRate: 15.0
-    creationSampleRate: true
     properties:
       metric_type:
         type: string

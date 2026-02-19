@@ -21,7 +21,7 @@ internal data class MetricLogEntry(
     override val id: String,
     override val message: String,
     val sampleRate: SampleRateConfig,
-    val creationSampleRate: SampleRateConfig? = null,
+    val creationSampleRate: SampleRateConfig = SampleRateConfig.Dynamic,
     override val onlyOnce: Boolean = false,
     override val throwable: Boolean = false,
     override val properties: Map<String, PropertyDefinition> = emptyMap()

@@ -37,11 +37,11 @@ internal object LogsConfigYamlParser {
 
         return when (type) {
             "metric" -> {
-                val sampleRate = parseSampleRateConfig(map["sampleRate"], required = true, entryId = id)!!
+                val sampleRate = parseSampleRateConfig(map["sampleRate"], entryId = id, fieldName = "sampleRate")
                 val creationSampleRate = parseSampleRateConfig(
                     map["creationSampleRate"],
-                    required = false,
-                    entryId = id
+                    entryId = id,
+                    fieldName = "creationSampleRate"
                 )
                 MetricLogEntry(
                     id = id,
@@ -81,14 +81,13 @@ internal object LogsConfigYamlParser {
 
     private fun parseSampleRateConfig(
         value: Any?,
-        required: Boolean,
-        entryId: String
-    ): SampleRateConfig? {
+        entryId: String,
+        fieldName: String
+    ): SampleRateConfig {
         return when (value) {
-            null -> if (required) error("Metric log entry '$entryId' must have a 'sampleRate'") else null
+            null -> SampleRateConfig.Dynamic
             is Number -> SampleRateConfig.Fixed(value.toFloat())
-            is Boolean -> if (value) SampleRateConfig.Dynamic else null
-            else -> error("'sampleRate'/'creationSampleRate' in '$entryId' must be a number or true")
+            else -> error("'$fieldName' in '$entryId' must be a number (or omitted to generate a parameter)")
         }
     }
 

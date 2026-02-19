@@ -306,7 +306,6 @@ internal class LogsConfigCodeGenerator(
         when (val csr = entry.creationSampleRate) {
             is SampleRateConfig.Fixed -> codeBuilder.addStatement("creationSampleRate = %Lf,", csr.value)
             is SampleRateConfig.Dynamic -> codeBuilder.addStatement("creationSampleRate = creationSampleRate,")
-            null -> {}
         }
 
         when (val sr = entry.sampleRate) {
