@@ -89,7 +89,7 @@ internal class ViewEndedMetricDispatcherTest {
             messageBuilder = any(),
             additionalProperties = any(),
             samplingRate = eq(EXPECTED_SAMPLE_RATE),
-            creationSampleRate = eq(null)
+            creationSampleRate = eq(100.0f)
         )
 
         verify(mockInternalLogger).log(
@@ -115,7 +115,7 @@ internal class ViewEndedMetricDispatcherTest {
             messageBuilder = any(),
             additionalProperties = any(),
             samplingRate = eq(EXPECTED_SAMPLE_RATE),
-            creationSampleRate = eq(null)
+            creationSampleRate = eq(100.0f)
         )
     }
 
@@ -133,7 +133,7 @@ internal class ViewEndedMetricDispatcherTest {
             messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
             additionalProperties = eq(expectedAttributes()),
             samplingRate = eq(EXPECTED_SAMPLE_RATE),
-            creationSampleRate = eq(null)
+            creationSampleRate = eq(100.0f)
         )
     }
 
@@ -157,7 +157,7 @@ internal class ViewEndedMetricDispatcherTest {
             messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
             additionalProperties = eq(expectedAttributes(instrumentationType = "cross_platform_navigator")),
             samplingRate = eq(EXPECTED_SAMPLE_RATE),
-            creationSampleRate = eq(null)
+            creationSampleRate = eq(100.0f)
         )
     }
 
@@ -180,7 +180,7 @@ internal class ViewEndedMetricDispatcherTest {
             messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
             additionalProperties = eq(expectedAttributes(instrumentationType = "manual")),
             samplingRate = eq(EXPECTED_SAMPLE_RATE),
-            creationSampleRate = eq(null)
+            creationSampleRate = eq(100.0f)
         )
     }
 

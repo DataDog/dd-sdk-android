@@ -274,7 +274,11 @@ internal class LogsConfigCodeGenerator(
         val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
             .addModifiers(KModifier.INTERNAL)
 
-        if (entry.creationSampleRate) {
+        if (entry.sampleRate is SampleRateConfig.Dynamic) {
+            funBuilder.addParameter("samplingRate", Float::class.asTypeName())
+        }
+
+        if (entry.creationSampleRate is SampleRateConfig.Dynamic) {
             funBuilder.addParameter(
                 ParameterSpec.builder("creationSampleRate", Float::class.asTypeName().copy(nullable = true))
                     .defaultValue("null")
@@ -298,10 +302,18 @@ internal class LogsConfigCodeGenerator(
 
         codeBuilder.unindent()
         codeBuilder.addStatement("},")
-        if (entry.creationSampleRate) {
-            codeBuilder.addStatement("creationSampleRate = creationSampleRate,")
+
+        when (val csr = entry.creationSampleRate) {
+            is SampleRateConfig.Fixed -> codeBuilder.addStatement("creationSampleRate = %Lf,", csr.value)
+            is SampleRateConfig.Dynamic -> codeBuilder.addStatement("creationSampleRate = creationSampleRate,")
+            null -> {}
         }
-        codeBuilder.addStatement("samplingRate = %Lf", entry.sampleRate)
+
+        when (val sr = entry.sampleRate) {
+            is SampleRateConfig.Fixed -> codeBuilder.addStatement("samplingRate = %Lf", sr.value)
+            is SampleRateConfig.Dynamic -> codeBuilder.addStatement("samplingRate = samplingRate")
+        }
+
         codeBuilder.unindent()
         codeBuilder.addStatement(")")
 

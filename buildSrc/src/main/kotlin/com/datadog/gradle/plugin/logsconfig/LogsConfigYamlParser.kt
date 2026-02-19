@@ -37,9 +37,12 @@ internal object LogsConfigYamlParser {
 
         return when (type) {
             "metric" -> {
-                val sampleRate = (map["sampleRate"] as? Number)?.toFloat()
-                    ?: error("Metric log entry '$id' must have a numeric 'sampleRate'")
-                val creationSampleRate = map["creationSampleRate"] as? Boolean ?: false
+                val sampleRate = parseSampleRateConfig(map["sampleRate"], required = true, entryId = id)!!
+                val creationSampleRate = parseSampleRateConfig(
+                    map["creationSampleRate"],
+                    required = false,
+                    entryId = id
+                )
                 MetricLogEntry(
                     id = id,
                     message = message,
@@ -73,6 +76,19 @@ internal object LogsConfigYamlParser {
             }
 
             else -> error("Unknown log type: '$type'. Supported: metric, log")
+        }
+    }
+
+    private fun parseSampleRateConfig(
+        value: Any?,
+        required: Boolean,
+        entryId: String
+    ): SampleRateConfig? {
+        return when (value) {
+            null -> if (required) error("Metric log entry '$entryId' must have a 'sampleRate'") else null
+            is Number -> SampleRateConfig.Fixed(value.toFloat())
+            is Boolean -> if (value) SampleRateConfig.Dynamic else null
+            else -> error("'sampleRate'/'creationSampleRate' in '$entryId' must be a number or true")
         }
     }
 

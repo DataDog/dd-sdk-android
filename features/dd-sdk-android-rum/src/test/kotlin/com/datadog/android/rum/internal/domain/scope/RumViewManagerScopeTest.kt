@@ -380,7 +380,7 @@ internal class RumViewManagerScopeTest {
             messageBuilderCaptor.capture(),
             additionalPropertiesCaptor.capture(),
             eq(1f),
-            eq(null)
+            eq(100.0f)
         )
 
         assertThat(additionalPropertiesCaptor.firstValue).containsKey("view_gap")

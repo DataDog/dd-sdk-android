@@ -20,12 +20,17 @@ internal sealed class LogEntry {
 internal data class MetricLogEntry(
     override val id: String,
     override val message: String,
-    val sampleRate: Float,
-    val creationSampleRate: Boolean = false,
+    val sampleRate: SampleRateConfig,
+    val creationSampleRate: SampleRateConfig? = null,
     override val onlyOnce: Boolean = false,
     override val throwable: Boolean = false,
     override val properties: Map<String, PropertyDefinition> = emptyMap()
 ) : LogEntry()
+
+internal sealed class SampleRateConfig {
+    data class Fixed(val value: Float) : SampleRateConfig()
+    object Dynamic : SampleRateConfig()
+}
 
 internal data class SimpleLogEntry(
     override val id: String,

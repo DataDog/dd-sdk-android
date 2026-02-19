@@ -73,7 +73,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
             argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
             argThat { hasExpectedValue(1, "rum_ui_slowness", "slow_frames", "count") },
             eq(0.75f),
-            eq(null)
+            eq(100.0f)
         )
     }
 
@@ -91,7 +91,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
             argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
             argThat { hasExpectedValue(1, "rum_ui_slowness", "slow_frames", "ignored_count") },
             eq(0.75f),
-            eq(null)
+            eq(100.0f)
         )
     }
 
@@ -109,7 +109,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
             argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
             argThat { hasExpectedValue(1, "rum_ui_slowness", "slow_frames", "missed_count") },
             eq(0.75f),
-            eq(null)
+            eq(100.0f)
         )
     }
 
@@ -127,7 +127,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
             argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
             argThat { hasExpectedValue(fakeViewDurationNs, "rum_ui_slowness", "view_duration") },
             eq(0.75f),
-            eq(null)
+            eq(100.0f)
         )
     }
 
@@ -145,7 +145,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
             argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
             any(),
             eq(0.75f),
-            eq(null)
+            eq(100.0f)
         )
     }
 
@@ -182,7 +182,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
             messageBuilder = any(),
             additionalProperties = any(),
             samplingRate = eq(0.75f),
-            creationSampleRate = eq(null)
+            creationSampleRate = eq(100.0f)
         )
     }
 
