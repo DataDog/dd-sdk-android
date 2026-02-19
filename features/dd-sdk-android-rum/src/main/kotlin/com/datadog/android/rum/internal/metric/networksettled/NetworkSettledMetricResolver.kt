@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.metric.networksettled
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
@@ -19,6 +20,8 @@ internal class NetworkSettledMetricResolver(
     private val initialResourceIdentifier: InitialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
     private val internalLogger: InternalLogger
 ) {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     private val resourceStartedTimestamps = HashSet<String>()
 
@@ -113,20 +116,11 @@ internal class NetworkSettledMetricResolver(
     @Suppress("ReturnCount")
     private fun computeMetric(): Long? {
         if (viewCreatedTimestamp == null) {
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "[ViewNetworkSettledMetric] There was no view created yet for this resource" }
-            )
+            logger.logTnsNoViewCreated()
             return null
         }
         if (resourceStartedTimestamps.size > 0) {
-            // not all resources were stopped
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "[ViewNetworkSettledMetric] Not all the initial resources were stopped for this view" }
-            )
+            logger.logTnsNotAllResourcesStopped()
             return null
         }
         return networkSettleMaxValue
