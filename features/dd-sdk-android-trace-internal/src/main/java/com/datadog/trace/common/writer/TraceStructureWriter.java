@@ -52,7 +52,7 @@ public class TraceStructureWriter implements Writer {
     try {
       String[] args = parseArgs(outputFile);
       String fileName = args[0];
-      this.out = fileName.isEmpty() ? System.err : new PrintStream(new FileOutputStream(fileName));
+      this.out = fileName.isEmpty() ? System.out : new PrintStream(new FileOutputStream(fileName));
       for (int i = 1; i < args.length; i++) {
         switch (args[i].toLowerCase(Locale.ROOT)) {
           case "includeresource":
@@ -172,7 +172,7 @@ public class TraceStructureWriter implements Writer {
 
   @Override
   public void close() {
-    if (out != System.err) {
+    if (out != System.out) {
       out.close();
     }
   }
