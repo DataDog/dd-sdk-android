@@ -9,11 +9,9 @@
 #include <fstream>
 #include <jni.h>
 #include <pthread.h>
-#include <sstream>
 #include <string>
 
 #include "android/log.h"
-#include "backtrace-handler.h"
 #include "datetime-utils.h"
 #include "file-utils.h"
 #include "signal-monitor.h"
@@ -115,7 +113,7 @@ void update_main_context(JNIEnv *env,
     if(pthread_mutex_trylock(&handler_mutex) != 0){
         // There is no action to take if the mutex cannot be acquired. Probably int this case
         // there is already a log writing due to a crash in progress.
-        // In this case updating the context will not make sense anymore and we do not want to
+        // In this case updating the context will not make sense anymore, and we do not want to
         // stale the process here.
         return;
     }
