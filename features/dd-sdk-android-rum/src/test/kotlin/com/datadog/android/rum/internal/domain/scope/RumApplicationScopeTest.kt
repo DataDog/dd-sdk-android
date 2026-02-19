@@ -308,7 +308,7 @@ internal class RumApplicationScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            RumApplicationScope.MULTIPLE_ACTIVE_SESSIONS_ERROR
+            "Application has multiple active sessions, this shouldn't happen."
         )
     }
 

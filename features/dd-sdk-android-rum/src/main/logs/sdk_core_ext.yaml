@@ -1,0 +1,23 @@
+logs:
+  - id: write_operation_ignored
+    message: "Write operation ignored, session is expired or RUM feature is disabled."
+    type: log
+    level: info
+    targets:
+      - user
+
+  - id: write_operation_failed
+    message: "Write operation failed."
+    type: log
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+
+  - id: no_error_callback_provided
+    message: "Write operation failed, but no onError callback was provided."
+    type: log
+    level: warn
+    targets:
+      - maintainer

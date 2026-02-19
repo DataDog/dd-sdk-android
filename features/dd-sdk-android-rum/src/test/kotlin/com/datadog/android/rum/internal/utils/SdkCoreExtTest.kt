@@ -159,7 +159,7 @@ internal class SdkCoreExtTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER),
-            message = WriteOperation.WRITE_OPERATION_FAILED_ERROR
+            message = "Write operation failed."
         )
         assertThat(invoked)
             .overridingErrorMessage("Expected to invoke onError callback, but it wasn't.")
@@ -190,7 +190,7 @@ internal class SdkCoreExtTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = WriteOperation.WRITE_OPERATION_FAILED_ERROR,
+            message = "Write operation failed.",
             throwable = fakeException
         )
         assertThat(invoked)
@@ -220,7 +220,7 @@ internal class SdkCoreExtTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = WriteOperation.WRITE_OPERATION_FAILED_ERROR,
+            message = "Write operation failed.",
             throwable = fakeException
         )
         assertThat(invoked)
@@ -248,7 +248,7 @@ internal class SdkCoreExtTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            message = WriteOperation.NO_ERROR_CALLBACK_PROVIDED_WARNING
+            message = "Write operation failed, but no onError callback was provided."
         )
     }
 
@@ -275,7 +275,7 @@ internal class SdkCoreExtTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.USER,
-            message = WriteOperation.WRITE_OPERATION_IGNORED
+            message = "Write operation ignored, session is expired or RUM feature is disabled."
         )
         assertThat(errorInvoked).isTrue()
         assertThat(successInvoked).isFalse()

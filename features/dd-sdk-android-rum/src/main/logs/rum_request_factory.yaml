@@ -1,0 +1,16 @@
+logs:
+  - id: sha1_generation_error
+    message: "Cannot generate SHA-1 hash for rum request idempotency key."
+    type: log
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: sha1_no_such_algorithm
+    message: "SHA-1 algorithm could not be found in MessageDigest."
+    type: log
+    level: error
+    targets:
+      - maintainer
+    throwable: true

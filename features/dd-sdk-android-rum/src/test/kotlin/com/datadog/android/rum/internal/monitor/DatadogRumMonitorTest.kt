@@ -1206,7 +1206,7 @@ internal class DatadogRumMonitorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogRumMonitor.CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE
+            "Cannot write JVM crash, because write context is not available."
         )
         verifyNoInteractions(mockApplicationScope, mockWriter)
     }

@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -20,7 +21,6 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
-import java.util.Locale
 
 internal data class RumEventMapper(
     val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
@@ -33,6 +33,8 @@ internal data class RumEventMapper(
     val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent> = NoOpEventMapper(),
     private val internalLogger: InternalLogger
 ) : EventMapper<Any> {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     override fun map(event: Any): Any? {
         return resolveEvent(event)
@@ -49,11 +51,7 @@ internal data class RumEventMapper(
                 if (event.error.isCrash == true) {
                     val mappedEvent = errorEventMapper.map(event)
                     if (mappedEvent == null) {
-                        internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.USER,
-                            { NO_DROPPING_FATAL_ERRORS_WARNING_MESSAGE }
-                        )
+                        logger.logNoDroppingFatalErrors()
                         event
                     } else {
                         mappedEvent
@@ -71,17 +69,7 @@ internal data class RumEventMapper(
             is TelemetryUsageEvent,
             is TelemetryErrorEvent -> event
             else -> {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    {
-                        NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
-                            .format(Locale.US, event.javaClass.simpleName)
-                    }
-                )
+                logger.logNoEventMapperAssigned(eventType = event.javaClass.simpleName)
                 event
             }
         }

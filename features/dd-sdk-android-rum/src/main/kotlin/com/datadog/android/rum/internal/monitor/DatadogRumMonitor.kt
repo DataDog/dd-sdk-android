@@ -59,6 +59,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
@@ -133,6 +134,8 @@ internal class DatadogRumMonitor(
     private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
 
     private val isDebugEnabled = AtomicBoolean(false)
+
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     // region RumMonitor
 
@@ -798,11 +801,7 @@ internal class DatadogRumMonitor(
                         it.putAll(currentFeatureContext.toMap())
                     }
                 } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
-                    )
+                    logger.logCannotWriteCrashWriteContextUnavailable()
                 }
             }
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
@@ -873,11 +872,7 @@ internal class DatadogRumMonitor(
             try {
                 latch.await(1, TimeUnit.SECONDS)
             } catch (_: InterruptedException) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Waiting for pending RUM events was interrupted" }
-                )
+                logger.logWaitingForPendingRumEventsInterrupted()
             }
         }
     }
@@ -938,9 +933,6 @@ internal class DatadogRumMonitor(
 
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
-
-        internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
-            "Cannot write JVM crash, because write context is not available."
 
         internal const val FO_ERROR_INVALID_NAME =
             "Feature operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
