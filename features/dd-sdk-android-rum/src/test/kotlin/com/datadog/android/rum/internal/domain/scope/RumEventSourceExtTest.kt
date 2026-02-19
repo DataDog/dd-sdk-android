@@ -80,7 +80,7 @@ internal class RumEventSourceExtTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            "You are using an unknown source %s for your events".format(Locale.US, fakeInvalidSource),
             NoSuchElementException::class.java
         )
     }
@@ -113,7 +113,7 @@ internal class RumEventSourceExtTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            "You are using an unknown source %s for your events".format(Locale.US, fakeInvalidSource),
             NoSuchElementException::class.java
         )
     }
@@ -148,7 +148,7 @@ internal class RumEventSourceExtTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            "You are using an unknown source %s for your events".format(Locale.US, fakeInvalidSource),
             NoSuchElementException::class.java
         )
     }
@@ -183,7 +183,7 @@ internal class RumEventSourceExtTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            "You are using an unknown source %s for your events".format(Locale.US, fakeInvalidSource),
             NoSuchElementException::class.java
         )
     }
@@ -217,7 +217,7 @@ internal class RumEventSourceExtTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, fakeInvalidSource),
+            "You are using an unknown source %s for your events".format(Locale.US, fakeInvalidSource),
             NoSuchElementException::class.java
         )
     }
