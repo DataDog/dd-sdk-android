@@ -1,0 +1,25 @@
+logs:
+  - id: session_view_track_error
+    message: "Failed to track %s view in session with different UUID %s"
+    type: log
+    level: info
+    targets:
+      - maintainer
+    message_args:
+      view_type:
+        type: string
+      session_id:
+        type: string
+
+  - id: session_sdk_error_track_error
+    message: "Failed to track %s error, session %s has ended"
+    type: log
+    level: info
+    targets:
+      - maintainer
+    message_args:
+      error_kind:
+        type: string
+        nullable: true
+      session_id:
+        type: string

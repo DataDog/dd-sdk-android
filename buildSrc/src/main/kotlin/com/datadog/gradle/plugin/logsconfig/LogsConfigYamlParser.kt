@@ -68,7 +68,11 @@ internal object LogsConfigYamlParser {
                 val messageArgs = messageArgsRaw.mapValues { (argName, argDef) ->
                     val typeName = argDef["type"] as? String
                         ?: error("message_arg '$argName' in '$id' must have a 'type' field")
-                    parsePrimitiveType(typeName)
+                    val argNullable = argDef["nullable"] as? Boolean ?: false
+                    MessageArgDefinition(
+                        type = parsePrimitiveType(typeName),
+                        nullable = argNullable
+                    )
                 }
 
                 SimpleLogEntry(

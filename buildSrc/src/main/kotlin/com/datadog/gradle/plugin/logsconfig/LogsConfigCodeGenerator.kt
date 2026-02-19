@@ -329,8 +329,11 @@ internal class LogsConfigCodeGenerator(
         val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
             .addModifiers(KModifier.INTERNAL)
 
-        for ((name, type) in entry.messageArgs) {
-            funBuilder.addParameter(toCamelCase(name), primitiveToTypeName(type))
+        for ((name, argDef) in entry.messageArgs) {
+            val argType = primitiveToTypeName(argDef.type).let {
+                if (argDef.nullable) it.copy(nullable = true) else it
+            }
+            funBuilder.addParameter(toCamelCase(name), argType)
         }
 
         if (entry.throwable) {

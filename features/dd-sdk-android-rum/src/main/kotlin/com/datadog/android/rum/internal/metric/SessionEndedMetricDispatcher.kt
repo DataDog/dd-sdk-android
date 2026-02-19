@@ -55,19 +55,19 @@ internal class SessionEndedMetricDispatcher(
     override fun onViewTracked(sessionId: String, viewEvent: ViewEvent) {
         val result = metricsBySessionId[sessionId]?.onViewTracked(viewEvent) ?: false
         if (result.not()) {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                { buildViewTrackError(sessionId, viewEvent) }
-            )
+            val viewType = when (viewEvent.view.url) {
+                RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL -> "AppLaunch"
+                RumViewManagerScope.RUM_BACKGROUND_VIEW_URL -> "Background"
+                else -> "Custom"
+            }
+            logger.logSessionViewTrackError(viewType = viewType, sessionId = sessionId)
         }
     }
 
     override fun onSdkErrorTracked(sessionId: String, errorKind: String?) {
-        metricsBySessionId[sessionId]?.onErrorTracked(errorKind) ?: internalLogger.log(
-            level = InternalLogger.Level.INFO,
-            target = InternalLogger.Target.MAINTAINER,
-            { buildSdkErrorTrackError(sessionId, errorKind) }
+        metricsBySessionId[sessionId]?.onErrorTracked(errorKind) ?: logger.logSessionSdkErrorTrackError(
+            errorKind = errorKind,
+            sessionId = sessionId
         )
     }
 
@@ -79,16 +79,4 @@ internal class SessionEndedMetricDispatcher(
         metricsBySessionId[sessionId]?.onSessionReplaySkippedFrameTracked()
     }
 
-    private fun buildSdkErrorTrackError(sessionId: String, errorKind: String?): String {
-        return "Failed to track $errorKind error, session $sessionId has ended"
-    }
-
-    private fun buildViewTrackError(sessionId: String, viewEvent: ViewEvent): String {
-        val viewType = when (viewEvent.view.url) {
-            RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL -> "AppLaunch"
-            RumViewManagerScope.RUM_BACKGROUND_VIEW_URL -> "Background"
-            else -> "Custom"
-        }
-        return "Failed to track $viewType view in session with different UUID $sessionId"
-    }
 }
