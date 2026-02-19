@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.anr
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.internal.utils.appendIfNotEmpty
 import java.io.IOException
 import java.io.InputStream
@@ -19,6 +20,8 @@ import java.util.Locale
 internal class AndroidTraceParser(
     private val internalLogger: InternalLogger
 ) {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     internal fun parse(traceInputStream: InputStream): List<ThreadDump> {
         @Suppress("UnsafeThirdPartyFunctionCall") // not 3rd party
@@ -79,11 +82,7 @@ internal class AndroidTraceParser(
         }
 
         if (threadDumps.isEmpty()) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { PARSING_FAILURE_MESSAGE }
-            )
+            logger.logTraceParsingFailure()
         }
 
         return threadDumps
@@ -106,20 +105,12 @@ internal class AndroidTraceParser(
                 it.reader().readText()
             }
         } catch (e: IOException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { TRACE_STREAM_READ_FAILURE },
-                e
-            )
+            logger.logTraceStreamReadFailure(throwable = e)
             ""
         }
     }
 
     companion object {
-        const val TRACE_STREAM_READ_FAILURE = "Failed to read crash trace stream."
-        const val PARSING_FAILURE_MESSAGE =
-            "Parsing tracing information for the exit reason wasn't successful, no thread dumps were parsed."
         val THREAD_NAME_REGEX = Regex("^\"(.+)\".+\$")
     }
 }

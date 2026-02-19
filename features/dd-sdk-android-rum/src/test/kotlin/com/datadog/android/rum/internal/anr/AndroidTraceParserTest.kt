@@ -87,7 +87,7 @@ internal class AndroidTraceParserTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = AndroidTraceParser.PARSING_FAILURE_MESSAGE
+            message = "Parsing tracing information for the exit reason wasn't successful, no thread dumps were parsed."
         )
     }
 
@@ -105,7 +105,7 @@ internal class AndroidTraceParserTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            AndroidTraceParser.TRACE_STREAM_READ_FAILURE,
+            "Failed to read crash trace stream.",
             throwableClass = IOException::class.java
         )
     }
