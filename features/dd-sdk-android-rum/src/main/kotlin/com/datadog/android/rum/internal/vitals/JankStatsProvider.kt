@@ -10,6 +10,7 @@ import android.view.Window
 import androidx.annotation.UiThread
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 
 internal interface JankStatsProvider {
 
@@ -32,12 +33,7 @@ internal interface JankStatsProvider {
                 return try {
                     JankStats.createAndTrack(window, listener)
                 } catch (e: IllegalStateException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Unable to attach JankStats to the current window" },
-                        e
-                    )
+                    DdSdkAndroidRumLogger(internalLogger).logJankStatsAttachError(throwable = e)
                     null
                 }
             }
