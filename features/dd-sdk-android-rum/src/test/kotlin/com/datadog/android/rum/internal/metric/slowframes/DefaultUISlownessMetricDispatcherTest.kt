@@ -8,15 +8,8 @@ package com.datadog.android.rum.internal.metric.slowframes
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_IGNORED_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_MISSED_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_RUM_UI_SLOWNESS
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_SLOW_FRAMES
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_VIEW_DURATION
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -47,9 +40,6 @@ internal class DefaultUISlownessMetricDispatcherTest {
     @StringForgery
     lateinit var fakeViewId: String
 
-    @FloatForgery(min = 0f, max = 100f)
-    var fakeSamplingRate: Float = 0f
-
     @LongForgery(min = 1, max = 100)
     var fakeViewDurationNs: Long = 0
 
@@ -65,8 +55,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     fun `set up`() {
         testedDispatcher = DefaultUISlownessMetricDispatcher(
             config = fakeSlowFramesConfiguration,
-            internalLogger = mockInternalLogger,
-            samplingRate = fakeSamplingRate
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -81,9 +70,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // Then
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_COUNT) },
-            eq(fakeSamplingRate),
+            argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
+            argThat { hasExpectedValue(1, "rum_ui_slowness", "slow_frames", "count") },
+            eq(0.75f),
             eq(null)
         )
     }
@@ -99,9 +88,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // Then
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_IGNORED_COUNT) },
-            eq(fakeSamplingRate),
+            argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
+            argThat { hasExpectedValue(1, "rum_ui_slowness", "slow_frames", "ignored_count") },
+            eq(0.75f),
             eq(null)
         )
     }
@@ -117,9 +106,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // Then
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_MISSED_COUNT) },
-            eq(fakeSamplingRate),
+            argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
+            argThat { hasExpectedValue(1, "rum_ui_slowness", "slow_frames", "missed_count") },
+            eq(0.75f),
             eq(null)
         )
     }
@@ -135,9 +124,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // Then
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(fakeViewDurationNs, KEY_RUM_UI_SLOWNESS, KEY_VIEW_DURATION) },
-            eq(fakeSamplingRate),
+            argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
+            argThat { hasExpectedValue(fakeViewDurationNs, "rum_ui_slowness", "view_duration") },
+            eq(0.75f),
             eq(null)
         )
     }
@@ -153,9 +142,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // Then
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
+            argThat { invoke() == "[Mobile Metric] RUM UI Slowness" },
             any(),
-            eq(fakeSamplingRate),
+            eq(0.75f),
             eq(null)
         )
     }
@@ -181,12 +170,8 @@ internal class DefaultUISlownessMetricDispatcherTest {
     }
 
     @Test
-    fun `M samplingRate = 0,75 W sendMetric { default sampling rate }`() {
+    fun `M samplingRate = 0,75 W sendMetric`() {
         // Given
-        testedDispatcher = DefaultUISlownessMetricDispatcher(
-            config = fakeSlowFramesConfiguration,
-            internalLogger = mockInternalLogger
-        )
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When

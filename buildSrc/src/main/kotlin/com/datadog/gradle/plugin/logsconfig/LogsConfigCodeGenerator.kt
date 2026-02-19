@@ -190,7 +190,7 @@ internal class LogsConfigCodeGenerator(
 
         when (propDef) {
             is PropertyDefinition.Const -> {
-                codeBuilder.addStatement("put(%S, %S)", propName, propDef.value)
+                appendConstSerialization(codeBuilder, propName, propDef)
             }
 
             is PropertyDefinition.Primitive -> {
@@ -228,6 +228,21 @@ internal class LogsConfigCodeGenerator(
                     codeBuilder.addStatement("put(%S, %N.toMap())", propName, kotlinName)
                 }
             }
+        }
+    }
+
+    private fun appendConstSerialization(
+        codeBuilder: CodeBlock.Builder,
+        propName: String,
+        propDef: PropertyDefinition.Const
+    ) {
+        when (propDef.type) {
+            PrimitiveType.STRING -> codeBuilder.addStatement("put(%S, %S)", propName, propDef.value)
+            PrimitiveType.INT -> codeBuilder.addStatement("put(%S, %L)", propName, propDef.value.toInt())
+            PrimitiveType.LONG -> codeBuilder.addStatement("put(%S, %LL)", propName, propDef.value.toLong())
+            PrimitiveType.FLOAT -> codeBuilder.addStatement("put(%S, %Lf)", propName, propDef.value.toFloat())
+            PrimitiveType.DOUBLE -> codeBuilder.addStatement("put(%S, %L)", propName, propDef.value.toDouble())
+            PrimitiveType.BOOLEAN -> codeBuilder.addStatement("put(%S, %L)", propName, propDef.value.toBoolean())
         }
     }
 

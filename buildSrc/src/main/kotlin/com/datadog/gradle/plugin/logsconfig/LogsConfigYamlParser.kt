@@ -94,12 +94,12 @@ internal object LogsConfigYamlParser {
         val type = map["type"] as? String
             ?: error("Each property must have a 'type' field")
         val nullable = map["nullable"] as? Boolean ?: false
-        val constValue = map["const"] as? String
+        val constRawValue = map["const"]
 
-        if (constValue != null) {
+        if (constRawValue != null) {
             return PropertyDefinition.Const(
                 type = parsePrimitiveType(type),
-                value = constValue
+                value = constRawValue.toString()
             )
         }
 

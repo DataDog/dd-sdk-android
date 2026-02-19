@@ -99,6 +99,41 @@ logs:
             type: long
             nullable: true
 
+  - id: ui_slowness
+    message: "[Mobile Metric] RUM UI Slowness"
+    type: metric
+    sampleRate: 0.75
+    properties:
+      metric_type:
+        type: string
+        const: "rum ui slowness"
+      rum_ui_slowness:
+        type: object
+        properties:
+          view_duration:
+            type: long
+          slow_frames:
+            type: object
+            properties:
+              count:
+                type: int
+              ignored_count:
+                type: int
+              missed_count:
+                type: int
+              config:
+                type: object
+                properties:
+                  max_count:
+                    type: int
+                  slow_frame_threshold:
+                    type: float
+                    const: 2.0
+                  max_duration:
+                    type: long
+                  view_min_duration:
+                    type: long
+
   - id: report_app_fully_displayed_called_too_early
     message: "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
     type: log
