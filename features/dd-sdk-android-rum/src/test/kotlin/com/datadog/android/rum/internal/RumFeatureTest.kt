@@ -28,8 +28,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
-import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
-import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
@@ -223,7 +221,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        verifySlowFramesListenerLogMessage(SLOW_FRAMES_MONITORING_DISABLED_MESSAGE)
+        verifySlowFramesListenerLogMessage("Slow frames monitoring disabled.")
     }
 
     @ParameterizedTest
@@ -377,7 +375,7 @@ internal class RumFeatureTest {
         mockSdkCore.internalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumFeature.DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE,
+            "Developer mode enabled, setting RUM sample rate to 100%.",
             mode = atLeastOnce()
         )
     }
@@ -1055,7 +1053,7 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumFeature.UNSUPPORTED_EVENT_TYPE.format(
+            "RUM feature receive an event of unsupported type=%s.".format(
                 Locale.US,
                 Any()::class.java.canonicalName
             )
@@ -1080,7 +1078,7 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
+            "RUM feature received an event with unknown value of \"type\" property=%s.".format(
                 Locale.US,
                 event["type"]
             )
@@ -1212,7 +1210,7 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumFeature.NO_LAST_RUM_VIEW_EVENT_AVAILABLE,
+            "No last known RUM view event found, skipping fatal ANR reporting.",
             mode = atLeastOnce()
         )
     }
@@ -1269,7 +1267,7 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            RumFeature.FAILED_TO_GET_HISTORICAL_EXIT_REASONS,
+            "Couldn't get historical exit reasons",
             exceptionThrown
         )
     }
@@ -1352,7 +1350,7 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumFeature.LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS
+            "RUM feature received a log event where mandatory message field is either missing or has a wrong type."
         )
 
         verifyNoInteractions(mockRumMonitor)
@@ -1409,7 +1407,7 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumFeature.LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS
+            "RUM feature received a log event with stacktrace where mandatory message field is either missing or has a wrong type."
         )
 
         verifyNoInteractions(mockRumMonitor)
@@ -1637,7 +1635,7 @@ internal class RumFeatureTest {
         assertThat(frameStatesAggregator.frameStateListeners).noneMatch(noneMatchPredicate)
     }
 
-    private fun verifySlowFramesListenerLogMessage(message: String = SLOW_FRAMES_MONITORING_ENABLED_MESSAGE) {
+    private fun verifySlowFramesListenerLogMessage(message: String = "Slow frames monitoring enabled.") {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,

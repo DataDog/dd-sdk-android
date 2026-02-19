@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -52,20 +53,12 @@ object Rum {
         }
 
         if (rumConfiguration.applicationId.isBlank()) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { INVALID_APPLICATION_ID_ERROR_MESSAGE }
-            )
+            DdSdkAndroidRumLogger(sdkCore.internalLogger).logInvalidApplicationIdErrorMessage()
             return
         }
 
         if (sdkCore.getFeature(Feature.RUM_FEATURE_NAME) != null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { RUM_FEATURE_ALREADY_ENABLED }
-            )
+            DdSdkAndroidRumLogger(sdkCore.internalLogger).logRumFeatureAlreadyEnabled()
             return
         }
 
@@ -174,13 +167,6 @@ object Rum {
 
     internal const val UNEXPECTED_SDK_CORE_TYPE =
         "SDK instance provided doesn't implement InternalSdkCore."
-
-    internal const val INVALID_APPLICATION_ID_ERROR_MESSAGE =
-        "You're trying to create a RumMonitor instance, " +
-            "but the RUM application id was empty. No RUM data will be sent."
-
-    internal const val RUM_FEATURE_ALREADY_ENABLED =
-        "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
 
     // endregion
 }

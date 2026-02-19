@@ -6,6 +6,7 @@
 package com.datadog.android.rum.internal.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -120,11 +121,7 @@ class RumNetworkInstrumentation internal constructor(
      * @param message the error message to report
      */
     fun reportInstrumentationError(message: String) = ifRumEnabled { sdkCore ->
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to instrument RUM resource: $message" }
-        )
+        DdSdkAndroidRumLogger(sdkCore.internalLogger).logReportInstrumentationError(message = message)
     }
 
     private fun ifRumEnabled(block: (FeatureSdkCore) -> Unit) {
@@ -149,8 +146,6 @@ class RumNetworkInstrumentation internal constructor(
 
     companion object {
         internal const val ERROR_MSG_FORMAT = "%s request error %s %s"
-        internal const val UNSUPPORTED_HTTP_METHOD =
-            "Unsupported HTTP method %s reported by %s instrumentation, using GET instead"
 
         internal const val WARN_RUM_DISABLED =
             "You set up a %s instrumentation for %s, but RUM feature is disabled. " +
@@ -205,10 +200,9 @@ class RumNetworkInstrumentation internal constructor(
                 HttpSpec.Method.OPTIONS -> RumResourceMethod.OPTIONS
                 HttpSpec.Method.CONNECT -> RumResourceMethod.CONNECT
                 else -> {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                        { UNSUPPORTED_HTTP_METHOD.format(Locale.US, method, networkInstrumentationName) }
+                    DdSdkAndroidRumLogger(internalLogger).logUnsupportedHttpMethod(
+                        method = method,
+                        instrumentation_name = networkInstrumentationName
                     )
                     RumResourceMethod.GET
                 }

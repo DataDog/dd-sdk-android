@@ -245,7 +245,7 @@ internal class RumNetworkInstrumentationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumNetworkInstrumentation.UNSUPPORTED_HTTP_METHOD.format(
+            "Unsupported HTTP method %s reported by %s instrumentation, using GET instead".format(
                 Locale.US,
                 fakeUnknownMethod,
                 fakeNetworkInstrumentationName

@@ -1,0 +1,14 @@
+logs:
+  - id: invalid_application_id_error_message
+    message: "You're trying to create a RumMonitor instance, but the RUM application id was empty. No RUM data will be sent."
+    type: log
+    level: error
+    targets:
+      - user
+
+  - id: rum_feature_already_enabled
+    message: "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
+    type: log
+    level: warn
+    targets:
+      - user

@@ -223,7 +223,7 @@ internal class RumTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            Rum.INVALID_APPLICATION_ID_ERROR_MESSAGE
+            "You're trying to create a RumMonitor instance, but the RUM application id was empty. No RUM data will be sent."
         )
         verify(mockSdkCore, never()).registerFeature(any())
         check(GlobalRumMonitor.get(mockSdkCore) is NoOpAdvancedRumMonitor)
@@ -245,7 +245,7 @@ internal class RumTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            Rum.RUM_FEATURE_ALREADY_ENABLED
+            "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
         )
         verify(mockSdkCore, never()).registerFeature(any())
     }

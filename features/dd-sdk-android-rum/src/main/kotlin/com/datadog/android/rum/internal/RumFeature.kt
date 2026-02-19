@@ -17,6 +17,7 @@ import android.os.Looper
 import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
@@ -118,7 +119,6 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -178,6 +178,7 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     private var rumAppStartupDetector: RumAppStartupDetector? = null
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     // region Feature
 
@@ -206,11 +207,7 @@ internal class RumFeature(
         )
 
         sampleRate = if (sdkCore.isDeveloperModeEnabled) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE }
-            )
+            logger.logDeveloperModeSampleRateChanged()
             ALL_IN_SAMPLE_RATE
         } else {
             configuration.sampleRate
@@ -286,11 +283,7 @@ internal class RumFeature(
         slowFramesConfiguration: SlowFramesConfiguration?
     ): FrameStateListener? {
         slowFramesListener = if (slowFramesConfiguration != null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { SLOW_FRAMES_MONITORING_ENABLED_MESSAGE }
-            )
+            logger.logSlowFramesMonitoringEnabled()
             DefaultSlowFramesListener(
                 configuration = slowFramesConfiguration,
                 metricDispatcher = DefaultUISlownessMetricDispatcher(
@@ -301,11 +294,7 @@ internal class RumFeature(
                 timeProvider = sdkCore.timeProvider
             )
         } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { SLOW_FRAMES_MONITORING_DISABLED_MESSAGE }
-            )
+            logger.logSlowFramesMonitoringDisabled()
             null
         }
 
@@ -409,11 +398,7 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             else -> {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
-                )
+                logger.logUnsupportedEventType(event_type = event::class.java.canonicalName.orEmpty())
             }
         }
     }
@@ -445,11 +430,7 @@ internal class RumFeature(
             }
 
             else -> {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]) }
-                )
+                logger.logUnknownEventTypePropertyValue(type_value = (event["type"] ?: "null").toString())
             }
         }
     }
@@ -501,12 +482,7 @@ internal class RumFeature(
                 // sorted in the order from most recent to least recent.
                 .firstOrNull { it.reason == ApplicationExitInfo.REASON_ANR }
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { FAILED_TO_GET_HISTORICAL_EXIT_REASONS },
-                e
-            )
+            logger.logFailedToGetHistoricalExitReasons(throwable = e)
             null
         } ?: return
 
@@ -519,11 +495,7 @@ internal class RumFeature(
                     dataWriter
                 )
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    InternalLogger.Target.USER,
-                    { NO_LAST_RUM_VIEW_EVENT_AVAILABLE }
-                )
+                logger.logNoLastRumViewEventAvailable()
             }
         }
     }
@@ -538,12 +510,7 @@ internal class RumFeature(
             @Suppress("UnsafeThirdPartyFunctionCall")
             frameStatesAggregator?.onActivityStarted(activity)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY },
-                e
-            )
+            logger.logFailedToEnableJankStatsTrackingManually(throwable = e)
         }
     }
 
@@ -648,11 +615,7 @@ internal class RumFeature(
         val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
 
         if (message == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { LOG_ERROR_EVENT_MISSING_MANDATORY_FIELDS }
-            )
+            logger.logLogErrorEventMissingMandatoryFields()
             return
         }
 
@@ -672,11 +635,7 @@ internal class RumFeature(
         val attributes = loggerErrorEvent[EVENT_ATTRIBUTES_PROPERTY] as? Map<String, Any?>
 
         if (message == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { LOG_ERROR_WITH_STACKTRACE_EVENT_MISSING_MANDATORY_FIELDS }
-            )
+            logger.logLogErrorWithStacktraceEventMissingMandatoryFields()
             return
         }
 
@@ -844,8 +803,6 @@ internal class RumFeature(
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."
-        internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
-            "Manually enabling JankStats tracking threw an exception."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
