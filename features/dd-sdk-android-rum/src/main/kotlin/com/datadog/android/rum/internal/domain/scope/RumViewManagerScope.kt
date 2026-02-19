@@ -14,7 +14,6 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionType
@@ -23,6 +22,7 @@ import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -36,7 +36,6 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -62,6 +61,8 @@ internal class RumViewManagerScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector
 ) : RumScope {
+
+    private val logger = DdSdkAndroidRumLogger(sdkCore.internalLogger)
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
         InteractionToNextViewMetricResolver(
@@ -115,17 +116,9 @@ internal class RumViewManagerScope(
             lastStoppedViewTime?.let {
                 val gap = event.eventTime.nanoTime - it.nanoTime
                 if (gap in 1 until THREE_SECONDS_GAP_NS) {
-                    sdkCore.internalLogger.logMetric(
-                        messageBuilder = { MESSAGE_GAP_BETWEEN_VIEWS.format(Locale.US, gap) },
-                        additionalProperties = mapOf(ATTR_GAP_BETWEEN_VIEWS to gap),
-                        samplingRate = MethodCallSamplingRate.MEDIUM.rate
-                    )
+                    logger.logGapBetweenViews(viewGap = gap)
                 } else if (gap < 0) {
-                    sdkCore.internalLogger.logMetric(
-                        messageBuilder = { MESSAGE_NEG_GAP_BETWEEN_VIEWS.format(Locale.US, gap) },
-                        additionalProperties = mapOf(ATTR_GAP_BETWEEN_VIEWS to gap),
-                        samplingRate = MethodCallSamplingRate.MEDIUM.rate
-                    )
+                    logger.logNegativeGapBetweenViews(viewGap = gap)
                 }
             }
             lastStoppedViewTime = null
@@ -460,10 +453,6 @@ internal class RumViewManagerScope(
         internal const val RUM_APP_LAUNCH_VIEW_ID = "com.datadog.application-launch.view"
         internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
         internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
-
-        private const val MESSAGE_GAP_BETWEEN_VIEWS = "[Mobile Metric] Gap between views"
-        private const val MESSAGE_NEG_GAP_BETWEEN_VIEWS = "[Mobile Metric] Negative gap between views"
-        internal const val ATTR_GAP_BETWEEN_VIEWS = "view_gap"
 
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +

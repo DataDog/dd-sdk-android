@@ -383,8 +383,8 @@ internal class RumViewManagerScopeTest {
             eq(null)
         )
 
-        assertThat(additionalPropertiesCaptor.firstValue).containsKey(RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS)
-        val gapNs = additionalPropertiesCaptor.firstValue[RumViewManagerScope.ATTR_GAP_BETWEEN_VIEWS] as Long
+        assertThat(additionalPropertiesCaptor.firstValue).containsKey("view_gap")
+        val gapNs = additionalPropertiesCaptor.firstValue["view_gap"] as Long
         val expectedGapNs = TimeUnit.MILLISECONDS.toNanos(fakeGapMs)
         assertThat(gapNs).isEqualTo(expectedGapNs)
         assertThat(messageBuilderCaptor.firstValue()).isEqualTo("[Mobile Metric] Gap between views")

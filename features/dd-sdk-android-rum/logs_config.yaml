@@ -134,6 +134,22 @@ logs:
                   view_min_duration:
                     type: long
 
+  - id: gap_between_views
+    message: "[Mobile Metric] Gap between views"
+    type: metric
+    sampleRate: 1.0
+    properties:
+      view_gap:
+        type: long
+
+  - id: negative_gap_between_views
+    message: "[Mobile Metric] Negative gap between views"
+    type: metric
+    sampleRate: 1.0
+    properties:
+      view_gap:
+        type: long
+
   - id: report_app_fully_displayed_called_too_early
     message: "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
     type: log
