@@ -71,7 +71,11 @@ internal class WriteOperation(
     }
 
     private fun notifyEventWriteFailure(exception: Exception? = null) {
-        logger.logWriteOperationFailed(throwable = exception)
+        if (exception != null) {
+            logger.logWriteOperationFailedWithException(throwable = exception)
+        } else {
+            logger.logWriteOperationFailed()
+        }
 
         advancedRumMonitor?.let {
             if (onError == NO_OP_EVENT_OUTCOME_ACTION) {

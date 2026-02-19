@@ -86,25 +86,13 @@ internal data class RumEventMapper(
         // but it can happen that if used from Java code to have null values. In this case we will
         // log a warning and we will use the original event.
         return if (event is ViewEvent && (mappedEvent == null || mappedEvent !== event)) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event) }
-            )
+            logger.logViewEventNull(event = event.toString())
             event
         } else if (mappedEvent == null) {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event) }
-            )
+            logger.logEventNull(event = event.toString())
             null
         } else if (mappedEvent !== event) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event) }
-            )
+            logger.logNotSameEventInstance(event = event.toString())
             null
         } else {
             event
@@ -113,22 +101,4 @@ internal data class RumEventMapper(
 
     // endregion
 
-    companion object {
-        internal const val VIEW_EVENT_NULL_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped ViewEvent was null. " +
-                "The original event object will be used instead: %s"
-        internal const val EVENT_NULL_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped object was null. " +
-                "This event will be dropped: %s"
-        internal const val NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped object was not the " +
-                "same instance as the original object. This event will be dropped: %s"
-        internal const val NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE =
-            "RumEventMapper: there was no EventMapper assigned for" +
-                " RUM event type: %s"
-        internal const val NO_DROPPING_FATAL_ERRORS_WARNING_MESSAGE =
-            "RumEventMapper: the return from the ErrorEvent mapper was null for a crash. " +
-                "Dropping crashes in from the event mapper is not supported. " +
-                "The original event object will be used instead."
-    }
 }

@@ -158,7 +158,7 @@ internal class SdkCoreExtTest {
         // Then
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.USER),
+            target = InternalLogger.Target.USER,
             message = "Write operation failed."
         )
         assertThat(invoked)

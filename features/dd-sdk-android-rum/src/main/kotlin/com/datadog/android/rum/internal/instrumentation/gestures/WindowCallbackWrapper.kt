@@ -38,6 +38,7 @@ internal class WindowCallbackWrapper(
 ) : FixedWindowCallback(wrappedCallback) {
 
     internal val windowReference = WeakReference(window)
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     // region Window.Callback
 

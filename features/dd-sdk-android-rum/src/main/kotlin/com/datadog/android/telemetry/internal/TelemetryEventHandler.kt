@@ -170,7 +170,7 @@ internal class TelemetryEventHandler(
         val eventIdentity = event.identity
 
         if (isLog(event) && eventIDsSeenInCurrentSession.contains(eventIdentity)) {
-            logger.logAlreadySeenEvent(eventIdentity = eventIdentity)
+            logger.logAlreadySeenEvent(eventIdentity = eventIdentity.toString())
             return false
         }
 

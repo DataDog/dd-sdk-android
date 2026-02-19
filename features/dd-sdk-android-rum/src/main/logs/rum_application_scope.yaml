@@ -1,0 +1,14 @@
+logs:
+  - id: multiple_active_sessions
+    message: "Application has multiple active sessions, this shouldn't happen."
+    type: log
+    level: error
+    targets:
+      - maintainer
+
+  - id: multiple_active_sessions_session_start
+    message: "Application has multiple active sessions when starting a new session"
+    type: log
+    level: error
+    targets:
+      - telemetry

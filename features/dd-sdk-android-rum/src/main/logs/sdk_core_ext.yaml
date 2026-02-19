@@ -12,6 +12,13 @@ logs:
     level: error
     targets:
       - user
+
+  - id: write_operation_failed_with_exception
+    message: "Write operation failed."
+    type: log
+    level: error
+    targets:
+      - user
       - telemetry
     throwable: true
 

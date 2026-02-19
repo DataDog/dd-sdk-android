@@ -718,7 +718,9 @@ internal class DatadogLateCrashReporterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogLateCrashReporter.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+            "RUM feature received a NDK crash event where one or more mandatory" +
+                " (timestamp, signalName, stacktrace, message, lastViewEvent) fields" +
+                " are either missing or have wrong type."
         )
     }
 
@@ -757,7 +759,9 @@ internal class DatadogLateCrashReporterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogLateCrashReporter.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+            "RUM feature received a NDK crash event where one or more mandatory" +
+                " (timestamp, signalName, stacktrace, message, lastViewEvent) fields" +
+                " are either missing or have wrong type."
         )
     }
 
@@ -1362,7 +1366,7 @@ internal class DatadogLateCrashReporterTest {
                 onlyOnce = eq(false),
                 additionalProperties = isNull()
             )
-            assertThat(firstValue()).isEqualTo(DatadogLateCrashReporter.OPEN_ANR_TRACE_ERROR)
+            assertThat(firstValue()).isEqualTo("Cannot open trace for the last known exit reason.")
         }
     }
 

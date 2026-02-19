@@ -8,6 +8,7 @@ logs:
     message_args:
       sdk_name:
         type: string
+        nullable: true
 
   - id: rum_monitor_already_registered
     message: "A RumMonitor has already been registered for this SDK instance"

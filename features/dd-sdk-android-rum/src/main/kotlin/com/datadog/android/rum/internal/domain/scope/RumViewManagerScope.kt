@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
@@ -77,11 +76,7 @@ internal class RumViewManagerScope(
             return if (isActive()) {
                 val activeViews = childrenScopes.filter { it.isActive() }
                 if (activeViews.size > 1) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Multiple views are active at the same time, this shouldn't happen." }
-                    )
+                    logger.logMultipleActiveViews()
                 }
                 activeViews.lastOrNull()
             } else {

@@ -398,7 +398,7 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             else -> {
-                logger.logUnsupportedEventType(event_type = event::class.java.canonicalName.orEmpty())
+                logger.logUnsupportedEventType(eventType = event::class.java.canonicalName.orEmpty())
             }
         }
     }
@@ -430,7 +430,7 @@ internal class RumFeature(
             }
 
             else -> {
-                logger.logUnknownEventTypePropertyValue(type_value = (event["type"] ?: "null").toString())
+                logger.logUnknownEventTypePropertyValue(typeValue = (event["type"] ?: "null").toString())
             }
         }
     }

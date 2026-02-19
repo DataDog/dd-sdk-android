@@ -57,8 +57,8 @@ object GlobalRumMonitor {
         return synchronized(registeredMonitors) {
             val monitor = registeredMonitors[sdkCore]
             if (monitor == null) {
-                (sdkCore as? FeatureSdkCore)?.let {
-                    DdSdkAndroidRumLogger(it.internalLogger)
+                (sdkCore as? FeatureSdkCore)?.internalLogger?.let { internalLogger ->
+                    DdSdkAndroidRumLogger(internalLogger)
                         .logNoRumMonitorRegistered(sdkName = sdkCore.name)
                 }
                 NoOpAdvancedRumMonitor()

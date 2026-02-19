@@ -202,7 +202,7 @@ class RumNetworkInstrumentation internal constructor(
                 else -> {
                     DdSdkAndroidRumLogger(internalLogger).logUnsupportedHttpMethod(
                         method = method,
-                        instrumentation_name = networkInstrumentationName
+                        instrumentationName = networkInstrumentationName
                     )
                     RumResourceMethod.GET
                 }

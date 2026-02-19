@@ -605,7 +605,7 @@ internal open class RumViewScope(
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
                 return
             } else {
-                logger.logActionDropped(actionType = event.type, actionName = event.name)
+                logger.logActionDropped(actionType = event.type.toString(), actionName = event.name)
                 return
             }
         }
