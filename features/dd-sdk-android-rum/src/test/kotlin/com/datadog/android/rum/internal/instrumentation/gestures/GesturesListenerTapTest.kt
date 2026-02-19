@@ -334,7 +334,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            GesturesListener.MSG_NO_TARGET_ACTION
+            "We could not find a valid target for the gesture event." +
+                " The DecorView was empty and either transparent or not clickable for this Activity."
         )
         verifyNoInteractions(rumMonitor.mockInstance)
     }

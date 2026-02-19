@@ -159,7 +159,8 @@ internal class GlobalRumMonitorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            GlobalRumMonitor.NO_MONITOR_REGISTERED_MESSAGE.format(Locale.US, fakeSdkInstanceName)
+            "No RumMonitor for the SDK instance with name %s found, returning no-op implementation."
+                .format(Locale.US, fakeSdkInstanceName)
 
         )
     }

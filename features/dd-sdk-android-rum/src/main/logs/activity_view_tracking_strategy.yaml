@@ -1,0 +1,8 @@
+logs:
+  - id: intent_extras_error
+    message: "Error getting Intent extras, ignoring it."
+    type: log
+    level: error
+    targets:
+      - user
+    throwable: true

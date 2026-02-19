@@ -7,12 +7,11 @@
 package com.datadog.android.rum
 
 import com.datadog.android.Datadog
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.GlobalRumMonitor.get
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
-import java.util.Locale
 
 /**
  * A global [RumMonitor] holder, ensuring that all RUM events are registered
@@ -58,13 +57,10 @@ object GlobalRumMonitor {
         return synchronized(registeredMonitors) {
             val monitor = registeredMonitors[sdkCore]
             if (monitor == null) {
-                (sdkCore as? FeatureSdkCore)
-                    ?.internalLogger
-                    ?.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { NO_MONITOR_REGISTERED_MESSAGE.format(Locale.US, sdkCore.name) }
-                    )
+                (sdkCore as? FeatureSdkCore)?.let {
+                    DdSdkAndroidRumLogger(it.internalLogger)
+                        .logNoRumMonitorRegistered(sdkName = sdkCore.name)
+                }
                 NoOpAdvancedRumMonitor()
             } else {
                 monitor
@@ -91,11 +87,8 @@ object GlobalRumMonitor {
     internal fun registerIfAbsent(monitor: RumMonitor, sdkCore: SdkCore = Datadog.getInstance()): Boolean {
         return synchronized(registeredMonitors) {
             if (registeredMonitors.containsKey(sdkCore)) {
-                (sdkCore as FeatureSdkCore).internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { "A RumMonitor has already been registered for this SDK instance" }
-                )
+                DdSdkAndroidRumLogger((sdkCore as FeatureSdkCore).internalLogger)
+                    .logRumMonitorAlreadyRegistered()
                 false
             } else {
                 @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
@@ -127,9 +120,6 @@ object GlobalRumMonitor {
     // endregion
 
     // region Constants
-
-    internal const val NO_MONITOR_REGISTERED_MESSAGE = "No RumMonitor for the SDK instance with" +
-        " name %s found, returning no-op implementation."
 
     // endregion
 }

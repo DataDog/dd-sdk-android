@@ -14,6 +14,7 @@ import android.view.Window
 import androidx.core.view.isVisible
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -40,6 +41,7 @@ internal class GesturesListener(
     private val androidActionTrackingStrategy: ActionTrackingStrategy = AndroidActionTrackingStrategy()
 ) : GestureListenerCompat() {
 
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
     private var scrollEventType: RumActionType? = null
     private var gestureDirection = ""
     private var scrollTargetReference: ViewTarget? = null
@@ -166,16 +168,11 @@ internal class GesturesListener(
         }
 
         if (target == null) {
-            val msg = if (composeViewDetected) {
-                MSG_NO_COMPOSE_TARGET
+            if (composeViewDetected) {
+                logger.logNoComposeTarget()
             } else {
-                MSG_NO_TARGET_ACTION
+                logger.logNoTargetAction()
             }
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { msg }
-            )
         }
         return target
     }
@@ -339,12 +336,5 @@ internal class GesturesListener(
         internal const val SCROLL_DIRECTION_UP = "up"
         internal const val SCROLL_DIRECTION_DOWN = "down"
 
-        internal const val MSG_NO_COMPOSE_TARGET =
-            "We could not find a valid target for the gesture " +
-                "event. Compose actions tracking not enabled, or the compose view is not tagged."
-        internal const val MSG_NO_TARGET_ACTION = "We could not find a valid target for " +
-            "the gesture event. " +
-            "The DecorView was empty and either transparent " +
-            "or not clickable for this Activity."
     }
 }

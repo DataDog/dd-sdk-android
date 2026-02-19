@@ -1,0 +1,17 @@
+logs:
+  - id: no_rum_monitor_registered
+    message: "No RumMonitor for the SDK instance with name %s found, returning no-op implementation."
+    type: log
+    level: warn
+    targets:
+      - user
+    message_args:
+      sdk_name:
+        type: string
+
+  - id: rum_monitor_already_registered
+    message: "A RumMonitor has already been registered for this SDK instance"
+    type: log
+    level: warn
+    targets:
+      - user

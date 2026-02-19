@@ -12,6 +12,7 @@ import android.os.Bundle
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.GlobalRumMonitor
@@ -135,15 +136,9 @@ constructor(
 
     private val Intent.safeExtras: Bundle?
         get() = try {
-            // old Androids can throw different exceptions here making native calls
             extras
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Error getting Intent extras, ignoring it." },
-                e
-            )
+            DdSdkAndroidRumLogger(internalLogger).logIntentExtrasError(throwable = e)
             null
         }
 

@@ -467,7 +467,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             {
-                it == GesturesListener.MSG_NO_TARGET_ACTION
+                it == "We could not find a valid target for the gesture event." +
+                    " The DecorView was empty and either transparent" +
+                    " or not clickable for this Activity."
             },
             mode = times(intermediaryEvents.size + 2)
         )

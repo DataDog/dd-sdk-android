@@ -14,6 +14,7 @@ import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 
@@ -42,14 +43,8 @@ abstract class ActivityLifecycleTrackingStrategy :
             this.sdkCore = sdkCore as FeatureSdkCore
             context.registerActivityLifecycleCallbacks(this)
         } else {
-            (sdkCore as FeatureSdkCore).internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                {
-                    "In order to use the RUM automatic tracking feature you will have" +
-                        " to use the Application context when initializing the SDK"
-                }
-            )
+            DdSdkAndroidRumLogger((sdkCore as FeatureSdkCore).internalLogger)
+                .logRumTrackingRequiresApplicationContext()
         }
     }
 
