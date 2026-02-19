@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.anr
 
 import android.os.Handler
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
@@ -28,6 +28,7 @@ internal class ANRDetectorRunnable(
     private val anrTestDelayMs: Long = ANR_TEST_DELAY_MS
 ) : Runnable {
 
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
     private var shouldStop = false
 
     // region Runnable
@@ -99,13 +100,7 @@ internal class ANRDetectorRunnable(
         return try {
             Thread.getAllStackTraces()
         } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            // coroutines machinery can throw errors here
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Failed to get all stack traces." },
-                t
-            )
+            logger.logFailedGetAllStackTraces(throwable = t)
             emptyMap()
         }
     }

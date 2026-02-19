@@ -1,0 +1,8 @@
+logs:
+  - id: failed_get_all_stack_traces
+    message: "Failed to get all stack traces."
+    type: log
+    level: error
+    targets:
+      - maintainer
+    throwable: true
