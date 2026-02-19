@@ -84,7 +84,8 @@ internal class LogsConfigCodeGenerator(
             is PropertyDefinition.ObjectDef -> generateDataClass(propertyName, propDef, enclosingNames)
             is PropertyDefinition.EnumDef -> generateEnumClass(propertyName, propDef)
             is PropertyDefinition.Primitive,
-            is PropertyDefinition.Const -> null
+            is PropertyDefinition.Const,
+            is PropertyDefinition.MapDef -> null
         }
     }
 
@@ -228,6 +229,14 @@ internal class LogsConfigCodeGenerator(
                     codeBuilder.addStatement("put(%S, %N.toMap())", propName, kotlinName)
                 }
             }
+
+            is PropertyDefinition.MapDef -> {
+                if (propDef.nullable) {
+                    codeBuilder.addStatement("putNonNull(%S, %N)", propName, kotlinName)
+                } else {
+                    codeBuilder.addStatement("put(%S, %N)", propName, kotlinName)
+                }
+            }
         }
     }
 
@@ -265,6 +274,14 @@ internal class LogsConfigCodeGenerator(
         val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
             .addModifiers(KModifier.INTERNAL)
 
+        if (entry.creationSampleRate) {
+            funBuilder.addParameter(
+                ParameterSpec.builder("creationSampleRate", Float::class.asTypeName().copy(nullable = true))
+                    .defaultValue("null")
+                    .build()
+            )
+        }
+
         addPropertyParameters(funBuilder, nonConstProperties, enclosingNames)
 
         val buildMap = MemberName("kotlin.collections", "buildMap")
@@ -281,6 +298,9 @@ internal class LogsConfigCodeGenerator(
 
         codeBuilder.unindent()
         codeBuilder.addStatement("},")
+        if (entry.creationSampleRate) {
+            codeBuilder.addStatement("creationSampleRate = creationSampleRate,")
+        }
         codeBuilder.addStatement("samplingRate = %Lf", entry.sampleRate)
         codeBuilder.unindent()
         codeBuilder.addStatement(")")
@@ -407,6 +427,9 @@ internal class LogsConfigCodeGenerator(
             }
             is PropertyDefinition.ObjectDef -> {
                 ClassName(packageName, enclosingNames + toPascalCase(propertyName))
+            }
+            is PropertyDefinition.MapDef -> {
+                MAP.parameterizedBy(STRING, primitiveToTypeName(propDef.valueType))
             }
         }
     }

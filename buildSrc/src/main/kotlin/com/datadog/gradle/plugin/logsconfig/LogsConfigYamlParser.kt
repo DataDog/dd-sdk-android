@@ -39,10 +39,12 @@ internal object LogsConfigYamlParser {
             "metric" -> {
                 val sampleRate = (map["sampleRate"] as? Number)?.toFloat()
                     ?: error("Metric log entry '$id' must have a numeric 'sampleRate'")
+                val creationSampleRate = map["creationSampleRate"] as? Boolean ?: false
                 MetricLogEntry(
                     id = id,
                     message = message,
                     sampleRate = sampleRate,
+                    creationSampleRate = creationSampleRate,
                     onlyOnce = onlyOnce,
                     throwable = throwable,
                     properties = properties
@@ -117,6 +119,15 @@ internal object LogsConfigYamlParser {
                     ?: error("Object property must have a 'properties' map")
                 PropertyDefinition.ObjectDef(
                     properties = properties.mapValues { (_, v) -> parsePropertyDefinition(v) },
+                    nullable = nullable
+                )
+            }
+
+            "map" -> {
+                val valueType = map["value_type"] as? String
+                    ?: error("Map property must have a 'value_type' field")
+                PropertyDefinition.MapDef(
+                    valueType = parsePrimitiveType(valueType),
                     nullable = nullable
                 )
             }

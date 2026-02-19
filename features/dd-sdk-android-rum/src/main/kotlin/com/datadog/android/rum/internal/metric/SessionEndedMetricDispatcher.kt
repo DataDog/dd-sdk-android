@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.metric
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.ConcurrentHashMap
 
@@ -17,6 +18,8 @@ internal class SessionEndedMetricDispatcher(
     private val sessionSamplingRate: Float
 ) :
     SessionMetricDispatcher {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     private val metricsBySessionId = ConcurrentHashMap<String, SessionEndedMetric>()
 
@@ -38,11 +41,9 @@ internal class SessionEndedMetricDispatcher(
         // the argument is always non - null, so we can suppress the warning
         @Suppress("UnsafeThirdPartyFunctionCall")
         metricsBySessionId.remove(sessionId)?.let { metric: SessionEndedMetric ->
-            internalLogger.logMetric(
-                messageBuilder = { SessionEndedMetric.RUM_SESSION_ENDED_METRIC_NAME },
-                additionalProperties = metric.toMetricAttributes(ntpOffsetAtEndMs),
+            logger.logRumSessionEnded(
                 creationSampleRate = sessionSamplingRate,
-                samplingRate = 15.0f
+                rse = metric.toGeneratedRse(ntpOffsetAtEndMs)
             )
         }
     }

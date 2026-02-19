@@ -60,65 +60,50 @@ class RumSessionEndedMetricTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Test
-    fun `M create attributes with session ended metric type W toMetricAttributes`() {
+    fun `M create attributes with session ended process type W toGeneratedRse`() {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
+
         // When
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        assertThat(attributes[SessionEndedMetric.METRIC_TYPE_KEY]).isEqualTo(SessionEndedMetric.METRIC_TYPE_VALUE)
+        val processType = rse["process_type"] as String
+        assertThat(processType).isEqualTo("app")
     }
 
     @Test
-    fun `M create attributes with session ended process type W toMetricAttributes`() {
-        // Given
-        val sessionEndedMetric = stubSessionEndedMetric()
-
-        // When
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-
-        // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val processType = rse[SessionEndedMetric.PROCESS_TYPE_KEY] as String
-        assertThat(processType).isEqualTo(SessionEndedMetric.PROCESS_TYPE_VALUE)
-    }
-
-    @Test
-    fun `M create attributes with session ended precondition W toMetricAttributes`() {
+    fun `M create attributes with session ended precondition W toGeneratedRse`() {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
         // When
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val precondition = rse[SessionEndedMetric.PRECONDITION_KEY] as String
+        val precondition = rse["precondition"] as String
         assertThat(precondition).isEqualTo(fakeStartReason.asString)
     }
 
     @Test
-    fun `M init attributes W toMetricAttributes { empty metric }`() {
+    fun `M init attributes W toGeneratedRse { empty metric }`() {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
+        assertThat(rse["duration"] as Long).isEqualTo(0L)
+        assertThat(rse["was_stopped"] as Boolean).isFalse()
 
-        assertThat(rse[SessionEndedMetric.DURATION_KEY] as Long).isEqualTo(0L)
-        assertThat(rse[SessionEndedMetric.WAS_STOPPED_KEY] as Boolean).isFalse()
+        val viewCounts = rse["views_count"] as Map<*, *>
+        assertThat(viewCounts["total"] as Int).isEqualTo(0)
+        assertThat(viewCounts["background"] as Int).isEqualTo(0)
+        assertThat(viewCounts["app_launch"] as Int).isEqualTo(0)
 
-        val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_TOTAL_KEY] as Int).isEqualTo(0)
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_BG_KEY] as Int).isEqualTo(0)
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_APP_LAUNCH_KEY] as Int).isEqualTo(0)
-
-        val errorCounts = rse[SessionEndedMetric.SDK_ERRORS_COUNT_KEY] as Map<*, *>
-        assertThat(errorCounts[SessionEndedMetric.SDK_ERRORS_COUNT_TOTAL_KEY] as Int).isEqualTo(0)
-        assertTrue((errorCounts[SessionEndedMetric.SDK_ERRORS_COUNT_BY_KIND_KEY] as Map<*, *>).isEmpty())
+        val errorCounts = rse["sdk_errors_count"] as Map<*, *>
+        assertThat(errorCounts["total"] as Int).isEqualTo(0)
+        assertTrue((errorCounts["by_kind"] as Map<*, *>).isEmpty())
     }
 
     @Test
@@ -128,11 +113,10 @@ class RumSessionEndedMetricTest {
 
         // When
         sessionEndedMetric.onSessionStopped()
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val wasStopped = rse[SessionEndedMetric.WAS_STOPPED_KEY] as Boolean
+        val wasStopped = rse["was_stopped"] as Boolean
         assertThat(wasStopped).isTrue()
     }
 
@@ -144,11 +128,10 @@ class RumSessionEndedMetricTest {
         // When
         sessionEndedMetric.onViewTracked(event)
 
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val duration = rse[SessionEndedMetric.DURATION_KEY] as Long
+        val duration = rse["duration"] as Long
         assertThat(duration).isEqualTo(event.view.timeSpent)
     }
 
@@ -188,9 +171,8 @@ class RumSessionEndedMetricTest {
         sessionEndedMetric.onViewTracked(sessionEvent3)
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val duration = rse[SessionEndedMetric.DURATION_KEY] as Long
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val duration = rse["duration"] as Long
         val expected = TimeUnit.MILLISECONDS.toNanos(date3 - date1) + duration3
         assertThat(duration).isEqualTo(expected)
     }
@@ -222,10 +204,9 @@ class RumSessionEndedMetricTest {
         sessionEndedMetric.onViewTracked(differentSessionViewEvent)
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_TOTAL_KEY]).isEqualTo(1)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val viewCounts = rse["views_count"] as Map<*, *>
+        assertThat(viewCounts["total"]).isEqualTo(1)
     }
 
     @Test
@@ -241,10 +222,9 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_TOTAL_KEY]).isEqualTo(events.count())
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val viewCounts = rse["views_count"] as Map<*, *>
+        assertThat(viewCounts["total"]).isEqualTo(events.count())
     }
 
     @Test
@@ -260,10 +240,9 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNT_WITH_HAS_REPLAY]).isEqualTo(
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val viewCounts = rse["views_count"] as Map<*, *>
+        assertThat(viewCounts["with_has_replay"]).isEqualTo(
             events.count {
                 it.session.hasReplay == true
             }
@@ -295,10 +274,9 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_BG_KEY]).isEqualTo(backgroundViewCount)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val viewCounts = rse["views_count"] as Map<*, *>
+        assertThat(viewCounts["background"]).isEqualTo(backgroundViewCount)
     }
 
     @Test
@@ -326,10 +304,9 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-        assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_APP_LAUNCH_KEY]).isEqualTo(appLaunchViewCount)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val viewCounts = rse["views_count"] as Map<*, *>
+        assertThat(viewCounts["app_launch"]).isEqualTo(appLaunchViewCount)
     }
 
     @Test
@@ -343,10 +320,9 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val sdkErrorCount = rse[SessionEndedMetric.SDK_ERRORS_COUNT_KEY] as Map<*, *>
-        assertThat(sdkErrorCount[SessionEndedMetric.SDK_ERRORS_COUNT_TOTAL_KEY]).isEqualTo(errorKinds.size)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val sdkErrorCount = rse["sdk_errors_count"] as Map<*, *>
+        assertThat(sdkErrorCount["total"]).isEqualTo(errorKinds.size)
     }
 
     @Test
@@ -373,9 +349,8 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val sdkErrorCount = rse[SessionEndedMetric.SDK_ERRORS_COUNT_KEY] as Map<*, *>
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val sdkErrorCount = rse["sdk_errors_count"] as Map<*, *>
 
         val expectedErrorKind = mapOf(
             "top1" to 10,
@@ -384,7 +359,7 @@ class RumSessionEndedMetricTest {
             "top4" to 7,
             "top5" to 6
         )
-        assertThat(sdkErrorCount[SessionEndedMetric.SDK_ERRORS_COUNT_BY_KIND_KEY]).isEqualTo(expectedErrorKind)
+        assertThat(sdkErrorCount["by_kind"]).isEqualTo(expectedErrorKind)
     }
 
     @Test
@@ -406,9 +381,8 @@ class RumSessionEndedMetricTest {
         }
 
         // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val sdkErrorCount = rse[SessionEndedMetric.SDK_ERRORS_COUNT_KEY] as Map<*, *>
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val sdkErrorCount = rse["sdk_errors_count"] as Map<*, *>
 
         val expectedErrorKind = mapOf(
             "top_1_error" to 10,
@@ -416,11 +390,11 @@ class RumSessionEndedMetricTest {
             "top_3_error" to 8,
             "top_4_error" to 7
         )
-        assertThat(sdkErrorCount[SessionEndedMetric.SDK_ERRORS_COUNT_BY_KIND_KEY]).isEqualTo(expectedErrorKind)
+        assertThat(sdkErrorCount["by_kind"]).isEqualTo(expectedErrorKind)
     }
 
     @Test
-    fun `M have correct no_view_events_count W toMetricAttributes()`(
+    fun `M have correct no_view_events_count W toGeneratedRse()`(
         @BoolForgery fakeBackgroundEventTracking: Boolean,
         @IntForgery(min = 0, max = 5) randomActionCount: Int,
         @IntForgery(min = 0, max = 5) randomResourceCount: Int,
@@ -446,19 +420,18 @@ class RumSessionEndedMetricTest {
             sessionEndedMetric.onMissedEventTracked(SessionEndedMetric.MissedEventType.LONG_TASK)
         }
 
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val noViewCounts = rse[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_KEY] as Map<*, *>
-        assertThat(noViewCounts[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ACTIONS_KEY]).isEqualTo(randomActionCount)
-        assertThat(noViewCounts[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ERRORS_KEY]).isEqualTo(randomErrorCount)
-        assertThat(noViewCounts[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_RESOURCES_KEY]).isEqualTo(randomResourceCount)
-        assertThat(noViewCounts[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_LONG_TASKS_KEY]).isEqualTo(randomLongTaskCount)
+        val noViewCounts = rse["no_view_events_count"] as Map<*, *>
+        assertThat(noViewCounts["actions"]).isEqualTo(randomActionCount)
+        assertThat(noViewCounts["errors"]).isEqualTo(randomErrorCount)
+        assertThat(noViewCounts["resources"]).isEqualTo(randomResourceCount)
+        assertThat(noViewCounts["long_tasks"]).isEqualTo(randomLongTaskCount)
     }
 
     @Test
-    fun `M have correct has_background_events_tracking_enabled W toMetricAttributes()`(
+    fun `M have correct has_background_events_tracking_enabled W toGeneratedRse()`(
         @BoolForgery fakeBackgroundEventTracking: Boolean
     ) {
         // Given
@@ -467,17 +440,16 @@ class RumSessionEndedMetricTest {
         )
 
         // When
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
         assertThat(
-            rse[SessionEndedMetric.HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY]
+            rse["has_background_events_tracking_enabled"]
         ).isEqualTo(fakeBackgroundEventTracking)
     }
 
     @Test
-    fun `M have correct ntp_offset W toMetricAttributes()`(
+    fun `M have correct ntp_offset W toGeneratedRse()`(
         @LongForgery ntpOffsetAtStart: Long,
         @LongForgery ntpOffsetAtEnd: Long
     ) {
@@ -485,17 +457,16 @@ class RumSessionEndedMetricTest {
         val sessionEndedMetric = stubSessionEndedMetric(ntpOffsetAtStartMs = ntpOffsetAtStart)
 
         // When
-        val attributes = sessionEndedMetric.toMetricAttributes(ntpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(ntpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val ntpOffset = rse[SessionEndedMetric.NTP_OFFSET_KEY] as Map<*, *>
-        assertThat(ntpOffset[SessionEndedMetric.NTP_OFFSET_AT_START_KEY]).isEqualTo(ntpOffsetAtStart)
-        assertThat(ntpOffset[SessionEndedMetric.NTP_OFFSET_AT_END_KEY]).isEqualTo(ntpOffsetAtEnd)
+        val ntpOffset = rse["ntp_offset"] as Map<*, *>
+        assertThat(ntpOffset["at_start"]).isEqualTo(ntpOffsetAtStart)
+        assertThat(ntpOffset["at_end"]).isEqualTo(ntpOffsetAtEnd)
     }
 
     @Test
-    fun `M have correct sr_skipped_frames_count W toMetricAttributes()`(
+    fun `M have correct sr_skipped_frames_count W toGeneratedRse()`(
         @IntForgery(min = 0, max = 100) count: Int
     ) {
         // Given
@@ -505,11 +476,10 @@ class RumSessionEndedMetricTest {
         repeat(count) {
             sessionEndedMetric.onSessionReplaySkippedFrameTracked()
         }
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
 
         // Then
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val skippedFramesCount = rse[SessionEndedMetric.SESSION_REPLAY_SKIPPED_FRAMES_COUNT] as Int
+        val skippedFramesCount = rse["sr_skipped_frames_count"] as Int
         assertThat(skippedFramesCount).isEqualTo(count)
     }
 
@@ -525,59 +495,57 @@ class RumSessionEndedMetricTest {
 
         // Then
 
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val json = JSONObject(attributes)
+        val rse = sessionEndedMetric.toGeneratedRse(fakeNtpOffsetAtEnd).toMap()
+        val rseObject = JSONObject(rse)
 
-        val rseObject = json.get(SessionEndedMetric.RSE_KEY) as JSONObject
+        assertThat(rseObject.get("process_type")).isInstanceOf(String::class.java)
+        assertThat(rseObject.get("precondition")).isInstanceOf(String::class.java)
+        assertThat(rseObject.get("duration")).isInstanceOf(java.lang.Long::class.java)
+        assertThat(rseObject.get("was_stopped")).isInstanceOf(java.lang.Boolean::class.java)
 
-        assertThat(rseObject.get(SessionEndedMetric.PROCESS_TYPE_KEY)).isInstanceOf(String::class.java)
-        assertThat(rseObject.get(SessionEndedMetric.PRECONDITION_KEY)).isInstanceOf(String::class.java)
-        assertThat(rseObject.get(SessionEndedMetric.DURATION_KEY)).isInstanceOf(java.lang.Long::class.java)
-        assertThat(rseObject.get(SessionEndedMetric.WAS_STOPPED_KEY)).isInstanceOf(java.lang.Boolean::class.java)
-
-        val viewCountsObject = rseObject.get(SessionEndedMetric.VIEW_COUNTS_KEY) as JSONObject
+        val viewCountsObject = rseObject.get("views_count") as JSONObject
         assertThat(
-            viewCountsObject.get(SessionEndedMetric.VIEW_COUNTS_TOTAL_KEY)
+            viewCountsObject.get("total")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            viewCountsObject.get(SessionEndedMetric.VIEW_COUNTS_BG_KEY)
+            viewCountsObject.get("background")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            viewCountsObject.get(SessionEndedMetric.VIEW_COUNTS_APP_LAUNCH_KEY)
+            viewCountsObject.get("app_launch")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            viewCountsObject.get(SessionEndedMetric.VIEW_COUNT_WITH_HAS_REPLAY)
+            viewCountsObject.get("with_has_replay")
         ).isInstanceOf(java.lang.Integer::class.java)
 
-        val sdkErrorsCount = rseObject.get(SessionEndedMetric.SDK_ERRORS_COUNT_KEY) as JSONObject
+        val sdkErrorsCount = rseObject.get("sdk_errors_count") as JSONObject
 
         assertThat(
-            sdkErrorsCount.get(SessionEndedMetric.SDK_ERRORS_COUNT_TOTAL_KEY)
+            sdkErrorsCount.get("total")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            sdkErrorsCount.get(SessionEndedMetric.SDK_ERRORS_COUNT_BY_KIND_KEY)
+            sdkErrorsCount.get("by_kind")
         ).isInstanceOf(JSONObject::class.java)
 
-        val noViewCounts = rseObject.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_KEY) as JSONObject
+        val noViewCounts = rseObject.get("no_view_events_count") as JSONObject
         assertThat(
-            noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ACTIONS_KEY)
+            noViewCounts.get("actions")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_RESOURCES_KEY)
+            noViewCounts.get("resources")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ERRORS_KEY)
+            noViewCounts.get("errors")
         ).isInstanceOf(java.lang.Integer::class.java)
         assertThat(
-            noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_LONG_TASKS_KEY)
+            noViewCounts.get("long_tasks")
         ).isInstanceOf(java.lang.Integer::class.java)
 
-        assertThat(rseObject.get(SessionEndedMetric.HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY))
+        assertThat(rseObject.get("has_background_events_tracking_enabled"))
             .isInstanceOf(java.lang.Boolean::class.java)
 
-        val nptOffset = rseObject.get(SessionEndedMetric.NTP_OFFSET_KEY) as JSONObject
-        assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_START_KEY)).isInstanceOf(java.lang.Long::class.java)
-        assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_END_KEY)).isInstanceOf(java.lang.Long::class.java)
+        val nptOffset = rseObject.get("ntp_offset") as JSONObject
+        assertThat(nptOffset.get("at_start")).isInstanceOf(java.lang.Long::class.java)
+        assertThat(nptOffset.get("at_end")).isInstanceOf(java.lang.Long::class.java)
     }
 
     private fun stubSessionEndedMetric(

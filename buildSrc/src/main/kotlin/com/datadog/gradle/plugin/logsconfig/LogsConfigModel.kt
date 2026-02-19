@@ -21,6 +21,7 @@ internal data class MetricLogEntry(
     override val id: String,
     override val message: String,
     val sampleRate: Float,
+    val creationSampleRate: Boolean = false,
     override val onlyOnce: Boolean = false,
     override val throwable: Boolean = false,
     override val properties: Map<String, PropertyDefinition> = emptyMap()
@@ -63,6 +64,11 @@ internal sealed class PropertyDefinition {
 
     data class ObjectDef(
         val properties: Map<String, PropertyDefinition>,
+        override val nullable: Boolean = false
+    ) : PropertyDefinition()
+
+    data class MapDef(
+        val valueType: PrimitiveType,
         override val nullable: Boolean = false
     ) : PropertyDefinition()
 }

@@ -394,82 +394,82 @@ internal class SessionEndedMetricDispatcherTest {
 
     private fun FakeInternalLogger.getNtpAtStartOffset(): Long {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            val ntpOffset = rse[SessionEndedMetric.NTP_OFFSET_KEY] as Map<*, *>
-            ntpOffset[SessionEndedMetric.NTP_OFFSET_AT_START_KEY] as Long
+            val rse = attributes["rse"] as Map<*, *>
+            val ntpOffset = rse["ntp_offset"] as Map<*, *>
+            ntpOffset["at_start"] as Long
         } ?: -1
     }
 
     private fun FakeInternalLogger.getNtpAtEndOffset(): Long {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            val ntpOffset = rse[SessionEndedMetric.NTP_OFFSET_KEY] as Map<*, *>
-            ntpOffset[SessionEndedMetric.NTP_OFFSET_AT_END_KEY] as Long
+            val rse = attributes["rse"] as Map<*, *>
+            val ntpOffset = rse["ntp_offset"] as Map<*, *>
+            ntpOffset["at_end"] as Long
         } ?: -1
     }
 
     private fun FakeInternalLogger.getBackgroundEventTracking(): Boolean? {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            rse[SessionEndedMetric.HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY] as? Boolean
+            val rse = attributes["rse"] as Map<*, *>
+            rse["has_background_events_tracking_enabled"] as? Boolean
         }
     }
 
     private fun FakeInternalLogger.getSkippedFramesCount(): Int? {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            rse[SessionEndedMetric.SESSION_REPLAY_SKIPPED_FRAMES_COUNT] as? Int
+            val rse = attributes["rse"] as Map<*, *>
+            rse["sr_skipped_frames_count"] as? Int
         }
     }
 
     private fun FakeInternalLogger.getMissedTypeCount(missedEventType: SessionEndedMetric.MissedEventType): Int {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            val noViewEventCount = rse[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_KEY] as Map<*, *>
+            val rse = attributes["rse"] as Map<*, *>
+            val noViewEventCount = rse["no_view_events_count"] as Map<*, *>
             when (missedEventType) {
                 SessionEndedMetric.MissedEventType.ACTION ->
-                    noViewEventCount[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ACTIONS_KEY]
+                    noViewEventCount["actions"]
 
                 SessionEndedMetric.MissedEventType.RESOURCE ->
-                    noViewEventCount[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_RESOURCES_KEY]
+                    noViewEventCount["resources"]
 
                 SessionEndedMetric.MissedEventType.ERROR ->
-                    noViewEventCount[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ERRORS_KEY]
+                    noViewEventCount["errors"]
 
                 SessionEndedMetric.MissedEventType.LONG_TASK ->
-                    noViewEventCount[SessionEndedMetric.NO_VIEW_EVENTS_COUNT_LONG_TASKS_KEY]
+                    noViewEventCount["long_tasks"]
             } as Int
         } ?: -1
     }
 
     private fun FakeInternalLogger.getHasReplayCount(): Int {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            val viewCount = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-            viewCount[SessionEndedMetric.VIEW_COUNT_WITH_HAS_REPLAY] as Int
+            val rse = attributes["rse"] as Map<*, *>
+            val viewCount = rse["views_count"] as Map<*, *>
+            viewCount["with_has_replay"] as Int
         } ?: -1
     }
 
     private fun FakeInternalLogger.isSessionStopped(): Boolean? {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            rse[SessionEndedMetric.WAS_STOPPED_KEY] as? Boolean
+            val rse = attributes["rse"] as Map<*, *>
+            rse["was_stopped"] as? Boolean
         }
     }
 
     private fun FakeInternalLogger.getErrorCounts(): Int {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            val errorCount = rse[SessionEndedMetric.SDK_ERRORS_COUNT_KEY] as Map<*, *>
-            errorCount[SessionEndedMetric.SDK_ERRORS_COUNT_TOTAL_KEY] as Int
+            val rse = attributes["rse"] as Map<*, *>
+            val errorCount = rse["sdk_errors_count"] as Map<*, *>
+            errorCount["total"] as Int
         } ?: -1
     }
 
     private fun FakeInternalLogger.getViewCounts(): Int {
         return lastMetric?.second?.let { attributes ->
-            val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-            val viewCount = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
-            viewCount[SessionEndedMetric.VIEW_COUNTS_TOTAL_KEY] as Int
+            val rse = attributes["rse"] as Map<*, *>
+            val viewCount = rse["views_count"] as Map<*, *>
+            viewCount["total"] as Int
         } ?: -1
     }
 }
