@@ -1,0 +1,74 @@
+logs:
+  - id: rum_view_ended
+    message: "[Mobile Metric] RUM View Ended"
+    type: metric
+    sampleRate: 0.75
+    creationSampleRate: 100
+    properties:
+      metric_type:
+        type: string
+        const: "rum view ended"
+      rve:
+        type: object
+        properties:
+          duration:
+            type: long
+            nullable: true
+          loading_time:
+            type: object
+            nullable: true
+            properties:
+              value:
+                type: long
+                nullable: true
+          view_type:
+            type: enum
+            values:
+              - custom
+              - background
+              - application_launch
+          tns:
+            type: object
+            properties:
+              value:
+                type: long
+                nullable: true
+              config:
+                type: enum
+                values:
+                  - disabled
+                  - time_based_default
+                  - time_based_custom
+                  - custom
+              no_value_reason:
+                type: enum
+                nullable: true
+                values:
+                  - unknown
+                  - no_resources
+                  - no_initial_resources
+                  - not_settled_yet
+          inv:
+            type: object
+            properties:
+              value:
+                type: long
+                nullable: true
+              config:
+                type: enum
+                values:
+                  - disabled
+                  - time_based_default
+                  - time_based_custom
+                  - custom
+              no_value_reason:
+                type: enum
+                nullable: true
+                values:
+                  - unknown
+                  - no_action
+                  - no_eligible_action
+                  - no_previous_view
+                  - disabled
+          instrumentation_type:
+            type: string

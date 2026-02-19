@@ -20,9 +20,9 @@ class LogsConfigPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions.create<LogsConfigExtension>(EXTENSION_NAME)
 
-        val yamlFile = File(target.projectDir, YAML_FILE_NAME)
-        if (!yamlFile.exists()) {
-            target.logger.info("No $YAML_FILE_NAME found in ${target.projectDir}, skipping logs config generation")
+        val logsDir = File(target.projectDir, LOGS_DIR)
+        if (!logsDir.isDirectory) {
+            target.logger.info("No $LOGS_DIR directory found in ${target.projectDir}, skipping logs config generation")
             return
         }
 
@@ -32,7 +32,7 @@ class LogsConfigPlugin : Plugin<Project> {
         val derivedClassName = LogsConfigCodeGenerator.moduleNameToClassName(target.name)
 
         val generateTask = target.tasks.register<GenerateLogsConfigTask>(TASK_NAME) {
-            inputFile.set(yamlFile)
+            inputDirectory.set(logsDir)
             targetPackageName.convention(extension.packageName)
             loggerClassName.convention(derivedClassName)
             outputDirectory.set(genDir)
@@ -53,7 +53,7 @@ class LogsConfigPlugin : Plugin<Project> {
 
     companion object {
         const val EXTENSION_NAME = "logsConfig"
-        const val YAML_FILE_NAME = "logs_config.yaml"
+        const val LOGS_DIR = "src/main/logs"
         const val TASK_NAME = "generateLogsConfig"
         private const val GEN_DIR = "generated/logsConfig"
     }

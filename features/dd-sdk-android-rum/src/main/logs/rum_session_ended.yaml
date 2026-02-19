@@ -1,0 +1,62 @@
+logs:
+  - id: rum_session_ended
+    message: "[Mobile Metric] RUM Session Ended"
+    type: metric
+    sampleRate: 15.0
+    properties:
+      metric_type:
+        type: string
+        const: "rum session ended"
+      rse:
+        type: object
+        properties:
+          process_type:
+            type: string
+            const: "app"
+          precondition:
+            type: string
+          duration:
+            type: long
+          was_stopped:
+            type: boolean
+          views_count:
+            type: object
+            properties:
+              total:
+                type: int
+              background:
+                type: int
+              app_launch:
+                type: int
+              with_has_replay:
+                type: int
+          sdk_errors_count:
+            type: object
+            properties:
+              total:
+                type: int
+              by_kind:
+                type: map
+                value_type: int
+          no_view_events_count:
+            type: object
+            properties:
+              actions:
+                type: int
+              resources:
+                type: int
+              errors:
+                type: int
+              long_tasks:
+                type: int
+          has_background_events_tracking_enabled:
+            type: boolean
+          ntp_offset:
+            type: object
+            properties:
+              at_start:
+                type: long
+              at_end:
+                type: long
+          sr_skipped_frames_count:
+            type: int
