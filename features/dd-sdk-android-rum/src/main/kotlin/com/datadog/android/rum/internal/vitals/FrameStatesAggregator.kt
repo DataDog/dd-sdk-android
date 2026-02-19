@@ -24,6 +24,7 @@ import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
@@ -37,6 +38,8 @@ internal class FrameStatesAggregator(
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
 
@@ -76,11 +79,7 @@ internal class FrameStatesAggregator(
     override fun onActivityStopped(activity: Activity) {
         val window = activity.window
         if (!activeActivities.containsKey(window)) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Activity stopped but window was not tracked" }
-            )
+            logger.logActivityStoppedWindowNotTracked()
         }
         val list = activeActivities[window] ?: mutableListOf()
         list.removeAll {
@@ -88,21 +87,13 @@ internal class FrameStatesAggregator(
         }
         activeActivities[window] = list
         if (list.isEmpty()) {
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Disabling jankStats for window $window" }
-            )
+            logger.logDisablingJankStatsForWindow(window = window.toString())
             try {
                 activeWindowsListener[window]?.let {
                     if (it.isTrackingEnabled) {
                         it.isTrackingEnabled = false
                     } else {
-                        internalLogger.log(
-                            InternalLogger.Level.ERROR,
-                            InternalLogger.Target.TELEMETRY,
-                            { JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR }
-                        )
+                    logger.logJankStatsTrackingAlreadyDisabled()
                     }
                 }
             } catch (iae: IllegalArgumentException) {
@@ -111,24 +102,14 @@ internal class FrameStatesAggregator(
                 // OnFrameMetricsAvailableListener that was never added). Unclear why, because
                 // JankStats registers listener in the constructor, so if we have the instance,
                 // listener should be there.
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.TELEMETRY,
-                    { JANK_STATS_TRACKING_DISABLE_ERROR },
-                    iae
-                )
+                logger.logJankStatsTrackingDisableError(throwable = iae)
             } catch (npe: NullPointerException) {
                 // Between Android N and Android P (included):
                 // android.view.View.removeFrameMetricsListener() may throw an NPE(attempt to remove
                 // OnFrameMetricsAvailableListener that was never added). Unclear why, because
                 // JankStats registers listener in the constructor, so if we have the instance,
                 // listener should be there.
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.TELEMETRY,
-                    { JANK_STATS_TRACKING_DISABLE_ERROR },
-                    npe
-                )
+                logger.logJankStatsTrackingDisableError(throwable = npe)
             }
         }
     }
@@ -176,25 +157,13 @@ internal class FrameStatesAggregator(
     private fun trackWindowJankStats(window: Window) {
         val knownJankStats = activeWindowsListener[window]
         if (knownJankStats != null) {
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Resuming jankStats for window $window" }
-            )
+            logger.logResumingJankStatsForWindow(window = window.toString())
             knownJankStats.isTrackingEnabled = true
         } else {
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Starting jankStats for window $window" }
-            )
+            logger.logStartingJankStatsForWindow(window = window.toString())
             val jankStats = jankStatsProvider.createJankStatsAndTrack(window, this, internalLogger)
             if (jankStats == null) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Unable to create JankStats" }
-                )
+                logger.logUnableToCreateJankStats()
             } else {
                 activeWindowsListener[window] = jankStats
             }
@@ -225,11 +194,7 @@ internal class FrameStatesAggregator(
         val decorView = window.peekDecorView()
 
         if (decorView == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to attach JankStatsListener to window, decorView is null" }
-            )
+            logger.logDecorViewNull()
             return
         }
 
@@ -238,11 +203,7 @@ internal class FrameStatesAggregator(
         decorView.post {
             // Only hardware accelerated views can be tracked with metrics listener
             if (!decorView.isHardwareAccelerated) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Unable to attach JankStatsListener to window, decorView is not hardware accelerated" }
-                )
+                logger.logDecorViewNotHwAccelerated()
                 return@post
             }
 
@@ -251,12 +212,7 @@ internal class FrameStatesAggregator(
                     @Suppress("UnsafeThirdPartyFunctionCall") // Listener can't be null here
                     window.addOnFrameMetricsAvailableListener(listener, handler)
                 } catch (e: IllegalStateException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Unable to attach JankStatsListener to window" },
-                        e
-                    )
+                    logger.logJankStatsListenerAttachError(throwable = e)
                 }
             }
         }
@@ -269,12 +225,7 @@ internal class FrameStatesAggregator(
         try {
             window.removeOnFrameMetricsAvailableListener(frameMetricsListener)
         } catch (e: IllegalArgumentException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to detach JankStatsListener to window, most probably because it wasn't attached" },
-                e
-            )
+            logger.logJankStatsListenerDetachError(throwable = e)
         }
     }
 
@@ -332,11 +283,6 @@ internal class FrameStatesAggregator(
 
     companion object {
 
-        internal const val JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR =
-            "Trying to disable JankStats instance which was already disabled before, this" +
-                " shouldn't happen."
-        internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
-            "Failed to disable JankStats tracking"
         private const val SIXTY_FPS: Double = 60.0
         private const val IS_FIRST_DRAW_FRAME = 1L
     }

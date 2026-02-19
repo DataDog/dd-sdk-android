@@ -194,7 +194,7 @@ internal class FrameStatesAggregatorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            FrameStatesAggregator.JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR
+            "Trying to disable JankStats instance which was already disabled before, this shouldn't happen."
         )
     }
 
@@ -212,7 +212,7 @@ internal class FrameStatesAggregatorTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.TELEMETRY,
-            message = FrameStatesAggregator.JANK_STATS_TRACKING_DISABLE_ERROR,
+            message = "Failed to disable JankStats tracking",
             throwable = exception
         )
     }
@@ -231,7 +231,7 @@ internal class FrameStatesAggregatorTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.TELEMETRY,
-            message = FrameStatesAggregator.JANK_STATS_TRACKING_DISABLE_ERROR,
+            message = "Failed to disable JankStats tracking",
             throwable = exception
         )
     }
