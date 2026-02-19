@@ -37,6 +37,7 @@ internal data class SimpleLogEntry(
     override val message: String,
     val level: LogLevel,
     val targets: List<LogTarget>,
+    val messageArgs: Map<String, PrimitiveType> = emptyMap(),
     override val onlyOnce: Boolean = false,
     override val throwable: Boolean = false,
     override val properties: Map<String, PropertyDefinition> = emptyMap()

@@ -246,3 +246,13 @@ logs:
     targets:
       - user
       - telemetry
+
+  - id: no_telemetry_for_view
+    message: "No telemetry found for viewId=%s"
+    type: log
+    level: warn
+    targets:
+      - telemetry
+    message_args:
+      view_id:
+        type: string

@@ -329,6 +329,10 @@ internal class LogsConfigCodeGenerator(
         val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
             .addModifiers(KModifier.INTERNAL)
 
+        for ((name, type) in entry.messageArgs) {
+            funBuilder.addParameter(toCamelCase(name), primitiveToTypeName(type))
+        }
+
         if (entry.throwable) {
             funBuilder.addParameter(
                 ParameterSpec.builder(
@@ -363,7 +367,17 @@ internal class LogsConfigCodeGenerator(
             )
         }
 
-        codeBuilder.addStatement("messageBuilder = { %S }", entry.message)
+        if (entry.messageArgs.isEmpty()) {
+            codeBuilder.addStatement("messageBuilder = { %S }", entry.message)
+        } else {
+            val localeClass = ClassName("java.util", "Locale")
+            val argNames = entry.messageArgs.keys.joinToString(", ") { toCamelCase(it) }
+            codeBuilder.addStatement(
+                "messageBuilder = { %S.format(%T.US, $argNames) }",
+                entry.message,
+                localeClass
+            )
+        }
 
         if (entry.throwable) {
             codeBuilder.add(",\nthrowable = throwable")

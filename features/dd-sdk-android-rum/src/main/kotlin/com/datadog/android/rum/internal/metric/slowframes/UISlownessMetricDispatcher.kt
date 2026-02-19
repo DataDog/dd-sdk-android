@@ -6,7 +6,6 @@
 package com.datadog.android.rum.internal.metric.slowframes
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.tools.annotation.NoOpImplementation
@@ -66,11 +65,7 @@ internal class DefaultUISlownessMetricDispatcher(
     override fun sendMetric(viewId: String, viewDurationNs: Long) {
         val telemetry = viewTelemetry.remove(viewId)
         if (telemetry == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                target = Target.TELEMETRY,
-                messageBuilder = { "No telemetry found for viewId=$viewId" }
-            )
+            logger.logNoTelemetryForView(viewId = viewId)
             return
         }
 

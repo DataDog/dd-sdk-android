@@ -63,12 +63,20 @@ internal object LogsConfigYamlParser {
                 val targets = (map["targets"] as? List<String>
                     ?: error("Log entry '$id' must have a 'targets' list"))
                     .map { parseLogTarget(it) }
+                @Suppress("UNCHECKED_CAST")
+                val messageArgsRaw = map["message_args"] as? Map<String, Map<String, Any>> ?: emptyMap()
+                val messageArgs = messageArgsRaw.mapValues { (argName, argDef) ->
+                    val typeName = argDef["type"] as? String
+                        ?: error("message_arg '$argName' in '$id' must have a 'type' field")
+                    parsePrimitiveType(typeName)
+                }
 
                 SimpleLogEntry(
                     id = id,
                     message = message,
                     level = level,
                     targets = targets,
+                    messageArgs = messageArgs,
                     onlyOnce = onlyOnce,
                     throwable = throwable,
                     properties = properties
