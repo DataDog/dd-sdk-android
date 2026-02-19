@@ -1,0 +1,70 @@
+logs:
+  - id: adding_view_loading_time
+    message: "View loading time %dns added to the view %s"
+    type: log
+    level: debug
+    targets:
+      - user
+    message_args:
+      new_loading_time:
+        type: long
+      view_name:
+        type: string
+
+  - id: overwriting_view_loading_time
+    message: "View loading time already exists for the view %s. Replacing the existing %d ns view loading time with the new %d ns loading time."
+    type: log
+    level: warn
+    targets:
+      - user
+    message_args:
+      view_name:
+        type: string
+      previous_view_loading_time:
+        type: long
+      new_loading_time:
+        type: long
+
+  - id: action_dropped
+    message: "RUM Action (%s on %s) was dropped, because another action is still active for the same view"
+    type: log
+    level: warn
+    targets:
+      - user
+    message_args:
+      action_type:
+        type: string
+      action_name:
+        type: string
+
+  - id: zero_duration
+    message: "The computed duration for the view: %s was 0. In order to keep the view we forced it to 1ns."
+    type: log
+    level: warn
+    targets:
+      - user
+      - telemetry
+    message_args:
+      view_name:
+        type: string
+    properties:
+      view_name_prop:
+        type: string
+
+  - id: negative_duration
+    message: "The computed duration for the view: %s was negative. In order to keep the view we forced it to 1ns."
+    type: log
+    level: warn
+    targets:
+      - user
+      - telemetry
+    message_args:
+      view_name:
+        type: string
+    properties:
+      view_start_ns:
+        type: long
+      view_end_ns:
+        type: long
+      view_name_prop:
+        type: string

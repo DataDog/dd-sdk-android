@@ -2767,7 +2767,7 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumViewScope.ACTION_DROPPED_WARNING.format(
+            "RUM Action (%s on %s) was dropped, because another action is still active for the same view".format(
                 Locale.US,
                 (fakeEvent as RumRawEvent.StartAction).type,
                 (fakeEvent as RumRawEvent.StartAction).name
@@ -2806,7 +2806,7 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumViewScope.ACTION_DROPPED_WARNING.format(
+            "RUM Action (%s on %s) was dropped, because another action is still active for the same view".format(
                 Locale.US,
                 (fakeEvent as RumRawEvent.StartAction).type,
                 (fakeEvent as RumRawEvent.StartAction).name
@@ -5766,7 +5766,7 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            RumViewScope.ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(
+            "View loading time %dns added to the view %s".format(
                 expectedViewLoadingTime,
                 testedScope.key.name
             )
@@ -5865,7 +5865,7 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumViewScope.OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT.format(
+            "View loading time already exists for the view %s. Replacing the existing %d ns view loading time with the new %d ns loading time.".format(
                 Locale.US,
                 testedScope.key.name,
                 previousLoadingTime,
@@ -8263,9 +8263,9 @@ internal class RumViewScopeTest {
             mockInternalLogger.verifyLog(
                 InternalLogger.Level.WARN,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                RumViewScope.ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name),
+                "The computed duration for the view: %s was 0. In order to keep the view we forced it to 1ns.".format(Locale.US, testedScope.key.name),
                 additionalProperties = mapOf(
-                    "view.name" to rawEventData.viewKey.name
+                    "view_name_prop" to rawEventData.viewKey.name
                 )
             )
         }
@@ -8293,11 +8293,11 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name),
+            "The computed duration for the view: %s was negative. In order to keep the view we forced it to 1ns.".format(Locale.US, testedScope.key.name),
             additionalProperties = mapOf(
-                "view.start_ns" to fakeEventTime.nanoTime,
-                "view.end_ns" to rawEventData.event.eventTime.nanoTime,
-                "view.name" to rawEventData.viewKey.name
+                "view_start_ns" to fakeEventTime.nanoTime,
+                "view_end_ns" to rawEventData.event.eventTime.nanoTime,
+                "view_name_prop" to rawEventData.viewKey.name
             )
         )
     }

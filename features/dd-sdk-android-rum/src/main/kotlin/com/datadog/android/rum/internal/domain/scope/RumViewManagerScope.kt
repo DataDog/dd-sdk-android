@@ -62,7 +62,7 @@ internal class RumViewManagerScope(
     private val insightsCollector: InsightsCollector
 ) : RumScope {
 
-    private val logger = DdSdkAndroidRumLogger(sdkCore.internalLogger)
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
         InteractionToNextViewMetricResolver(
@@ -207,11 +207,7 @@ internal class RumViewManagerScope(
         }
 
         if (event is RumRawEvent.AddViewLoadingTime && !hasActiveView) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE }
-            )
+            logger.logNoActiveViewForLoadingTime()
             sdkCore.internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = event.overwrite,
@@ -234,11 +230,7 @@ internal class RumViewManagerScope(
         val isForegroundProcess = processFlag == importanceForeground
 
         if (event is RumRawEvent.AddViewLoadingTime) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { MESSAGE_MISSING_VIEW }
-            )
+            logger.logMessageMissingView()
             // we should return here and not add the event to the session ended metric missed events as we already
             // send the API usage telemetry
             return
@@ -247,22 +239,14 @@ internal class RumViewManagerScope(
         } else {
             val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
             if (!isSilentOrphanEvent) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { MESSAGE_MISSING_VIEW }
-                )
+                logger.logMessageMissingView()
             }
         }
 
         // Track the orphan event both in foreground and background.
         SessionEndedMetric.MissedEventType.fromRawEvent(rawEvent = event)?.let {
             sessionEndedMetricDispatcher.onMissedEventTracked(sessionId = parentScope.getRumContext().sessionId, it)
-        } ?: sdkCore.internalLogger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.MAINTAINER,
-            { MESSAGE_UNKNOWN_MISSED_TYPE }
-        )
+        } ?: logger.logMessageUnknownMissedType()
     }
 
     @WorkerThread
@@ -324,11 +308,7 @@ internal class RumViewManagerScope(
             childrenScopes.add(viewScope)
             lastStoppedViewTime = null
         } else if (!isSilentOrphanEvent) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { MESSAGE_MISSING_VIEW }
-            )
+            logger.logMessageMissingView()
         }
     }
 
@@ -453,22 +433,6 @@ internal class RumViewManagerScope(
         internal const val RUM_APP_LAUNCH_VIEW_ID = "com.datadog.application-launch.view"
         internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
         internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
-
-        internal const val MESSAGE_MISSING_VIEW =
-            "A RUM event was detected, but no view is active. " +
-                "To track views automatically, try calling the " +
-                "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
-                "You can also track views manually using the RumMonitor.startView() and " +
-                "RumMonitor.stopView() methods."
-
-        internal const val MESSAGE_UNKNOWN_MISSED_TYPE = "An RUM event was detected, but no view is active, " +
-            "its missed type is unknown"
-
-        internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
-            "No active view found to add the loading time."
-
-        internal const val MULTIPLE_ACTIVE_VIEWS_ERROR =
-            "Multiple views are active at the same time, this shouldn't happen."
 
         internal val THREE_SECONDS_GAP_NS = TimeUnit.SECONDS.toNanos(3)
     }
