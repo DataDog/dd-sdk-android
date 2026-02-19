@@ -25,7 +25,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
-import java.util.Locale
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 
 // region Resource.Method conversion
 
@@ -61,13 +61,11 @@ internal fun RumResourceMethod.toErrorMethod(): ErrorEvent.Method {
 
 internal fun String.toOperationType(internalLogger: InternalLogger): ResourceEvent.OperationType? {
     return try {
-        ResourceEvent.OperationType.valueOf(this.uppercase(Locale.US))
+        ResourceEvent.OperationType.valueOf(this.uppercase(java.util.Locale.US))
     } catch (e: IllegalArgumentException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { "Unable to convert [$this] to a valid graphql operation type" },
-            e
+        DdSdkAndroidRumLogger(internalLogger).logUnableToConvertGraphqlOperationType(
+            value = this,
+            throwable = e
         )
         null
     }
@@ -529,12 +527,7 @@ internal fun ViewEvent.ViewEventSource.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
@@ -546,12 +539,7 @@ internal fun LongTaskEvent.LongTaskEventSource.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
@@ -563,12 +551,7 @@ internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
@@ -580,12 +563,7 @@ internal fun ActionEvent.ActionEventSource.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
@@ -597,12 +575,7 @@ internal fun ResourceEvent.ResourceEventSource.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
@@ -614,12 +587,7 @@ internal fun VitalOperationStepEvent.VitalOperationStepEventSource.Companion.try
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
@@ -631,18 +599,10 @@ internal fun VitalAppLaunchEvent.VitalAppLaunchEventSource.Companion.tryFromSour
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
-            e
-        )
+        DdSdkAndroidRumLogger(internalLogger).logUnknownSourceForEvents(source = source, throwable = e)
         null
     }
 }
-
-internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
-    "source %s for your events"
 
 // endregion
 

@@ -686,7 +686,7 @@ internal class DatadogLateCrashReporterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            DatadogLateCrashReporter.INFO_RUM_FEATURE_NOT_REGISTERED
+            "RUM feature is not registered, won't report NDK crash info as RUM error."
         )
     }
 
@@ -1146,7 +1146,7 @@ internal class DatadogLateCrashReporterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogLateCrashReporter.INFO_RUM_FEATURE_NOT_REGISTERED
+            "RUM feature is not registered, won't report NDK crash info as RUM error."
         )
     }
 
@@ -1411,7 +1411,7 @@ internal class DatadogLateCrashReporterTest {
                 onlyOnce = eq(false),
                 additionalProperties = isNull()
             )
-            assertThat(firstValue()).isEqualTo(DatadogLateCrashReporter.MISSING_ANR_TRACE)
+            assertThat(firstValue()).isEqualTo("Last known exit reason has no trace information attached, cannot report fatal ANR.")
         }
     }
 

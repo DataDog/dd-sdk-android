@@ -1,0 +1,47 @@
+logs:
+  - id: rum_feature_not_registered_info
+    message: "RUM feature is not registered, won't report NDK crash info as RUM error."
+    type: log
+    level: info
+    targets:
+      - user
+
+  - id: rum_feature_not_registered_warn
+    message: "RUM feature is not registered, won't report NDK crash info as RUM error."
+    type: log
+    level: warn
+    targets:
+      - user
+
+  - id: ndk_crash_event_missing_mandatory_fields
+    message: "RUM feature received a NDK crash event where one or more mandatory (timestamp, signalName, stacktrace, message, lastViewEvent) fields are either missing or have wrong type."
+    type: log
+    level: warn
+    targets:
+      - user
+
+  - id: open_anr_trace_error
+    message: "Cannot open trace for the last known exit reason."
+    type: log
+    level: error
+    targets:
+      - user
+    throwable: true
+
+  - id: missing_anr_trace
+    message: "Last known exit reason has no trace information attached, cannot report fatal ANR."
+    type: log
+    level: warn
+    targets:
+      - user
+
+  - id: error_parsing_source_type_from_ndk_crash
+    message: "Error parsing source type from NDK crash event: %s"
+    type: log
+    level: error
+    targets:
+      - telemetry
+    throwable: true
+    message_args:
+      source_type:
+        type: string

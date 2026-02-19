@@ -10,7 +10,6 @@ import android.app.ApplicationExitInfo
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
@@ -25,6 +24,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
@@ -41,6 +41,8 @@ internal class DatadogLateCrashReporter(
     private val androidTraceParser: AndroidTraceParser = AndroidTraceParser(sdkCore.internalLogger)
 ) : LateCrashReporter {
 
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
+
     // region LateCrashEventHandler
 
     @Suppress("ComplexCondition")
@@ -51,11 +53,7 @@ internal class DatadogLateCrashReporter(
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
         if (rumFeature == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { INFO_RUM_FEATURE_NOT_REGISTERED }
-            )
+            logger.logRumFeatureNotRegisteredInfo()
             return
         }
 
@@ -72,11 +70,7 @@ internal class DatadogLateCrashReporter(
         if (timestamp == null || signalName == null || stacktrace == null ||
             errorLogMessage == null || lastViewEvent == null
         ) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS }
-            )
+            logger.logNdkCrashEventMissingMandatoryFields()
             return
         }
 
@@ -118,11 +112,7 @@ internal class DatadogLateCrashReporter(
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
             if (rumFeature == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { INFO_RUM_FEATURE_NOT_REGISTERED }
-                )
+                logger.logRumFeatureNotRegisteredWarn()
                 return
             }
 
@@ -295,20 +285,11 @@ internal class DatadogLateCrashReporter(
         val traceInputStream = try {
             anrExitInfo.traceInputStream
         } catch (ioe: IOException) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { OPEN_ANR_TRACE_ERROR },
-                ioe
-            )
+            logger.logOpenAnrTraceError(throwable = ioe)
             return emptyList()
         }
         if (traceInputStream == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { MISSING_ANR_TRACE }
-            )
+            logger.logMissingAnrTrace()
             return emptyList()
         }
 
@@ -349,11 +330,9 @@ internal class DatadogLateCrashReporter(
             try {
                 ErrorEvent.SourceType.fromJson(sourceType)
             } catch (e: NoSuchElementException) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.TELEMETRY,
-                    { "Error parsing source type from NDK crash event: $sourceType" },
-                    e
+                logger.logErrorParsingSourceTypeFromNdkCrash(
+                    sourceType = sourceType,
+                    throwable = e
                 )
                 ErrorEvent.SourceType.NDK
             }
@@ -369,16 +348,6 @@ internal class DatadogLateCrashReporter(
     // endregion
 
     companion object {
-        internal const val INFO_RUM_FEATURE_NOT_REGISTERED =
-            "RUM feature is not registered, won't report NDK crash info as RUM error."
-        internal const val NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS =
-            "RUM feature received a NDK crash event" +
-                " where one or more mandatory (timestamp, signalName, stacktrace," +
-                " message, lastViewEvent) fields are either missing or have wrong type."
-        internal const val MISSING_ANR_TRACE = "Last known exit reason has no trace information" +
-            " attached, cannot report fatal ANR."
-        internal const val OPEN_ANR_TRACE_ERROR = "Cannot open trace for the last known exit reason."
-
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
     }
 }
