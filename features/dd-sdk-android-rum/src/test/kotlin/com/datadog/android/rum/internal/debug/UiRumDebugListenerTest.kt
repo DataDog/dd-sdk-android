@@ -100,7 +100,7 @@ internal class UiRumDebugListenerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
+            "Cannot enable RUM debugging, because root content view can't be found"
         )
 
         verifyNoInteractions(rumMonitor.mockInstance, mockContentView)
@@ -118,7 +118,7 @@ internal class UiRumDebugListenerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
+            "Cannot enable RUM debugging, because root content view can't be found"
         )
 
         verifyNoInteractions(rumMonitor.mockInstance, mockContentView)
@@ -136,7 +136,7 @@ internal class UiRumDebugListenerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
+            "Cannot enable RUM debugging, because root content view can't be found"
         )
 
         verifyNoInteractions(rumMonitor.mockInstance, mockContentView)

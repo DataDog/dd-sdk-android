@@ -20,8 +20,8 @@ import android.widget.TextView
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.UiThread
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import kotlin.math.pow
@@ -30,6 +30,8 @@ internal class UiRumDebugListener(
     private val sdkCore: FeatureSdkCore,
     private val advancedRumMonitor: AdvancedRumMonitor
 ) : Application.ActivityLifecycleCallbacks, RumDebugListener {
+
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     internal var rumViewsContainer: LinearLayout? = null
 
@@ -55,11 +57,7 @@ internal class UiRumDebugListener(
 
         val contentView = findContentView(activity)
         if (contentView == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { CANNOT_FIND_CONTENT_VIEW_MESSAGE }
-            )
+            logger.logCannotFindContentView()
             return
         }
 
@@ -187,8 +185,6 @@ internal class UiRumDebugListener(
     // endregion
 
     companion object {
-        const val CANNOT_FIND_CONTENT_VIEW_MESSAGE =
-            "Cannot enable RUM debugging, because root content view can't be found"
         const val DEFAULT_ALPHA = 200
         val ACTIVE_COLOR = Color.rgb(99, 44, 166)
     }
