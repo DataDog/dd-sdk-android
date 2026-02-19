@@ -45,6 +45,9 @@ dependencies {
     // Verification Metadata XML
     implementation(libs.kotlinXmlBuilder)
 
+    // LogsConfig YAML parsing
+    implementation(libs.snakeYaml)
+
     // Tests
     testImplementation(libs.jUnit4)
     testImplementation(libs.mockitoKotlin)
@@ -74,6 +77,10 @@ gradlePlugin {
         register("verificationXml") {
             id = "verificationXml" // the alias
             implementationClass = "com.datadog.gradle.plugin.verification.VerificationXmlPlugin"
+        }
+        register("logsConfig") {
+            id = "logsConfig"
+            implementationClass = "com.datadog.gradle.plugin.logsconfig.LogsConfigPlugin"
         }
     }
 }

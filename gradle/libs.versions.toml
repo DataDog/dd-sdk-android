@@ -76,6 +76,7 @@ jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.17.0"
 dependencyLicense = "0.5.0"
 kotlinXmlBuilder = "1.9.3"
+snakeYaml = "2.2"
 
 # Integrations
 sqlDelight = "1.5.5"
@@ -228,6 +229,7 @@ kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.r
 kotlinGrammarParser = { module = "com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm", version.ref = "kotlinGrammarParser" }
 jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
 kotlinXmlBuilder = {module="org.redundent:kotlin-xml-builder", version.ref="kotlinXmlBuilder"}
+snakeYaml = { module = "org.yaml:snakeyaml", version.ref = "snakeYaml" }
 
 # Integrations
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }

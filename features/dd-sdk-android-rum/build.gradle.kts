@@ -38,6 +38,7 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("logsConfig")
 }
 
 android {
@@ -53,6 +54,10 @@ android {
     testFixtures {
         enable = true
     }
+}
+
+logsConfig {
+    packageName.set("com.datadog.android.rum.internal.generated")
 }
 
 dependencies {

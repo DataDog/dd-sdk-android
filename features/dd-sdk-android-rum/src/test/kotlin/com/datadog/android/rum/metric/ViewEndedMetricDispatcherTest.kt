@@ -11,28 +11,14 @@ import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_CONFIG
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_DURATION
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_INSTRUMENTATION_TYPE
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_INTERACTION_TO_NEXT_VIEW
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_LOADING_TIME
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_NO_VALUE_REASON
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_RUM_VIEW_ENDED
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_TIME_TO_NETWORK_SETTLED
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_VALUE
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_VIEW_TYPE
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.VIEW_ENDED_MESSAGE
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.toAttributeValue
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -57,9 +43,6 @@ internal class ViewEndedMetricDispatcherTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
-
-    @FloatForgery(min = 0f, max = 1f)
-    private var fakeSampleRate: Float = 0f
 
     @LongForgery(min = 0)
     private var fakeDuration: Long = 0
@@ -91,7 +74,6 @@ internal class ViewEndedMetricDispatcherTest {
         dispatcherUnderTest = ViewEndedMetricDispatcher(
             viewType = fakeViewType,
             internalLogger = mockInternalLogger,
-            samplingRate = fakeSampleRate,
             instrumentationType = fakeInstrumentationType
         )
     }
@@ -106,7 +88,7 @@ internal class ViewEndedMetricDispatcherTest {
         verify(mockInternalLogger).logMetric(
             messageBuilder = any(),
             additionalProperties = any(),
-            samplingRate = eq(fakeSampleRate),
+            samplingRate = eq(EXPECTED_SAMPLE_RATE),
             creationSampleRate = eq(null)
         )
 
@@ -122,7 +104,7 @@ internal class ViewEndedMetricDispatcherTest {
     }
 
     @Test
-    fun `M samplingRate = 0,75 W sendViewEnded { default sampling rate }`() {
+    fun `M samplingRate = 0,75 W sendViewEnded`() {
         // Given
         val dispatcherUnderTest = ViewEndedMetricDispatcher(fakeViewType, mockInternalLogger)
         // When
@@ -132,7 +114,7 @@ internal class ViewEndedMetricDispatcherTest {
         verify(mockInternalLogger).logMetric(
             messageBuilder = any(),
             additionalProperties = any(),
-            samplingRate = eq(0.75f),
+            samplingRate = eq(EXPECTED_SAMPLE_RATE),
             creationSampleRate = eq(null)
         )
     }
@@ -150,83 +132,9 @@ internal class ViewEndedMetricDispatcherTest {
         verify(mockInternalLogger).logMetric(
             messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
             additionalProperties = eq(expectedAttributes()),
-            samplingRate = eq(fakeSampleRate),
+            samplingRate = eq(EXPECTED_SAMPLE_RATE),
             creationSampleRate = eq(null)
         )
-    }
-
-    @Test
-    fun `M return valid string W toAttributeValue(ViewInitializationMetricsConfig)`() {
-        toExhaustiveMap(ViewInitializationMetricsConfig::class.java) {
-            when (it) {
-                ViewInitializationMetricsConfig.DISABLED -> "disabled"
-                ViewInitializationMetricsConfig.CUSTOM -> "custom"
-                ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> "time_based_custom"
-                ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> "time_based_default"
-            }
-        }.forEach { (config, expectedValue) ->
-            // When
-            val actualValue = toAttributeValue(config)
-
-            // Then
-            assertThat(actualValue).isEqualTo(expectedValue)
-        }
-    }
-
-    @Test
-    fun `M return valid string W toAttributeValue(InteractionToNextView)`() {
-        toExhaustiveMap(NoValueReason.InteractionToNextView::class.java) {
-            when (it) {
-                NoValueReason.InteractionToNextView.UNKNOWN -> "unknown"
-                NoValueReason.InteractionToNextView.NO_ACTION -> "no_action"
-                NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> "no_previous_view"
-                NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> "no_eligible_action"
-                NoValueReason.InteractionToNextView.DISABLED -> "disabled"
-            }
-        }.forEach { (noValueReason, expectedValue) ->
-            // When
-            val actualValue = toAttributeValue(noValueReason)
-
-            // Then
-            assertThat(actualValue).isEqualTo(expectedValue)
-        }
-    }
-
-    @Test
-    fun `M return valid string W toAttributeValue(TimeToNetworkSettle)`() {
-        toExhaustiveMap(NoValueReason.TimeToNetworkSettle::class.java) {
-            when (it) {
-                NoValueReason.TimeToNetworkSettle.UNKNOWN -> "unknown"
-                NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> "no_resources"
-                NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> "not_settled_yet"
-                NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> "no_initial_resources"
-            }
-        }.forEach { (noValueReason, expectedValue) ->
-            // When
-            val actualValue = toAttributeValue(noValueReason)
-
-            // Then
-            assertThat(actualValue).isEqualTo(expectedValue)
-        }
-    }
-
-    @Test
-    fun `M return valid string W toAttributeValue(ViewType)`() {
-        toExhaustiveMap(RumViewType::class.java) {
-            when (it) {
-                RumViewType.NONE,
-                RumViewType.FOREGROUND -> "custom"
-
-                RumViewType.BACKGROUND -> "background"
-                RumViewType.APPLICATION_LAUNCH -> "application_launch"
-            }
-        }.forEach { (viewType, expectedValue) ->
-            // When
-            val actualValue = toAttributeValue(viewType)
-
-            // Then
-            assertThat(actualValue).isEqualTo(expectedValue)
-        }
     }
 
     @Test
@@ -236,8 +144,7 @@ internal class ViewEndedMetricDispatcherTest {
         val dispatcher = ViewEndedMetricDispatcher(
             viewType = fakeViewType,
             internalLogger = mockInternalLogger,
-            instrumentationType = customInstrumentationType,
-            samplingRate = fakeSampleRate
+            instrumentationType = customInstrumentationType
         )
         dispatcher.onDurationResolved(fakeDuration)
         dispatcher.onViewLoadingTimeResolved(fakeLoadingTime)
@@ -249,7 +156,7 @@ internal class ViewEndedMetricDispatcherTest {
         verify(mockInternalLogger).logMetric(
             messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
             additionalProperties = eq(expectedAttributes(instrumentationType = "cross_platform_navigator")),
-            samplingRate = eq(fakeSampleRate),
+            samplingRate = eq(EXPECTED_SAMPLE_RATE),
             creationSampleRate = eq(null)
         )
     }
@@ -260,8 +167,7 @@ internal class ViewEndedMetricDispatcherTest {
         val dispatcher = ViewEndedMetricDispatcher(
             viewType = fakeViewType,
             internalLogger = mockInternalLogger,
-            instrumentationType = null,
-            samplingRate = fakeSampleRate
+            instrumentationType = null
         )
         dispatcher.onDurationResolved(fakeDuration)
         dispatcher.onViewLoadingTimeResolved(fakeLoadingTime)
@@ -273,7 +179,7 @@ internal class ViewEndedMetricDispatcherTest {
         verify(mockInternalLogger).logMetric(
             messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
             additionalProperties = eq(expectedAttributes(instrumentationType = "manual")),
-            samplingRate = eq(fakeSampleRate),
+            samplingRate = eq(EXPECTED_SAMPLE_RATE),
             creationSampleRate = eq(null)
         )
     }
@@ -288,19 +194,57 @@ internal class ViewEndedMetricDispatcherTest {
     ) = buildAttributesMap(
         duration = duration,
         loadingTime = loadingTime,
-        viewType = toAttributeValue(viewType),
-
+        viewType = viewTypeToString(viewType),
         invValue = invState.initializationTime,
-        invConfig = toAttributeValue(invState.config),
-        invNoValueReason = toAttributeValue(invState.noValueReason),
-
+        invConfig = configToString(invState.config),
+        invNoValueReason = invNoValueReasonToString(invState.noValueReason),
         tnsValue = tnsState.initializationTime,
-        tnsConfig = toAttributeValue(tnsState.config),
-        tnsNoValueReason = toAttributeValue(tnsState.noValueReason),
+        tnsConfig = configToString(tnsState.config),
+        tnsNoValueReason = tnsNoValueReasonToString(tnsState.noValueReason),
         instrumentationType = instrumentationType
     )
 
     companion object {
+
+        private const val EXPECTED_SAMPLE_RATE = 0.75f
+
+        private fun viewTypeToString(viewType: RumViewType): String = when (viewType) {
+            RumViewType.NONE,
+            RumViewType.FOREGROUND -> "custom"
+            RumViewType.BACKGROUND -> "background"
+            RumViewType.APPLICATION_LAUNCH -> "application_launch"
+        }
+
+        private fun configToString(config: ViewInitializationMetricsConfig): String = when (config) {
+            ViewInitializationMetricsConfig.DISABLED -> "disabled"
+            ViewInitializationMetricsConfig.CUSTOM -> "custom"
+            ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> "time_based_default"
+            ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> "time_based_custom"
+        }
+
+        private fun tnsNoValueReasonToString(reason: NoValueReason?): String? = when (reason) {
+            null -> "unknown"
+            is NoValueReason.TimeToNetworkSettle -> when (reason) {
+                NoValueReason.TimeToNetworkSettle.UNKNOWN -> "unknown"
+                NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> "no_resources"
+                NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> "no_initial_resources"
+                NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> "not_settled_yet"
+            }
+            else -> "unknown"
+        }
+
+        private fun invNoValueReasonToString(reason: NoValueReason?): String? = when (reason) {
+            null -> "unknown"
+            is NoValueReason.InteractionToNextView -> when (reason) {
+                NoValueReason.InteractionToNextView.UNKNOWN -> "unknown"
+                NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> "no_previous_view"
+                NoValueReason.InteractionToNextView.NO_ACTION -> "no_action"
+                NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> "no_eligible_action"
+                NoValueReason.InteractionToNextView.DISABLED -> "disabled"
+            }
+            else -> "unknown"
+        }
+
         private fun buildAttributesMap(
             viewType: String,
             duration: Long?,
@@ -313,42 +257,38 @@ internal class ViewEndedMetricDispatcherTest {
             tnsNoValueReason: String?,
             instrumentationType: String?
         ): Map<String, Any?> = mapOf(
-            KEY_METRIC_TYPE to "rum view ended",
-            KEY_RUM_VIEW_ENDED to mapOf(
-                KEY_DURATION to duration,
-                KEY_LOADING_TIME to buildMap { put(KEY_VALUE, loadingTime) },
-                KEY_VIEW_TYPE to viewType,
-                KEY_TIME_TO_NETWORK_SETTLED to buildMetricSpecificAttributes(
-                    tnsValue,
-                    tnsConfig,
-                    tnsNoValueReason
-                ),
-                KEY_INTERACTION_TO_NEXT_VIEW to buildMetricSpecificAttributes(
-                    invValue,
-                    invConfig,
-                    invNoValueReason
-                ),
-                KEY_INSTRUMENTATION_TYPE to (instrumentationType ?: "manual")
-            )
+            "metric_type" to "rum view ended",
+            "rve" to buildMap<String, Any?> {
+                if (duration != null) put("duration", duration)
+                if (loadingTime != null) {
+                    put("loading_time", buildMap<String, Any?> {
+                        put("value", loadingTime)
+                    })
+                }
+                put("view_type", viewType)
+                put(
+                    "tns",
+                    buildMetricSpecificAttributes(tnsValue, tnsConfig, tnsNoValueReason)
+                )
+                put(
+                    "inv",
+                    buildMetricSpecificAttributes(invValue, invConfig, invNoValueReason)
+                )
+                put("instrumentation_type", instrumentationType ?: "manual")
+            }
         )
 
         private fun buildMetricSpecificAttributes(
-            tnsValue: Long?,
-            tnsConfig: String,
-            tnsNoValueReason: String?
-        ): Map<Any, Any?> = buildMap {
-            put(KEY_VALUE, tnsValue)
-            put(KEY_CONFIG, tnsConfig)
-            if (tnsNoValueReason != null && tnsValue == null) {
-                put(KEY_NO_VALUE_REASON, tnsNoValueReason)
+            value: Long?,
+            config: String,
+            noValueReason: String?
+        ): Map<String, Any?> = buildMap {
+            if (value != null) put("value", value)
+            put("config", config)
+            if (noValueReason != null && value == null) {
+                put("no_value_reason", noValueReason)
             }
         }
-
-        @Suppress("RECEIVER_NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        private inline fun <E : Enum<E>> toExhaustiveMap(
-            enumClass: Class<E>,
-            valueSelector: (E) -> String
-        ): Map<E, String> = enumClass.enumConstants.associateWith(valueSelector)
 
         private fun <E> Forge.aViewInitializationMetricsState(
             enumClass: Class<E>
