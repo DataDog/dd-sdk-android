@@ -1,0 +1,11 @@
+logs:
+  - id: system_setting_not_found
+    message: "Problem retrieving system value for %s"
+    type: log
+    level: warn
+    targets:
+      - maintainer
+    throwable: true
+    message_args:
+      setting_name:
+        type: string

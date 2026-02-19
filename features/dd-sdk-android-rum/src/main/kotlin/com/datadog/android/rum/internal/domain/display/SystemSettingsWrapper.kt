@@ -9,21 +9,20 @@ package com.datadog.android.rum.internal.domain.display
 import android.content.Context
 import android.provider.Settings
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 
 internal class SystemSettingsWrapper(
     private val applicationContext: Context,
     private val internalLogger: InternalLogger
 ) {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
+
     fun getInt(name: String): Int {
         return try {
             Settings.System.getInt(applicationContext.contentResolver, name)
         } catch (e: Settings.SettingNotFoundException) {
-            internalLogger.log(
-                target = InternalLogger.Target.MAINTAINER,
-                level = InternalLogger.Level.WARN,
-                messageBuilder = { "Problem retrieving system value for $name" },
-                throwable = e
-            )
+            logger.logSystemSettingNotFound(settingName = name, throwable = e)
             Integer.MIN_VALUE
         }
     }
