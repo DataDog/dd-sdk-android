@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.tracking.ComponentPredicate
 
 /**
@@ -26,12 +27,7 @@ internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
         try {
             operation(component)
         } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Internal operation failed on ComponentPredicate" },
-                e
-            )
+            DdSdkAndroidRumLogger(internalLogger).logComponentPredicateOperationFailed(throwable = e)
         }
     }
 }

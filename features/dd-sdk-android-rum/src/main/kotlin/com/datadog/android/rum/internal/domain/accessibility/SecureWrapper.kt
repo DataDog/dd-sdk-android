@@ -10,6 +10,7 @@ import android.content.Context
 import android.provider.Settings
 import android.provider.Settings.SettingNotFoundException
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 
 internal class SecureWrapper {
     @Suppress("UnsafeThirdPartyFunctionCall")
@@ -26,20 +27,10 @@ internal class SecureWrapper {
                 -1
             )
         } catch (e: SettingNotFoundException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
-                { "Setting cannot be found $key" },
-                e
-            )
+            DdSdkAndroidRumLogger(internalLogger).logSecureSettingNotFound(key = key, throwable = e)
             -1
         } catch (e: SecurityException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
-                { "Security exception accessing $key" },
-                e
-            )
+            DdSdkAndroidRumLogger(internalLogger).logSecureSettingSecurityException(key = key, throwable = e)
             -1
         }
     }

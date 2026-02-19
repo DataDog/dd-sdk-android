@@ -1,0 +1,11 @@
+logs:
+  - id: global_setting_not_found
+    message: "Setting not found %s"
+    type: log
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+    message_args:
+      key:
+        type: string

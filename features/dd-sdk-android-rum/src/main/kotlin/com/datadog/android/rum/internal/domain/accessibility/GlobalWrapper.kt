@@ -10,6 +10,7 @@ import android.content.Context
 import android.provider.Settings
 import android.provider.Settings.SettingNotFoundException
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 
 internal class GlobalWrapper {
     @Suppress("UnsafeThirdPartyFunctionCall")
@@ -24,12 +25,7 @@ internal class GlobalWrapper {
                 key
             )
         } catch (e: SettingNotFoundException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
-                { "Setting not found $key" },
-                e
-            )
+            DdSdkAndroidRumLogger(internalLogger).logGlobalSettingNotFound(key = key, throwable = e)
             null
         }
     }
