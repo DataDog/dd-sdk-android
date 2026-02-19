@@ -30,6 +30,7 @@ import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -91,6 +92,8 @@ internal open class RumViewScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector
 ) : RumScope {
+
+    private val logger by lazy { DdSdkAndroidRumLogger(sdkCore.internalLogger) }
 
     internal val url = key.url.replace('.', '/')
 
@@ -500,17 +503,12 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        val internalLogger = sdkCore.internalLogger
         val viewName = key.name
         val previousViewLoadingTime = viewLoadingTime
         val newLoadingTime = event.eventTime.nanoTime - startedNanos
         if (previousViewLoadingTime == null) {
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.USER,
-                { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, newLoadingTime, viewName) }
-            )
-            internalLogger.logApiUsage {
+            logger.logAddingViewLoadingTime(newLoadingTime = newLoadingTime, viewName = viewName)
+            sdkCore.internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = false,
                     noView = false,
@@ -518,19 +516,12 @@ internal open class RumViewScope(
                 )
             }
         } else if (event.overwrite) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                {
-                    OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT.format(
-                        Locale.US,
-                        viewName,
-                        previousViewLoadingTime,
-                        newLoadingTime
-                    )
-                }
+            logger.logOverwritingViewLoadingTime(
+                viewName = viewName,
+                previousViewLoadingTime = previousViewLoadingTime,
+                newLoadingTime = newLoadingTime
             )
-            internalLogger.logApiUsage {
+            sdkCore.internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                     overwrite = true,
                     noView = false,
@@ -614,11 +605,7 @@ internal open class RumViewScope(
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
                 return
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name) }
-                )
+                logger.logActionDropped(actionType = event.type, actionName = event.name)
                 return
             }
         }
@@ -1367,34 +1354,15 @@ internal open class RumViewScope(
             if (isFatalBackgroundEvent || event is RumRawEvent.StartView) {
                 // This is a legitimate empty duration, no-op
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(
-                        InternalLogger.Target.USER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
-                    null,
-                    false,
-                    mapOf("view.name" to key.name)
-                )
+                logger.logZeroDuration(viewName = key.name, viewNameProp = key.name)
             }
             stoppedNanos = startedNanos + 1
         } else if (duration < 0) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(
-                    InternalLogger.Target.USER,
-                    InternalLogger.Target.TELEMETRY
-                ),
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
-                null,
-                false,
-                mapOf(
-                    "view.start_ns" to startedNanos,
-                    "view.end_ns" to event.eventTime.nanoTime,
-                    "view.name" to key.name
-                )
+            logger.logNegativeDuration(
+                viewName = key.name,
+                viewStartNs = startedNanos,
+                viewEndNs = event.eventTime.nanoTime,
+                viewNameProp = key.name
             )
             stoppedNanos = startedNanos + 1
         }
@@ -1621,9 +1589,6 @@ internal open class RumViewScope(
 
     companion object {
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
-
-        internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
-            " another action is still active for the same view"
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55

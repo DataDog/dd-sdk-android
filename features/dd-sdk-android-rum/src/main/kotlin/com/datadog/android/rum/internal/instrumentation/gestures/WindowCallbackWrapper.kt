@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -48,21 +49,12 @@ internal class WindowCallbackWrapper(
             try {
                 gesturesDetector.onTouchEvent(copy)
             } catch (e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { "Error processing MotionEvent" },
-                    e
-                )
+                logger.logErrorProcessingMotionEvent(throwable = e)
             } finally {
                 copy.recycle()
             }
         } else {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Received null MotionEvent" }
-            )
+            logger.logReceivedNullMotionEvent()
         }
 
         return try {
@@ -95,11 +87,7 @@ internal class WindowCallbackWrapper(
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event == null) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Received null KeyEvent" }
-            )
+            logger.logReceivedNullKeyEvent()
         } else if (event.keyCode == KeyEvent.KEYCODE_BACK &&
             event.action == KeyEvent.ACTION_UP
         ) {
@@ -157,12 +145,7 @@ internal class WindowCallbackWrapper(
         // This happens because Kotlin delegate expects non-null value incorrectly inferring
         // non-null type from Java interface definition (seems to be solved in Kotlin 1.8 though)
         if (e.message?.contains("Parameter specified as non-null is null") == true) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Wrapped Window.Callback failed processing event" },
-                e
-            )
+            logger.logWrappedCallbackFailed(throwable = e)
         } else {
             @Suppress("ThrowingInternalException") // we need to let client exception to propagate
             throw e

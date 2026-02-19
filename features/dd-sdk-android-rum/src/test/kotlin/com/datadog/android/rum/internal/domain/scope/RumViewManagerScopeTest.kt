@@ -672,7 +672,11 @@ internal class RumViewManagerScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            RumViewManagerScope.MESSAGE_MISSING_VIEW
+            "A RUM event was detected, but no view is active. " +
+                "To track views automatically, try calling the " +
+                "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
+                "You can also track views manually using the RumMonitor.startView() and " +
+                "RumMonitor.stopView() methods."
         )
     }
 
@@ -1052,7 +1056,7 @@ internal class RumViewManagerScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            RumViewManagerScope.MULTIPLE_ACTIVE_VIEWS_ERROR
+            "Multiple views are active at the same time, this shouldn't happen."
         )
     }
 
