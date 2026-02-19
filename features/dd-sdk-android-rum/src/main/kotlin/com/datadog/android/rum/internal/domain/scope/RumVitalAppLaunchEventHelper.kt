@@ -62,19 +62,12 @@ internal class RumVitalAppLaunchEventHelper(
         val displayInfo = displayInfoProvider.getState()
         val user = datadogContext.userInfo
 
-        val viewId = rumContext.viewId
-        val viewUrl = rumContext.viewUrl
-
-        val view = if (viewId != null && viewUrl != null) {
-            VitalAppLaunchEvent.VitalAppLaunchEventView(
-                id = viewId,
-                referrer = null,
-                url = viewUrl,
-                name = rumContext.viewName
-            )
-        } else {
-            null
-        }
+        val view = VitalAppLaunchEvent.VitalAppLaunchEventView(
+            id = rumContext.viewId ?: RumContext.NULL_UUID,
+            referrer = null,
+            url = rumContext.viewUrl ?: "",
+            name = rumContext.viewName
+        )
 
         return VitalAppLaunchEvent(
             date = timestampMs,

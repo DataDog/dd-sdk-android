@@ -667,7 +667,7 @@ internal class RumEventSerializerTest {
             }
             .hasNullableField("service", event.service)
 
-        event.view?.let {
+        event.view.let {
             assertThat(jsonObject).hasField("view") {
                 val view = checkNotNull(event.view)
                 hasField("id", view.id)
