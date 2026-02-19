@@ -82,36 +82,30 @@ internal class RumAppStartupTelemetryReporterTest {
 
         @Suppress("UNCHECKED_CAST")
         val innerMap: Map<String, Any?> =
-            propertiesMap[RumAppStartupTelemetryReporterImpl.KEY_APP_LAUNCH_TTID] as Map<String, Any?>
+            propertiesMap["app_launch_ttid"] as Map<String, Any?>
 
-        assertThat(message).isEqualTo(RumAppStartupTelemetryReporterImpl.METRIC_NAME)
+        assertThat(message).isEqualTo("[Mobile Metric] App Launch TTID")
         assertThat(innerMap).containsExactlyEntriesOf(
             buildMap {
-                put(RumAppStartupTelemetryReporterImpl.KEY_SCENARIO, info.scenario.name)
-                put(RumAppStartupTelemetryReporterImpl.KEY_TTID_DURATION_NS, info.durationNs)
-                put(RumAppStartupTelemetryReporterImpl.KEY_INDEX_IN_SESSION, appStartIndex)
-                put(
-                    RumAppStartupTelemetryReporterImpl.KEY_CP_PROCESS_START_DIFF_NS,
-                    contentProviderCreationTimeNanos - appStartupTimeNanos
-                )
-                put(RumAppStartupTelemetryReporterImpl.KEY_PROCESS_START_IMPORTANCE, processStartImportance)
-                put(
-                    RumAppStartupTelemetryReporterImpl.KEY_HAS_SAVED_INSTANCE_STATE,
-                    info.scenario.hasSavedInstanceStateBundle
-                )
+                put("scenario", info.scenario.name)
+                put("duration_ns", info.durationNs)
+                put("index_in_session", appStartIndex)
+                put("cp_process_start_diff_ns", contentProviderCreationTimeNanos - appStartupTimeNanos)
+                put("process_start_importance", processStartImportance)
+                put("has_saved_instance_state", info.scenario.hasSavedInstanceStateBundle)
 
                 info.scenario.appStartActivityOnCreateGapNs?.let {
-                    put(RumAppStartupTelemetryReporterImpl.KEY_GAP_NS, it)
+                    put("app_start_activity_on_create_gap_ns", it)
                 }
             }
         )
 
-        assertThat(propertiesMap[RumAppStartupTelemetryReporterImpl.KEY_METRIC_TYPE])
-            .isEqualTo(RumAppStartupTelemetryReporterImpl.METRIC_TYPE_VALUE)
+        assertThat(propertiesMap["metric_type"])
+            .isEqualTo("app launch ttid")
 
         assertThat(propertiesMap).containsOnlyKeys(
-            RumAppStartupTelemetryReporterImpl.KEY_APP_LAUNCH_TTID,
-            RumAppStartupTelemetryReporterImpl.KEY_METRIC_TYPE
+            "app_launch_ttid",
+            "metric_type"
         )
     }
 

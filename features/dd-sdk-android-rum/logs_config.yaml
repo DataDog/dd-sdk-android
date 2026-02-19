@@ -72,6 +72,33 @@ logs:
           instrumentation_type:
             type: string
 
+  - id: app_launch_ttid
+    message: "[Mobile Metric] App Launch TTID"
+    type: metric
+    sampleRate: 15.0
+    properties:
+      metric_type:
+        type: string
+        const: "app launch ttid"
+      app_launch_ttid:
+        type: object
+        properties:
+          scenario:
+            type: string
+          duration_ns:
+            type: long
+          index_in_session:
+            type: int
+          cp_process_start_diff_ns:
+            type: long
+          process_start_importance:
+            type: int
+          has_saved_instance_state:
+            type: boolean
+          app_start_activity_on_create_gap_ns:
+            type: long
+            nullable: true
+
   - id: report_app_fully_displayed_called_too_early
     message: "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
     type: log
