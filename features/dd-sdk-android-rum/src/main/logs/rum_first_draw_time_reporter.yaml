@@ -1,0 +1,16 @@
+logs:
+  - id: ttid_remove_draw_listener_error
+    message: "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver"
+    type: log
+    level: warn
+    targets:
+      - telemetry
+    throwable: true
+
+  - id: ttid_add_draw_listener_error
+    message: "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver"
+    type: log
+    level: warn
+    targets:
+      - telemetry
+    throwable: true

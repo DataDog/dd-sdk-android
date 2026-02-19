@@ -12,6 +12,7 @@ import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 
@@ -21,6 +22,8 @@ internal class RumFirstDrawTimeReporterImpl(
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
     private val handler: Handler
 ) : RumFirstDrawTimeReporter {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     override fun subscribeToFirstFrameDrawn(
         activity: Activity,
@@ -90,12 +93,7 @@ internal class RumFirstDrawTimeReporterImpl(
                         try {
                             decorView.viewTreeObserver.removeOnDrawListener(this)
                         } catch (e: IllegalStateException) {
-                            internalLogger.log(
-                                InternalLogger.Level.WARN,
-                                InternalLogger.Target.TELEMETRY,
-                                { "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver" },
-                                e
-                            )
+                            logger.logTtidRemoveDrawListenerError(throwable = e)
                         }
                     }
                 }
@@ -106,12 +104,7 @@ internal class RumFirstDrawTimeReporterImpl(
             try {
                 decorView.viewTreeObserver.addOnDrawListener(listener)
             } catch (e: IllegalStateException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.TELEMETRY,
-                    { "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver" },
-                    e
-                )
+                logger.logTtidAddDrawListenerError(throwable = e)
             }
         }
     }
