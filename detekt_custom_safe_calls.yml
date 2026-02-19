@@ -119,6 +119,7 @@ datadog:
       - "android.view.View.getChildAt(kotlin.Int)"
       - "android.view.View.getTag(kotlin.Int)"
       - "android.view.View.hashCode()"
+      - "android.view.View.invalidate()"
       - "android.view.View.onDraw(android.graphics.Canvas)"
       - "android.view.View.performClick()"
       - "android.view.View.post(java.lang.Runnable?)"

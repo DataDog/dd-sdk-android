@@ -6,7 +6,10 @@
 
 package com.datadog.android.sdk.integration.rum.startup
 
+import android.app.Activity
 import android.app.ActivityManager
+import android.app.Application
+import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -26,6 +29,8 @@ import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented test verifying that TTID auto-forwarding works when the interstitial
@@ -58,8 +63,26 @@ internal class AppStartupAsyncAutoForwardingTest :
         val expectedEvents = mutableListOf<ExpectedEvent>()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
 
-        instrumentation.waitForIdleSync()
-        waitForPendingRUMEvents()
+        // AsyncInterstitialSplashActivity navigates via Handler.postDelayed(100ms),
+        // which means startActivity(MainContentActivity) fires asynchronously after
+        // the splash finishes. We register a lifecycle callback to deterministically
+        // wait until MainContentActivity reaches RESUMED state before capturing
+        // the RUM context (which resolvedRumContext() snapshots at ExpectedEvent
+        // construction time).
+        val mainActivityResumed = CountDownLatch(1)
+        val application = instrumentation.targetContext.applicationContext as Application
+        val callback = onActivityResumedCallback<MainContentActivity>(mainActivityResumed)
+        application.registerActivityLifecycleCallbacks(callback)
+        try {
+            instrumentation.waitForIdleSync()
+            check(mainActivityResumed.await(MAIN_ACTIVITY_WAIT_SECONDS, TimeUnit.SECONDS)) {
+                "MainContentActivity did not reach RESUMED state within $MAIN_ACTIVITY_WAIT_SECONDS seconds"
+            }
+            instrumentation.waitForIdleSync()
+            waitForPendingRUMEvents()
+        } finally {
+            application.unregisterActivityLifecycleCallbacks(callback)
+        }
 
         // Expect application launch view for MainContentActivity
         expectedEvents.add(
@@ -102,6 +125,26 @@ internal class AppStartupAsyncAutoForwardingTest :
             )
             true
         }.doWait(timeoutMs = FINAL_WAIT_MS)
+    }
+
+    private inline fun <reified T : Activity> onActivityResumedCallback(
+        latch: CountDownLatch
+    ): Application.ActivityLifecycleCallbacks {
+        return object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: Activity) {
+                if (activity is T) latch.countDown()
+            }
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        }
+    }
+
+    companion object {
+        private const val MAIN_ACTIVITY_WAIT_SECONDS = 30L
     }
 
     /**

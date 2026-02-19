@@ -735,17 +735,14 @@ internal class RumFeature(
                         }
                     }
 
-                    if (wasForwarded && activity.window.peekDecorView()?.isLaidOut == true) {
-                        // The forwarded activity has already drawn its first frame.
-                        // Invoke the callback directly instead of subscribing to
-                        // OnDrawListener, which would require forcing a redraw.
-                        val timestampNs = sdkCore.timeProvider.getDeviceElapsedTimeNanos()
-                        callback.onFirstFrameDrawn(timestampNs)
-                    } else {
-                        rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
-                            activity = activity,
-                            callback = callback
-                        )
+                    rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
+                        activity = activity,
+                        callback = callback
+                    )
+                    if (wasForwarded) {
+                        // The forwarded activity may have already drawn before retarget.
+                        // Invalidate the decor view to ensure OnDrawListener fires.
+                        activity.window.peekDecorView()?.invalidate()
                     }
                 }
             },

@@ -20,7 +20,6 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
-import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -178,26 +177,23 @@ internal class RumFeatureInitStartupDetectorTest {
     }
 
     @Test
-    fun `M call sendTTIDEvent W onAppStartupRetargeted { forwarded activity already laid out }`() {
+    fun `M subscribe and invalidate W onAppStartupRetargeted`() {
         // Given
-        val fakeElapsedNanos = 5_000_000_000L
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeElapsedNanos
-
         val detector = initializeAndCaptureDetector()
         val splashActivity = createMockActivityWithWindow()
-        val mainActivity = createMockActivityWithWindow(isLaidOut = true)
+        val mainActivity = createMockActivityWithWindow()
+        val mainDecorView = mainActivity.window.decorView
 
         // When
         detector.simulateActivityCreated(splashActivity, null)
         detector.simulateActivityCreated(mainActivity, null)
         detector.onActivityDestroyed(splashActivity)
 
-        // Then - sendAppStartEvent called exactly once (during detection, not retargeting)
+        // Then - subscribes to draw listener and invalidates to ensure draw fires
         verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
-        val captor = argumentCaptor<RumTTIDInfo>()
-        verify(mockRumMonitor).sendTTIDEvent(captor.capture())
-        assertThat(captor.firstValue.wasForwarded).isTrue()
-        assertThat(captor.firstValue.scenario.activity.get()).isSameAs(mainActivity)
+        verify(mockRumMonitor, never()).sendTTIDEvent(any())
+        verify(mainDecorView).addOnAttachStateChangeListener(any())
+        verify(mainDecorView).invalidate()
     }
 
     @Test
@@ -220,7 +216,8 @@ internal class RumFeatureInitStartupDetectorTest {
         // Given
         val detector = initializeAndCaptureDetector()
         val splashActivity = createMockActivityWithWindow()
-        val mainActivity = createMockActivityWithWindow(isLaidOut = true)
+        val mainActivity = createMockActivityWithWindow()
+        val mainDecorView = mainActivity.window.decorView
 
         detector.simulateActivityCreated(splashActivity, null)
         detector.simulateActivityCreated(mainActivity, null)
@@ -231,67 +228,48 @@ internal class RumFeatureInitStartupDetectorTest {
         // When
         detector.onActivityDestroyed(splashActivity)
 
-        // Then - sendAppStartEvent was called exactly once before clear, but no sendTTIDEvent
-        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
-        verify(mockRumMonitor, never()).sendTTIDEvent(any())
-    }
-
-    @Test
-    fun `M subscribe to first frame W onAppStartupRetargeted { forwarded activity not laid out }`() {
-        // Given
-        val detector = initializeAndCaptureDetector()
-        val splashActivity = createMockActivityWithWindow()
-        val mainActivity = createMockActivityWithWindow(isLaidOut = false)
-        val mainDecorView = mainActivity.window.decorView
-
-        // When
-        detector.simulateActivityCreated(splashActivity, null)
-        detector.simulateActivityCreated(mainActivity, null)
-        detector.onActivityDestroyed(splashActivity)
-
-        // Then - sendAppStartEvent called exactly once (during detection, not retargeting)
-        // sendTTIDEvent should NOT be called directly since the forwarded activity's
-        // decor view is not laid out yet; instead it subscribes via rumFirstDrawTimeReporter
-        // which registers a listener on the decor view to wait for attachment
+        // Then - subscribes to draw and invalidates, but since monitor is gone
+        // the callback won't reach sendTTIDEvent
         verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
         verify(mockRumMonitor, never()).sendTTIDEvent(any())
         verify(mainDecorView).addOnAttachStateChangeListener(any())
+        verify(mainDecorView).invalidate()
     }
 
     @Test
-    fun `M not forward again W notifyStartupTTIDReported called after sendTTIDEvent`() {
+    fun `M not forward again W notifyStartupTTIDReported called after first forward`() {
         // Given - set up a forwarding scenario: splash -> main -> third
-        // After the first forwarding (splash -> main) triggers sendTTIDEvent,
-        // notifyStartupTTIDReported is called. Then when main is destroyed
-        // with third still alive, no second forwarding should happen because
-        // the startupTTIDReported flag prevents it.
-        val fakeElapsedNanos = 5_000_000_000L
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeElapsedNanos
-
+        // After the first forwarding (splash -> main) subscribes to draw,
+        // the draw callback fires and calls notifyStartupTTIDReported.
+        // Then when main is destroyed with third still alive, no second
+        // forwarding should happen because the startupTTIDReported flag prevents it.
         val detector = initializeAndCaptureDetector()
         val splashActivity = createMockActivityWithWindow()
-        val mainActivity = createMockActivityWithWindow(isLaidOut = true)
-        val thirdActivity = createMockActivityWithWindow(isLaidOut = true)
+        val mainActivity = createMockActivityWithWindow()
+        val thirdActivity = createMockActivityWithWindow()
+        val mainDecorView = mainActivity.window.decorView
 
         // Splash created (startup detected), main created, third created
         detector.simulateActivityCreated(splashActivity, null)
         detector.simulateActivityCreated(mainActivity, null)
         detector.simulateActivityCreated(thirdActivity, null)
 
-        // Splash destroyed -> forwards to main, sendTTIDEvent called,
-        // notifyStartupTTIDReported sets the flag
+        // Splash destroyed -> forwards to main, subscribes to draw + invalidates
         detector.onActivityDestroyed(splashActivity)
-        val captor = argumentCaptor<RumTTIDInfo>()
-        verify(mockRumMonitor, times(1)).sendTTIDEvent(captor.capture())
-        assertThat(captor.firstValue.scenario.activity.get()).isSameAs(mainActivity)
+        verify(mockRumMonitor, never()).sendTTIDEvent(any())
+        verify(mainDecorView).addOnAttachStateChangeListener(any())
+        verify(mainDecorView).invalidate()
+
+        // Simulate the draw callback having fired (in real Android,
+        // invalidate() triggers a draw which calls notifyStartupTTIDReported)
+        detector.notifyStartupTTIDReported()
 
         // When - main destroyed while third is still alive.
-        // Without notifyStartupTTIDReported, the detector would try to
-        // forward from main to third and trigger another sendTTIDEvent.
+        // The detector should not attempt another forwarding.
         detector.onActivityDestroyed(mainActivity)
 
-        // Then - still only one sendTTIDEvent call total
-        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
+        // Then - sendTTIDEvent was never called directly (it would come via draw callback)
+        verify(mockRumMonitor, never()).sendTTIDEvent(any())
     }
 
     @Test
@@ -311,7 +289,7 @@ internal class RumFeatureInitStartupDetectorTest {
             .unregisterActivityLifecycleCallbacks(detector as Application.ActivityLifecycleCallbacks)
     }
 
-    private fun createMockActivityWithWindow(isLaidOut: Boolean = false): Activity {
+    private fun createMockActivityWithWindow(): Activity {
         val mockActivity = mock<Activity>()
         val mockWindow = mock<Window>()
         val mockDecorView = mock<View>()
@@ -320,7 +298,6 @@ internal class RumFeatureInitStartupDetectorTest {
         whenever(mockWindow.callback) doReturn mockCallback
         whenever(mockWindow.peekDecorView()) doReturn mockDecorView
         whenever(mockWindow.decorView) doReturn mockDecorView
-        whenever(mockDecorView.isLaidOut) doReturn isLaidOut
         return mockActivity
     }
 
