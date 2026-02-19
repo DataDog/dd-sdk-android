@@ -514,7 +514,7 @@ internal class RumSessionScopeStartupManagerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.USER,
-            message = RumSessionScopeStartupManagerImpl.REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE,
+            message = "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it.",
             throwable = null,
             onlyOnce = false,
             additionalProperties = null
@@ -545,7 +545,7 @@ internal class RumSessionScopeStartupManagerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.USER,
-            message = RumSessionScopeStartupManagerImpl.REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE,
+            message = "RumMonitor.reportAppFullyDisplayed was called before TTID was computed, will report TTID as TTFD.",
             throwable = null,
             onlyOnce = false,
             additionalProperties = null
@@ -646,7 +646,7 @@ internal class RumSessionScopeStartupManagerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = RumSessionScopeStartupManagerImpl.TTID_TOO_LARGE_MESSAGE,
+            message = "TTID value is too large, skipping it",
             throwable = null,
             onlyOnce = false,
             additionalProperties = null
@@ -705,7 +705,7 @@ internal class RumSessionScopeStartupManagerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = RumSessionScopeStartupManagerImpl.TTFD_TOO_LARGE_MESSAGE,
+            message = "TTFD value is too large, skipping it",
             throwable = null,
             onlyOnce = false,
             additionalProperties = null,

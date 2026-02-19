@@ -26,19 +26,68 @@ internal object LogsConfigYamlParser {
             ?: error("Each log entry must have a string 'id'")
         val message = map["message"] as? String
             ?: error("Each log entry must have a string 'message'")
-        val sampleRate = (map["sampleRate"] as? Number)?.toFloat()
-            ?: error("Each log entry must have a numeric 'sampleRate'")
+        val type = map["type"] as? String ?: "metric"
+        val onlyOnce = map["onlyOnce"] as? Boolean ?: false
+        val throwable = map["throwable"] as? Boolean ?: false
 
         @Suppress("UNCHECKED_CAST")
         val propertiesMap = map["properties"] as? Map<String, Map<String, Any>>
             ?: emptyMap()
+        val properties = propertiesMap.mapValues { (_, v) -> parsePropertyDefinition(v) }
 
-        return LogEntry(
-            id = id,
-            message = message,
-            sampleRate = sampleRate,
-            properties = propertiesMap.mapValues { (_, v) -> parsePropertyDefinition(v) }
-        )
+        return when (type) {
+            "metric" -> {
+                val sampleRate = (map["sampleRate"] as? Number)?.toFloat()
+                    ?: error("Metric log entry '$id' must have a numeric 'sampleRate'")
+                MetricLogEntry(
+                    id = id,
+                    message = message,
+                    sampleRate = sampleRate,
+                    onlyOnce = onlyOnce,
+                    throwable = throwable,
+                    properties = properties
+                )
+            }
+
+            "log" -> {
+                val level = parseLogLevel(
+                    map["level"] as? String
+                        ?: error("Log entry '$id' must have a 'level' field")
+                )
+                @Suppress("UNCHECKED_CAST")
+                val targets = (map["targets"] as? List<String>
+                    ?: error("Log entry '$id' must have a 'targets' list"))
+                    .map { parseLogTarget(it) }
+
+                SimpleLogEntry(
+                    id = id,
+                    message = message,
+                    level = level,
+                    targets = targets,
+                    onlyOnce = onlyOnce,
+                    throwable = throwable,
+                    properties = properties
+                )
+            }
+
+            else -> error("Unknown log type: '$type'. Supported: metric, log")
+        }
+    }
+
+    private fun parseLogLevel(level: String): LogLevel = when (level) {
+        "error" -> LogLevel.ERROR
+        "warn" -> LogLevel.WARN
+        "info" -> LogLevel.INFO
+        "debug" -> LogLevel.DEBUG
+        "verbose" -> LogLevel.VERBOSE
+        else -> error("Unknown log level: '$level'. Supported: error, warn, info, debug, verbose")
+    }
+
+    private fun parseLogTarget(target: String): LogTarget = when (target) {
+        "user" -> LogTarget.USER
+        "telemetry" -> LogTarget.TELEMETRY
+        "maintainer" -> LogTarget.MAINTAINER
+        else -> error("Unknown log target: '$target'. Supported: user, telemetry, maintainer")
     }
 
     private fun parsePropertyDefinition(map: Map<String, Any>): PropertyDefinition {

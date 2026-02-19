@@ -9,12 +9,36 @@ internal data class LogsConfig(
     val logs: List<LogEntry>
 )
 
-internal data class LogEntry(
-    val id: String,
-    val message: String,
+internal sealed class LogEntry {
+    abstract val id: String
+    abstract val message: String
+    abstract val onlyOnce: Boolean
+    abstract val throwable: Boolean
+    abstract val properties: Map<String, PropertyDefinition>
+}
+
+internal data class MetricLogEntry(
+    override val id: String,
+    override val message: String,
     val sampleRate: Float,
-    val properties: Map<String, PropertyDefinition>
-)
+    override val onlyOnce: Boolean = false,
+    override val throwable: Boolean = false,
+    override val properties: Map<String, PropertyDefinition> = emptyMap()
+) : LogEntry()
+
+internal data class SimpleLogEntry(
+    override val id: String,
+    override val message: String,
+    val level: LogLevel,
+    val targets: List<LogTarget>,
+    override val onlyOnce: Boolean = false,
+    override val throwable: Boolean = false,
+    override val properties: Map<String, PropertyDefinition> = emptyMap()
+) : LogEntry()
+
+internal enum class LogLevel { ERROR, WARN, INFO, DEBUG, VERBOSE }
+
+internal enum class LogTarget { USER, TELEMETRY, MAINTAINER }
 
 internal sealed class PropertyDefinition {
 

@@ -1,6 +1,7 @@
 logs:
   - id: rum_view_ended
     message: "[Mobile Metric] RUM View Ended"
+    type: metric
     sampleRate: 0.75
     properties:
       metric_type:
@@ -70,3 +71,33 @@ logs:
                   - disabled
           instrumentation_type:
             type: string
+
+  - id: report_app_fully_displayed_called_too_early
+    message: "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
+    type: log
+    level: error
+    targets:
+      - user
+
+  - id: report_app_fully_displayed_called_before_ttid
+    message: "RumMonitor.reportAppFullyDisplayed was called before TTID was computed, will report TTID as TTFD."
+    type: log
+    level: warn
+    targets:
+      - user
+
+  - id: ttfd_too_large
+    message: "TTFD value is too large, skipping it"
+    type: log
+    level: warn
+    targets:
+      - user
+      - telemetry
+
+  - id: ttid_too_large
+    message: "TTID value is too large, skipping it"
+    type: log
+    level: warn
+    targets:
+      - user
+      - telemetry

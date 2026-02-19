@@ -236,15 +236,21 @@ internal class LogsConfigCodeGenerator(
         enclosingNames: List<String>,
         nonConstProperties: Map<String, PropertyDefinition>
     ): FunSpec {
+        return when (entry) {
+            is MetricLogEntry -> generateMetricLogFunction(entry, enclosingNames, nonConstProperties)
+            is SimpleLogEntry -> generateSimpleLogFunction(entry, enclosingNames, nonConstProperties)
+        }
+    }
+
+    private fun generateMetricLogFunction(
+        entry: MetricLogEntry,
+        enclosingNames: List<String>,
+        nonConstProperties: Map<String, PropertyDefinition>
+    ): FunSpec {
         val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
             .addModifiers(KModifier.INTERNAL)
 
-        for ((propName, propDef) in nonConstProperties) {
-            val kotlinName = toCamelCase(propName)
-            val resolvedType = resolveTypeName(propName, propDef, enclosingNames)
-            val finalType = if (propDef.nullable) resolvedType.copy(nullable = true) else resolvedType
-            funBuilder.addParameter(ParameterSpec.builder(kotlinName, finalType).build())
-        }
+        addPropertyParameters(funBuilder, nonConstProperties, enclosingNames)
 
         val buildMap = MemberName("kotlin.collections", "buildMap")
         val codeBuilder = CodeBlock.builder()
@@ -267,6 +273,91 @@ internal class LogsConfigCodeGenerator(
         funBuilder.addCode(codeBuilder.build())
 
         return funBuilder.build()
+    }
+
+    private fun generateSimpleLogFunction(
+        entry: SimpleLogEntry,
+        enclosingNames: List<String>,
+        nonConstProperties: Map<String, PropertyDefinition>
+    ): FunSpec {
+        val funBuilder = FunSpec.builder("log${toPascalCase(entry.id)}")
+            .addModifiers(KModifier.INTERNAL)
+
+        if (entry.throwable) {
+            funBuilder.addParameter(
+                ParameterSpec.builder(
+                    "throwable",
+                    Throwable::class.asTypeName().copy(nullable = true)
+                ).defaultValue("null").build()
+            )
+        }
+
+        addPropertyParameters(funBuilder, nonConstProperties, enclosingNames)
+
+        val levelClass = ClassName("com.datadog.android.api", "InternalLogger", "Level")
+        val targetClass = ClassName("com.datadog.android.api", "InternalLogger", "Target")
+
+        val codeBuilder = CodeBlock.builder()
+        codeBuilder.add("internalLogger.log(\n")
+        codeBuilder.indent()
+        codeBuilder.addStatement("level = %T.%L,", levelClass, entry.level.name)
+
+        if (entry.targets.size == 1) {
+            codeBuilder.addStatement(
+                "target = %T.%L,",
+                targetClass,
+                entry.targets.first().name
+            )
+        } else {
+            val targetsList = entry.targets.joinToString(", ") { "%T.${it.name}" }
+            val targetTypes = entry.targets.map { targetClass }.toTypedArray()
+            codeBuilder.addStatement(
+                "targets = listOf($targetsList),",
+                *targetTypes
+            )
+        }
+
+        codeBuilder.addStatement("messageBuilder = { %S }", entry.message)
+
+        if (entry.throwable) {
+            codeBuilder.add(",\nthrowable = throwable")
+        }
+
+        if (entry.onlyOnce) {
+            codeBuilder.add(",\nonlyOnce = true")
+        }
+
+        if (nonConstProperties.isNotEmpty()) {
+            val buildMap = MemberName("kotlin.collections", "buildMap")
+            codeBuilder.add(",\nadditionalProperties = %M {\n", buildMap)
+            codeBuilder.indent()
+            for ((propName, propDef) in entry.properties) {
+                appendPropertySerialization(codeBuilder, propName, propDef)
+            }
+            codeBuilder.unindent()
+            codeBuilder.add("}")
+        }
+
+        codeBuilder.add("\n")
+        codeBuilder.unindent()
+        codeBuilder.addStatement(")")
+
+        funBuilder.addCode(codeBuilder.build())
+
+        return funBuilder.build()
+    }
+
+    private fun addPropertyParameters(
+        funBuilder: FunSpec.Builder,
+        nonConstProperties: Map<String, PropertyDefinition>,
+        enclosingNames: List<String>
+    ) {
+        for ((propName, propDef) in nonConstProperties) {
+            val kotlinName = toCamelCase(propName)
+            val resolvedType = resolveTypeName(propName, propDef, enclosingNames)
+            val finalType = if (propDef.nullable) resolvedType.copy(nullable = true) else resolvedType
+            funBuilder.addParameter(ParameterSpec.builder(kotlinName, finalType).build())
+        }
     }
 
     private fun generatePutNonNullHelper(): FunSpec {

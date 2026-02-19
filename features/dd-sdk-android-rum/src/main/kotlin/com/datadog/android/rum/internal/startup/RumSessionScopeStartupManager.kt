@@ -6,13 +6,13 @@
 
 package com.datadog.android.rum.internal.startup
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -63,6 +63,8 @@ internal class RumSessionScopeStartupManagerImpl(
     private val sdkCore: InternalSdkCore,
     private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 ) : RumSessionScopeStartupManager {
+
+    private val logger = DdSdkAndroidRumLogger(sdkCore.internalLogger)
 
     private var lastScenario: RumStartupScenario? = null
 
@@ -171,32 +173,14 @@ internal class RumSessionScopeStartupManagerImpl(
         val scenario = lastScenario
 
         if (scenario == null) {
-            sdkCore.internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.USER,
-                messageBuilder = {
-                    REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE
-                },
-                throwable = null,
-                onlyOnce = false,
-                additionalProperties = null
-            )
+            logger.logReportAppFullyDisplayedCalledTooEarly()
             return
         }
 
         ttfdReportedForScenario = true
 
         if (!ttidReportedForScenario) {
-            sdkCore.internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                target = InternalLogger.Target.USER,
-                messageBuilder = {
-                    REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE
-                },
-                throwable = null,
-                onlyOnce = false,
-                additionalProperties = null
-            )
+            logger.logReportAppFullyDisplayedCalledBeforeTtid()
             return
         }
 
@@ -221,16 +205,7 @@ internal class RumSessionScopeStartupManagerImpl(
         scenario: RumStartupScenario
     ) {
         if (durationNs > MAX_TTFD_DURATION_NS) {
-            sdkCore.internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = {
-                    TTFD_TOO_LARGE_MESSAGE
-                },
-                throwable = null,
-                onlyOnce = false,
-                additionalProperties = null
-            )
+            logger.logTtfdTooLarge()
             return
         }
 
@@ -259,16 +234,7 @@ internal class RumSessionScopeStartupManagerImpl(
         val durationNs = ttidEvent.vital.duration.toLong()
 
         if (durationNs > MAX_TTID_DURATION_NS) {
-            sdkCore.internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = {
-                    TTID_TOO_LARGE_MESSAGE
-                },
-                throwable = null,
-                onlyOnce = false,
-                additionalProperties = null
-            )
+            logger.logTtidTooLarge()
             return
         }
 
@@ -285,16 +251,6 @@ internal class RumSessionScopeStartupManagerImpl(
 
     companion object {
         private const val PROFILER_IS_RUNNING = "profiler_is_running"
-
-        internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
-            "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
-
-        internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE =
-            "RumMonitor.reportAppFullyDisplayed was called before TTID was computed, will report TTID as TTFD."
-
-        internal const val TTID_TOO_LARGE_MESSAGE = "TTID value is too large, skipping it"
-
-        internal const val TTFD_TOO_LARGE_MESSAGE = "TTFD value is too large, skipping it"
 
         internal val MAX_TTID_DURATION_NS: Long = 1.minutes.inWholeNanoseconds
         internal val MAX_TTFD_DURATION_NS: Long = 90.seconds.inWholeNanoseconds
