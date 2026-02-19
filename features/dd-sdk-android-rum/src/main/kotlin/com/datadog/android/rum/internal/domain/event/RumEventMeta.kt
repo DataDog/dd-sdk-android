@@ -7,10 +7,10 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
-import java.util.Locale
 
 internal sealed class RumEventMeta {
 
@@ -45,7 +45,6 @@ internal sealed class RumEventMeta {
 
     companion object {
 
-        private const val UNKNOWN_RUM_EVENT_META_TYPE_ERROR = "Unknown RUM event meta type value [%s]"
         private const val UNABLE_TO_PARSE_JSON_INTO_META = "Unable to parse json into RUM event meta"
 
         const val TYPE_KEY = "type"
@@ -74,11 +73,7 @@ internal sealed class RumEventMeta {
                     }
 
                     else -> {
-                        internalLogger.log(
-                            InternalLogger.Level.ERROR,
-                            InternalLogger.Target.USER,
-                            { UNKNOWN_RUM_EVENT_META_TYPE_ERROR.format(Locale.US, type) }
-                        )
+                        DdSdkAndroidRumLogger(internalLogger).logUnknownRumEventMetaType(metaType = type)
                         null
                     }
                 }

@@ -74,7 +74,7 @@ internal class RumEventMetaDeserializerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMetaDeserializer.DESERIALIZATION_ERROR,
+            "Failed to deserialize RUM event meta",
             JsonParseException::class.java
         )
     }
@@ -89,7 +89,7 @@ internal class RumEventMetaDeserializerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMetaDeserializer.DESERIALIZATION_ERROR,
+            "Failed to deserialize RUM event meta",
             JsonParseException::class.java
         )
     }
@@ -121,7 +121,7 @@ internal class RumEventMetaDeserializerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMetaDeserializer.DESERIALIZATION_ERROR,
+            "Failed to deserialize RUM event meta",
             JsonParseException::class.java
         )
     }
@@ -169,7 +169,7 @@ internal class RumEventMetaDeserializerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            RumEventMetaDeserializer.DESERIALIZATION_ERROR,
+            "Failed to deserialize RUM event meta",
             JsonParseException::class.java
         )
     }

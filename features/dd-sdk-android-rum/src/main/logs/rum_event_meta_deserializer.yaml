@@ -1,0 +1,8 @@
+logs:
+  - id: rum_event_meta_deserialization_error
+    message: "Failed to deserialize RUM event meta"
+    type: log
+    level: error
+    targets:
+      - user
+    throwable: true

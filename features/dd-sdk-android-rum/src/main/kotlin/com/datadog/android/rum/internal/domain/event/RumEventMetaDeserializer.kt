@@ -8,28 +8,23 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.google.gson.JsonParseException
 
 internal class RumEventMetaDeserializer(
     private val internalLogger: InternalLogger
 ) : Deserializer<ByteArray, RumEventMeta> {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
+
     override fun deserialize(model: ByteArray): RumEventMeta? {
         if (model.isEmpty()) return null
 
         return try {
             RumEventMeta.fromJson(String(model, Charsets.UTF_8), internalLogger)
         } catch (e: JsonParseException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { DESERIALIZATION_ERROR },
-                e
-            )
+            logger.logRumEventMetaDeserializationError(throwable = e)
             null
         }
-    }
-
-    companion object {
-        const val DESERIALIZATION_ERROR = "Failed to deserialize RUM event meta"
     }
 }

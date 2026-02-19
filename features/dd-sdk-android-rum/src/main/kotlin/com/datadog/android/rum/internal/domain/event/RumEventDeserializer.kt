@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.rum.internal.generated.DdSdkAndroidRumLogger
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -17,10 +18,11 @@ import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
-import java.util.Locale
 
 internal class RumEventDeserializer(private val internalLogger: InternalLogger) :
     Deserializer<JsonObject, Any> {
+
+    private val logger = DdSdkAndroidRumLogger(internalLogger)
 
     // region Deserializer
 
@@ -31,20 +33,10 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
                 model
             )
         } catch (e: JsonParseException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
-                e
-            )
+            logger.logRumEventDeserializeError(model = model.toString(), throwable = e)
             null
         } catch (e: IllegalStateException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
-                e
-            )
+            logger.logRumEventDeserializeError(model = model.toString(), throwable = e)
             null
         }
     }
@@ -99,7 +91,5 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
         const val TELEMETRY_TYPE_DEBUG = "debug"
         const val TELEMETRY_TYPE_ERROR = "error"
 
-        const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the RumEvent: %s"
     }
 }
