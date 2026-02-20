@@ -8,10 +8,13 @@ package com.datadog.android.core.internal.account
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 
 internal class DatadogAccountInfoProvider(
     private val internalLogger: InternalLogger
 ) : MutableAccountInfoProvider {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     @Volatile
     private var internalAccountInfo: AccountInfo? = null
@@ -38,11 +41,7 @@ internal class DatadogAccountInfoProvider(
                 extraInfo = it.extraInfo + extraInfo
             )
         } ?: run {
-            internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                target = InternalLogger.Target.USER,
-                messageBuilder = { MSG_ACCOUNT_NULL }
-            )
+            logger.logAccountNull()
         }
     }
 
@@ -54,8 +53,4 @@ internal class DatadogAccountInfoProvider(
         return internalAccountInfo
     }
 
-    companion object {
-        internal const val MSG_ACCOUNT_NULL =
-            "Failed to add Account ExtraInfo because no Account Info exist yet. Please call `setAccountInfo` first."
-    }
 }

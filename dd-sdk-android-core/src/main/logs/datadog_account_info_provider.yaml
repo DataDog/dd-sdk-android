@@ -1,0 +1,6 @@
+logs:
+  - id: account_null
+    message: "Failed to add Account ExtraInfo because no Account Info exist yet. Please call `setAccountInfo` first."
+    level: warn
+    targets:
+      - user

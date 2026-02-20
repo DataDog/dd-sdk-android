@@ -1,0 +1,64 @@
+logs:
+  - id: plain_file_write_io_error
+    message: "Unable to write data to file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: plain_file_write_security_error
+    message: "Unable to write data to file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: plain_file_read_not_exists
+    message: "Unable to read data from file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      file_path:
+        type: string
+
+  - id: plain_file_read_is_directory
+    message: "Unable to read data from file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      file_path:
+        type: string
+
+  - id: plain_file_read_io_error
+    message: "Unable to read data from file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: plain_file_read_security_error
+    message: "Unable to read data from file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string

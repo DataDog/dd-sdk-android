@@ -397,7 +397,7 @@ internal class CallbackNetworkInfoProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            CallbackNetworkInfoProvider.ERROR_REGISTER
+            "We couldn't register a Network Callback, the network information reported will be less accurate."
         )
     }
 
@@ -417,7 +417,7 @@ internal class CallbackNetworkInfoProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            CallbackNetworkInfoProvider.ERROR_REGISTER,
+            "We couldn't register a Network Callback, the network information reported will be less accurate.",
             exception
         )
     }
@@ -440,7 +440,7 @@ internal class CallbackNetworkInfoProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            CallbackNetworkInfoProvider.ERROR_REGISTER,
+            "We couldn't register a Network Callback, the network information reported will be less accurate.",
             exception
         )
     }
@@ -537,7 +537,7 @@ internal class CallbackNetworkInfoProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            CallbackNetworkInfoProvider.ERROR_UNREGISTER,
+            "We couldn't unregister the Network Callback",
             exception
         )
     }
@@ -552,7 +552,7 @@ internal class CallbackNetworkInfoProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            CallbackNetworkInfoProvider.ERROR_UNREGISTER
+            "We couldn't unregister the Network Callback"
         )
     }
 
@@ -573,7 +573,7 @@ internal class CallbackNetworkInfoProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            CallbackNetworkInfoProvider.ERROR_UNREGISTER,
+            "We couldn't unregister the Network Callback",
             exception
         )
     }

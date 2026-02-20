@@ -1,0 +1,88 @@
+logs:
+  - id: write_io_error
+    message: "Unable to write data to file: %s"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: write_security_error
+    message: "Unable to write data to file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: read_io_error
+    message: "Unable to read data from file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: read_security_error
+    message: "Unable to read data from file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      file_path:
+        type: string
+
+  - id: not_all_data_read
+    message: "File %s is probably corrupted, not all content was read."
+    level: error
+    targets:
+      - user
+      - telemetry
+    message_args:
+      file_path:
+        type: string
+
+  - id: unexpected_block_type
+    message: "Unexpected block type identifier=%d met, was expecting %s(%d)"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      block_type:
+        type: int
+      expected_block_type_name:
+        type: string
+      expected_block_type_id:
+        type: int
+
+  - id: plain_batch_bytes_read_mismatch
+    message: "Number of bytes read for operation='%s' doesn't match with expected: expected=%d, actual=%d"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      operation:
+        type: string
+      expected:
+        type: int
+      actual:
+        type: int
+
+  - id: unexpected_eof
+    message: "Unexpected EOF at the operation=%s"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      operation:
+        type: string

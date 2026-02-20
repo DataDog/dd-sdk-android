@@ -8,8 +8,8 @@ package com.datadog.android.core.internal.utils
 
 import androidx.annotation.CheckResult
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.lint.InternalApi
-import java.util.Locale
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
@@ -20,9 +20,6 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-
-internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
-internal const val ERROR_FUTURE_GET_FAILED = "Unable to get result of the %s task"
 
 /**
  * Executes [Runnable] without throwing [RejectedExecutionException] if it cannot be accepted
@@ -42,11 +39,9 @@ fun Executor.executeSafe(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         execute(runnable)
     } catch (e: RejectedExecutionException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logTaskRejected(
+            operationName = operationName,
+            throwable = e
         )
     }
 }
@@ -73,11 +68,9 @@ fun ScheduledExecutorService.scheduleSafe(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         schedule(runnable, delay, unit)
     } catch (e: RejectedExecutionException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logTaskRejected(
+            operationName = operationName,
+            throwable = e
         )
         null
     }
@@ -102,11 +95,9 @@ fun ExecutorService.submitSafe(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         submit(runnable)
     } catch (e: RejectedExecutionException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logTaskRejected(
+            operationName = operationName,
+            throwable = e
         )
         null
     }
@@ -132,11 +123,9 @@ fun <T> ExecutorService.submitSafe(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         submit(callable)
     } catch (e: RejectedExecutionException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logTaskRejected(
+            operationName = operationName,
+            throwable = e
         )
         null
     }
@@ -157,27 +146,21 @@ fun <T> Future<T>?.getSafe(
     return try {
         this?.get()
     } catch (e: InterruptedException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logFutureGetFailed(
+            operationName = operationName,
+            throwable = e
         )
         null
     } catch (e: CancellationException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logFutureGetFailed(
+            operationName = operationName,
+            throwable = e
         )
         null
     } catch (e: ExecutionException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logFutureGetFailed(
+            operationName = operationName,
+            throwable = e
         )
         null
     }

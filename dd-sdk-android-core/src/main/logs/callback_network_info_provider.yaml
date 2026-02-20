@@ -1,0 +1,26 @@
+logs:
+  - id: register_failed
+    message: "We couldn't register a Network Callback, the network information reported will be less accurate."
+    level: error
+    targets:
+      - user
+
+  - id: register_failed_with_exception
+    message: "We couldn't register a Network Callback, the network information reported will be less accurate."
+    level: error
+    targets:
+      - user
+    throwable: true
+
+  - id: unregister_failed
+    message: "We couldn't unregister the Network Callback"
+    level: error
+    targets:
+      - user
+
+  - id: unregister_failed_with_exception
+    message: "We couldn't unregister the Network Callback"
+    level: error
+    targets:
+      - user
+    throwable: true
