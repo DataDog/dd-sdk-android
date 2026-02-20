@@ -6,10 +6,13 @@
 
 package com.datadog.android.flags.internal.net
 
+import androidx.annotation.WorkerThread
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface PrecomputedAssignmentsReader {
-    fun readPrecomputedFlags(context: EvaluationContext): String?
+    @WorkerThread
+    fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String?
 }

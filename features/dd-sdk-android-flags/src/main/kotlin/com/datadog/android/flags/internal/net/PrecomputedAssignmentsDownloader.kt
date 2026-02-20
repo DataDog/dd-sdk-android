@@ -6,8 +6,9 @@
 
 package com.datadog.android.flags.internal.net
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
@@ -18,17 +19,17 @@ import okhttp3.Response
  *
  * @param callFactory Factory for creating HTTP calls
  * @param internalLogger Logger for error and debug messages
- * @param flagsContext Context containing SDK configuration and authentication
  * @param requestFactory Factory for creating precomputed assignments requests
  */
 internal class PrecomputedAssignmentsDownloader(
     private val callFactory: Call.Factory,
     private val internalLogger: InternalLogger,
-    private val flagsContext: FlagsContext,
     private val requestFactory: PrecomputedAssignmentsRequestFactory
 ) : PrecomputedAssignmentsReader {
-    override fun readPrecomputedFlags(context: EvaluationContext): String? {
-        val request = requestFactory.create(context, flagsContext) ?: return null
+
+    @WorkerThread
+    override fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String? {
+        val request = requestFactory.create(context, datadogContext) ?: return null
 
         return executeDownloadRequest(request)
     }

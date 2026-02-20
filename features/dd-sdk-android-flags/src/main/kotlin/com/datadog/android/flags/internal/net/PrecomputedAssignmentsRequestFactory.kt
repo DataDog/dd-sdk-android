@@ -7,8 +7,9 @@
 package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.getFlagsEndpoint
-import com.datadog.android.flags.internal.model.FlagsContext
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
 import okhttp3.Request
@@ -20,7 +21,10 @@ import org.json.JSONObject
 /**
  * Factory for creating HTTP requests to fetch precomputed flag assignments.
  */
-internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: InternalLogger) {
+internal class PrecomputedAssignmentsRequestFactory(
+    private val internalLogger: InternalLogger,
+    private val customFlagEndpoint: String?
+) {
 
     /**
      * Creates an OkHttp Request for fetching precomputed flag assignments.
@@ -32,20 +36,19 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
      *
      * @param context The evaluation context containing targeting key and custom attributes
      *                for flag evaluation
-     * @param flagsContext The flags context containing SDK configuration, authentication,
-     *                     site information, and custom endpoint settings
+     * @param datadogContext The [DatadogContext] holding common information about SDK
      * @return A fully-formed OkHttp Request ready for execution, or null if the request
      *         cannot be constructed (e.g., invalid endpoint, JSON serialization error)
      */
     @Suppress("ReturnCount")
-    fun create(context: EvaluationContext, flagsContext: FlagsContext): Request? {
-        val url = flagsContext.customFlagEndpoint
-            ?: flagsContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
+    fun create(context: EvaluationContext, datadogContext: DatadogContext): Request? {
+        val url = customFlagEndpoint
+            ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
             ?: return null
 
-        val headers = buildHeaders(flagsContext) ?: return null
+        val headers = buildHeaders(datadogContext) ?: return null
 
-        val body = buildRequestBody(context, flagsContext) ?: return null
+        val body = buildRequestBody(context, datadogContext) ?: return null
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
@@ -55,15 +58,15 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
             .build()
     }
 
-    private fun buildHeaders(flagsContext: FlagsContext): Headers? {
+    private fun buildHeaders(datadogContext: DatadogContext): Headers? {
         val headersBuilder = Headers.Builder()
 
         try {
             headersBuilder
-                .add(HEADER_CLIENT_TOKEN, flagsContext.clientToken)
+                .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
 
-            flagsContext.applicationId?.let {
+            datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
             }
         } catch (e: IllegalArgumentException) {
@@ -79,14 +82,14 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
         return headersBuilder.build()
     }
 
-    private fun buildRequestBody(context: EvaluationContext, flagsContext: FlagsContext): RequestBody? = try {
+    private fun buildRequestBody(context: EvaluationContext, datadogContext: DatadogContext): RequestBody? = try {
         val attributeObj = buildStringifiedAttributes(context)
 
         val subject = JSONObject()
             .put("targeting_key", context.targetingKey)
             .put("targeting_attributes", attributeObj)
-        val env = buildEnvPayload(flagsContext)
-        val source = buildSourcePayload(flagsContext)
+        val env = buildEnvPayload(datadogContext)
+        val source = buildSourcePayload(datadogContext)
         val attributes = JSONObject()
             .put("env", env)
             .put("source", source)
@@ -121,15 +124,19 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
-    private fun buildEnvPayload(flagsContext: FlagsContext): JSONObject =
+    private fun buildEnvPayload(datadogContext: DatadogContext): JSONObject =
         JSONObject()
-            .put("dd_env", flagsContext.env)
+            .put("dd_env", datadogContext.env)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
-    private fun buildSourcePayload(flagsContext: FlagsContext): JSONObject =
+    private fun buildSourcePayload(datadogContext: DatadogContext): JSONObject =
         JSONObject()
             .put("sdk_name", SDK_NAME)
-            .put("sdk_version", flagsContext.sdkVersion)
+            .put("sdk_version", datadogContext.sdkVersion)
+
+    private val DatadogContext.rumApplicationId: String?
+        get() = featuresContext.get(Feature.RUM_FEATURE_NAME)
+            ?.get("application_id") as? String
 
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
