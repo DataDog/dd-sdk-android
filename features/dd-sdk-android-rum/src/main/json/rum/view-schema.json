@@ -12,9 +12,6 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "$ref": "_stream-schema.json"
-    },
-    {
       "required": ["type", "view", "_dd"],
       "properties": {
         "type": {
