@@ -182,12 +182,12 @@ internal class EvaluationEventsProcessorTest {
     @Test
     fun `M schedule periodic flush W constructor()`() {
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ) doReturn mockScheduledFuture
 
         createSchedulingEnabledProcessor()
 
-        verify(mockScheduledExecutor).scheduleAtFixedRate(
+        verify(mockScheduledExecutor).scheduleWithFixedDelay(
             any<Runnable>(),
             eq(TEST_FLUSH_INTERVAL_MS),
             eq(TEST_FLUSH_INTERVAL_MS),
@@ -198,7 +198,7 @@ internal class EvaluationEventsProcessorTest {
     @Test
     fun `M log warning W startPeriodicFlush() { executor rejects }`(forge: Forge) {
         val exception = RejectedExecutionException(forge.anAlphabeticalString())
-        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any()))
+        whenever(mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any()))
             .doThrow(exception)
 
         createSchedulingEnabledProcessor()
@@ -217,7 +217,7 @@ internal class EvaluationEventsProcessorTest {
     fun `M flush W periodic task executes { interval elapsed }`() {
         var taskRunnable: Runnable? = null
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
@@ -261,7 +261,7 @@ internal class EvaluationEventsProcessorTest {
     fun `M skip flush W periodic task executes { interval not elapsed }`() {
         var taskRunnable: Runnable? = null
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
@@ -305,7 +305,7 @@ internal class EvaluationEventsProcessorTest {
     fun `M flush W periodic task executes { no previous flush }`() {
         var taskRunnable: Runnable? = null
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
@@ -335,7 +335,7 @@ internal class EvaluationEventsProcessorTest {
     fun `M not write W periodic task executes { empty aggregations }`() {
         var taskRunnable: Runnable? = null
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ).thenAnswer {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
@@ -355,7 +355,7 @@ internal class EvaluationEventsProcessorTest {
     @Test
     fun `M auto-schedule W constructor { periodicFlushEnabled = true (default) }`() {
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ) doReturn mockScheduledFuture
 
         EvaluationEventsProcessor(
@@ -367,7 +367,7 @@ internal class EvaluationEventsProcessorTest {
             aggregator = testedAggregator
         )
 
-        verify(mockScheduledExecutor).scheduleAtFixedRate(
+        verify(mockScheduledExecutor).scheduleWithFixedDelay(
             any<Runnable>(),
             eq(TEST_FLUSH_INTERVAL_MS),
             eq(TEST_FLUSH_INTERVAL_MS),
@@ -387,7 +387,7 @@ internal class EvaluationEventsProcessorTest {
             periodicFlushEnabled = false
         )
 
-        verify(mockScheduledExecutor, never()).scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+        verify(mockScheduledExecutor, never()).scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
     }
 
     // endregion
@@ -418,7 +418,7 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M shutdown before cancel W stop()`() {
-        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any()))
+        whenever(mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any()))
             .doReturn(mockScheduledFuture)
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
         val processor = createSchedulingEnabledProcessor()
@@ -455,7 +455,7 @@ internal class EvaluationEventsProcessorTest {
 
     @Test
     fun `M cancel scheduled task W stop()`() {
-        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any()))
+        whenever(mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any()))
             .doReturn(mockScheduledFuture)
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
 
@@ -744,7 +744,7 @@ internal class EvaluationEventsProcessorTest {
     @Test
     fun `M accept evaluations W flush() { during flush operation }`() {
         whenever(
-            mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())
+            mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
         ) doReturn mockScheduledFuture
 
         val flushInProgress = CountDownLatch(1)
@@ -827,7 +827,7 @@ internal class EvaluationEventsProcessorTest {
         whenever(mockTimeProvider.getDeviceTimestampMillis()).thenAnswer { currentTime.get() }
 
         var periodicTask: Runnable? = null
-        whenever(mockScheduledExecutor.scheduleAtFixedRate(any<Runnable>(), any(), any(), any())).thenAnswer {
+        whenever(mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())).thenAnswer {
             periodicTask = it.getArgument(0)
             mockScheduledFuture
         }

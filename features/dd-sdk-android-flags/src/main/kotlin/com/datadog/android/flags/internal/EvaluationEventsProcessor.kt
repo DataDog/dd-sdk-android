@@ -95,7 +95,7 @@ internal class EvaluationEventsProcessor(
             if (currentFuture == null || currentFuture.isCancelled || currentFuture.isDone) {
                 try {
                     @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-                    scheduledFlushFuture = scheduledExecutor.scheduleAtFixedRate(
+                    scheduledFlushFuture = scheduledExecutor.scheduleWithFixedDelay(
                         { periodicFlushTask() },
                         flushIntervalMs,
                         flushIntervalMs,
