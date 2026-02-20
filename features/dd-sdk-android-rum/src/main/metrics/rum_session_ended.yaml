@@ -1,7 +1,6 @@
-logs:
+metrics:
   - id: rum_session_ended
     message: "[Mobile Metric] RUM Session Ended"
-    type: metric
     sampleRate: 15.0
     properties:
       metric_type:

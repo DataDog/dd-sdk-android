@@ -1,14 +1,12 @@
 logs:
   - id: no_compose_target
     message: "We could not find a valid target for the gesture event. Compose actions tracking not enabled, or the compose view is not tagged."
-    type: log
     level: info
     targets:
       - user
 
   - id: no_target_action
     message: "We could not find a valid target for the gesture event. The DecorView was empty and either transparent or not clickable for this Activity."
-    type: log
     level: info
     targets:
       - user

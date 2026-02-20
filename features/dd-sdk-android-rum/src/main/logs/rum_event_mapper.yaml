@@ -1,14 +1,12 @@
 logs:
   - id: no_dropping_fatal_errors
     message: "RumEventMapper: the return from the ErrorEvent mapper was null for a crash. Dropping crashes in from the event mapper is not supported. The original event object will be used instead."
-    type: log
     level: warn
     targets:
       - user
 
   - id: no_event_mapper_assigned
     message: "RumEventMapper: there was no EventMapper assigned for RUM event type: %s"
-    type: log
     level: warn
     targets:
       - maintainer
@@ -19,7 +17,6 @@ logs:
 
   - id: view_event_null
     message: "RumEventMapper: the returned mapped ViewEvent was null. The original event object will be used instead: %s"
-    type: log
     level: error
     targets:
       - user
@@ -29,7 +26,6 @@ logs:
 
   - id: event_null
     message: "RumEventMapper: the returned mapped object was null. This event will be dropped: %s"
-    type: log
     level: info
     targets:
       - user
@@ -39,7 +35,6 @@ logs:
 
   - id: not_same_event_instance
     message: "RumEventMapper: the returned mapped object was not the same instance as the original object. This event will be dropped: %s"
-    type: log
     level: warn
     targets:
       - user

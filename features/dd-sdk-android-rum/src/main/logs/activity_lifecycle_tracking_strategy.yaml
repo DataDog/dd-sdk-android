@@ -1,7 +1,6 @@
 logs:
   - id: rum_tracking_requires_application_context
     message: "In order to use the RUM automatic tracking feature you will have to use the Application context when initializing the SDK"
-    type: log
     level: error
     targets:
       - user

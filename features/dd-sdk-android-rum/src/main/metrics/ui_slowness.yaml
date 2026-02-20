@@ -1,7 +1,6 @@
-logs:
+metrics:
   - id: ui_slowness
     message: "[Mobile Metric] RUM UI Slowness"
-    type: metric
     sampleRate: 0.75
     creationSampleRate: 100
     properties:

@@ -1,28 +1,24 @@
 logs:
   - id: developer_mode_sample_rate_changed
     message: "Developer mode enabled, setting RUM sample rate to 100%."
-    type: log
     level: info
     targets:
       - user
 
   - id: slow_frames_monitoring_enabled
     message: "Slow frames monitoring enabled."
-    type: log
     level: info
     targets:
       - user
 
   - id: slow_frames_monitoring_disabled
     message: "Slow frames monitoring disabled."
-    type: log
     level: info
     targets:
       - user
 
   - id: unsupported_event_type
     message: "RUM feature receive an event of unsupported type=%s."
-    type: log
     level: warn
     targets:
       - user
@@ -32,7 +28,6 @@ logs:
 
   - id: unknown_event_type_property_value
     message: "RUM feature received an event with unknown value of \"type\" property=%s."
-    type: log
     level: warn
     targets:
       - user
@@ -42,7 +37,6 @@ logs:
 
   - id: failed_to_get_historical_exit_reasons
     message: "Couldn't get historical exit reasons"
-    type: log
     level: error
     targets:
       - maintainer
@@ -50,14 +44,12 @@ logs:
 
   - id: no_last_rum_view_event_available
     message: "No last known RUM view event found, skipping fatal ANR reporting."
-    type: log
     level: info
     targets:
       - user
 
   - id: failed_to_enable_jank_stats_tracking_manually
     message: "Manually enabling JankStats tracking threw an exception."
-    type: log
     level: error
     targets:
       - telemetry
@@ -65,7 +57,6 @@ logs:
 
   - id: log_error_event_missing_mandatory_fields
     message: "RUM feature received a log event where mandatory message field is either missing or has a wrong type."
-    type: log
     level: warn
     targets:
       - user
@@ -73,7 +64,6 @@ logs:
 
   - id: log_error_with_stacktrace_event_missing_mandatory_fields
     message: "RUM feature received a log event with stacktrace where mandatory message field is either missing or has a wrong type."
-    type: log
     level: warn
     targets:
       - user

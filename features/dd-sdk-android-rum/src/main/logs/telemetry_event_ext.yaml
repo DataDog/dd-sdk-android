@@ -1,7 +1,6 @@
 logs:
   - id: unknown_source
     message: "You are using an unknown source %s for your events"
-    type: log
     level: error
     targets:
       - user

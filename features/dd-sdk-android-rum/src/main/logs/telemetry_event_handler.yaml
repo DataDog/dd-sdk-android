@@ -1,7 +1,6 @@
 logs:
   - id: already_seen_event
     message: "Already seen telemetry event with identity=%s, rejecting."
-    type: log
     level: info
     targets:
       - maintainer
@@ -11,14 +10,12 @@ logs:
 
   - id: max_event_number_reached
     message: "Max number of telemetry events per session reached, rejecting."
-    type: log
     level: info
     targets:
       - maintainer
 
   - id: global_datadog_tracer_invoke_error
     message: "GlobalDatadogTracer class exists in the runtime classpath, but there is an error invoking isRegistered method"
-    type: log
     level: error
     targets:
       - telemetry

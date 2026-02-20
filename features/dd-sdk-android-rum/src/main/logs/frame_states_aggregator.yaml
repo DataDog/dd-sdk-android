@@ -1,14 +1,12 @@
 logs:
   - id: activity_stopped_window_not_tracked
     message: "Activity stopped but window was not tracked"
-    type: log
     level: warn
     targets:
       - maintainer
 
   - id: disabling_jank_stats_for_window
     message: "Disabling jankStats for window %s"
-    type: log
     level: debug
     targets:
       - maintainer
@@ -18,14 +16,12 @@ logs:
 
   - id: jank_stats_tracking_already_disabled
     message: "Trying to disable JankStats instance which was already disabled before, this shouldn't happen."
-    type: log
     level: error
     targets:
       - telemetry
 
   - id: jank_stats_tracking_disable_error
     message: "Failed to disable JankStats tracking"
-    type: log
     level: error
     targets:
       - telemetry
@@ -33,7 +29,6 @@ logs:
 
   - id: resuming_jank_stats_for_window
     message: "Resuming jankStats for window %s"
-    type: log
     level: debug
     targets:
       - maintainer
@@ -43,7 +38,6 @@ logs:
 
   - id: starting_jank_stats_for_window
     message: "Starting jankStats for window %s"
-    type: log
     level: debug
     targets:
       - maintainer
@@ -53,28 +47,24 @@ logs:
 
   - id: unable_to_create_jank_stats
     message: "Unable to create JankStats"
-    type: log
     level: warn
     targets:
       - maintainer
 
   - id: decor_view_null
     message: "Unable to attach JankStatsListener to window, decorView is null"
-    type: log
     level: warn
     targets:
       - maintainer
 
   - id: decor_view_not_hw_accelerated
     message: "Unable to attach JankStatsListener to window, decorView is not hardware accelerated"
-    type: log
     level: warn
     targets:
       - maintainer
 
   - id: jank_stats_listener_attach_error
     message: "Unable to attach JankStatsListener to window"
-    type: log
     level: error
     targets:
       - maintainer
@@ -82,7 +72,6 @@ logs:
 
   - id: jank_stats_listener_detach_error
     message: "Unable to detach JankStatsListener to window, most probably because it wasn't attached"
-    type: log
     level: error
     targets:
       - maintainer

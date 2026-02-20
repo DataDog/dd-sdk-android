@@ -1,7 +1,6 @@
 logs:
   - id: negative_duration
     message: "The computed duration for your resource: %s was 0 or negative. In order to keep the resource event we forced it to 1ns."
-    type: log
     level: warn
     targets:
       - user
@@ -11,7 +10,6 @@ logs:
 
   - id: payload_truncation_failure
     message: "Failed to truncate payload"
-    type: log
     level: error
     targets:
       - maintainer

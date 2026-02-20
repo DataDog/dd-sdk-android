@@ -1,7 +1,6 @@
 logs:
   - id: unable_to_convert_graphql_operation_type
     message: "Unable to convert [%s] to a valid graphql operation type"
-    type: log
     level: error
     targets:
       - maintainer
@@ -13,7 +12,6 @@ logs:
 
   - id: unknown_source_for_events
     message: "You are using an unknown source %s for your events"
-    type: log
     level: error
     targets:
       - user

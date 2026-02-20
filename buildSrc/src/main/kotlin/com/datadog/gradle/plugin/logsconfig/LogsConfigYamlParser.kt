@@ -10,23 +10,36 @@ import java.io.File
 
 internal object LogsConfigYamlParser {
 
-    fun parse(file: File): LogsConfig {
-        val yaml = Yaml()
-        val root = file.inputStream().use { yaml.load<Map<String, Any>>(it) }
+    fun parseLogs(file: File): List<LogEntry> {
+        val root = loadYaml(file)
 
         @Suppress("UNCHECKED_CAST")
         val logsList = root["logs"] as? List<Map<String, Any>>
-            ?: error("logs_config.yaml must contain a 'logs' list at the root level")
+            ?: error("${file.name} must contain a 'logs' list at the root level")
 
-        return LogsConfig(logs = logsList.map { parseLogEntry(it) })
+        return logsList.map { parseSimpleLogEntry(it) }
     }
 
-    private fun parseLogEntry(map: Map<String, Any>): LogEntry {
+    fun parseMetrics(file: File): List<LogEntry> {
+        val root = loadYaml(file)
+
+        @Suppress("UNCHECKED_CAST")
+        val metricsList = root["metrics"] as? List<Map<String, Any>>
+            ?: error("${file.name} must contain a 'metrics' list at the root level")
+
+        return metricsList.map { parseMetricLogEntry(it) }
+    }
+
+    private fun loadYaml(file: File): Map<String, Any> {
+        val yaml = Yaml()
+        return file.inputStream().use { yaml.load<Map<String, Any>>(it) }
+    }
+
+    private fun parseCommonFields(map: Map<String, Any>): CommonEntryFields {
         val id = map["id"] as? String
-            ?: error("Each log entry must have a string 'id'")
+            ?: error("Each entry must have a string 'id'")
         val message = map["message"] as? String
-            ?: error("Each log entry must have a string 'message'")
-        val type = map["type"] as? String ?: "metric"
+            ?: error("Each entry must have a string 'message'")
         val onlyOnce = map["onlyOnce"] as? Boolean ?: false
         val throwable = map["throwable"] as? Boolean ?: false
 
@@ -35,61 +48,69 @@ internal object LogsConfigYamlParser {
             ?: emptyMap()
         val properties = propertiesMap.mapValues { (_, v) -> parsePropertyDefinition(v) }
 
-        return when (type) {
-            "metric" -> {
-                val sampleRate = parseSampleRateConfig(map["sampleRate"], entryId = id, fieldName = "sampleRate")
-                val creationSampleRate = parseSampleRateConfig(
-                    map["creationSampleRate"],
-                    entryId = id,
-                    fieldName = "creationSampleRate"
-                )
-                MetricLogEntry(
-                    id = id,
-                    message = message,
-                    sampleRate = sampleRate,
-                    creationSampleRate = creationSampleRate,
-                    onlyOnce = onlyOnce,
-                    throwable = throwable,
-                    properties = properties
-                )
-            }
-
-            "log" -> {
-                val level = parseLogLevel(
-                    map["level"] as? String
-                        ?: error("Log entry '$id' must have a 'level' field")
-                )
-                @Suppress("UNCHECKED_CAST")
-                val targets = (map["targets"] as? List<String>
-                    ?: error("Log entry '$id' must have a 'targets' list"))
-                    .map { parseLogTarget(it) }
-                @Suppress("UNCHECKED_CAST")
-                val messageArgsRaw = map["message_args"] as? Map<String, Map<String, Any>> ?: emptyMap()
-                val messageArgs = messageArgsRaw.mapValues { (argName, argDef) ->
-                    val typeName = argDef["type"] as? String
-                        ?: error("message_arg '$argName' in '$id' must have a 'type' field")
-                    val argNullable = argDef["nullable"] as? Boolean ?: false
-                    MessageArgDefinition(
-                        type = parsePrimitiveType(typeName),
-                        nullable = argNullable
-                    )
-                }
-
-                SimpleLogEntry(
-                    id = id,
-                    message = message,
-                    level = level,
-                    targets = targets,
-                    messageArgs = messageArgs,
-                    onlyOnce = onlyOnce,
-                    throwable = throwable,
-                    properties = properties
-                )
-            }
-
-            else -> error("Unknown log type: '$type'. Supported: metric, log")
-        }
+        return CommonEntryFields(id, message, onlyOnce, throwable, properties)
     }
+
+    private fun parseMetricLogEntry(map: Map<String, Any>): MetricLogEntry {
+        val common = parseCommonFields(map)
+        val sampleRate = parseSampleRateConfig(map["sampleRate"], entryId = common.id, fieldName = "sampleRate")
+        val creationSampleRate = parseSampleRateConfig(
+            map["creationSampleRate"],
+            entryId = common.id,
+            fieldName = "creationSampleRate"
+        )
+        return MetricLogEntry(
+            id = common.id,
+            message = common.message,
+            sampleRate = sampleRate,
+            creationSampleRate = creationSampleRate,
+            onlyOnce = common.onlyOnce,
+            throwable = common.throwable,
+            properties = common.properties
+        )
+    }
+
+    private fun parseSimpleLogEntry(map: Map<String, Any>): SimpleLogEntry {
+        val common = parseCommonFields(map)
+        val level = parseLogLevel(
+            map["level"] as? String
+                ?: error("Log entry '${common.id}' must have a 'level' field")
+        )
+        @Suppress("UNCHECKED_CAST")
+        val targets = (map["targets"] as? List<String>
+            ?: error("Log entry '${common.id}' must have a 'targets' list"))
+            .map { parseLogTarget(it) }
+        @Suppress("UNCHECKED_CAST")
+        val messageArgsRaw = map["message_args"] as? Map<String, Map<String, Any>> ?: emptyMap()
+        val messageArgs = messageArgsRaw.mapValues { (argName, argDef) ->
+            val typeName = argDef["type"] as? String
+                ?: error("message_arg '$argName' in '${common.id}' must have a 'type' field")
+            val argNullable = argDef["nullable"] as? Boolean ?: false
+            MessageArgDefinition(
+                type = parsePrimitiveType(typeName),
+                nullable = argNullable
+            )
+        }
+
+        return SimpleLogEntry(
+            id = common.id,
+            message = common.message,
+            level = level,
+            targets = targets,
+            messageArgs = messageArgs,
+            onlyOnce = common.onlyOnce,
+            throwable = common.throwable,
+            properties = common.properties
+        )
+    }
+
+    private data class CommonEntryFields(
+        val id: String,
+        val message: String,
+        val onlyOnce: Boolean,
+        val throwable: Boolean,
+        val properties: Map<String, PropertyDefinition>
+    )
 
     private fun parseSampleRateConfig(
         value: Any?,

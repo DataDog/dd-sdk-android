@@ -1,14 +1,12 @@
 logs:
   - id: tns_no_view_created
     message: "[ViewNetworkSettledMetric] There was no view created yet for this resource"
-    type: log
     level: debug
     targets:
       - maintainer
 
   - id: tns_not_all_resources_stopped
     message: "[ViewNetworkSettledMetric] Not all the initial resources were stopped for this view"
-    type: log
     level: debug
     targets:
       - maintainer

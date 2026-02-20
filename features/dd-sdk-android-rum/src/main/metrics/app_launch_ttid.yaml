@@ -1,7 +1,6 @@
-logs:
+metrics:
   - id: app_launch_ttid
     message: "[Mobile Metric] App Launch TTID"
-    type: metric
     sampleRate: 15.0
     creationSampleRate: 100
     properties:

@@ -1,7 +1,6 @@
 logs:
   - id: secure_setting_not_found
     message: "Setting cannot be found %s"
-    type: log
     level: error
     targets:
       - maintainer
@@ -12,7 +11,6 @@ logs:
 
   - id: secure_setting_security_exception
     message: "Security exception accessing %s"
-    type: log
     level: error
     targets:
       - maintainer

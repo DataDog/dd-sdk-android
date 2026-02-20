@@ -1,7 +1,6 @@
 logs:
   - id: jank_stats_attach_error
     message: "Unable to attach JankStats to the current window"
-    type: log
     level: error
     targets:
       - maintainer

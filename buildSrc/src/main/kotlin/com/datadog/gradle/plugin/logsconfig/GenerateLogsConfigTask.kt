@@ -11,22 +11,30 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 @CacheableTask
 abstract class GenerateLogsConfigTask : DefaultTask() {
 
     init {
         group = "datadog"
-        description = "Generate Kotlin logging functions from YAML files in src/main/logs/"
+        description = "Generate Kotlin logging/metric functions from YAML files in src/main/logs/ and src/main/metrics/"
     }
 
+    @get:Optional
     @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:InputDirectory
     abstract val inputDirectory: DirectoryProperty
+
+    @get:Optional
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputDirectory
+    abstract val metricsInputDirectory: DirectoryProperty
 
     @get:Input
     abstract val targetPackageName: Property<String>
@@ -39,22 +47,23 @@ abstract class GenerateLogsConfigTask : DefaultTask() {
 
     @TaskAction
     fun performTask() {
-        val logsDir = inputDirectory.get().asFile
-        val yamlFiles = logsDir.listFiles { file ->
-            file.isFile && (file.extension == "yaml" || file.extension == "yml")
-        }?.sorted() ?: emptyList()
+        val logEntries = collectYamlFiles(inputDirectory).flatMap { file ->
+            logger.info("Parsing logs config from: ${file.name}")
+            LogsConfigYamlParser.parseLogs(file)
+        }
+        val metricEntries = collectYamlFiles(metricsInputDirectory).flatMap { file ->
+            logger.info("Parsing metrics config from: ${file.name}")
+            LogsConfigYamlParser.parseMetrics(file)
+        }
 
-        if (yamlFiles.isEmpty()) {
-            logger.info("No YAML files found in ${logsDir.absolutePath}, skipping generation")
+        val allEntries = logEntries + metricEntries
+        if (allEntries.isEmpty()) {
+            logger.info("No log or metric entries found, skipping generation")
             return
         }
 
-        val allLogs = yamlFiles.flatMap { file ->
-            logger.info("Parsing logs config from: ${file.name}")
-            LogsConfigYamlParser.parse(file).logs
-        }
-        val mergedConfig = LogsConfig(logs = allLogs)
-        logger.info("Found ${mergedConfig.logs.size} log entries across ${yamlFiles.size} file(s)")
+        val mergedConfig = LogsConfig(logs = allEntries)
+        logger.info("Found ${mergedConfig.logs.size} entries (${logEntries.size} logs, ${metricEntries.size} metrics)")
 
         val outputDir = outputDirectory.get().asFile
         val generator = LogsConfigCodeGenerator(
@@ -64,5 +73,14 @@ abstract class GenerateLogsConfigTask : DefaultTask() {
         generator.generate(mergedConfig, outputDir)
 
         logger.info("Generated ${loggerClassName.get()} in: ${outputDir.absolutePath}")
+    }
+
+    private fun collectYamlFiles(directory: DirectoryProperty): List<File> {
+        if (!directory.isPresent) return emptyList()
+        val dir = directory.get().asFile
+        if (!dir.isDirectory) return emptyList()
+        return dir.listFiles { file ->
+            file.isFile && (file.extension == "yaml" || file.extension == "yml")
+        }?.sorted() ?: emptyList()
     }
 }

@@ -1,7 +1,6 @@
 logs:
   - id: trace_parsing_failure
     message: "Parsing tracing information for the exit reason wasn't successful, no thread dumps were parsed."
-    type: log
     level: error
     targets:
       - maintainer
@@ -9,7 +8,6 @@ logs:
 
   - id: trace_stream_read_failure
     message: "Failed to read crash trace stream."
-    type: log
     level: error
     targets:
       - user

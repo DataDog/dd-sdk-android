@@ -1,7 +1,6 @@
 logs:
   - id: session_view_track_error
     message: "Failed to track %s view in session with different UUID %s"
-    type: log
     level: info
     targets:
       - maintainer
@@ -13,7 +12,6 @@ logs:
 
   - id: session_sdk_error_track_error
     message: "Failed to track %s error, session %s has ended"
-    type: log
     level: info
     targets:
       - maintainer

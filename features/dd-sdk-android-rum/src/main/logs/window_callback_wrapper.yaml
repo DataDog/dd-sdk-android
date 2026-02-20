@@ -1,7 +1,6 @@
 logs:
   - id: error_processing_motion_event
     message: "Error processing MotionEvent"
-    type: log
     level: error
     targets:
       - maintainer
@@ -10,7 +9,6 @@ logs:
 
   - id: received_null_motion_event
     message: "Received null MotionEvent"
-    type: log
     level: error
     targets:
       - maintainer
@@ -18,7 +16,6 @@ logs:
 
   - id: received_null_key_event
     message: "Received null KeyEvent"
-    type: log
     level: error
     targets:
       - maintainer
@@ -26,7 +23,6 @@ logs:
 
   - id: wrapped_callback_failed
     message: "Wrapped Window.Callback failed processing event"
-    type: log
     level: error
     targets:
       - maintainer

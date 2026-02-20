@@ -1,7 +1,6 @@
 logs:
   - id: rum_event_deserialize_error
     message: "Error while trying to deserialize the RumEvent: %s"
-    type: log
     level: error
     targets:
       - maintainer

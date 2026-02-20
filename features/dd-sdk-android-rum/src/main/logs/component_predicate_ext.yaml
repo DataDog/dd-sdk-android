@@ -1,7 +1,6 @@
 logs:
   - id: component_predicate_operation_failed
     message: "Internal operation failed on ComponentPredicate"
-    type: log
     level: error
     targets:
       - maintainer

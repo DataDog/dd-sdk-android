@@ -1,21 +1,18 @@
 logs:
   - id: report_app_fully_displayed_called_too_early
     message: "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
-    type: log
     level: error
     targets:
       - user
 
   - id: report_app_fully_displayed_called_before_ttid
     message: "RumMonitor.reportAppFullyDisplayed was called before TTID was computed, will report TTID as TTFD."
-    type: log
     level: warn
     targets:
       - user
 
   - id: ttfd_too_large
     message: "TTFD value is too large, skipping it"
-    type: log
     level: warn
     targets:
       - user
@@ -23,7 +20,6 @@ logs:
 
   - id: ttid_too_large
     message: "TTID value is too large, skipping it"
-    type: log
     level: warn
     targets:
       - user
@@ -31,7 +27,6 @@ logs:
 
   - id: no_telemetry_for_view
     message: "No telemetry found for viewId=%s"
-    type: log
     level: warn
     targets:
       - telemetry

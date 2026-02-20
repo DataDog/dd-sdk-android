@@ -1,7 +1,6 @@
 logs:
   - id: cannot_find_content_view
     message: "Cannot enable RUM debugging, because root content view can't be found"
-    type: log
     level: warn
     targets:
       - user

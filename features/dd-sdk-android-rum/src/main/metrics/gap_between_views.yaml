@@ -1,7 +1,6 @@
-logs:
+metrics:
   - id: gap_between_views
     message: "[Mobile Metric] Gap between views"
-    type: metric
     sampleRate: 1.0
     creationSampleRate: 100
     properties:
@@ -10,7 +9,6 @@ logs:
 
   - id: negative_gap_between_views
     message: "[Mobile Metric] Negative gap between views"
-    type: metric
     sampleRate: 1.0
     creationSampleRate: 100
     properties:

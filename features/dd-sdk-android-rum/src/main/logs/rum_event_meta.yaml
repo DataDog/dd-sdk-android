@@ -1,7 +1,6 @@
 logs:
   - id: unknown_rum_event_meta_type
     message: "Unknown RUM event meta type value [%s]"
-    type: log
     level: error
     targets:
       - user

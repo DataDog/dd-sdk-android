@@ -1,7 +1,6 @@
 logs:
   - id: report_instrumentation_error
     message: "Unable to instrument RUM resource: %s"
-    type: log
     level: warn
     targets:
       - maintainer
@@ -11,7 +10,6 @@ logs:
 
   - id: unsupported_http_method
     message: "Unsupported HTTP method %s reported by %s instrumentation, using GET instead"
-    type: log
     level: warn
     targets:
       - user
