@@ -15,16 +15,13 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "view", "resource"],
+      "required": ["type", "resource"],
       "properties": {
         "type": {
           "type": "string",
           "description": "RUM event type",
           "const": "resource",
           "readOnly": true
-        },
-        "view": {
-          "type": "object"
         },
         "resource": {
           "type": "object",
@@ -280,6 +277,48 @@
                     "utility",
                     "video"
                   ],
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
+            "request": {
+              "type": "object",
+              "description": "Request properties",
+              "properties": {
+                "encoded_body_size": {
+                  "type": "integer",
+                  "description": "Size in octet of the request body sent over the network (after encoding)",
+                  "minimum": 0,
+                  "readOnly": true
+                },
+                "decoded_body_size": {
+                  "type": "integer",
+                  "description": "Size in octet of the request body before any encoding",
+                  "minimum": 0,
+                  "readOnly": true
+                },
+                "headers": {
+                  "type": "object",
+                  "description": "HTTP headers of the resource request",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
+            "response": {
+              "type": "object",
+              "description": "Response properties",
+              "properties": {
+                "headers": {
+                  "type": "object",
+                  "description": "HTTP headers of the resource response",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
                   "readOnly": true
                 }
               },

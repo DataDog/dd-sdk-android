@@ -728,8 +728,8 @@ internal class RumSessionScopeStartupManagerTest {
             )
             hasNoSessionReplay()
 
-            hasViewId(rumContext.viewId)
-            hasUrl(rumContext.viewUrl)
+            hasViewId(rumContext.viewId ?: RumContext.NULL_UUID)
+            hasUrl(rumContext.viewUrl ?: "")
             hasName(rumContext.viewName)
 
             hasSource(fakeVitalSource)
@@ -796,8 +796,8 @@ internal class RumSessionScopeStartupManagerTest {
             )
             hasNoSessionReplay()
 
-            hasViewId(rumContext.viewId)
-            hasUrl(rumContext.viewUrl)
+            hasViewId(rumContext.viewId ?: RumContext.NULL_UUID)
+            hasUrl(rumContext.viewUrl ?: "")
             hasName(rumContext.viewName)
 
             hasSource(fakeVitalSource)
