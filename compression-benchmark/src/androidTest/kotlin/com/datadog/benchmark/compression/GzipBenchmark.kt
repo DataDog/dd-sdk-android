@@ -32,6 +32,7 @@ class GzipBenchmark {
     private lateinit var payloadSmall: ByteArray
     private lateinit var payloadMedium: ByteArray
     private lateinit var payloadLarge: ByteArray
+    private lateinit var payloadMaxBatch: ByteArray
     private lateinit var payloadLogs: ByteArray
 
     @Before
@@ -40,6 +41,7 @@ class GzipBenchmark {
         payloadSmall = context.assets.open("payloads/rum_small.json").readBytes()
         payloadMedium = context.assets.open("payloads/rum_medium.json").readBytes()
         payloadLarge = context.assets.open("payloads/rum_large.json").readBytes()
+        payloadMaxBatch = context.assets.open("payloads/rum_max_batch.json").readBytes()
         payloadLogs = context.assets.open("payloads/logs_batch.json").readBytes()
     }
 
@@ -61,6 +63,13 @@ class GzipBenchmark {
     fun compress_largePayload_gzip() {
         benchmarkRule.measureRepeated {
             compressWithGzip(payloadLarge)
+        }
+    }
+
+    @Test
+    fun compress_maxBatchPayload_gzip() {
+        benchmarkRule.measureRepeated {
+            compressWithGzip(payloadMaxBatch)
         }
     }
 

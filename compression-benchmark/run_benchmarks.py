@@ -172,6 +172,8 @@ def parse_benchmark_json(json_path: Path) -> Dict:
             payload = 'Medium (~4.3 KB)'
         elif 'largePayload' in name:
             payload = 'Large (~37 KB)'
+        elif 'maxBatchPayload' in name:
+            payload = 'Max Batch (~536 KB)'
         elif 'logsPayload' in name:
             payload = 'Logs (~1.2 KB)'
         else:
@@ -236,8 +238,8 @@ def get_compression_ratios_from_device() -> List[Dict]:
                     except json.JSONDecodeError:
                         pass
         
-        # Return the last 4 entries (most recent run)
-        return ratios[-4:] if len(ratios) >= 4 else ratios
+        # Return the last 5 entries (most recent run)
+        return ratios[-5:] if len(ratios) >= 5 else ratios
         
     except subprocess.TimeoutExpired:
         print_warning("Timeout reading logcat")
@@ -259,7 +261,7 @@ def print_speed_table(speed_results: Dict) -> None:
         return
     
     algos = ['Gzip', 'Zstd JNI', 'Zstd Java']
-    payload_order = ['Small (~885 B)', 'Logs (~1.2 KB)', 'Medium (~4.3 KB)', 'Large (~37 KB)']
+    payload_order = ['Small (~885 B)', 'Logs (~1.2 KB)', 'Medium (~4.3 KB)', 'Large (~37 KB)', 'Max Batch (~536 KB)']
     
     # Print table
     header = f"{'Payload':<20} | {'Gzip':>12} | {'Zstd JNI':>12} | {'Zstd Java':>12}"

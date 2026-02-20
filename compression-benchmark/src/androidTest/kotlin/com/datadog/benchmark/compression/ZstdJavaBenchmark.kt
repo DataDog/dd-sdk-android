@@ -31,6 +31,7 @@ class ZstdJavaBenchmark {
     private lateinit var payloadSmall: ByteArray
     private lateinit var payloadMedium: ByteArray
     private lateinit var payloadLarge: ByteArray
+    private lateinit var payloadMaxBatch: ByteArray
     private lateinit var payloadLogs: ByteArray
 
     @Before
@@ -39,6 +40,7 @@ class ZstdJavaBenchmark {
         payloadSmall = context.assets.open("payloads/rum_small.json").readBytes()
         payloadMedium = context.assets.open("payloads/rum_medium.json").readBytes()
         payloadLarge = context.assets.open("payloads/rum_large.json").readBytes()
+        payloadMaxBatch = context.assets.open("payloads/rum_max_batch.json").readBytes()
         payloadLogs = context.assets.open("payloads/logs_batch.json").readBytes()
     }
 
@@ -60,6 +62,13 @@ class ZstdJavaBenchmark {
     fun compress_largePayload_zstdJava() {
         benchmarkRule.measureRepeated {
             compressWithZstdJava(payloadLarge)
+        }
+    }
+
+    @Test
+    fun compress_maxBatchPayload_zstdJava() {
+        benchmarkRule.measureRepeated {
+            compressWithZstdJava(payloadMaxBatch)
         }
     }
 
