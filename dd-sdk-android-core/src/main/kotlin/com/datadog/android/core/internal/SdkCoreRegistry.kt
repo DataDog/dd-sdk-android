@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.SdkCore
 
 /**
@@ -17,6 +18,7 @@ internal class SdkCoreRegistry(
     private val internalLogger: InternalLogger
 ) {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
     private val instances = mutableMapOf<String, SdkCore>()
 
     // region SdkCoreRegistry
@@ -29,11 +31,7 @@ internal class SdkCoreRegistry(
     fun register(name: String?, sdkCore: SdkCore) {
         val key = name ?: DEFAULT_INSTANCE_NAME
         if (instances.containsKey(key)) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "An SdkCode with name $key has already been registered." }
-            )
+            logger.logSdkCoreAlreadyRegistered(key = key)
         } else {
             instances[key] = sdkCore
         }

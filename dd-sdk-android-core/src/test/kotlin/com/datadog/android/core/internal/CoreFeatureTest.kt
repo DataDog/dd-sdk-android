@@ -533,7 +533,7 @@ internal class CoreFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = CoreFeature.BUILD_ID_READ_ERROR,
+            message = "Failed to read Build ID information, de-obfuscation may not work properly.",
             throwableClass = RuntimeException::class.java
         )
     }
@@ -558,7 +558,7 @@ internal class CoreFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            CoreFeature.BUILD_ID_IS_MISSING_INFO_MESSAGE
+            "Build ID is not found in the application assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0 or above to be able to de-obfuscate stacktraces."
         )
     }
 
@@ -585,7 +585,7 @@ internal class CoreFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = CoreFeature.BUILD_ID_READ_ERROR,
+            message = "Failed to read Build ID information, de-obfuscation may not work properly.",
             throwableClass = IOException::class.java
         )
     }
@@ -827,7 +827,7 @@ internal class CoreFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            CoreFeature.SDK_INITIALIZED_IN_SECONDARY_PROCESS_WARNING_MESSAGE
+            "Datadog SDK was initialized in a secondary process: although data will still be captured, nothing will be uploaded from this process. Make sure to also initialize the SDK from the main process of your application."
         )
     }
 

@@ -1,0 +1,9 @@
+logs:
+  - id: no_event_receiver
+    message: "Feature \"%s\" has no event receiver registered, ignoring event."
+    level: info
+    targets:
+      - user
+    message_args:
+      feature_name:
+        type: string

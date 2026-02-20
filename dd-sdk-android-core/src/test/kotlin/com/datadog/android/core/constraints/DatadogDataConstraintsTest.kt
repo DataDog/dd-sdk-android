@@ -376,7 +376,7 @@ internal class DatadogDataConstraintsTest {
             }
         }
         val expectedLogs = badToSanitizedKeys.toList().map {
-            DatadogDataConstraints.CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
+            "Invalid timing name: %s, sanitized to: %s".format(
                 Locale.US,
                 it.first,
                 it.second

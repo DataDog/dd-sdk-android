@@ -1,0 +1,9 @@
+logs:
+  - id: sdk_core_already_registered
+    message: "An SdkCode with name %s has already been registered."
+    level: warn
+    targets:
+      - user
+    message_args:
+      key:
+        type: string

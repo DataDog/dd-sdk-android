@@ -7,6 +7,7 @@
 package com.datadog.android.core.constraints
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.constraints.StringTransform
 import com.datadog.android.core.internal.utils.toMutableMap
 import java.util.Locale
@@ -18,6 +19,8 @@ import java.util.Locale
  */
 class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataConstraints {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
+
     // region DataConstraints
 
     /** @inheritdoc */
@@ -25,28 +28,15 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
         val convertedTags = tags.mapNotNull {
             val tag = convertTag(it)
             if (tag == null) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { "\"$it\" is an invalid tag, and was ignored." }
-                )
+                logger.logInvalidTagIgnored(tagValue = it)
             } else if (tag != it) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { "tag \"$it\" was modified to \"$tag\" to match our constraints." },
-                    onlyOnce = true
-                )
+                logger.logTagModifiedToMatchConstraints(originalTag = it, modifiedTag = tag)
             }
             tag
         }
         val discardedCount = convertedTags.size - MAX_TAG_COUNT
         if (discardedCount > 0) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "too many tags were added, $discardedCount had to be discarded." }
-            )
+            logger.logTooManyTagsDiscarded(discardedCount = discardedCount)
         }
         return convertedTags.take(MAX_TAG_COUNT)
     }
@@ -65,29 +55,17 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
             // passed.
             @Suppress("SENSELESS_COMPARISON")
             if (it.key == null) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { "\"$it\" is an invalid attribute, and was ignored." }
-                )
+                logger.logInvalidAttributeIgnored(attribute = it.toString())
                 null
             } else if (it.key in reservedKeys) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.USER,
-                    { "\"$it\" key was in the reservedKeys set, and was dropped." }
-                )
+                logger.logAttributeKeyInReservedDropped(attribute = it.toString())
                 null
             } else {
                 val key = convertAttributeKey(it.key, prefixDotCount)
                 if (key != it.key) {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        {
-                            "Key \"${it.key}\" " +
-                                "was modified to \"$key\" to match our constraints."
-                        }
+                    logger.logAttributeKeyModifiedToMatchConstraints(
+                        originalKey = it.key,
+                        modifiedKey = key
                     )
                 }
                 key to it.value
@@ -95,15 +73,14 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
         }
         val discardedCount = convertedAttributes.size - MAX_ATTR_COUNT
         if (discardedCount > 0) {
-            val warningMessage = resolveDiscardedAttrsWarning(
-                attributesGroupName,
-                discardedCount
-            )
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { warningMessage }
-            )
+            if (attributesGroupName != null) {
+                logger.logTooManyAttributesDiscardedForGroup(
+                    attributesGroupName = attributesGroupName,
+                    discardedCount = discardedCount
+                )
+            } else {
+                logger.logTooManyAttributesDiscarded(discardedCount = discardedCount)
+            }
         }
         return convertedAttributes.take(MAX_ATTR_COUNT).toMutableMap()
     }
@@ -114,33 +91,13 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
             val sanitizedKey =
                 entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
             if (sanitizedKey != entry.key) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    {
-                        CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
-                            Locale.US,
-                            entry.key,
-                            sanitizedKey
-                        )
-                    }
+                logger.logCustomTimingKeyReplaced(
+                    originalKey = entry.key,
+                    sanitizedKey = sanitizedKey
                 )
             }
             sanitizedKey
         }.toMutableMap()
-    }
-
-    private fun resolveDiscardedAttrsWarning(
-        attributesGroupName: String?,
-        discardedCount: Int
-    ): String {
-        return if (attributesGroupName != null) {
-            "Too many attributes were added for [$attributesGroupName], " +
-                "$discardedCount had to be discarded."
-        } else {
-            "Too many attributes were added, " +
-                "$discardedCount had to be discarded."
-        }
     }
 
     // endregion
@@ -207,9 +164,6 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
 
         private const val MAX_ATTR_COUNT = 128
         private const val MAX_DEPTH_LEVEL = 9
-
-        internal const val CUSTOM_TIMING_KEY_REPLACED_WARNING = "Invalid timing name: %s," +
-            " sanitized to: %s"
 
         private val reservedTagKeys = setOf(
             "host",

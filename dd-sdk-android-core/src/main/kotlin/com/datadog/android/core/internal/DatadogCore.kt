@@ -14,6 +14,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
@@ -48,7 +49,6 @@ import okhttp3.Call
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.Collections
-import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
@@ -114,6 +114,8 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override val internalLogger: InternalLogger = internalLoggerProvider(this)
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     /** @inheritDoc */
     override val timeProvider: TimeProvider
@@ -282,18 +284,10 @@ internal class DatadogCore(
     override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
         val feature = features[featureName]
         if (feature == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName) }
-            )
+            logger.logMissingFeatureForEventReceiver(featureName = featureName)
         } else {
             if (feature.eventReceiver.get() != null) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName) }
-                )
+                logger.logEventReceiverAlreadyExists(featureName = featureName)
             }
             feature.eventReceiver.set(receiver)
         }
@@ -303,11 +297,7 @@ internal class DatadogCore(
         // the argument is always non - null, so we can suppress the warning
         @Suppress("UnsafeThirdPartyFunctionCall")
         if (featureContextUpdateReceivers.contains(listener)) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED.format(Locale.US, listener) }
-            )
+            logger.logContextUpdateListenerAlreadyRegistered(listener = listener.toString())
         }
         features.forEach {
             val currentContext = getFeatureContext(it.key, false)
@@ -394,11 +384,7 @@ internal class DatadogCore(
         ) {
             coreFeature.writeLastViewEvent(data)
         } else {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                { NO_NEED_TO_WRITE_LAST_VIEW_EVENT }
-            )
+            logger.logNoNeedToWriteLastViewEvent()
         }
     }
 
@@ -559,28 +545,13 @@ internal class DatadogCore(
             Runtime.getRuntime().addShutdownHook(shutdownHook)
         } catch (e: IllegalStateException) {
             // Most probably Runtime is already shutting down
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to add shutdown hook, Runtime is already shutting down" },
-                e
-            )
+            logger.logUnableToAddShutdownHook(e)
             stop()
         } catch (e: IllegalArgumentException) {
             // can only happen if hook is already added, or already running
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Shutdown hook was rejected" },
-                e
-            )
+            logger.logShutdownHookWasRejected(e)
         } catch (e: SecurityException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Security Manager denied adding shutdown hook " },
-                e
-            )
+            logger.logSecurityManagerDeniedAddingShutdownHook(e)
         }
     }
 
@@ -590,19 +561,9 @@ internal class DatadogCore(
                 Runtime.getRuntime().removeShutdownHook(shutdownHook)
             } catch (e: IllegalStateException) {
                 // Most probably Runtime is already shutting down
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Unable to remove shutdown hook, Runtime is already shutting down" },
-                    e
-                )
+                logger.logUnableToRemoveShutdownHook(e)
             } catch (e: SecurityException) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Security Manager denied removing shutdown hook " },
-                    e
-                )
+                logger.logSecurityManagerDeniedRemovingShutdownHook(e)
             }
         }
     }
@@ -638,22 +599,14 @@ internal class DatadogCore(
             @Suppress("UnsafeThirdPartyFunctionCall")
             tryLock(time, unit)
         } catch (e: InterruptedException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { "Couldn't acquire ${javaClass.simpleName} due to the exception thrown, aborting operation." },
-                e
-            )
+            logger.logLockAcquisitionFailedException(lockClassName = javaClass.simpleName, e)
             return
         }
         if (!locked) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                {
-                    "Couldn't acquire ${javaClass.simpleName} due to" +
-                        " timeout ($time $unit), aborting operation."
-                }
+            logger.logLockAcquisitionFailedTimeout(
+                lockClassName = javaClass.simpleName,
+                time = time,
+                unit = unit.toString()
             )
             return
         }
@@ -672,10 +625,8 @@ internal class DatadogCore(
         try {
             lock()
         } catch (e: InterruptedException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { "Couldn't acquire ${javaClass.simpleName} lock due to the exception thrown, aborting operation." },
+            logger.logLockAcquisitionFailedExceptionSafeWithLock(
+                lockClassName = javaClass.simpleName,
                 e
             )
             return null

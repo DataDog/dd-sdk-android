@@ -1,0 +1,104 @@
+logs:
+  - id: missing_feature_for_event_receiver
+    message: "Cannot add event receiver for feature \"%s\", it is not registered."
+    level: warn
+    targets:
+      - user
+    message_args:
+      feature_name:
+        type: string
+
+  - id: event_receiver_already_exists
+    message: "Feature \"%s\" already has event receiver registered, overwriting it."
+    level: warn
+    targets:
+      - user
+    message_args:
+      feature_name:
+        type: string
+
+  - id: context_update_listener_already_registered
+    message: "SDK core already has \"%s\" listener registered."
+    level: warn
+    targets:
+      - user
+    message_args:
+      listener:
+        type: string
+
+  - id: no_need_to_write_last_view_event
+    message: "No need to write last RUM view event: NDK crash reports feature is not enabled and API is below 30."
+    level: info
+    targets:
+      - maintainer
+
+  - id: unable_to_add_shutdown_hook
+    message: "Unable to add shutdown hook, Runtime is already shutting down"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: shutdown_hook_was_rejected
+    message: "Shutdown hook was rejected"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: security_manager_denied_adding_shutdown_hook
+    message: "Security Manager denied adding shutdown hook "
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: unable_to_remove_shutdown_hook
+    message: "Unable to remove shutdown hook, Runtime is already shutting down"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: security_manager_denied_removing_shutdown_hook
+    message: "Security Manager denied removing shutdown hook "
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: lock_acquisition_failed_exception
+    message: "Couldn't acquire %s due to the exception thrown, aborting operation."
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+    message_args:
+      lock_class_name:
+        type: string
+
+  - id: lock_acquisition_failed_timeout
+    message: "Couldn't acquire %s due to timeout (%d %s), aborting operation."
+    level: error
+    targets:
+      - user
+      - telemetry
+    message_args:
+      lock_class_name:
+        type: string
+      time:
+        type: long
+      unit:
+        type: string
+
+  - id: lock_acquisition_failed_exception_safe_with_lock
+    message: "Couldn't acquire %s lock due to the exception thrown, aborting operation."
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+    message_args:
+      lock_class_name:
+        type: string

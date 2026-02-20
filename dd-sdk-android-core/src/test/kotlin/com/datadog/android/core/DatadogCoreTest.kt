@@ -764,7 +764,7 @@ internal class DatadogCoreTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
+            "Cannot add event receiver for feature \"%s\", it is not registered.".format(Locale.US, feature)
         )
     }
 
@@ -788,7 +788,7 @@ internal class DatadogCoreTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
+            "Feature \"%s\" already has event receiver registered, overwriting it.".format(Locale.US, feature)
         )
     }
 
@@ -836,7 +836,7 @@ internal class DatadogCoreTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogCore.CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED.format(Locale.US, mockContextUpdateListener)
+            "SDK core already has \"%s\" listener registered.".format(Locale.US, mockContextUpdateListener)
         )
     }
 
@@ -1240,7 +1240,7 @@ internal class DatadogCoreTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            DatadogCore.NO_NEED_TO_WRITE_LAST_VIEW_EVENT
+            "No need to write last RUM view event: NDK crash reports feature is not enabled and API is below 30."
         )
     }
 

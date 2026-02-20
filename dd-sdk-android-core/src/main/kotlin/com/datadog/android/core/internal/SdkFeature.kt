@@ -11,6 +11,7 @@ import android.content.Context
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -59,7 +60,6 @@ import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
-import java.util.Locale
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
@@ -232,11 +232,7 @@ internal class SdkFeature(
     override fun sendEvent(event: Any) {
         val receiver = eventReceiver.get()
         if (receiver == null) {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { NO_EVENT_RECEIVER.format(Locale.US, wrappedFeature.name) }
-            )
+            logger.logNoEventReceiver(featureName = wrappedFeature.name)
         } else {
             receiver.onReceive(event)
         }
@@ -465,8 +461,6 @@ internal class SdkFeature(
     // endregion
 
     companion object {
-        const val NO_EVENT_RECEIVER =
-            "Feature \"%s\" has no event receiver registered, ignoring event."
         internal const val TRACK_NAME = "track"
         internal const val METER_NAME = "dd-sdk-android"
         internal const val BATCH_COUNT_METRIC_NAME = "android.benchmark.batch_count"

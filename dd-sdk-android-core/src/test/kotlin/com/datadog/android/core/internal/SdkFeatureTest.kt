@@ -684,7 +684,7 @@ internal class SdkFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
+            "Feature \"%s\" has no event receiver registered, ignoring event.".format(Locale.US, fakeFeatureName)
         )
     }
 

@@ -18,6 +18,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchProcessingLevel
@@ -111,6 +112,8 @@ internal class CoreFeature(
     private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     /**
      * Lazy-initialized shared OkHttpClient instance with FIPS 140-2 compliant configuration.
@@ -308,12 +311,7 @@ internal class CoreFeature(
             } catch (ise: IllegalStateException) {
                 // this may be called from the test
                 // when Kronos is already shut down
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Trying to shut down Kronos when it is already not running" },
-                    ise
-                )
+                logger.logKronosShutdownAlreadyNotRunning(ise)
             }
 
             initialized.set(false)
@@ -484,12 +482,7 @@ internal class CoreFeature(
                     syncInBackground()
                 } catch (ise: IllegalStateException) {
                     // should never happen
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Unable to launch a synchronize local time with an NTP server." },
-                        ise
-                    )
+                    logger.logUnableToLaunchNtpSync(ise)
                 }
             }
 
@@ -540,12 +533,7 @@ internal class CoreFeature(
                 }
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Unable to read your application's version name" },
-                e
-            )
+            logger.logUnableToReadAppVersionName(e)
             null
         }
     }
@@ -557,19 +545,10 @@ internal class CoreFeature(
                     it.readText().trim()
                 }
             } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
-                internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    InternalLogger.Target.USER,
-                    { BUILD_ID_IS_MISSING_INFO_MESSAGE }
-                )
+                logger.logBuildIdIsMissing()
                 null
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    { BUILD_ID_READ_ERROR },
-                    e
-                )
+                logger.logBuildIdReadError(e)
                 null
             }
         }
@@ -695,11 +674,7 @@ internal class CoreFeature(
             appContext.packageName == currentProcess.processName
         }
         if (!isMainProcess) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { SDK_INITIALIZED_IN_SECONDARY_PROCESS_WARNING_MESSAGE }
-            )
+            logger.logSdkInitializedInSecondaryProcess()
         }
     }
 
@@ -718,12 +693,7 @@ internal class CoreFeature(
                 Thread.currentThread().interrupt()
             } catch (se: SecurityException) {
                 // this should not happen
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Thread was unable to set its own interrupted state" },
-                    se
-                )
+                logger.logThreadUnableToSetInterruptedState(se)
             }
         }
     }
@@ -785,12 +755,6 @@ internal class CoreFeature(
 
         // should be the same as in dd-sdk-android-gradle-plugin
         internal const val BUILD_ID_FILE_NAME = "datadog.buildId"
-        internal const val BUILD_ID_IS_MISSING_INFO_MESSAGE =
-            "Build ID is not found in the application" +
-                " assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0" +
-                " or above to be able to de-obfuscate stacktraces."
-        internal const val BUILD_ID_READ_ERROR =
-            "Failed to read Build ID information, de-obfuscation may not work properly."
 
         internal val RESTRICTED_CIPHER_SUITES = arrayOf(
             // TLS 1.3
