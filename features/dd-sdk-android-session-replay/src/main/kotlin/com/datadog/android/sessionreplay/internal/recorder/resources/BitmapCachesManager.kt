@@ -12,6 +12,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 
 internal class BitmapCachesManager(
     private val resourcesLRUCache: Cache<String, ByteArray>,
@@ -35,11 +36,7 @@ internal class BitmapCachesManager(
             applicationContext.registerComponentCallbacks(resourcesLRUCache)
             isResourcesCacheRegisteredForCallbacks = true
         } else {
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { Cache.DOES_NOT_IMPLEMENT_COMPONENTCALLBACKS }
-            )
+            DdSdkAndroidSessionReplayLogger(logger).logDoesNotImplementComponentCallbacks()
         }
     }
 

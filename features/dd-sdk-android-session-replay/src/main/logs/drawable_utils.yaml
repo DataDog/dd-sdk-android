@@ -1,0 +1,17 @@
+logs:
+  - id: failed_to_create_scaled_bitmap
+    message: "Failed to create a scaled bitmap from the drawable"
+    level: error
+    targets:
+      - maintainer
+
+  - id: drawable_draw_runtime_exception
+    message: "Drawable.draw call finished with an exception. Drawable type is %s"
+    level: error
+    targets:
+      - telemetry
+    message_args:
+      drawable_class_name:
+        type: string
+        nullable: true
+    throwable: true

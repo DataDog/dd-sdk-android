@@ -1,0 +1,12 @@
+logs:
+  - id: broken_json
+    message: "SR GsonExt: Unable parse the batch data into a JsonObject: expected to parse [%s] as %s"
+    level: error
+    targets:
+      - telemetry
+    message_args:
+      element_string:
+        type: string
+      expected_type:
+        type: string
+    throwable: true

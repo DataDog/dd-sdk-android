@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.R
@@ -36,6 +37,7 @@ internal class TreeViewTraversal(
     private val viewUtilsInternal: ViewUtilsInternal,
     private val internalLogger: InternalLogger
 ) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     @Suppress("ReturnCount")
     @UiThread
@@ -84,17 +86,7 @@ internal class TreeViewTraversal(
             mapper = defaultViewMapper
             jobStatusCallback = noOpCallback
             val viewType = view.javaClass.canonicalName ?: view.javaClass.name
-
-            internalLogger.log(
-                level = InternalLogger.Level.INFO,
-                target = InternalLogger.Target.TELEMETRY,
-                messageBuilder = { "No mapper found for view $viewType" },
-                throwable = null,
-                onlyOnce = true,
-                additionalProperties = mapOf(
-                    "replay.widget.type" to viewType
-                )
-            )
+            logger.logNoMapperFoundForView(viewType, viewType)
         }
 
         val resolvedWireframes = internalLogger.measureMethodCallPerf(
@@ -145,12 +137,7 @@ internal class TreeViewTraversal(
                 val privacyLevel = TouchPrivacy.valueOf(touchPrivacy.toString().uppercase(Locale.US))
                 mappingContext.touchPrivacyManager.addTouchOverrideArea(viewArea, privacyLevel)
             } catch (e: IllegalArgumentException) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    { INVALID_PRIVACY_LEVEL_ERROR },
-                    e
-                )
+                logger.logInvalidPrivacyLevel(e)
             }
         }
     }

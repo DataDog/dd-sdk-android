@@ -1,0 +1,27 @@
+logs:
+  - id: item_dropped_invalid
+    message: "SR RecordedDataQueueHandler: dropped item from the queue. isValid=false, type=%s"
+    level: warn
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      item_type:
+        type: string
+
+  - id: failed_to_add_records
+    message: "SR RecordedDataQueueHandler: failed to add records into the queue"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: item_dropped_expired
+    message: "SR RecordedDataQueueHandler: dropped item from the queue. age=%d ns"
+    level: warn
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      age_ns:
+        type: long

@@ -13,6 +13,7 @@ import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -46,6 +47,7 @@ internal class RecorderWindowCallback(
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
     private val windowInspector: WindowInspector = WindowInspector
 ) : Window.Callback by wrappedCallback {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
@@ -73,12 +75,7 @@ internal class RecorderWindowCallback(
                 }
             }
         } else {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { MOTION_EVENT_WAS_NULL_ERROR_MESSAGE },
-                null
-            )
+            logger.logMotionEventNull()
         }
 
         @Suppress("SwallowedException")
@@ -172,12 +169,7 @@ internal class RecorderWindowCallback(
         // This happens because Kotlin delegate expects non-null value incorrectly inferring
         // non-null type from Java interface definition (seems to be solved in Kotlin 1.8 though)
         if (e.message?.contains("Parameter specified as non-null is null") == true) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE },
-                e
-            )
+            logger.logFailToProcessMotionEvent(e)
         } else {
             @Suppress("ThrowingInternalException") // we need to let client exception to propagate
             throw e

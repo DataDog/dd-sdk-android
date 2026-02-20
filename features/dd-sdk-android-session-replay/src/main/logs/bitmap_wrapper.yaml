@@ -1,0 +1,21 @@
+logs:
+  - id: failed_to_create_bitmap
+    message: "Failed to create bitmap"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: failed_to_create_scaled_bitmap_maintainer
+    message: "Failed to create scaled bitmap"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: failed_to_create_scaled_bitmap_user
+    message: "Failed to create scaled bitmap"
+    level: error
+    targets:
+      - user
+    throwable: true

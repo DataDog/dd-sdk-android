@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 
 /**
  * Wraps the Canvas class to catch potential crashes.
@@ -24,12 +25,9 @@ class CanvasWrapper(
      * @return the created canvas or null if it failed.
      */
     fun createCanvas(bitmap: Bitmap): Canvas? {
+        val srLogger = DdSdkAndroidSessionReplayLogger(logger)
         if (bitmap.isRecycled || !bitmap.isMutable) {
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                { INVALID_BITMAP }
-            )
+            srLogger.logInvalidBitmap()
             return null
         }
 
@@ -37,21 +35,10 @@ class CanvasWrapper(
         return try {
             Canvas(bitmap)
         } catch (e: IllegalStateException) {
-            // should never happen since we are passing an immutable bitmap
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                { FAILED_TO_CREATE_CANVAS },
-                e
-            )
+            srLogger.logFailedToCreateCanvas(e)
             null
         } catch (e: RuntimeException) {
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                { FAILED_TO_CREATE_CANVAS },
-                e
-            )
+            srLogger.logFailedToCreateCanvas(e)
             null
         }
     }

@@ -10,6 +10,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
@@ -108,16 +109,8 @@ object SessionReplay {
         currentRegisteredCore?.get()?.isCoreActive() == true
 
     private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER),
-            messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
-        )
-
-        internalLogger.log(
-            level = InternalLogger.Level.DEBUG,
-            targets = listOf(InternalLogger.Target.TELEMETRY),
-            messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
-        )
+        val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
+        logger.logAlreadyRegisteredMaintainer()
+        logger.logAlreadyRegisteredTelemetry()
     }
 }

@@ -13,6 +13,7 @@ import android.util.TypedValue
 import android.view.WindowManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -34,36 +35,20 @@ internal object MiscUtils {
         return try {
             JsonParser.parseString(jsonString) as? JsonObject
         } catch (e: JsonParseException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { DESERIALIZE_JSON_ERROR },
-                throwable = e
-            )
+            DdSdkAndroidSessionReplayLogger(internalLogger).logDeserializeJsonError(e)
             null
         }
     }
 
     internal fun safeGetStringFromJsonObject(internalLogger: InternalLogger, json: JsonObject, key: String): String? {
+        val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
         return try {
             json.get(key)?.asString
         } catch (e: ClassCastException) {
-            // this should never happen - element is a valid json already
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { GET_STRING_FROM_JSON_ERROR },
-                throwable = e
-            )
+            logger.logGetStringFromJsonError(e)
             null
         } catch (e: IllegalStateException) {
-            // this should never happen - element is not jsonArray
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { GET_STRING_FROM_JSON_ERROR },
-                throwable = e
-            )
+            logger.logGetStringFromJsonError(e)
             null
         }
     }

@@ -1,0 +1,13 @@
+logs:
+  - id: motion_event_null
+    message: "RecorderWindowCallback: intercepted null motion event"
+    level: error
+    targets:
+      - user
+
+  - id: fail_to_process_motion_event
+    message: "RecorderWindowCallback: wrapped callback failed to handle the motion event"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

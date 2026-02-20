@@ -1,0 +1,12 @@
+logs:
+  - id: already_registered_maintainer
+    message: "Session Replay is already enabled and does not support multiple instances. The existing instance will continue to be used."
+    level: error
+    targets:
+      - maintainer
+
+  - id: already_registered_telemetry
+    message: "Session Replay is already enabled and does not support multiple instances. The existing instance will continue to be used."
+    level: debug
+    targets:
+      - telemetry

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay
 
 import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -85,11 +86,9 @@ data class SessionReplayConfiguration internal constructor(
          */
         fun addExtensionSupport(extensionSupport: ExtensionSupport): Builder {
             if (this.extensionSupportSet.any { it.name() == extensionSupport.name() }) {
-                logger.log(
-                    target = InternalLogger.Target.MAINTAINER,
-                    level = InternalLogger.Level.WARN,
-                    messageBuilder = { DUPLICATE_EXTENSION_DETECTED.format(Locale.US, extensionSupport.name()) }
-                )
+                @Suppress("USELESS_ELVIS")
+                DdSdkAndroidSessionReplayLogger(logger)
+                    .logDuplicateExtensionDetected(extensionSupport.name() ?: "")
             } else {
                 this.extensionSupportSet.add(extensionSupport)
             }
@@ -251,14 +250,11 @@ data class SessionReplayConfiguration internal constructor(
         private fun customMappers(): List<MapperTypeWrapper<*>> {
             val allItems = extensionSupportSet.flatMap { it.getCustomViewMappers() }
 
+            val srLogger = DdSdkAndroidSessionReplayLogger(logger)
             allItems.groupBy { it }
                 .filter { it.value.size > 1 }
                 .forEach { (item, _) ->
-                    logger.log(
-                        target = InternalLogger.Target.MAINTAINER,
-                        level = InternalLogger.Level.WARN,
-                        messageBuilder = { DUPLICATE_MAPPER_DETECTED.format(Locale.US, item.type) }
-                    )
+                    srLogger.logDuplicateMapperDetected(item.type.toString())
                 }
 
             return allItems.distinct().toList()

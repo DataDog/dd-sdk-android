@@ -1,0 +1,20 @@
+logs:
+  - id: resources_null
+    message: "Resources is null for view %s"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      view_class_name:
+        type: string
+        nullable: true
+
+  - id: application_context_null
+    message: "Application context is null for view %s"
+    level: error
+    targets:
+      - telemetry
+    message_args:
+      view_class_name:
+        type: string
+        nullable: true

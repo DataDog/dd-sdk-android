@@ -1,0 +1,6 @@
+logs:
+  - id: does_not_implement_component_callbacks
+    message: "Cache instance does not implement ComponentCallbacks2"
+    level: error
+    targets:
+      - maintainer

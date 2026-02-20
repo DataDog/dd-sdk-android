@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -30,6 +31,7 @@ internal class SnapshotProducer(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val internalLogger: InternalLogger
 ) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     @UiThread
     fun produce(
@@ -144,12 +146,7 @@ internal class SnapshotProducer(
     }
 
     private fun logInvalidPrivacyLevelError(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { INVALID_PRIVACY_LEVEL_ERROR },
-            e
-        )
+        logger.logInvalidPrivacyLevel(e)
     }
 
     internal companion object {

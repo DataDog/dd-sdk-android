@@ -16,6 +16,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
@@ -30,6 +31,7 @@ internal class DrawableUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(internalLogger),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     /**
      * This method attempts to create a bitmap from a drawable, such that the bitmap file size will
@@ -66,11 +68,7 @@ internal class DrawableUtils(
 
                 @WorkerThread
                 override fun onFailure() {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { FAILED_TO_CREATE_SCALED_BITMAP_ERROR }
-                    )
+                    logger.logFailedToCreateScaledBitmap()
                     bitmapCreationCallback.onFailure()
                 }
             }
@@ -132,12 +130,7 @@ internal class DrawableUtils(
         drawable: Drawable,
         runtimeException: RuntimeException
     ) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            { "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${drawable.resolveClassName()}" },
-            runtimeException
-        )
+        logger.logDrawableDrawRuntimeException(drawable.resolveClassName(), runtimeException)
     }
 
     @WorkerThread

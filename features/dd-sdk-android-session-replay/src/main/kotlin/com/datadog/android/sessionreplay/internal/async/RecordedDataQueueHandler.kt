@@ -11,6 +11,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
@@ -36,6 +37,7 @@ internal class RecordedDataQueueHandler(
     private val telemetrySampleRate: Float = TELEMETRY_SAMPLE_RATE_PERCENT,
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(telemetrySampleRate)
 ) : DataQueueHandler {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     @Synchronized
     override fun clearAndStopProcessingQueue() {
@@ -196,34 +198,15 @@ internal class RecordedDataQueueHandler(
     }
 
     private fun logInvalidQueueItemException(item: RecordedDataQueueItem) {
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            listOf(
-                InternalLogger.Target.MAINTAINER,
-                InternalLogger.Target.TELEMETRY
-            ),
-            { ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, item.javaClass.simpleName) }
-        )
+        logger.logItemDroppedInvalid(item.javaClass.simpleName)
     }
 
     private fun logAddToQueueException(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE },
-            e
-        )
+        logger.logFailedToAddRecords(e)
     }
 
     private fun logExpiredItemException(nextItemAgeInNs: Long) {
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            listOf(
-                InternalLogger.Target.MAINTAINER,
-                InternalLogger.Target.TELEMETRY
-            ),
-            { ITEM_DROPPED_EXPIRED_MESSAGE.format(Locale.US, nextItemAgeInNs) }
-        )
+        logger.logItemDroppedExpired(nextItemAgeInNs)
     }
 
     // end region

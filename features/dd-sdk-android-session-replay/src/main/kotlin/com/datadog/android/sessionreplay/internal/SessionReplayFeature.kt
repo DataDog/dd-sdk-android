@@ -10,6 +10,7 @@ import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -119,6 +120,7 @@ internal class SessionReplayFeature(
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
     private val rumContextProvider = SessionReplayRumContextProvider()
+    private val logger = DdSdkAndroidSessionReplayLogger(sdkCore.internalLogger)
 
     // region Feature
 
@@ -189,11 +191,7 @@ internal class SessionReplayFeature(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
-            )
+            logger.logUnsupportedEventType(event::class.java.canonicalName ?: "unknown")
             return
         }
 
@@ -238,15 +236,8 @@ internal class SessionReplayFeature(
                     }
                 }
         } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                {
-                    UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
-                        Locale.US,
-                        sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
-                    )
-                }
+            logger.logUnknownEventTypePropertyValue(
+                sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]?.toString() ?: "null"
             )
         }
     }
@@ -293,43 +284,23 @@ internal class SessionReplayFeature(
     }
 
     private fun logMissingApplicationContextError() {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
-        )
+        logger.logRequiresApplicationContext()
     }
 
     private fun logEventMissingMandatoryFieldsError() {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { EVENT_MISSING_MANDATORY_FIELDS }
-        )
+        logger.logEventMissingMandatoryFields()
     }
 
     private fun logNotKeptMessage() {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
-            { SESSION_NOT_KEPT_MESSAGE }
-        )
+        logger.logSessionNotKept()
     }
 
     private fun logSampledOutMessage() {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
-            { SESSION_SAMPLED_OUT_MESSAGE }
-        )
+        logger.logSessionSampledOut()
     }
 
     private fun logNotInitializedError() {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            { CANNOT_START_RECORDING_NOT_INITIALIZED }
-        )
+        logger.logNotInitialized()
     }
 
     private fun handleRecording(sessionData: SessionData) {

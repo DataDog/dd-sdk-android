@@ -15,6 +15,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.MAX_ALPHA_VALUE
 
@@ -72,30 +73,16 @@ internal open class AndroidQDrawableToColorMapper(
                 in blendModesReturningBlendColor -> colorFilter.color
                 in blendModesReturningOriginalColor -> fillColor
                 else -> {
-                    internalLogger.log(
-                        level = InternalLogger.Level.INFO,
-                        target = InternalLogger.Target.TELEMETRY,
-                        messageBuilder = { "No mapper found for gradient blend mode ${colorFilter.mode}" },
-                        throwable = null,
-                        onlyOnce = true,
-                        additionalProperties = mapOf(
-                            "replay.gradient.blend_mode" to colorFilter.mode
-                        )
-                    )
+                    val blendMode = colorFilter.mode.toString()
+                    DdSdkAndroidSessionReplayLogger(internalLogger)
+                        .logNoMapperForBlendMode(blendMode, blendMode)
                     fillColor
                 }
             }
         } else {
-            internalLogger.log(
-                level = InternalLogger.Level.INFO,
-                target = InternalLogger.Target.TELEMETRY,
-                messageBuilder = { "No mapper found for gradient color filter ${colorFilter.javaClass}" },
-                throwable = null,
-                onlyOnce = true,
-                additionalProperties = mapOf(
-                    "replay.gradient.filter_type" to colorFilter.javaClass.canonicalName
-                )
-            )
+            val filterType = colorFilter.javaClass.canonicalName ?: colorFilter.javaClass.name
+            DdSdkAndroidSessionReplayLogger(internalLogger)
+                .logNoMapperForColorFilter(filterType, filterType)
             fillColor
         }
     }

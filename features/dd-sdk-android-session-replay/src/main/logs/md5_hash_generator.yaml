@@ -1,0 +1,8 @@
+logs:
+  - id: md5_hash_generation_error
+    message: "Cannot generate MD5 hash."
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true

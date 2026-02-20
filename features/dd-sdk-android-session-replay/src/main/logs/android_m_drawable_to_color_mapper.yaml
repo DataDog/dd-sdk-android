@@ -1,0 +1,21 @@
+logs:
+  - id: no_mapper_found_for_drawable
+    message: "No mapper found for drawable %s"
+    level: info
+    targets:
+      - telemetry
+    message_args:
+      drawable_type:
+        type: string
+    onlyOnce: true
+    properties:
+      replay_drawable_type:
+        type: string
+        key: "replay.drawable.type"
+
+  - id: unable_to_read_color_filter
+    message: "Unable to read ColorFilter.mColorField field through reflection"
+    level: warn
+    targets:
+      - maintainer
+    throwable: true

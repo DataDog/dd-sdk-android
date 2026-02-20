@@ -11,6 +11,7 @@ import android.view.View
 import android.view.inspector.WindowInspector
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import java.lang.NullPointerException
 import java.lang.reflect.Field
 
@@ -50,13 +51,7 @@ internal object WindowInspector {
                 getGlobalWindowViewsLegacy(GLOBAL_WM_INSTANCE, VIEWS_FIELD)
             }
         } catch (e: Throwable) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { FAILED_TO_RETRIEVE_DECOR_VIEWS_ERROR_MESSAGE },
-                e,
-                true
-            )
+            DdSdkAndroidSessionReplayLogger(internalLogger).logFailedToRetrieveDecorViews(e)
             emptyList()
         }
     }

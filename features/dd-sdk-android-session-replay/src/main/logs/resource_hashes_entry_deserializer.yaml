@@ -1,0 +1,10 @@
+logs:
+  - id: deserialize_error
+    message: "Error while trying to deserialize the ResourceHashesEntry: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      model:
+        type: string

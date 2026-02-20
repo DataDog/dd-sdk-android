@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.toHexString
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 
@@ -23,12 +24,7 @@ internal class MD5HashGenerator(
 
             hashBytes.toHexString()
         } catch (e: NoSuchAlgorithmException) {
-            logger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { MD5_HASH_GENERATION_ERROR },
-                e
-            )
+            DdSdkAndroidSessionReplayLogger(logger).logMd5HashGenerationError(e)
             null
         }
     }

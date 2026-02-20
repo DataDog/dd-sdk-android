@@ -1,0 +1,7 @@
+logs:
+  - id: path_draw_error
+    message: "Failed to draw Path to Canvas"
+    level: warn
+    targets:
+      - maintainer
+    throwable: true

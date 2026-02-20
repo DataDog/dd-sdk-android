@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?): MobileSegment.Wireframe {
@@ -26,12 +27,7 @@ internal fun MobileSegment.Source.Companion.tryFromSource(
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { UNKNOWN_MOBILE_SEGMENT_SOURCE_WARNING_MESSAGE_FORMAT.format(java.util.Locale.US, source) },
-            e
-        )
+        DdSdkAndroidSessionReplayLogger(internalLogger).logUnknownMobileSegmentSource(source, e)
         MobileSegment.Source.ANDROID
     }
 }

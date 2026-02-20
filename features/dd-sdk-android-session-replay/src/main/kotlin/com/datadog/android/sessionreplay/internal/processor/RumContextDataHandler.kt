@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.processor
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import java.util.Locale
 
@@ -17,6 +18,7 @@ internal class RumContextDataHandler(
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger
 ) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     @MainThread
     internal fun createRumContextData(): RecordedQueuedItemContext? {
@@ -25,16 +27,7 @@ internal class RumContextDataHandler(
         val newRumContext = rumContextProvider.getRumContext()
 
         if (newRumContext.isNotValid()) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                {
-                    INVALID_RUM_CONTEXT_ERROR_MESSAGE_FORMAT.format(
-                        Locale.ENGLISH,
-                        newRumContext.toString()
-                    )
-                }
-            )
+            logger.logInvalidRumContext(newRumContext.toString())
             return null
         }
 

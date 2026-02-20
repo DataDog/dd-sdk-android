@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
@@ -24,6 +25,7 @@ internal class ResourcesRequestFactory(
     private val resourceRequestBodyFactory: ResourceRequestBodyFactory =
         ResourceRequestBodyFactory(internalLogger)
 ) : RequestFactory {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     @Suppress("ThrowingInternalException")
     override fun create(
@@ -61,23 +63,13 @@ internal class ResourcesRequestFactory(
         try {
             body.writeTo(buffer)
         } catch (e: IOException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CONVERTING_BODY_TO_BYTEARRAY },
-                throwable = e
-            )
+            logger.logErrorConvertingBodyToBytearray(e)
         }
 
         try {
             result = buffer.readByteArray()
         } catch (e: EOFException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CONVERTING_BODY_TO_BYTEARRAY },
-                throwable = e
-            )
+            logger.logErrorConvertingBodyToBytearray(e)
         }
 
         return result

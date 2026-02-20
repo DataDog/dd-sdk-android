@@ -14,6 +14,7 @@ import android.graphics.Path
 import android.graphics.PathMeasure
 import android.graphics.RectF
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.HashGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGenerator
@@ -27,6 +28,7 @@ internal class PathUtils(
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(),
     private val md5Generator: HashGenerator = MD5HashGenerator(logger)
 ) {
+    private val srLogger = DdSdkAndroidSessionReplayLogger(logger)
     internal fun convertPathToBitmap(
         checkPath: Path,
         checkmarkColor: Int,
@@ -129,12 +131,7 @@ internal class PathUtils(
         try {
             canvas?.drawPath(path, paint)
         } catch (e: IllegalArgumentException) {
-            logger.log(
-                target = InternalLogger.Target.MAINTAINER,
-                level = InternalLogger.Level.WARN,
-                messageBuilder = { PATH_DRAW_ERROR },
-                throwable = e
-            )
+            srLogger.logPathDrawError(e)
         }
     }
 

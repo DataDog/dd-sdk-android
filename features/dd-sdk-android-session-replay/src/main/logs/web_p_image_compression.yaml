@@ -1,0 +1,8 @@
+logs:
+  - id: image_compression_error
+    message: "Error while compressing the image."
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true

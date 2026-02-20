@@ -1,0 +1,7 @@
+logs:
+  - id: bitmap_drawing_failed
+    message: "Failed to draw alpha8 bitmap to ARGB_8888"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

@@ -1,0 +1,9 @@
+logs:
+  - id: invalid_layer_index
+    message: "Failed to get drawable from layer - invalid index passed: %d"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      index:
+        type: int

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewTreeObserver.OnDrawListener
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import java.util.WeakHashMap
@@ -19,6 +20,7 @@ internal class ViewOnDrawInterceptor(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val onDrawListenerProducer: OnDrawListenerProducer
 ) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
     internal val decorOnDrawListeners: WeakHashMap<View, OnDrawListener> =
         WeakHashMap()
 
@@ -37,12 +39,7 @@ internal class ViewOnDrawInterceptor(
                     viewTreeObserver.addOnDrawListener(onDrawListener)
                     decorOnDrawListeners[decorView] = onDrawListener
                 } catch (e: IllegalStateException) {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.TELEMETRY,
-                        { "Unable to add onDrawListener onto viewTreeObserver" },
-                        e
-                    )
+                    logger.logUnableToAddOnDrawListener(e)
                 }
             }
         }
@@ -76,12 +73,7 @@ internal class ViewOnDrawInterceptor(
             try {
                 decorView.viewTreeObserver.removeOnDrawListener(listener)
             } catch (e: IllegalStateException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.TELEMETRY,
-                    { "Unable to remove onDrawListener from viewTreeObserver" },
-                    e
-                )
+                logger.logUnableToRemoveOnDrawListener(e)
             }
         }
     }

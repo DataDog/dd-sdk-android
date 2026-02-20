@@ -7,11 +7,13 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
 import java.util.Locale
 
 internal class MutationResolver(private val internalLogger: InternalLogger) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     /**
      * Computes a diff between two arrays.
@@ -361,17 +363,9 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             val isSameClass = prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)
             if (!isSameClass) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    {
-                        MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
-                            .format(
-                                Locale.ENGLISH,
-                                prevWireframe.javaClass.name,
-                                currentWireframe.javaClass.name
-                            )
-                    }
+                logger.logMissMatchingTypes(
+                    prevWireframe.javaClass.name,
+                    currentWireframe.javaClass.name
                 )
                 null
             } else {

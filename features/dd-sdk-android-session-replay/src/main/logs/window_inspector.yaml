@@ -1,0 +1,8 @@
+logs:
+  - id: failed_to_retrieve_decor_views
+    message: "SR WindowInspector failed to retrieve the decor views"
+    level: error
+    targets:
+      - telemetry
+    throwable: true
+    onlyOnce: true

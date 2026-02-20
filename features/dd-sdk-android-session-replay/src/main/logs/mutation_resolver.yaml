@@ -1,0 +1,11 @@
+logs:
+  - id: miss_matching_types
+    message: "SR MutationResolver: wireframe of type [%1s] is not matching the wireframe of type [%2s]"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      prev_type:
+        type: string
+      current_type:
+        type: string

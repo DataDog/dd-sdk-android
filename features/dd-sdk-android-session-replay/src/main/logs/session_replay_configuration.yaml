@@ -1,0 +1,18 @@
+logs:
+  - id: duplicate_extension_detected
+    message: "Attempting to add support twice for the same extension %s. The duplicate will be ignored."
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      extension_name:
+        type: string
+
+  - id: duplicate_mapper_detected
+    message: "Duplicate mapper for %s. The duplicate will be ignored."
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      mapper_type:
+        type: string

@@ -1,0 +1,48 @@
+logs:
+  - id: unsupported_event_type
+    message: "Session Replay feature receive an event of unsupported type=%s."
+    level: warn
+    targets:
+      - user
+    message_args:
+      type_name:
+        type: string
+
+  - id: unknown_event_type_property_value
+    message: "Session Replay feature received an event with unknown value of \"type\" property=%s."
+    level: warn
+    targets:
+      - user
+    message_args:
+      type_value:
+        type: string
+
+  - id: requires_application_context
+    message: "Session Replay could not be initialized without the Application context."
+    level: warn
+    targets:
+      - maintainer
+
+  - id: event_missing_mandatory_fields
+    message: "Session Replay feature received an event where one or more mandatory (keepSession) fields are either missing or have wrong type."
+    level: warn
+    targets:
+      - maintainer
+
+  - id: session_not_kept
+    message: "This session was not kept. No replay will be provided for it."
+    level: info
+    targets:
+      - user
+
+  - id: session_sampled_out
+    message: "This session was sampled out from recording. No replay will be provided for it."
+    level: info
+    targets:
+      - user
+
+  - id: not_initialized
+    message: "Cannot start session recording, because Session Replay feature is not initialized."
+    level: warn
+    targets:
+      - user

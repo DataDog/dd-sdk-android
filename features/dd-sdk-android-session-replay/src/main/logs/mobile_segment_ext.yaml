@@ -1,0 +1,10 @@
+logs:
+  - id: unknown_mobile_segment_source
+    message: "You are using an unknown source %s for MobileSegment.Source enum."
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      source:
+        type: string
+    throwable: true

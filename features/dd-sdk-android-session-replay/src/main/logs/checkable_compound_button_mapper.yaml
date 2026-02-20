@@ -1,0 +1,12 @@
+logs:
+  - id: null_button_drawable
+    message: "ButtonDrawable of the compound button is null"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    properties:
+      replay_compound_view:
+        type: string
+        nullable: true
+        key: "replay.compound.view"

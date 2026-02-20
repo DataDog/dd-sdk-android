@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 
 internal interface BitmapConverter {
     @WorkerThread
@@ -44,12 +45,7 @@ internal class Alpha8BitmapConverter(
             drawAlpha8ToArgb(argbBitmap, bitmap)
         } catch (e: IllegalStateException) {
             argbBitmap.recycle()
-            logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { BITMAP_DRAWING_FAILED },
-                e
-            )
+            DdSdkAndroidSessionReplayLogger(logger).logBitmapDrawingFailed(e)
             null
         }
     }

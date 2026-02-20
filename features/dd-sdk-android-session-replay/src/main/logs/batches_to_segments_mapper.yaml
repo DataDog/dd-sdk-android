@@ -1,0 +1,14 @@
+logs:
+  - id: unable_to_deserialize_enriched_record
+    message: "SR BatchesToSegmentMapper: unable to deserialize EnrichedRecord"
+    level: error
+    targets:
+      - telemetry
+    throwable: true
+
+  - id: illegal_state_enriched_record
+    message: "SR BatchesToSegmentMapper: Enriched record was missing the context information"
+    level: error
+    targets:
+      - telemetry
+    onlyOnce: true

@@ -7,11 +7,11 @@
 package com.datadog.android.sessionreplay.internal.gson
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import java.util.Locale
 
 internal const val BROKEN_JSON_ERROR_MESSAGE_FORMAT =
     "SR GsonExt: Unable parse the batch data into a JsonObject: expected to parse [%s] as %s"
@@ -24,17 +24,8 @@ internal fun JsonElement.safeGetAsJsonObject(internalLogger: InternalLogger): Js
     return if (isJsonObject) {
         asJsonObject
     } else {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            {
-                BROKEN_JSON_ERROR_MESSAGE_FORMAT.format(
-                    Locale.ENGLISH,
-                    this.toString(),
-                    JSON_OBJECT_TYPE
-                )
-            }
-        )
+        DdSdkAndroidSessionReplayLogger(internalLogger)
+            .logBrokenJson(this.toString(), JSON_OBJECT_TYPE)
         null
     }
 }
@@ -44,18 +35,8 @@ internal fun JsonPrimitive.safeGetAsLong(internalLogger: InternalLogger): Long? 
     return try {
         asLong
     } catch (e: NumberFormatException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            {
-                BROKEN_JSON_ERROR_MESSAGE_FORMAT.format(
-                    Locale.ENGLISH,
-                    this.toString(),
-                    JSON_PRIMITIVE_TYPE
-                )
-            },
-            e
-        )
+        DdSdkAndroidSessionReplayLogger(internalLogger)
+            .logBrokenJson(this.toString(), JSON_PRIMITIVE_TYPE, e)
         null
     }
 }
@@ -65,17 +46,8 @@ internal fun JsonElement.safeGetAsJsonArray(internalLogger: InternalLogger): Jso
     return if (isJsonArray) {
         asJsonArray
     } else {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            {
-                BROKEN_JSON_ERROR_MESSAGE_FORMAT.format(
-                    Locale.ENGLISH,
-                    this.toString(),
-                    JSON_ARRAY_TYPE
-                )
-            }
-        )
+        DdSdkAndroidSessionReplayLogger(internalLogger)
+            .logBrokenJson(this.toString(), JSON_ARRAY_TYPE)
         null
     }
 }

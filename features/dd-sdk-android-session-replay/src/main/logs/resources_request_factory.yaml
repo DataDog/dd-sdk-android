@@ -1,0 +1,7 @@
+logs:
+  - id: error_converting_body_to_bytearray
+    message: "Error converting request body to bytearray"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

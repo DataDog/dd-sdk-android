@@ -12,6 +12,7 @@ import android.widget.CompoundButton
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -64,17 +65,8 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
                 checkableDrawableIndex
             )
         } ?: kotlin.run {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                targets = listOf(
-                    InternalLogger.Target.MAINTAINER,
-                    InternalLogger.Target.TELEMETRY
-                ),
-                messageBuilder = { NULL_BUTTON_DRAWABLE_MSG },
-                additionalProperties = mapOf(
-                    "replay.compound.view" to view.javaClass.canonicalName
-                )
-            )
+            DdSdkAndroidSessionReplayLogger(internalLogger)
+                .logNullButtonDrawable(view.javaClass.canonicalName)
             null
         }
 

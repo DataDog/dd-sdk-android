@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.net
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_ID_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.APPLICATION_KEY
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource.Companion.FILENAME_KEY
@@ -25,6 +26,7 @@ import java.io.IOException
 internal class ResourceRequestBodyFactory(
     private val internalLogger: InternalLogger
 ) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
     internal fun create(
         resources: List<RawBatchEvent>
     ): RequestBody? {
@@ -43,12 +45,7 @@ internal class ResourceRequestBodyFactory(
         val result = try {
             builder.build()
         } catch (e: IllegalStateException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { EMPTY_REQUEST_BODY_ERROR },
-                throwable = e
-            )
+            logger.logEmptyRequestBody(e)
             null
         }
 
@@ -57,11 +54,7 @@ internal class ResourceRequestBodyFactory(
 
     private fun getApplicationId(resources: List<ResourceEvent>): String? {
         if (resources.isEmpty()) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { NO_RESOURCES_TO_SEND_ERROR }
-            )
+            logger.logNoResourcesToSend()
             return null
         }
 
@@ -70,11 +63,7 @@ internal class ResourceRequestBodyFactory(
         }
 
         if (uniqueApplicationIds.size > 1) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.USER,
-                { MULTIPLE_APPLICATION_ID_ERROR }
-            )
+            logger.logMultipleApplicationId()
         }
 
         // list is not empty, so cannot throw NoSuchElementException
@@ -142,21 +131,10 @@ internal class ResourceRequestBodyFactory(
         val body = try {
             applicationIdOuter.toString().toRequestBody(CONTENT_TYPE_APPLICATION)
         } catch (e: ArrayIndexOutOfBoundsException) {
-            // we have data, so should not be able to throw this
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
-                throwable = e
-            )
+            logger.logErrorCreatingRequestBody(e)
             null
         } catch (e: IOException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
-                throwable = e
-            )
+            logger.logErrorCreatingRequestBody(e)
             null
         }
 
@@ -179,21 +157,10 @@ internal class ResourceRequestBodyFactory(
         val body = try {
             resourceData.toRequestBody(mimeType?.toMediaTypeOrNull() ?: CONTENT_TYPE_IMAGE)
         } catch (e: ArrayIndexOutOfBoundsException) {
-            // this should never happen because we aren't specifying an offset
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
-                throwable = e
-            )
+            logger.logErrorCreatingRequestBody(e)
             null
         } catch (e: IOException) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CREATING_REQUEST_BODY },
-                throwable = e
-            )
+            logger.logErrorCreatingRequestBody(e)
             null
         }
 

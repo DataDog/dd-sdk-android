@@ -17,6 +17,7 @@ import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -38,6 +39,7 @@ internal class DefaultImageWireframeHelper(
     private val viewUtilsInternal: ViewUtilsInternal,
     private val imageTypeResolver: ImageTypeResolver
 ) : ImageWireframeHelper {
+    private val srLogger = DdSdkAndroidSessionReplayLogger(logger)
 
     @Suppress("ReturnCount")
     @UiThread
@@ -222,11 +224,7 @@ internal class DefaultImageWireframeHelper(
         val resources = view.resources
 
         if (resources == null) {
-            logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { RESOURCES_NULL_ERROR.format(Locale.US, view.javaClass.canonicalName) }
-            )
+            srLogger.logResourcesNull(view.javaClass.canonicalName)
 
             return null
         }
@@ -235,11 +233,7 @@ internal class DefaultImageWireframeHelper(
         val applicationContext = view.context.applicationContext
 
         if (applicationContext == null) {
-            logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, view.javaClass.canonicalName) }
-            )
+            srLogger.logApplicationContextNull(view.javaClass.canonicalName)
 
             return null
         }

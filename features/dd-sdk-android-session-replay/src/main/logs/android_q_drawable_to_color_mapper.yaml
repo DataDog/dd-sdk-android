@@ -1,0 +1,28 @@
+logs:
+  - id: no_mapper_for_blend_mode
+    message: "No mapper found for gradient blend mode %s"
+    level: info
+    targets:
+      - telemetry
+    message_args:
+      blend_mode:
+        type: string
+    onlyOnce: true
+    properties:
+      replay_gradient_blend_mode:
+        type: string
+        key: "replay.gradient.blend_mode"
+
+  - id: no_mapper_for_color_filter
+    message: "No mapper found for gradient color filter %s"
+    level: info
+    targets:
+      - telemetry
+    message_args:
+      filter_type:
+        type: string
+    onlyOnce: true
+    properties:
+      replay_gradient_filter_type:
+        type: string
+        key: "replay.gradient.filter_type"

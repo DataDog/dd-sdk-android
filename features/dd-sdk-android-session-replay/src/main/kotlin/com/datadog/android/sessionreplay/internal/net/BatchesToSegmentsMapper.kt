@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.RECORD_TYPE_FULL_SNAPSHOT
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonArray
 import com.datadog.android.sessionreplay.internal.gson.safeGetAsJsonObject
@@ -26,6 +27,7 @@ import com.google.gson.JsonParser
  *  This class is meant for internal usage.
  */
 internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogger) {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
 
     fun map(datadogContext: DatadogContext, batchData: List<ByteArray>): List<Pair<MobileSegment, JsonObject>> {
         return groupBatchDataIntoSegments(datadogContext, batchData)
@@ -44,20 +46,10 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
                 try {
                     JsonParser.parseString(String(it)).safeGetAsJsonObject(internalLogger)
                 } catch (e: JsonParseException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.TELEMETRY,
-                        { UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE },
-                        e
-                    )
+                    logger.logUnableToDeserializeEnrichedRecord(e)
                     null
                 } catch (e: IllegalStateException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.TELEMETRY,
-                        { UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE },
-                        e
-                    )
+                    logger.logUnableToDeserializeEnrichedRecord(e)
                     null
                 }
             }
@@ -167,13 +159,7 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
         val sessionId = get(EnrichedRecord.SESSION_ID_KEY)?.asString
         val viewId = get(EnrichedRecord.VIEW_ID_KEY)?.asString
         if (applicationId == null || sessionId == null || viewId == null) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE },
-                null,
-                true
-            )
+            logger.logIllegalStateEnrichedRecord()
             return null
         }
         return SessionReplayRumContext(

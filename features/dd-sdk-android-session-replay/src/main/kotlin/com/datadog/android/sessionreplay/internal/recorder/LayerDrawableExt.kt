@@ -9,14 +9,11 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 
 internal fun LayerDrawable.safeGetDrawable(index: Int, logger: InternalLogger = InternalLogger.UNBOUND): Drawable? {
     return if (index < 0 || index >= this.numberOfLayers) {
-        logger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            { "Failed to get drawable from layer - invalid index passed: $index" }
-        )
+        DdSdkAndroidSessionReplayLogger(logger).logInvalidLayerIndex(index)
         null
     } else {
         @Suppress("UnsafeThirdPartyFunctionCall") // Can't be out of bounds

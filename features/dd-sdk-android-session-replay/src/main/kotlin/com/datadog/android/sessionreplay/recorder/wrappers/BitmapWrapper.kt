@@ -11,6 +11,7 @@ import android.graphics.Bitmap.Config
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 
 /**
  * Wraps the Bitmap class to catch potential crashes.
@@ -19,6 +20,7 @@ import com.datadog.android.lint.InternalApi
 class BitmapWrapper(
     private val logger: InternalLogger = InternalLogger.UNBOUND
 ) {
+    private val srLogger = DdSdkAndroidSessionReplayLogger(logger)
     /**
      * Creates a bitmap with the given parameters.
      * @param bitmapWidth the width of the bitmap.
@@ -40,15 +42,7 @@ class BitmapWrapper(
                 Bitmap.createBitmap(bitmapWidth, bitmapHeight, config)
             }
         } catch (e: IllegalArgumentException) {
-            // should never happen since config is given as valid type and width/height are
-            // normalized to be at least 1
-            // TODO RUM-806 Add logs here once the sdkLogger is added
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                { FAILED_TO_CREATE_BITMAP },
-                e
-            )
+            srLogger.logFailedToCreateBitmap(e)
             null
         }
     }
@@ -63,25 +57,10 @@ class BitmapWrapper(
         return try {
             Bitmap.createScaledBitmap(src, dstWidth, dstHeight, filter)
         } catch (e: IllegalArgumentException) {
-            // should never happen since config is given as valid type and width/height are
-            // normalized to be at least 1
-            // TODO RUM-806 Add logs here once the sdkLogger is added
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                { FAILED_TO_CREATE_SCALED_BITMAP },
-                e
-            )
+            srLogger.logFailedToCreateScaledBitmapMaintainer(e)
             null
         } catch (e: RuntimeException) {
-            // It's still possible that RuntimeException is thrown after checking the bitmap
-            // is not recycled.
-            logger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.USER,
-                { FAILED_TO_CREATE_SCALED_BITMAP },
-                e
-            )
+            srLogger.logFailedToCreateScaledBitmapUser(e)
             null
         }
     }

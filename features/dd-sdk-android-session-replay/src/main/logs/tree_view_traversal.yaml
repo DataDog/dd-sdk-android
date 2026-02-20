@@ -1,0 +1,22 @@
+logs:
+  - id: no_mapper_found_for_view
+    message: "No mapper found for view %s"
+    level: info
+    targets:
+      - telemetry
+    message_args:
+      view_type:
+        type: string
+    onlyOnce: true
+    properties:
+      replay_widget_type:
+        type: string
+        key: "replay.widget.type"
+
+  - id: invalid_privacy_level
+    message: "Invalid privacy level"
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true

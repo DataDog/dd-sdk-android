@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import java.io.ByteArrayOutputStream
 
 /**
@@ -19,6 +20,7 @@ internal class WebPImageCompression(
     private val logger: InternalLogger,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ImageCompression {
+    private val srLogger = DdSdkAndroidSessionReplayLogger(logger)
 
     @WorkerThread
     override fun compressBitmap(bitmap: Bitmap): ByteArray {
@@ -32,13 +34,7 @@ internal class WebPImageCompression(
             @Suppress("UnsafeThirdPartyFunctionCall")
             bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
         } catch (e: IllegalStateException) {
-            // probably if the bitmap was recycled while we were working on it
-            logger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { IMAGE_COMPRESSION_ERROR },
-                e
-            )
+            srLogger.logImageCompressionError(e)
 
             return EMPTY_BYTEARRAY
         }

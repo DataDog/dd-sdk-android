@@ -1,0 +1,14 @@
+logs:
+  - id: unable_to_add_on_draw_listener
+    message: "Unable to add onDrawListener onto viewTreeObserver"
+    level: warn
+    targets:
+      - telemetry
+    throwable: true
+
+  - id: unable_to_remove_on_draw_listener
+    message: "Unable to remove onDrawListener from viewTreeObserver"
+    level: warn
+    targets:
+      - telemetry
+    throwable: true

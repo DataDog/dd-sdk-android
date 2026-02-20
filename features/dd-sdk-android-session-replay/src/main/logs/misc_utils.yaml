@@ -1,0 +1,14 @@
+logs:
+  - id: deserialize_json_error
+    message: "Error deserializing json object"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: get_string_from_json_error
+    message: "Error getting string property from json"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

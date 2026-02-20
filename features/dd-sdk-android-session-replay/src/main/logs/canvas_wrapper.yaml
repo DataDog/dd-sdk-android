@@ -1,0 +1,13 @@
+logs:
+  - id: invalid_bitmap
+    message: "Cannot create canvas: bitmap is either already recycled or immutable"
+    level: error
+    targets:
+      - maintainer
+
+  - id: failed_to_create_canvas
+    message: "Failed to create canvas"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

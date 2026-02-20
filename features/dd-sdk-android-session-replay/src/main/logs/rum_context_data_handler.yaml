@@ -1,0 +1,9 @@
+logs:
+  - id: invalid_rum_context
+    message: "SR RumContextDataHandler: Invalid RUM context: [%s] when trying to bundle the RumContextData"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      context_string:
+        type: string

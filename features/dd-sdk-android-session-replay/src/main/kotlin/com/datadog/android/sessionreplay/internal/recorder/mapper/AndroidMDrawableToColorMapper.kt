@@ -22,6 +22,7 @@ import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.VectorDrawable
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.utils.ALPHA_SHIFT_ANDROID
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.MASK_COLOR
@@ -55,16 +56,8 @@ internal open class AndroidMDrawableToColorMapper(
             is VectorDrawable -> null // return null without reporting them by telemetry.
             else -> {
                 val drawableType = drawable.javaClass.canonicalName ?: drawable.javaClass.name
-                internalLogger.log(
-                    level = InternalLogger.Level.INFO,
-                    target = InternalLogger.Target.TELEMETRY,
-                    messageBuilder = { "No mapper found for drawable $drawableType" },
-                    throwable = null,
-                    onlyOnce = true,
-                    additionalProperties = mapOf(
-                        "replay.drawable.type" to drawableType
-                    )
-                )
+                DdSdkAndroidSessionReplayLogger(internalLogger)
+                    .logNoMapperFoundForDrawable(drawableType, drawableType)
                 null
             }
         }
@@ -143,20 +136,10 @@ internal open class AndroidMDrawableToColorMapper(
                 mColorField?.get(it) as? Int
             } ?: fillPaint.color
         } catch (e: IllegalArgumentException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to read ColorFilter.mColorField field through reflection" },
-                e
-            )
+            DdSdkAndroidSessionReplayLogger(internalLogger).logUnableToReadColorFilter(e)
             fillPaint.color
         } catch (e: IllegalAccessException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to read ColorFilter.mColorField field through reflection" },
-                e
-            )
+            DdSdkAndroidSessionReplayLogger(internalLogger).logUnableToReadColorFilter(e)
             fillPaint.color
         }
         val fillAlpha = (fillPaint.alpha * drawable.alpha) / MAX_ALPHA_VALUE

@@ -1,0 +1,13 @@
+logs:
+  - id: system_requirements_not_met
+    message: "Session replay is disabled because the system doesn't meet the minimum Session Replay requirements"
+    level: info
+    targets:
+      - telemetry
+      - user
+    onlyOnce: true
+    properties:
+      device_stats:
+        type: map
+        value_type: string
+        nullable: true

@@ -1,0 +1,26 @@
+logs:
+  - id: empty_request_body
+    message: "Unable to add any sections to request body"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: no_resources_to_send
+    message: "No resources to send"
+    level: error
+    targets:
+      - maintainer
+
+  - id: multiple_application_id
+    message: "There were multiple applicationIds associated with the resources"
+    level: error
+    targets:
+      - user
+
+  - id: error_creating_request_body
+    message: "Error creating request body"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.resources
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.sessionreplay.internal.generated.DdSdkAndroidSessionReplayLogger
 import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import com.google.gson.JsonParseException
 import java.util.Locale
@@ -15,20 +16,12 @@ import java.util.Locale
 internal class ResourceHashesEntryDeserializer(
     private val internalLogger: InternalLogger
 ) : Deserializer<String, ResourceHashesEntry> {
+    private val logger = DdSdkAndroidSessionReplayLogger(internalLogger)
     override fun deserialize(model: String): ResourceHashesEntry? {
         return try {
             ResourceHashesEntry.fromJson(model)
         } catch (e: JsonParseException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                {
-                    DESERIALIZE_ERROR_MESSAGE_FORMAT.format(
-                        Locale.US,
-                        model
-                    )
-                }
-            )
+            logger.logDeserializeError(model)
             null
         }
     }

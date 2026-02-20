@@ -157,13 +157,13 @@ internal class SessionReplayTest {
         // Then
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER),
+            target = InternalLogger.Target.MAINTAINER,
             message = IS_ALREADY_REGISTERED_WARNING
         )
 
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.DEBUG,
-            targets = listOf(InternalLogger.Target.TELEMETRY),
+            target = InternalLogger.Target.TELEMETRY,
             message = IS_ALREADY_REGISTERED_WARNING
         )
         assertThat(SessionReplay.currentRegisteredCore?.get()).isEqualTo(mockCore1)
