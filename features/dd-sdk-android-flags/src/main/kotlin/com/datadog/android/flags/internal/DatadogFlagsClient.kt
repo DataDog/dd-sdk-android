@@ -169,6 +169,7 @@ internal class DatadogFlagsClient(
                 createSuccessResolution(resolution.flag, resolution.value)
             }
             is InternalResolution.Error -> {
+                trackErrorResolution(resolution)
                 createErrorResolution(
                     flagKey = flagKey,
                     defaultValue = resolution.defaultValue,
