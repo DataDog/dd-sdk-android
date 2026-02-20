@@ -1021,13 +1021,20 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M track error evaluation W resolve() { type mismatch and trackEvaluations enabled }`(forge: Forge) {
+    fun `M track success evaluation W resolve() { successful resolution and trackEvaluations enabled }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = forge.aBool()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.anAlphabeticalString()
+        val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeAllocationKey = forge.anAlphabeticalString()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.STRING.value,
-            variationValue = "some-string"
+            variationValue = fakeFlagValue,
+            variationKey = fakeVariationKey,
+            allocationKey = fakeAllocationKey,
+            reason = "STATIC",
+            doLog = true
         )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -1036,7 +1043,6 @@ internal class DatadogFlagsClientTest {
         val mockEvaluationsFeature = mock<EvaluationsFeature>()
 
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
 
         val clientWithEvaluationTracking = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -1055,17 +1061,17 @@ internal class DatadogFlagsClientTest {
         val result = clientWithEvaluationTracking.resolve(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        assertThat(result.value).isEqualTo(fakeDefaultValue)
-        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.reason).isEqualTo(ResolutionReason.STATIC)
 
-        // Verify error evaluation was tracked
+        // Verify success evaluation was tracked
         verify(mockEvaluationsFeature).processEvaluation(
             flagKey = eq(fakeFlagKey),
             context = eq(fakeContext),
-            variantKey = isNull(),
-            allocationKey = isNull(),
-            errorCode = eq(ErrorCode.TYPE_MISMATCH.name),
-            errorMessage = eq("Flag has type 'string' but Boolean was requested")
+            variantKey = eq(fakeVariationKey),
+            allocationKey = eq(fakeAllocationKey),
+            errorCode = isNull(),
+            errorMessage = isNull()
         )
     }
 
