@@ -258,7 +258,6 @@ internal class FlagsStateManagerTest {
 
         // updateState should have been delayed by at least the sleep time
         assertThat(updatedStateTime - initialStateTime).isGreaterThan(10_000_000) // ~10ms in nanoseconds
-        assertThat(initialStateTime).isLessThan(updatedStateTime)
 
         assertThat(testedManager.getCurrentState()).isEqualTo(updatedState)
     }
