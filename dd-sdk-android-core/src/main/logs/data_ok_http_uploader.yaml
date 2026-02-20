@@ -1,0 +1,43 @@
+logs:
+  - id: unable_to_create_request
+    message: "Unable to create the request, probably due to bad data format. The batch will be dropped."
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+
+  - id: unable_to_find_host
+    message: "Unable to find host for site %s; we will retry later."
+    level: error
+    targets:
+      - user
+    throwable: true
+    message_args:
+      site:
+        type: string
+
+  - id: unable_to_execute_request
+    message: "Unable to execute the request; we will retry later."
+    level: error
+    targets:
+      - user
+    throwable: true
+
+  - id: warning_user_agent_header_reserved
+    message: "Ignoring provided User-Agent header, because it is reserved."
+    level: warn
+    targets:
+      - maintainer
+
+  - id: unexpected_status_code
+    message: "Unexpected status code %d on upload request: %s"
+    level: warn
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      code:
+        type: int
+      description:
+        type: string

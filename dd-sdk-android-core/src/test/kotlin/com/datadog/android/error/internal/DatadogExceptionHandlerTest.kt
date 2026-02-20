@@ -182,7 +182,7 @@ internal class DatadogExceptionHandlerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE,
+            "Datadog SDK is in an unexpected state due to an ongoing crash. Some events could be lost.",
             mode = never()
         )
     }
@@ -266,7 +266,7 @@ internal class DatadogExceptionHandlerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            DatadogExceptionHandler.MISSING_RUM_FEATURE_INFO
+            "RUM feature is not registered, won't report crash as RUM event."
         )
     }
 

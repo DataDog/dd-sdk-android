@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
@@ -25,22 +26,12 @@ internal fun sleepSafe(durationMs: Long, internalLogger: InternalLogger): Boolea
             // Restore the interrupted status
             Thread.currentThread().interrupt()
         } catch (se: SecurityException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Thread was unable to set its own interrupted state" },
-                se
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logThreadUnableToSetInterruptedState(throwable = se)
         }
         return true
     } catch (e: IllegalArgumentException) {
         // This means we tried sleeping for a negative time
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Thread tried to sleep for a negative amount of time" },
-            e
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logThreadSleepNegativeTime(throwable = e)
         return false
     }
 }
@@ -64,24 +55,11 @@ internal fun loggingAfterExecute(task: Runnable?, t: Throwable?, logger: Interna
                 Thread.currentThread().interrupt()
             } catch (se: SecurityException) {
                 // this should not happen
-                logger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Thread was unable to set its own interrupted state" },
-                    se
-                )
+                DdSdkAndroidCoreLogger(logger).logThreadUnableToSetInterruptedState(throwable = se)
             }
         }
     }
     if (throwable != null) {
-        logger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { ERROR_UNCAUGHT_EXECUTION_EXCEPTION },
-            throwable
-        )
+        DdSdkAndroidCoreLogger(logger).logUncaughtExecutionException(throwable = throwable)
     }
 }
-
-internal const val ERROR_UNCAUGHT_EXECUTION_EXCEPTION =
-    "Uncaught exception during the task execution"

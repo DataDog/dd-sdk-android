@@ -1,0 +1,22 @@
+logs:
+  - id: thread_unable_to_set_interrupted_state
+    message: "Thread was unable to set its own interrupted state"
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: thread_sleep_negative_time
+    message: "Thread tried to sleep for a negative amount of time"
+    level: warn
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: uncaught_execution_exception
+    message: "Uncaught exception during the task execution"
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true

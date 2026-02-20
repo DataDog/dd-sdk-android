@@ -9,6 +9,7 @@ package com.datadog.android.error.internal
 import android.content.Context
 import androidx.work.WorkManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
@@ -26,6 +27,7 @@ internal class DatadogExceptionHandler(
     appContext: Context
 ) : Thread.UncaughtExceptionHandler {
 
+    private val logger by lazy { DdSdkAndroidCoreLogger(sdkCore.internalLogger) }
     private val contextRef = WeakReference(appContext)
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
 
@@ -45,11 +47,7 @@ internal class DatadogExceptionHandler(
                 )
             )
         } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { MISSING_RUM_FEATURE_INFO }
-            )
+            logger.logMissingRumFeatureInfo()
         }
 
         // TODO RUM-3794 If DatadogExceptionHandler goes into dedicated module (module of 1 class
@@ -59,11 +57,7 @@ internal class DatadogExceptionHandler(
             val idled = (sdkCore.getPersistenceExecutorService() as? ThreadPoolExecutor)
                 ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS, sdkCore.internalLogger, sdkCore.timeProvider) ?: true
             if (!idled) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { EXECUTOR_NOT_IDLED_WARNING_MESSAGE }
-                )
+                logger.logExecutorNotIdledWarningMessage()
             }
         }
 
@@ -127,12 +121,7 @@ internal class DatadogExceptionHandler(
             Thread.getAllStackTraces()
         } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
             // coroutines machinery can throw errors here
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Failed to get all threads dump" },
-                t
-            )
+            logger.logFailedToGetAllThreadsDump(throwable = t)
             emptyMap()
         }
     }
@@ -145,12 +134,7 @@ internal class DatadogExceptionHandler(
         internal const val LOGGER_NAME = CrashReportsFeature.CRASH_FEATURE_NAME
         internal const val MESSAGE = "Application crash detected"
         internal const val MAX_WAIT_FOR_IDLE_TIME_IN_MS = 100L
-        internal const val EXECUTOR_NOT_IDLED_WARNING_MESSAGE =
-            "Datadog SDK is in an unexpected state due to an ongoing crash. " +
-                "Some events could be lost."
         internal const val MISSING_LOGS_FEATURE_INFO =
             "Logs feature is not registered, won't report crash as log."
-        internal const val MISSING_RUM_FEATURE_INFO =
-            "RUM feature is not registered, won't report crash as RUM event."
     }
 }

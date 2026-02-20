@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
@@ -17,7 +18,6 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import java.io.File
-import java.util.Locale
 
 internal class FileEventBatchWriter(
     private val fileOrchestrator: FileOrchestrator,
@@ -27,6 +27,8 @@ internal class FileEventBatchWriter(
     private val batchWriteEventListener: BatchWriteEventListener,
     private val internalLogger: InternalLogger
 ) : EventBatchWriter {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     @get:WorkerThread
     private val batchFile: File? by lazy {
@@ -60,11 +62,7 @@ internal class FileEventBatchWriter(
     ): Boolean {
         val (batchFile, metadataFile) = batchFile to metadataFile
         if (batchFile == null) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { NO_BATCH_FILE_AVAILABLE }
-            )
+            logger.logNoBatchFileAvailable()
             return false
         }
 
@@ -86,16 +84,9 @@ internal class FileEventBatchWriter(
 
     private fun checkEventSize(eventSize: Int): Boolean {
         if (eventSize > filePersistenceConfig.maxItemSize) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                {
-                    ERROR_LARGE_DATA.format(
-                        Locale.US,
-                        eventSize,
-                        filePersistenceConfig.maxItemSize
-                    )
-                }
+            logger.logErrorLargeData(
+                eventSize = eventSize,
+                maxItemSize = filePersistenceConfig.maxItemSize
             )
             return false
         }
@@ -110,22 +101,7 @@ internal class FileEventBatchWriter(
             false
         )
         if (!result) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                {
-                    WARNING_METADATA_WRITE_FAILED.format(
-                        Locale.US,
-                        metadataFile.path
-                    )
-                }
-            )
+            logger.logWarningMetadataWriteFailed(path = metadataFile.path)
         }
-    }
-
-    companion object {
-        internal const val WARNING_METADATA_WRITE_FAILED = "Unable to write metadata file: %s"
-        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
-        internal const val NO_BATCH_FILE_AVAILABLE = "No batch file available"
     }
 }

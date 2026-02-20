@@ -1,0 +1,40 @@
+logs:
+  - id: error_delete
+    message: "Unable to delete file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      target_path:
+        type: string
+
+  - id: info_move_no_src
+    message: "Unable to move files; source directory does not exist: %s"
+    level: info
+    targets:
+      - maintainer
+    message_args:
+      src_dir_path:
+        type: string
+
+  - id: error_move_not_dir
+    message: "Unable to move files; file is not a directory: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      path:
+        type: string
+
+  - id: error_move_no_dst
+    message: "Unable to move files; could not create directory: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      src_dir_path:
+        type: string
