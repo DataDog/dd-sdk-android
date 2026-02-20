@@ -139,7 +139,6 @@ internal class EvaluationEventsProcessor(
         scheduledExecutor.shutdown()
 
         // Wait for any in-progress flush to complete, then drain any remaining events.
-        @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
         val events = flushMutex.withLock {
             scheduledFlushFuture?.cancel(false)
             aggregator.drain()
