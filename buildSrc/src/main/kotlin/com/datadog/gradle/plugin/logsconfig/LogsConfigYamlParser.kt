@@ -144,6 +144,7 @@ internal object LogsConfigYamlParser {
         val type = map["type"] as? String
             ?: error("Each property must have a 'type' field")
         val nullable = map["nullable"] as? Boolean ?: false
+        val key = map["key"] as? String
         val constRawValue = map["const"]
 
         if (constRawValue != null) {
@@ -158,7 +159,7 @@ internal object LogsConfigYamlParser {
                 @Suppress("UNCHECKED_CAST")
                 val values = map["values"] as? List<String>
                     ?: error("Enum property must have a 'values' list")
-                PropertyDefinition.EnumDef(values = values, nullable = nullable)
+                PropertyDefinition.EnumDef(values = values, nullable = nullable, key = key)
             }
 
             "object" -> {
@@ -167,7 +168,8 @@ internal object LogsConfigYamlParser {
                     ?: error("Object property must have a 'properties' map")
                 PropertyDefinition.ObjectDef(
                     properties = properties.mapValues { (_, v) -> parsePropertyDefinition(v) },
-                    nullable = nullable
+                    nullable = nullable,
+                    key = key
                 )
             }
 
@@ -176,13 +178,15 @@ internal object LogsConfigYamlParser {
                     ?: error("Map property must have a 'value_type' field")
                 PropertyDefinition.MapDef(
                     valueType = parsePrimitiveType(valueType),
-                    nullable = nullable
+                    nullable = nullable,
+                    key = key
                 )
             }
 
             else -> PropertyDefinition.Primitive(
                 type = parsePrimitiveType(type),
-                nullable = nullable
+                nullable = nullable,
+                key = key
             )
         }
     }

@@ -1354,15 +1354,20 @@ internal open class RumViewScope(
             if (isFatalBackgroundEvent || event is RumRawEvent.StartView) {
                 // This is a legitimate empty duration, no-op
             } else {
-                logger.logZeroDuration(viewName = key.name, viewNameProp = key.name)
+                logger.logZeroDuration(
+                    viewName = key.name,
+                    zeroDurationView = DdSdkAndroidRumLogger.ZeroDurationView(name = key.name)
+                )
             }
             stoppedNanos = startedNanos + 1
         } else if (duration < 0) {
             logger.logNegativeDuration(
                 viewName = key.name,
-                viewStartNs = startedNanos,
-                viewEndNs = event.eventTime.nanoTime,
-                viewNameProp = key.name
+                negativeDurationView = DdSdkAndroidRumLogger.NegativeDurationView(
+                    startNs = startedNanos,
+                    endNs = event.eventTime.nanoTime,
+                    name = key.name
+                )
             )
             stoppedNanos = startedNanos + 1
         }

@@ -50,10 +50,12 @@ internal enum class LogTarget { USER, TELEMETRY, MAINTAINER }
 internal sealed class PropertyDefinition {
 
     abstract val nullable: Boolean
+    abstract val key: String?
 
     data class Primitive(
         val type: PrimitiveType,
-        override val nullable: Boolean = false
+        override val nullable: Boolean = false,
+        override val key: String? = null
     ) : PropertyDefinition()
 
     data class Const(
@@ -61,21 +63,25 @@ internal sealed class PropertyDefinition {
         val value: String
     ) : PropertyDefinition() {
         override val nullable: Boolean = false
+        override val key: String? = null
     }
 
     data class EnumDef(
         val values: List<String>,
-        override val nullable: Boolean = false
+        override val nullable: Boolean = false,
+        override val key: String? = null
     ) : PropertyDefinition()
 
     data class ObjectDef(
         val properties: Map<String, PropertyDefinition>,
-        override val nullable: Boolean = false
+        override val nullable: Boolean = false,
+        override val key: String? = null
     ) : PropertyDefinition()
 
     data class MapDef(
         val valueType: PrimitiveType,
-        override val nullable: Boolean = false
+        override val nullable: Boolean = false,
+        override val key: String? = null
     ) : PropertyDefinition()
 }
 

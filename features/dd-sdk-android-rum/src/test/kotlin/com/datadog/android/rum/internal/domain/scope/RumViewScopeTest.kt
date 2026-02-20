@@ -8265,7 +8265,7 @@ internal class RumViewScopeTest {
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 "The computed duration for the view: %s was 0. In order to keep the view we forced it to 1ns.".format(Locale.US, testedScope.key.name),
                 additionalProperties = mapOf(
-                    "view_name_prop" to rawEventData.viewKey.name
+                    "view" to mapOf("name" to rawEventData.viewKey.name)
                 )
             )
         }
@@ -8295,9 +8295,11 @@ internal class RumViewScopeTest {
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             "The computed duration for the view: %s was negative. In order to keep the view we forced it to 1ns.".format(Locale.US, testedScope.key.name),
             additionalProperties = mapOf(
-                "view_start_ns" to fakeEventTime.nanoTime,
-                "view_end_ns" to rawEventData.event.eventTime.nanoTime,
-                "view_name_prop" to rawEventData.viewKey.name
+                "view" to mapOf(
+                    "start_ns" to fakeEventTime.nanoTime,
+                    "end_ns" to rawEventData.event.eventTime.nanoTime,
+                    "name" to rawEventData.viewKey.name
+                )
             )
         )
     }

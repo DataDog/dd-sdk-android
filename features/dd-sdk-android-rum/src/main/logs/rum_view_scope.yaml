@@ -44,8 +44,12 @@ logs:
       view_name:
         type: string
     properties:
-      view_name_prop:
-        type: string
+      zero_duration_view:
+        type: object
+        key: view
+        properties:
+          name:
+            type: string
 
   - id: negative_duration
     message: "The computed duration for the view: %s was negative. In order to keep the view we forced it to 1ns."
@@ -57,9 +61,13 @@ logs:
       view_name:
         type: string
     properties:
-      view_start_ns:
-        type: long
-      view_end_ns:
-        type: long
-      view_name_prop:
-        type: string
+      negative_duration_view:
+        type: object
+        key: view
+        properties:
+          start_ns:
+            type: long
+          end_ns:
+            type: long
+          name:
+            type: string

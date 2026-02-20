@@ -188,17 +188,18 @@ internal class LogsConfigCodeGenerator(
         propDef: PropertyDefinition
     ) {
         val kotlinName = toCamelCase(propName)
+        val serializedKey = propDef.key ?: propName
 
         when (propDef) {
             is PropertyDefinition.Const -> {
-                appendConstSerialization(codeBuilder, propName, propDef)
+                appendConstSerialization(codeBuilder, serializedKey, propDef)
             }
 
             is PropertyDefinition.Primitive -> {
                 if (propDef.nullable) {
-                    codeBuilder.addStatement("putNonNull(%S, %N)", propName, kotlinName)
+                    codeBuilder.addStatement("putNonNull(%S, %N)", serializedKey, kotlinName)
                 } else {
-                    codeBuilder.addStatement("put(%S, %N)", propName, kotlinName)
+                    codeBuilder.addStatement("put(%S, %N)", serializedKey, kotlinName)
                 }
             }
 
@@ -206,13 +207,13 @@ internal class LogsConfigCodeGenerator(
                 if (propDef.nullable) {
                     codeBuilder.addStatement(
                         "putNonNull(%S, %N?.serializedValue)",
-                        propName,
+                        serializedKey,
                         kotlinName
                     )
                 } else {
                     codeBuilder.addStatement(
                         "put(%S, %N.serializedValue)",
-                        propName,
+                        serializedKey,
                         kotlinName
                     )
                 }
@@ -222,19 +223,19 @@ internal class LogsConfigCodeGenerator(
                 if (propDef.nullable) {
                     codeBuilder.addStatement(
                         "putNonNull(%S, %N?.toMap())",
-                        propName,
+                        serializedKey,
                         kotlinName
                     )
                 } else {
-                    codeBuilder.addStatement("put(%S, %N.toMap())", propName, kotlinName)
+                    codeBuilder.addStatement("put(%S, %N.toMap())", serializedKey, kotlinName)
                 }
             }
 
             is PropertyDefinition.MapDef -> {
                 if (propDef.nullable) {
-                    codeBuilder.addStatement("putNonNull(%S, %N)", propName, kotlinName)
+                    codeBuilder.addStatement("putNonNull(%S, %N)", serializedKey, kotlinName)
                 } else {
-                    codeBuilder.addStatement("put(%S, %N)", propName, kotlinName)
+                    codeBuilder.addStatement("put(%S, %N)", serializedKey, kotlinName)
                 }
             }
         }
