@@ -1,0 +1,22 @@
+logs:
+  - id: task_rejected
+    message: "Unable to schedule %s task on the executor"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      operation_name:
+        type: string
+
+  - id: future_get_failed
+    message: "Unable to get result of the %s task"
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+    message_args:
+      operation_name:
+        type: string

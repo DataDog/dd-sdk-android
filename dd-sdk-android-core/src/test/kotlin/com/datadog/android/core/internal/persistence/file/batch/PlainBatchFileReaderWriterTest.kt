@@ -178,7 +178,7 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER),
-            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            "Unable to write data to file: %s".format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
     }
@@ -205,7 +205,7 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER),
-            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            "Unable to write data to file: %s".format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
     }
@@ -231,7 +231,7 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            "Unable to read data from file: %s".format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
     }
@@ -252,7 +252,7 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            "Unable to read data from file: %s".format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
     }
@@ -274,7 +274,7 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
+            "File %s is probably corrupted, not all content was read.".format(Locale.US, file.path)
         )
     }
 
@@ -358,7 +358,7 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
+            "File %s is probably corrupted, not all content was read.".format(Locale.US, file.path)
         )
     }
 

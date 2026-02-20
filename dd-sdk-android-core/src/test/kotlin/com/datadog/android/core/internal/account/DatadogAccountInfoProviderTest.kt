@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.account
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
-import com.datadog.android.core.internal.account.DatadogAccountInfoProvider.Companion.MSG_ACCOUNT_NULL
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -291,7 +290,9 @@ internal class DatadogAccountInfoProviderTest {
                 additionalProperties = isNull()
             )
             allValues.forEach {
-                assertThat(it()).isEqualTo(MSG_ACCOUNT_NULL)
+                assertThat(it()).isEqualTo(
+                    "Failed to add Account ExtraInfo because no Account Info exist yet. Please call `setAccountInfo` first."
+                )
             }
         }
     }

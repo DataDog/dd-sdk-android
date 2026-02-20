@@ -180,7 +180,7 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            "Unable to write data to file: %s".format(Locale.US, file.path),
             IOException::class.java
         )
     }
@@ -207,7 +207,7 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            "Unable to write data to file: %s".format(Locale.US, file.path),
             IOException::class.java
         )
     }
@@ -233,7 +233,7 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            "Unable to read data from file: %s".format(Locale.US, file.path),
             null
         )
     }
@@ -254,7 +254,7 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            "Unable to read data from file: %s".format(Locale.US, file.path),
             null
         )
     }
