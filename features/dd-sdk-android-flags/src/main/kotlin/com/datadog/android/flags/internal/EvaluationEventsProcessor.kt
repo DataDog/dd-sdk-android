@@ -127,8 +127,8 @@ internal class EvaluationEventsProcessor(
         // Wait for any in-progress flush to complete, then drain any remaining events.
         val events = flushMutex.withLock {
             scheduledFlushFuture?.cancel(false)
-            aggregator.drain()
             lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
+            aggregator.drain()
         }
 
         if (events.isNotEmpty()) {
