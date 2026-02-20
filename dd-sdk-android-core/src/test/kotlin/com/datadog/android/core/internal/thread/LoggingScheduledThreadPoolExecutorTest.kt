@@ -82,7 +82,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            "Uncaught exception during the task execution",
             throwable
         )
     }
@@ -102,7 +102,7 @@ internal class LoggingScheduledThreadPoolExecutorTest :
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            "Uncaught exception during the task execution",
             CancellationException::class.java
         )
     }

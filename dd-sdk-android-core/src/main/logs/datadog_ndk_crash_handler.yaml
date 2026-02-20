@@ -1,0 +1,25 @@
+logs:
+  - id: error_read_ndk_dir
+    message: "Error while trying to read the NDK crash directory"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+
+  - id: info_rum_feature_not_registered
+    message: "RUM feature is not registered, won't report NDK crash info as RUM error."
+    level: info
+    targets:
+      - user
+
+  - id: unable_to_clear_ndk_crash_report
+    message: "Unable to clear the NDK crash report file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      path:
+        type: string

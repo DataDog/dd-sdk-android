@@ -8,11 +8,13 @@ package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import java.io.File
 import java.io.FileNotFoundException
-import java.util.Locale
 
 internal class FileMover(val internalLogger: InternalLogger) {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     /**
      * Deletes the file or directory (recursively if needed).
@@ -24,20 +26,10 @@ internal class FileMover(val internalLogger: InternalLogger) {
         return try {
             target.deleteRecursively()
         } catch (e: FileNotFoundException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_DELETE.format(Locale.US, target.path) },
-                e
-            )
+            logger.logErrorDelete(targetPath = target.path, throwable = e)
             false
         } catch (e: SecurityException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_DELETE.format(Locale.US, target.path) },
-                e
-            )
+            logger.logErrorDelete(targetPath = target.path, throwable = e)
             false
         }
     }
@@ -94,14 +86,4 @@ internal class FileMover(val internalLogger: InternalLogger) {
         return file.renameToSafe(destFile, internalLogger)
     }
 
-    @Suppress("StringLiteralDuplication")
-    companion object {
-        internal const val ERROR_DELETE = "Unable to delete file: %s"
-        internal const val INFO_MOVE_NO_SRC = "Unable to move files; " +
-            "source directory does not exist: %s"
-        internal const val ERROR_MOVE_NOT_DIR = "Unable to move files; " +
-            "file is not a directory: %s"
-        internal const val ERROR_MOVE_NO_DST = "Unable to move files; " +
-            "could not create directory: %s"
-    }
 }

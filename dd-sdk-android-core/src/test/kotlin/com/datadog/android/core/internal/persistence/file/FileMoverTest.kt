@@ -142,7 +142,7 @@ internal class FileMoverTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,
-            FileMover.INFO_MOVE_NO_SRC.format(Locale.US, fakeSrcDir.path)
+            "Unable to move files; source directory does not exist: %s".format(Locale.US, fakeSrcDir.path)
         )
     }
 
@@ -160,7 +160,7 @@ internal class FileMoverTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            FileMover.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeSrcDir.path)
+            "Unable to move files; file is not a directory: %s".format(Locale.US, fakeSrcDir.path)
         )
     }
 
@@ -178,7 +178,7 @@ internal class FileMoverTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            FileMover.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeDstDir.path)
+            "Unable to move files; file is not a directory: %s".format(Locale.US, fakeDstDir.path)
         )
     }
 

@@ -1,0 +1,66 @@
+logs:
+  - id: debug_different_root
+    message: "The file provided (%s) doesn't belong to the current folder (%s)"
+    level: debug
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      file_path:
+        type: string
+      root_dir_path:
+        type: string
+
+  - id: error_not_batch_file
+    message: "The file provided is not a batch file: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      file_path:
+        type: string
+
+  - id: error_root_not_writable
+    message: "The provided root dir is not writable: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      root_dir_path:
+        type: string
+
+  - id: error_root_not_dir
+    message: "The provided root file is not a directory: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      root_dir_path:
+        type: string
+
+  - id: error_cant_create_root
+    message: "The provided root dir can't be created: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      root_dir_path:
+        type: string
+
+  - id: error_disk_full
+    message: "Too much disk space used (%d/%d): cleaning up to free %d bytes…"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      size_on_disk:
+        type: long
+      max_disk_space:
+        type: long
+      size_to_free:
+        type: long

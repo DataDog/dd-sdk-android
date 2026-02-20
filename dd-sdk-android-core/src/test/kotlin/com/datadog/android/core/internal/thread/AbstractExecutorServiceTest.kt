@@ -125,7 +125,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            "Uncaught exception during the task execution",
             throwable
         )
     }
@@ -181,7 +181,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            "Uncaught exception during the task execution",
             throwable
         )
     }
@@ -201,7 +201,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_UNCAUGHT_EXECUTION_EXCEPTION,
+            "Uncaught exception during the task execution",
             CancellationException::class.java
         )
     }

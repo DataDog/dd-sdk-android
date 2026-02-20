@@ -10,9 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.ERROR_LARGE_DATA
-import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.NO_BATCH_FILE_AVAILABLE
-import com.datadog.android.core.internal.persistence.FileEventBatchWriter.Companion.WARNING_METADATA_WRITE_FAILED
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -170,7 +167,7 @@ internal class FileEventBatchWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            NO_BATCH_FILE_AVAILABLE
+            "No batch file available"
         )
     }
 
@@ -193,7 +190,7 @@ internal class FileEventBatchWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            ERROR_LARGE_DATA.format(
+            "Can't write data with size %d (max item size is %d)".format(
                 Locale.US,
                 batchEvent.data.size,
                 maxItemSize
@@ -324,7 +321,7 @@ internal class FileEventBatchWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            WARNING_METADATA_WRITE_FAILED.format(
+            "Unable to write metadata file: %s".format(
                 Locale.US,
                 fakeBatchMetadataFile
             )

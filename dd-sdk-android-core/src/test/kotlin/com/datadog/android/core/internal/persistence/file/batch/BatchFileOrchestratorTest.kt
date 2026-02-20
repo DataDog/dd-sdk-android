@@ -163,7 +163,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+            "The provided root file is not a directory: %s".format(Locale.US, notADir.path)
         )
         verifyNoInteractions(mockMetricsDispatcher)
     }
@@ -191,7 +191,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+            "The provided root dir can't be created: %s".format(Locale.US, fakeRootDir.path)
         )
         verifyNoInteractions(mockMetricsDispatcher)
     }
@@ -220,7 +220,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+            "The provided root dir is not writable: %s".format(Locale.US, fakeRootDir.path)
         )
         verifyNoInteractions(mockMetricsDispatcher)
     }
@@ -602,7 +602,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_DISK_FULL.format(
+            "Too much disk space used (%d/%d): cleaning up to free %d bytes…".format(
                 Locale.US,
                 files.size * previousData.length,
                 MAX_DISK_SPACE,
@@ -638,7 +638,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+            "The provided root file is not a directory: %s".format(Locale.US, notADir.path)
         )
     }
 
@@ -665,7 +665,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+            "The provided root dir can't be created: %s".format(Locale.US, fakeRootDir.path)
         )
     }
 
@@ -693,7 +693,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+            "The provided root dir is not writable: %s".format(Locale.US, fakeRootDir.path)
         )
     }
 
@@ -825,7 +825,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+            "The provided root file is not a directory: %s".format(Locale.US, notADir.path)
         )
     }
 
@@ -852,7 +852,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+            "The provided root dir can't be created: %s".format(Locale.US, fakeRootDir.path)
         )
     }
 
@@ -880,7 +880,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+            "The provided root dir is not writable: %s".format(Locale.US, fakeRootDir.path)
         )
     }
 
@@ -1022,7 +1022,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
+            "The provided root file is not a directory: %s".format(Locale.US, notADir.path)
         )
     }
 
@@ -1049,7 +1049,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
+            "The provided root dir can't be created: %s".format(Locale.US, fakeRootDir.path)
         )
     }
 
@@ -1077,7 +1077,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
+            "The provided root dir is not writable: %s".format(Locale.US, fakeRootDir.path)
         )
     }
 
@@ -1156,8 +1156,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.DEBUG_DIFFERENT_ROOT
-                .format(Locale.US, fakeFile.path, fakeRootDir.path)
+            "The file provided (%s) doesn't belong to the current folder (%s)".format(Locale.US, fakeFile.path, fakeRootDir.path)
         )
     }
 
@@ -1176,7 +1175,7 @@ internal class BatchFileOrchestratorTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
+            "The file provided is not a batch file: %s".format(Locale.US, fakeFile.path)
         )
     }
 

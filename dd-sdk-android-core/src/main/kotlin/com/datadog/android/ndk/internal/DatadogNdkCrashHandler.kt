@@ -8,6 +8,7 @@ package com.datadog.android.ndk.internal
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.persistence.Deserializer
@@ -30,6 +31,7 @@ internal class DatadogNdkCrashHandler(
     internal val nativeCrashSourceType: String = "ndk"
 ) : NdkCrashHandler {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
     internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
 
     internal var lastRumViewEvent: JsonObject? = null
@@ -73,12 +75,7 @@ internal class DatadogNdkCrashHandler(
                 }
             }
         } catch (e: SecurityException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_READ_NDK_DIR },
-                e
-            )
+            logger.logErrorReadNdkDir(throwable = e)
         } finally {
             clearCrashLog()
         }
@@ -145,11 +142,7 @@ internal class DatadogNdkCrashHandler(
                 )
             )
         } else {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { INFO_RUM_FEATURE_NOT_REGISTERED }
-            )
+            logger.logInfoRumFeatureNotRegistered()
         }
     }
 
@@ -160,17 +153,9 @@ internal class DatadogNdkCrashHandler(
                 ndkCrashDataDirectory.listFilesSafe(internalLogger)
                     ?.forEach { it.deleteRecursively() }
             } catch (e: Throwable) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    {
-                        "Unable to clear the NDK crash report file:" +
-                            " ${ndkCrashDataDirectory.absolutePath}"
-                    },
-                    e
+                logger.logUnableToClearNdkCrashReport(
+                    path = ndkCrashDataDirectory.absolutePath,
+                    throwable = e
                 )
             }
         }
@@ -186,11 +171,6 @@ internal class DatadogNdkCrashHandler(
         internal const val NETWORK_INFO_FILE_NAME = "network_information"
 
         internal const val LOG_CRASH_MSG = "NDK crash detected with signal: %s"
-        internal const val ERROR_READ_NDK_DIR = "Error while trying to read the NDK crash directory"
-
-        internal const val INFO_RUM_FEATURE_NOT_REGISTERED =
-            "RUM feature is not registered, won't report NDK crash info as RUM error."
-
         private const val STORAGE_VERSION = 2
 
         internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports_v$STORAGE_VERSION"

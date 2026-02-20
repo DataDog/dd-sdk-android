@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
@@ -22,7 +23,6 @@ import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.internal.time.TimeProvider
 import java.io.File
 import java.io.FileFilter
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToLong
 
@@ -38,6 +38,7 @@ internal class BatchFileOrchestrator(
     private val pendingFiles: AtomicInteger = AtomicInteger(0)
 ) : FileOrchestrator {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
     private val fileFilter = BatchFileFilter()
 
     // Offset the recent threshold for read and write to avoid conflicts
@@ -119,21 +120,13 @@ internal class BatchFileOrchestrator(
             // is requested with granted orchestrator (due to consent change). Not an issue, because
             // batch file should be migrated to the same folder, but leaving this debug point
             // just in case.
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DEBUG_DIFFERENT_ROOT.format(Locale.US, file.path, rootDir.path) }
-            )
+            logger.logDebugDifferentRoot(filePath = file.path, rootDirPath = rootDir.path)
         }
 
         return if (file.isBatchFile) {
             file.metadata
         } else {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_NOT_BATCH_FILE.format(Locale.US, file.path) }
-            )
+            logger.logErrorNotBatchFile(filePath = file.path)
             null
         }
     }
@@ -153,25 +146,11 @@ internal class BatchFileOrchestrator(
                 if (rootDir.canWriteSafe(internalLogger)) {
                     return true
                 } else {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path) }
-                    )
+                    logger.logErrorRootNotWritable(rootDirPath = rootDir.path)
                     return false
                 }
             } else {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path) }
-                )
+                logger.logErrorRootNotDir(rootDirPath = rootDir.path)
                 return false
             }
         } else {
@@ -185,14 +164,7 @@ internal class BatchFileOrchestrator(
                 if (rootDir.mkdirsSafe(internalLogger)) {
                     return true
                 } else {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path) }
-                    )
+                    logger.logErrorCantCreateRoot(rootDirPath = rootDir.path)
                     return false
                 }
             }
@@ -283,10 +255,10 @@ internal class BatchFileOrchestrator(
         val maxDiskSpace = config.maxDiskSpace
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree) }
+            logger.logErrorDiskFull(
+                sizeOnDisk = sizeOnDisk,
+                maxDiskSpace = maxDiskSpace,
+                sizeToFree = sizeToFree
             )
             files.sorted().fold(sizeToFree) { remainingSizeToFree, file ->
                 if (remainingSizeToFree > 0) {
@@ -358,13 +330,5 @@ internal class BatchFileOrchestrator(
         const val DECREASE_PERCENT = 0.95
         const val INCREASE_PERCENT = 1.05
 
-        internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
-        internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"
-        internal const val ERROR_CANT_CREATE_ROOT = "The provided root dir can't be created: %s"
-        internal const val ERROR_DISK_FULL = "Too much disk space used (%d/%d): " +
-            "cleaning up to free %d bytes…"
-        internal const val ERROR_NOT_BATCH_FILE = "The file provided is not a batch file: %s"
-        internal const val DEBUG_DIFFERENT_ROOT = "The file provided (%s) doesn't belong" +
-            " to the current folder (%s)"
     }
 }

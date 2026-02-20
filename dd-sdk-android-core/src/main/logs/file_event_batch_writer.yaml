@@ -1,0 +1,27 @@
+logs:
+  - id: no_batch_file_available
+    message: "No batch file available"
+    level: error
+    targets:
+      - user
+      - telemetry
+
+  - id: error_large_data
+    message: "Can't write data with size %d (max item size is %d)"
+    level: error
+    targets:
+      - user
+    message_args:
+      event_size:
+        type: int
+      max_item_size:
+        type: int
+
+  - id: warning_metadata_write_failed
+    message: "Unable to write metadata file: %s"
+    level: warn
+    targets:
+      - user
+    message_args:
+      path:
+        type: string

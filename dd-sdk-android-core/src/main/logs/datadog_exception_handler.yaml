@@ -1,0 +1,19 @@
+logs:
+  - id: missing_rum_feature_info
+    message: "RUM feature is not registered, won't report crash as RUM event."
+    level: info
+    targets:
+      - user
+
+  - id: executor_not_idled_warning_message
+    message: "Datadog SDK is in an unexpected state due to an ongoing crash. Some events could be lost."
+    level: warn
+    targets:
+      - user
+
+  - id: failed_to_get_all_threads_dump
+    message: "Failed to get all threads dump"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

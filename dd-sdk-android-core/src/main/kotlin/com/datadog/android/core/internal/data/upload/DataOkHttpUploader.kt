@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.data.upload
 
 import android.net.TrafficStats
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
@@ -176,11 +177,7 @@ internal class DataOkHttpUploader(
 
         for ((header, value) in request.headers) {
             if (header.lowercase(Locale.US) == "user-agent") {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { WARNING_USER_AGENT_HEADER_RESERVED }
-                )
+                logger.logWarningUserAgentHeaderReserved()
                 continue
             }
             builder.addHeader(header, value)
@@ -226,11 +223,7 @@ internal class DataOkHttpUploader(
             HTTP_INSUFFICIENT_STORAGE -> UploadStatus.HttpServerError(code)
 
             else -> {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { "Unexpected status code $code on upload request: ${request.description}" }
-                )
+                logger.logUnexpectedStatusCode(code = code, description = request.description)
                 UploadStatus.UnknownHttpError(code)
             }
         }
@@ -254,8 +247,6 @@ internal class DataOkHttpUploader(
 
         const val SYSTEM_UA = "http.agent"
 
-        const val WARNING_USER_AGENT_HEADER_RESERVED =
-            "Ignoring provided User-Agent header, because it is reserved."
         const val HEADER_USER_AGENT = "User-Agent"
     }
 }
