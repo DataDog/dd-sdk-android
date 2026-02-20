@@ -37,6 +37,7 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("logsConfig")
 }
 
 android {
@@ -45,6 +46,10 @@ android {
     }
 
     namespace = "com.datadog.android.sessionreplay"
+}
+
+logsConfig {
+    packageName.set("com.datadog.android.sessionreplay.internal.generated")
 }
 
 dependencies {
