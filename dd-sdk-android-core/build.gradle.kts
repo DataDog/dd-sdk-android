@@ -39,6 +39,11 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("logsConfig")
+}
+
+logsConfig {
+    packageName.set("com.datadog.android.core.internal.generated")
 }
 
 /**
