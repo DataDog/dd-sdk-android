@@ -797,7 +797,7 @@ internal class DataOkHttpUploaderTest {
         mockLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            DataOkHttpUploader.WARNING_USER_AGENT_HEADER_RESERVED
+            "Ignoring provided User-Agent header, because it is reserved."
         )
     }
 

@@ -41,39 +41,20 @@ internal class FileMover(val internalLogger: InternalLogger) {
     @WorkerThread
     fun moveFiles(srcDir: File, destDir: File): Boolean {
         if (!srcDir.existsSafe(internalLogger)) {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                { INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path) }
-            )
+            logger.logInfoMoveNoSrc(srcDirPath = srcDir.path)
             return true
         }
         if (!srcDir.isDirectorySafe(internalLogger)) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path) }
-            )
+            logger.logErrorMoveNotDir(path = srcDir.path)
             return false
         }
         if (!destDir.existsSafe(internalLogger)) {
             if (!destDir.mkdirsSafe(internalLogger)) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path) }
-                )
+                logger.logErrorMoveNoDst(srcDirPath = srcDir.path)
                 return false
             }
         } else if (!destDir.isDirectorySafe(internalLogger)) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path) }
-            )
+            logger.logErrorMoveNotDir(path = destDir.path)
             return false
         }
 

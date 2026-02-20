@@ -211,7 +211,7 @@ internal class DatadogExceptionHandlerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+            "Datadog SDK is in an unexpected state due to an ongoing crash. Some events could be lost."
         )
     }
 

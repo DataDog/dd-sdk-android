@@ -1,0 +1,48 @@
+logs:
+  - id: kronos_shutdown_already_not_running
+    message: "Trying to shut down Kronos when it is already not running"
+    level: warn
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: unable_to_launch_ntp_sync
+    message: "Unable to launch a synchronize local time with an NTP server."
+    level: error
+    targets:
+      - maintainer
+    throwable: true
+
+  - id: unable_to_read_app_version_name
+    message: "Unable to read your application's version name"
+    level: error
+    targets:
+      - user
+    throwable: true
+
+  - id: build_id_is_missing
+    message: "Build ID is not found in the application assets. If you are using obfuscation, please use Datadog Gradle Plugin 1.13.0 or above to be able to de-obfuscate stacktraces."
+    level: info
+    targets:
+      - user
+
+  - id: build_id_read_error
+    message: "Failed to read Build ID information, de-obfuscation may not work properly."
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+
+  - id: sdk_initialized_in_secondary_process
+    message: "Datadog SDK was initialized in a secondary process: although data will still be captured, nothing will be uploaded from this process. Make sure to also initialize the SDK from the main process of your application."
+    level: warn
+    targets:
+      - user
+
+  - id: core_feature_thread_unable_to_set_interrupted_state
+    message: "Thread was unable to set its own interrupted state"
+    level: error
+    targets:
+      - maintainer
+    throwable: true

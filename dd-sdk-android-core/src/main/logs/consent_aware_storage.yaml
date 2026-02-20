@@ -1,5 +1,5 @@
 logs:
-  - id: warning_delete_failed
+  - id: consent_aware_storage_delete_failed
     message: "Unable to delete file: %s"
     level: warn
     targets:

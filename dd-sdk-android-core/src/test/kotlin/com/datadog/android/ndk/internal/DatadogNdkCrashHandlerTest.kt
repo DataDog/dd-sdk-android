@@ -247,7 +247,7 @@ internal class DatadogNdkCrashHandlerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED
+            "RUM feature is not registered, won't report NDK crash info as RUM error."
         )
     }
 

@@ -1,5 +1,5 @@
 logs:
-  - id: bad_encryption_result
+  - id: encrypted_batch_bad_encryption_result
     message: "Encryption of non-empty data produced empty result, aborting write operation."
     level: error
     targets:

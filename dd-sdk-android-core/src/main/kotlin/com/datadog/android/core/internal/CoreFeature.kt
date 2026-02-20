@@ -693,7 +693,7 @@ internal class CoreFeature(
                 Thread.currentThread().interrupt()
             } catch (se: SecurityException) {
                 // this should not happen
-                logger.logThreadUnableToSetInterruptedState(se)
+                logger.logCoreFeatureThreadUnableToSetInterruptedState(se)
             }
         }
     }

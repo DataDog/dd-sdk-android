@@ -92,7 +92,7 @@ internal class WipeDataMigrationOperationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            WipeDataMigrationOperation.WARN_NULL_DIR
+            "Can't wipe data from a null directory"
         )
     }
 

@@ -1,0 +1,90 @@
+logs:
+  - id: invalid_tag_ignored
+    message: "\"%s\" is an invalid tag, and was ignored."
+    level: error
+    targets:
+      - user
+    message_args:
+      tag_value:
+        type: string
+
+  - id: tag_modified_to_match_constraints
+    message: "tag \"%s\" was modified to \"%s\" to match our constraints."
+    level: warn
+    targets:
+      - user
+    onlyOnce: true
+    message_args:
+      original_tag:
+        type: string
+      modified_tag:
+        type: string
+
+  - id: too_many_tags_discarded
+    message: "too many tags were added, %d had to be discarded."
+    level: warn
+    targets:
+      - user
+    message_args:
+      discarded_count:
+        type: int
+
+  - id: invalid_attribute_ignored
+    message: "\"%s\" is an invalid attribute, and was ignored."
+    level: error
+    targets:
+      - user
+    message_args:
+      attribute:
+        type: string
+
+  - id: attribute_key_in_reserved_dropped
+    message: "\"%s\" key was in the reservedKeys set, and was dropped."
+    level: error
+    targets:
+      - user
+    message_args:
+      attribute:
+        type: string
+
+  - id: attribute_key_modified_to_match_constraints
+    message: "Key \"%s\" was modified to \"%s\" to match our constraints."
+    level: warn
+    targets:
+      - user
+    message_args:
+      original_key:
+        type: string
+      modified_key:
+        type: string
+
+  - id: too_many_attributes_discarded_for_group
+    message: "Too many attributes were added for [%s], %d had to be discarded."
+    level: warn
+    targets:
+      - user
+    message_args:
+      attributes_group_name:
+        type: string
+      discarded_count:
+        type: int
+
+  - id: too_many_attributes_discarded
+    message: "Too many attributes were added, %d had to be discarded."
+    level: warn
+    targets:
+      - user
+    message_args:
+      discarded_count:
+        type: int
+
+  - id: custom_timing_key_replaced
+    message: "Invalid timing name: %s, sanitized to: %s"
+    level: warn
+    targets:
+      - user
+    message_args:
+      original_key:
+        type: string
+      sanitized_key:
+        type: string

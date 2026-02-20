@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader.Companion.FAILED_TO_DESERIALIZE_ERROR
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -144,7 +143,7 @@ internal class TLVBlockFileReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            message = FAILED_TO_DESERIALIZE_ERROR
+            message = "Failed to deserialize TLV data length"
         )
     }
 
@@ -163,7 +162,7 @@ internal class TLVBlockFileReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            message = FAILED_TO_DESERIALIZE_ERROR
+            message = "Failed to deserialize TLV data length"
         )
     }
 

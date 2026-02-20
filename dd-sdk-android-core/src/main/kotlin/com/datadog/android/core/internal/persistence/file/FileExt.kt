@@ -38,10 +38,14 @@ private fun <T> File.safeCall(
     return try {
         lambda()
     } catch (e: SecurityException) {
-        DdSdkAndroidCoreLogger(internalLogger).logSecurityExceptionForFile(path = path, throwable = e)
+        @Suppress("UNNECESSARY_SAFE_CALL")
+        val safePath = this.path?.toString() ?: ""
+        DdSdkAndroidCoreLogger(internalLogger).logSecurityExceptionForFile(path = safePath, throwable = e)
         default
     } catch (e: Exception) {
-        DdSdkAndroidCoreLogger(internalLogger).logUnexpectedExceptionForFile(path = path, throwable = e)
+        @Suppress("UNNECESSARY_SAFE_CALL")
+        val safePath = this.path?.toString() ?: ""
+        DdSdkAndroidCoreLogger(internalLogger).logUnexpectedExceptionForFile(path = safePath, throwable = e)
         default
     }
 }

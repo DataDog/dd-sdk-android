@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.time
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.time.KronosTimeProvider.Companion.FAIL_MESSAGE
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.anException
@@ -109,10 +108,9 @@ internal class KronosTimeProviderTest {
         internalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = FAIL_MESSAGE,
+            message = "KronosClock.getCurrentTimeMs failed with an exception",
             throwable = exception,
-            onlyOnce = true,
-            additionalProperties = emptyMap()
+            onlyOnce = true
         )
         assertThat(result).isZero()
     }
@@ -133,10 +131,9 @@ internal class KronosTimeProviderTest {
         internalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = FAIL_MESSAGE,
+            message = "KronosClock.getCurrentTimeMs failed with an exception",
             throwable = exception,
-            onlyOnce = true,
-            additionalProperties = emptyMap()
+            onlyOnce = true
         )
         assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
     }

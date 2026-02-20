@@ -35,6 +35,8 @@ internal class DataOkHttpUploader(
     val executionTimer: ExecutionTimer
 ) : DataUploader {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
+
     @Volatile
     private var attempts: Int = 1
 
@@ -58,15 +60,7 @@ internal class DataOkHttpUploader(
             requestFactory.create(context, executionContext, batch, batchMeta)
                 ?: return UploadStatus.RequestCreationError(null)
         } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                {
-                    "Unable to create the request, probably due to bad data format." +
-                        " The batch will be dropped."
-                },
-                e
-            )
+            logger.logUnableToCreateRequest(throwable = e)
             return UploadStatus.RequestCreationError(e)
         }
 
@@ -75,28 +69,13 @@ internal class DataOkHttpUploader(
                 try {
                     executeUploadRequest(request)
                 } catch (e: UnknownHostException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
-                        { "Unable to find host for site ${context.site}; we will retry later." },
-                        e
-                    )
+                    logger.logUnableToFindHost(site = context.site.toString(), throwable = e)
                     UploadStatus.DNSError(e)
                 } catch (e: IOException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
-                        { "Unable to execute the request; we will retry later." },
-                        e
-                    )
+                    logger.logUnableToExecuteRequest(throwable = e)
                     UploadStatus.NetworkError(e)
                 } catch (e: Throwable) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
-                        { "Unable to execute the request; we will retry later." },
-                        e
-                    )
+                    logger.logUnableToExecuteRequest(throwable = e)
                     UploadStatus.UnknownException(throwable = e)
                 }
             }

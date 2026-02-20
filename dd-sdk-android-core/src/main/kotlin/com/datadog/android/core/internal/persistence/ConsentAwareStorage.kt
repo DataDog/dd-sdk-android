@@ -178,7 +178,7 @@ internal class ConsentAwareStorage(
                 )
             }
         } else {
-            logger.logWarningDeleteFailed(path = batchFile.path)
+            logger.logConsentAwareStorageDeleteFailed(path = batchFile.path ?: "")
         }
     }
 
@@ -186,7 +186,7 @@ internal class ConsentAwareStorage(
     private fun deleteBatchMetadataFile(metadataFile: File) {
         val result = fileMover.delete(metadataFile)
         if (!result) {
-            logger.logWarningDeleteFailed(path = metadataFile.path)
+            logger.logConsentAwareStorageDeleteFailed(path = metadataFile.path ?: "")
         }
     }
 

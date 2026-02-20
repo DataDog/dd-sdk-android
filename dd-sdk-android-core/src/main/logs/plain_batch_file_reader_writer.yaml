@@ -1,5 +1,5 @@
 logs:
-  - id: write_io_error
+  - id: plain_batch_write_io_error
     message: "Unable to write data to file: %s"
     level: error
     targets:
@@ -9,7 +9,7 @@ logs:
       file_path:
         type: string
 
-  - id: write_security_error
+  - id: plain_batch_write_security_error
     message: "Unable to write data to file: %s"
     level: error
     targets:
@@ -20,7 +20,7 @@ logs:
       file_path:
         type: string
 
-  - id: read_io_error
+  - id: plain_batch_read_io_error
     message: "Unable to read data from file: %s"
     level: error
     targets:
@@ -65,7 +65,7 @@ logs:
       expected_block_type_id:
         type: int
 
-  - id: plain_batch_bytes_read_mismatch
+  - id: bytes_read_mismatch
     message: "Number of bytes read for operation='%s' doesn't match with expected: expected=%d, actual=%d"
     level: error
     targets:
@@ -78,7 +78,7 @@ logs:
       actual:
         type: int
 
-  - id: unexpected_eof
+  - id: plain_batch_unexpected_eof
     message: "Unexpected EOF at the operation=%s"
     level: error
     targets:

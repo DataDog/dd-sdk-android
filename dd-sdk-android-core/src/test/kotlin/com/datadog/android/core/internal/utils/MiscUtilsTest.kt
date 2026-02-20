@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.JsonSerializer.ITEM_SERIALIZATION_ERROR
 import com.datadog.android.core.internal.utils.JsonSerializer.safeMapValuesToJson
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
@@ -196,7 +195,7 @@ internal class MiscUtilsTest {
             .verifyLog(
                 level = InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                message = ITEM_SERIALIZATION_ERROR.format(Locale.US, faultyKey),
+                message = "Error serializing value for key %s, value was dropped.".format(Locale.US, faultyKey),
                 throwable = fakeException
             )
     }

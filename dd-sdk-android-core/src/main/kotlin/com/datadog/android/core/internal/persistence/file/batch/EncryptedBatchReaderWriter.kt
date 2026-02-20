@@ -31,7 +31,7 @@ internal class EncryptedBatchReaderWriter(
         )
 
         if (data.data.isNotEmpty() && encryptedRawBatchEvent.data.isEmpty()) {
-            DdSdkAndroidCoreLogger(internalLogger).logBadEncryptionResult()
+            DdSdkAndroidCoreLogger(internalLogger).logEncryptedBatchBadEncryptionResult()
             return false
         }
 

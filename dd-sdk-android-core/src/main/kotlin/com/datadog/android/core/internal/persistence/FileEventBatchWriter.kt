@@ -84,9 +84,9 @@ internal class FileEventBatchWriter(
 
     private fun checkEventSize(eventSize: Int): Boolean {
         if (eventSize > filePersistenceConfig.maxItemSize) {
-            logger.logErrorLargeData(
+            logger.logBatchErrorLargeData(
                 eventSize = eventSize,
-                maxItemSize = filePersistenceConfig.maxItemSize
+                maxItemSize = filePersistenceConfig.maxItemSize.toInt()
             )
             return false
         }

@@ -9,8 +9,6 @@ package com.datadog.android.core.internal.persistence.datastore
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader.Companion.INVALID_NUMBER_OF_BLOCKS_ERROR
-import com.datadog.android.core.internal.persistence.datastore.DatastoreFileReader.Companion.UNEXPECTED_BLOCKS_ORDER_ERROR
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
@@ -144,7 +142,7 @@ internal class DataStoreFileReaderTest {
 
         val foundBlocks = blocksReturned.size
         val expectedBlocks = TLVBlockType.values().size
-        val expectedError = INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, foundBlocks, expectedBlocks)
+        val expectedError = "Read error - datastore entry has invalid number of blocks. Was: %d, expected: %d".format(Locale.US, foundBlocks, expectedBlocks)
         val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
@@ -213,7 +211,7 @@ internal class DataStoreFileReaderTest {
         // Given
         blocksReturned.removeAt(blocksReturned.lastIndex)
         val expectedMessage =
-            INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, blocksReturned.size, TLVBlockType.values().size)
+            "Read error - datastore entry has invalid number of blocks. Was: %d, expected: %d".format(Locale.US, blocksReturned.size, TLVBlockType.values().size)
         val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
@@ -252,7 +250,7 @@ internal class DataStoreFileReaderTest {
         mockInternalLogger.verifyLog(
             target = InternalLogger.Target.MAINTAINER,
             level = InternalLogger.Level.ERROR,
-            message = UNEXPECTED_BLOCKS_ORDER_ERROR
+            message = "Read error - blocks are in an unexpected order"
         )
         verifyNoMoreInteractions(mockCallback)
     }

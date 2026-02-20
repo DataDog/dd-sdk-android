@@ -1,5 +1,5 @@
 logs:
-  - id: error_large_data
+  - id: single_item_error_large_data
     message: "Can't write data with size %d (max item size is %d)"
     level: error
     targets:

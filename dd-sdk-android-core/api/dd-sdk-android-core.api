@@ -988,11 +988,7 @@ public abstract interface class com/datadog/android/core/persistence/Persistence
 }
 
 public abstract interface class com/datadog/android/core/persistence/Serializer {
-	public static final field Companion Lcom/datadog/android/core/persistence/Serializer$Companion;
 	public abstract fun serialize (Ljava/lang/Object;)Ljava/lang/String;
-}
-
-public final class com/datadog/android/core/persistence/Serializer$Companion {
 }
 
 public final class com/datadog/android/core/persistence/SerializerKt {

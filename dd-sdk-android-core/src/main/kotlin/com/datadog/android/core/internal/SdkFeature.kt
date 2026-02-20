@@ -76,6 +76,8 @@ internal class SdkFeature(
     private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : FeatureScope {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
+
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
     internal val initialized = AtomicBoolean(false)

@@ -158,7 +158,7 @@ internal class SingleItemDataWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName),
+            "Error serializing %s model".format(Locale.US, data.javaClass.simpleName),
             fakeThrowable
         )
     }
@@ -190,7 +190,7 @@ internal class SingleItemDataWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            SingleItemDataWriter.ERROR_LARGE_DATA.format(Locale.US, dataSize, maxLimit)
+            "Can't write data with size %d (max item size is %d)".format(Locale.US, dataSize, maxLimit)
         )
     }
 }

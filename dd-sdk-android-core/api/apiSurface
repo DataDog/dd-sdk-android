@@ -390,7 +390,6 @@ interface com.datadog.android.core.persistence.PersistenceStrategy
   fun migrateData(PersistenceStrategy)
 interface com.datadog.android.core.persistence.Serializer<T: Any>
   fun serialize(T): String?
-  companion object 
 fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
 data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
   constructor(Int, T?)

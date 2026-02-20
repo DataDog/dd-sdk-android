@@ -64,7 +64,7 @@ internal open class SingleItemDataWriter<T : Any>(
         if (eventSize > filePersistenceConfig.maxItemSize) {
             // DISCUSS? send a RUM/Log Error event here to the org so they get visibility
             // about this in their own org?
-            logger.logErrorLargeData(
+            logger.logSingleItemErrorLargeData(
                 eventSize = eventSize,
                 maxItemSize = filePersistenceConfig.maxItemSize.toInt()
             )

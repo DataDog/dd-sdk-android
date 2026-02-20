@@ -6,7 +6,7 @@ logs:
       - user
       - telemetry
 
-  - id: error_large_data
+  - id: batch_error_large_data
     message: "Can't write data with size %d (max item size is %d)"
     level: error
     targets:

@@ -33,7 +33,7 @@ internal class EncryptedFileReaderWriter(
         val encryptedData = encryption.encrypt(data)
 
         if (data.isNotEmpty() && encryptedData.isEmpty()) {
-            DdSdkAndroidCoreLogger(internalLogger).logBadEncryptionResult()
+            DdSdkAndroidCoreLogger(internalLogger).logEncryptedFileBadEncryptionResult()
             return false
         }
 

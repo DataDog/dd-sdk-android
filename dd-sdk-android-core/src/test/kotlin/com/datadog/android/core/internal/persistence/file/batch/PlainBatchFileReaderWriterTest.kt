@@ -177,7 +177,7 @@ internal class PlainBatchFileReaderWriterTest {
         assertThat(file).doesNotExist()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER),
+            InternalLogger.Target.MAINTAINER,
             "Unable to write data to file: %s".format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
@@ -204,7 +204,7 @@ internal class PlainBatchFileReaderWriterTest {
         assertThat(result).isFalse()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER),
+            InternalLogger.Target.MAINTAINER,
             "Unable to write data to file: %s".format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
