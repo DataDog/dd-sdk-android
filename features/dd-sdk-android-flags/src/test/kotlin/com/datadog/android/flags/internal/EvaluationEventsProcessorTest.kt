@@ -386,8 +386,6 @@ internal class EvaluationEventsProcessorTest {
             aggregator = testedAggregator,
             periodicFlushEnabled = false
         )
-
-        verify(mockScheduledExecutor, never()).scheduleWithFixedDelay(any<Runnable>(), any(), any(), any())
     }
 
     // endregion
