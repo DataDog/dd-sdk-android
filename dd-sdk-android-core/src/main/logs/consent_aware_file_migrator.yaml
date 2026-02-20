@@ -1,0 +1,13 @@
+logs:
+  - id: unexpected_consent_migration
+    message: "Unexpected consent migration from %s to %s"
+    level: warn
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      previous_state:
+        type: string
+        nullable: true
+      new_state:
+        type: string

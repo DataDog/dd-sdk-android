@@ -126,7 +126,7 @@ internal class EncryptedBatchReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
+            "Encryption of non-empty data produced empty result, aborting write operation."
         )
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockBatchFileReaderWriter)

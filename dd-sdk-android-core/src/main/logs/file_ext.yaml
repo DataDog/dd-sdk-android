@@ -1,0 +1,22 @@
+logs:
+  - id: security_exception_for_file
+    message: "Security exception was thrown for file %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      path:
+        type: string
+
+  - id: unexpected_exception_for_file
+    message: "Unexpected exception was thrown for file %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      path:
+        type: string

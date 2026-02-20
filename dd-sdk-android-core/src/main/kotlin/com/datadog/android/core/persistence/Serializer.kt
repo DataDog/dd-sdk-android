@@ -7,8 +7,8 @@
 package com.datadog.android.core.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.lint.InternalApi
-import java.util.Locale
 
 /**
  * An interface which can transform an object of type [T] into a formatted String.
@@ -20,9 +20,6 @@ interface Serializer<T : Any> {
      */
     fun serialize(model: T): String?
 
-    companion object {
-        internal const val ERROR_SERIALIZING = "Error serializing %s model"
-    }
 }
 
 /**
@@ -44,11 +41,9 @@ fun <T : Any> Serializer<T>.serializeToByteArray(
         val serialized = serialize(model)
         serialized?.toByteArray(Charsets.UTF_8)
     } catch (e: Throwable) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { Serializer.ERROR_SERIALIZING.format(Locale.US, model.javaClass.simpleName) },
-            e
+        DdSdkAndroidCoreLogger(internalLogger).logErrorSerializing(
+            modelName = model.javaClass.simpleName,
+            throwable = e
         )
         null
     }

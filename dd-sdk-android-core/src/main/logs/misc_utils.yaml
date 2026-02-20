@@ -1,0 +1,19 @@
+logs:
+  - id: internal_io_operation_failed
+    message: "Internal I/O operation failed"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+
+  - id: item_serialization_error
+    message: "Error serializing value for key %s, value was dropped."
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+    message_args:
+      key:
+        type: string

@@ -7,9 +7,12 @@
 package com.datadog.android.core.internal.time
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.lyft.kronos.SyncListener
 
 internal class LoggingSyncListener(private val internalLogger: InternalLogger) : SyncListener {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
     override fun onStartSync(host: String) {
         // no-op
     }
@@ -19,11 +22,6 @@ internal class LoggingSyncListener(private val internalLogger: InternalLogger) :
     }
 
     override fun onError(host: String, throwable: Throwable) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Kronos onError @host:$host" },
-            throwable
-        )
+        logger.logKronosOnError(host = host, throwable = throwable)
     }
 }

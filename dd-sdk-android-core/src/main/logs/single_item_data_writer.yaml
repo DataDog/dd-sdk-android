@@ -1,0 +1,12 @@
+logs:
+  - id: error_large_data
+    message: "Can't write data with size %d (max item size is %d)"
+    level: error
+    targets:
+      - user
+      - telemetry
+    message_args:
+      event_size:
+        type: int
+      max_item_size:
+        type: int

@@ -1,0 +1,8 @@
+logs:
+  - id: unable_to_gzip_request_body
+    message: "Unable to gzip request body"
+    level: warn
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true

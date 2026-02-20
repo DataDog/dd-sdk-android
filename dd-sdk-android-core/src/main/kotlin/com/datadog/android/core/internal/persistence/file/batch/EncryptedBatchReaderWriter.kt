@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.security.Encryption
 import java.io.File
@@ -30,11 +31,7 @@ internal class EncryptedBatchReaderWriter(
         )
 
         if (data.data.isNotEmpty() && encryptedRawBatchEvent.data.isEmpty()) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { BAD_ENCRYPTION_RESULT_MESSAGE }
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logBadEncryptionResult()
             return false
         }
 
@@ -58,8 +55,4 @@ internal class EncryptedBatchReaderWriter(
             }
     }
 
-    companion object {
-        internal const val BAD_ENCRYPTION_RESULT_MESSAGE = "Encryption of non-empty data produced" +
-            " empty result, aborting write operation."
-    }
 }

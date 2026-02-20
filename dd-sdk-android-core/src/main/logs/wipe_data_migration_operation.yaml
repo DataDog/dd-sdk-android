@@ -1,0 +1,6 @@
+logs:
+  - id: warn_null_dir
+    message: "Can't wipe data from a null directory"
+    level: warn
+    targets:
+      - maintainer

@@ -1,0 +1,9 @@
+logs:
+  - id: warning_delete_failed
+    message: "Unable to delete file: %s"
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      path:
+        type: string

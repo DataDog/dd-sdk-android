@@ -1,0 +1,18 @@
+logs:
+  - id: warning_unknown_batch_id
+    message: "Attempting to unlock or delete an unknown file: %s"
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      file_name:
+        type: string
+
+  - id: warning_delete_failed
+    message: "Unable to delete file: %s"
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      path:
+        type: string

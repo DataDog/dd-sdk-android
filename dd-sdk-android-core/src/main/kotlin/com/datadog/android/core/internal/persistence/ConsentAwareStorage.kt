@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
@@ -25,7 +26,6 @@ import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
-import java.util.Locale
 import java.util.concurrent.ExecutorService
 
 internal class ConsentAwareStorage(
@@ -48,6 +48,8 @@ internal class ConsentAwareStorage(
     private val lockedReadBatches: MutableSet<Batch> = mutableSetOf()
 
     private val writeLock = Any()
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     /** @inheritdoc */
     @AnyThread
@@ -176,11 +178,7 @@ internal class ConsentAwareStorage(
                 )
             }
         } else {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { WARNING_DELETE_FAILED.format(Locale.US, batchFile.path) }
-            )
+            logger.logWarningDeleteFailed(path = batchFile.path)
         }
     }
 
@@ -188,17 +186,9 @@ internal class ConsentAwareStorage(
     private fun deleteBatchMetadataFile(metadataFile: File) {
         val result = fileMover.delete(metadataFile)
         if (!result) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { WARNING_DELETE_FAILED.format(Locale.US, metadataFile.path) }
-            )
+            logger.logWarningDeleteFailed(path = metadataFile.path)
         }
     }
 
     private data class Batch(val file: File, val metaFile: File?)
-
-    companion object {
-        internal const val WARNING_DELETE_FAILED = "Unable to delete file: %s"
-    }
 }

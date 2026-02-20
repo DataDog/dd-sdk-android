@@ -1,0 +1,12 @@
+logs:
+  - id: cannot_copy_dest_no_space
+    message: "Cannot copy ByteArray, dest doesn't have enough space"
+    level: warn
+    targets:
+      - maintainer
+
+  - id: cannot_copy_src_no_data
+    message: "Cannot copy ByteArray, src doesn't have enough data"
+    level: warn
+    targets:
+      - maintainer

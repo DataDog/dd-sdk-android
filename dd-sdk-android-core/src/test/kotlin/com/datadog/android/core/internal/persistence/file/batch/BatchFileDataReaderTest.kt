@@ -277,7 +277,7 @@ internal class BatchFileDataReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            BatchFileDataReader.WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName)
+            "Attempting to unlock or delete an unknown file: %s".format(Locale.US, fileName)
         )
     }
 
@@ -335,7 +335,7 @@ internal class BatchFileDataReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            BatchFileDataReader.WARNING_DELETE_FAILED.format(Locale.US, file.path)
+            "Unable to delete file: %s".format(Locale.US, file.path)
         )
     }
 
@@ -353,7 +353,7 @@ internal class BatchFileDataReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            BatchFileDataReader.WARNING_UNKNOWN_BATCH_ID.format(Locale.US, fileName)
+            "Attempting to unlock or delete an unknown file: %s".format(Locale.US, fileName)
         )
     }
 

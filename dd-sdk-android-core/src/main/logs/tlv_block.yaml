@@ -1,0 +1,11 @@
+logs:
+  - id: byte_length_exceeded_error
+    message: "DataBlock length exceeds limit of %s bytes, was %s"
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      max_entry_size:
+        type: int
+      entry_size:
+        type: int

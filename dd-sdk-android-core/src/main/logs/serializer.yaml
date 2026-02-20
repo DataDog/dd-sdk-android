@@ -1,0 +1,11 @@
+logs:
+  - id: error_serializing
+    message: "Error serializing %s model"
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true
+    message_args:
+      model_name:
+        type: string

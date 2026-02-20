@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.datastore
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteDirectoryContentsSafe
@@ -27,6 +28,7 @@ internal class DatastoreFileWriter(
     private val internalLogger: InternalLogger,
     private val fileReaderWriter: FileReaderWriter
 ) {
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
     @WorkerThread
     internal fun <T : Any> write(
         key: String,
@@ -130,16 +132,10 @@ internal class DatastoreFileWriter(
     }
 
     private fun logFailedToSerializeDataError() {
-        internalLogger.log(
-            target = InternalLogger.Target.MAINTAINER,
-            level = InternalLogger.Level.ERROR,
-            messageBuilder = { FAILED_TO_SERIALIZE_DATA_ERROR }
-        )
+        logger.logFailedToSerializeDataError()
     }
 
     internal companion object {
-        internal const val FAILED_TO_SERIALIZE_DATA_ERROR =
-            "Write error - Failed to serialize data for the datastore"
         private val EMPTY_BYTE_ARRAY = ByteArray(0)
     }
 }

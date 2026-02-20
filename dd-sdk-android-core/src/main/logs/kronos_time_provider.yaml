@@ -1,0 +1,9 @@
+logs:
+  - id: kronos_clock_failed
+    message: "KronosClock.getCurrentTimeMs failed with an exception"
+    level: warn
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    onlyOnce: true

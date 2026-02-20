@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.security.Encryption
 import java.io.File
 
@@ -25,22 +26,14 @@ internal class EncryptedFileReaderWriter(
         append: Boolean
     ): Boolean {
         if (append) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { APPEND_MODE_NOT_SUPPORTED_MESSAGE }
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logAppendModeNotSupported()
             return false
         }
 
         val encryptedData = encryption.encrypt(data)
 
         if (data.isNotEmpty() && encryptedData.isEmpty()) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { BAD_ENCRYPTION_RESULT_MESSAGE }
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logBadEncryptionResult()
             return false
         }
 
@@ -58,10 +51,4 @@ internal class EncryptedFileReaderWriter(
         return encryption.decrypt(delegate.readData(file))
     }
 
-    companion object {
-        internal const val BAD_ENCRYPTION_RESULT_MESSAGE = "Encryption of non-empty data produced" +
-            " empty result, aborting write operation."
-        internal const val APPEND_MODE_NOT_SUPPORTED_MESSAGE = "Append mode is not supported," +
-            " use EncryptedBatchFileReaderWriter instead."
-    }
 }

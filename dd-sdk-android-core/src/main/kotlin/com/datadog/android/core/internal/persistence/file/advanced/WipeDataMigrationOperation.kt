@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.utils.retryWithDelay
 import com.datadog.android.internal.time.TimeProvider
@@ -27,11 +28,7 @@ internal class WipeDataMigrationOperation(
     @WorkerThread
     override fun run() {
         if (targetDir == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { WARN_NULL_DIR }
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logWarnNullDir()
         } else {
             retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger, timeProvider) {
                 fileMover.delete(targetDir)
@@ -40,8 +37,6 @@ internal class WipeDataMigrationOperation(
     }
 
     companion object {
-        internal const val WARN_NULL_DIR = "Can't wipe data from a null directory"
-
         private const val MAX_RETRY = 3
         private val RETRY_DELAY_NS = TimeUnit.MILLISECONDS.toNanos(500)
     }

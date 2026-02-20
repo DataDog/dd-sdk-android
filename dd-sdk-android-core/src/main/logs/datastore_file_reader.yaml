@@ -1,0 +1,17 @@
+logs:
+  - id: invalid_number_of_blocks_error
+    message: "Read error - datastore entry has invalid number of blocks. Was: %d, expected: %d"
+    level: error
+    targets:
+      - maintainer
+    message_args:
+      number_blocks_found:
+        type: int
+      number_blocks_expected:
+        type: int
+
+  - id: unexpected_blocks_order_error
+    message: "Read error - blocks are in an unexpected order"
+    level: error
+    targets:
+      - maintainer

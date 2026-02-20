@@ -1,0 +1,12 @@
+logs:
+  - id: append_mode_not_supported
+    message: "Append mode is not supported, use EncryptedBatchFileReaderWriter instead."
+    level: error
+    targets:
+      - maintainer
+
+  - id: bad_encryption_result
+    message: "Encryption of non-empty data produced empty result, aborting write operation."
+    level: error
+    targets:
+      - user
