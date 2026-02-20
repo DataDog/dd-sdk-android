@@ -36,17 +36,10 @@ internal class EvaluationEventsProcessor(
     @Volatile
     private var lastFlushTimeMs: Long = 0L
 
-    @Volatile
-    private var periodicFlushEnabled: Boolean = periodicFlushEnabled
-        set(value) {
-            field = value
-            if (value) {
-                startPeriodicFlush()
-            }
-        }
-
     init {
-        startPeriodicFlush()
+        if (periodicFlushEnabled) {
+            startPeriodicFlush()
+        }
     }
 
     fun processEvaluation(
@@ -85,23 +78,18 @@ internal class EvaluationEventsProcessor(
         val events: List<EvaluationAggregationStats>
         try {
             events = aggregator.drain()
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
         } finally {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - only called after successful tryLock()
             flushMutex.unlock()
         }
 
         if (events.isNotEmpty()) {
-            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
             writer.writeAll(events)
         }
     }
 
     private fun startPeriodicFlush() {
-        if (!periodicFlushEnabled) {
-            return
-        }
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
         flushMutex.withLock {
             val currentFuture = scheduledFlushFuture
             if (currentFuture == null || currentFuture.isCancelled || currentFuture.isDone) {
@@ -133,8 +121,6 @@ internal class EvaluationEventsProcessor(
     }
 
     fun stop() {
-        periodicFlushEnabled = false
-
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - does not throw in Android
         scheduledExecutor.shutdown()
 
@@ -142,6 +128,7 @@ internal class EvaluationEventsProcessor(
         val events = flushMutex.withLock {
             scheduledFlushFuture?.cancel(false)
             aggregator.drain()
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
         }
 
         if (events.isNotEmpty()) {
