@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.datastore
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -17,7 +18,6 @@ import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
 import com.datadog.android.core.internal.utils.toInt
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import java.io.File
-import java.util.Locale
 
 internal class DatastoreFileReader(
     private val dataStoreFileHelper: DataStoreFileHelper,
@@ -26,6 +26,8 @@ internal class DatastoreFileReader(
     private val internalLogger: InternalLogger,
     private val tlvBlockFileReader: TLVBlockFileReader
 ) {
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
+
     @WorkerThread
     internal fun <T : Any> read(
         key: String,
@@ -103,28 +105,13 @@ internal class DatastoreFileReader(
     }
 
     private fun logInvalidNumberOfBlocksError(numberBlocksFound: Int, numberBlocksExpected: Int) {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = {
-                INVALID_NUMBER_OF_BLOCKS_ERROR
-                    .format(Locale.US, numberBlocksFound, numberBlocksExpected)
-            }
+        logger.logInvalidNumberOfBlocksError(
+            numberBlocksFound = numberBlocksFound,
+            numberBlocksExpected = numberBlocksExpected
         )
     }
 
     private fun logBlocksInUnexpectedBlocksOrderError() {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { UNEXPECTED_BLOCKS_ORDER_ERROR }
-        )
-    }
-
-    internal companion object {
-        internal const val INVALID_NUMBER_OF_BLOCKS_ERROR =
-            "Read error - datastore entry has invalid number of blocks. Was: %d, expected: %d"
-        internal const val UNEXPECTED_BLOCKS_ORDER_ERROR =
-            "Read error - blocks are in an unexpected order"
+        logger.logUnexpectedBlocksOrderError()
     }
 }

@@ -1,0 +1,22 @@
+logs:
+  - id: cancel_error
+    message: "Error cancelling the UploadWorker"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+
+  - id: upload_worker_was_scheduled
+    message: "UploadWorker was scheduled."
+    level: info
+    targets:
+      - maintainer
+
+  - id: setup_error
+    message: "Error while trying to setup the UploadWorker"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true

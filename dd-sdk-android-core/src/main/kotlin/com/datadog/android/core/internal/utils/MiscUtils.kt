@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.lint.InternalApi
@@ -18,7 +19,6 @@ import com.google.gson.JsonPrimitive
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
-import java.util.Locale
 
 internal fun retryWithDelay(
     times: Int,
@@ -46,15 +46,7 @@ internal inline fun retryWithDelay(
             wasSuccessful = try {
                 block()
             } catch (e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { "Internal I/O operation failed" },
-                    e
-                )
+                DdSdkAndroidCoreLogger(internalLogger).logInternalIoOperationFailed(e)
                 false
             }
             loopTimeOrigin = timeProvider.getDeviceElapsedTimeNanos()
@@ -70,8 +62,6 @@ object JsonSerializer {
     // it could be an extension function, but since the scope is very wide (Any?) in order to avoid
     // polluting user-space, we are going to encapsulate it. Maybe later if we have an internal
     // package it can be converted back to the extension function.
-
-    internal const val ITEM_SERIALIZATION_ERROR = "Error serializing value for key %s, value was dropped."
 
     /**
      * Converts arbitrary object to the [JsonElement] with the best effort. [Any.toString] is
@@ -113,12 +103,7 @@ object JsonSerializer {
             try {
                 result += it.key to toJsonElement(it.value)
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    messageBuilder = { ITEM_SERIALIZATION_ERROR.format(Locale.US, it.key) },
-                    throwable = e
-                )
+                DdSdkAndroidCoreLogger(internalLogger).logItemSerializationError(key = it.key, throwable = e)
             }
         }
         return result

@@ -1,0 +1,19 @@
+logs:
+  - id: received_unknown_broadcast_intent
+    message: "Received unknown broadcast intent: [%s]"
+    level: debug
+    targets:
+      - maintainer
+      - telemetry
+    message_args:
+      action:
+        type: string
+        nullable: true
+
+  - id: error_handling_broadcast_intent
+    message: "Error handling system info broadcast intent."
+    level: error
+    targets:
+      - user
+      - telemetry
+    throwable: true

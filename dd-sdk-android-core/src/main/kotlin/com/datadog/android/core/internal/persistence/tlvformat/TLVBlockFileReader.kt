@@ -8,12 +8,12 @@ package com.datadog.android.core.internal.persistence.tlvformat
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.utils.copyOfRangeSafe
 import com.datadog.android.core.internal.utils.toInt
 import com.datadog.android.core.internal.utils.toShort
 import java.io.File
-import java.util.Locale
 
 internal class TLVBlockFileReader(
     val internalLogger: InternalLogger,
@@ -101,24 +101,11 @@ internal class TLVBlockFileReader(
     }
 
     private fun logTypeCorruptionError(shortValue: Short) {
-        internalLogger.log(
-            target = InternalLogger.Target.MAINTAINER,
-            level = InternalLogger.Level.WARN,
-            messageBuilder = {
-                CORRUPT_TLV_HEADER_TYPE_ERROR.format(
-                    Locale.US,
-                    shortValue
-                )
-            }
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logCorruptTlvHeaderTypeError(shortValue = shortValue.toString())
     }
 
     private fun logFailedToDeserializeError() {
-        internalLogger.log(
-            target = InternalLogger.Target.MAINTAINER,
-            level = InternalLogger.Level.WARN,
-            messageBuilder = { FAILED_TO_DESERIALIZE_ERROR }
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logFailedToDeserializeError()
     }
 
     private data class TLVResult<T : Any>(
@@ -126,8 +113,4 @@ internal class TLVBlockFileReader(
         val newIndex: Int
     )
 
-    internal companion object {
-        internal const val CORRUPT_TLV_HEADER_TYPE_ERROR = "TLV header corrupt. Invalid type %s"
-        internal const val FAILED_TO_DESERIALIZE_ERROR = "Failed to deserialize TLV data length"
-    }
 }

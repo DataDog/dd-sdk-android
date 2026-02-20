@@ -1,0 +1,15 @@
+logs:
+  - id: corrupt_tlv_header_type_error
+    message: "TLV header corrupt. Invalid type %s"
+    level: warn
+    targets:
+      - maintainer
+    message_args:
+      short_value:
+        type: string
+
+  - id: failed_to_deserialize_error
+    message: "Failed to deserialize TLV data length"
+    level: warn
+    targets:
+      - maintainer

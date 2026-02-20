@@ -1,0 +1,11 @@
+logs:
+  - id: ndk_crash_deserialize_error
+    message: "Error while trying to deserialize the NDK Crash info: %s"
+    level: error
+    targets:
+      - maintainer
+      - telemetry
+    throwable: true
+    message_args:
+      model:
+        type: string

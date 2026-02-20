@@ -96,7 +96,7 @@ internal class MoveDataMigrationOperationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            MoveDataMigrationOperation.WARN_NULL_SOURCE_DIR
+            "Can't move data from a null directory"
         )
     }
 
@@ -120,7 +120,7 @@ internal class MoveDataMigrationOperationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            MoveDataMigrationOperation.WARN_NULL_DEST_DIR
+            "Can't move data to a null directory"
         )
     }
 

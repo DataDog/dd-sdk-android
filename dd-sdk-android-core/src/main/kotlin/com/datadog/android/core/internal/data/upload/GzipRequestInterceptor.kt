@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -25,6 +26,8 @@ import kotlin.jvm.Throws
  * This class uses the [GzipSink] to compress the body content.
  */
 internal class GzipRequestInterceptor(private val internalLogger: InternalLogger) : Interceptor {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     // region Interceptor
 
@@ -50,15 +53,7 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
                     .method(originalRequest.method, gzip(body))
                     .build()
             } catch (e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { "Unable to gzip request body" },
-                    e
-                )
+                logger.logUnableToGzipRequestBody(throwable = e)
                 originalRequest
             }
             chain.proceed(compressedRequest)

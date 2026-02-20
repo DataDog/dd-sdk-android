@@ -121,7 +121,7 @@ internal class EncryptedFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            EncryptedFileReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
+            "Encryption of non-empty data produced empty result, aborting write operation."
         )
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockFileReaderWriterDelegate)
@@ -144,7 +144,7 @@ internal class EncryptedFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            EncryptedFileReaderWriter.APPEND_MODE_NOT_SUPPORTED_MESSAGE
+            "Append mode is not supported, use EncryptedBatchFileReaderWriter instead."
         )
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockFileReaderWriterDelegate)

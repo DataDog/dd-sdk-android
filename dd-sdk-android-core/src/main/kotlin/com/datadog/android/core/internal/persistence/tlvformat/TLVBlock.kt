@@ -7,14 +7,15 @@
 package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import java.nio.ByteBuffer
-import java.util.Locale
 
 internal class TLVBlock(
     val type: TLVBlockType,
     val data: ByteArray,
     val internalLogger: InternalLogger
 ) {
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
     @Suppress("ReturnCount")
     internal fun serialize(maxEntrySize: Int = MAXIMUM_DATA_SIZE_MB): ByteArray? {
         if (data.isEmpty()) return null
@@ -44,17 +45,11 @@ internal class TLVBlock(
     }
 
     private fun logEntrySizeExceededError(entrySize: Int, maxEntrySize: Int) {
-        internalLogger.log(
-            target = InternalLogger.Target.MAINTAINER,
-            level = InternalLogger.Level.WARN,
-            messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR.format(Locale.US, maxEntrySize, entrySize) }
-        )
+        logger.logByteLengthExceededError(maxEntrySize = maxEntrySize, entrySize = entrySize)
     }
 
     internal companion object {
         // The maximum length of data (Value) in TLV block defining key data.
         private const val MAXIMUM_DATA_SIZE_MB = 10 * 1024 * 1024 // 10 mb
-        internal const val BYTE_LENGTH_EXCEEDED_ERROR =
-            "DataBlock length exceeds limit of %s bytes, was %s"
     }
 }

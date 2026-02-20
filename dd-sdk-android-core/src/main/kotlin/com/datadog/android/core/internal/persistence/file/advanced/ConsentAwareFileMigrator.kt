@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.internal.time.TimeProvider
@@ -83,13 +84,9 @@ internal class ConsentAwareFileMigrator(
         }
 
         else -> {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(
-                    InternalLogger.Target.MAINTAINER,
-                    InternalLogger.Target.TELEMETRY
-                ),
-                { "Unexpected consent migration from $previousState to $newState" }
+            DdSdkAndroidCoreLogger(internalLogger).logUnexpectedConsentMigration(
+                previousState = previousState?.toString() ?: "null",
+                newState = newState.toString()
             )
             NoOpDataMigrationOperation()
         }

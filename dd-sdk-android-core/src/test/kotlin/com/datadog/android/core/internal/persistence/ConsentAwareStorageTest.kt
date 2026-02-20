@@ -452,7 +452,7 @@ internal class ConsentAwareStorageTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, file.path)
+            "Unable to delete file: %s".format(Locale.US, file.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
         verifyNoInteractions(mockMetricsDispatcher)
@@ -482,7 +482,7 @@ internal class ConsentAwareStorageTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path)
+            "Unable to delete file: %s".format(Locale.US, mockMetaFile.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(

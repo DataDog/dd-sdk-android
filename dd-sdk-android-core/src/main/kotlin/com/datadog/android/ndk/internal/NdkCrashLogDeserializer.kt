@@ -7,38 +7,26 @@
 package com.datadog.android.ndk.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.google.gson.JsonParseException
-import java.util.Locale
 
 internal class NdkCrashLogDeserializer(
     private val internalLogger: InternalLogger
 ) : Deserializer<String, NdkCrashLog> {
 
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
+
     override fun deserialize(model: String): NdkCrashLog? {
         return try {
             NdkCrashLog.fromJson(model)
         } catch (e: JsonParseException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
-                e
-            )
+            logger.logNdkCrashDeserializeError(model = model, throwable = e)
             null
         } catch (e: IllegalStateException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
-                e
-            )
+            logger.logNdkCrashDeserializeError(model = model, throwable = e)
             null
         }
     }
 
-    companion object {
-        const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the NDK Crash info: %s"
-    }
 }

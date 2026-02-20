@@ -1,0 +1,12 @@
+logs:
+  - id: warn_null_source_dir
+    message: "Can't move data from a null directory"
+    level: warn
+    targets:
+      - maintainer
+
+  - id: warn_null_dest_dir
+    message: "Can't move data to a null directory"
+    level: warn
+    targets:
+      - maintainer

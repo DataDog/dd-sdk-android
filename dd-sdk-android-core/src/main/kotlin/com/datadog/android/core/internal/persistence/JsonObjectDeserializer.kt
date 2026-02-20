@@ -7,37 +7,25 @@
 package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
-import java.util.Locale
 
 internal class JsonObjectDeserializer(private val internalLogger: InternalLogger) :
     Deserializer<String, JsonObject> {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
+
     override fun deserialize(model: String): JsonObject? {
         return try {
             JsonParser.parseString(model).asJsonObject
         } catch (jpe: JsonParseException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
-                jpe
-            )
+            logger.logRumEventDeserializeError(model = model, throwable = jpe)
             null
         } catch (ise: IllegalStateException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
-                ise
-            )
+            logger.logRumEventDeserializeError(model = model, throwable = ise)
             null
         }
-    }
-
-    companion object {
-        const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the RumEvent: %s"
     }
 }

@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.lint.InternalApi
 import java.nio.ByteBuffer
 
@@ -109,18 +110,10 @@ internal fun ByteArray.copyTo(
     internalLogger: InternalLogger
 ): Boolean {
     return if (destPos + length > dest.size) {
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Cannot copy ByteArray, dest doesn't have enough space" }
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logCannotCopyDestNoSpace()
         false
     } else if (srcPos + length > size) {
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Cannot copy ByteArray, src doesn't have enough data" }
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logCannotCopySrcNoData()
         false
     } else {
         // this and dest can't be null, NPE cannot happen here

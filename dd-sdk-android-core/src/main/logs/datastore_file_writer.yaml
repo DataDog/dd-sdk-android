@@ -1,0 +1,6 @@
+logs:
+  - id: failed_to_serialize_data_error
+    message: "Write error - Failed to serialize data for the datastore"
+    level: error
+    targets:
+      - maintainer

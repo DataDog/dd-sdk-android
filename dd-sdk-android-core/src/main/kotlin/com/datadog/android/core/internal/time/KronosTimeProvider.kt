@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.time
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.internal.time.BaseTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.lyft.kronos.Clock
@@ -45,18 +46,8 @@ internal class KronosTimeProvider(
         return runCatching {
             getCurrentTimeMs()
         }.onFailure { ex ->
-            internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = { FAIL_MESSAGE },
-                throwable = ex,
-                onlyOnce = true,
-                additionalProperties = emptyMap()
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logKronosClockFailed(throwable = ex)
         }
     }
 
-    companion object {
-        const val FAIL_MESSAGE = "KronosClock.getCurrentTimeMs failed with an exception"
-    }
 }

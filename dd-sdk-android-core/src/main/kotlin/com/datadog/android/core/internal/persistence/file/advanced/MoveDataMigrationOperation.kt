@@ -29,17 +29,9 @@ internal class MoveDataMigrationOperation(
     @WorkerThread
     override fun run() {
         if (fromDir == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { WARN_NULL_SOURCE_DIR }
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logWarnNullSourceDir()
         } else if (toDir == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { WARN_NULL_DEST_DIR }
-            )
+            DdSdkAndroidCoreLogger(internalLogger).logWarnNullDestDir()
         } else {
             retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger, timeProvider) {
                 fileMover.moveFiles(fromDir, toDir)
@@ -48,9 +40,6 @@ internal class MoveDataMigrationOperation(
     }
 
     companion object {
-        internal const val WARN_NULL_SOURCE_DIR = "Can't move data from a null directory"
-        internal const val WARN_NULL_DEST_DIR = "Can't move data to a null directory"
-
         private const val MAX_RETRY = 3
         private val RETRY_DELAY_NS = TimeUnit.MILLISECONDS.toNanos(500)
     }

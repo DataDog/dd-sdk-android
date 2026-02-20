@@ -15,11 +15,9 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.UploadWorker
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import java.util.concurrent.TimeUnit
 
-internal const val CANCEL_ERROR_MESSAGE = "Error cancelling the UploadWorker"
-internal const val SETUP_ERROR_MESSAGE = "Error while trying to setup the UploadWorker"
-internal const val UPLOAD_WORKER_WAS_SCHEDULED = "UploadWorker was scheduled."
 internal const val UPLOAD_WORKER_NAME = "DatadogUploadWorker"
 internal const val TAG_DATADOG_UPLOAD = "DatadogBackgroundUpload"
 
@@ -34,12 +32,7 @@ internal fun cancelUploadWorker(
         val workManager = WorkManager.getInstance(context)
         workManager.cancelAllWorkByTag("$TAG_DATADOG_UPLOAD/$instanceName")
     } catch (e: IllegalStateException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { CANCEL_ERROR_MESSAGE },
-            e
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logCancelError(e)
     }
 }
 
@@ -65,17 +58,8 @@ internal fun triggerUploadWorker(
             ExistingWorkPolicy.REPLACE,
             uploadWorkRequest
         )
-        internalLogger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.MAINTAINER,
-            { UPLOAD_WORKER_WAS_SCHEDULED }
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logUploadWorkerWasScheduled()
     } catch (e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { SETUP_ERROR_MESSAGE },
-            e
-        )
+        DdSdkAndroidCoreLogger(internalLogger).logSetupError(e)
     }
 }

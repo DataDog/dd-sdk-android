@@ -8,13 +8,13 @@ package com.datadog.android.core.internal.persistence.file.single
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.generated.DdSdkAndroidCoreLogger
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
-import java.util.Locale
 
 internal open class SingleItemDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
@@ -23,6 +23,8 @@ internal open class SingleItemDataWriter<T : Any>(
     internal val internalLogger: InternalLogger,
     internal val filePersistenceConfig: FilePersistenceConfig
 ) : DataWriter<T> {
+
+    private val logger = DdSdkAndroidCoreLogger(internalLogger)
 
     // region DataWriter
 
@@ -62,16 +64,9 @@ internal open class SingleItemDataWriter<T : Any>(
         if (eventSize > filePersistenceConfig.maxItemSize) {
             // DISCUSS? send a RUM/Log Error event here to the org so they get visibility
             // about this in their own org?
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                {
-                    ERROR_LARGE_DATA.format(
-                        Locale.US,
-                        eventSize,
-                        filePersistenceConfig.maxItemSize
-                    )
-                }
+            logger.logErrorLargeData(
+                eventSize = eventSize,
+                maxItemSize = filePersistenceConfig.maxItemSize.toInt()
             )
             return false
         }
@@ -80,7 +75,4 @@ internal open class SingleItemDataWriter<T : Any>(
 
     // endregion
 
-    companion object {
-        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
-    }
 }
