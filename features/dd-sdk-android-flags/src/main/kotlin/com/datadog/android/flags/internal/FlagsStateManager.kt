@@ -79,6 +79,8 @@ internal class FlagsStateManager(private val subscription: DDCoreSubscription<Fl
     }
 
     override fun removeListener(listener: FlagsStateListener) {
-        subscription.removeListener(listener)
+        stateLock.read {
+            subscription.removeListener(listener)
+        }
     }
 }
