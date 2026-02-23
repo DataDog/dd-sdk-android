@@ -6,14 +6,20 @@
 package com.datadog.android.rum.internal.domain.state
 
 import com.datadog.android.internal.collections.EvictingQueue
-import java.util.Queue
+import java.util.concurrent.ConcurrentLinkedDeque
+import kotlin.Long
 import kotlin.math.max
 
-internal data class ViewUIPerformanceReport(
+// don't make it data class, because slowFramesRecords will be copied by reference
+// see manual copy() below
+internal class ViewUIPerformanceReport private constructor(
     val viewStartedTimeStamp: Long = 0L,
-    var slowFramesRecords: Queue<SlowFrameRecord> = EvictingQueue(),
+    val slowFramesRecords: EvictingQueue<SlowFrameRecord>,
+    @Volatile
     var totalFramesDurationNs: Long = 0L,
+    @Volatile
     var slowFramesDurationNs: Long = 0L,
+    @Volatile
     var freezeFramesDuration: Long = 0,
     val minViewLifetimeThresholdNs: Long = 0
 ) {
@@ -23,30 +29,49 @@ internal data class ViewUIPerformanceReport(
         minimumViewLifetimeThresholdNs: Long
     ) : this(
         viewStartedTimeStamp = viewStartedTimeStamp,
-        slowFramesRecords = EvictingQueue(maxSize),
+        slowFramesRecords = EvictingQueue(
+            maxSize = maxSize,
+            delegate = ConcurrentLinkedDeque()
+        ),
         minViewLifetimeThresholdNs = minimumViewLifetimeThresholdNs
     )
 
     val lastSlowFrameRecord: SlowFrameRecord?
+        // lastOrNull here is a function of EvictingQueue, because generally for the queue it is O(N)
         get() = slowFramesRecords.lastOrNull()
 
-    val size: Int
-        get() = slowFramesRecords.size
+    fun snapshot(): ViewUIPerformanceReport.Snapshot = ViewUIPerformanceReport.Snapshot(
+        viewStartedTimeStamp = viewStartedTimeStamp,
+        // iterator over ConcurrentLinkedDeque is weekly consistent, but we are ok with that
+        slowFramesRecords = slowFramesRecords.toList(),
+        totalFramesDurationNs = totalFramesDurationNs,
+        slowFramesDurationNs = slowFramesDurationNs,
+        freezeFramesDuration = freezeFramesDuration,
+        minViewLifetimeThresholdNs = minViewLifetimeThresholdNs
+    )
 
-    fun isEmpty() = slowFramesRecords.isEmpty()
+    data class Snapshot(
+        val viewStartedTimeStamp: Long,
+        val slowFramesRecords: List<SlowFrameRecord>,
+        val totalFramesDurationNs: Long,
+        val slowFramesDurationNs: Long,
+        val freezeFramesDuration: Long,
+        val minViewLifetimeThresholdNs: Long
+    ) {
+        fun slowFramesRate(viewEndedTimeStamp: Long): Double = when {
+            viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
+            totalFramesDurationNs > 0.0 -> slowFramesDurationNs.toDouble() /
+                totalFramesDurationNs * MILLISECONDS_IN_SECOND
+            else -> 0.0
+        }
 
-    fun slowFramesRate(viewEndedTimeStamp: Long): Double = when {
-        viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
-        totalFramesDurationNs > 0.0 -> slowFramesDurationNs.toDouble() / totalFramesDurationNs * MILLISECONDS_IN_SECOND
-        else -> 0.0
-    }
-
-    fun freezeFramesRate(viewEndedTimeStamp: Long): Double = when {
-        viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
-        else -> max(
-            0.0,
-            freezeFramesDuration.toDouble() / (viewEndedTimeStamp - viewStartedTimeStamp) * SECONDS_IN_HOUR
-        )
+        fun freezeFramesRate(viewEndedTimeStamp: Long): Double = when {
+            viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
+            else -> max(
+                0.0,
+                freezeFramesDuration.toDouble() / (viewEndedTimeStamp - viewStartedTimeStamp) * SECONDS_IN_HOUR
+            )
+        }
     }
 
     companion object {

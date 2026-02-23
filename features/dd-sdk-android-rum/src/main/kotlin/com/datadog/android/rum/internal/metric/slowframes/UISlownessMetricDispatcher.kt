@@ -40,7 +40,7 @@ internal class DefaultUISlownessMetricDispatcher(
 
     private val viewTelemetry = ConcurrentHashMap<String, SlowFramesTelemetry>()
 
-    // Called from the main thread
+    // Called from the RUM thread
     override fun onViewCreated(viewId: String) {
         viewTelemetry.putIfAbsent(viewId, SlowFramesTelemetry())
     }
@@ -60,7 +60,7 @@ internal class DefaultUISlownessMetricDispatcher(
         viewTelemetry[viewId]?.missedFrameCount?.incrementAndGet()
     }
 
-    // Called from the main thread
+    // Called from the RUM thread
     override fun sendMetric(viewId: String, viewDurationNs: Long) {
         val telemetry = viewTelemetry.remove(viewId)
         if (telemetry == null) {

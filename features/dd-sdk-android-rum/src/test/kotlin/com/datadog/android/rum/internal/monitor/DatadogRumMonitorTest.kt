@@ -237,7 +237,9 @@ internal class DatadogRumMonitorTest {
         whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.timeProvider.getDeviceTimestampMillis()) doReturn eventTimeMs
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
-        whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
+        whenever(
+            mockSlowFramesListener.resolveReport(any(), any(), any())
+        ) doReturn fakeViewUIPerformanceReport.snapshot()
         whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope

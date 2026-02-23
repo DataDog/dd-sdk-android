@@ -827,8 +827,8 @@ internal class DatadogRumMonitor(
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
+                                    currentRumContext()
                                 }
-                                currentRumContext()
                             }
                         )
                         val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)

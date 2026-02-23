@@ -18,7 +18,7 @@ import kotlin.math.min
 
 internal interface SlowFramesListener : FrameStateListener {
     fun onViewCreated(viewId: String, startedTimestampNs: Long)
-    fun resolveReport(viewId: String, isViewCompleted: Boolean, viewDurationNs: Long): ViewUIPerformanceReport?
+    fun resolveReport(viewId: String, isViewCompleted: Boolean, viewDurationNs: Long): ViewUIPerformanceReport.Snapshot?
     fun onAddLongTask(durationNs: Long)
 }
 
@@ -37,19 +37,19 @@ internal class DefaultSlowFramesListener(
 
     private val slowFramesRecords = ConcurrentHashMap<String, ViewUIPerformanceReport>()
 
-    // Called from the main thread
+    // Called from the RUM thread
     override fun onViewCreated(viewId: String, startedTimestampNs: Long) {
         currentViewId = viewId
         currentViewStartedTimestampNs = startedTimestampNs
         metricDispatcher.onViewCreated(viewId)
     }
 
-    // Called from the main thread
+    // Called from the RUM thread
     override fun resolveReport(
         viewId: String,
         isViewCompleted: Boolean,
         viewDurationNs: Long
-    ): ViewUIPerformanceReport? {
+    ): ViewUIPerformanceReport.Snapshot? {
         @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
         val report = if (isViewCompleted) slowFramesRecords.remove(viewId) else slowFramesRecords[viewId]
 
@@ -58,7 +58,7 @@ internal class DefaultSlowFramesListener(
         // making sure that report is not partially updated
         return synchronized(report) {
             if (isViewCompleted) metricDispatcher.sendMetric(viewId, viewDurationNs)
-            report.copy()
+            report.snapshot()
         }
     }
 
@@ -123,7 +123,7 @@ internal class DefaultSlowFramesListener(
         }
     }
 
-    // Called from the background thread
+    // Called from the RUM thread
     override fun onAddLongTask(durationNs: Long) {
         val viewId = currentViewId
         if (durationNs >= configuration.freezeDurationThresholdNs && viewId != null) {
