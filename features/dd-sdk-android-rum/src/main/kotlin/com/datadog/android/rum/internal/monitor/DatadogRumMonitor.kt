@@ -130,7 +130,7 @@ internal class DatadogRumMonitor(
 
     private val internalProxy = _RumInternalProxy(this)
 
-    private val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
+    private val globalAttributes: MutableMap<String, Any> = ConcurrentHashMap()
 
     private val isDebugEnabled = AtomicBoolean(false)
 
