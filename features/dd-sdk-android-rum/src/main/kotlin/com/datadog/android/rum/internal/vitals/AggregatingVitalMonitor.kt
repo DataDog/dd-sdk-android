@@ -6,14 +6,16 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
 
 internal class AggregatingVitalMonitor : VitalMonitor {
 
+    @Volatile
     private var lastKnownSample: Double = Double.NaN
 
-    private val listeners: MutableMap<VitalListener, VitalInfo> = mutableMapOf()
+    private val listeners: MutableMap<VitalListener, VitalInfo> = ConcurrentHashMap()
 
     // region VitalObserver
 
