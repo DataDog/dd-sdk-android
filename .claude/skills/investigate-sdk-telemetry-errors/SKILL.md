@@ -1,6 +1,6 @@
 ---
-name: explore-telemetry
-description: Explore SDK telemetry logs and metrics using the Datadog MCP server
+name: investigate-sdk-telemetry-errors
+description: Investigate SDK telemetry errors using the Datadog MCP server
 disable-model-invocation: false
 argument-hint: [query or investigation topic]
 ---
