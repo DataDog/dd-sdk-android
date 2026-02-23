@@ -32,9 +32,6 @@ internal class EvaluationEventsProcessor(
     private val flushMutex = ReentrantLock()
 
     @Volatile
-    private var periodicFlushScheduled: Boolean = false
-
-    @Volatile
     private var lastFlushTimeMs: Long = timeProvider.getDeviceTimestampMillis()
 
     init {
@@ -91,24 +88,21 @@ internal class EvaluationEventsProcessor(
     }
 
     private fun startPeriodicFlush() {
-        if (!periodicFlushScheduled) {
-            try {
-                @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-                scheduledExecutor.scheduleWithFixedDelay(
-                    { periodicFlushTask() },
-                    flushIntervalMs,
-                    flushIntervalMs,
-                    TimeUnit.MILLISECONDS
-                )
-                periodicFlushScheduled = true
-            } catch (e: RejectedExecutionException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { "Failed to schedule evaluation flush" },
-                    e
-                )
-            }
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
+            scheduledExecutor.scheduleWithFixedDelay(
+                { periodicFlushTask() },
+                flushIntervalMs,
+                flushIntervalMs,
+                TimeUnit.MILLISECONDS
+            )
+        } catch (e: RejectedExecutionException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { "Failed to schedule evaluation flush" },
+                e
+            )
         }
     }
 
