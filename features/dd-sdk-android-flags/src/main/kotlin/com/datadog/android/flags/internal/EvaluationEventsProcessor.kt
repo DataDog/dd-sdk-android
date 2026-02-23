@@ -13,7 +13,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -31,19 +30,14 @@ internal class EvaluationEventsProcessor(
     periodicFlushEnabled: Boolean = true
 ) {
     private val flushMutex = ReentrantLock()
-    private var scheduledFlushFuture: ScheduledFuture<*>? = null
 
     @Volatile
-    private var periodicFlushEnabled: Boolean = periodicFlushEnabled
-        set(value) {
-            field = value
-            if (value) {
-                reschedulePeriodicFlush()
-            }
-        }
+    private var lastFlushTimeMs: Long = timeProvider.getDeviceTimestampMillis()
 
     init {
-        reschedulePeriodicFlush()
+        if (periodicFlushEnabled) {
+            startPeriodicFlush()
+        }
     }
 
     fun processEvaluation(
@@ -69,7 +63,7 @@ internal class EvaluationEventsProcessor(
         )
 
         if (drainedEvents.isNotEmpty()) {
-            reschedulePeriodicFlush()
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
             writer.writeAll(drainedEvents)
         }
     }
@@ -82,7 +76,7 @@ internal class EvaluationEventsProcessor(
         val events: List<EvaluationAggregationStats>
         try {
             events = aggregator.drain()
-            reschedulePeriodicFlush()
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
         } finally {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - only called after successful tryLock()
             flushMutex.unlock()
@@ -93,43 +87,39 @@ internal class EvaluationEventsProcessor(
         }
     }
 
-    fun reschedulePeriodicFlush() {
-        if (!periodicFlushEnabled) {
-            return
+    private fun startPeriodicFlush() {
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
+            scheduledExecutor.scheduleWithFixedDelay(
+                { periodicFlushTask() },
+                flushIntervalMs,
+                flushIntervalMs,
+                TimeUnit.MILLISECONDS
+            )
+        } catch (e: RejectedExecutionException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { "Failed to schedule evaluation flush" },
+                e
+            )
         }
+    }
 
-        // Cancel any scheduled before scheduling a new one.
-        @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
-        flushMutex.withLock {
-            scheduledFlushFuture?.cancel(false)
-            try {
-                @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-                scheduledFlushFuture = scheduledExecutor.schedule(
-                    { flush() },
-                    flushIntervalMs,
-                    TimeUnit.MILLISECONDS
-                )
-            } catch (e: RejectedExecutionException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { "Failed to schedule evaluation flush" },
-                    e
-                )
-            }
+    private fun periodicFlushTask() {
+        val now = timeProvider.getDeviceTimestampMillis()
+        if (now - lastFlushTimeMs >= flushIntervalMs) {
+            flush()
         }
     }
 
     fun stop() {
-        periodicFlushEnabled = false
-
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - does not throw in Android
         scheduledExecutor.shutdown()
 
         // Wait for any in-progress flush to complete, then drain any remaining events.
-        @Suppress("UnsafeThirdPartyFunctionCall") // safe - ReentrantLock.lock() does not throw
         val events = flushMutex.withLock {
-            scheduledFlushFuture?.cancel(false)
+            lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
             aggregator.drain()
         }
 

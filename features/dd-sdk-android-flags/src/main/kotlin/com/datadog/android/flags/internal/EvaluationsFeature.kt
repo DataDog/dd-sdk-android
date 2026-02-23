@@ -88,7 +88,6 @@ internal class EvaluationsFeature(
             flushIntervalMs = flagsConfiguration.evaluationFlushIntervalMs,
             aggregator = aggregator
         )
-        evaluationProcessor?.reschedulePeriodicFlush()
 
         initialized.set(true)
     }
