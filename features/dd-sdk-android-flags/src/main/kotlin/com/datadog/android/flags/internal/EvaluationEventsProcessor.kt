@@ -35,10 +35,9 @@ internal class EvaluationEventsProcessor(
     private var periodicFlushScheduled: Boolean = false
 
     @Volatile
-    private var lastFlushTimeMs: Long = 0L
+    private var lastFlushTimeMs: Long = timeProvider.getDeviceTimestampMillis()
 
     init {
-        lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
         if (periodicFlushEnabled) {
             startPeriodicFlush()
         }
@@ -92,25 +91,23 @@ internal class EvaluationEventsProcessor(
     }
 
     private fun startPeriodicFlush() {
-        flushMutex.withLock {
-            if (!periodicFlushScheduled) {
-                try {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-                    scheduledExecutor.scheduleWithFixedDelay(
-                        { periodicFlushTask() },
-                        flushIntervalMs,
-                        flushIntervalMs,
-                        TimeUnit.MILLISECONDS
-                    )
-                    periodicFlushScheduled = true
-                } catch (e: RejectedExecutionException) {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                        { "Failed to schedule evaluation flush" },
-                        e
-                    )
-                }
+        if (!periodicFlushScheduled) {
+            try {
+                @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
+                scheduledExecutor.scheduleWithFixedDelay(
+                    { periodicFlushTask() },
+                    flushIntervalMs,
+                    flushIntervalMs,
+                    TimeUnit.MILLISECONDS
+                )
+                periodicFlushScheduled = true
+            } catch (e: RejectedExecutionException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                    { "Failed to schedule evaluation flush" },
+                    e
+                )
             }
         }
     }
