@@ -11,8 +11,6 @@ import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
-import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -23,7 +21,6 @@ import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFacto
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
-import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
 
 /**
  * Type alias for a function that logs a message with a given level.
@@ -35,11 +32,7 @@ internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
     internal val flagsConfiguration: FlagsConfiguration
-) : StorageBackedFeature,
-    FeatureContextUpdateReceiver {
-
-    @Volatile
-    internal var applicationId: String? = null
+) : StorageBackedFeature {
 
     @Volatile
     internal var processor: EventsProcessor = NoOpEventsProcessor()
@@ -79,19 +72,13 @@ internal class FlagsFeature(
 
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
-            internalLogger = sdkCore.internalLogger
+            internalLogger = sdkCore.internalLogger,
+            customFlagEndpoint = flagsConfiguration.customFlagEndpoint
         )
 
     // endregion
 
     override val name: String = FLAGS_FEATURE_NAME
-
-    // region Context Listener
-    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
-        if (featureName == RUM_FEATURE_NAME && applicationId == null) {
-            applicationId = context[RUM_APPLICATION_ID]?.toString()
-        }
-    }
 
     override fun onInitialize(appContext: Context) {
         if (isInitialized) {
@@ -104,7 +91,6 @@ internal class FlagsFeature(
         }
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
-        sdkCore.setContextUpdateReceiver(this)
         dataWriter = createDataWriter()
         processor = ExposureEventsProcessor(
             writer = dataWriter,
@@ -113,15 +99,12 @@ internal class FlagsFeature(
     }
 
     override fun onStop() {
-        sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
             registeredClients.clear()
         }
     }
-
-    // endregion
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
 
