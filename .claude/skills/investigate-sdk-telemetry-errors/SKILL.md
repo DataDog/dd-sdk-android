@@ -9,7 +9,7 @@ You are helping the user explore SDK telemetry data using the Datadog MCP server
 
 ## What is SDK Telemetry
 
-The dd-sdk-android SDK reports internal telemetry (logs and metrics) to a special Datadog org. This telemetry helps SDK maintainers understand SDK health, detect anomalies, and debug issues in production.
+The SDK reports internal telemetry (logs and metrics) to a special Datadog org. This telemetry helps SDK maintainers understand SDK health, detect anomalies, and debug issues in production.
 
 ### Log Types
 
@@ -17,7 +17,7 @@ Telemetry logs have two distinct types, indicated by the `@type` field:
 
 - **`@type:log`** — Regular SDK-internal telemetry logs. These are emitted by the SDK itself to report errors, warnings, diagnostics, and operational events. They originate from SDK code paths.
 
-- **`@type:sdk_crash`** — Crash reports from customer apps that have at least one SDK-related stackframe. These are not emitted by the SDK itself — they are crashes that happened in the customer's process where the SDK was on the call stack. **The presence of an SDK stackframe does not mean the SDK caused the crash** — the SDK may simply be present on the call stack while the root cause lies elsewhere (e.g., in app code, a third-party library, or an Android OS issue). Always assess SDK responsibility explicitly.
+- **`@type:sdk_crash`** — Crash reports from customer apps that have at least one SDK-related stackframe. These are not emitted by the SDK itself — they are crashes that happened in the customer's process where the SDK was on the call stack. **The presence of an SDK stackframe does not mean the SDK caused the crash** — the SDK may simply be present on the call stack while the root cause lies elsewhere (e.g., in app code, a third-party library, or a platform OS issue). Always assess SDK responsibility explicitly.
 
 **Always filter or split by `@type` when investigating.** Mixing both types in the same query obscures root causes and leads to misleading aggregations.
 
@@ -42,7 +42,7 @@ Telemetry logs contain rich contextual data. Use these fields for querying, filt
 | `@log_id` | Unique identifier of the log type | Filtering to a specific log message |
 | `@org_id` | Customer organization ID | Isolating issues to specific customers |
 | `@sdk_version` | SDK version in use | Detecting regressions across releases |
-| `@os_version` | Android OS version | Finding OS-specific issues |
+| `@os_version` | OS version | Finding OS-specific issues |
 | `@device_model` | Device model name | Finding device-specific issues |
 | `@app_id` | Application ID | Isolating issues to specific apps |
 | `status` | Log level (error, warn, info, debug) | Filtering by severity |
@@ -99,7 +99,7 @@ The SDK being on the call stack is a necessary but not sufficient condition for 
 
 1. **Where is the crash frame?** Look at the top of the stack (the frame where the crash originated).
    - If the crashing frame is in SDK code → SDK is likely responsible
-   - If the crashing frame is in app code, Android framework, or a third-party library, but SDK frames appear deeper in the stack → the SDK may just be an innocent bystander (e.g., it called a system API that crashed, or the app called into the SDK with bad state)
+   - If the crashing frame is in app code, the platform framework, or a third-party library, but SDK frames appear deeper in the stack → the SDK may just be an innocent bystander (e.g., it called a system API that crashed, or the app called into the SDK with bad state)
 
 2. **What is the exception type?** Some exceptions point away from the SDK:
    - `NullPointerException` or `IllegalArgumentException` in app code → likely app bug
