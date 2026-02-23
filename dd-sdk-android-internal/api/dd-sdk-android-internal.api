@@ -48,6 +48,7 @@ public final class com/datadog/android/internal/attributes/ViewScopeInstrumentat
 public final class com/datadog/android/internal/collections/EvictingQueue : java/util/Queue {
 	public fun <init> (I)V
 	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/util/Deque;)V
 	public fun add (Ljava/lang/Object;)Z
 	public fun addAll (Ljava/util/Collection;)Z
 	public fun clear ()V
@@ -57,6 +58,7 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun getSize ()I
 	public fun isEmpty ()Z
 	public fun iterator ()Ljava/util/Iterator;
+	public final fun lastOrNull ()Ljava/lang/Object;
 	public fun offer (Ljava/lang/Object;)Z
 	public fun peek ()Ljava/lang/Object;
 	public fun poll ()Ljava/lang/Object;

@@ -17,16 +17,18 @@ internal class ViewUIPerformanceReportForgeryFactory : ForgeryFactory<ViewUIPerf
         val viewStartedTimeStamp = forge.aLong(min = 0)
         return ViewUIPerformanceReport(
             viewStartedTimeStamp = viewStartedTimeStamp,
-            slowFramesRecords = forge.aList {
+            maxSize = Int.MAX_VALUE,
+            minimumViewLifetimeThresholdNs = 0
+        ).apply {
+            slowFramesRecords += forge.aList {
                 SlowFrameRecord(
                     startTimestampNs = aLong(min = viewStartedTimeStamp),
                     durationNs = aLong(min = 0)
                 )
-            }.toEvictingQueue(),
-            totalFramesDurationNs = forge.aLong(min = 1),
-            slowFramesDurationNs = forge.aLong(min = 0),
-            freezeFramesDuration = forge.aLong(min = 0),
-            minViewLifetimeThresholdNs = 0
-        )
+            }.toEvictingQueue()
+            totalFramesDurationNs = forge.aLong(min = 1)
+            slowFramesDurationNs = forge.aLong(min = 0)
+            freezeFramesDuration = forge.aLong(min = 0)
+        }
     }
 }

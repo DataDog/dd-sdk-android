@@ -25,11 +25,12 @@ sealed interface com.datadog.android.internal.attributes.ViewScopeInstrumentatio
     companion object 
       fun create(String): Custom
 class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
+  constructor(Int, java.util.Deque<T>)
   constructor(Int = Int.MAX_VALUE)
-  override val size: Int
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+  fun lastOrNull(): T?
 interface com.datadog.android.internal.data.PreferencesStorage
   fun putFloat(String, Float)
   fun getFloat(String, Float = 0f): Float

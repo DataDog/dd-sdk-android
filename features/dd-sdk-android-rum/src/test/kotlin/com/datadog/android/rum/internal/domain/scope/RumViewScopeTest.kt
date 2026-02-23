@@ -36,7 +36,6 @@ import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
-import com.datadog.android.rum.internal.collections.toEvictingQueue
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -248,7 +247,7 @@ internal class RumViewScopeTest {
     private lateinit var mockViewEndedMetricDispatcher: ViewEndedMetricDispatcher
 
     @Mock
-    private lateinit var mockViewUIPerformanceReport: ViewUIPerformanceReport
+    private lateinit var mockViewUIPerformanceReportSnapshot: ViewUIPerformanceReport.Snapshot
 
     @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
@@ -361,18 +360,17 @@ internal class RumViewScopeTest {
                 duration = aLong(min = 0, max = MAX_DURATION_VALUE_NS)
             )
         }
-        whenever(mockViewUIPerformanceReport.freezeFramesRate(any())) doReturn fakeFreezeRate
-        whenever(mockViewUIPerformanceReport.slowFramesRate(any())) doReturn fakeSlownessRate
-        whenever(mockViewUIPerformanceReport.slowFramesRecords) doReturn fakeSlowRecords
+        whenever(mockViewUIPerformanceReportSnapshot.freezeFramesRate(any())) doReturn fakeFreezeRate
+        whenever(mockViewUIPerformanceReportSnapshot.slowFramesRate(any())) doReturn fakeSlownessRate
+        whenever(mockViewUIPerformanceReportSnapshot.slowFramesRecords) doReturn fakeSlowRecords
             .map {
                 SlowFrameRecord(
                     startTimestampNs = fakeEventTime.nanoTime + it.start,
                     durationNs = it.duration
                 )
             }
-            .toEvictingQueue()
 
-        whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn mockViewUIPerformanceReport
+        whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn mockViewUIPerformanceReportSnapshot
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any(), any(), any())) doReturn mockActionScope
