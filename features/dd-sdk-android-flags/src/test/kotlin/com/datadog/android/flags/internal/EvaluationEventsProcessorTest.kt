@@ -22,14 +22,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -310,8 +308,12 @@ internal class EvaluationEventsProcessorTest {
             taskRunnable = it.getArgument(0)
             mockScheduledFuture
         }
-        // Set time to be greater than flush interval (simulating first run after startup)
-        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn TEST_FLUSH_INTERVAL_MS
+        // Init sets lastFlushTimeMs to current time; use 0 so that when the task runs with
+        // now = TEST_FLUSH_INTERVAL_MS the interval has elapsed.
+        whenever(mockTimeProvider.getDeviceTimestampMillis())
+            .doReturn(0L)
+            .doReturn(0L)
+            .doReturn(TEST_FLUSH_INTERVAL_MS)
 
         val processor = createSchedulingEnabledProcessor()
         processor.processEvaluation(
@@ -325,7 +327,7 @@ internal class EvaluationEventsProcessorTest {
             null
         )
 
-        // Run periodic task - should flush since lastFlushTimeMs is 0
+        // Run periodic task - should flush since interval has elapsed (now=interval, lastFlush=0)
         checkNotNull(taskRunnable).run()
 
         verify(mockWriter).writeAll(any())
@@ -415,7 +417,7 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M shutdown before cancel W stop()`() {
+    fun `M shutdown executor W stop() { periodic flush was enabled }`() {
         whenever(mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any()))
             .doReturn(mockScheduledFuture)
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
@@ -423,9 +425,7 @@ internal class EvaluationEventsProcessorTest {
 
         processor.stop()
 
-        val inOrder = inOrder(mockScheduledExecutor, mockScheduledFuture)
-        inOrder.verify(mockScheduledExecutor).shutdown()
-        inOrder.verify(mockScheduledFuture, atLeastOnce()).cancel(false)
+        verify(mockScheduledExecutor).shutdown()
     }
 
     @Test
@@ -452,15 +452,27 @@ internal class EvaluationEventsProcessorTest {
     }
 
     @Test
-    fun `M cancel scheduled task W stop()`() {
+    fun `M flush remaining and shutdown W stop() { periodic flush was enabled }`() {
         whenever(mockScheduledExecutor.scheduleWithFixedDelay(any<Runnable>(), any(), any(), any()))
             .doReturn(mockScheduledFuture)
         whenever(mockScheduledExecutor.awaitTermination(any(), any())) doReturn true
 
         val processor = createSchedulingEnabledProcessor()
+        processor.processEvaluation(
+            fakeFlagKey,
+            fakeContext,
+            fakeApplicationId,
+            fakeViewName,
+            fakeVariantKey,
+            fakeAllocationKey,
+            null,
+            null
+        )
         processor.stop()
 
-        verify(mockScheduledFuture).cancel(false)
+        verify(mockScheduledExecutor).shutdown()
+        val events = captureWrittenEvents()
+        assertThat(events).hasSize(1)
     }
 
     // endregion

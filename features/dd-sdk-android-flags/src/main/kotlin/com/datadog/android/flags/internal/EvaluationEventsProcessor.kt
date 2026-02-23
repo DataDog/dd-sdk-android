@@ -13,7 +13,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -31,12 +30,15 @@ internal class EvaluationEventsProcessor(
     periodicFlushEnabled: Boolean = true
 ) {
     private val flushMutex = ReentrantLock()
-    private var scheduledFlushFuture: ScheduledFuture<*>? = null
+
+    @Volatile
+    private var periodicFlushScheduled: Boolean = false
 
     @Volatile
     private var lastFlushTimeMs: Long = 0L
 
     init {
+        lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
         if (periodicFlushEnabled) {
             startPeriodicFlush()
         }
@@ -91,16 +93,16 @@ internal class EvaluationEventsProcessor(
 
     private fun startPeriodicFlush() {
         flushMutex.withLock {
-            val currentFuture = scheduledFlushFuture
-            if (currentFuture == null || currentFuture.isCancelled || currentFuture.isDone) {
+            if (!periodicFlushScheduled) {
                 try {
                     @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-                    scheduledFlushFuture = scheduledExecutor.scheduleWithFixedDelay(
+                    scheduledExecutor.scheduleWithFixedDelay(
                         { periodicFlushTask() },
                         flushIntervalMs,
                         flushIntervalMs,
                         TimeUnit.MILLISECONDS
                     )
+                    periodicFlushScheduled = true
                 } catch (e: RejectedExecutionException) {
                     internalLogger.log(
                         InternalLogger.Level.WARN,
@@ -126,7 +128,6 @@ internal class EvaluationEventsProcessor(
 
         // Wait for any in-progress flush to complete, then drain any remaining events.
         val events = flushMutex.withLock {
-            scheduledFlushFuture?.cancel(false)
             lastFlushTimeMs = timeProvider.getDeviceTimestampMillis()
             aggregator.drain()
         }
