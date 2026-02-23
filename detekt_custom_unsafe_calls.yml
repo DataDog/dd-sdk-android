@@ -117,6 +117,7 @@ datadog:
       - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String?):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentLinkedQueue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.NullPointerException"
       - "java.util.concurrent.CopyOnWriteArraySet.removeAll(kotlin.collections.Collection):java.lang.NullPointerException,java.lang.ClassCastException"
+      - "java.util.concurrent.CountDownLatch.await():java.lang.InterruptedException"
       - "java.util.concurrent.CountDownLatch.await(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.CountDownLatch.constructor(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.util.concurrent.Executor.execute(java.lang.Runnable):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
