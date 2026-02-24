@@ -68,7 +68,7 @@ internal class CronetRequestInfoTest {
             requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.url
@@ -86,7 +86,7 @@ internal class CronetRequestInfoTest {
             requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.method
@@ -109,7 +109,7 @@ internal class CronetRequestInfoTest {
                 requestContext.addHeader(key, value)
             }
         }
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.headers
@@ -147,7 +147,7 @@ internal class CronetRequestInfoTest {
         requestContext.setTag(Float::class.java, fakeFloat)
         requestContext.setTag(Double::class.java, fakeDouble)
 
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // Then
         assertThat(requestInfo.tag(String::class.java)).isEqualTo(fakeString)
@@ -172,7 +172,7 @@ internal class CronetRequestInfoTest {
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.addHeader(HttpSpec.Header.CONTENT_TYPE, fakeContentType)
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.contentType
@@ -190,7 +190,7 @@ internal class CronetRequestInfoTest {
             requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val actual = requestInfo.contentType
@@ -211,7 +211,7 @@ internal class CronetRequestInfoTest {
         requestContext.setTag(String::class.java, forge.aString())
         requestContext.setTag(Int::class.java, forge.anInt())
         requestContext.setTag(Boolean::class.java, forge.aBool())
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.tag(Double::class.java)
@@ -229,7 +229,7 @@ internal class CronetRequestInfoTest {
             requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.tag(String::class.java)
@@ -251,7 +251,7 @@ internal class CronetRequestInfoTest {
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.contentLength()
@@ -274,7 +274,7 @@ internal class CronetRequestInfoTest {
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.addHeader(HttpSpec.Header.CONTENT_LENGTH, fakeLength.toString())
         requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.contentLength()
@@ -294,7 +294,7 @@ internal class CronetRequestInfoTest {
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
         requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.contentLength()
@@ -312,7 +312,7 @@ internal class CronetRequestInfoTest {
             requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(fakeMethod) }
-        val requestInfo = CronetHttpRequestInfo(requestContext)
+        val requestInfo = requestContext.asCronetRequestInfo()
 
         // When
         val result = requestInfo.contentLength()

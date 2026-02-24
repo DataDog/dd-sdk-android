@@ -10,7 +10,6 @@ import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -46,16 +45,13 @@ internal class DatadogTracingToolkitTest {
     }
 
     @Test
-    fun `M build TracingInstrumentation W createApmNetworkInstrumentation()`(
-        @BoolForgery fakeCanSendSpan: Boolean
-    ) {
+    fun `M build TracingInstrumentation W createApmNetworkInstrumentation()`() {
         // Given
         val builder = ApmNetworkInstrumentationConfiguration(fakeTracedHosts)
 
         // When
         val result: ApmNetworkInstrumentation = DatadogTracingToolkit.createApmNetworkInstrumentation(
             fakeInstrumentationName,
-            fakeCanSendSpan,
             builder
         )
 
@@ -68,8 +64,7 @@ internal class DatadogTracingToolkitTest {
     @Test
     fun `M build TracingInstrumentation with configured values W createApmNetworkInstrumentation()`(
         @StringForgery fakeSdkInstanceName: String,
-        @StringForgery fakeTraceOrigin: String,
-        @BoolForgery fakeCanSendSpan: Boolean
+        @StringForgery fakeTraceOrigin: String
     ) {
         // Given
         val builder = ApmNetworkInstrumentationConfiguration(fakeTracedHosts)
@@ -80,7 +75,6 @@ internal class DatadogTracingToolkitTest {
         val result: ApmNetworkInstrumentation =
             DatadogTracingToolkit.createApmNetworkInstrumentation(
                 fakeInstrumentationName,
-                fakeCanSendSpan,
                 builder
             )
 

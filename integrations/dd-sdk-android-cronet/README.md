@@ -20,19 +20,28 @@ dependencies {
 
 ## Configuration
 
-Use the `CronetEngine.Builder.configureDatadogInstrumentation()` extension to enable instrumentation. You can enable RUM, APM, or both depending on your needs.
+Use the `CronetEngine.Builder.configureDatadogInstrumentation()` extension to enable
+instrumentation. You can enable RUM, APM, or both depending on your needs.
 
-Below are common configurations compared with their OkHttp equivalents.
+Below are common configurations compared with their [OkHttp equivalents](https://github.com/DataDog/dd-sdk-android/tree/develop/integrations/dd-sdk-android-okhttp).
 
 
-### 1. RUM + APM full tracing (recommended)
+### 1. RUM + APM application-level tracing (recommended)
 
-**OkHttp equivalent:** `addInterceptor(DatadogInterceptor)` + `addNetworkInterceptor(TracingInterceptor)`
+**OkHttp equivalent:** `addInterceptor(DatadogInterceptor)`
 
-Tracks HTTP requests as RUM Resources and creates APM spans at both application and network levels. Redirect hops and retries get individual spans, providing full visibility into the request lifecycle.
+Tracks HTTP requests as RUM Resources and creates APM spans at the application level.
+Redirects are not individually traced — a single span covers the entire request lifecycle.
+This is the default behavior.
 
 ```kotlin
-@OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
+import com.datadog.android.cronet.configureDatadogInstrumentation
+import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ExperimentalTraceApi
+
+@OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
 val cronetEngine = CronetEngine.Builder(context)
     .configureDatadogInstrumentation(
         apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts = listOf("api.example.com")),
@@ -41,138 +50,24 @@ val cronetEngine = CronetEngine.Builder(context)
     .build()
 ```
 
-
-### 2. RUM + APM application-level tracing
-
-**OkHttp equivalent:** `addInterceptor(DatadogInterceptor)`
-
-Tracks HTTP requests as RUM Resources and creates APM spans at the application level. Redirects and retries are not individually traced — a single span covers the entire request lifecycle.
-
+**Note:** Both RUM and Trace features should be enabled: 
 ```kotlin
-@OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
-val cronetEngine = CronetEngine.Builder(context)
-    .configureDatadogInstrumentation(
-        apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts = listOf("api.example.com"))
-            .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS),
-        rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration()
-    )
-    .build()
+import com.datadog.android.rum.Rum
+import com.datadog.android.trace.Trace
+
+Trace.enable(...)
+Rum.enable(...)
 ```
 
-### 3. APM network-level tracing only
+### 2. RUM + APM full tracing (including redirects)
 
-**OkHttp equivalent:** `addNetworkInterceptor(TracingInterceptor)`
+**OkHttp equivalent:** `addInterceptor(DatadogInterceptor)` + `addNetworkInterceptor(TracingInterceptor)`
 
-Creates APM spans at the network level — each redirect hop and retry gets its own span. No RUM Resource tracking.
-
-```kotlin
-@OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
-val cronetEngine = CronetEngine.Builder(context)
-    .configureDatadogInstrumentation(
-        rumInstrumentationConfiguration = null,
-        apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts = listOf("api.example.com"))
-    )
-    .build()
-```
-
-
-
-### 4. RUM only (no APM tracing)
-
-Tracks HTTP requests as RUM Resources only. No APM spans or tracing headers.
+Tracks HTTP requests as RUM Resources and creates APM spans at both application and network levels.
+Redirect hops are assigned individual spans, which provide full visibility of the request lifecycle.
 
 ```kotlin
-@OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
-val cronetEngine = CronetEngine.Builder(context)
-    .configureDatadogInstrumentation(
-        rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
-        apmInstrumentationConfiguration = null
-    )
-    .build()
-```
-
-### 5. RUM + distributed tracing headers only (no client-side APM spans)
-
-Tracks HTTP requests as RUM Resources and injects distributed tracing headers for server-side correlation, without creating client-side APM spans.
-
-```kotlin
-@OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
-val cronetEngine = CronetEngine.Builder(context)
-    .configureDatadogInstrumentation(
-        rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
-        apmInstrumentationConfiguration = null,
-        distributedTracingConfiguration = ApmNetworkInstrumentationConfiguration(
-            tracedHosts = listOf("api.example.com")
-        )
-    )
-    .build()
-```
-
-## Distributed tracing headers and RUM–APM linking
-
-When RUM is enabled, the SDK automatically injects distributed tracing headers (`x-datadog-trace-id`, `x-datadog-parent-id`, etc.) into outgoing requests. These headers allow the Datadog backend to link RUM Resources to the corresponding server-side APM spans, making it possible to trace a user action end-to-end from the mobile app through the backend services.
-
-### How it works
-
-The SDK uses a separate tracing pipeline for header injection, controlled by the `distributedTracingConfiguration` parameter. This pipeline:
-
-- Creates a local trace span with `EXCLUDE_INTERNAL_REDIRECTS` scope (one trace ID per RUM resource, regardless of redirects).
-- Injects the tracing headers into the request before it is sent to the network.
-- Does **not** send the local span to the APM backend — it exists only to carry the trace context.
-
-The modified request (with headers) is then passed to both RUM resource tracking and to the APM instrumentation (if configured), ensuring that the trace context propagates consistently.
-
-### Default behavior
-
-When `distributedTracingConfiguration` is not specified, the SDK reuses the `apmInstrumentationConfiguration` host list for header injection. Only requests to hosts listed in `apmInstrumentationConfiguration` receive tracing headers, and the same hosts get client-side APM spans.
-
-### Customising with `distributedTracingConfiguration`
-
-Provide `distributedTracingConfiguration` explicitly when the host list for header injection should differ from the host list for APM spans. Common reasons:
-
-- **Broader header injection than APM spans.** You want RUM resources for CDN or third-party hosts to link to server-side traces, but you do not want the SDK to create client-side APM spans for those hosts.
-
-  ```kotlin
-  @OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
-  val cronetEngine = CronetEngine.Builder(context)
-      .configureDatadogInstrumentation(
-          rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
-          apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(
-              tracedHosts = listOf("api.example.com") // APM spans for backend only
-          ),
-          distributedTracingConfiguration = ApmNetworkInstrumentationConfiguration(
-              tracedHosts = listOf("api.example.com", "cdn.example.com") // headers for both
-          )
-      )
-      .build()
-  ```
-
-- **Header injection without APM spans.** Set `apmInstrumentationConfiguration = null` and provide `distributedTracingConfiguration` to inject tracing headers for RUM correlation without creating any client-side spans (see [configuration 5](#5-rum--distributed-tracing-headers-only-no-client-side-apm-spans) above).
-
-- **Different sampling or header format.** Pass a configuration with a different sampler or `TracingHeaderType` to control how distributed tracing headers are formatted for the RUM pipeline independently from the APM pipeline.
-
-> **Note:** `distributedTracingConfiguration` is only active when `rumInstrumentationConfiguration` is also provided. Without RUM enabled there is no RUM resource to link, so the SDK ignores this parameter.
-
-## Known Limitations
-
-### Tracing headers on redirects
-
-Cronet's `UrlRequest.followRedirect()` does not allow modifying request headers. This has the following implications when using `ApmNetworkTracingScope.ALL`:
-
-- Client-side spans for redirect hops are created correctly — the local trace tree is complete.
-- However, tracing headers (`x-datadog-trace-id`, `x-datadog-parent-id`, etc.) are **not** updated on redirect — the server on the redirect target receives the headers from the original request.
-- This breaks **server-side** distributed tracing correlation for redirect hops, since the redirect target sees a `parent-id` that belongs to the original request span rather than the redirect hop span.
-
-This limitation does not apply when using `ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS`, since redirect hops are not individually traced and the original headers remain valid.
-
-### RUM-to-APM linking with `ApmNetworkTracingScope.ALL`
-
-When `ApmNetworkTracingScope.ALL` is used together with RUM, the SDK automatically switches the distributed tracing scope to `EXCLUDE_INTERNAL_REDIRECTS`. Because Cronet does not allow modifying headers on redirect, using `ALL` scope with RUM would create multiple APM spans per RUM resource (one for the initial request and one for each redirect hop), making a 1:1 RUM–APM link ambiguous.
-
-In the following configuration, RUM Resources will **not** link directly to APM Spans in the Datadog UI:
-
-```kotlin
-@OptIn(ExperimentalTracingApi::class, ExperimentalRumApi::class)
+@OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
 val cronetEngine = CronetEngine.Builder(context)
     .configureDatadogInstrumentation(
         apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts = listOf("api.example.com"))
@@ -182,4 +77,94 @@ val cronetEngine = CronetEngine.Builder(context)
     .build()
 ```
 
-If RUM-to-APM linking is important for your use case, use `ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS` instead (see [configuration 2](#2-rum--apm-application-level-tracing)). This creates a single span per RUM resource and preserves the link.
+**Note:** Both RUM and Trace features should be enabled:
+```kotlin
+Trace.enable(...)
+Rum.enable(...)
+```
+
+### 3. RUM + distributed tracing (no client-side APM spans)
+
+When `apmInstrumentationConfiguration` is provided, RUM-APM linking is enabled by default — the SDK injects `x-datadog-trace-id` and `x-datadog-parent-id` headers into outgoing requests, allowing you to navigate between RUM Resources and APM Spans in the Datadog UI and build end-to-end distributed traces across client, backend, and other components.
+
+However, this also enables client-side APM spans. If you want RUM-APM linking **without** client-side network spans, call `setHeaderPropagationOnly)` on the APM configuration:
+
+```kotlin
+@OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
+val cronetEngine = CronetEngine.Builder(context)
+    .configureDatadogInstrumentation(
+        rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+        apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(
+            tracedHosts = listOf("api.example.com")
+        ).setHeaderPropagationOnly()
+    )
+    .build()
+```
+
+**Note:** Both RUM and Trace features should be enabled:
+```kotlin
+Trace.enable(...)
+Rum.enable(...)
+```
+
+### 4. APM tracing only (no RUM)
+
+**OkHttp equivalent:** `addNetworkInterceptor(TracingInterceptor)`
+
+Creates APM spans at the network level — each redirect hop gets its own span. No RUM resource tracking.
+
+```kotlin
+@OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
+val cronetEngine = CronetEngine.Builder(context)
+    .configureDatadogInstrumentation(
+        rumInstrumentationConfiguration = null,
+        apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts = listOf("api.example.com"))
+    )
+    .build()
+```
+
+**Note:** Trace feature should be enabled: `Trace.enable(...)`
+
+### 5. RUM only (no APM tracing)
+
+**OkHttp equivalent:** `addInterceptor(DatadogInterceptor)` without `Trace.enable(tracesConfig)`
+
+Tracks HTTP requests as RUM Resources only. No APM spans or tracing headers.
+
+```kotlin
+@OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
+val cronetEngine = CronetEngine.Builder(context)
+    .configureDatadogInstrumentation(
+        rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+        apmInstrumentationConfiguration = null
+    )
+    .build()
+```
+**Note:** RUM feature should be enabled: `Rum.enable(...)`
+
+
+## Known Limitations
+
+### Tracing redirects
+
+When `ApmNetworkTracingScope.ALL` is used together with RUM, 
+client spans will be created for both the original request and the redirect hops. 
+However, tracing headers (`x-datadog-trace-id`, `x-datadog-parent-id`, etc.) will only be added for
+the original request, as Cronet does not allow headers to be modified on redirect requests.
+
+```kotlin
+@OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
+val cronetEngine = CronetEngine.Builder(context)
+    .configureDatadogInstrumentation(
+        apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts = listOf("api.example.com"))
+            .setTraceScope(ApmNetworkTracingScope.ALL),
+        rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration()
+    )
+    .build()
+```
+
+### Tracing retries
+
+At the moment, Cronet does not allow retry requests to be intercepted, so retries cannot be instrumented directly.
+
+

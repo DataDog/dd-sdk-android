@@ -61,7 +61,7 @@ import java.util.Locale
 class ApmNetworkInstrumentation internal constructor(
     internal val canSendSpan: Boolean,
     internal val sdkInstanceName: String?,
-    internal val traceOrigin: String?,
+    val traceOrigin: String?,
     internal val tracerProvider: TracerProvider,
     internal val redacted404ResourceName: Boolean,
     internal val traceSampler: Sampler<DatadogSpan>,

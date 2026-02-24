@@ -79,13 +79,13 @@ object com.datadog.android.internal.network.HttpSpec
     const val CONNECT: String
     fun values()
     fun isMethodWithBody(String)
-    fun redirectAllowed(String)
   object Header
     const val CONTENT_TYPE: String
     const val CONTENT_LENGTH: String
     const val LOCATION: String
     const val RETRY_AFTER: String
     const val WEBSOCKET_ACCEPT_HEADER: String
+    fun values()
   object StatusCode
     const val OK: Int
     const val MOVED_PERMANENTLY: Int
@@ -104,6 +104,8 @@ object com.datadog.android.internal.network.HttpSpec
     const val BAD_GATEWAY: Int
     const val SERVICE_UNAVAILABLE: Int
     const val GATEWAY_TIMEOUT: Int
+    const val NETWORK_AUTHENTICATION_REQUIRED: Int
+    fun values()
     fun clientErrors()
     fun serverErrors()
   object ContentType
@@ -113,6 +115,7 @@ object com.datadog.android.internal.network.HttpSpec
     const val APPLICATION_GRPC: String
     const val APPLICATION_GRPC_PROTO: String
     const val APPLICATION_GRPC_JSON: String
+    fun values()
     fun isStream(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)

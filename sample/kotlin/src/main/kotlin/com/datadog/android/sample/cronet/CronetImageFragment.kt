@@ -19,7 +19,7 @@ import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.sample.R
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
-import com.datadog.android.trace.ExperimentalTracingApi
+import com.datadog.android.trace.ExperimentalTraceApi
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
 import org.chromium.net.UrlRequest
@@ -50,7 +50,7 @@ internal class CronetImageFragment : Fragment() {
         "storage.googleapis.com"
     )
 
-    @OptIn(ExperimentalRumApi::class, ExperimentalTracingApi::class)
+    @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -69,8 +69,8 @@ internal class CronetImageFragment : Fragment() {
             .enableHttp2(true)
             .configureDatadogInstrumentation(
                 rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
-                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts),
-                distributedTracingConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
+                    .setHeaderPropagationOnly()
             )
             .build()
     }

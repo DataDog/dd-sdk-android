@@ -17,7 +17,8 @@ import com.datadog.android.sdk.integration.network.models.TestResponse
 import com.datadog.android.sdk.integration.network.wrappers.HttpTestClientWrapper
 import com.datadog.android.sdk.integration.network.wrappers.HttpTestClientWrapper.Companion.tracedHosts
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
-import com.datadog.android.trace.ExperimentalTracingApi
+import com.datadog.android.trace.ApmNetworkTracingScope
+import com.datadog.android.trace.ExperimentalTraceApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
@@ -33,7 +34,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 
-@OptIn(ExperimentalRumApi::class, ExperimentalTracingApi::class)
+@OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
 internal class CronetClientWrapper(
     private val context: Context,
     private val baseUrl: String
@@ -113,6 +114,7 @@ internal class CronetClientWrapper(
                     apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
                         .setTraceSampleRate(100f)
                         .setTracedRequestListener(cronetSpansCollector)
+                        .setTraceScope(ApmNetworkTracingScope.ALL)
                 )
                 .build()
 

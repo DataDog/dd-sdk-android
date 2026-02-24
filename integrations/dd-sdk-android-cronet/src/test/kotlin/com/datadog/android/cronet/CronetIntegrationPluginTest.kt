@@ -12,11 +12,9 @@ import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfigurat
 import com.datadog.android.tests.elmyr.aHostName
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
-import com.datadog.android.trace.ExperimentalTracingApi
-import com.datadog.android.trace.internal.traceOrigin
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -43,7 +41,7 @@ import java.util.concurrent.Executor
 @ForgeConfiguration(Configurator::class)
 @OptIn(
     ExperimentalRumApi::class,
-    ExperimentalTracingApi::class
+    ExperimentalTraceApi::class
 )
 internal class CronetIntegrationPluginTest {
 
@@ -204,37 +202,34 @@ internal class CronetIntegrationPluginTest {
     }
 
     @Test
-    fun `M not override traceOrigin W build() {distributedTracingConfig with custom origin}`(
-        @StringForgery fakeOrigin: String
-    ) {
-        // When
-        val engine = mockDelegateBuilder.configureDatadogInstrumentation(
-            rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
-            distributedTracingConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
-                .setTraceOrigin(fakeOrigin),
-            apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
-        ).build()
-
-        // Then
-        check(engine is DatadogCronetEngine)
-        assertThat(engine.distributedTracingInstrumentation?.traceOrigin).isEqualTo(fakeOrigin)
-    }
-
-    @Test
-    fun `M use distributedTracingConfig W build() {explicit distributedTracingConfig provided, APM is null}`() {
+    fun `M not create apmInstrumentation W build() {setHeaderPropagationOnly}`() {
         // When
         val engine = mockDelegateBuilder
             .configureDatadogInstrumentation(
                 rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
-                distributedTracingConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost),
-                apmInstrumentationConfiguration = null
-            )
-            .build()
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+                    .setHeaderPropagationOnly()
+            ).build()
 
         // Then
         check(engine is DatadogCronetEngine)
+        assertThat(engine.apmNetworkInstrumentation).isNull()
         assertThat(engine.distributedTracingInstrumentation).isNotNull
-        assertThat(engine.distributedTracingInstrumentation?.traceOrigin).isEqualTo(CronetIntegrationPlugin.ORIGIN_RUM)
+    }
+
+    @Test
+    fun `M create both instrumentations W build() {canSendSpan is true by default}`() {
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.apmNetworkInstrumentation).isNotNull
+        assertThat(engine.distributedTracingInstrumentation).isNotNull
     }
 
     @Test

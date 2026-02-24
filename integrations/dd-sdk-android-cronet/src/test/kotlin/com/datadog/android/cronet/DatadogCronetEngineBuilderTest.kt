@@ -15,7 +15,7 @@ import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfigurat
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentationAssert
 import com.datadog.android.tests.elmyr.aHostName
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
-import com.datadog.android.trace.ExperimentalTracingApi
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -43,7 +43,7 @@ import java.util.concurrent.Executor
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@OptIn(ExperimentalRumApi::class, ExperimentalTracingApi::class)
+@OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
 internal class DatadogCronetEngineBuilderTest {
     @Mock
     private lateinit var mockBuilderDelegate: CronetEngine.Builder

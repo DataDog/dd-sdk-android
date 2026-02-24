@@ -54,14 +54,6 @@ object HttpSpec {
          */
         fun isMethodWithBody(method: String) =
             POST == method || PUT == method || PATCH == method
-
-        /**
-         * Checks if the given HTTP method allows a redirect to rewrite the method.
-         * Safe methods (GET, HEAD) are never rewritten during redirects, so rewrite is not allowed.
-         * @param method the HTTP method to check
-         * @return true if the method is not GET or HEAD; false otherwise
-         */
-        fun redirectAllowed(method: String) = method != GET && method != HEAD
     }
 
     /**
@@ -82,6 +74,17 @@ object HttpSpec {
 
         /** Sec-WebSocket-Accept header name. */
         const val WEBSOCKET_ACCEPT_HEADER: String = "Sec-WebSocket-Accept"
+
+        /**
+         * Returns a list of all header name values.
+         */
+        fun values() = listOf(
+            CONTENT_TYPE,
+            CONTENT_LENGTH,
+            LOCATION,
+            RETRY_AFTER,
+            WEBSOCKET_ACCEPT_HEADER
+        )
     }
 
     /**
@@ -139,17 +142,48 @@ object HttpSpec {
         /** HTTP 504 Gateway Timeout status code. */
         const val GATEWAY_TIMEOUT: Int = 504
 
+        /** Network Authentication Required (RFC 6585) status code. */
+        const val NETWORK_AUTHENTICATION_REQUIRED: Int = 511
+
+        /**
+         * Returns a list of all HTTP status codes.
+         */
+        fun values() = listOf(
+            OK,
+            MOVED_PERMANENTLY,
+            FOUND,
+            SEE_OTHER,
+            TEMPORARY_REDIRECT,
+            PERMANENT_REDIRECT,
+            BAD_REQUEST,
+            UNAUTHORIZED,
+            FORBIDDEN,
+            NOT_FOUND,
+            METHOD_NOT_ALLOWED,
+            REQUEST_TIMEOUT,
+            TOO_MANY_REQUESTS,
+            INTERNAL_ERROR,
+            BAD_GATEWAY,
+            SERVICE_UNAVAILABLE,
+            GATEWAY_TIMEOUT,
+            NETWORK_AUTHENTICATION_REQUIRED
+        )
+
         /**
          * Returns a list of common HTTP client error status codes (4xx).
          * @return list containing BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, and NOT_FOUND
          */
-        fun clientErrors() = listOf(BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, NOT_FOUND)
+        fun clientErrors() = values().filter { it / STATUS_CODE_TYPE == STATUS_CODE_TYPE_CLIENT }
 
         /**
          * Returns a list of common HTTP server error status codes (5xx).
          * @return list containing INTERNAL_ERROR, BAD_GATEWAY, and SERVICE_UNAVAILABLE
          */
-        fun serverErrors() = listOf(INTERNAL_ERROR, BAD_GATEWAY, SERVICE_UNAVAILABLE)
+        fun serverErrors() = values().filter { it / STATUS_CODE_TYPE == STATUS_CODE_TYPE_SERVER }
+
+        private const val STATUS_CODE_TYPE = 100
+        private const val STATUS_CODE_TYPE_SERVER = 5
+        private const val STATUS_CODE_TYPE_CLIENT = 4
     }
 
     /**
@@ -174,6 +208,18 @@ object HttpSpec {
 
         /** gRPC with JSON content type. */
         const val APPLICATION_GRPC_JSON: String = "application/grpc+json"
+
+        /**
+         * Returns a list of all content type values.
+         */
+        fun values() = listOf(
+            APPLICATION_JSON,
+            TEXT_PLAIN,
+            TEXT_EVENT_STREAM,
+            APPLICATION_GRPC,
+            APPLICATION_GRPC_PROTO,
+            APPLICATION_GRPC_JSON
+        )
 
         /**
          * Checks if the given content type represents a streaming protocol.

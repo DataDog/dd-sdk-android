@@ -16,10 +16,29 @@ import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.TracerProvider
 
 /**
- * Configuration that allows to configure APM tracing for network requests.
+ * Configuration for APM distributed tracing of network requests.
+ *
+ * This class controls how the Datadog SDK instruments outgoing HTTP requests
+ * with distributed tracing headers and optional client-side APM spans.
+ *
+ * At minimum, you must provide a list of first-party hosts (or a map of hosts
+ * to [TracingHeaderType]s) so that the SDK knows which requests to instrument.
+ *
+ * Example usage:
+ * ```kotlin
+ * val apmConfig = ApmNetworkInstrumentationConfiguration(
+ *     listOf("api.example.com", "cdn.example.com")
+ * )
+ *     .setTraceSampleRate(75f)
+ *     .setTraceContextInjection(TraceContextInjection.ALL)
+ * ```
+ *
+ * @see TracingHeaderType
+ * @see TraceContextInjection
+ * @see ApmNetworkTracingScope
  */
 @Suppress("TooManyFunctions")
-data class ApmNetworkInstrumentationConfiguration(
+class ApmNetworkInstrumentationConfiguration internal constructor(
     internal val tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
     internal var traceOrigin: String? = null,
     internal var redacted404ResourceName: Boolean = true,
@@ -29,9 +48,9 @@ data class ApmNetworkInstrumentationConfiguration(
     internal var tracedRequestListener: NetworkTracedRequestListener = NoOpNetworkTracedRequestListener(),
     internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE),
     internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracer.getOrNull() },
-    internal var networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
+    internal var networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS,
+    internal var headerPropagationOnly: Boolean = false
 ) {
-
     /**
      * Creates a configuration with a list of traced hosts using default header types
      * ([TracingHeaderType.DATADOG] and [TracingHeaderType.TRACECONTEXT]).
@@ -45,6 +64,17 @@ data class ApmNetworkInstrumentationConfiguration(
                 TracingHeaderType.TRACECONTEXT
             )
         }
+    )
+
+    /**
+     * Creates a configuration with a map of hosts to their associated tracing header types.
+     *
+     * @param tracedHostsWithHeaderType a map of host names to sets of [TracingHeaderType]
+     * to use for each host.
+     */
+    constructor(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>) : this(
+        tracedHostsWithHeaderType,
+        headerPropagationOnly = false // this line added in order to use main constructor and prevent loop
     )
 
     /**
@@ -129,10 +159,10 @@ data class ApmNetworkInstrumentationConfiguration(
      * Sets the tracing scope for network instrumentation.
      *
      * This controls how detailed the tracing will be:
-     * - [ApmNetworkTracingScope.ALL]: Traces both application-level requests and internal
-     *   network operations (redirects, retries). This is the default.
-     * - [ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS]: Only traces the top-level
+     * - [ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS] (default): Only traces the top-level
      *   application request, while still maintaining RUM-APM linking capabilities.
+     * - [ApmNetworkTracingScope.ALL]: Traces both application-level requests and internal
+     *   network operations (redirects, retries).
      *
      * @param networkTracingScope the tracing scope to use
      * @see ApmNetworkTracingScope
@@ -140,6 +170,54 @@ data class ApmNetworkInstrumentationConfiguration(
     fun setTraceScope(networkTracingScope: ApmNetworkTracingScope) = apply {
         this.networkTracingScope = networkTracingScope
     }
+
+    /**
+     * Disables client-side APM span reporting while keeping tracing header propagation active.
+     *
+     * When called, the SDK will still inject distributed tracing headers
+     * (e.g. `x-datadog-trace-id`, `x-datadog-parent-id`) into outgoing requests for
+     * first-party hosts, enabling RUM-APM linking and end-to-end distributed traces.
+     * However, no client-side APM spans will be sent to the Datadog backend.
+     *
+     * This is useful when you want distributed tracing visibility without the overhead
+     * of client-side network spans.
+     */
+    fun setHeaderPropagationOnly() = apply {
+        headerPropagationOnly = true
+    }
+
+    /**
+     * Returns whether this configuration is set to header-propagation-only mode.
+     *
+     * @return `true` if client-side APM spans are disabled and only tracing headers
+     * are propagated, `false` otherwise.
+     * @see headerPropagationOnly
+     */
+    fun isHeaderPropagationOnly(): Boolean {
+        return headerPropagationOnly
+    }
+
+    /**
+     * Creates a deep copy of this configuration.
+     *
+     * Mutable collection fields are deeply copied to ensure the returned instance is independent.
+     * Immutable and shared-by-design fields (scalars, enums, lambdas) are reused as-is.
+     *
+     * @return a new [ApmNetworkInstrumentationConfiguration] with the same settings.
+     */
+    fun copy() = ApmNetworkInstrumentationConfiguration(
+        tracedHostsWithHeaderType = tracedHostsWithHeaderType.deepCopy(),
+        traceOrigin = traceOrigin,
+        redacted404ResourceName = redacted404ResourceName,
+        sdkInstanceName = sdkInstanceName,
+        localTracerFactory = localTracerFactory,
+        traceContextInjection = traceContextInjection,
+        tracedRequestListener = tracedRequestListener,
+        traceSampler = traceSampler,
+        globalTracerProvider = globalTracerProvider,
+        networkTracingScope = networkTracingScope,
+        headerPropagationOnly = headerPropagationOnly
+    )
 
     internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer) = apply {
         this.localTracerFactory = factory
@@ -155,8 +233,7 @@ data class ApmNetworkInstrumentationConfiguration(
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
 
         internal fun ApmNetworkInstrumentationConfiguration.createInstrumentation(
-            instrumentationName: String,
-            canSendSpan: Boolean
+            instrumentationName: String
         ): ApmNetworkInstrumentation {
             val localFirstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(
                 resolveHosts(tracedHostsWithHeaderType)
@@ -165,7 +242,7 @@ data class ApmNetworkInstrumentationConfiguration(
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
             return ApmNetworkInstrumentation(
-                canSendSpan = canSendSpan,
+                canSendSpan = !headerPropagationOnly,
                 traceOrigin = traceOrigin,
                 traceSampler = traceSampler,
                 tracerProvider = tracerProvider,
@@ -190,6 +267,8 @@ data class ApmNetworkInstrumentationConfiguration(
 
             return tracedHosts.filterKeys { sanitizedHosts.contains(it) }
         }
+
+        private fun Map<String, Set<TracingHeaderType>>.deepCopy() = mapValues { (_, v) -> v.toSet() }
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->

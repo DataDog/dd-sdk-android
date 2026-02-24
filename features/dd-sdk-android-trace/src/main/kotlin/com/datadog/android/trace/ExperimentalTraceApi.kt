@@ -15,4 +15,4 @@ package com.datadog.android.trace
     level = RequiresOptIn.Level.WARNING
 )
 @Retention(AnnotationRetention.BINARY)
-annotation class ExperimentalTracingApi
+annotation class ExperimentalTraceApi

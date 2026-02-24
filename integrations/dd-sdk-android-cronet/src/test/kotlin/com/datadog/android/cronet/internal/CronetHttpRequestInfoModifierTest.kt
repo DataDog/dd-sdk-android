@@ -55,7 +55,7 @@ internal class CronetHttpRequestInfoModifierTest {
             requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(forge.anElementFrom(HttpSpec.Method.values())) }
-        fakeRequestInfo = CronetHttpRequestInfo(requestContext)
+        fakeRequestInfo = requestContext.asCronetRequestInfo()
         testedRequestInfoBuilder = fakeRequestInfo.newBuilder()
     }
 

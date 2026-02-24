@@ -240,7 +240,7 @@ internal class CronetRequestResourceIdentifierTest {
             mockExecutor
         )
 
-        val request = CronetHttpRequestInfo(requestContext)
+        val request = requestContext.asCronetRequestInfo()
 
         // When
         val actual = request.uniqueId
@@ -269,7 +269,7 @@ internal class CronetRequestResourceIdentifierTest {
                 mockExecutor
             )
         }
-        return CronetHttpRequestInfo(requestContext)
+        return requestContext.asCronetRequestInfo()
     }
 
     private val CronetHttpRequestInfo.uniqueId: String

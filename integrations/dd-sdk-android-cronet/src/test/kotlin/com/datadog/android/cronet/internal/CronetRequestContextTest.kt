@@ -28,7 +28,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -312,6 +311,30 @@ internal class CronetRequestContextTest {
     }
 
     @Test
+    fun `M share rawCompressionDictionary by reference W copy()`(
+        @StringForgery fakeDictionaryId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeHash = ByteArray(5) { forge.anInt().toByte() }
+        val fakeDictionary = mock<ByteBuffer>()
+        testedContext.setRawCompressionDictionary(fakeHash, fakeDictionary, fakeDictionaryId)
+
+        // When
+        val copiedContext = testedContext.copy()
+
+        // Then
+        val copiedRequest = copiedContext.asCronetRequestInfo()
+        copiedContext.asCronetRequest(copiedRequest, mockTracingState)
+
+        verify(mockDelegateBuilder).setRawCompressionDictionary(
+            fakeHash,
+            fakeDictionary,
+            fakeDictionaryId
+        )
+    }
+
+    @Test
     fun `M build CronetHttpRequestInfo W buildRequestInfo()`() {
         // When
         val requestInfo = testedContext.asCronetRequestInfo()
@@ -517,37 +540,5 @@ internal class CronetRequestContextTest {
 
         // Then
         verify(mockDelegateBuilder).addRequestAnnotation(fakeAnnotation)
-    }
-
-    @Test
-    fun `M not affect original W copy() + modify copy { rawCompressionDictionary set }`(
-        @StringForgery fakeDictionaryId: String,
-        forge: Forge
-    ) {
-        // Given
-        val originalHash = ByteArray(5) { forge.anInt().toByte() }
-        val originalHashCopy = originalHash.copyOf()
-        val originalDictionary = ByteBuffer.allocate(4).putInt(42).flip() as ByteBuffer
-        testedContext.setRawCompressionDictionary(originalHash, originalDictionary, fakeDictionaryId)
-
-        // When
-        val copiedContext = testedContext.copy()
-
-        // Modify the original hash bytes after copying
-        originalHash[0] = (originalHash[0] + 1).toByte()
-
-        // Then - the copy's hash should be independent from the original byte array
-        val copiedRequest = copiedContext.asCronetRequestInfo()
-        copiedContext.asCronetRequest(copiedRequest, mockTracingState)
-
-        val hashCaptor = argumentCaptor<ByteArray>()
-        val idCaptor = argumentCaptor<String>()
-        verify(mockDelegateBuilder).setRawCompressionDictionary(
-            hashCaptor.capture(),
-            any(),
-            idCaptor.capture()
-        )
-        assertThat(hashCaptor.firstValue).isEqualTo(originalHashCopy)
-        assertThat(idCaptor.firstValue).isEqualTo(fakeDictionaryId)
     }
 }

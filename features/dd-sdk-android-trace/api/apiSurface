@@ -1,6 +1,6 @@
-data class com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
-  constructor(Map<String, Set<TracingHeaderType>>, String? = null, Boolean = true, String? = null, (com.datadog.android.api.SdkCore, Set<TracingHeaderType>) -> com.datadog.android.trace.api.tracer.DatadogTracer = DEFAULT_LOCAL_TRACER_FACTORY, TraceContextInjection = TraceContextInjection.SAMPLED, NetworkTracedRequestListener = NoOpNetworkTracedRequestListener(), com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE), () -> com.datadog.android.trace.api.tracer.DatadogTracer? = { GlobalDatadogTracer.getOrNull() }, ApmNetworkTracingScope = ApmNetworkTracingScope.ALL)
+class com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
   constructor(List<String>)
+  constructor(Map<String, Set<TracingHeaderType>>)
   fun setTraceOrigin(String)
   fun getTraceOrigin(): String?
   fun setSdkInstanceName(String)
@@ -10,6 +10,9 @@ data class com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
   fun setTraceContextInjection(TraceContextInjection)
   fun set404ResourcesRedacted(Boolean)
   fun setTraceScope(ApmNetworkTracingScope)
+  fun setHeaderPropagationOnly()
+  fun isHeaderPropagationOnly(): Boolean
+  fun copy()
 enum com.datadog.android.trace.ApmNetworkTracingScope
   - ALL
   - EXCLUDE_INTERNAL_REDIRECTS
@@ -19,7 +22,7 @@ open class com.datadog.android.trace.DeterministicTraceSampler : com.datadog.and
   constructor(() -> Float)
   constructor(Float)
   constructor(Double)
-annotation com.datadog.android.trace.ExperimentalTracingApi
+annotation com.datadog.android.trace.ExperimentalTraceApi
 object com.datadog.android.trace.GlobalDatadogTracer
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
@@ -75,7 +78,7 @@ object com.datadog.android.trace.internal.DatadogTracingToolkit
   fun addThrowable(com.datadog.android.trace.api.span.DatadogSpan, Throwable, Byte)
   fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun mergeBaggage(String?, String): String
-  fun createApmNetworkInstrumentation(String, Boolean, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
+  fun createApmNetworkInstrumentation(String, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
 class com.datadog.android.trace.internal.RumContextPropagator
   constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
   companion object 

@@ -116,7 +116,7 @@ internal class CronetRequestContext internal constructor(
         url = url,
         engine = engine,
         executor = executor,
-        requestParams = requestParams.deepCopy(),
+        requestParams = requestParams.copy(),
         requestCallback = requestCallback,
         additionalAnnotations = additionalAnnotations.toMutableList()
     )
@@ -171,12 +171,11 @@ internal data class CronetRequestParams(
     var uploadDataProviderParams: UploadDataProviderParams? = null
 ) {
 
-    fun deepCopy() = copy(
-        rawCompressionDictionary = rawCompressionDictionary?.deepCopy(),
+    fun copy() = copy(
         headers = headers.mapValues { it.value.toMutableList() }.toMutableMap()
     )
 
-    data class UploadDataProviderParams(
+    class UploadDataProviderParams(
         val uploadDataProvider: UploadDataProvider?,
         val executor: Executor?
     )
@@ -205,12 +204,6 @@ internal data class CronetRequestParams(
             result = 31 * result + (dictionaryId?.hashCode() ?: 0)
             return result
         }
-
-        fun deepCopy() = RawCompressionDictionary(
-            dictionarySha256Hash?.copyOf(),
-            dictionary?.duplicate(),
-            dictionaryId
-        )
     }
 }
 

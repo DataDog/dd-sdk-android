@@ -7,7 +7,6 @@ public final class com/datadog/android/cronet/CronetIntegrationPlugin {
 }
 
 public final class com/datadog/android/cronet/CronetIntegrationPluginKt {
-	public static final fun configureDatadogInstrumentation (Lorg/chromium/net/CronetEngine$Builder;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;)Lcom/datadog/android/cronet/CronetIntegrationPlugin;
-	public static synthetic fun configureDatadogInstrumentation$default (Lorg/chromium/net/CronetEngine$Builder;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;ILjava/lang/Object;)Lcom/datadog/android/cronet/CronetIntegrationPlugin;
+	public static final fun configureDatadogInstrumentation (Lorg/chromium/net/CronetEngine$Builder;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;)Lcom/datadog/android/cronet/CronetIntegrationPlugin;
 }
 

@@ -12,6 +12,8 @@ import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -27,7 +29,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -60,7 +61,12 @@ internal class CronetRedirectTracingRequestTest {
     @StringForgery(regex = URL_FORGERY_PATTERN)
     lateinit var fakeUrl: String
 
+    @Mock
+    lateinit var mockNewTraceState: RequestTracingState
+
     private lateinit var testedRequest: CronetRedirectTracingRequestWrapper
+
+    private val requestTracingState = AtomicReference<RequestTracingState?>(null)
 
     @BeforeEach
     fun `set up`() {
@@ -72,6 +78,7 @@ internal class CronetRedirectTracingRequestTest {
             previousRequestInfo = null,
             apmTracingStateHolder = AtomicReference<RequestTracingState?>(null)
         )
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
     }
 
     @Test
@@ -110,21 +117,15 @@ internal class CronetRedirectTracingRequestTest {
     // region followRedirect instrumentation
 
     @Test
-    fun `M create new trace state W followRedirect() {301 redirect, POST method}`() {
+    fun `M replace method to GET W followRedirect() {method replacement redirect, POST}`(
+        forge: Forge
+    ) {
         // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val mockNewTraceState = mock<RequestTracingState>()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
+        val statusCode = forge.anInt(HttpSpec.StatusCode.MOVED_PERMANENTLY, HttpSpec.StatusCode.SEE_OTHER)
 
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.MOVED_PERMANENTLY,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
+        testedRequest = createCronetWrapper(
+            redirectStatusCode = statusCode,
+            previousRequestInfo = createRequestContext(HttpSpec.Method.POST).asCronetRequestInfo()
         )
 
         // When
@@ -142,77 +143,15 @@ internal class CronetRedirectTracingRequestTest {
     }
 
     @Test
-    fun `M create new trace state W followRedirect() {302 redirect, POST method}`() {
+    fun `M preserve method W followRedirect() {non method replacement redirect redirect, POST}`(
+        forge: Forge
+    ) {
         // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-        val mockNewTraceState = mock<RequestTracingState>()
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
+        val statusCode = forge.anInt(HttpSpec.StatusCode.TEMPORARY_REDIRECT, HttpSpec.StatusCode.PERMANENT_REDIRECT)
 
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.FOUND,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
-        )
-
-        // When
-        testedRequest.followRedirect()
-
-        // Then
-        argumentCaptor<HttpRequestInfo> {
-            verify(mockApmNetworkInstrumentation).onRequest(capture())
-            assertThat(firstValue.method).isEqualTo(HttpSpec.Method.GET)
-        }
-    }
-
-    @Test
-    fun `M create new trace state W followRedirect() {303 redirect, POST method}`() {
-        // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-        val mockNewTraceState = mock<RequestTracingState>()
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
-
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.SEE_OTHER,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
-        )
-
-        // When
-        testedRequest.followRedirect()
-
-        // Then
-        argumentCaptor<HttpRequestInfo> {
-            verify(mockApmNetworkInstrumentation).onRequest(capture())
-            assertThat(firstValue.method).isEqualTo(HttpSpec.Method.GET)
-        }
-    }
-
-    @Test
-    fun `M preserve method W followRedirect() {307 redirect, POST method}`() {
-        // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-        val mockNewTraceState = mock<RequestTracingState>()
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
-
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.TEMPORARY_REDIRECT,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
+        testedRequest = createCronetWrapper(
+            redirectStatusCode = statusCode,
+            previousRequestInfo = createRequestContext(HttpSpec.Method.POST).asCronetRequestInfo()
         )
 
         // When
@@ -227,49 +166,16 @@ internal class CronetRedirectTracingRequestTest {
     }
 
     @Test
-    fun `M preserve method W followRedirect() {308 redirect, POST method}`() {
+    fun `M preserve method W followRedirect() {non-replaceable methods}`(
+        forge: Forge
+    ) {
         // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-        val mockNewTraceState = mock<RequestTracingState>()
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
+        val statusCode = forge.anInt(HttpSpec.StatusCode.MOVED_PERMANENTLY, HttpSpec.StatusCode.PERMANENT_REDIRECT)
+        val method = forge.anElementFrom(HttpSpec.Method.GET, HttpSpec.Method.HEAD)
 
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.PERMANENT_REDIRECT,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
-        )
-
-        // When
-        testedRequest.followRedirect()
-
-        // Then
-        argumentCaptor<HttpRequestInfo> {
-            verify(mockApmNetworkInstrumentation).onRequest(capture())
-            assertThat(firstValue.method).isEqualTo(HttpSpec.Method.POST)
-        }
-    }
-
-    @Test
-    fun `M preserve method W followRedirect() {301 redirect, GET method}`() {
-        // Given
-        val requestContext = createRequestContext(HttpSpec.Method.GET)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-        val mockNewTraceState = mock<RequestTracingState>()
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockNewTraceState
-
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.MOVED_PERMANENTLY,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
+        testedRequest = createCronetWrapper(
+            redirectStatusCode = statusCode,
+            previousRequestInfo = createRequestContext(method).asCronetRequestInfo()
         )
 
         // When
@@ -279,24 +185,22 @@ internal class CronetRedirectTracingRequestTest {
         argumentCaptor<HttpRequestInfo> {
             verify(mockApmNetworkInstrumentation).onRequest(capture())
             assertThat(firstValue.url).isEqualTo(fakeUrl)
-            assertThat(firstValue.method).isEqualTo(HttpSpec.Method.GET)
+            assertThat(firstValue.method).isEqualTo(method)
         }
     }
 
     @Test
-    fun `M not instrument redirect W followRedirect() {null apmNetworkInstrumentation}`() {
+    fun `M not instrument redirect W followRedirect() {null apmNetworkInstrumentation}`(
+        @IntForgery(
+            min = HttpSpec.StatusCode.MOVED_PERMANENTLY,
+            max = HttpSpec.StatusCode.PERMANENT_REDIRECT
+        ) statusCode: Int
+    ) {
         // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.MOVED_PERMANENTLY,
-            apmNetworkInstrumentation = null,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
+        testedRequest = createCronetWrapper(
+            redirectStatusCode = statusCode,
+            previousRequestInfo = createRequestContext(HttpSpec.Method.POST).asCronetRequestInfo(),
+            apmInstrumentation = null
         )
 
         // When
@@ -308,19 +212,17 @@ internal class CronetRedirectTracingRequestTest {
     }
 
     @Test
-    fun `M not instrument redirect W followRedirect() {null newLocationUrl}`() {
+    fun `M not instrument redirect W followRedirect() {null newLocationUrl}`(
+        @IntForgery(
+            min = HttpSpec.StatusCode.MOVED_PERMANENTLY,
+            max = HttpSpec.StatusCode.PERMANENT_REDIRECT
+        ) statusCode: Int
+    ) {
         // Given
-        val requestContext = createRequestContext(HttpSpec.Method.POST)
-        val previousRequestInfo = requestContext.asCronetRequestInfo()
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = null,
-            redirectStatusCode = HttpSpec.StatusCode.MOVED_PERMANENTLY,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = previousRequestInfo,
-            apmTracingStateHolder = requestTracingState
+        testedRequest = createCronetWrapper(
+            redirectStatusCode = statusCode,
+            previousRequestInfo = createRequestContext(HttpSpec.Method.POST).asCronetRequestInfo(),
+            newLocationUrl = null
         )
 
         // When
@@ -333,17 +235,16 @@ internal class CronetRedirectTracingRequestTest {
     }
 
     @Test
-    fun `M not instrument redirect W followRedirect() {null previousRequestInfo}`() {
+    fun `M not instrument redirect W followRedirect() {null previousRequestInfo}`(
+        @IntForgery(
+            min = HttpSpec.StatusCode.MOVED_PERMANENTLY,
+            max = HttpSpec.StatusCode.PERMANENT_REDIRECT
+        ) statusCode: Int
+    ) {
         // Given
-        val requestTracingState = AtomicReference<RequestTracingState?>(null)
-
-        testedRequest = CronetRedirectTracingRequestWrapper(
-            delegate = mockDelegate,
-            newLocationUrl = fakeUrl,
-            redirectStatusCode = HttpSpec.StatusCode.MOVED_PERMANENTLY,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
-            previousRequestInfo = null,
-            apmTracingStateHolder = requestTracingState
+        testedRequest = createCronetWrapper(
+            redirectStatusCode = statusCode,
+            previousRequestInfo = null
         )
 
         // When
@@ -359,16 +260,27 @@ internal class CronetRedirectTracingRequestTest {
 
     // region private
 
-    private fun createRequestContext(method: String): CronetRequestContext {
-        val context = CronetRequestContext(
-            url = fakeUrl,
-            engine = mockEngine,
-            requestCallback = mockCallback,
-            executor = mockExecutor
-        )
-        context.setHttpMethod(method)
-        return context
-    }
+    private fun createRequestContext(method: String) = CronetRequestContext(
+        url = fakeUrl,
+        engine = mockEngine,
+        requestCallback = mockCallback,
+        executor = mockExecutor,
+        requestParams = CronetRequestParams(method = method)
+    )
+
+    private fun createCronetWrapper(
+        redirectStatusCode: Int,
+        previousRequestInfo: HttpRequestInfo?,
+        newLocationUrl: String? = fakeUrl,
+        apmInstrumentation: ApmNetworkInstrumentation? = mockApmNetworkInstrumentation
+    ) = CronetRedirectTracingRequestWrapper(
+        delegate = mockDelegate,
+        newLocationUrl = newLocationUrl,
+        redirectStatusCode = redirectStatusCode,
+        apmNetworkInstrumentation = apmInstrumentation,
+        previousRequestInfo = previousRequestInfo,
+        apmTracingStateHolder = requestTracingState
+    )
 
     // endregion
 }

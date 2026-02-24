@@ -12,7 +12,7 @@ import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
-import com.datadog.android.trace.ExperimentalTracingApi
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import org.chromium.net.CronetEngine
 import java.util.concurrent.Executor
@@ -28,20 +28,16 @@ import java.util.concurrent.TimeUnit
  * will be automatically tracked as RUM resources with timing information.
  * @param apmInstrumentationConfiguration optional APM tracing configuration. When provided, trace spans
  * will be created for HTTP requests and tracing headers will be injected for first-party hosts.
- * @param distributedTracingConfiguration optional distributed tracing configuration for propagating
- * trace context to backend services without generating local APM spans.
  */
-@ExperimentalTracingApi
+@ExperimentalTraceApi
 @ExperimentalRumApi
 fun CronetEngine.Builder.configureDatadogInstrumentation(
     rumInstrumentationConfiguration: RumNetworkInstrumentationConfiguration?,
-    apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?,
-    distributedTracingConfiguration: ApmNetworkInstrumentationConfiguration? = null
+    apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?
 ) = CronetIntegrationPlugin(
     this,
     rumInstrumentationConfiguration,
-    apmInstrumentationConfiguration,
-    distributedTracingConfiguration
+    apmInstrumentationConfiguration
 )
 
 /**
@@ -52,8 +48,7 @@ fun CronetEngine.Builder.configureDatadogInstrumentation(
 class CronetIntegrationPlugin internal constructor(
     private val delegate: CronetEngine.Builder,
     private val rumInstrumentationConfiguration: RumNetworkInstrumentationConfiguration?,
-    private val apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?,
-    private val distributedTracingInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?
+    private val apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?
 ) {
     private var listenerExecutor: Executor? = null
 
@@ -64,7 +59,7 @@ class CronetIntegrationPlugin internal constructor(
      */
     @ExperimentalRumApi
     fun setListenerExecutor(executor: Executor) = apply {
-        this.listenerExecutor = executor
+        listenerExecutor = executor
     }
 
     /**
@@ -76,21 +71,21 @@ class CronetIntegrationPlugin internal constructor(
             _RumInternalProxy.createRumNetworkInstrumentation(CRONET_NETWORK_INSTRUMENTATION_NAME, it)
         }
 
-        val apmInstrumentation = apmInstrumentationConfiguration?.let { configuration ->
-            DatadogTracingToolkit.createApmNetworkInstrumentation(
-                CRONET_NETWORK_INSTRUMENTATION_NAME,
-                true,
-                configuration
-            )
-        }
+        val apmInstrumentation = apmInstrumentationConfiguration
+            ?.takeUnless { it.isHeaderPropagationOnly() }
+            ?.let { configuration ->
+                DatadogTracingToolkit.createApmNetworkInstrumentation(
+                    CRONET_NETWORK_INSTRUMENTATION_NAME,
+                    configuration
+                )
+            }
 
         val distributedTracingInstrumentation = rumNetworkInstrumentation?.let {
-            (distributedTracingInstrumentationConfiguration ?: apmInstrumentationConfiguration)
+            apmInstrumentationConfiguration
                 ?.copy()
                 ?.let { configuration ->
                     DatadogTracingToolkit.createApmNetworkInstrumentation(
                         CRONET_NETWORK_INSTRUMENTATION_NAME,
-                        false,
                         configuration
                             .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
                             .setTraceOriginIfNull(ORIGIN_RUM)
@@ -118,9 +113,13 @@ class CronetIntegrationPlugin internal constructor(
     }
 
     internal companion object {
+        const val ORIGIN_RUM = "rum"
+        const val DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60L
+        const val CRONET_NETWORK_INSTRUMENTATION_NAME = "cronet"
+
         // Exception thrown only for wrong arguments, but those ones are correct
         @Suppress("UnsafeThirdPartyFunctionCall")
-        fun newListenerExecutor(): ThreadPoolExecutor = ThreadPoolExecutor(
+        private fun newListenerExecutor(): ThreadPoolExecutor = ThreadPoolExecutor(
             0,
             Runtime.getRuntime().availableProcessors(),
             DEFAULT_KEEP_ALIVE_TIME_SECONDS,
@@ -134,10 +133,5 @@ class CronetIntegrationPlugin internal constructor(
             } else {
                 this
             }
-
-        const val DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60L
-
-        const val CRONET_NETWORK_INSTRUMENTATION_NAME = "cronet"
-        const val ORIGIN_RUM = "rum"
     }
 }
