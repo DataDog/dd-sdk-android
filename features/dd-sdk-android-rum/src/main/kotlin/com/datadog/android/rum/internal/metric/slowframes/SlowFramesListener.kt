@@ -5,6 +5,7 @@
  */
 package com.datadog.android.rum.internal.metric.slowframes
 
+import android.os.Build
 import androidx.metrics.performance.FrameData
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
@@ -65,6 +66,8 @@ internal class DefaultSlowFramesListener(
     // Called from the background thread
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId
+        // currentViewStartedTimestampNs can be set by RUM thread in onViewCreated after we read currentViewId,
+        // there is no consistency guarantee here
         if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimestampNs) {
             if (viewId != null) {
                 metricDispatcher.incrementMissedFrameCount(viewId)
@@ -139,11 +142,20 @@ internal class DefaultSlowFramesListener(
         // do nothing
     }
 
-    private fun getViewPerformanceReport(viewId: String) = slowFramesRecords.getOrPut(viewId) {
-        ViewUIPerformanceReport(
-            currentViewStartedTimestampNs,
-            configuration.maxSlowFramesAmount,
-            minimumViewLifetimeThresholdNs = configuration.minViewLifetimeThresholdNs
-        )
+    private fun getViewPerformanceReport(viewId: String): ViewUIPerformanceReport {
+        val createLambda = {
+            ViewUIPerformanceReport(
+                currentViewStartedTimestampNs,
+                configuration.maxSlowFramesAmount,
+                minimumViewLifetimeThresholdNs = configuration.minViewLifetimeThresholdNs
+            )
+        }
+
+        return if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // all args are safe
+            slowFramesRecords.computeIfAbsent(viewId) { createLambda.invoke() }
+        } else {
+            slowFramesRecords.getOrPut(viewId, createLambda)
+        }
     }
 }

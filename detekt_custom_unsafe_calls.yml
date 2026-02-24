@@ -112,6 +112,7 @@ datadog:
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection?):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.concurrent.Callable.call():java.lang.Exception"
+      - "java.util.concurrent.ConcurrentHashMap.computeIfAbsent(kotlin.String, java.util.function.Function):java.lang.NullPointerException,java.lang.IllegalStateException,java.lang.RuntimeException"
       - "java.util.concurrent.ConcurrentHashMap.contains(kotlin.Any?):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentHashMap.remove(com.datadog.android.api.feature.FeatureContextUpdateReceiver):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String?):java.lang.NullPointerException"
