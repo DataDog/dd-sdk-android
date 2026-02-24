@@ -50,7 +50,7 @@ internal class PrecomputedAssignmentsDownloader(
 
     private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
-        response.body?.string()
+        response.body?.use { it.string() }
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,
