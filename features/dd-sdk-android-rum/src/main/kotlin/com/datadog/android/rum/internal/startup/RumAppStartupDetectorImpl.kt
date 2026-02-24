@@ -29,6 +29,7 @@ internal class RumAppStartupDetectorImpl(
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
+    private var pendingScenario: RumStartupScenario? = null
 
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
@@ -83,7 +84,13 @@ internal class RumAppStartupDetectorImpl(
             trackedActivities.add(activity)
         }
 
-        if (trackedActivities.size == 1 && !isChangingConfigurations && shouldTrackStartup) {
+        val isFirstTrackedActivityWithNoPendingStartup =
+            trackedActivities.size == 1 &&
+                !isChangingConfigurations &&
+                shouldTrackStartup &&
+                pendingScenario == null
+
+        if (isFirstTrackedActivityWithNoPendingStartup) {
             val processStartTime = appStartupTimeProvider()
 
             val gapNs = now.nanoTime - processStartTime.nanoTime
@@ -114,12 +121,31 @@ internal class RumAppStartupDetectorImpl(
                 )
             }
 
-            listener.onAppStartupDetected(scenario)
+            pendingScenario = scenario
+            if (!listener.onAppStartupDetected(scenario)) {
+                pendingScenario = null
+            }
             isFirstActivityForProcess = false
+        }
+
+        // If a pending scenario exists and this is a different qualifying activity,
+        // notify the listener so it can subscribe to this activity's first frame too.
+        val currentPendingScenario = pendingScenario
+        if (currentPendingScenario != null && shouldTrackStartup &&
+            currentPendingScenario.activity.get() !== activity
+        ) {
+            listener.onNextActivityCreated(currentPendingScenario, activity)
         }
     }
 
+    override fun getPendingScenario(): RumStartupScenario? = pendingScenario
+
+    override fun clearPendingScenario() {
+        pendingScenario = null
+    }
+
     override fun destroy() {
+        pendingScenario = null
         application.unregisterActivityLifecycleCallbacks(this)
     }
 
