@@ -36,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -60,7 +61,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -130,7 +132,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -170,7 +173,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -215,7 +219,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -259,7 +264,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -296,7 +302,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -324,7 +331,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -372,7 +380,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -404,7 +413,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(mockDecorView, expectedResourceName)
@@ -446,7 +456,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -486,7 +497,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -508,7 +520,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference<Window>(null),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -542,7 +555,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(validTarget, expectedResourceName)
         var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to validTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to validTarget.height.toLong()
         )
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
             mock {
@@ -561,16 +576,29 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             providers,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
         verify(rumMonitor.mockInstance).addAction(
-            RumActionType.TAP,
-            "",
-            expectedAttributes
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
+                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
+                val widthMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH]
+                val heightMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT]
+                classMatches && resourceMatches && widthMatches && heightMatches &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_X) &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_Y)
+            }
         )
     }
 
@@ -605,7 +633,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(validTarget, expectedResourceName)
         var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.simpleName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to validTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to validTarget.height.toLong()
         )
 
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
@@ -625,16 +655,29 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             providers,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
         verify(rumMonitor.mockInstance).addAction(
-            RumActionType.TAP,
-            "",
-            expectedAttributes
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
+                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
+                val widthMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH]
+                val heightMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT]
+                classMatches && resourceMatches && widthMatches && heightMatches &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_X) &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_Y)
+            }
         )
     }
 
@@ -668,7 +711,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(validTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to validTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to validTarget.height.toLong()
         )
 
         testedListener = GesturesListener(
@@ -676,7 +721,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -684,9 +730,21 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         // Then
         verify(rumMonitor.mockInstance).addAction(
-            RumActionType.TAP,
-            fakeCustomTargetName,
-            expectedAttributes
+            eq(RumActionType.TAP),
+            eq(fakeCustomTargetName),
+            argThat { attributes ->
+                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
+                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
+                val widthMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH]
+                val heightMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT]
+                classMatches && resourceMatches && widthMatches && heightMatches &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_X) &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_Y)
+            }
         )
     }
 
@@ -719,7 +777,9 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockResourcesForTarget(validTarget, expectedResourceName)
         val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to validTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to validTarget.height.toLong()
         )
 
         testedListener = GesturesListener(
@@ -727,7 +787,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -735,9 +796,139 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         // Then
         verify(rumMonitor.mockInstance).addAction(
-            RumActionType.TAP,
-            "",
-            expectedAttributes
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
+                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
+                    expectedAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
+                val widthMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH]
+                val heightMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] ==
+                    expectedAttributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT]
+                classMatches && resourceMatches && widthMatches && heightMatches &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_X) &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_Y)
+            }
+        )
+    }
+
+    @Test
+    fun `M calculate correct relative position W tap { position relative to target }`(
+        forge: Forge
+    ) {
+        // Given
+        val targetX = 100
+        val targetY = 200
+        val touchX = 150f
+        val touchY = 250f
+
+        val mockEvent: MotionEvent = mock {
+            whenever(it.x).thenReturn(touchX)
+            whenever(it.y).thenReturn(touchY)
+        }
+
+        val targetId = forge.anInt()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        // Mock getLocationOnScreen to return a specific position
+        whenever(validTarget.getLocationOnScreen(any())).doAnswer { invocation ->
+            val array = invocation.arguments[0] as IntArray
+            array[0] = targetX
+            array[1] = targetY
+            null
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then - position should be relative to the target element
+        val expectedRelativeX = (touchX - targetX).toLong()
+        val expectedRelativeY = (touchY - targetY).toLong()
+        verify(rumMonitor.mockInstance).addAction(
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                attributes[RumAttributes.INTERNAL_ACTION_POSITION_X] == expectedRelativeX &&
+                    attributes[RumAttributes.INTERNAL_ACTION_POSITION_Y] == expectedRelativeY
+            }
+        )
+    }
+
+    @Test
+    fun `M not include position W tap { view not attached to window }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        // Mock view as not attached to window
+        whenever(validTarget.isAttachedToWindow).thenReturn(false)
+
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then - position attributes should NOT be included when view is not attached
+        verify(rumMonitor.mockInstance).addAction(
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                !attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_X) &&
+                    !attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_Y) &&
+                    attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] == validTarget.javaClass.canonicalName
+            }
         )
     }
 
@@ -776,7 +967,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             contextRef = WeakReference(mockAppContext),
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
             composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -837,7 +1029,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         whenever(
@@ -866,6 +1059,136 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             fakeAttributes
         )
     }
+
+    // region View Identity Tests
+
+    @Test
+    fun `M include view identity W onTap() { viewIdentityResolver returns value }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val fakeViewIdentity = forge.anAlphabeticalString(size = 32)
+        val validTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        whenever(mockViewIdentityResolver.resolveViewIdentity(validTarget)).thenReturn(fakeViewIdentity)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addAction(
+            eq(RumActionType.TAP),
+            any(),
+            argThat {
+                this[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] == fakeViewIdentity
+            }
+        )
+    }
+
+    @Test
+    fun `M not include view identity W onTap() { viewIdentityResolver returns null }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val validTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        whenever(mockViewIdentityResolver.resolveViewIdentity(validTarget)).thenReturn(null)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addAction(
+            eq(RumActionType.TAP),
+            any(),
+            argThat {
+                !this.containsKey(RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY)
+            }
+        )
+    }
+
+    @Test
+    fun `M call resolveViewIdentity W onTap() { view is tapped }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val validTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(mockViewIdentityResolver).resolveViewIdentity(validTarget)
+    }
+
+    // endregion
 
     // region Internal
 

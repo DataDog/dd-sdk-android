@@ -14,6 +14,7 @@ import android.view.Window
 import androidx.core.view.isVisible
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -37,7 +38,8 @@ internal class GesturesListener(
     private val contextRef: Reference<Context>,
     private val internalLogger: InternalLogger,
     private val composeActionTrackingStrategy: ActionTrackingStrategy = NoOpActionTrackingStrategy(),
-    private val androidActionTrackingStrategy: ActionTrackingStrategy = AndroidActionTrackingStrategy()
+    private val androidActionTrackingStrategy: ActionTrackingStrategy = AndroidActionTrackingStrategy(),
+    private val viewIdentityResolver: ViewIdentityResolver
 ) : GestureListenerCompat() {
 
     private var scrollEventType: RumActionType? = null
@@ -226,7 +228,7 @@ internal class GesturesListener(
                 onUpEvent.y
             )
             downTarget?.takeIf { it == upTarget }?.let { target ->
-                sendTapEventWithTarget(target)
+                sendTapEventWithTarget(target, onUpEvent.x, onUpEvent.y)
             }
         }
     }
@@ -257,19 +259,26 @@ internal class GesturesListener(
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
         if (decorView != null) {
             findTarget(decorView, e.x, e.y)?.let { target ->
-                sendTapEventWithTarget(target)
+                sendTapEventWithTarget(target, e.x, e.y)
             }
         }
     }
 
-    private fun sendTapEventWithTarget(target: ViewTarget) {
+    private fun sendTapEventWithTarget(target: ViewTarget, touchX: Float = 0f, touchY: Float = 0f) {
         val attributes = mutableMapOf<String, Any?>()
         target.viewRef.get()?.let { view ->
-            val targetId: String = contextRef.get().resourceIdName(view.id)
-            attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
-            attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
-            attributesProviders.forEach {
-                it.extractAttributes(view, attributes)
+            addViewAttributes(view, attributes)
+
+            if (view.isAttachedToWindow) {
+                val locationOnScreen = IntArray(2)
+                @Suppress("UnsafeThirdPartyFunctionCall") // locationOnScreen is non-null with exactly 2 elements
+                view.getLocationOnScreen(locationOnScreen)
+
+                val relativeX = (touchX - locationOnScreen[0]).toLong()
+                val relativeY = (touchY - locationOnScreen[1]).toLong()
+
+                attributes[RumAttributes.INTERNAL_ACTION_POSITION_X] = relativeX
+                attributes[RumAttributes.INTERNAL_ACTION_POSITION_Y] = relativeY
             }
         }
         target.node?.let {
@@ -288,12 +297,7 @@ internal class GesturesListener(
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>()
         scrollTarget.viewRef.get()?.let { view ->
-            val targetId: String = contextRef.get().resourceIdName(view.id)
-            attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
-            attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
-            attributesProviders.forEach {
-                it.extractAttributes(view, attributes)
-            }
+            addViewAttributes(view, attributes)
         }
         scrollTarget.node?.let {
             attributes.putAll(it.customAttributes)
@@ -303,6 +307,20 @@ internal class GesturesListener(
             attributes[RumAttributes.ACTION_GESTURE_DIRECTION] = gestureDirection
         }
         return attributes
+    }
+
+    private fun addViewAttributes(view: View, attributes: MutableMap<String, Any?>) {
+        val targetId: String = contextRef.get().resourceIdName(view.id)
+        attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
+        attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
+        attributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] = view.width.toLong()
+        attributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] = view.height.toLong()
+        viewIdentityResolver.resolveViewIdentity(view)?.let { viewIdentity ->
+            attributes[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] = viewIdentity
+        }
+        attributesProviders.forEach {
+            it.extractAttributes(view, attributes)
+        }
     }
 
     private fun resolveGestureDirection(endEvent: MotionEvent): String {
