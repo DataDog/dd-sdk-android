@@ -19,6 +19,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -119,6 +120,9 @@ internal class DefaultImageWireframeHelperTest {
     @Mock
     lateinit var mockContext: Context
 
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
     @LongForgery
     var fakeViewId: Long = 0L
 
@@ -189,7 +193,8 @@ internal class DefaultImageWireframeHelperTest {
             resourceResolver = mockResourceResolver,
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewUtilsInternal = mockViewUtilsInternal,
-            imageTypeResolver = mockImageTypeResolver
+            imageTypeResolver = mockImageTypeResolver,
+            sdkCore = mockSdkCore
         )
     }
 

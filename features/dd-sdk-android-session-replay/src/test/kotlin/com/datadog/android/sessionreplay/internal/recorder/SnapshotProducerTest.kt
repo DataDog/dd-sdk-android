@@ -19,6 +19,7 @@ import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Comp
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.ViewIdentityProvider
 import com.datadog.android.sessionreplay.setSessionReplayImagePrivacy
 import com.datadog.android.sessionreplay.setSessionReplayTextAndInputPrivacy
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
@@ -72,6 +73,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
+    @Mock
+    lateinit var mockViewIdentityProvider: ViewIdentityProvider
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -112,7 +116,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -139,7 +144,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -166,7 +172,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -193,7 +200,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -224,7 +232,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -261,7 +270,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         val argumentCaptor = argumentCaptor<MappingContext>()
@@ -296,7 +306,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         val argumentCaptor = argumentCaptor<MappingContext>()
@@ -340,7 +351,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -373,7 +385,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -413,7 +426,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
@@ -460,7 +474,8 @@ internal class SnapshotProducerTest {
             fakeSystemInformation,
             fakeTextAndInputPrivacy,
             fakeImagePrivacy,
-            mockRecordedDataQueueRefs
+            mockRecordedDataQueueRefs,
+            mockViewIdentityProvider
         )
 
         // Then
