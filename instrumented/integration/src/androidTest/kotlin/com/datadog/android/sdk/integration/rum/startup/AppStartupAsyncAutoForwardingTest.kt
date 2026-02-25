@@ -9,7 +9,6 @@ package com.datadog.android.sdk.integration.rum.startup
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
-import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -138,7 +137,8 @@ internal class AppStartupAsyncAutoForwardingTest :
         ) {
 
         val mainActivityResumed = CountDownLatch(1)
-        private lateinit var mainActivityResumedCallback: Application.ActivityLifecycleCallbacks
+        private var mainActivityResumedCallback: Application.ActivityLifecycleCallbacks =
+            NoOpActivityLifecycleCallbacks()
 
         override fun beforeActivityLaunched() {
             super.beforeActivityLaunched()
@@ -146,16 +146,10 @@ internal class AppStartupAsyncAutoForwardingTest :
                 .targetContext.applicationContext
 
             // Register before the activity launches so we can't miss the RESUMED callback.
-            mainActivityResumedCallback = object : Application.ActivityLifecycleCallbacks {
+            mainActivityResumedCallback = object : NoOpActivityLifecycleCallbacks() {
                 override fun onActivityResumed(activity: Activity) {
                     if (activity is MainContentActivity) mainActivityResumed.countDown()
                 }
-                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-                override fun onActivityStarted(activity: Activity) {}
-                override fun onActivityPaused(activity: Activity) {}
-                override fun onActivityStopped(activity: Activity) {}
-                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-                override fun onActivityDestroyed(activity: Activity) {}
             }
             (appContext as Application).registerActivityLifecycleCallbacks(mainActivityResumedCallback)
 
