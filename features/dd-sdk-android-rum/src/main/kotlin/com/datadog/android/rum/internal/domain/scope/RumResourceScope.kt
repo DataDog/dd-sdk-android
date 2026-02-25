@@ -257,11 +257,15 @@ internal class RumResourceScope(
         val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
         val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
 
+        val graphqlErrorsJson = resourceAttributes.remove(RumAttributes.GRAPHQL_ERRORS) as? String
+        val graphqlErrors = parseGraphQLErrors(graphqlErrorsJson)
+
         val graphql = resolveGraphQLAttributes(
             operationType = graphqlOperationType,
             operationName = graphqlOperationName,
             variables = graphqlVariables,
-            payload = graphqlPayload
+            payload = graphqlPayload,
+            errors = graphqlErrors
         )
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
@@ -560,18 +564,38 @@ internal class RumResourceScope(
         operationType: String?,
         operationName: String?,
         variables: String?,
-        payload: String?
+        payload: String?,
+        errors: List<ResourceEvent.Error>?
     ): ResourceEvent.Graphql? {
         operationType?.toOperationType(sdkCore.internalLogger)?.let {
             return ResourceEvent.Graphql(
                 operationType = it,
                 operationName = operationName,
                 variables = variables,
-                payload = payload
+                payload = payload,
+                errorCount = errors?.size?.toLong(),
+                errors = errors
             )
         }
 
         return null
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun parseGraphQLErrors(jsonString: String?): List<ResourceEvent.Error>? {
+        if (jsonString.isNullOrEmpty()) return null
+
+        return try {
+            val jsonArray = com.google.gson.JsonParser.parseString(jsonString).asJsonArray
+            jsonArray.map { ResourceEvent.Error.fromJsonObject(it.asJsonObject) }
+        } catch (e: Exception) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.USER,
+                { "Failed to parse GraphQL errors from attribute: $e" }
+            )
+            null
+        }
     }
 
     @Suppress("ReturnCount", "SwallowedException")
