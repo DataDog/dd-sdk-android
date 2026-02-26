@@ -11,6 +11,7 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
 import java.util.Collections
@@ -82,6 +83,15 @@ internal class RumAppStartupDetectorImpl(
 
         if (shouldTrackStartup) {
             trackedActivities.add(activity)
+        }
+
+        // Clear a stale pending scenario so a re-launch in the same process
+        // is not blocked by an interstitial that never forwarded TTID.
+        val stalePending = pendingScenario
+        if (stalePending != null &&
+            now.nanoTime - stalePending.initialTime.nanoTime > MAX_TTID_DURATION_NS
+        ) {
+            pendingScenario = null
         }
 
         val isFirstTrackedActivityWithNoPendingStartup =

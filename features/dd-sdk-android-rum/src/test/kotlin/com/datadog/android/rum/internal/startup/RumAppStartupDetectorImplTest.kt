@@ -11,6 +11,7 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -303,11 +304,7 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // When
-        detector.onActivityStarted(activity)
-        detector.onActivityResumed(activity)
-        detector.onActivityPaused(activity)
-        detector.onActivityStopped(activity)
-        detector.onActivityDestroyed(activity)
+        destroyActivity(detector, activity)
 
         // Simulate RumFeature reporting TTID and clearing the pending scenario
         detector.clearPendingScenario()
@@ -384,11 +381,7 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
         )
 
-        detector.onActivityStarted(activity2)
-        detector.onActivityResumed(activity2)
-        detector.onActivityPaused(activity2)
-        detector.onActivityStopped(activity2)
-        detector.onActivityDestroyed(activity2)
+        destroyActivity(detector, activity2)
 
         detector.onActivityDestroyed(activity)
 
@@ -464,11 +457,7 @@ internal class RumAppStartupDetectorImplTest {
         verifyNoMoreInteractions(listener)
 
         // When - interstitial activity is destroyed and main activity is created
-        detector.onActivityStarted(interstitialActivity)
-        detector.onActivityResumed(interstitialActivity)
-        detector.onActivityPaused(interstitialActivity)
-        detector.onActivityStopped(interstitialActivity)
-        detector.onActivityDestroyed(interstitialActivity)
+        destroyActivity(detector, interstitialActivity)
 
         currentTime += 1.seconds
 
@@ -653,11 +642,7 @@ internal class RumAppStartupDetectorImplTest {
         shouldTrackActivity1 = false
 
         // And - activity is destroyed (predicate now returns false, but stored value was true)
-        detector.onActivityStarted(activity1)
-        detector.onActivityResumed(activity1)
-        detector.onActivityPaused(activity1)
-        detector.onActivityStopped(activity1)
-        detector.onActivityDestroyed(activity1)
+        destroyActivity(detector, activity1)
 
         // Simulate RumFeature reporting TTID and clearing the pending scenario
         detector.clearPendingScenario()
@@ -711,6 +696,45 @@ internal class RumAppStartupDetectorImplTest {
         assertThat(pending).isNotNull
         assertThat(pending).isInstanceOf(RumStartupScenario.Cold::class.java)
         assertThat(pending!!.activity.get()).isSameAs(activity)
+    }
+
+    @Test
+    fun `M create fresh startup scenario W stale pendingScenario exists on re-launch`(
+        forge: Forge
+    ) {
+        // Given - first launch creates a pending scenario (e.g. interstitial that never drew)
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+        val staleScenario = detector.getPendingScenario()
+        assertThat(staleScenario).isNotNull
+
+        // Simulate the interstitial activity being fully destroyed (app goes background)
+        destroyActivity(detector, activity)
+
+        // Advance time beyond the TTID timeout (1 minute)
+        currentTime += MAX_TTID_DURATION_NS.nanoseconds + 1.seconds
+
+        // When - user re-launches the app (new activity in the same process)
+        val secondActivity: Activity = mock()
+        whenever(secondActivity.isChangingConfigurations) doReturn false
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - stale scenario was discarded and a fresh one created for the new activity
+        val freshScenario = detector.getPendingScenario()
+        assertThat(freshScenario).isNotNull
+        assertThat(freshScenario).isNotSameAs(staleScenario)
+        assertThat(freshScenario!!.activity.get()).isSameAs(secondActivity)
     }
 
     @Test
@@ -866,11 +890,7 @@ internal class RumAppStartupDetectorImplTest {
         val originalScenario = detector.getPendingScenario()
         assertThat(originalScenario).isNotNull
 
-        detector.onActivityStarted(activity)
-        detector.onActivityResumed(activity)
-        detector.onActivityPaused(activity)
-        detector.onActivityStopped(activity)
-        detector.onActivityDestroyed(activity)
+        destroyActivity(detector, activity)
 
         currentTime += 1.seconds
         val secondActivity: Activity = mock()
@@ -937,6 +957,14 @@ internal class RumAppStartupDetectorImplTest {
         } else {
             detector.onActivityCreated(activity, bundle)
         }
+    }
+
+    private fun destroyActivity(detector: RumAppStartupDetectorImpl, activity: Activity) {
+        detector.onActivityStarted(activity)
+        detector.onActivityResumed(activity)
+        detector.onActivityPaused(activity)
+        detector.onActivityStopped(activity)
+        detector.onActivityDestroyed(activity)
     }
 
     private fun RumAppStartupDetector.Listener.verifyScenarioDetected(expected: RumStartupScenario) {
