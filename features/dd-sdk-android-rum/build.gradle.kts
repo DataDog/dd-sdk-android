@@ -72,6 +72,10 @@ dependencies {
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
+    // Generate Diff classes
+    implementation(project(":tools:diff"))
+    ksp(project(":tools:diff"))
+
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
