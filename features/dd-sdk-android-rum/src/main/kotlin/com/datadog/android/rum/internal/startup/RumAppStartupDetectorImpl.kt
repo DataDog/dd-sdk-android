@@ -122,9 +122,7 @@ internal class RumAppStartupDetectorImpl(
             }
 
             pendingScenario = scenario
-            if (!listener.onAppStartupDetected(scenario)) {
-                pendingScenario = null
-            }
+            listener.onAppStartupDetected(scenario)
             isFirstActivityForProcess = false
         }
 

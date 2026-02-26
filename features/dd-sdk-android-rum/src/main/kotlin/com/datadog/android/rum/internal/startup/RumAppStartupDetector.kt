@@ -18,11 +18,8 @@ internal interface RumAppStartupDetector {
     interface Listener {
         /**
          * Called when a startup scenario is detected.
-         * @return true if the listener successfully subscribed to the first frame draw,
-         * false if it was unable to (e.g. activity already GC'd, RUM monitor unavailable).
-         * The detector uses this to decide whether to keep or discard pendingScenario.
          */
-        fun onAppStartupDetected(scenario: RumStartupScenario): Boolean
+        fun onAppStartupDetected(scenario: RumStartupScenario)
         fun onNextActivityCreated(pendingScenario: RumStartupScenario, activity: Activity)
     }
 

@@ -71,8 +71,6 @@ internal class RumAppStartupDetectorImplTest {
     @BeforeEach
     fun `set up`() {
         whenever(activity.isChangingConfigurations) doReturn false
-        // Default: listener successfully subscribes to the first frame draw
-        whenever(listener.onAppStartupDetected(any())) doReturn true
     }
 
     @Test
@@ -713,27 +711,6 @@ internal class RumAppStartupDetectorImplTest {
         assertThat(pending).isNotNull
         assertThat(pending).isInstanceOf(RumStartupScenario.Cold::class.java)
         assertThat(pending!!.activity.get()).isSameAs(activity)
-    }
-
-    @Test
-    fun `M not set pendingScenario W onAppStartupDetected listener returns false`(
-        forge: Forge
-    ) {
-        // Given - listener fails to subscribe (e.g. activity GC'd, monitor unavailable)
-        whenever(listener.onAppStartupDetected(any())) doReturn false
-        val detector = createDetector()
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = activity,
-            hasSavedInstanceStateBundle = false
-        )
-
-        // Then - pendingScenario must remain null so future startups are not blocked
-        assertThat(detector.getPendingScenario()).isNull()
     }
 
     @Test

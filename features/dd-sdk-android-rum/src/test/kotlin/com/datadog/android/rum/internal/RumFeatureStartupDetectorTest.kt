@@ -162,7 +162,7 @@ internal class RumFeatureStartupDetectorTest {
     }
 
     @Test
-    fun `M return false and do nothing W onAppStartupDetected + activity GCd`() {
+    fun `M do nothing W onAppStartupDetected + activity GCd`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -178,16 +178,15 @@ internal class RumFeatureStartupDetectorTest {
         )
 
         // When
-        val result = listener.onAppStartupDetected(fakeScenario)
+        listener.onAppStartupDetected(fakeScenario)
 
         // Then
-        assertThat(result).isFalse()
         verify(mockRumMonitor, never()).sendAppStartEvent(any())
         verify(mockFirstDrawReporter, never()).subscribeToFirstFrameDrawn(any(), any())
     }
 
     @Test
-    fun `M return false and do nothing W onAppStartupDetected + monitor not AdvancedRumMonitor`() {
+    fun `M do nothing W onAppStartupDetected + monitor not AdvancedRumMonitor`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -209,10 +208,9 @@ internal class RumFeatureStartupDetectorTest {
         )
 
         // When
-        val result = listener.onAppStartupDetected(fakeScenario)
+        listener.onAppStartupDetected(fakeScenario)
 
         // Then
-        assertThat(result).isFalse()
         verify(mockFirstDrawReporter, never()).subscribeToFirstFrameDrawn(any(), any())
     }
 
