@@ -41,7 +41,7 @@ fun GitCloneDependenciesExtension.cloneRumEventsFormat(
     destinationFolder: String,
     excludedPrefixes: List<String> = emptyList()
 ) {
-    val repositoryRef = project.findProperty("dd.rum.schema.ref") as? String ?: "master"
+    val repositoryRef = project.findProperty("dd.rum.schema.ref") as? String ?: "adlrb/partial-view"
 
     clone(
         repo = RUM_EVENTS_FORMAT_REPO,
