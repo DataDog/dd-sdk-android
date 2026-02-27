@@ -1,16 +1,32 @@
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 
-// Map feature types to their real Datadog endpoints
+// Intake base URL per site name (mirrors DatadogSite.intakeEndpoint)
+const SITE_INTAKE_BASES = {
+  'us1':      'https://browser-intake-datadoghq.com',
+  'us3':      'https://browser-intake-us3-datadoghq.com',
+  'us5':      'https://browser-intake-us5-datadoghq.com',
+  'eu1':      'https://browser-intake-datadoghq.eu',
+  'ap1':      'https://browser-intake-ap1-datadoghq.com',
+  'ap2':      'https://browser-intake-ap2-datadoghq.com',
+  'us1_fed':  'https://browser-intake-ddog-gov.com',
+  'staging':  'https://browser-intake-datad0g.com',
+};
+
+const site = (process.env.DATADOG_SITE || 'staging').toLowerCase();
+const intakeBase = SITE_INTAKE_BASES[site] || SITE_INTAKE_BASES['staging'];
+
+console.log(`🌍 Forwarding to site: ${site} (${intakeBase})`);
+
 const DATADOG_ENDPOINTS = {
-  'rum': 'https://rum.browser-intake-datadoghq.com/api/v2/rum',
-  'logs': 'https://logs.browser-intake-datadoghq.com/api/v2/logs',
-  'traces': 'https://trace.browser-intake-datadoghq.com/api/v2/spans',
-  'session-replay': 'https://session-replay.browser-intake-datadoghq.com/api/v2/replay',
-  'profiling': 'https://intake.profile.datadoghq.com/api/v2/profile',
-  'feature-flags-exposures': 'https://browser-intake-datadoghq.com/api/v2/exposures',
+  'rum':                       `${intakeBase}/api/v2/rum`,
+  'logs':                      `${intakeBase}/api/v2/logs`,
+  'traces':                    `${intakeBase}/api/v2/spans`,
+  'session-replay':            `${intakeBase}/api/v2/replay`,
+  'profiling':                 `${intakeBase}/api/v2/profile`,
+  'feature-flags-exposures':   `${intakeBase}/api/v2/exposures`,
   // Feature flags assignments use dynamic CDN URLs based on the original request
-  'feature-flags-assignments': null  
+  'feature-flags-assignments': null
 };
 
 // Headers to forward to Datadog
