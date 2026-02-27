@@ -590,7 +590,7 @@ internal class RumResourceScope(
             jsonArray.map { ResourceEvent.Error.fromJsonObject(it.asJsonObject) }
         } catch (e: Exception) {
             sdkCore.internalLogger.log(
-                InternalLogger.Level.DEBUG,
+                InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { "Failed to parse GraphQL errors from attribute" },
                 e
