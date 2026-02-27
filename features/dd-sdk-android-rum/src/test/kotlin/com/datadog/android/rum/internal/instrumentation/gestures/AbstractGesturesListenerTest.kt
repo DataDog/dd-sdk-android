@@ -14,6 +14,7 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -61,6 +62,9 @@ internal abstract class AbstractGesturesListenerTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockViewIdentityResolver: ViewIdentityResolver
 
     // region Tests
 
@@ -116,8 +120,16 @@ internal abstract class AbstractGesturesListenerTest {
             whenever(it.id).thenReturn(id)
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
+            whenever(it.isAttachedToWindow).thenReturn(true)
 
             whenever(it.getLocationInWindow(any())).doAnswer {
+                val array = it.arguments[0] as IntArray
+                array[0] = locationOnScreenArray[0]
+                array[1] = locationOnScreenArray[1]
+                null
+            }
+
+            whenever(it.getLocationOnScreen(any())).doAnswer {
                 val array = it.arguments[0] as IntArray
                 array[0] = locationOnScreenArray[0]
                 array[1] = locationOnScreenArray[1]

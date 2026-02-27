@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -61,7 +62,8 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    viewIdentityResolver: ViewIdentityResolver
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -99,7 +101,8 @@ internal class RumSessionScope(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        insightsCollector
+        insightsCollector = insightsCollector,
+        viewIdentityResolver = viewIdentityResolver
     )
 
     internal val activeView: RumViewScope?
