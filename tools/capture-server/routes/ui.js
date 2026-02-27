@@ -32,6 +32,7 @@ router.get('/requests', (req, res) => {
       isMultipart: r.isMultipart,
       partCount: r.partCount,
       eventCount: r.eventCount || 0,
+      eventTypes: r.eventTypes ? JSON.parse(r.eventTypes) : null,
       forwardStatus: r.forwardStatus,
       forwardError: r.forwardError
     }));

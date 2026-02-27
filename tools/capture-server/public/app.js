@@ -95,10 +95,10 @@ async function loadRequests() {
           <div class="request-meta">
             <span>${req.method}</span>
             <span>${formatBytes(req.rawBodySize)}</span>
-            ${req.eventCount > 0 ? `<span class="event-count">${req.eventCount} event${req.eventCount > 1 ? 's' : ''}</span>` : ''}
             ${req.isMultipart ? `<span>${req.partCount} parts</span>` : ''}
             ${formatForwardStatus(req.forwardStatus)}
           </div>
+          ${req.eventTypes ? `<div class="event-types">${formatEventTypes(req.eventTypes)}</div>` : (req.eventCount > 0 ? `<div class="event-types"><span class="event-type-pill">Events: ${req.eventCount}</span></div>` : '')}
         </div>
       `;
     }
@@ -146,7 +146,7 @@ async function selectRequest(id) {
           <span class="detail-label">Raw Size</span>
           <span class="detail-value">${formatBytes(req.rawBodySize)}</span>
           <span class="detail-label">Events</span>
-          <span class="detail-value">${req.eventCount || 0}</span>
+          <span class="detail-value">${req.eventCount || 0}${req.eventTypes ? ` &mdash; ${formatEventTypes(JSON.parse(req.eventTypes || '{}'))}` : ''}</span>
         </div>
       </div>
       
@@ -196,7 +196,23 @@ async function selectRequest(id) {
         </div>
       `;
     }
-    
+
+    const rawEvents = Array.isArray(req.parsedBody)
+      ? req.parsedBody
+      : (req.parsedBody && typeof req.parsedBody === 'object' ? [req.parsedBody] : []);
+    // Filter out the empty metadata line {} that the Android SDK prepends to each batch
+    const events = rawEvents.filter(e => e && typeof e === 'object' && Object.keys(e).length > 0);
+    if (events.length > 0) {
+      html += `
+        <div class="detail-section">
+          <h4>Events (${events.length})</h4>
+          <div class="events-list">
+            ${events.map((ev, i) => renderEventItem(ev, i)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     if (req.responseBody) {
       html += `
         <div class="detail-section">
@@ -288,6 +304,53 @@ function tryFormatJson(str) {
   } catch {
     return escapeHtml(str);
   }
+}
+
+function renderEventItem(ev, index) {
+  const type = typeof ev === 'object' && ev !== null ? (ev.type || 'unknown') : 'unknown';
+  const summary = getEventSummary(ev, type);
+  const json = escapeHtml(JSON.stringify(ev, null, 2));
+  return `
+    <div class="event-item" id="event-${index}">
+      <div class="event-item-header" onclick="toggleEvent(${index})">
+        <span class="event-toggle">▶</span>
+        <span class="event-type-pill event-type-${type.replace(/_/g, '-')}">${type}</span>
+        <span class="event-summary">${summary}</span>
+      </div>
+      <div class="event-item-body" style="display:none">
+        <pre class="json-view">${json}</pre>
+      </div>
+    </div>
+  `;
+}
+
+function getEventSummary(ev, type) {
+  if (!ev || typeof ev !== 'object') return '';
+  const v = ev.view;
+  if (type === 'view' || type === 'view_update') {
+    return escapeHtml(v?.name || v?.url || '');
+  }
+  if (type === 'action') return escapeHtml(ev.action?.target?.name || ev.action?.type || '');
+  if (type === 'error') return escapeHtml(ev.error?.message || '');
+  if (type === 'resource') return escapeHtml(ev.resource?.url || '');
+  if (type === 'long_task') return `${ev.long_task?.duration ?? ''}ns`;
+  return '';
+}
+
+function toggleEvent(index) {
+  const item = document.getElementById(`event-${index}`);
+  const body = item.querySelector('.event-item-body');
+  const arrow = item.querySelector('.event-toggle');
+  const expanded = body.style.display !== 'none';
+  body.style.display = expanded ? 'none' : 'block';
+  arrow.textContent = expanded ? '▶' : '▼';
+}
+
+function formatEventTypes(types) {
+  return Object.entries(types)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, count]) => `<span class="event-type-pill event-type-${type.replace('_', '-')}">${type}: ${count}</span>`)
+    .join(' ');
 }
 
 function escapeHtml(text) {

@@ -92,11 +92,25 @@ router.post(['/:feature', '/*'], captureRawBody, async (req, res) => {
       decompressedBody = rawBody.toString('utf-8');
     }
     
-    // Count events (each line is one event in NDJSON format)
+    // Count events and build type breakdown (each line is one event in NDJSON format)
+    let eventTypes = null;
     if (decompressedBody) {
-      eventCount = decompressedBody.split('\n').filter(line => line.trim()).length;
+      const lines = decompressedBody.split('\n').filter(line => line.trim());
+      const typeCounts = {};
+      for (const line of lines) {
+        try {
+          const event = JSON.parse(line);
+          if (Object.keys(event).length === 0) continue; // skip empty metadata line
+          eventCount++;
+          const type = event.type || 'unknown';
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+        } catch {}
+      }
+      if (Object.keys(typeCounts).length > 0) {
+        eventTypes = JSON.stringify(typeCounts);
+      }
     }
-    
+
     // Store the request
     const record = storage.save({
       timestamp: Date.now(),
@@ -110,7 +124,8 @@ router.post(['/:feature', '/*'], captureRawBody, async (req, res) => {
       decompressError: decompressError,
       contentType: contentType,
       encoding: encoding || null,
-      eventCount: eventCount
+      eventCount: eventCount,
+      eventTypes: eventTypes
     });
     
     console.log(`📥 [${feature}] Captured request #${record.id} (${rawBody.length} bytes)`);

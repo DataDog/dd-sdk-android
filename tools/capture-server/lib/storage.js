@@ -31,6 +31,7 @@ function init() {
       isMultipart INTEGER DEFAULT 0,
       partCount INTEGER DEFAULT 0,
       eventCount INTEGER DEFAULT 0,
+      eventTypes TEXT,
       forwardStatus INTEGER,
       forwardError TEXT,
       forwardedAt INTEGER,
@@ -42,6 +43,9 @@ function init() {
     CREATE INDEX IF NOT EXISTS idx_eventCount ON requests(eventCount);
   `);
   
+  // Add eventTypes column to existing databases that predate this field
+  try { db.exec('ALTER TABLE requests ADD COLUMN eventTypes TEXT'); } catch {}
+
   console.log('📦 Database initialized');
 }
 
@@ -53,11 +57,11 @@ function save(record) {
     INSERT INTO requests (
       timestamp, feature, method, path, headers, rawBodySize, rawBody,
       decompressedBody, decompressError, contentType, encoding,
-      isMultipart, partCount, eventCount
+      isMultipart, partCount, eventCount, eventTypes
     ) VALUES (
       @timestamp, @feature, @method, @path, @headers, @rawBodySize, @rawBody,
       @decompressedBody, @decompressError, @contentType, @encoding,
-      @isMultipart, @partCount, @eventCount
+      @isMultipart, @partCount, @eventCount, @eventTypes
     )
   `);
   
@@ -75,7 +79,8 @@ function save(record) {
     encoding: record.encoding || null,
     isMultipart: record.isMultipart || 0,
     partCount: record.partCount || 0,
-    eventCount: record.eventCount || 0
+    eventCount: record.eventCount || 0,
+    eventTypes: record.eventTypes || null
   });
   
   return { id: result.lastInsertRowid, ...record };
