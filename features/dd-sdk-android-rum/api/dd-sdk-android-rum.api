@@ -8638,16 +8638,14 @@ public final class com/datadog/android/rum/model/ViewEvent$FlutterBuildTime$Comp
 
 public final class com/datadog/android/rum/model/ViewEvent$FrozenFrame {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/Long;)Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
+	public fun <init> (J)V
+	public final fun component1 ()J
+	public final fun copy (J)Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;JILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$FrozenFrame;
-	public final fun getCount ()Ljava/lang/Long;
+	public final fun getCount ()J
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
@@ -9850,16 +9848,14 @@ public final class com/datadog/android/rum/model/ViewProperties$FlutterBuildTime
 
 public final class com/datadog/android/rum/model/ViewProperties$FrozenFrame {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/Long;)Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;
+	public fun <init> (J)V
+	public final fun component1 ()J
+	public final fun copy (J)Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;JILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewProperties$FrozenFrame;
-	public final fun getCount ()Ljava/lang/Long;
+	public final fun getCount ()J
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
@@ -11064,16 +11060,14 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTim
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/Long;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;
+	public fun <init> (J)V
+	public final fun component1 ()J
+	public final fun copy (J)Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;JILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;
-	public final fun getCount ()Ljava/lang/Long;
+	public final fun getCount ()J
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;

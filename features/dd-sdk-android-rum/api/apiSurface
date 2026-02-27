@@ -2635,7 +2635,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): LongTask
       fun fromJsonObject(com.google.gson.JsonObject): LongTask
   data class FrozenFrame
-    constructor(kotlin.Long? = null)
+    constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): FrozenFrame
@@ -2996,7 +2996,7 @@ data class com.datadog.android.rum.model.ViewProperties
       fun fromJson(kotlin.String): LongTask
       fun fromJsonObject(com.google.gson.JsonObject): LongTask
   data class FrozenFrame
-    constructor(kotlin.Long? = null)
+    constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): FrozenFrame
@@ -3265,7 +3265,7 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): LongTask
       fun fromJsonObject(com.google.gson.JsonObject): LongTask
   data class FrozenFrame
-    constructor(kotlin.Long? = null)
+    constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): FrozenFrame

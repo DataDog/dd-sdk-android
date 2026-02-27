@@ -18,6 +18,7 @@ import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.domain.scope.RumViewStateMapper
+import com.datadog.android.rum.model.RumViewUpdateEvent
 import com.datadog.android.rum.model.ViewEvent
 
 internal class RumDataWriter(
@@ -31,11 +32,9 @@ internal class RumDataWriter(
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
-        val mappedElement = eventMapper.map(element) ?: return false
-
-        if (mappedElement is ViewEvent) {
-            val viewState = RumViewStateMapper.fromViewEvent(mappedElement)
-
+        val mappedElement = when (element) {
+            is ViewEvent, is RumViewUpdateEvent -> element
+            else -> eventMapper.map(element) ?: return false
         }
 
         val byteArray = eventSerializer.serializeToByteArray(
