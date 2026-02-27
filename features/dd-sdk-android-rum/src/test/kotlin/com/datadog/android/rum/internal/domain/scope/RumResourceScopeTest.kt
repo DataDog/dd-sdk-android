@@ -3520,16 +3520,17 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            val graphql = firstValue.resource.graphql
-            checkNotNull(graphql)
+            val graphql = checkNotNull(firstValue.resource.graphql)
             assertThat(graphql.errorCount).isEqualTo(1L)
-            assertThat(graphql.errors).hasSize(1)
-            val error = checkNotNull(graphql.errors?.first())
+            val errors = checkNotNull(graphql.errors)
+            assertThat(errors).hasSize(1)
+            val error = errors[0]
             assertThat(error.message).isEqualTo("field not found")
             assertThat(error.code).isEqualTo("VALIDATION_ERROR")
-            assertThat(error.locations).hasSize(1)
-            assertThat(error.line).isEqualTo(2L)
-            assertThat(error.column).isEqualTo(3L)
+            val locations = checkNotNull(error.locations)
+            assertThat(locations).hasSize(1)
+            assertThat(locations[0].line).isEqualTo(2L)
+            assertThat(locations[0].column).isEqualTo(3L)
             assertThat(error.path).hasSize(2)
         }
     }
@@ -3561,12 +3562,12 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            val graphql = firstValue.resource.graphql
-            assertThat(graphql).isNotNull
-            assertThat(graphql!!.errorCount).isEqualTo(2L)
-            assertThat(graphql.errors).hasSize(2)
-            assertThat(graphql.errors!![0].message).isEqualTo("error one")
-            assertThat(graphql.errors!![1].message).isEqualTo("error two")
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isEqualTo(2L)
+            val errors = checkNotNull(graphql.errors)
+            assertThat(errors).hasSize(2)
+            assertThat(errors[0].message).isEqualTo("error one")
+            assertThat(errors[1].message).isEqualTo("error two")
         }
     }
 
