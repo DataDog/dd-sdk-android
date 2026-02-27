@@ -9166,7 +9166,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockInsightsCollector).onLongTask(fakeEvent.eventTime.nanoTime, durationNs)
+        verify(mockInsightsCollector).onLongTask(durationNs)
     }
 
     @Test

@@ -271,7 +271,7 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             val duration = resolveResourceDuration(eventTime)
-            insightsCollector.onNetworkRequest(eventTimestamp, duration)
+            insightsCollector.onNetworkRequest(duration)
             ResourceEvent(
                 date = eventTimestamp,
                 resource = ResourceEvent.Resource(

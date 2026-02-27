@@ -113,7 +113,7 @@ internal class DefaultSlowFramesListener(
                         frameStartedTimestampNs,
                         frameDurationNs
                     )
-                    insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
+                    insightsCollector.onSlowFrame(frameDurationNs)
                 }
             } else {
                 // It's a continuous slow frame – increasing duration
@@ -121,7 +121,7 @@ internal class DefaultSlowFramesListener(
                     previousSlowFrameRecord.durationNs + frameDurationNs,
                     configuration.maxSlowFrameThresholdNs - 1
                 )
-                insightsCollector.onSlowFrame(frameStartedTimestampNs, frameDurationNs)
+                insightsCollector.onSlowFrame(frameDurationNs)
             }
         }
     }

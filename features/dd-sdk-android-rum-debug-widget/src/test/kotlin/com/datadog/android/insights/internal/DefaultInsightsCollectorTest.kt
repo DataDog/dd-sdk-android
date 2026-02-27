@@ -104,7 +104,7 @@ internal class DefaultInsightsCollectorTest {
     @Test
     fun `M append SlowFrame event W onSlowFrame()`(@LongForgery(min = 0) fakeDurationNs: Long) {
         // When
-        testedInsightsCollector.onSlowFrame(startedTimestamp = 0L, durationNs = fakeDurationNs)
+        testedInsightsCollector.onSlowFrame(durationNs = fakeDurationNs)
 
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
@@ -116,7 +116,7 @@ internal class DefaultInsightsCollectorTest {
     @Test
     fun `M append LongTask event W onLongTask()`(@LongForgery(min = 0) fakeDurationNs: Long) {
         // When
-        testedInsightsCollector.onLongTask(startedTimestamp = 0L, durationNs = fakeDurationNs)
+        testedInsightsCollector.onLongTask(durationNs = fakeDurationNs)
 
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
@@ -128,7 +128,7 @@ internal class DefaultInsightsCollectorTest {
     @Test
     fun `M append Resource event W onNetworkRequest()`(@LongForgery(min = 0) fakeDurationNs: Long) {
         // When
-        testedInsightsCollector.onNetworkRequest(startedTimestamp = 0L, durationNs = fakeDurationNs)
+        testedInsightsCollector.onNetworkRequest(durationNs = fakeDurationNs)
 
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()

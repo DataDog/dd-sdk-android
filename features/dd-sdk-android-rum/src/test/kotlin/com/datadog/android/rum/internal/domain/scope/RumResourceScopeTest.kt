@@ -3684,7 +3684,7 @@ internal class RumResourceScopeTest {
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockInsightsCollector).onNetworkRequest(any(), any())
+        verify(mockInsightsCollector).onNetworkRequest(any())
     }
 
     // endregion
