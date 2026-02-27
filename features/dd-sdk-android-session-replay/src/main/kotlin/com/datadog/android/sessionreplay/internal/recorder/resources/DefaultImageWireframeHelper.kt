@@ -251,6 +251,8 @@ internal class DefaultImageWireframeHelper(
         val drawableWidthDp = drawableProperties.drawableWidth.densityNormalized(density).toLong()
         val drawableHeightDp = drawableProperties.drawableHeight.densityNormalized(density).toLong()
 
+        val permanentId = sdkCore.getViewIdentityResolver().resolveViewIdentity(view)
+
         if (imagePrivacy == ImagePrivacy.MASK_ALL) {
             return createContentPlaceholderWireframe(
                 id = id,
@@ -259,7 +261,8 @@ internal class DefaultImageWireframeHelper(
                 width = drawableWidthDp,
                 height = drawableHeightDp,
                 label = MASK_ALL_CONTENT_LABEL,
-                clipping = clipping
+                clipping = clipping,
+                permanentId = permanentId
             )
         }
 
@@ -272,7 +275,8 @@ internal class DefaultImageWireframeHelper(
                 width = drawableWidthDp,
                 height = drawableHeightDp,
                 label = MASK_CONTEXTUAL_CONTENT_LABEL,
-                clipping = clipping
+                clipping = clipping,
+                permanentId = permanentId
             )
         }
 
@@ -283,7 +287,7 @@ internal class DefaultImageWireframeHelper(
                 y,
                 width = drawableWidthDp,
                 height = drawableHeightDp,
-                permanentId = sdkCore.getViewIdentityResolver().resolveViewIdentity(view),
+                permanentId = permanentId,
                 shapeStyle = shapeStyle,
                 border = border,
                 clip = clipping,
@@ -431,7 +435,8 @@ internal class DefaultImageWireframeHelper(
         width: Long,
         height: Long,
         label: String,
-        clipping: MobileSegment.WireframeClip?
+        clipping: MobileSegment.WireframeClip?,
+        permanentId: String? = null
     ): MobileSegment.Wireframe.PlaceholderWireframe {
         return MobileSegment.Wireframe.PlaceholderWireframe(
             id,
@@ -440,7 +445,8 @@ internal class DefaultImageWireframeHelper(
             width,
             height,
             label = label,
-            clip = clipping
+            clip = clipping,
+            permanentId = permanentId
         )
     }
 
