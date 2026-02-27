@@ -50,6 +50,7 @@ internal class ViewWireframeMapper(
                     viewGlobalBounds.y,
                     viewGlobalBounds.width,
                     viewGlobalBounds.height,
+                    permanentId = resolveViewIdentity(view, mappingContext.viewIdentityProvider),
                     shapeStyle = shapeStyle,
                     border = null
                 )

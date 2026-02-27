@@ -145,6 +145,7 @@ internal class WindowsOnDrawListenerTest {
                     eq(fakeSystemInformation),
                     eq(fakeTextAndInputPrivacy),
                     eq(fakeImagePrivacy),
+                    any(),
                     any()
                 )
             )
@@ -212,7 +213,8 @@ internal class WindowsOnDrawListenerTest {
             systemInformation = any(),
             textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
             imagePrivacy = eq(fakeImagePrivacy),
-            recordedDataQueueRefs = argCaptor.capture()
+            recordedDataQueueRefs = argCaptor.capture(),
+            viewIdentityProvider = any()
         )
         assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
@@ -304,7 +306,7 @@ internal class WindowsOnDrawListenerTest {
                 "Capture Record"
             )
         ).thenReturn(mockPerformanceMetric)
-        whenever(mockSnapshotProducer.produce(any(), any(), any(), any(), any())).thenReturn(null)
+        whenever(mockSnapshotProducer.produce(any(), any(), any(), any(), any(), any())).thenReturn(null)
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
         fakeSnapshotQueueItem.pendingJobs.set(0)
