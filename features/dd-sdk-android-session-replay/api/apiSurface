@@ -295,35 +295,35 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
   sealed class Wireframe
     abstract fun toJson(): com.google.gson.JsonElement
     data class ShapeWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ShapeWireframe
         fun fromJsonObject(com.google.gson.JsonObject): ShapeWireframe
     data class TextWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null, kotlin.String? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): TextWireframe
         fun fromJsonObject(com.google.gson.JsonObject): TextWireframe
     data class ImageWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ImageWireframe
         fun fromJsonObject(com.google.gson.JsonObject): ImageWireframe
     data class PlaceholderWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, kotlin.String? = null, kotlin.String? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): PlaceholderWireframe
         fun fromJsonObject(com.google.gson.JsonObject): PlaceholderWireframe
     data class WebviewWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, kotlin.Boolean? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, kotlin.Boolean? = null, kotlin.String? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 

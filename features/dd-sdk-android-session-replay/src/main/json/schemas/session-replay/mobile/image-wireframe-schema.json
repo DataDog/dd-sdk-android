@@ -36,6 +36,11 @@
           "type": "boolean",
           "description": "Flag describing an image wireframe that should render an empty state placeholder",
           "readOnly": false
+        },
+        "permanentId": {
+          "type": "string",
+          "description": "A globally unique and stable identifier for this UI element, computed as the hash of the element's path (32 lowercase hex characters). Used to correlate wireframes with RUM action events.",
+          "readOnly": true
         }
       }
     }
