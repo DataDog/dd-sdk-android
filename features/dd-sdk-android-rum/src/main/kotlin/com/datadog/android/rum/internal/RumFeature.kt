@@ -31,7 +31,6 @@ import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -381,20 +380,18 @@ internal class RumFeature(
         sdkCore: InternalSdkCore
     ): DataWriter<Any> {
         return RumDataWriter(
-            eventSerializer = MapperSerializer(
-                RumEventMapper(
-                    viewEventMapper = configuration.viewEventMapper,
-                    errorEventMapper = configuration.errorEventMapper,
-                    resourceEventMapper = configuration.resourceEventMapper,
-                    actionEventMapper = configuration.actionEventMapper,
-                    longTaskEventMapper = configuration.longTaskEventMapper,
-                    vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
-                    vitalAppLaunchEventMapper = configuration.vitalAppLaunchEventMapper,
-                    telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
-                    internalLogger = sdkCore.internalLogger
-                ),
-                RumEventSerializer(sdkCore.internalLogger)
+            eventMapper = RumEventMapper(
+                viewEventMapper = configuration.viewEventMapper,
+                errorEventMapper = configuration.errorEventMapper,
+                resourceEventMapper = configuration.resourceEventMapper,
+                actionEventMapper = configuration.actionEventMapper,
+                longTaskEventMapper = configuration.longTaskEventMapper,
+                vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
+                vitalAppLaunchEventMapper = configuration.vitalAppLaunchEventMapper,
+                telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
+                internalLogger = sdkCore.internalLogger
             ),
+            eventSerializer = RumEventSerializer(sdkCore.internalLogger),
             eventMetaSerializer = RumEventMetaSerializer(),
             sdkCore = sdkCore
         )

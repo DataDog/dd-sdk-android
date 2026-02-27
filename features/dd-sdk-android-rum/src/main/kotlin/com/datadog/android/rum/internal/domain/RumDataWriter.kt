@@ -14,11 +14,14 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.model.ViewEvent
 
 internal class RumDataWriter(
-    internal val eventSerializer: Serializer<Any>,
+    internal val eventMapper: RumEventMapper,
+    internal val eventSerializer: RumEventSerializer,
     private val eventMetaSerializer: Serializer<RumEventMeta>,
     private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
@@ -27,17 +30,19 @@ internal class RumDataWriter(
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
+        val mappedElement = eventMapper.map(element) ?: return false
+
         val byteArray = eventSerializer.serializeToByteArray(
-            element,
+            mappedElement,
             sdkCore.internalLogger
         ) ?: return false
 
-        val batchEvent = if (element is ViewEvent) {
-            val hasAccessibility = element.view.accessibility != null
+        val batchEvent = if (mappedElement is ViewEvent) {
+            val hasAccessibility = mappedElement.view.accessibility != null
 
             val eventMeta = RumEventMeta.View(
-                viewId = element.view.id,
-                documentVersion = element.dd.documentVersion,
+                viewId = mappedElement.view.id,
+                documentVersion = mappedElement.dd.documentVersion,
                 hasAccessibility = hasAccessibility
             )
             val serializedEventMeta =
@@ -54,7 +59,7 @@ internal class RumDataWriter(
         synchronized(this) {
             val result = writer.write(batchEvent, null, eventType)
             if (result) {
-                onDataWritten(element, byteArray)
+                onDataWritten(mappedElement, byteArray)
             }
             return result
         }
