@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
-import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.internal.domain.scope.RumViewState
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -39,7 +39,7 @@ internal interface SessionMetricDispatcher {
     /**
      * Called when a view is tracked by this session metric.
      */
-    fun onViewTracked(sessionId: String, viewEvent: ViewEvent)
+    fun onViewTracked(sessionId: String, viewState: RumViewState)
 
     /**
      * Called when a sdk error is tracked by this session metric.

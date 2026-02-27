@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.rum.model.RumViewUpdateEvent
 
-internal class RumViewStateDiffMapper {
+internal object RumViewStateDiffMapper {
 
     @Suppress("LongMethod")
     fun mapDiffToUpdateEvent(diff: RumViewStateDiff): RumViewUpdateEvent {

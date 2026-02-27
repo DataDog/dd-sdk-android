@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.rum.model.ViewEvent
 
-internal class RumViewStateMapper {
+internal object RumViewStateMapper {
 
     fun mapToViewEvent(state: RumViewState): ViewEvent {
         return ViewEvent(

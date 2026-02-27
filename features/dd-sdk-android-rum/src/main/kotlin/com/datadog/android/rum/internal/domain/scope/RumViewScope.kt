@@ -45,7 +45,6 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
-import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
@@ -56,7 +55,6 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 import java.util.UUID
@@ -133,6 +131,8 @@ internal open class RumViewScope(
     internal var hasReplay = false
 
     internal var stopped: Boolean = false
+
+    internal var prevViewState: RumViewState? = null
 
     // region Vitals Fields
 
@@ -1171,7 +1171,7 @@ internal open class RumViewScope(
 
         val uiSlownessReport = slowFramesListener?.resolveReport(viewId, viewComplete, durationNs)
         val slowFrames = uiSlownessReport?.slowFramesRecords?.map {
-            ViewEvent.SlowFrame(
+            RumViewState.SlowFrame(
                 start = it.startTimestampNs - startedNanos,
                 duration = it.durationNs
             )
@@ -1191,7 +1191,7 @@ internal open class RumViewScope(
         }
 
         val accessibility = accessibilitySnapshotManager.getIfChanged()?.let {
-            ViewEvent.Accessibility(
+            RumViewState.Accessibility(
                 textSize = it.textSize,
                 invertColorsEnabled = it.isColorInversionEnabled,
                 singleAppModeEnabled = it.isScreenPinningEnabled,
@@ -1206,8 +1206,8 @@ internal open class RumViewScope(
         val displayInfo = displayInfoProvider.getState()
 
         val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Number)?.let {
-            ViewEvent.Performance(
-                fbc = ViewEvent.Fbc(
+            RumViewState.Performance(
+                fbc = RumViewState.Fbc(
                     timestamp = it.toLong()
                 )
             )
@@ -1225,38 +1225,42 @@ internal open class RumViewScope(
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
             val user = datadogContext.userInfo
-            val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
+            val replayStats = RumViewState.ReplayStats(recordsCount = sessionReplayRecordsCount)
             val syntheticsAttribute = if (
                 rumContext.syntheticsTestId.isNullOrBlank() ||
                 rumContext.syntheticsResultId.isNullOrBlank()
             ) {
                 null
             } else {
-                ViewEvent.Synthetics(
+                RumViewState.Synthetics(
                     testId = rumContext.syntheticsTestId,
                     resultId = rumContext.syntheticsResultId
                 )
             }
 
             val sessionType = when {
-                rumSessionTypeOverride != null -> rumSessionTypeOverride.toView()
-                syntheticsAttribute == null -> ViewEvent.ViewEventSessionType.USER
-                else -> ViewEvent.ViewEventSessionType.SYNTHETICS
+                rumSessionTypeOverride != null -> when (rumSessionTypeOverride) {
+                    RumSessionType.SYNTHETICS -> RumViewState.ViewEventSessionType.SYNTHETICS
+                    RumSessionType.USER -> RumViewState.ViewEventSessionType.USER
+                }
+                syntheticsAttribute == null -> RumViewState.ViewEventSessionType.USER
+                else -> RumViewState.ViewEventSessionType.SYNTHETICS
             }
-            ViewEvent(
+
+            val viewState = RumViewState(
                 date = eventTimestamp,
-                featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
-                view = ViewEvent.ViewEventView(
+                featureFlags = RumViewState.Context(additionalProperties = eventFeatureFlags),
+                view = RumViewState.ViewEventView(
                     id = currentViewId,
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty(),
                     timeSpent = durationNs,
-                    action = ViewEvent.Action(eventActionCount),
-                    resource = ViewEvent.Resource(eventResourceCount),
-                    error = ViewEvent.Error(eventErrorCount),
-                    crash = ViewEvent.Crash(eventCrashCount),
-                    longTask = ViewEvent.LongTask(eventLongTaskCount),
-                    frozenFrame = ViewEvent.FrozenFrame(eventFrozenFramesCount),
+                    action = RumViewState.Action(eventActionCount),
+                    resource = RumViewState.Resource(eventResourceCount),
+                    error = RumViewState.Error(eventErrorCount),
+                    crash = RumViewState.Crash(eventCrashCount),
+                    longTask = RumViewState.LongTask(eventLongTaskCount),
+                    frozenFrame = RumViewState.FrozenFrame(eventFrozenFramesCount),
                     customTimings = timings,
                     isActive = !viewComplete,
                     cpuTicksCount = eventCpuTicks,
@@ -1270,7 +1274,7 @@ internal open class RumViewScope(
                     refreshRateAverage = refreshRateInfo?.meanValue,
                     refreshRateMin = refreshRateInfo?.minValue,
                     isSlowRendered = isSlowRendered,
-                    frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
+                    frustration = RumViewState.Frustration(eventFrustrationCount.toLong()),
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
@@ -1284,7 +1288,7 @@ internal open class RumViewScope(
                     freezeRate = freezeRate
                 ),
                 usr = if (user.hasUserData()) {
-                    ViewEvent.Usr(
+                    RumViewState.Usr(
                         id = user.id,
                         name = user.name,
                         email = user.email,
@@ -1295,34 +1299,31 @@ internal open class RumViewScope(
                     null
                 },
                 account = datadogContext.accountInfo?.let {
-                    ViewEvent.Account(
+                    RumViewState.Account(
                         id = it.id,
                         name = it.name,
                         additionalProperties = it.extraInfo.toMutableMap()
                     )
                 },
-                application = ViewEvent.Application(
+                application = RumViewState.Application(
                     id = rumContext.applicationId,
                     currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
                 ),
-                session = ViewEvent.ViewEventSession(
+                session = RumViewState.ViewEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
                     isActive = rumContext.isSessionActive
                 ),
                 synthetics = syntheticsAttribute,
-                source = ViewEvent.ViewEventSource.tryFromSource(
-                    datadogContext.source,
-                    sdkCore.internalLogger
-                ),
-                os = ViewEvent.Os(
+                source = datadogContext.source.toViewStateSource(),
+                os = RumViewState.Os(
                     name = datadogContext.deviceInfo.osName,
                     version = datadogContext.deviceInfo.osVersion,
                     versionMajor = datadogContext.deviceInfo.osMajorVersion
                 ),
-                device = ViewEvent.Device(
-                    type = datadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                device = RumViewState.Device(
+                    type = datadogContext.deviceInfo.deviceType.toViewStateDeviceType(),
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
@@ -1336,24 +1337,37 @@ internal open class RumViewScope(
                     totalRam = datadogContext.deviceInfo.totalRam,
                     isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
-                context = ViewEvent.Context(additionalProperties = viewCustomAttributes),
-                dd = ViewEvent.Dd(
+                context = RumViewState.Context(additionalProperties = viewCustomAttributes),
+                dd = RumViewState.Dd(
                     documentVersion = eventVersion,
-                    session = ViewEvent.DdSession(
-                        sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
+                    session = RumViewState.DdSession(
+                        sessionPrecondition = rumContext.sessionStartReason.toViewStateSessionPrecondition()
                     ),
                     replayStats = replayStats,
-                    configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = RumViewState.Configuration(sessionSampleRate = sampleRate)
                 ),
-                connectivity = datadogContext.networkInfo.toViewConnectivity(),
+                connectivity = datadogContext.networkInfo.toViewStateConnectivity(),
                 service = datadogContext.service,
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
-            ).apply {
-                sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
+            )
+
+            sessionEndedMetricDispatcher.onViewTracked(sessionId, viewState)
+
+            val prev = prevViewState
+
+            val eventToSend = if (prev != null) {
+                val diff = viewState.diff(prev)
+                RumViewStateDiffMapper.mapDiffToUpdateEvent(diff)
+            } else {
+                RumViewStateMapper.mapToViewEvent(viewState)
             }
+
+            prevViewState = viewState
+
+            eventToSend
         }.submit()
     }
 
@@ -1408,7 +1422,7 @@ internal open class RumViewScope(
         }
 
     private fun resolveCustomTimings() = if (customTimings.isNotEmpty()) {
-        ViewEvent.CustomTimings(LinkedHashMap(customTimings))
+        RumViewState.CustomTimings(LinkedHashMap(customTimings))
     } else {
         null
     }
@@ -1697,8 +1711,8 @@ internal open class RumViewScope(
             )
         }
 
-        private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
-            return ViewEvent.FlutterBuildTime(
+        private fun VitalInfo.toPerformanceMetric(): RumViewState.FlutterBuildTime {
+            return RumViewState.FlutterBuildTime(
                 min = minValue,
                 max = maxValue,
                 average = meanValue
@@ -1728,8 +1742,8 @@ internal open class RumViewScope(
          *
          * As the frame times are reported in nanoseconds, we need to add a multiplier.
          */
-        private fun VitalInfo.toInversePerformanceMetric(): ViewEvent.FlutterBuildTime {
-            return ViewEvent.FlutterBuildTime(
+        private fun VitalInfo.toInversePerformanceMetric(): RumViewState.FlutterBuildTime {
+            return RumViewState.FlutterBuildTime(
                 min = invertValue(maxValue) * TimeUnit.SECONDS.toNanos(1),
                 max = invertValue(minValue) * TimeUnit.SECONDS.toNanos(1),
                 average = invertValue(meanValue) * TimeUnit.SECONDS.toNanos(1)
