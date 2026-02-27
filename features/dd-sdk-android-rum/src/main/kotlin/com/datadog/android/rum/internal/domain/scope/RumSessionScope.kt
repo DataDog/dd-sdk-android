@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -61,7 +63,8 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    private val viewEventMapper: EventMapper<ViewEvent>
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -99,7 +102,8 @@ internal class RumSessionScope(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        insightsCollector
+        insightsCollector = insightsCollector,
+        viewEventMapper = viewEventMapper
     )
 
     internal val activeView: RumViewScope?

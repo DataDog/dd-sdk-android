@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
+import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.model.ViewEvent
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -54,7 +56,8 @@ internal class RumApplicationScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val viewEventMapper: EventMapper<ViewEvent>
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -84,7 +87,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
     )
 
@@ -206,7 +210,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

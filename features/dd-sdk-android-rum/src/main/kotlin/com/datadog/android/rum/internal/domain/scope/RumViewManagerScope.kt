@@ -16,7 +16,9 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -60,7 +62,8 @@ internal class RumViewManagerScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    internal val viewEventMapper: EventMapper<ViewEvent>
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -295,7 +298,8 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -378,7 +382,8 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
     }
 
@@ -421,7 +426,8 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
     }
 

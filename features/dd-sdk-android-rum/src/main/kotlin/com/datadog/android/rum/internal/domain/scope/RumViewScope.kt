@@ -53,8 +53,10 @@ import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 import java.util.UUID
@@ -87,7 +89,8 @@ internal open class RumViewScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    internal val viewEventMapper: EventMapper<ViewEvent>
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -472,7 +475,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
     }
 
@@ -1670,7 +1674,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            viewEventMapper: EventMapper<ViewEvent>
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1707,7 +1712,8 @@ internal open class RumViewScope(
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                viewEventMapper = viewEventMapper
             )
         }
 

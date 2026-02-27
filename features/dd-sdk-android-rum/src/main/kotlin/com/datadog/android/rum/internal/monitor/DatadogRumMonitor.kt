@@ -27,7 +27,9 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
+import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -100,7 +102,8 @@ internal class DatadogRumMonitor(
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    private val viewEventMapper: EventMapper<ViewEvent>
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -123,7 +126,8 @@ internal class DatadogRumMonitor(
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        viewEventMapper = viewEventMapper
     )
 
     internal var debugListener: RumDebugListener? = null
