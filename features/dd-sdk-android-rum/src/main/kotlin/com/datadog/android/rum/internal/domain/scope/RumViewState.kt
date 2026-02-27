@@ -15,13 +15,13 @@ import com.datadog.tools.diff.DiffReplace
 @Diff
 internal data class RumViewState(
     @DiffIgnore val date: Long,
-    val application: Application,
+    @DiffIgnore val application: Application,
     val service: String? = null,
     val version: String? = null,
     val buildVersion: String? = null,
     val buildId: String? = null,
     val ddtags: String? = null,
-    val session: ViewEventSession,
+    @DiffIgnore val session: ViewEventSession,
     val source: ViewEventSource? = null,
     @DiffMerge val view: ViewEventView,
     val usr: Usr? = null,
@@ -52,9 +52,9 @@ internal data class RumViewState(
     ) {
     }
     data class ViewEventView(
-        val id: String,
+        @DiffIgnore val id: String,
         var referrer: String? = null,
-        var url: String,
+        @DiffIgnore var url: String,
         var name: String? = null,
         val loadingTime: Long? = null,
         val networkSettledTime: Long? = null,
@@ -170,7 +170,7 @@ internal data class RumViewState(
         val configuration: Configuration? = null,
         val browserSdkVersion: String? = null,
         val sdkName: String? = null,
-        val documentVersion: Long,
+        @DiffIgnore val documentVersion: Long,
         val pageStates: List<PageState>? = null,
         val replayStats: ReplayStats? = null,
         val cls: DdCls? = null,
