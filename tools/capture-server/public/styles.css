@@ -1,0 +1,303 @@
+:root {
+  --bg-primary: #0a0e14;
+  --bg-secondary: #151b23;
+  --bg-tertiary: #1c232e;
+  --text-primary: #e6e6e6;
+  --text-secondary: #8b949e;
+  --accent-purple: #632ca6;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-cyan: #06b6d4;
+  --border-color: #2d3748;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+header {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, #4a1d7a 100%);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(99, 44, 166, 0.3);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+main {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  height: calc(100vh - 60px);
+}
+
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sidebar h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.stats-panel {
+  margin-bottom: 2rem;
+}
+
+#stats {
+  font-size: 0.875rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.stat-label {
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.filter-panel select,
+.filter-panel input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.filter-panel label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.filter-panel input[type="number"] {
+  width: 80px;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  overflow: hidden;
+}
+
+.requests-list {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+}
+
+.request-item {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.request-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.request-item.selected {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-purple);
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.feature-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.feature-rum { background: rgba(99, 44, 166, 0.3); color: #c084fc; }
+.feature-logs { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+.feature-traces { background: rgba(6, 182, 212, 0.3); color: #67e8f9; }
+.feature-session-replay { background: rgba(16, 185, 129, 0.3); color: #6ee7b7; }
+.feature-profiling { background: rgba(245, 158, 11, 0.3); color: #fcd34d; }
+.feature-feature-flags-exposures { background: rgba(236, 72, 153, 0.3); color: #f9a8d4; }
+.feature-feature-flags-assignments { background: rgba(236, 72, 153, 0.3); color: #f9a8d4; }
+
+.request-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.request-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 1rem;
+}
+
+.request-detail {
+  padding: 1.5rem;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+.placeholder {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 3rem;
+}
+
+.loading {
+  color: var(--text-secondary);
+  padding: 2rem;
+  text-align: center;
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-section h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+}
+
+.detail-value {
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.json-view {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.event-count {
+  background: rgba(99, 44, 166, 0.2);
+  color: #c084fc;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.forward-status {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.forward-status.success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+.forward-status.error { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+.forward-status.pending { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 0.75rem;
+  color: var(--accent-red);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
