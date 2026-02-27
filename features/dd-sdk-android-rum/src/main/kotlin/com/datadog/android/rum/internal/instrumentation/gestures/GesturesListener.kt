@@ -270,12 +270,12 @@ internal class GesturesListener(
             addViewAttributes(view, attributes)
 
             if (view.isAttachedToWindow) {
-                val locationOnScreen = IntArray(2)
-                @Suppress("UnsafeThirdPartyFunctionCall") // locationOnScreen is non-null with exactly 2 elements
-                view.getLocationOnScreen(locationOnScreen)
+                val locationInWindow = IntArray(2)
+                @Suppress("UnsafeThirdPartyFunctionCall") // locationInWindow is non-null with exactly 2 elements
+                view.getLocationInWindow(locationInWindow)
 
-                val relativeX = (touchX - locationOnScreen[0]).toLong()
-                val relativeY = (touchY - locationOnScreen[1]).toLong()
+                val relativeX = (touchX - locationInWindow[0]).toLong()
+                val relativeY = (touchY - locationInWindow[1]).toLong()
 
                 attributes[RumAttributes.INTERNAL_ACTION_POSITION_X] = relativeX
                 attributes[RumAttributes.INTERNAL_ACTION_POSITION_Y] = relativeY

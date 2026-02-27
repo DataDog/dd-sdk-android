@@ -837,13 +837,16 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             forge = forge,
             clickable = true
         )
-        // Mock getLocationOnScreen to return a specific position
-        whenever(validTarget.getLocationOnScreen(any())).doAnswer { invocation ->
+        // Mock getLocationInWindow to return a specific position
+        whenever(validTarget.getLocationInWindow(any())).doAnswer { invocation ->
             val array = invocation.arguments[0] as IntArray
             array[0] = targetX
             array[1] = targetY
             null
         }
+        // Ensure the view dimensions are large enough for the hit test to pass
+        whenever(validTarget.width).thenReturn((touchX - targetX).toInt() + 1)
+        whenever(validTarget.height).thenReturn((touchY - targetY).toInt() + 1)
         mockDecorView = mockDecorView<ViewGroup>(
             id = forge.anInt(),
             forEvent = mockEvent,
