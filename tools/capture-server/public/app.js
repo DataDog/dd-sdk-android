@@ -172,6 +172,22 @@ async function selectRequest(id) {
       `;
     }
     
+    const rawEvents = Array.isArray(req.parsedBody)
+      ? req.parsedBody
+      : (req.parsedBody && typeof req.parsedBody === 'object' ? [req.parsedBody] : []);
+    // Filter out the empty metadata line {} that the Android SDK prepends to each batch
+    const events = rawEvents.filter(e => e && typeof e === 'object' && Object.keys(e).length > 0);
+    if (events.length > 0) {
+      html += `
+        <div class="detail-section">
+          <h4>Events (${events.length})</h4>
+          <div class="events-list">
+            ${events.map((ev, i) => renderEventItem(ev, i)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     if (req.parsedBody) {
       html += `
         <div class="detail-section">
@@ -187,28 +203,12 @@ async function selectRequest(id) {
         </div>
       `;
     }
-    
+
     if (req.decompressError) {
       html += `
         <div class="detail-section">
           <h4>Decompression Error</h4>
           <div class="error-message">${req.decompressError}</div>
-        </div>
-      `;
-    }
-
-    const rawEvents = Array.isArray(req.parsedBody)
-      ? req.parsedBody
-      : (req.parsedBody && typeof req.parsedBody === 'object' ? [req.parsedBody] : []);
-    // Filter out the empty metadata line {} that the Android SDK prepends to each batch
-    const events = rawEvents.filter(e => e && typeof e === 'object' && Object.keys(e).length > 0);
-    if (events.length > 0) {
-      html += `
-        <div class="detail-section">
-          <h4>Events (${events.length})</h4>
-          <div class="events-list">
-            ${events.map((ev, i) => renderEventItem(ev, i)).join('')}
-          </div>
         </div>
       `;
     }
