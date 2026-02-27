@@ -1423,7 +1423,7 @@ internal open class RumViewScope(
     ) {
         delegateEventToChildren(event, datadogContext, writeScope, writer)
         if (stopped) return
-        insightsCollector.onLongTask(event.eventTime.nanoTime, event.durationNs)
+        insightsCollector.onLongTask(event.durationNs)
         val rumContext = getRumContext()
         val longTaskCustomAttributes = getCustomAttributes().toMutableMap().apply {
             put(RumAttributes.LONG_TASK_TARGET, event.target)
