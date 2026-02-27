@@ -586,13 +586,14 @@ internal class RumResourceScope(
         if (jsonString.isNullOrEmpty()) return null
 
         return try {
-            val jsonArray = com.google.gson.JsonParser.parseString(jsonString).asJsonArray
+            val jsonArray = JsonParser.parseString(jsonString).asJsonArray
             jsonArray.map { ResourceEvent.Error.fromJsonObject(it.asJsonObject) }
         } catch (e: Exception) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.DEBUG,
                 InternalLogger.Target.USER,
-                { "Failed to parse GraphQL errors from attribute: $e" }
+                { "Failed to parse GraphQL errors from attribute" },
+                e
             )
             null
         }

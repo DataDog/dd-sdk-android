@@ -3521,15 +3521,16 @@ internal class RumResourceScopeTest {
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             val graphql = firstValue.resource.graphql
-            assertThat(graphql).isNotNull
-            assertThat(graphql!!.errorCount).isEqualTo(1L)
+            checkNotNull(graphql)
+            assertThat(graphql.errorCount).isEqualTo(1L)
             assertThat(graphql.errors).hasSize(1)
-            assertThat(graphql.errors!![0].message).isEqualTo("field not found")
-            assertThat(graphql.errors!![0].code).isEqualTo("VALIDATION_ERROR")
-            assertThat(graphql.errors!![0].locations).hasSize(1)
-            assertThat(graphql.errors!![0].locations!![0].line).isEqualTo(2L)
-            assertThat(graphql.errors!![0].locations!![0].column).isEqualTo(3L)
-            assertThat(graphql.errors!![0].path).hasSize(2)
+            val error = checkNotNull(graphql.errors?.first())
+            assertThat(error.message).isEqualTo("field not found")
+            assertThat(error.code).isEqualTo("VALIDATION_ERROR")
+            assertThat(error.locations).hasSize(1)
+            assertThat(error.line).isEqualTo(2L)
+            assertThat(error.column).isEqualTo(3L)
+            assertThat(error.path).hasSize(2)
         }
     }
 
