@@ -237,6 +237,7 @@
         "frozen_frame": {
           "type": "object",
           "description": "Properties of the frozen frames of the view",
+          "required": ["count"],
           "properties": {
             "count": {
               "type": "integer",
