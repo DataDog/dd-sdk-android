@@ -34,7 +34,6 @@ internal data class RumViewState(
     val device: Device? = null,
     val dd: Dd,
     val context: Context? = null,
-    val stream: Stream? = null,
     val container: Container? = null,
     @DiffReplace val featureFlags: Context? = null,
     val privacy: Privacy? = null,
@@ -214,11 +213,11 @@ internal data class RumViewState(
     ) {
     }
     data class LongTask(
-        val count: Long? = null,
+        val count: Long,
     ) {
     }
     data class FrozenFrame(
-        val count: Long? = null,
+        val count: Long,
     ) {
     }
     data class SlowFrame(
