@@ -2587,7 +2587,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Context
       fun fromJsonObject(com.google.gson.JsonObject): Context
   data class Stream
-    constructor(kotlin.String)
+    constructor(kotlin.String, kotlin.Number? = null, kotlin.Number? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Number? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Stream
@@ -2629,7 +2629,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Crash
       fun fromJsonObject(com.google.gson.JsonObject): Crash
   data class LongTask
-    constructor(kotlin.Long? = null)
+    constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTask
@@ -2990,7 +2990,7 @@ data class com.datadog.android.rum.model.ViewProperties
       fun fromJson(kotlin.String): Crash
       fun fromJsonObject(com.google.gson.JsonObject): Crash
   data class LongTask
-    constructor(kotlin.Long? = null)
+    constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTask
@@ -3125,7 +3125,7 @@ data class com.datadog.android.rum.model.ViewProperties
     companion object 
       fun fromJson(kotlin.String): ReplayLevel
 data class com.datadog.android.rum.model.ViewUpdateEvent
-  constructor(Container? = null, ViewUpdateEventView, ViewUpdateEventSession, FeatureFlags? = null, Privacy? = null, Display? = null, kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ViewUpdateEventSource? = null, Usr? = null, Account? = null, Connectivity? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, FeatureFlags? = null, Stream? = null)
+  constructor(Container? = null, Stream? = null, ViewUpdateEventView, ViewUpdateEventSession, FeatureFlags? = null, Privacy? = null, Display? = null, kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ViewUpdateEventSource? = null, Usr? = null, Account? = null, Connectivity? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, FeatureFlags? = null)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -3137,6 +3137,12 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
     companion object 
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
+  data class Stream
+    constructor(kotlin.Number? = null, kotlin.Number? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Stream
+      fun fromJsonObject(com.google.gson.JsonObject): Stream
   data class ViewUpdateEventView
     constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, LoadingType? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, Action? = null, Error? = null, Crash? = null, LongTask? = null, FrozenFrame? = null, kotlin.collections.List<SlowFrame>? = null, Resource? = null, Frustration? = null, kotlin.collections.List<InForegroundPeriod>? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, Performance? = null, Accessibility? = null, kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -3222,12 +3228,6 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
     companion object 
       fun fromJson(kotlin.String): Dd
       fun fromJsonObject(com.google.gson.JsonObject): Dd
-  data class Stream
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Stream
-      fun fromJsonObject(com.google.gson.JsonObject): Stream
   data class ContainerView
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -3259,7 +3259,7 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): Crash
       fun fromJsonObject(com.google.gson.JsonObject): Crash
   data class LongTask
-    constructor(kotlin.Long? = null)
+    constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTask

@@ -209,7 +209,7 @@
         "crash": {
           "type": "object",
           "description": "Properties of the crashes of the view",
-          "required": ["count"],
+          "required": [ "count" ],
           "properties": {
             "count": {
               "type": "integer",
@@ -223,6 +223,7 @@
         "long_task": {
           "type": "object",
           "description": "Properties of the long tasks of the view",
+          "required": ["count"],
           "properties": {
             "count": {
               "type": "integer",
