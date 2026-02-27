@@ -3,10 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.cronet.internal
+package com.datadog.android.okhttp.internal
 
-import com.datadog.android.trace.internal.net.RequestTraceState
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
+import okhttp3.RequestBody
 
-internal interface CronetInstrumentationStateHolder {
-    var traceState: RequestTraceState?
-}
+internal data class OkHttpRequestBody(val body: RequestBody) : HttpRequestBody

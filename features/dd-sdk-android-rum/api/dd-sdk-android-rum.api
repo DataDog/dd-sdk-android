@@ -430,7 +430,7 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 
 public final class com/datadog/android/rum/internal/net/RumNetworkInstrumentation {
 	public static final field Companion Lcom/datadog/android/rum/internal/net/RumNetworkInstrumentation$Companion;
-	public final fun reportInstrumentationError (Ljava/lang/String;)V
+	public final fun reportInstrumentationError (Lkotlin/jvm/functions/Function0;)V
 	public final fun sendTiming (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public final fun sendWaitForResourceTimingEvent (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V
 	public final fun startResource (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V

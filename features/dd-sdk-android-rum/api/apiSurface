@@ -230,7 +230,7 @@ class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
   fun startResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun stopResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.api.instrumentation.network.HttpResponseInfo, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Throwable)
-  fun reportInstrumentationError(String)
+  fun reportInstrumentationError(() -> String)
   companion object 
     fun buildResourceId(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Boolean): com.datadog.android.rum.resource.ResourceId
 interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier

@@ -167,6 +167,7 @@ interface com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
   fun removeHeader(String): HttpRequestInfoBuilder
   fun replaceHeader(String, String): HttpRequestInfoBuilder
   fun <T> addTag(Class<T>, T?): HttpRequestInfoBuilder
+  fun setMethod(String, HttpRequestBody? = null): HttpRequestInfoBuilder
   fun build(): HttpRequestInfo
 interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
@@ -321,29 +322,6 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
-object com.datadog.android.core.internal.net.HttpSpec
-  object Method
-    const val GET: String
-    const val POST: String
-    const val PATCH: String
-    const val PUT: String
-    const val HEAD: String
-    const val DELETE: String
-    const val TRACE: String
-    const val OPTIONS: String
-    const val CONNECT: String
-    fun values()
-  object Headers
-    const val CONTENT_TYPE: String
-    const val CONTENT_LENGTH: String
-    const val WEBSOCKET_ACCEPT_HEADER: String
-  object ContentType
-    const val TEXT_PLAIN: String
-    const val TEXT_EVENT_STREAM: String
-    const val APPLICATION_GRPC: String
-    const val APPLICATION_GRPC_PROTO: String
-    const val APPLICATION_GRPC_JSON: String
-    fun isStream(String?): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean

@@ -66,6 +66,57 @@ enum com.datadog.android.internal.network.GraphQLHeaders
   - DD_GRAPHQL_VARIABLES_HEADER
   - DD_GRAPHQL_TYPE_HEADER
   - DD_GRAPHQL_PAYLOAD_HEADER
+object com.datadog.android.internal.network.HttpSpec
+  object Method
+    const val GET: String
+    const val POST: String
+    const val PATCH: String
+    const val PUT: String
+    const val HEAD: String
+    const val DELETE: String
+    const val TRACE: String
+    const val OPTIONS: String
+    const val CONNECT: String
+    fun values()
+    fun isMethodWithBody(String)
+  object Header
+    const val CONTENT_TYPE: String
+    const val CONTENT_LENGTH: String
+    const val LOCATION: String
+    const val RETRY_AFTER: String
+    const val WEBSOCKET_ACCEPT_HEADER: String
+    fun values()
+  object StatusCode
+    const val OK: Int
+    const val MOVED_PERMANENTLY: Int
+    const val FOUND: Int
+    const val SEE_OTHER: Int
+    const val TEMPORARY_REDIRECT: Int
+    const val PERMANENT_REDIRECT: Int
+    const val BAD_REQUEST: Int
+    const val UNAUTHORIZED: Int
+    const val FORBIDDEN: Int
+    const val NOT_FOUND: Int
+    const val METHOD_NOT_ALLOWED: Int
+    const val REQUEST_TIMEOUT: Int
+    const val TOO_MANY_REQUESTS: Int
+    const val INTERNAL_ERROR: Int
+    const val BAD_GATEWAY: Int
+    const val SERVICE_UNAVAILABLE: Int
+    const val GATEWAY_TIMEOUT: Int
+    const val NETWORK_AUTHENTICATION_REQUIRED: Int
+    fun values()
+    fun clientErrors()
+    fun serverErrors()
+  object ContentType
+    const val APPLICATION_JSON: String
+    const val TEXT_PLAIN: String
+    const val TEXT_EVENT_STREAM: String
+    const val APPLICATION_GRPC: String
+    const val APPLICATION_GRPC_PROTO: String
+    const val APPLICATION_GRPC_JSON: String
+    fun values()
+    fun isStream(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter

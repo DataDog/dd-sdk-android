@@ -276,7 +276,7 @@ internal class TracerProviderTest {
     }
 
     @Test
-    fun `M log warning only once W provideTracer() called multiple times {tracing feature not registered}`() {
+    fun `M log warning with onlyOnce flag W provideTracer() called multiple times {tracing feature not registered}`() {
         // Given
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
 
@@ -380,6 +380,261 @@ internal class TracerProviderTest {
         )
 
         // Then
+        verifyNoInteractions(mockFirstPartyHostResolver)
+    }
+
+    @Test
+    fun `M create new local tracer each time W provideTracer() {global tracer cycles availability}`(
+        @Mock mockSecondLocalTracer: DatadogTracer
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        var globalTracerAvailable = false
+        var localTracerInstance = 0
+        val localTracers = listOf(mockLocalTracer, mockSecondLocalTracer)
+        testedTracerProvider = TracerProvider(
+            localTracerFactory = { _, _ ->
+                localTracers[localTracerInstance++ % 2]
+            },
+            globalTracerProvider = { if (globalTracerAvailable) mockGlobalTracer else null }
+        )
+
+        // When - first call: no global, creates first local tracer
+        val result1 = testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // Then
+        assertThat(result1).isSameAs(mockLocalTracer)
+
+        // When - second call: global becomes available, clears local
+        globalTracerAvailable = true
+        val result2 = testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // Then
+        assertThat(result2).isSameAs(mockGlobalTracer)
+
+        // When - third call: global becomes unavailable, creates second local tracer
+        globalTracerAvailable = false
+        val result3 = testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // Then - should create NEW local tracer since previous was cleared
+        assertThat(result3).isSameAs(mockSecondLocalTracer)
+        assertThat(localTracerInstance).isEqualTo(2)
+    }
+
+    @Test
+    fun `M reuse same local tracer W provideTracer() {global tracer never available between calls}`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        var factoryCallCount = 0
+        testedTracerProvider = TracerProvider(
+            localTracerFactory = { _, _ ->
+                factoryCallCount++
+                mockLocalTracer
+            },
+            globalTracerProvider = { null }
+        )
+
+        // When - multiple calls without global tracer ever being available
+        val results = (1..5).map {
+            testedTracerProvider.provideTracer(
+                mockSdkCore,
+                fakeLocalHeaderTypes,
+                fakeNetworkInstrumentationName
+            )
+        }
+
+        // Then - factory should be called only once
+        assertThat(factoryCallCount).isEqualTo(1)
+        results.forEach { assertThat(it).isSameAs(mockLocalTracer) }
+    }
+
+    @Test
+    fun `M log warning for each local tracer creation W provideTracer() {global tracer cycles}`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        var globalTracerAvailable = false
+        testedTracerProvider = TracerProvider(
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { if (globalTracerAvailable) mockGlobalTracer else null }
+        )
+
+        // When - create local tracer
+        testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // When - switch to global
+        globalTracerAvailable = true
+        testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // When - switch back to local (new creation)
+        globalTracerAvailable = false
+        testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // Then - should log warning twice (once for each local tracer creation)
+        verify(mockInternalLogger, times(2)).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any<() -> String>(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
+    @Test
+    fun `M handle concurrent switch from local to global W provideTracer()`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        var globalTracerAvailable = false
+        val factoryCallCount = AtomicInteger(0)
+        testedTracerProvider = TracerProvider(
+            localTracerFactory = { _, _ ->
+                factoryCallCount.incrementAndGet()
+                mockLocalTracer
+            },
+            globalTracerProvider = { if (globalTracerAvailable) mockGlobalTracer else null }
+        )
+
+        // First, create local tracer
+        val initialResult = testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+        assertThat(initialResult).isSameAs(mockLocalTracer)
+
+        // Now make global available
+        globalTracerAvailable = true
+
+        val threadCount = 10
+        val executor = Executors.newFixedThreadPool(threadCount)
+        val startLatch = CountDownLatch(1)
+        val doneLatch = CountDownLatch(threadCount)
+        val results = mutableListOf<DatadogTracer?>()
+
+        // When - concurrent access after global becomes available
+        repeat(threadCount) {
+            executor.submit {
+                startLatch.await()
+                val result = testedTracerProvider.provideTracer(
+                    mockSdkCore,
+                    fakeLocalHeaderTypes,
+                    fakeNetworkInstrumentationName
+                )
+                synchronized(results) {
+                    results.add(result)
+                }
+                doneLatch.countDown()
+            }
+        }
+        startLatch.countDown()
+        doneLatch.await(5, TimeUnit.SECONDS)
+        executor.shutdown()
+
+        // Then - all threads should get global tracer
+        assertThat(results).hasSize(threadCount)
+        results.forEach { assertThat(it).isSameAs(mockGlobalTracer) }
+        // Factory was called only once (initial local tracer creation)
+        assertThat(factoryCallCount.get()).isEqualTo(1)
+    }
+
+    @Test
+    fun `M use updated header types W provideTracer() {new local tracer created after global cleared}`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        var globalTracerAvailable = false
+        val capturedHeaderTypes = mutableListOf<Set<TracingHeaderType>>()
+        testedTracerProvider = TracerProvider(
+            localTracerFactory = { _, headerTypes ->
+                capturedHeaderTypes.add(headerTypes)
+                mockLocalTracer
+            },
+            globalTracerProvider = { if (globalTracerAvailable) mockGlobalTracer else null }
+        )
+
+        // When - first local tracer creation
+        testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // When - switch to global
+        globalTracerAvailable = true
+        testedTracerProvider.provideTracer(
+            mockSdkCore,
+            fakeLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // When - switch back to local with different header types
+        globalTracerAvailable = false
+        val newLocalHeaderTypes = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        val newGlobalHeaderTypes = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        whenever(mockFirstPartyHostResolver.getAllHeaderTypes()) doReturn newGlobalHeaderTypes
+
+        testedTracerProvider.provideTracer(
+            mockSdkCore,
+            newLocalHeaderTypes,
+            fakeNetworkInstrumentationName
+        )
+
+        // Then - second local tracer should use new header types
+        assertThat(capturedHeaderTypes).hasSize(2)
+        assertThat(capturedHeaderTypes[0]).isEqualTo(fakeLocalHeaderTypes + fakeGlobalHeaderTypes)
+        assertThat(capturedHeaderTypes[1]).isEqualTo(newLocalHeaderTypes + newGlobalHeaderTypes)
+    }
+
+    @Test
+    fun `M not create local tracer W provideTracer() {global tracer always available}`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        var factoryCallCount = 0
+        testedTracerProvider = TracerProvider(
+            localTracerFactory = { _, _ ->
+                factoryCallCount++
+                mockLocalTracer
+            },
+            globalTracerProvider = { mockGlobalTracer }
+        )
+
+        // When - multiple calls with global tracer always available
+        val results = (1..5).map {
+            testedTracerProvider.provideTracer(
+                mockSdkCore,
+                fakeLocalHeaderTypes,
+                fakeNetworkInstrumentationName
+            )
+        }
+
+        // Then - factory should never be called
+        assertThat(factoryCallCount).isEqualTo(0)
+        results.forEach { assertThat(it).isSameAs(mockGlobalTracer) }
         verifyNoInteractions(mockFirstPartyHostResolver)
     }
 }

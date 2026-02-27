@@ -81,6 +81,7 @@ internal class ApmInstrumentationConfigurationTest {
         assertThat(result.traceOrigin).isNull()
         assertThat(result.redacted404ResourceName).isTrue()
         assertThat(result.injectionType).isEqualTo(TraceContextInjection.SAMPLED)
+        assertThat(result.canSendSpan).isTrue()
     }
 
     @Test
@@ -88,7 +89,8 @@ internal class ApmInstrumentationConfigurationTest {
         @StringForgery fakeTraceOrigin: String
     ) {
         // When
-        val result = testedBuilder.setTraceOrigin(fakeTraceOrigin).createInstrumentation(fakeNetworkLibraryName)
+        val result = testedBuilder.setTraceOrigin(fakeTraceOrigin)
+            .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
         assertThat(result.traceOrigin).isEqualTo(fakeTraceOrigin)
@@ -99,7 +101,8 @@ internal class ApmInstrumentationConfigurationTest {
         @StringForgery fakeSdkInstanceName: String
     ) {
         // When
-        val result = testedBuilder.setSdkInstanceName(fakeSdkInstanceName).createInstrumentation(fakeNetworkLibraryName)
+        val result = testedBuilder.setSdkInstanceName(fakeSdkInstanceName)
+            .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
         assertThat(result.sdkInstanceName).isEqualTo(fakeSdkInstanceName)
@@ -120,7 +123,8 @@ internal class ApmInstrumentationConfigurationTest {
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // When
-        val result = testedBuilder.setTraceSampleRate(fakeSampleRate).createInstrumentation(fakeNetworkLibraryName)
+        val result = testedBuilder.setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
         assertThat(result.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
@@ -130,30 +134,24 @@ internal class ApmInstrumentationConfigurationTest {
     @Test
     fun `M set trace sampler W setTraceSampler()`() {
         // When
-        val result = testedBuilder.setTraceSampler(mockTraceSampler).createInstrumentation(fakeNetworkLibraryName)
+        val result = testedBuilder.setTraceSampler(mockTraceSampler)
+            .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
         assertThat(result.traceSampler).isSameAs(mockTraceSampler)
     }
 
     @Test
-    fun `M set trace context injection W setTraceContextInjection() {ALL}`() {
+    fun `M set trace context injection W setTraceContextInjection()`(forge: Forge) {
+        // Given
+        val fakeInjection = forge.aValueFrom(TraceContextInjection::class.java)
+
         // When
-        val result = testedBuilder.setTraceContextInjection(TraceContextInjection.ALL)
+        val result = testedBuilder.setTraceContextInjection(fakeInjection)
             .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
-        assertThat(result.injectionType).isEqualTo(TraceContextInjection.ALL)
-    }
-
-    @Test
-    fun `M set trace context injection W setTraceContextInjection() {SAMPLED}`() {
-        // When
-        val result = testedBuilder.setTraceContextInjection(TraceContextInjection.SAMPLED)
-            .createInstrumentation(fakeNetworkLibraryName)
-
-        // Then
-        assertThat(result.injectionType).isEqualTo(TraceContextInjection.SAMPLED)
+        assertThat(result.injectionType).isEqualTo(fakeInjection)
     }
 
     @Test
@@ -161,7 +159,8 @@ internal class ApmInstrumentationConfigurationTest {
         @BoolForgery fakeRedacted: Boolean
     ) {
         // When
-        val result = testedBuilder.set404ResourcesRedacted(fakeRedacted).createInstrumentation(fakeNetworkLibraryName)
+        val result = testedBuilder.set404ResourcesRedacted(fakeRedacted)
+            .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
         assertThat(result.redacted404ResourceName).isEqualTo(fakeRedacted)
@@ -182,7 +181,7 @@ internal class ApmInstrumentationConfigurationTest {
             .setTraceSampleRate(fakeSampleRate)
             .setTraceContextInjection(TraceContextInjection.ALL)
             .set404ResourcesRedacted(fakeRedacted)
-            .setTraceScope(ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY)
+            .setTraceScope(ApmNetworkTracingScope.ALL)
 
         // Then
         assertThat(result).isSameAs(testedBuilder)
@@ -197,8 +196,7 @@ internal class ApmInstrumentationConfigurationTest {
         val result = testedBuilder.setLocalTracerFactory(fakeFactory)
 
         // Then
-        assertThat(result).isSameAs(testedBuilder)
-        assertThat(testedBuilder.localTracerFactory).isSameAs(fakeFactory)
+        assertThat(result.localTracerFactory).isSameAs(fakeFactory)
     }
 
     @Test
@@ -210,8 +208,7 @@ internal class ApmInstrumentationConfigurationTest {
         val result = testedBuilder.setGlobalTracerProvider(fakeProvider)
 
         // Then
-        assertThat(result).isSameAs(testedBuilder)
-        assertThat(testedBuilder.globalTracerProvider === fakeProvider).isTrue()
+        assertThat<() -> DatadogTracer?>(result.globalTracerProvider).isSameAs(fakeProvider)
     }
 
     @Test
@@ -233,22 +230,14 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
-    fun `M set APPLICATION_LEVEL_REQUESTS_ONLY scope W setTraceScope()`() {
+    fun `M set scope W setTraceScope()`(forge: Forge) {
+        // Given
+        val fakeScope = forge.aValueFrom(ApmNetworkTracingScope::class.java)
+
         // When
-        val result = testedBuilder.setTraceScope(ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY)
+        val result = testedBuilder.setTraceScope(fakeScope)
 
         // Then
-        assertThat(result).isSameAs(testedBuilder)
-        assertThat(testedBuilder.networkTracingScope).isEqualTo(ApmNetworkTracingScope.APPLICATION_LEVEL_REQUESTS_ONLY)
-    }
-
-    @Test
-    fun `M set DETAILED scope W setTraceScope()`() {
-        // When
-        val result = testedBuilder.setTraceScope(ApmNetworkTracingScope.ALL)
-
-        // Then
-        assertThat(result).isSameAs(testedBuilder)
-        assertThat(testedBuilder.networkTracingScope).isEqualTo(ApmNetworkTracingScope.ALL)
+        assertThat(result.networkTracingScope).isEqualTo(fakeScope)
     }
 }

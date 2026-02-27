@@ -242,6 +242,17 @@ class DatadogPropagationHelper internal constructor() {
     }
 
     /**
+     * Removes all tracing headers from the request.
+     * This is useful when starting a new independent trace for redirect requests.
+     *
+     * @param builder the request builder to remove headers from.
+     * @return the modified request info builder.
+     */
+    fun removeAllTracingHeaders(builder: HttpRequestInfoBuilder) = builder.apply {
+        ALL_TRACING_HEADERS.forEach { removeHeader(it) }
+    }
+
+    /**
      * Extracts the sampling decision from the request.
      * Checks headers and tags for existing sampling decisions.
      *
@@ -344,6 +355,9 @@ class DatadogPropagationHelper internal constructor() {
             W3CHttpCodec.TRACE_PARENT_KEY,
             W3CHttpCodec.TRACE_STATE_KEY
         )
+
+        internal val ALL_TRACING_HEADERS: Set<String> =
+            DATADOG_CODEC_HEADERS + B3M_CODEC_HEADERS + W3C_CODEC_HEADERS + B3HttpCodec.B3_KEY
 
         private fun HttpRequestInfoBuilder.resetDatadogHeaders(
             span: DatadogSpan,

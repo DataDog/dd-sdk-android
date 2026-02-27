@@ -6,9 +6,10 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
-import com.datadog.android.cronet.internal.DatadogRequestFinishedInfoListener.Companion.minus
+import com.datadog.android.cronet.internal.CronetRequestFinishedInfoListener.Companion.minus
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.rum.internal.net.verifyReportInstrumentationError
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.StubRequestFinishedInfoMetrics
 import fr.xgouchet.elmyr.Forge
@@ -42,7 +43,7 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DatadogRequestFinishedInfoListenerTest {
+internal class CronetRequestFinishedInfoListenerTest {
 
     @Mock
     private lateinit var mockRumNetworkInstrumentation: RumNetworkInstrumentation
@@ -56,11 +57,11 @@ internal class DatadogRequestFinishedInfoListenerTest {
     @Forgery
     private lateinit var fakeRequestInfo: HttpRequestInfo
 
-    private lateinit var testedListener: DatadogRequestFinishedInfoListener
+    private lateinit var testedListener: CronetRequestFinishedInfoListener
 
     @BeforeEach
     fun `set up`() {
-        testedListener = DatadogRequestFinishedInfoListener(
+        testedListener = CronetRequestFinishedInfoListener(
             executor = mock(),
             rumNetworkInstrumentation = mockRumNetworkInstrumentation
         )
@@ -186,7 +187,9 @@ internal class DatadogRequestFinishedInfoListenerTest {
         testedListener.onRequestFinished(mockRequestFinishedInfo)
 
         // Then
-        verify(mockRumNetworkInstrumentation).reportInstrumentationError(NO_REQUEST_INFO_MESSAGE)
+        mockRumNetworkInstrumentation.verifyReportInstrumentationError(
+            "Unable to instrument RUM resource without the request info"
+        )
     }
 
     @Test
@@ -264,9 +267,5 @@ internal class DatadogRequestFinishedInfoListenerTest {
             assertThat(firstValue.downloadStart).isEqualTo(0L)
             assertThat(firstValue.downloadDuration).isEqualTo(0L)
         }
-    }
-
-    companion object {
-        private const val NO_REQUEST_INFO_MESSAGE = "Unable to instrument RUM resource without the request info"
     }
 }

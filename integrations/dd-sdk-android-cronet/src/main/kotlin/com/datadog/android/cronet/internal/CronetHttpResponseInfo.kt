@@ -6,7 +6,7 @@
 package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
-import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.internal.network.HttpSpec
 import org.chromium.net.UrlResponseInfo
 
 internal data class CronetHttpResponseInfo(
@@ -28,21 +28,21 @@ internal data class CronetHttpResponseInfo(
              * potential interoperability and security issues if different implementations have different error
              * handling behaviors.
              */
-            return headers[HttpSpec.Headers.CONTENT_TYPE]?.lastOrNull()
+            return headers[HttpSpec.Header.CONTENT_TYPE]?.lastOrNull()
         }
 
     override val contentLength: Long?
         get() {
-        /*
-         *  Content-Length is expected to be declared once or in case of multiple repetitions should have same value.
-         *  Otherwise it's assumed that Content-Length is invalid
-         *  according to  https://www.rfc-editor.org/rfc/rfc9110.pdf, page 63:
-         *
-         * Likewise, a sender forward a message with a Content-Length header field value that does not match the ABNF
-         * above, with one exception: a recipient of a Content-Length header field value consisting of the same decimal
-         * value repeated as a comma-separated list (e.g, "ContentLength: 42, 42")
-         */
-            val contentLengthHeaderValues = headers[HttpSpec.Headers.CONTENT_LENGTH]?.toSet()
+            /*
+             *  Content-Length is expected to be declared once or in case of multiple repetitions should have same value.
+             *  Otherwise it's assumed that Content-Length is invalid
+             *  according to  https://www.rfc-editor.org/rfc/rfc9110.pdf, page 63:
+             *
+             * Likewise, a sender forward a message with a Content-Length header field value that does not match the ABNF
+             * above, with one exception: a recipient of a Content-Length header field value consisting of the same decimal
+             * value repeated as a comma-separated list (e.g, "ContentLength: 42, 42")
+             */
+            val contentLengthHeaderValues = headers[HttpSpec.Header.CONTENT_LENGTH]?.toSet()
 
             return contentLengthHeaderValues?.firstOrNull()
                 ?.takeIf { contentLengthHeaderValues.size == 1 }

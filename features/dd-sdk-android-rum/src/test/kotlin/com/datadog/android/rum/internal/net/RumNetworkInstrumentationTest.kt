@@ -12,12 +12,13 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -367,7 +368,7 @@ internal class RumNetworkInstrumentationTest {
         whenever(mockResponseInfo.contentLength) doReturn 1000L
         whenever(mockResponseInfo.contentType) doReturn null
         whenever(mockResponseInfo.headers) doReturn mapOf(
-            HttpSpec.Headers.WEBSOCKET_ACCEPT_HEADER to listOf(fakeWebSocketAccept)
+            HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER to listOf(fakeWebSocketAccept)
         )
         whenever(
             mockRumResourceAttributesProvider.onProvideAttributes(
@@ -494,7 +495,7 @@ internal class RumNetworkInstrumentationTest {
         @StringForgery fakeErrorMessage: String
     ) {
         // When
-        testedInstrumentation.reportInstrumentationError(fakeErrorMessage)
+        testedInstrumentation.reportInstrumentationError { fakeErrorMessage }
 
         // Then
         mockInternalLogger.verifyLog(
@@ -651,6 +652,13 @@ internal class RumNetworkInstrumentationTest {
 
         override fun <T> addTag(type: Class<in T>, tag: T?) = apply {
             request = request.copy(tags = request.tags.toMutableMap().also { it[type] = tag })
+        }
+
+        override fun setMethod(
+            method: String,
+            body: HttpRequestBody?
+        ): HttpRequestInfoBuilder = apply {
+            request = request.copy(method = method)
         }
 
         override fun build(): HttpRequestInfo = request.copy()

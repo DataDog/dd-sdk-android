@@ -484,11 +484,13 @@ public abstract interface class com/datadog/android/api/instrumentation/network/
 	public abstract fun build ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;
 	public abstract fun removeHeader (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public abstract fun replaceHeader (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public abstract fun setMethod (Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public abstract fun setUrl (Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 }
 
 public final class com/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder$DefaultImpls {
 	public static fun replaceHeader (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public static synthetic fun setMethod$default (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Lcom/datadog/android/api/instrumentation/network/HttpRequestBody;ILjava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 }
 
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpResponseInfo {
@@ -857,41 +859,6 @@ public abstract interface class com/datadog/android/core/internal/net/FirstParty
 	public abstract fun isEmpty ()Z
 	public abstract fun isFirstPartyUrl (Ljava/lang/String;)Z
 	public abstract fun isFirstPartyUrl (Lokhttp3/HttpUrl;)Z
-}
-
-public final class com/datadog/android/core/internal/net/HttpSpec {
-	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec;
-}
-
-public final class com/datadog/android/core/internal/net/HttpSpec$ContentType {
-	public static final field APPLICATION_GRPC Ljava/lang/String;
-	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
-	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$ContentType;
-	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
-	public static final field TEXT_PLAIN Ljava/lang/String;
-	public final fun isStream (Ljava/lang/String;)Z
-}
-
-public final class com/datadog/android/core/internal/net/HttpSpec$Headers {
-	public static final field CONTENT_LENGTH Ljava/lang/String;
-	public static final field CONTENT_TYPE Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$Headers;
-	public static final field WEBSOCKET_ACCEPT_HEADER Ljava/lang/String;
-}
-
-public final class com/datadog/android/core/internal/net/HttpSpec$Method {
-	public static final field CONNECT Ljava/lang/String;
-	public static final field DELETE Ljava/lang/String;
-	public static final field GET Ljava/lang/String;
-	public static final field HEAD Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/core/internal/net/HttpSpec$Method;
-	public static final field OPTIONS Ljava/lang/String;
-	public static final field PATCH Ljava/lang/String;
-	public static final field POST Ljava/lang/String;
-	public static final field PUT Ljava/lang/String;
-	public static final field TRACE Ljava/lang/String;
-	public final fun values ()Ljava/util/List;
 }
 
 public abstract interface class com/datadog/android/core/internal/persistence/Deserializer {

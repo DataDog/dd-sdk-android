@@ -118,5 +118,5 @@ object DatadogTracingToolkit {
     fun createApmNetworkInstrumentation(
         name: String,
         configuration: ApmNetworkInstrumentationConfiguration
-    ): ApmNetworkInstrumentation = configuration.createInstrumentation(name)
+    ) = configuration.createInstrumentation(name)
 }

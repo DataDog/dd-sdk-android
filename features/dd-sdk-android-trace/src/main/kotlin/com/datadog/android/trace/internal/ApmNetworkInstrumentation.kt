@@ -21,17 +21,17 @@ import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.NetworkTracedRequestListener
 import com.datadog.android.trace.TraceContextInjection
+import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.DatadogTracingToolkit.propagationHelper
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
-import com.datadog.android.trace.internal.net.RequestTraceState
+import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.trace.internal.net.TracerProvider
 import com.datadog.android.trace.internal.net.applyPriority
 import com.datadog.android.trace.internal.net.buildSpan
 import com.datadog.android.trace.internal.net.finishRumAware
-import com.datadog.android.trace.internal.net.isRumEnabled
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
@@ -43,6 +43,8 @@ import java.util.Locale
  * This class handles the creation and management of trace spans for HTTP requests, including
  * header injection, sampling decisions, and span lifecycle management.
  *
+ * @param canSendSpan whether APM span sending is enabled. When false, spans are created for RUM-APM linking
+ *        but not sent to the backend.
  * @param sdkInstanceName the name of the SDK instance to bind to, or null for the default instance.
  * @param traceOrigin optional origin tag to add to traces.
  * @param tracerProvider provider for obtaining tracer instances.
@@ -57,8 +59,9 @@ import java.util.Locale
 @Suppress("LongParameterList")
 @InternalApi
 class ApmNetworkInstrumentation internal constructor(
+    internal val canSendSpan: Boolean,
     internal val sdkInstanceName: String?,
-    internal val traceOrigin: String?,
+    val traceOrigin: String?,
     internal val tracerProvider: TracerProvider,
     internal val redacted404ResourceName: Boolean,
     internal val traceSampler: Sampler<DatadogSpan>,
@@ -66,12 +69,14 @@ class ApmNetworkInstrumentation internal constructor(
     internal val tracedRequestListener: NetworkTracedRequestListener,
     internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
-    // TODO RUM-13974 will be used in the following tickets
-    @Suppress("unused")
-    private val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
+    val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
-    private val sdkCoreReference = SdkReference(sdkInstanceName) {
+    private val internalSdkCore: InternalSdkCore?
+        get() = sdkCoreReference.get() as? InternalSdkCore
+
+    /** Reference to the SDK core instance. */
+    val sdkCoreReference: SdkReference = SdkReference(sdkInstanceName) {
         val sdkCore = it as InternalSdkCore
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && sdkCore.firstPartyHostResolver.isEmpty()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN, onlyOnce = true) {
@@ -79,8 +84,14 @@ class ApmNetworkInstrumentation internal constructor(
             }
         }
     }
-    private val internalSdkCore: InternalSdkCore?
-        get() = sdkCoreReference.get() as? InternalSdkCore
+
+    /** The sample rate used by the trace sampler, or null if unavailable. */
+    val sampleRate: Float?
+        get() = traceSampler.getSampleRate()
+
+    /** The set of tracing header types configured for locally defined first-party hosts. */
+    val localHeaderTypes: Set<TracingHeaderType>
+        get() = localFirstPartyHostHeaderTypeResolver.getAllHeaderTypes()
 
     /**
      * Called when a network request is about to be sent.
@@ -90,7 +101,7 @@ class ApmNetworkInstrumentation internal constructor(
      * @return the tracing state containing the request modifier, sampling decision, and span.
      */
     @Suppress("ReturnCount")
-    fun onRequest(request: HttpRequestInfo): RequestTraceState? {
+    fun onRequest(request: HttpRequestInfo): RequestTracingState? {
         val sdkCore = getSdkCoreOrNull(request.url)
         val requestInfoBuilder = request.newBuilder(sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
         if (requestInfoBuilder == null) {
@@ -98,17 +109,17 @@ class ApmNetworkInstrumentation internal constructor(
         }
 
         if (sdkCore == null) {
-            return RequestTraceState(requestInfoBuilder)
+            return RequestTracingState(requestInfoBuilder)
         }
 
         val tracer = tracerProvider.provideTracer(
             sdkCore,
-            localFirstPartyHostHeaderTypeResolver.getAllHeaderTypes(),
+            localHeaderTypes,
             networkingLibraryName
         )
 
         if (tracer == null || !request.isTraceable(sdkCore)) {
-            return RequestTraceState(requestInfoBuilder)
+            return RequestTracingState(requestInfoBuilder)
         }
 
         val span = tracer.buildSpan(request, networkingLibraryName, traceOrigin)
@@ -117,8 +128,8 @@ class ApmNetworkInstrumentation internal constructor(
             span.applyPriority(isSampled, traceSampler)
         }
 
-        val updatedRequest = try {
-            updateRequest(request.url, sdkCore, requestInfoBuilder, tracer, span, isSampled)
+        val tracedRequestInfoBuilder = try {
+            traceRequest(request.url, sdkCore, requestInfoBuilder, tracer, span, isSampled)
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -129,11 +140,11 @@ class ApmNetworkInstrumentation internal constructor(
             requestInfoBuilder
         }
 
-        return RequestTraceState(
+        return RequestTracingState(
             span = span,
             isSampled = isSampled,
-            requestBuilder = updatedRequest,
-            sampleRate = traceSampler.getSampleRate()
+            sampleRate = traceSampler.getSampleRate(),
+            tracedRequestInfoBuilder = tracedRequestInfoBuilder
         )
     }
 
@@ -141,51 +152,77 @@ class ApmNetworkInstrumentation internal constructor(
      * Called when a network request succeeds.
      * This method updates the span with response information and finishes it.
      *
-     * @param tracingState the tracing state from [onRequest].
+     * @param requestTracingState the tracing state from [onRequest].
      * @param response the HTTP response information.
      */
-    fun onResponseSucceeded(tracingState: RequestTraceState, response: HttpResponseInfo) {
-        if (tracingState.isSampled) {
-            tracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, response.statusCode)
+    fun onResponseSucceeded(requestTracingState: RequestTracingState, response: HttpResponseInfo) {
+        if (requestTracingState.isSampled) {
+            requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, response.statusCode)
             if (response.statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
-                tracingState.span?.isError = true
+                requestTracingState.span?.isError = true
             }
             if (response.statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
-                tracingState.span?.resourceName = RESOURCE_NAME_404
+                requestTracingState.span?.resourceName = RESOURCE_NAME_404
             }
         }
-        tracingState.onRequestCompleted(response, null)
-        tracingState.span?.finishRumAware(tracingState.isSampled, !internalSdkCore.isRumEnabled)
+        requestTracingState.onRequestIntercepted(response, null)
+        requestTracingState.span?.finishRumAware(requestTracingState.isSampled, canSendSpan)
     }
 
     /**
      * Called when a network request fails.
      * This method marks the span as errored, adds error details, and finishes it.
      *
-     * @param tracingState the tracing state from [onRequest].
+     * @param requestTracingState the tracing state from [onRequest].
      * @param throwable the exception that caused the failure.
      */
-    fun onResponseFailed(tracingState: RequestTraceState, throwable: Throwable) {
-        if (tracingState.isSampled) {
-            tracingState.span?.isError = true
-            tracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, throwable.message)
-            tracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
-            tracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
+    fun onResponseFailed(requestTracingState: RequestTracingState, throwable: Throwable) {
+        if (requestTracingState.isSampled) {
+            requestTracingState.span?.isError = true
+            requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, throwable.message)
+            requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
+            requestTracingState.span?.setTag(
+                DatadogTracingConstants.Tags.KEY_ERROR_STACK,
+                throwable.loggableStackTrace()
+            )
         }
-        tracingState.onRequestCompleted(null, throwable)
-        tracingState.span?.finishRumAware(tracingState.isSampled, !internalSdkCore.isRumEnabled)
+        requestTracingState.onRequestIntercepted(null, throwable)
+        requestTracingState.span?.finishRumAware(requestTracingState.isSampled, canSendSpan)
+    }
+
+    /**
+     * Removes all tracing headers from the request.
+     * This is useful when starting a new independent trace for redirect requests,
+     * ensuring each redirect creates a separate root span.
+     *
+     * @param requestBuilder the request builder to remove headers from.
+     */
+    fun removeTracingHeaders(requestBuilder: HttpRequestInfoBuilder) {
+        propagationHelper.removeAllTracingHeaders(requestBuilder)
+    }
+
+    /**
+     * Reports an instrumentation error to the internal logger.
+     * @param messageBuilder the error message to report
+     */
+    fun reportInstrumentationError(messageBuilder: () -> String) {
+        internalSdkCore?.internalLogger?.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            messageBuilder
+        )
     }
 
     private fun DatadogSpan.isSampled(request: HttpRequestInfo): Boolean =
         extractRumContext(rumContextPropagator, block = true)
             .sample(request, traceSampler)
 
-    private fun RequestTraceState.onRequestCompleted(
+    private fun RequestTracingState.onRequestIntercepted(
         response: HttpResponseInfo?,
         throwable: Throwable?
     ) {
-        if (!isSampled || span == null) return
-        val request = requestBuilder.build()
+        if (span == null) return
+        val request = tracedRequestInfoBuilder.build()
         try {
             tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
         } catch (e: StackOverflowError) {
@@ -200,27 +237,27 @@ class ApmNetworkInstrumentation internal constructor(
         }
     }
 
-    private fun updateRequest(
+    private fun traceRequest(
         url: String,
         sdkCore: InternalSdkCore,
-        requestModifier: HttpRequestInfoBuilder,
+        requestBuilder: HttpRequestInfoBuilder,
         tracer: DatadogTracer,
         span: DatadogSpan,
         isSampled: Boolean
-    ): HttpRequestInfoBuilder = requestModifier.also { modifier ->
+    ): HttpRequestInfoBuilder = requestBuilder.also { builder ->
         val tracingHeaderTypes = localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(url)
             .ifEmpty { sdkCore.firstPartyHostResolver.headerTypesForUrl(url) }
 
         if (isSampled) {
             propagationHelper.propagateSampledHeaders(
-                requestModifier,
+                builder,
                 tracer,
                 span,
                 tracingHeaderTypes
             )
         } else {
             propagationHelper.propagateNotSampledHeaders(
-                modifier,
+                builder,
                 tracer,
                 span,
                 tracingHeaderTypes,

@@ -73,7 +73,10 @@ internal class DatadogTracingToolkitTest {
 
         // When
         val result: ApmNetworkInstrumentation =
-            DatadogTracingToolkit.createApmNetworkInstrumentation(fakeInstrumentationName, builder)
+            DatadogTracingToolkit.createApmNetworkInstrumentation(
+                fakeInstrumentationName,
+                builder
+            )
 
         // Then
         assertThat(result).isNotNull

@@ -6,11 +6,9 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
-import com.datadog.android.trace.internal.ApmNetworkInstrumentation
-import com.datadog.android.trace.internal.net.RequestTraceState
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
+import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -44,13 +42,13 @@ import java.util.concurrent.Executor
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DatadogCronetRequestContextTest {
+internal class CronetRequestContextTest {
 
     @Mock
     lateinit var mockEngine: DatadogCronetEngine
 
     @Mock
-    lateinit var mockCallback: DatadogRequestCallback
+    lateinit var mockCallback: CronetRequestCallback
 
     @Mock
     lateinit var mockExecutor: Executor
@@ -62,12 +60,12 @@ internal class DatadogCronetRequestContextTest {
     lateinit var mockUrlRequest: UrlRequest
 
     @Mock
-    lateinit var mockTracingState: RequestTraceState
+    lateinit var mockTracingState: RequestTracingState
 
-    @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
+    @StringForgery(regex = URL_FORGERY_PATTERN)
     lateinit var fakeUrl: String
 
-    lateinit var testedContext: DatadogCronetRequestContext
+    lateinit var testedContext: CronetRequestContext
 
     @BeforeEach
     fun `set up`() {
@@ -86,10 +84,10 @@ internal class DatadogCronetRequestContextTest {
         whenever(mockDelegateBuilder.setRawCompressionDictionary(any(), any(), any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.addRequestAnnotation(any())) doReturn mockDelegateBuilder
 
-        testedContext = DatadogCronetRequestContext(
+        testedContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         )
     }
@@ -313,9 +311,33 @@ internal class DatadogCronetRequestContextTest {
     }
 
     @Test
+    fun `M share rawCompressionDictionary by reference W copy()`(
+        @StringForgery fakeDictionaryId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeHash = ByteArray(5) { forge.anInt().toByte() }
+        val fakeDictionary = mock<ByteBuffer>()
+        testedContext.setRawCompressionDictionary(fakeHash, fakeDictionary, fakeDictionaryId)
+
+        // When
+        val copiedContext = testedContext.copy()
+
+        // Then
+        val copiedRequest = copiedContext.asCronetRequestInfo()
+        copiedContext.asCronetRequest(copiedRequest, mockTracingState)
+
+        verify(mockDelegateBuilder).setRawCompressionDictionary(
+            fakeHash,
+            fakeDictionary,
+            fakeDictionaryId
+        )
+    }
+
+    @Test
     fun `M build CronetHttpRequestInfo W buildRequestInfo()`() {
         // When
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // Then
         assertThat(requestInfo).isInstanceOf(CronetHttpRequestInfo::class.java)
@@ -326,10 +348,10 @@ internal class DatadogCronetRequestContextTest {
     @Test
     fun `M build UrlRequest W buildCronetRequest()`() {
         // Given
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        val request = testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        val request = testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockEngine).newDelegateUrlRequestBuilder(fakeUrl, mockCallback, mockExecutor)
@@ -340,10 +362,10 @@ internal class DatadogCronetRequestContextTest {
     @Test
     fun `M add requestInfo as annotation W buildCronetRequest()`() {
         // Given
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).addRequestAnnotation(requestInfo)
@@ -352,10 +374,10 @@ internal class DatadogCronetRequestContextTest {
     @Test
     fun `M add tracingState as annotation W buildCronetRequest() { tracingState not null }`() {
         // Given
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).addRequestAnnotation(mockTracingState)
@@ -365,10 +387,10 @@ internal class DatadogCronetRequestContextTest {
     fun `M apply disableCache W buildCronetRequest() { cache disabled }`() {
         // Given
         testedContext.disableCache()
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).disableCache()
@@ -378,10 +400,10 @@ internal class DatadogCronetRequestContextTest {
     fun `M apply allowDirectExecutor W buildCronetRequest() { direct executor allowed }`() {
         // Given
         testedContext.allowDirectExecutor()
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).allowDirectExecutor()
@@ -393,10 +415,10 @@ internal class DatadogCronetRequestContextTest {
     ) {
         // Given
         testedContext.setPriority(fakePriority)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).setPriority(fakePriority)
@@ -408,10 +430,10 @@ internal class DatadogCronetRequestContextTest {
     ) {
         // Given
         testedContext.bindToNetwork(fakeNetworkHandle)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).bindToNetwork(fakeNetworkHandle)
@@ -423,10 +445,10 @@ internal class DatadogCronetRequestContextTest {
     ) {
         // Given
         testedContext.setTrafficStatsTag(fakeTag)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).setTrafficStatsTag(fakeTag)
@@ -438,10 +460,10 @@ internal class DatadogCronetRequestContextTest {
     ) {
         // Given
         testedContext.setTrafficStatsUid(fakeUid)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).setTrafficStatsUid(fakeUid)
@@ -453,10 +475,10 @@ internal class DatadogCronetRequestContextTest {
         val mockUploadProvider = mock<UploadDataProvider>()
         val mockUploadExecutor = mock<Executor>()
         testedContext.setUploadDataProvider(mockUploadProvider, mockUploadExecutor)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).setUploadDataProvider(mockUploadProvider, mockUploadExecutor)
@@ -467,10 +489,10 @@ internal class DatadogCronetRequestContextTest {
         // Given
         val mockListener = mock<RequestFinishedInfo.Listener>()
         testedContext.setRequestFinishedListener(mockListener)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).setRequestFinishedListener(mockListener)
@@ -485,68 +507,18 @@ internal class DatadogCronetRequestContextTest {
         val fakeHash = ByteArray(5) { forge.anInt().toByte() }
         val mockDictionary = mock<ByteBuffer>()
         testedContext.setRawCompressionDictionary(fakeHash, mockDictionary, fakeDictionaryId)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).setRawCompressionDictionary(fakeHash, mockDictionary, fakeDictionaryId)
     }
 
     @Test
-    fun `M return networkTracingInstrumentation W networkTracingInstrumentation { tracing enabled }`() {
-        // Given
-        val mockTracingInstrumentation = mock<ApmNetworkInstrumentation>()
-        whenever(mockEngine.apmNetworkInstrumentation) doReturn mockTracingInstrumentation
-
-        // When
-        val result = testedContext.apmNetworkInstrumentation
-
-        // Then
-        assertThat(result).isSameAs(mockTracingInstrumentation)
-    }
-
-    @Test
-    fun `M return null W networkTracingInstrumentation { tracing disabled }`() {
-        // Given
-        whenever(mockEngine.apmNetworkInstrumentation) doReturn null
-
-        // When
-        val result = testedContext.apmNetworkInstrumentation
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M return RumNetworkInstrumentation W rumNetworkInstrumentation { rum enabled }`() {
-        // Given
-        val mockRumInstrumentation = mock<RumNetworkInstrumentation>()
-        whenever(mockEngine.rumNetworkInstrumentation) doReturn mockRumInstrumentation
-
-        // When
-        val result = testedContext.rumNetworkInstrumentation
-
-        // Then
-        assertThat(result).isSameAs(mockRumInstrumentation)
-    }
-
-    @Test
-    fun `M return null W rumNetworkInstrumentation { rum disabled }`() {
-        // Given
-        whenever(mockEngine.rumNetworkInstrumentation) doReturn null
-
-        // When
-        val result = testedContext.rumNetworkInstrumentation
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
     fun `M update url W url setter`(
-        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") newUrl: String
+        @StringForgery(regex = URL_FORGERY_PATTERN) newUrl: String
     ) {
         // When
         testedContext.url = newUrl
@@ -561,10 +533,10 @@ internal class DatadogCronetRequestContextTest {
     ) {
         // Given
         testedContext.addRequestAnnotation(fakeAnnotation)
-        val requestInfo = testedContext.buildRequestInfo()
+        val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
-        testedContext.buildCronetRequest(requestInfo, mockTracingState)
+        testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
         verify(mockDelegateBuilder).addRequestAnnotation(fakeAnnotation)
