@@ -41,8 +41,8 @@ internal data class RumViewState(
     data class Application(
         val id: String,
         val currentLocale: String?,
-    ) {
-    }
+    )
+
     data class ViewEventSession(
         val id: String,
         val type: ViewEventSessionType,
