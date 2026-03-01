@@ -15,7 +15,7 @@ internal object RumViewStateDiffMapper {
         return RumViewUpdateEvent(
             container = if (diff.container.exists) diff.container.item?.toUpdateEvent() else null,
             view = diff.view.item!!.toUpdateEvent(),
-            session = diff.session.toUpdateEvent(),
+            session = diff.session.item!!.toUpdateEvent(),
             featureFlags = if (diff.featureFlags.exists) diff.featureFlags.item?.let {
                 RumViewUpdateEvent.FeatureFlags(it.additionalProperties)
             } else null,
@@ -24,7 +24,7 @@ internal object RumViewStateDiffMapper {
             } else null,
             display = if (diff.display.exists) diff.display.item?.toUpdateEventDisplay() else null,
             date = diff.date,
-            application = diff.application.toUpdateEvent(),
+            application = diff.application.item!!.toUpdateEvent(),
             service = if (diff.service.exists) diff.service.item else null,
             version = if (diff.version.exists) diff.version.item else null,
             buildVersion = if (diff.buildVersion.exists) diff.buildVersion.item else null,
@@ -55,17 +55,17 @@ internal object RumViewStateDiffMapper {
 
     // region Private - top-level nested types
 
-    private fun RumViewState.Application.toUpdateEvent() = RumViewUpdateEvent.Application(
+    private fun RumViewStateDiff.ApplicationDiff.toUpdateEvent() = RumViewUpdateEvent.Application(
         id = id,
-        currentLocale = currentLocale
+        currentLocale = if (currentLocale.exists) currentLocale.item else null
     )
 
-    private fun RumViewState.ViewEventSession.toUpdateEvent() = RumViewUpdateEvent.RumViewUpdateEventSession(
-        isActive = isActive,
-        sampledForReplay = sampledForReplay,
+    private fun RumViewStateDiff.ViewEventSessionDiff.toUpdateEvent() = RumViewUpdateEvent.RumViewUpdateEventSession(
+        isActive = if (isActive.exists) isActive.item else null,
+        sampledForReplay = if (sampledForReplay.exists) sampledForReplay.item else null,
         id = id,
         type = type.toUpdateEvent(),
-        hasReplay = hasReplay
+        hasReplay = if (hasReplay.exists) hasReplay.item else null
     )
 
     @Suppress("LongMethod")
@@ -187,23 +187,23 @@ internal object RumViewStateDiffMapper {
         isLowRam = isLowRam
     )
 
-    private fun RumViewState.Dd.toUpdateEventDd() = RumViewUpdateEvent.Dd(
-        session = session?.let {
+    private fun RumViewStateDiff.DdDiff.toUpdateEventDd() = RumViewUpdateEvent.Dd(
+        session = if (session.exists) session.item?.let {
             RumViewUpdateEvent.DdSession(
                 plan = it.plan?.toUpdateEvent(),
                 sessionPrecondition = it.sessionPrecondition?.toUpdateEvent()
             )
-        },
-        configuration = configuration?.let {
+        } else null,
+        configuration = if (configuration.exists) configuration.item?.let {
             RumViewUpdateEvent.Configuration(
                 sessionSampleRate = it.sessionSampleRate,
                 sessionReplaySampleRate = it.sessionReplaySampleRate,
                 profilingSampleRate = it.profilingSampleRate,
                 traceSampleRate = it.traceSampleRate
             )
-        },
-        browserSdkVersion = browserSdkVersion,
-        sdkName = sdkName,
+        } else null,
+        browserSdkVersion = if (browserSdkVersion.exists) browserSdkVersion.item else null,
+        sdkName = if (sdkName.exists) sdkName.item else null,
         documentVersion = documentVersion
     )
 

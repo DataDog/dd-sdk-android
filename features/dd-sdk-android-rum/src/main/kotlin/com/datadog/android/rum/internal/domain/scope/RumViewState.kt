@@ -15,13 +15,13 @@ import com.datadog.tools.diff.DiffReplace
 @Diff
 internal data class RumViewState(
     @DiffIgnore val date: Long,
-    @DiffIgnore val application: Application,
+    @DiffMerge val application: Application,
     val service: String? = null,
     val version: String? = null,
     val buildVersion: String? = null,
     val buildId: String? = null,
     val ddtags: String? = null,
-    @DiffIgnore val session: ViewEventSession,
+    @DiffMerge val session: ViewEventSession,
     val source: ViewEventSource? = null,
     @DiffMerge val view: ViewEventView,
     val usr: Usr? = null,
@@ -32,20 +32,20 @@ internal data class RumViewState(
     val ciTest: CiTest? = null,
     val os: Os? = null,
     val device: Device? = null,
-    val dd: Dd,
+    @DiffMerge val dd: Dd,
     val context: Context? = null,
     val container: Container? = null,
     @DiffReplace val featureFlags: Context? = null,
     val privacy: Privacy? = null,
 ) {
     data class Application(
-        val id: String,
+        @DiffIgnore val id: String,
         val currentLocale: String?,
     )
 
     data class ViewEventSession(
-        val id: String,
-        val type: ViewEventSessionType,
+        @DiffIgnore val id: String,
+        @DiffIgnore val type: ViewEventSessionType,
         val hasReplay: Boolean? = null,
         val isActive: Boolean? = true,
         val sampledForReplay: Boolean? = null,
@@ -54,7 +54,7 @@ internal data class RumViewState(
     data class ViewEventView(
         @DiffIgnore val id: String,
         var referrer: String? = null,
-        @DiffIgnore var url: String,
+        @DiffIgnore val url: String,
         var name: String? = null,
         val loadingTime: Long? = null,
         val networkSettledTime: Long? = null,

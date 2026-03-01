@@ -1368,7 +1368,8 @@ internal open class RumViewScope(
             val newEvent = if (prev == null) {
                 mappedViewEvent
             } else {
-                RumViewStateDiffMapper.mapDiffToUpdateEvent(prev.diff(newViewState))
+                val diff = prev.diff(newViewState)
+                RumViewStateDiffMapper.mapDiffToUpdateEvent(diff)
             }
 
             prevViewState = newViewState
