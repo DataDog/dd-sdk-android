@@ -50,6 +50,14 @@ data class DiffOptional<T>(
     val item: T?,
     val exists: Boolean
 ) {
+    fun get(): T? {
+        return if (exists) {
+            item
+        } else {
+            null
+        }
+    }
+
     companion object {
         fun <T> empty(): DiffOptional<T> {
             return DiffOptional(

@@ -13,46 +13,46 @@ import com.datadog.android.rum.model.ViewEventDiff
 @Suppress("LongMethod")
 internal fun ViewEventDiff.toUpdateEvent(): RumViewUpdateEvent {
     return RumViewUpdateEvent(
-        container = if (container.exists) container.item?.toUpdateEvent() else null,
-        stream = if (stream.exists) stream.item?.let { RumViewUpdateEvent.Stream(id = it.id) } else null,
+        container = container.get()?.toUpdateEvent(),
+        stream = stream.get()?.let { RumViewUpdateEvent.Stream(id = it.id) },
         view = view.toUpdateEvent(),
         session = session.toUpdateEvent(),
-        featureFlags = if (featureFlags.exists) featureFlags.item?.let {
-            if (it.additionalProperties.exists) it.additionalProperties.item?.let { map ->
+        featureFlags = featureFlags.get()?.let {
+            it.additionalProperties.get()?.let { map ->
                 RumViewUpdateEvent.FeatureFlags(map.toMutableMap())
-            } else null
-        } else null,
-        privacy = if (privacy.exists) privacy.item?.let {
+            }
+        },
+        privacy = privacy.get()?.let {
             RumViewUpdateEvent.Privacy(replayLevel = it.replayLevel.toUpdateEvent())
-        } else null,
-        display = if (display.exists) display.item?.toUpdateEventDisplay() else null,
+        },
+        display = display.get()?.toUpdateEventDisplay(),
         date = date,
         application = application.toUpdateEvent(),
-        service = if (service.exists) service.item else null,
-        version = if (version.exists) version.item else null,
-        buildVersion = if (buildVersion.exists) buildVersion.item else null,
-        buildId = if (buildId.exists) buildId.item else null,
-        ddtags = if (ddtags.exists) ddtags.item else null,
-        source = if (source.exists) source.item?.toUpdateEvent() else null,
-        usr = if (usr.exists) usr.item?.toUpdateEvent() else null,
-        account = if (account.exists) account.item?.toUpdateEvent() else null,
-        connectivity = if (connectivity.exists) connectivity.item?.toUpdateEvent() else null,
-        synthetics = if (synthetics.exists) synthetics.item?.let {
+        service = service.get(),
+        version = version.get(),
+        buildVersion = buildVersion.get(),
+        buildId = buildId.get(),
+        ddtags = ddtags.get(),
+        source = source.get()?.toUpdateEvent(),
+        usr = usr.get()?.toUpdateEvent(),
+        account = account.get()?.toUpdateEvent(),
+        connectivity = connectivity.get()?.toUpdateEvent(),
+        synthetics = synthetics.get()?.let {
             RumViewUpdateEvent.Synthetics(
                 testId = it.testId,
                 resultId = it.resultId,
                 injected = it.injected
             )
-        } else null,
-        ciTest = if (ciTest.exists) ciTest.item?.let {
+        },
+        ciTest = ciTest.get()?.let {
             RumViewUpdateEvent.CiTest(testExecutionId = it.testExecutionId)
-        } else null,
-        os = if (os.exists) os.item?.toUpdateEvent() else null,
-        device = if (device.exists) device.item?.toUpdateEvent() else null,
+        },
+        os = os.get()?.toUpdateEvent(),
+        device = device.get()?.toUpdateEvent(),
         dd = dd.toUpdateEventDd(),
-        context = if (context.exists) context.item?.let {
+        context = context.get()?.let {
             RumViewUpdateEvent.FeatureFlags(it.additionalProperties)
-        } else null
+        }
     )
 }
 
@@ -60,82 +60,76 @@ internal fun ViewEventDiff.toUpdateEvent(): RumViewUpdateEvent {
 
 private fun ViewEventDiff.ApplicationDiff.toUpdateEvent() = RumViewUpdateEvent.Application(
     id = id,
-    currentLocale = if (currentLocale.exists) currentLocale.item else null
+    currentLocale = currentLocale.get()
 )
 
 private fun ViewEventDiff.ViewEventSessionDiff.toUpdateEvent() = RumViewUpdateEvent.RumViewUpdateEventSession(
-    isActive = if (isActive.exists) isActive.item else null,
-    sampledForReplay = if (sampledForReplay.exists) sampledForReplay.item else null,
+    isActive = isActive.get(),
+    sampledForReplay = sampledForReplay.get(),
     id = id,
     type = type.toUpdateEvent(),
-    hasReplay = if (hasReplay.exists) hasReplay.item else null
+    hasReplay = hasReplay.get()
 )
 
 @Suppress("LongMethod")
 private fun ViewEventDiff.ViewEventViewDiff.toUpdateEvent() = RumViewUpdateEvent.RumViewUpdateEventView(
-    loadingTime = if (loadingTime.exists) loadingTime.item else null,
-    networkSettledTime = if (networkSettledTime.exists) networkSettledTime.item else null,
-    interactionToNextViewTime = if (interactionToNextViewTime.exists) interactionToNextViewTime.item else null,
-    loadingType = if (loadingType.exists) loadingType.item?.toUpdateEvent() else null,
-    timeSpent = if (timeSpent.exists) timeSpent.item else null,
-    firstContentfulPaint = if (firstContentfulPaint.exists) firstContentfulPaint.item else null,
-    largestContentfulPaint = if (largestContentfulPaint.exists) largestContentfulPaint.item else null,
-    largestContentfulPaintTargetSelector = if (largestContentfulPaintTargetSelector.exists) {
-        largestContentfulPaintTargetSelector.item
-    } else null,
-    firstInputDelay = if (firstInputDelay.exists) firstInputDelay.item else null,
-    firstInputTime = if (firstInputTime.exists) firstInputTime.item else null,
-    firstInputTargetSelector = if (firstInputTargetSelector.exists) firstInputTargetSelector.item else null,
-    interactionToNextPaint = if (interactionToNextPaint.exists) interactionToNextPaint.item else null,
-    interactionToNextPaintTime = if (interactionToNextPaintTime.exists) interactionToNextPaintTime.item else null,
-    interactionToNextPaintTargetSelector = if (interactionToNextPaintTargetSelector.exists) {
-        interactionToNextPaintTargetSelector.item
-    } else null,
-    cumulativeLayoutShift = if (cumulativeLayoutShift.exists) cumulativeLayoutShift.item else null,
-    cumulativeLayoutShiftTime = if (cumulativeLayoutShiftTime.exists) cumulativeLayoutShiftTime.item else null,
-    cumulativeLayoutShiftTargetSelector = if (cumulativeLayoutShiftTargetSelector.exists) {
-        cumulativeLayoutShiftTargetSelector.item
-    } else null,
-    domComplete = if (domComplete.exists) domComplete.item else null,
-    domContentLoaded = if (domContentLoaded.exists) domContentLoaded.item else null,
-    domInteractive = if (domInteractive.exists) domInteractive.item else null,
-    loadEvent = if (loadEvent.exists) loadEvent.item else null,
-    firstByte = if (firstByte.exists) firstByte.item else null,
-    customTimings = if (customTimings.exists) customTimings.item?.let {
+    loadingTime = loadingTime.get(),
+    networkSettledTime = networkSettledTime.get(),
+    interactionToNextViewTime = interactionToNextViewTime.get(),
+    loadingType = loadingType.get()?.toUpdateEvent(),
+    timeSpent = timeSpent.get(),
+    firstContentfulPaint = firstContentfulPaint.get(),
+    largestContentfulPaint = largestContentfulPaint.get(),
+    largestContentfulPaintTargetSelector = largestContentfulPaintTargetSelector.get(),
+    firstInputDelay = firstInputDelay.get(),
+    firstInputTime = firstInputTime.get(),
+    firstInputTargetSelector = firstInputTargetSelector.get(),
+    interactionToNextPaint = interactionToNextPaint.get(),
+    interactionToNextPaintTime = interactionToNextPaintTime.get(),
+    interactionToNextPaintTargetSelector = interactionToNextPaintTargetSelector.get(),
+    cumulativeLayoutShift = cumulativeLayoutShift.get(),
+    cumulativeLayoutShiftTime = cumulativeLayoutShiftTime.get(),
+    cumulativeLayoutShiftTargetSelector = cumulativeLayoutShiftTargetSelector.get(),
+    domComplete = domComplete.get(),
+    domContentLoaded = domContentLoaded.get(),
+    domInteractive = domInteractive.get(),
+    loadEvent = loadEvent.get(),
+    firstByte = firstByte.get(),
+    customTimings = customTimings.get()?.let {
         RumViewUpdateEvent.CustomTimings(it.additionalProperties)
-    } else null,
-    isActive = if (isActive.exists) isActive.item else null,
-    isSlowRendered = if (isSlowRendered.exists) isSlowRendered.item else null,
-    action = if (action.exists) action.item?.let { RumViewUpdateEvent.Action(it.count) } else null,
-    error = if (error.exists) error.item?.let { RumViewUpdateEvent.Error(it.count) } else null,
-    crash = if (crash.exists) crash.item?.let { RumViewUpdateEvent.Crash(it.count) } else null,
-    longTask = if (longTask.exists) longTask.item?.let { RumViewUpdateEvent.LongTask(it.count) } else null,
-    frozenFrame = if (frozenFrame.exists) frozenFrame.item?.let { RumViewUpdateEvent.FrozenFrame(it.count) } else null,
-    slowFrames = if (slowFrames.exists) slowFrames.item?.map {
+    },
+    isActive = isActive.get(),
+    isSlowRendered = isSlowRendered.get(),
+    action = action.get()?.let { RumViewUpdateEvent.Action(it.count) },
+    error = error.get()?.let { RumViewUpdateEvent.Error(it.count) },
+    crash = crash.get()?.let { RumViewUpdateEvent.Crash(it.count) },
+    longTask = longTask.get()?.let { RumViewUpdateEvent.LongTask(it.count) },
+    frozenFrame = frozenFrame.get()?.let { RumViewUpdateEvent.FrozenFrame(it.count) },
+    slowFrames = slowFrames.get()?.map {
         RumViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration)
-    } else null,
-    resource = if (resource.exists) resource.item?.let { RumViewUpdateEvent.Resource(it.count) } else null,
-    frustration = if (frustration.exists) frustration.item?.let { RumViewUpdateEvent.Frustration(it.count) } else null,
-    inForegroundPeriods = if (inForegroundPeriods.exists) inForegroundPeriods.item?.map {
+    },
+    resource = resource.get()?.let { RumViewUpdateEvent.Resource(it.count) },
+    frustration = frustration.get()?.let { RumViewUpdateEvent.Frustration(it.count) },
+    inForegroundPeriods = inForegroundPeriods.get()?.map {
         RumViewUpdateEvent.InForegroundPeriod(start = it.start, duration = it.duration)
-    } else null,
-    memoryAverage = if (memoryAverage.exists) memoryAverage.item else null,
-    memoryMax = if (memoryMax.exists) memoryMax.item else null,
-    cpuTicksCount = if (cpuTicksCount.exists) cpuTicksCount.item else null,
-    cpuTicksPerSecond = if (cpuTicksPerSecond.exists) cpuTicksPerSecond.item else null,
-    refreshRateAverage = if (refreshRateAverage.exists) refreshRateAverage.item else null,
-    refreshRateMin = if (refreshRateMin.exists) refreshRateMin.item else null,
-    slowFramesRate = if (slowFramesRate.exists) slowFramesRate.item else null,
-    freezeRate = if (freezeRate.exists) freezeRate.item else null,
-    flutterBuildTime = if (flutterBuildTime.exists) flutterBuildTime.item?.toUpdateEvent() else null,
-    flutterRasterTime = if (flutterRasterTime.exists) flutterRasterTime.item?.toUpdateEvent() else null,
-    jsRefreshRate = if (jsRefreshRate.exists) jsRefreshRate.item?.toUpdateEvent() else null,
-    performance = if (performance.exists) performance.item?.toUpdateEvent() else null,
-    accessibility = if (accessibility.exists) accessibility.item?.toUpdateEvent() else null,
+    },
+    memoryAverage = memoryAverage.get(),
+    memoryMax = memoryMax.get(),
+    cpuTicksCount = cpuTicksCount.get(),
+    cpuTicksPerSecond = cpuTicksPerSecond.get(),
+    refreshRateAverage = refreshRateAverage.get(),
+    refreshRateMin = refreshRateMin.get(),
+    slowFramesRate = slowFramesRate.get(),
+    freezeRate = freezeRate.get(),
+    flutterBuildTime = flutterBuildTime.get()?.toUpdateEvent(),
+    flutterRasterTime = flutterRasterTime.get()?.toUpdateEvent(),
+    jsRefreshRate = jsRefreshRate.get()?.toUpdateEvent(),
+    performance = performance.get()?.toUpdateEvent(),
+    accessibility = accessibility.get()?.toUpdateEvent(),
     id = id,
-    referrer = if (referrer.exists) referrer.item else null,
+    referrer = referrer.get(),
     url = url,
-    name = if (name.exists) name.item else null
+    name = name.get()
 )
 
 private fun ViewEvent.Usr.toUpdateEvent() = RumViewUpdateEvent.Usr(
@@ -191,22 +185,22 @@ private fun ViewEvent.Device.toUpdateEvent() = RumViewUpdateEvent.Device(
 )
 
 private fun ViewEventDiff.DdDiff.toUpdateEventDd() = RumViewUpdateEvent.Dd(
-    session = if (session.exists) session.item?.let {
+    session = session.get()?.let {
         RumViewUpdateEvent.DdSession(
             plan = it.plan?.toUpdateEvent(),
             sessionPrecondition = it.sessionPrecondition?.toUpdateEvent()
         )
-    } else null,
-    configuration = if (configuration.exists) configuration.item?.let {
+    },
+    configuration = configuration.get()?.let {
         RumViewUpdateEvent.Configuration(
             sessionSampleRate = it.sessionSampleRate,
             sessionReplaySampleRate = it.sessionReplaySampleRate,
             profilingSampleRate = it.profilingSampleRate,
             traceSampleRate = it.traceSampleRate
         )
-    } else null,
-    browserSdkVersion = if (browserSdkVersion.exists) browserSdkVersion.item else null,
-    sdkName = if (sdkName.exists) sdkName.item else null,
+    },
+    browserSdkVersion = browserSdkVersion.get(),
+    sdkName = sdkName.get(),
     documentVersion = documentVersion
 )
 
@@ -228,7 +222,7 @@ private fun ViewEvent.FlutterBuildTime.toUpdateEvent() = RumViewUpdateEvent.Flut
 
 private fun ViewEventDiff.ViewEventViewDiff.PerformanceDiff.toUpdateEvent() =
     RumViewUpdateEvent.Performance(
-        cls = if (cls.exists) cls.item?.let {
+        cls = cls.get()?.let {
             RumViewUpdateEvent.Cls(
                 score = it.score,
                 timestamp = it.timestamp,
@@ -240,12 +234,12 @@ private fun ViewEventDiff.ViewEventViewDiff.PerformanceDiff.toUpdateEvent() =
                     RumViewUpdateEvent.PreviousRect(r.x, r.y, r.width, r.height)
                 }
             )
-        } else null,
-        fcp = if (fcp.exists) fcp.item?.let { RumViewUpdateEvent.Fcp(it.timestamp) } else null,
-        fid = if (fid.exists) fid.item?.let {
+        },
+        fcp = fcp.get()?.let { RumViewUpdateEvent.Fcp(it.timestamp) },
+        fid = fid.get()?.let {
             RumViewUpdateEvent.Fid(it.duration, it.timestamp, it.targetSelector)
-        } else null,
-        inp = if (inp.exists) inp.item?.let {
+        },
+        inp = inp.get()?.let {
             RumViewUpdateEvent.Inp(
                 duration = it.duration,
                 timestamp = it.timestamp,
@@ -254,8 +248,8 @@ private fun ViewEventDiff.ViewEventViewDiff.PerformanceDiff.toUpdateEvent() =
                     RumViewUpdateEvent.InpSubParts(s.inputDelay, s.processingTime, s.presentationDelay)
                 }
             )
-        } else null,
-        lcp = if (lcp.exists) lcp.item?.let {
+        },
+        lcp = lcp.get()?.let {
             RumViewUpdateEvent.Lcp(
                 timestamp = it.timestamp,
                 targetSelector = it.targetSelector,
@@ -264,36 +258,34 @@ private fun ViewEventDiff.ViewEventViewDiff.PerformanceDiff.toUpdateEvent() =
                     RumViewUpdateEvent.LcpSubParts(s.loadDelay, s.loadTime, s.renderDelay)
                 }
             )
-        } else null,
-        fbc = if (fbc.exists) fbc.item?.let { RumViewUpdateEvent.Fbc(it.timestamp) } else null
+        },
+        fbc = fbc.get()?.let { RumViewUpdateEvent.Fbc(it.timestamp) }
     )
 
 private fun ViewEventDiff.ViewEventViewDiff.AccessibilityDiff.toUpdateEvent() =
     RumViewUpdateEvent.Accessibility(
-        textSize = if (textSize.exists) textSize.item else null,
-        screenReaderEnabled = if (screenReaderEnabled.exists) screenReaderEnabled.item else null,
-        boldTextEnabled = if (boldTextEnabled.exists) boldTextEnabled.item else null,
-        reduceTransparencyEnabled = if (reduceTransparencyEnabled.exists) reduceTransparencyEnabled.item else null,
-        reduceMotionEnabled = if (reduceMotionEnabled.exists) reduceMotionEnabled.item else null,
-        buttonShapesEnabled = if (buttonShapesEnabled.exists) buttonShapesEnabled.item else null,
-        invertColorsEnabled = if (invertColorsEnabled.exists) invertColorsEnabled.item else null,
-        increaseContrastEnabled = if (increaseContrastEnabled.exists) increaseContrastEnabled.item else null,
-        assistiveSwitchEnabled = if (assistiveSwitchEnabled.exists) assistiveSwitchEnabled.item else null,
-        assistiveTouchEnabled = if (assistiveTouchEnabled.exists) assistiveTouchEnabled.item else null,
-        videoAutoplayEnabled = if (videoAutoplayEnabled.exists) videoAutoplayEnabled.item else null,
-        closedCaptioningEnabled = if (closedCaptioningEnabled.exists) closedCaptioningEnabled.item else null,
-        monoAudioEnabled = if (monoAudioEnabled.exists) monoAudioEnabled.item else null,
-        shakeToUndoEnabled = if (shakeToUndoEnabled.exists) shakeToUndoEnabled.item else null,
-        reducedAnimationsEnabled = if (reducedAnimationsEnabled.exists) reducedAnimationsEnabled.item else null,
-        shouldDifferentiateWithoutColor = if (shouldDifferentiateWithoutColor.exists) {
-            shouldDifferentiateWithoutColor.item
-        } else null,
-        grayscaleEnabled = if (grayscaleEnabled.exists) grayscaleEnabled.item else null,
-        singleAppModeEnabled = if (singleAppModeEnabled.exists) singleAppModeEnabled.item else null,
-        onOffSwitchLabelsEnabled = if (onOffSwitchLabelsEnabled.exists) onOffSwitchLabelsEnabled.item else null,
-        speakScreenEnabled = if (speakScreenEnabled.exists) speakScreenEnabled.item else null,
-        speakSelectionEnabled = if (speakSelectionEnabled.exists) speakSelectionEnabled.item else null,
-        rtlEnabled = if (rtlEnabled.exists) rtlEnabled.item else null
+        textSize = textSize.get(),
+        screenReaderEnabled = screenReaderEnabled.get(),
+        boldTextEnabled = boldTextEnabled.get(),
+        reduceTransparencyEnabled = reduceTransparencyEnabled.get(),
+        reduceMotionEnabled = reduceMotionEnabled.get(),
+        buttonShapesEnabled = buttonShapesEnabled.get(),
+        invertColorsEnabled = invertColorsEnabled.get(),
+        increaseContrastEnabled = increaseContrastEnabled.get(),
+        assistiveSwitchEnabled = assistiveSwitchEnabled.get(),
+        assistiveTouchEnabled = assistiveTouchEnabled.get(),
+        videoAutoplayEnabled = videoAutoplayEnabled.get(),
+        closedCaptioningEnabled = closedCaptioningEnabled.get(),
+        monoAudioEnabled = monoAudioEnabled.get(),
+        shakeToUndoEnabled = shakeToUndoEnabled.get(),
+        reducedAnimationsEnabled = reducedAnimationsEnabled.get(),
+        shouldDifferentiateWithoutColor = shouldDifferentiateWithoutColor.get(),
+        grayscaleEnabled = grayscaleEnabled.get(),
+        singleAppModeEnabled = singleAppModeEnabled.get(),
+        onOffSwitchLabelsEnabled = onOffSwitchLabelsEnabled.get(),
+        speakScreenEnabled = speakScreenEnabled.get(),
+        speakSelectionEnabled = speakSelectionEnabled.get(),
+        rtlEnabled = rtlEnabled.get()
     )
 
 // endregion
