@@ -67,6 +67,7 @@ internal class HomeFragment :
             R.id.navigation_cronet_image -> R.id.fragment_cronet_image
             R.id.navigation_compose -> R.id.activity_jetpack_compose
             R.id.navigation_session_replay -> R.id.fragment_session_replay
+            R.id.navigation_feature_flag_evaluation -> R.id.fragment_feature_flag_evaluation
             R.id.navigation_about -> R.id.fragment_about
 
             else -> null
