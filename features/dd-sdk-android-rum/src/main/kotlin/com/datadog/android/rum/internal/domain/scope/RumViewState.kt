@@ -188,10 +188,6 @@ internal data class RumViewState(
         @DiffMap val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
     )
 
-    data class Stream(
-        val id: String,
-    ) {
-    }
     data class Container(
         val view: ContainerView,
         val source: ViewEventSource,
