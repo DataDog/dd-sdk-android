@@ -6,6 +6,8 @@
 
 package com.datadog.tools.diff
 
+import kotlin.reflect.KClass
+
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
 annotation class Diff
@@ -29,6 +31,20 @@ annotation class DiffAppend
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.SOURCE)
 annotation class DiffMap
+
+enum class DiffVisibility { PUBLIC, INTERNAL, PROTECTED, PRIVATE }
+
+@Repeatable
+@Target(AnnotationTarget.FILE)
+@Retention(AnnotationRetention.SOURCE)
+annotation class DiffConfig(
+    val forClass: KClass<*>,
+    val merge: Array<String> = [], // list of fields that should behave as if annotated with DiffMerge
+    val ignore: Array<String> = [], // list of fields that should behave as if annotated with DiffIgnore
+    val append: Array<String> = [], // list of fields that should behave as if annotated with DiffAppend
+    val diffMap: Array<String> = [], // list of fields that should behave as if annotated with DiffMap
+    val visibility: DiffVisibility = DiffVisibility.INTERNAL,
+)
 
 data class DiffOptional<T>(
     val item: T?,

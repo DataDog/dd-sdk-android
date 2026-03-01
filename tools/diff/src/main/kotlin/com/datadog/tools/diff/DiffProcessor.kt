@@ -14,6 +14,8 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFile
+import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.Visibility
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ClassName
@@ -32,6 +34,14 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
 private enum class DiffStrategy { REPLACE, MERGE, IGNORE, APPEND, MAP }
+
+private data class DiffConfigData(
+    val classDecl: KSClassDeclaration,
+    val fieldStrategies: Map<String, DiffStrategy>,
+    val visibility: KModifier?,
+    val containingFile: KSFile,
+    val outputPackage: String,
+)
 
 private data class PropertyInfo(
     val name: String,
@@ -53,16 +63,134 @@ class DiffProcessor(
         private val MAP_CLASS = ClassName("kotlin.collections", "Map")
     }
 
+    // Populated at the start of each process() round; used by readPropInfos to resolve
+    // external field strategies for classes annotated via @DiffConfig.
+    private var configMap: Map<KSClassDeclaration, DiffConfigData> = emptyMap()
+
     override fun process(resolver: Resolver): List<KSAnnotated> {
+        val configSymbols = resolver.getSymbolsWithAnnotation(DiffConfig::class.qualifiedName!!)
+        val (validConfigSymbols, deferredConfigs) = configSymbols.partition { it.validate() }
+        configMap = buildConfigMap(validConfigSymbols.filterIsInstance<KSFile>())
+
         val symbols = resolver.getSymbolsWithAnnotation(Diff::class.qualifiedName!!)
         val (valid, deferred) = symbols.partition { it.validate() }
+        val validClasses = valid.filterIsInstance<KSClassDeclaration>()
 
-        valid.filterIsInstance<KSClassDeclaration>().forEach { classDecl ->
-            logger.info("DiffPlugin: processing @Diff class ${classDecl.qualifiedName?.asString()}")
-            generateDiffFor(classDecl)
+        // Conflict check: a class must not have both @Diff and @DiffConfig.
+        val diffClassNames = validClasses.mapNotNull { it.qualifiedName?.asString() }.toSet()
+        for (configData in configMap.values) {
+            if (configData.classDecl.qualifiedName?.asString() in diffClassNames) {
+                logger.error(
+                    "Class ${configData.classDecl.qualifiedName?.asString()} " +
+                        "has both @Diff and @DiffConfig annotations — remove one.",
+                    configData.containingFile,
+                )
+            }
         }
 
-        return deferred
+        validClasses.forEach { classDecl ->
+            logger.info("DiffPlugin: processing @Diff class ${classDecl.qualifiedName?.asString()}")
+            generateDiffFor(
+                classDecl = classDecl,
+                outputPackage = classDecl.packageName.asString(),
+                visibility = classDecl.getVisibility().toKModifier(),
+                originatingFiles = listOf(classDecl.containingFile!!),
+            )
+        }
+
+        // Classes that appear as MERGE targets inside another @DiffConfig only provide field
+        // strategies via configMap — they must not also generate a standalone diff file, since
+        // the parent already embeds their diff as a nested type.
+        val mergeTargets = collectMergeTargets(configMap)
+
+        configMap.values
+            .filter { it.classDecl.qualifiedName?.asString() !in diffClassNames }
+            .filter { it.classDecl !in mergeTargets }
+            .forEach { configData ->
+                logger.info("DiffPlugin: processing @DiffConfig class ${configData.classDecl.qualifiedName?.asString()}")
+                generateDiffFor(
+                    classDecl = configData.classDecl,
+                    outputPackage = configData.outputPackage,
+                    visibility = configData.visibility,
+                    originatingFiles = listOf(configData.containingFile),
+                )
+            }
+
+        return deferred + deferredConfigs
+    }
+
+    private fun buildConfigMap(files: List<KSFile>): Map<KSClassDeclaration, DiffConfigData> {
+        val result = mutableMapOf<KSClassDeclaration, DiffConfigData>()
+        for (file in files) {
+            val annotations = file.annotations.filter { it.shortName.asString() == "DiffConfig" }
+            for (annotation in annotations) {
+                val args = annotation.arguments.associateBy { it.name?.asString() }
+
+                val forClassType = args["forClass"]?.value as? KSType
+                if (forClassType == null) {
+                    logger.error("@DiffConfig missing valid forClass argument", file)
+                    continue
+                }
+                val classDecl = forClassType.declaration as? KSClassDeclaration
+                if (classDecl == null) {
+                    logger.error("@DiffConfig forClass must reference a class declaration", file)
+                    continue
+                }
+
+                fun strSet(key: String): Set<String> =
+                    ((args[key]?.value as? List<*>)?.filterIsInstance<String>() ?: emptyList()).toSet()
+
+                val fieldStrategies: Map<String, DiffStrategy> = buildMap {
+                    strSet("merge").forEach { put(it, DiffStrategy.MERGE) }
+                    strSet("ignore").forEach { put(it, DiffStrategy.IGNORE) }
+                    strSet("append").forEach { put(it, DiffStrategy.APPEND) }
+                    strSet("diffMap").forEach { put(it, DiffStrategy.MAP) }
+                }
+
+                val visibilityEntryName = (args["visibility"]?.value as? KSType)
+                    ?.declaration?.simpleName?.asString()
+                val visibility = parseVisibility(visibilityEntryName)
+
+                if (result.containsKey(classDecl)) {
+                    logger.error(
+                        "Multiple @DiffConfig annotations targeting ${classDecl.qualifiedName?.asString()}",
+                        file,
+                    )
+                    continue
+                }
+
+                result[classDecl] = DiffConfigData(
+                    classDecl = classDecl,
+                    fieldStrategies = fieldStrategies,
+                    visibility = visibility,
+                    containingFile = file,
+                    outputPackage = file.packageName.asString(),
+                )
+            }
+        }
+        return result
+    }
+
+    // Returns the set of class declarations that appear as MERGE-strategy fields in any DiffConfig.
+    private fun collectMergeTargets(configs: Map<KSClassDeclaration, DiffConfigData>): Set<KSClassDeclaration> {
+        val targets = mutableSetOf<KSClassDeclaration>()
+        for ((classDecl, configData) in configs) {
+            val mergeFieldNames = configData.fieldStrategies
+                .filterValues { it == DiffStrategy.MERGE }.keys
+            for (prop in classDecl.getDeclaredProperties()) {
+                if (prop.simpleName.asString() in mergeFieldNames) {
+                    (prop.type.resolve().declaration as? KSClassDeclaration)?.let { targets.add(it) }
+                }
+            }
+        }
+        return targets
+    }
+
+    private fun parseVisibility(entryName: String?): KModifier? = when (entryName) {
+        "PUBLIC" -> KModifier.PUBLIC
+        "PRIVATE" -> KModifier.PRIVATE
+        "PROTECTED" -> KModifier.PROTECTED
+        else -> KModifier.INTERNAL
     }
 
     // Normalizes a Map/MutableMap type (possibly nullable) to a non-nullable immutable Map<K,V>.
@@ -95,16 +223,19 @@ class DiffProcessor(
         }
     }
 
-    private fun generateDiffFor(classDecl: KSClassDeclaration) {
-        val packageName = classDecl.packageName.asString()
+    private fun generateDiffFor(
+        classDecl: KSClassDeclaration,
+        outputPackage: String,
+        visibility: KModifier?,
+        originatingFiles: List<KSFile>,
+    ) {
         val className = classDecl.simpleName.asString()
         val sourceType = classDecl.toClassName()
-        val diffType = ClassName(packageName, "${className}Diff")
-        val visibility = classDecl.getVisibility().toKModifier()
+        val diffType = ClassName(outputPackage, "${className}Diff")
 
         val propInfos = readPropInfos(classDecl)
 
-        val fileBuilder = FileSpec.builder(packageName, "${className}Diff")
+        val fileBuilder = FileSpec.builder(outputPackage, "${className}Diff")
             .addFileComment("Auto-generated by DiffPlugin — do not edit")
 
         val (nestedTypeSpecs, nestedFunSpecs) = buildNestedContent(propInfos, diffType, visibility)
@@ -135,23 +266,27 @@ class DiffProcessor(
         )
 
         fileBuilder.build()
-            .writeTo(codeGenerator, aggregating = false, listOf(classDecl.containingFile!!))
+            .writeTo(codeGenerator, aggregating = false, originatingFiles)
     }
 
     private fun readPropInfos(classDecl: KSClassDeclaration): List<PropertyInfo> {
+        val externalStrategies = configMap[classDecl]?.fieldStrategies ?: emptyMap()
         return classDecl.getDeclaredProperties().map { prop ->
+            val propName = prop.simpleName.asString()
             val typeName = prop.type.toTypeName()
-            val annotations = prop.annotations.map { it.shortName.asString() }.toSet()
-            val strategy = when {
-                annotations.contains("DiffIgnore") -> DiffStrategy.IGNORE
-                annotations.contains("DiffAppend") -> DiffStrategy.APPEND
-                annotations.contains("DiffMerge") -> DiffStrategy.MERGE
-                annotations.contains("DiffMap") -> DiffStrategy.MAP
-                else -> DiffStrategy.REPLACE
+            val strategy = externalStrategies[propName] ?: run {
+                val annotations = prop.annotations.map { it.shortName.asString() }.toSet()
+                when {
+                    annotations.contains("DiffIgnore") -> DiffStrategy.IGNORE
+                    annotations.contains("DiffAppend") -> DiffStrategy.APPEND
+                    annotations.contains("DiffMerge") -> DiffStrategy.MERGE
+                    annotations.contains("DiffMap") -> DiffStrategy.MAP
+                    else -> DiffStrategy.REPLACE
+                }
             }
             val resolvedType = prop.type.resolve()
             PropertyInfo(
-                name = prop.simpleName.asString(),
+                name = propName,
                 typeName = typeName,
                 strategy = strategy,
                 mergeClassDecl = if (strategy == DiffStrategy.MERGE) resolvedType.declaration as? KSClassDeclaration else null,
