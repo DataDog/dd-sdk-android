@@ -14,8 +14,8 @@ internal object RumViewStateDiffMapper {
     fun mapDiffToUpdateEvent(diff: RumViewStateDiff): RumViewUpdateEvent {
         return RumViewUpdateEvent(
             container = if (diff.container.exists) diff.container.item?.toUpdateEvent() else null,
-            view = diff.view.item!!.toUpdateEvent(),
-            session = diff.session.item!!.toUpdateEvent(),
+            view = diff.view.toUpdateEvent(),
+            session = diff.session.toUpdateEvent(),
             featureFlags = if (diff.featureFlags.exists) diff.featureFlags.item?.let {
                 RumViewUpdateEvent.FeatureFlags(it.additionalProperties)
             } else null,
@@ -24,7 +24,7 @@ internal object RumViewStateDiffMapper {
             } else null,
             display = if (diff.display.exists) diff.display.item?.toUpdateEventDisplay() else null,
             date = diff.date,
-            application = diff.application.item!!.toUpdateEvent(),
+            application = diff.application.toUpdateEvent(),
             service = if (diff.service.exists) diff.service.item else null,
             version = if (diff.version.exists) diff.version.item else null,
             buildVersion = if (diff.buildVersion.exists) diff.buildVersion.item else null,
@@ -46,7 +46,7 @@ internal object RumViewStateDiffMapper {
             } else null,
             os = if (diff.os.exists) diff.os.item?.toUpdateEvent() else null,
             device = if (diff.device.exists) diff.device.item?.toUpdateEvent() else null,
-            dd = diff.dd.item!!.toUpdateEventDd(),
+            dd = diff.dd.toUpdateEventDd(),
             context = if (diff.context.exists) diff.context.item?.let {
                 RumViewUpdateEvent.FeatureFlags(it.additionalProperties)
             } else null

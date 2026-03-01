@@ -62,6 +62,23 @@ class DiffProcessor(
         return deferred
     }
 
+    // Returns true if the class has any @DiffIgnore fields, meaning its diff function always
+    // returns a value (never DiffOptional.empty()).
+    private fun nestedClassAlwaysHasDiff(mergeClassDecl: KSClassDeclaration): Boolean =
+        readPropInfos(mergeClassDecl).any { it.strategy == DiffStrategy.IGNORE }
+
+    // Returns the field type in a diff data class for a @DiffMerge property.
+    // If the merged class always produces a diff, the field is a direct type (or nullable type);
+    // otherwise it is wrapped in DiffOptional.
+    private fun mergeFieldType(info: PropertyInfo, nestedDiffType: ClassName): TypeName {
+        val mergeDecl = info.mergeClassDecl!!
+        return if (nestedClassAlwaysHasDiff(mergeDecl)) {
+            if (info.typeName.isNullable) nestedDiffType.copy(nullable = true) else nestedDiffType
+        } else {
+            DIFF_OPTIONAL.parameterizedBy(nestedDiffType)
+        }
+    }
+
     private fun generateDiffFor(classDecl: KSClassDeclaration) {
         val packageName = classDecl.packageName.asString()
         val className = classDecl.simpleName.asString()
@@ -86,7 +103,7 @@ class DiffProcessor(
                 DiffStrategy.APPEND -> DIFF_OPTIONAL.parameterizedBy(info.typeName.copy(nullable = false))
                 DiffStrategy.MERGE -> {
                     val nestedName = "${info.mergeClassDecl!!.simpleName.asString()}Diff"
-                    DIFF_OPTIONAL.parameterizedBy(diffType.nestedClass(nestedName))
+                    mergeFieldType(info, diffType.nestedClass(nestedName))
                 }
             }
             info.name to fieldType
@@ -153,7 +170,7 @@ class DiffProcessor(
                     DiffStrategy.APPEND -> DIFF_OPTIONAL.parameterizedBy(nestedInfo.typeName.copy(nullable = false))
                     DiffStrategy.MERGE -> {
                         val deeperName = "${nestedInfo.mergeClassDecl!!.simpleName.asString()}Diff"
-                        DIFF_OPTIONAL.parameterizedBy(nestedDiffType.nestedClass(deeperName))
+                        mergeFieldType(nestedInfo, nestedDiffType.nestedClass(deeperName))
                     }
                 }
                 nestedInfo.name to fieldType
@@ -195,6 +212,28 @@ class DiffProcessor(
             .build()
     }
 
+    // Emits the MERGE field computation for a single property, used in both buildMainDiffFun
+    // and buildNestedDiffFun.
+    private fun CodeBlock.Builder.addMergeComputation(info: PropertyInfo) {
+        val nestedAlwaysHasDiff = nestedClassAlwaysHasDiff(info.mergeClassDecl!!)
+        if (info.typeName.isNullable) {
+            if (nestedAlwaysHasDiff) {
+                addStatement(
+                    "val %N = if (%N != null && other.%N != null) %N.diff(other.%N) else null",
+                    "${info.name}Diff", info.name, info.name, info.name, info.name,
+                )
+            } else {
+                beginControlFlow("val %N = if (%N != null && other.%N != null)", "${info.name}Diff", info.name, info.name)
+                addStatement("%N.diff(other.%N)", info.name, info.name)
+                nextControlFlow("else")
+                addStatement("%T.empty()", DIFF_OPTIONAL)
+                endControlFlow()
+            }
+        } else {
+            addStatement("val %N = %N.diff(other.%N)", "${info.name}Diff", info.name, info.name)
+        }
+    }
+
     private fun buildMainDiffFun(
         sourceType: ClassName,
         diffType: ClassName,
@@ -218,15 +257,7 @@ class DiffProcessor(
         }
 
         for (info in propInfos.filter { it.strategy == DiffStrategy.MERGE }) {
-            if (info.typeName.isNullable) {
-                code.beginControlFlow("val %N = if (%N != null && other.%N != null)", "${info.name}Diff", info.name, info.name)
-                code.addStatement("%N.diff(other.%N)", info.name, info.name)
-                code.nextControlFlow("else")
-                code.addStatement("%T.empty()", DIFF_OPTIONAL)
-                code.endControlFlow()
-            } else {
-                code.addStatement("val %N = %N.diff(other.%N)", "${info.name}Diff", info.name, info.name)
-            }
+            code.addMergeComputation(info)
         }
 
         code.add("return %T(\n", diffType)
@@ -257,7 +288,15 @@ class DiffProcessor(
         propInfos: List<PropertyInfo>,
         visibility: KModifier?,
     ): FunSpec {
-        val returnType = DIFF_OPTIONAL.parameterizedBy(nestedDiffType)
+        // A class always produces a diff (never returns empty) when it has @DiffIgnore fields,
+        // or when it has a non-nullable @DiffMerge field whose nested class always has a diff.
+        val alwaysPresent = propInfos.any { info ->
+            info.strategy == DiffStrategy.IGNORE ||
+                (!info.typeName.isNullable && info.strategy == DiffStrategy.MERGE &&
+                    nestedClassAlwaysHasDiff(info.mergeClassDecl!!))
+        }
+        val returnType = if (alwaysPresent) nestedDiffType else DIFF_OPTIONAL.parameterizedBy(nestedDiffType)
+
         val code = CodeBlock.builder()
 
         for (info in propInfos.filter { it.strategy == DiffStrategy.REPLACE }) {
@@ -275,26 +314,29 @@ class DiffProcessor(
         }
 
         for (info in propInfos.filter { it.strategy == DiffStrategy.MERGE }) {
-            if (info.typeName.isNullable) {
-                code.beginControlFlow("val %N = if (%N != null && other.%N != null)", "${info.name}Diff", info.name, info.name)
-                code.addStatement("%N.diff(other.%N)", info.name, info.name)
-                code.nextControlFlow("else")
-                code.addStatement("%T.empty()", DIFF_OPTIONAL)
-                code.endControlFlow()
-            } else {
-                code.addStatement("val %N = %N.diff(other.%N)", "${info.name}Diff", info.name, info.name)
-            }
+            code.addMergeComputation(info)
         }
 
         code.add("\n")
 
-        val changeable = propInfos.filter { it.strategy != DiffStrategy.IGNORE }
-        if (changeable.isNotEmpty()) {
-            val noneChanged = changeable.joinToString(" && ") { "!${it.name}Diff.exists" }
-            code.beginControlFlow("if (%L)", noneChanged)
-            code.addStatement("return %T.empty()", DIFF_OPTIONAL)
-            code.endControlFlow()
-            code.add("\n")
+        if (!alwaysPresent) {
+            val changeable = propInfos.filter { it.strategy != DiffStrategy.IGNORE }
+            if (changeable.isNotEmpty()) {
+                val noneChangedParts = changeable.map { info ->
+                    // Nullable MERGE where nested always has diff: field is SubDiff?, check for null
+                    if (info.strategy == DiffStrategy.MERGE && info.typeName.isNullable &&
+                        nestedClassAlwaysHasDiff(info.mergeClassDecl!!)
+                    ) {
+                        "${info.name}Diff == null"
+                    } else {
+                        "!${info.name}Diff.exists"
+                    }
+                }
+                code.beginControlFlow("if (%L)", noneChangedParts.joinToString(" && "))
+                code.addStatement("return %T.empty()", DIFF_OPTIONAL)
+                code.endControlFlow()
+                code.add("\n")
+            }
         }
 
         code.add("return %T(\n", nestedDiffType)
@@ -308,7 +350,11 @@ class DiffProcessor(
             }
         }
         code.unindent()
-        code.add(").%M()\n", WRAP_OPTIONAL)
+        if (alwaysPresent) {
+            code.add(")\n")
+        } else {
+            code.add(").%M()\n", WRAP_OPTIONAL)
+        }
 
         return FunSpec.builder("diff")
             .receiver(mergeSourceType)
