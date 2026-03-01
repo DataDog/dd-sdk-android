@@ -58,6 +58,7 @@ import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.diff
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 import java.util.UUID
@@ -136,7 +137,7 @@ internal open class RumViewScope(
 
     internal var stopped: Boolean = false
 
-    internal var prevViewState: RumViewState? = null
+    internal var prevViewEvent: ViewEvent? = null
 
     // region Vitals Fields
 
@@ -1361,20 +1362,18 @@ internal open class RumViewScope(
 
             val mappedViewEvent = viewEventMapper.map(viewEvent)!!
 
-            val newViewState = RumViewStateMapper.fromViewEvent(mappedViewEvent)
-
-            val prev = prevViewState
+            val prev = prevViewEvent
 
             val newEvent = if (prev == null) {
                 mappedViewEvent
             } else {
-                val diff = prev.diff(newViewState)
-                RumViewStateDiffMapper.mapDiffToUpdateEvent(diff)
+                val diff = prev.diff(mappedViewEvent)
+                diff.toUpdateEvent()
             }
 
-            prevViewState = newViewState
+            prevViewEvent = mappedViewEvent
 
-            sessionEndedMetricDispatcher.onViewTracked(sessionId, newViewState)
+            sessionEndedMetricDispatcher.onViewTracked(sessionId, mappedViewEvent)
 
             newEvent
         }.submit()

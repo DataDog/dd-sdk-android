@@ -17,7 +17,6 @@ import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
-import com.datadog.android.rum.internal.domain.scope.RumViewStateMapper
 import com.datadog.android.rum.model.RumViewUpdateEvent
 import com.datadog.android.rum.model.ViewEvent
 

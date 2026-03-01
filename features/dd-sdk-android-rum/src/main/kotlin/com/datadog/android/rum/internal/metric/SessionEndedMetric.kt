@@ -10,7 +10,7 @@ import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
-import com.datadog.android.rum.internal.domain.scope.RumViewState
+import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -40,18 +40,18 @@ internal class SessionEndedMetric(
     /**
      * Called on view tracked event, return true if the view is recorded by the metric, false otherwise.
      */
-    fun onViewTracked(rumViewState: RumViewState): Boolean {
-        if (rumViewState.session.id != sessionId) {
+    fun onViewTracked(viewEvent: ViewEvent): Boolean {
+        if (viewEvent.session.id != sessionId) {
             return false
         }
         val trackedView = TrackedView(
-            viewUrl = trackedViewsById[rumViewState.view.id]?.viewUrl ?: rumViewState.view.url,
-            startMs = trackedViewsById[rumViewState.view.id]?.startMs ?: rumViewState.date,
-            durationNs = rumViewState.view.timeSpent,
-            hasReplay = rumViewState.session.hasReplay ?: false
+            viewUrl = trackedViewsById[viewEvent.view.id]?.viewUrl ?: viewEvent.view.url,
+            startMs = trackedViewsById[viewEvent.view.id]?.startMs ?: viewEvent.date,
+            durationNs = viewEvent.view.timeSpent,
+            hasReplay = viewEvent.session.hasReplay ?: false
         )
 
-        trackedViewsById[rumViewState.view.id] = trackedView
+        trackedViewsById[viewEvent.view.id] = trackedView
         if (firstTrackedView == null) {
             firstTrackedView = trackedView
         }

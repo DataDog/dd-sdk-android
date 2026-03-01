@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.metric
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
-import com.datadog.android.rum.internal.domain.scope.RumViewState
+import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.ConcurrentHashMap
 
 internal class SessionEndedMetricDispatcher(
@@ -51,13 +51,13 @@ internal class SessionEndedMetricDispatcher(
         metricsBySessionId[sessionId]?.onSessionStopped()
     }
 
-    override fun onViewTracked(sessionId: String, viewState: RumViewState) {
-        val result = metricsBySessionId[sessionId]?.onViewTracked(viewState) ?: false
+    override fun onViewTracked(sessionId: String, viewEvent: ViewEvent) {
+        val result = metricsBySessionId[sessionId]?.onViewTracked(viewEvent) ?: false
         if (result.not()) {
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.MAINTAINER,
-                { buildViewTrackError(sessionId, viewState) }
+                { buildViewTrackError(sessionId, viewEvent) }
             )
         }
     }
@@ -82,8 +82,8 @@ internal class SessionEndedMetricDispatcher(
         return "Failed to track $errorKind error, session $sessionId has ended"
     }
 
-    private fun buildViewTrackError(sessionId: String, viewState: RumViewState): String {
-        val viewType = when (viewState.view.url) {
+    private fun buildViewTrackError(sessionId: String, viewEvent: ViewEvent): String {
+        val viewType = when (viewEvent.view.url) {
             RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL -> "AppLaunch"
             RumViewManagerScope.RUM_BACKGROUND_VIEW_URL -> "Background"
             else -> "Custom"
