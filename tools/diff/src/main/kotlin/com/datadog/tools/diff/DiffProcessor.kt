@@ -22,6 +22,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
@@ -30,7 +31,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
-private enum class DiffStrategy { REPLACE, MERGE, IGNORE, APPEND }
+private enum class DiffStrategy { REPLACE, MERGE, IGNORE, APPEND, MAP }
 
 private data class PropertyInfo(
     val name: String,
@@ -48,6 +49,8 @@ class DiffProcessor(
         private val DIFF_OPTIONAL = ClassName("com.datadog.tools.diff", "DiffOptional")
         private val MAKE_DIFF = MemberName("com.datadog.tools.diff", "makeDiff")
         private val WRAP_OPTIONAL = MemberName("com.datadog.tools.diff", "wrapOptional")
+        private val DIFF_MAP = MemberName("com.datadog.tools.diff", "diffMap")
+        private val MAP_CLASS = ClassName("kotlin.collections", "Map")
     }
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -60,6 +63,19 @@ class DiffProcessor(
         }
 
         return deferred
+    }
+
+    // Normalizes a Map/MutableMap type (possibly nullable) to a non-nullable immutable Map<K,V>.
+    // diffMap() always returns Map<K,V>, so the diff field must use the immutable type.
+    private fun TypeName.toImmutableMapType(): TypeName {
+        val base = copy(nullable = false)
+        return if (base is ParameterizedTypeName &&
+            base.rawType.canonicalName in setOf("kotlin.collections.Map", "kotlin.collections.MutableMap")
+        ) {
+            MAP_CLASS.parameterizedBy(base.typeArguments)
+        } else {
+            base
+        }
     }
 
     // Returns true if the class has any @DiffIgnore fields, meaning its diff function always
@@ -101,6 +117,7 @@ class DiffProcessor(
                 DiffStrategy.IGNORE -> info.typeName
                 DiffStrategy.REPLACE -> DIFF_OPTIONAL.parameterizedBy(info.typeName)
                 DiffStrategy.APPEND -> DIFF_OPTIONAL.parameterizedBy(info.typeName.copy(nullable = false))
+                DiffStrategy.MAP -> DIFF_OPTIONAL.parameterizedBy(info.typeName.toImmutableMapType())
                 DiffStrategy.MERGE -> {
                     val nestedName = "${info.mergeClassDecl!!.simpleName.asString()}Diff"
                     mergeFieldType(info, diffType.nestedClass(nestedName))
@@ -129,6 +146,7 @@ class DiffProcessor(
                 annotations.contains("DiffIgnore") -> DiffStrategy.IGNORE
                 annotations.contains("DiffAppend") -> DiffStrategy.APPEND
                 annotations.contains("DiffMerge") -> DiffStrategy.MERGE
+                annotations.contains("DiffMap") -> DiffStrategy.MAP
                 else -> DiffStrategy.REPLACE
             }
             val resolvedType = prop.type.resolve()
@@ -168,6 +186,7 @@ class DiffProcessor(
                     DiffStrategy.IGNORE -> nestedInfo.typeName
                     DiffStrategy.REPLACE -> DIFF_OPTIONAL.parameterizedBy(nestedInfo.typeName)
                     DiffStrategy.APPEND -> DIFF_OPTIONAL.parameterizedBy(nestedInfo.typeName.copy(nullable = false))
+                    DiffStrategy.MAP -> DIFF_OPTIONAL.parameterizedBy(nestedInfo.typeName.toImmutableMapType())
                     DiffStrategy.MERGE -> {
                         val deeperName = "${nestedInfo.mergeClassDecl!!.simpleName.asString()}Diff"
                         mergeFieldType(nestedInfo, nestedDiffType.nestedClass(deeperName))
@@ -210,6 +229,25 @@ class DiffProcessor(
                 nestedTypes.forEach { addType(it) }
             }
             .build()
+    }
+
+    // Emits the MAP field computation for a single property, used in both buildMainDiffFun
+    // and buildNestedDiffFun.
+    private fun CodeBlock.Builder.addMapComputation(info: PropertyInfo) {
+        val mapResult = "${info.name}MapResult"
+        if (info.typeName.isNullable) {
+            addStatement(
+                "val %N = %M(%N.orEmpty(), other.%N.orEmpty())",
+                mapResult, DIFF_MAP, info.name, info.name,
+            )
+        } else {
+            addStatement("val %N = %M(%N, other.%N)", mapResult, DIFF_MAP, info.name, info.name)
+        }
+        beginControlFlow("val %N = if (%N.isNotEmpty())", "${info.name}Diff", mapResult)
+        addStatement("%N.%M()", mapResult, WRAP_OPTIONAL)
+        nextControlFlow("else")
+        addStatement("%T.empty()", DIFF_OPTIONAL)
+        endControlFlow()
     }
 
     // Emits the MERGE field computation for a single property, used in both buildMainDiffFun
@@ -256,6 +294,10 @@ class DiffProcessor(
             code.endControlFlow()
         }
 
+        for (info in propInfos.filter { it.strategy == DiffStrategy.MAP }) {
+            code.addMapComputation(info)
+        }
+
         for (info in propInfos.filter { it.strategy == DiffStrategy.MERGE }) {
             code.addMergeComputation(info)
         }
@@ -266,7 +308,7 @@ class DiffProcessor(
             val comma = if (i < propInfos.lastIndex) "," else ""
             when (info.strategy) {
                 DiffStrategy.IGNORE -> code.add("%N = other.%N$comma\n", info.name, info.name)
-                DiffStrategy.REPLACE, DiffStrategy.APPEND, DiffStrategy.MERGE ->
+                DiffStrategy.REPLACE, DiffStrategy.APPEND, DiffStrategy.MAP, DiffStrategy.MERGE ->
                     code.add("%N = %N$comma\n", info.name, "${info.name}Diff")
             }
         }
@@ -313,6 +355,10 @@ class DiffProcessor(
             code.endControlFlow()
         }
 
+        for (info in propInfos.filter { it.strategy == DiffStrategy.MAP }) {
+            code.addMapComputation(info)
+        }
+
         for (info in propInfos.filter { it.strategy == DiffStrategy.MERGE }) {
             code.addMergeComputation(info)
         }
@@ -345,7 +391,7 @@ class DiffProcessor(
             val comma = if (i < propInfos.lastIndex) "," else ""
             when (info.strategy) {
                 DiffStrategy.IGNORE -> code.add("%N = other.%N$comma\n", info.name, info.name)
-                DiffStrategy.REPLACE, DiffStrategy.APPEND, DiffStrategy.MERGE ->
+                DiffStrategy.REPLACE, DiffStrategy.APPEND, DiffStrategy.MAP, DiffStrategy.MERGE ->
                     code.add("%N = %N$comma\n", info.name, "${info.name}Diff")
             }
         }

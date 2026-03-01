@@ -26,6 +26,10 @@ annotation class DiffIgnore
 @Retention(AnnotationRetention.SOURCE)
 annotation class DiffAppend
 
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.SOURCE)
+annotation class DiffMap
+
 data class DiffOptional<T>(
     val item: T?,
     val exists: Boolean
@@ -52,5 +56,17 @@ fun <T> makeDiff(old: T, new: T): DiffOptional<T> {
         DiffOptional.empty()
     } else {
         new.wrapOptional()
+    }
+}
+
+fun <K : Any, V> diffMap(old: Map<K, V>, new: Map<K, V>): Map<K, V> {
+    return buildMap {
+        for ((key, newValue) in new) {
+            val oldValue = old[key]
+
+            if (newValue != oldValue) {
+                put(key, newValue)
+            }
+        }
     }
 }

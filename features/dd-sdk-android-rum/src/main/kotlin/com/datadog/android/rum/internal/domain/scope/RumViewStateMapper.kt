@@ -33,7 +33,7 @@ internal object RumViewStateMapper {
             dd = event.dd.fromViewEvent(),
             context = event.context?.fromViewEvent(),
             container = event.container?.fromViewEvent(),
-            featureFlags = event.featureFlags?.fromViewEvent(),
+            featureFlags = event.featureFlags?.fromViewEvent2(),
             privacy = event.privacy?.fromViewEvent()
         )
     }
@@ -211,6 +211,10 @@ internal object RumViewStateMapper {
         additionalProperties = additionalProperties.toMutableMap()
     )
 
+    private fun ViewEvent.Context.fromViewEvent2() = RumViewState.FeatureFlagsContext(
+        additionalProperties = additionalProperties.toMutableMap()
+    )
+
     private fun ViewEvent.Container.fromViewEvent() = RumViewState.Container(
         view = RumViewState.ContainerView(view.id),
         source = source.fromViewEvent()
@@ -360,6 +364,10 @@ internal object RumViewStateMapper {
     )
 
     private fun RumViewState.Context.toViewEvent() = ViewEvent.Context(
+        additionalProperties = additionalProperties
+    )
+
+    private fun RumViewState.FeatureFlagsContext.toViewEvent() = ViewEvent.Context(
         additionalProperties = additionalProperties
     )
 

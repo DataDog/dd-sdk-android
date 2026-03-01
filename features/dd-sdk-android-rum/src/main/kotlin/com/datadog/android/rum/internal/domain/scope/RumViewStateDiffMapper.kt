@@ -17,7 +17,9 @@ internal object RumViewStateDiffMapper {
             view = diff.view.toUpdateEvent(),
             session = diff.session.toUpdateEvent(),
             featureFlags = if (diff.featureFlags.exists) diff.featureFlags.item?.let {
-                RumViewUpdateEvent.FeatureFlags(it.additionalProperties)
+                if (it.additionalProperties.exists) it.additionalProperties.item?.let { map ->
+                    RumViewUpdateEvent.FeatureFlags(map.toMutableMap())
+                } else null
             } else null,
             privacy = if (diff.privacy.exists) diff.privacy.item?.let {
                 RumViewUpdateEvent.Privacy(replayLevel = it.replayLevel.toUpdateEvent())

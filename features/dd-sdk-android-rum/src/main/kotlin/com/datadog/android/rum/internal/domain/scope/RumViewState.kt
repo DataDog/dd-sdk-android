@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.tools.diff.Diff
 import com.datadog.tools.diff.DiffAppend
 import com.datadog.tools.diff.DiffIgnore
+import com.datadog.tools.diff.DiffMap
 import com.datadog.tools.diff.DiffMerge
 import com.datadog.tools.diff.DiffReplace
 
@@ -35,7 +36,7 @@ internal data class RumViewState(
     @DiffMerge val dd: Dd,
     val context: Context? = null,
     val container: Container? = null,
-    @DiffReplace val featureFlags: Context? = null,
+    @DiffMerge val featureFlags: FeatureFlagsContext? = null,
     val privacy: Privacy? = null,
 ) {
     data class Application(
@@ -181,8 +182,12 @@ internal data class RumViewState(
     }
     data class Context(
         val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
-    ) {
-    }
+    )
+
+    data class FeatureFlagsContext(
+        @DiffMap val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
+    )
+
     data class Stream(
         val id: String,
     ) {
