@@ -6,10 +6,12 @@
 
 package com.datadog.android.rum.internal.net
 
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -39,15 +41,18 @@ internal class RumInstrumentationConfigurationTest {
     @StringForgery
     lateinit var fakeInstrumentationName: String
 
+    private lateinit var fakeLibraryType: LibraryType
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
         testedConfiguration = RumNetworkInstrumentationConfiguration()
     }
 
     @Test
     fun `M build with default values W createInstrumentation()`() {
         // When
-        val result = testedConfiguration.createInstrumentation(fakeInstrumentationName)
+        val result = testedConfiguration.createInstrumentation(fakeInstrumentationName, fakeLibraryType)
 
         // Then
         assertThat(result.sdkInstanceName).isNull()
@@ -62,7 +67,7 @@ internal class RumInstrumentationConfigurationTest {
         // When
         val result = testedConfiguration.setSdkInstanceName(
             fakeSdkInstanceName
-        ).createInstrumentation(fakeInstrumentationName)
+        ).createInstrumentation(fakeInstrumentationName, fakeLibraryType)
 
         // Then
         assertThat(result.sdkInstanceName).isEqualTo(fakeSdkInstanceName)
@@ -72,7 +77,7 @@ internal class RumInstrumentationConfigurationTest {
     fun `M set resource attributes provider W setRumResourceAttributesProvider()`() {
         // When
         val result = testedConfiguration.setRumResourceAttributesProvider(mockResourceAttributesProvider)
-            .createInstrumentation(fakeInstrumentationName)
+            .createInstrumentation(fakeInstrumentationName, fakeLibraryType)
 
         // Then
         assertThat(result.rumResourceAttributesProvider).isSameAs(mockResourceAttributesProvider)

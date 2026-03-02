@@ -7,6 +7,7 @@ package com.datadog.android.cronet
 
 import com.datadog.android.cronet.internal.CronetRequestFinishedInfoListener
 import com.datadog.android.cronet.internal.DatadogCronetEngine
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
@@ -67,8 +68,12 @@ class CronetIntegrationPlugin internal constructor(
      * @return an instrumented [CronetEngine] instance, or a plain one if no instrumentation was configured.
      */
     fun build(): CronetEngine {
-        val rumNetworkInstrumentation = rumInstrumentationConfiguration?.let {
-            _RumInternalProxy.createRumNetworkInstrumentation(CRONET_NETWORK_INSTRUMENTATION_NAME, it)
+        val rumNetworkInstrumentation = rumInstrumentationConfiguration?.let { configuration ->
+            _RumInternalProxy.createRumNetworkInstrumentation(
+                CRONET_NETWORK_INSTRUMENTATION_NAME,
+                LibraryType.CRONET,
+                configuration
+            )
         }
 
         val apmInstrumentation = apmInstrumentationConfiguration

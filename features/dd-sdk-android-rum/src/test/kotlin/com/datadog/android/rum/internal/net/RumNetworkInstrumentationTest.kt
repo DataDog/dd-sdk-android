@@ -19,6 +19,7 @@ import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
@@ -99,8 +100,12 @@ internal class RumNetworkInstrumentationTest {
 
     private lateinit var fakeRequestInfo: StubHttpRequestInfo
 
+    private lateinit var fakeLibraryType: LibraryType
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
+
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeature
 
@@ -119,7 +124,8 @@ internal class RumNetworkInstrumentationTest {
         testedInstrumentation = RumNetworkInstrumentation(
             sdkInstanceName = null,
             networkInstrumentationName = fakeNetworkInstrumentationName,
-            rumResourceAttributesProvider = mockRumResourceAttributesProvider
+            rumResourceAttributesProvider = mockRumResourceAttributesProvider,
+            libraryType = fakeLibraryType
         )
     }
 
@@ -506,6 +512,15 @@ internal class RumNetworkInstrumentationTest {
     }
 
     @Test
+    fun `M call reportNetworkingLibraryType W sdkCoreReference resolved`() {
+        // When
+        testedInstrumentation.sdkCoreReference.get()
+
+        // Then
+        verify(mockRumMonitor).reportNetworkingLibraryType(eq(fakeLibraryType))
+    }
+
+    @Test
     fun `M generate UUID W buildResourceId() {generateUuid = true}`() {
         // When
         val resourceId = RumNetworkInstrumentation.buildResourceId(fakeRequestInfo, generateUuid = true)
@@ -576,7 +591,8 @@ internal class RumNetworkInstrumentationTest {
         val testedInstrumentationNoRum = RumNetworkInstrumentation(
             sdkInstanceName = null,
             networkInstrumentationName = fakeNetworkInstrumentationName,
-            rumResourceAttributesProvider = mockRumResourceAttributesProvider
+            rumResourceAttributesProvider = mockRumResourceAttributesProvider,
+            libraryType = fakeLibraryType
         )
 
         // When

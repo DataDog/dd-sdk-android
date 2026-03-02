@@ -14,6 +14,7 @@ import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.tag
 import com.datadog.android.core.SdkReference
 import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -41,10 +42,15 @@ import java.util.UUID
 class RumNetworkInstrumentation internal constructor(
     internal val sdkInstanceName: String?,
     internal val networkInstrumentationName: String,
-    internal val rumResourceAttributesProvider: RumResourceAttributesProvider
+    internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
+    internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 ) {
-    private val sdkCoreReference = SdkReference(sdkInstanceName) {
-        it.networkMonitor?.notifyInterceptorInstantiated()
+
+    internal val sdkCoreReference = SdkReference(sdkInstanceName) {
+        it.networkMonitor?.apply {
+            notifyInterceptorInstantiated()
+            reportNetworkingLibraryType(libraryType)
+        }
     }
 
     /**

@@ -182,6 +182,11 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
         - FAIL
     class TrackWebView : ApiUsage
       constructor(MutableMap<String, Any?> = mutableMapOf())
+    class NetworkInstrumentation : ApiUsage
+      constructor(LibraryType, MutableMap<String, Any?> = mutableMapOf())
+      enum LibraryType
+        - CRONET
+        - OKHTTP
   object InterceptorInstantiated : InternalTelemetryEvent
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG

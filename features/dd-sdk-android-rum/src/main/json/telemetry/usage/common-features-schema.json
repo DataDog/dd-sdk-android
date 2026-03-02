@@ -296,8 +296,19 @@
         },
         "action_type": {
           "type": "string",
-          "description": "Feature operations action type",
+          "description": "Operations step type",
           "enum": ["start", "succeed", "fail"]
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "GraphQLRequest",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "GraphQL request detected",
+          "const": "graphql-request"
         }
       }
     }

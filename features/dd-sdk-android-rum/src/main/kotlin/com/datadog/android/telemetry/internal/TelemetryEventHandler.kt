@@ -403,6 +403,7 @@ internal class TelemetryEventHandler(
         )
     }
 
+    @Suppress("LongMethod")
     private fun createApiUsageEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
@@ -431,6 +432,17 @@ internal class TelemetryEventHandler(
             }
             is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
                 TelemetryUsageEvent.Usage.TrackWebView()
+            }
+            is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
+                TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation(
+                    type = when (event.type) {
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.CRONET ->
+                            TelemetryUsageEvent.Type.CRONET
+
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.OKHTTP ->
+                            TelemetryUsageEvent.Type.OKHTTP
+                    }
+                )
             }
         }
 
