@@ -3598,9 +3598,8 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            val graphql = firstValue.resource.graphql
-            assertThat(graphql).isNotNull
-            assertThat(graphql!!.errorCount).isNull()
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
             assertThat(graphql.errors).isNull()
         }
     }
@@ -3631,9 +3630,8 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            val graphql = firstValue.resource.graphql
-            assertThat(graphql).isNotNull
-            assertThat(graphql!!.errorCount).isNull()
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
             assertThat(graphql.errors).isNull()
         }
     }
@@ -3664,9 +3662,8 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            val graphql = firstValue.resource.graphql
-            assertThat(graphql).isNotNull
-            assertThat(graphql!!.errorCount).isNull()
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
             assertThat(graphql.errors).isNull()
         }
     }
