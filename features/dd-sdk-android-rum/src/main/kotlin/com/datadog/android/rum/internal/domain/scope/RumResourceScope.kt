@@ -34,6 +34,7 @@ import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.google.gson.JsonParser
 import java.net.MalformedURLException
 import java.net.URL
 import java.nio.ByteBuffer
