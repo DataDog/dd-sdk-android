@@ -27,7 +27,7 @@ internal class LayoutNodeUtils {
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod")
     fun resolveLayoutNode(node: LayoutNode): TargetNode? {
-        return runSafe {
+        return runSafe("resolveLayoutNode") {
             var isClickable = false
             var isScrollable = false
             var datadogTag: String? = null
@@ -51,11 +51,11 @@ internal class LayoutNodeUtils {
                         role = role ?: getOrNull(SemanticsProperties.Role)
                     }
                 } else {
-                    when (modifier::class.qualifiedName) {
+                    when (val name = modifier::class.qualifiedName) {
                         CLASS_NAME_SELECTABLE_ELEMENT,
                         CLASS_NAME_CLICKABLE_ELEMENT,
                         CLASS_NAME_COMBINED_CLICKABLE_ELEMENT -> {
-                            role = role ?: getRole(modifier)
+                            role = role ?: getRole(modifier, name)
                             isClickable = true
                         }
 
@@ -89,8 +89,8 @@ internal class LayoutNodeUtils {
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall")
-    private fun getRole(obj: Any): Role? {
-        return runSafe {
+    private fun getRole(obj: Any, modifierClassName: String): Role? {
+        return runSafe("getRole($modifierClassName)") {
             val roleField = obj::class.java.getDeclaredField("role")
             roleField.isAccessible = true
             roleField.get(obj) as? Role
@@ -98,21 +98,21 @@ internal class LayoutNodeUtils {
     }
 
     fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? {
-        return runSafe {
+        return runSafe("getLayoutNodeBoundsInWindow") {
             node.layoutDelegate.outerCoordinator.coordinates.boundsInWindow()
         }
     }
 
-    private fun <T> runSafe(action: () -> T): T? {
+    private fun <T> runSafe(callSite: String, action: () -> T): T? {
         try {
             return action()
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             // We rely on visibility suppression to access internal field,
             // any runtime exception must be caught here.
             (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-                level = InternalLogger.Level.ERROR,
+                level = InternalLogger.Level.WARN,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = { "LayoutNodeUtils execution failure." },
+                messageBuilder = { "LayoutNodeUtils execution failure in $callSite." },
                 throwable = e,
                 onlyOnce = true
             )
