@@ -7,6 +7,7 @@
 package com.datadog.android.rum
 
 import android.app.Activity
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
@@ -98,14 +99,16 @@ internal class RumInternalProxyTest {
 
     @Test
     fun `M return RumNetworkInstrumentation W createInstrumentation()`(
-        @StringForgery fakeInstrumentationName: String
+        @StringForgery fakeInstrumentationName: String,
+        forge: Forge
     ) {
         // Given
+        val fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
         val builder = RumNetworkInstrumentationConfiguration()
 
         // When
         val result = with(_RumInternalProxy.Companion) {
-            builder.createInstrumentation(fakeInstrumentationName)
+            builder.createInstrumentation(fakeInstrumentationName, fakeLibraryType)
         }
 
         // Then
@@ -115,14 +118,17 @@ internal class RumInternalProxyTest {
 
     @Test
     fun `M return RumNetworkInstrumentation W createRumNetworkInstrumentation()`(
-        @StringForgery fakeInstrumentationName: String
+        @StringForgery fakeInstrumentationName: String,
+        forge: Forge
     ) {
         // Given
+        val fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
         val configuration = RumNetworkInstrumentationConfiguration()
 
         // When
         val result = _RumInternalProxy.createRumNetworkInstrumentation(
             fakeInstrumentationName,
+            fakeLibraryType,
             configuration
         )
 

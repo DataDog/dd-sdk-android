@@ -71,6 +71,16 @@ sealed class InternalTelemetryEvent {
         class TrackWebView(
             additionalProperties: MutableMap<String, Any?> = mutableMapOf()
         ) : ApiUsage(additionalProperties)
+
+        class NetworkInstrumentation(
+            val type: LibraryType,
+            additionalProperties: MutableMap<String, Any?> = mutableMapOf()
+        ) : ApiUsage(additionalProperties) {
+            enum class LibraryType {
+                CRONET,
+                OKHTTP
+            }
+        }
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()

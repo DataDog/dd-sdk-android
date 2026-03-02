@@ -6,14 +6,21 @@
 
 package com.datadog.android.cronet
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.verifyApiUsage
 import com.datadog.android.cronet.internal.DatadogCronetEngine
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.tests.elmyr.aHostName
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -29,13 +36,15 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.Executor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -51,12 +60,16 @@ internal class CronetIntegrationPluginTest {
     @Mock
     lateinit var mockCronetEngine: CronetEngine
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var fakeTracedHost: List<String>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTracedHost = listOf(forge.aHostName())
         whenever(mockDelegateBuilder.build()) doReturn mockCronetEngine
+        whenever(datadogCore.mockInstance.internalLogger) doReturn mockInternalLogger
     }
 
     @Test
@@ -228,8 +241,8 @@ internal class CronetIntegrationPluginTest {
 
         // Then
         check(engine is DatadogCronetEngine)
-        assertThat(engine.apmNetworkInstrumentation).isNotNull
         assertThat(engine.distributedTracingInstrumentation).isNotNull
+        assertThat(engine.distributedTracingInstrumentation?.traceOrigin).isEqualTo(CronetIntegrationPlugin.ORIGIN_RUM)
     }
 
     @Test
@@ -244,5 +257,48 @@ internal class CronetIntegrationPluginTest {
 
         // Then
         verify(mockDelegateBuilder).build()
+    }
+
+    @Test
+    fun `M send network instrumentation telemetry W build()`() {
+        // When
+        mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = null,
+                apmInstrumentationConfiguration = null
+            )
+            .build()
+
+        // Then
+        mockInternalLogger.verifyApiUsage(
+            NetworkInstrumentation(NetworkInstrumentation.LibraryType.CRONET)
+        )
+    }
+
+    @Test
+    fun `M not send telemetry W build() {sdk core not available}`() {
+        // Given
+        datadogCore.clearRegistry()
+
+        // When
+        mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = null,
+                apmInstrumentationConfiguration = null
+            )
+            .build()
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    companion object {
+        val datadogCore = DatadogSingletonTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(datadogCore)
+        }
     }
 }

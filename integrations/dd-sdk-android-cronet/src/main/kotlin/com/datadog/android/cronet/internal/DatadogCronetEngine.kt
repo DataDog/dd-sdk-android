@@ -33,6 +33,7 @@ internal class DatadogCronetEngine(
         callback: UrlRequest.Callback,
         executor: Executor
     ): UrlRequest.Builder {
+
         val datadogCallback = CronetRequestCallback(
             callback,
             apmNetworkInstrumentation,
@@ -46,6 +47,7 @@ internal class DatadogCronetEngine(
             requestCallback = datadogCallback,
             executor = executor
         )
+
         return CronetUrlRequestBuilder(
             requestContext = requestContext,
             requestCallback = datadogCallback

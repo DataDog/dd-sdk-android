@@ -7,7 +7,7 @@
 package com.datadog.android.okhttp
 
 import com.datadog.android.okhttp.internal.buildResourceId
-import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

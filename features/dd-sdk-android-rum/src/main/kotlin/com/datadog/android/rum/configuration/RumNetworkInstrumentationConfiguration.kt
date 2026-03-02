@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.configuration
 
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
@@ -37,9 +38,14 @@ class RumNetworkInstrumentationConfiguration {
         this.resourceAttributesProvider = rumResourceAttributesProvider
     }
 
-    internal fun createInstrumentation(instrumentationName: String) = RumNetworkInstrumentation(
-        sdkInstanceName,
-        instrumentationName,
-        resourceAttributesProvider
+    internal fun createInstrumentation(
+        instrumentationName: String,
+        libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+    ) = RumNetworkInstrumentation(
+        sdkInstanceName = sdkInstanceName,
+        networkInstrumentationName = instrumentationName,
+        rumResourceAttributesProvider = resourceAttributesProvider,
+        libraryType = libraryType
+
     )
 }
