@@ -104,6 +104,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -729,7 +730,7 @@ internal class RumFeature(
         val interactionPredicate: InteractionPredicate,
         val viewTrackingStrategy: ViewTrackingStrategy?,
         val longTaskTrackingStrategy: TrackingStrategy?,
-        val viewEventMapper: EventMapper<ViewEvent>,
+        val viewEventMapper: ViewEventMapper,
         val errorEventMapper: EventMapper<ErrorEvent>,
         val resourceEventMapper: EventMapper<ResourceEvent>,
         val actionEventMapper: EventMapper<ActionEvent>,
@@ -782,7 +783,7 @@ internal class RumFeature(
             interactionPredicate = NoOpInteractionPredicate(),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
-            viewEventMapper = NoOpEventMapper(),
+            viewEventMapper = ViewEventMapper { event -> event },
             errorEventMapper = NoOpEventMapper(),
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),

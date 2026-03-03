@@ -7,8 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -64,7 +63,7 @@ internal class RumSessionScope(
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val viewEventMapper: EventMapper<ViewEvent>
+    private val viewEventMapper: ViewEventMapper
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID

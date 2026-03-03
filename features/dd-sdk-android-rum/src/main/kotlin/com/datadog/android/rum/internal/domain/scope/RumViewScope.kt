@@ -53,7 +53,7 @@ import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -92,7 +92,7 @@ internal open class RumViewScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector,
-    internal val viewEventMapper: EventMapper<ViewEvent>
+    internal val viewEventMapper: ViewEventMapper
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -1360,7 +1360,7 @@ internal open class RumViewScope(
                 ddtags = buildDDTagsString(datadogContext)
             )
 
-            val mappedViewEvent = viewEventMapper.map(viewEvent)!!
+            val mappedViewEvent = viewEventMapper.map(viewEvent)
 
             val prev = prevViewEvent
 
@@ -1678,7 +1678,7 @@ internal open class RumViewScope(
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
             insightsCollector: InsightsCollector,
-            viewEventMapper: EventMapper<ViewEvent>
+            viewEventMapper: ViewEventMapper
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,

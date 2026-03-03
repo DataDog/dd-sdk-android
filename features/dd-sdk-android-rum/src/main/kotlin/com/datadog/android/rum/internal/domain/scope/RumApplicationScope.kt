@@ -7,8 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
-import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.event.ViewEventMapper
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -57,7 +56,7 @@ internal class RumApplicationScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
-    private val viewEventMapper: EventMapper<ViewEvent>
+    private val viewEventMapper: ViewEventMapper
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
