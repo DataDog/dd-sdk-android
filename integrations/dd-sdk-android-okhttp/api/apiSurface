@@ -25,7 +25,11 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
     constructor(List<String>)
     override fun build(): DatadogInterceptor
     fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
-typealias TraceContextInjection = com.datadog.android.trace.TraceContextInjection
+DEPRECATED data class com.datadog.android.okhttp.TraceContext
+  constructor(String, String, Int)
+DEPRECATED enum com.datadog.android.okhttp.TraceContextInjection
+  - ALL
+  - SAMPLED
 class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
   constructor(okhttp3.Request.Builder)
   override fun setUrl(String)
@@ -34,7 +38,10 @@ class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog
   override fun removeHeader(String)
   override fun <T> addTag(Class<T>, T?)
   override fun build(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
-typealias DeterministicTraceSampler = com.datadog.android.trace.DeterministicTraceSampler
+DEPRECATED open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<com.datadog.android.trace.api.span.DatadogSpan>
+  constructor(() -> Float)
+  constructor(Float)
+  constructor(Double)
 fun okhttp3.Request.Builder.parentSpan(com.datadog.android.trace.api.span.DatadogSpan): okhttp3.Request.Builder
 interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan, okhttp3.Response?, Throwable?)
@@ -54,5 +61,6 @@ open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interce
     fun setTraceSampleRate(Float): R
     fun setTraceSampler(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>): R
     fun setTraceContextInjection(com.datadog.android.trace.TraceContextInjection): R
+    DEPRECATED fun setTraceContextInjection(com.datadog.android.okhttp.TraceContextInjection): R
     fun set404ResourcesRedacted(Boolean): R
     abstract fun build(): T
