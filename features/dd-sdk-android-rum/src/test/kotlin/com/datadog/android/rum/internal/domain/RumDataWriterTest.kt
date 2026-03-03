@@ -202,7 +202,7 @@ internal class RumDataWriterTest {
         )
 
         whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
-        whenever(mockEventSerializer.serialize(fakeEvent)) doReturn null
+        whenever(mockEventSerializer.serialize(fakeEvent)) doThrow RuntimeException("serialization error")
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
