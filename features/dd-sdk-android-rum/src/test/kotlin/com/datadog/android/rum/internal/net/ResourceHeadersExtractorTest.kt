@@ -8,7 +8,10 @@ package com.datadog.android.rum.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
+import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.forge.anHttpHeaderMap
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -40,78 +44,79 @@ internal class ResourceHeadersExtractorTest {
     // region Extraction
 
     @Test
-    fun `M extract matching request headers W extractRequestHeaders()`() {
+    fun `M extract matching request headers W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val headers = mapOf(
-            "Content-Type" to listOf("application/json"),
-            "Cache-Control" to listOf("no-cache")
-        )
+        val expectedMap = ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS
+            .associateWith { forge.anAsciiString() }
+        val headers = expectedMap.mapValues { listOf(it.value) }
 
         // When
         val result = testedExtractor.extractRequestHeaders(headers, mockInternalLogger)
 
         // Then
-        assertThat(result).containsExactlyInAnyOrderEntriesOf(
-            mapOf(
-                "content-type" to "application/json",
-                "cache-control" to "no-cache"
-            )
-        )
+        assertThat(result).containsExactlyEntriesOf(expectedMap)
     }
 
     @Test
-    fun `M extract matching response headers W extractResponseHeaders()`() {
+    fun `M extract matching response headers W extractResponseHeaders()`(forge: Forge) {
         // Given
-        val headers = mapOf(
-            "Content-Type" to listOf("text/html"),
-            "ETag" to listOf("\"abc123\""),
-            "Content-Length" to listOf("1024")
-        )
+        val expectedMap = ResourceHeadersConfiguration.DEFAULT_RESPONSE_HEADERS
+            .associateWith { forge.anAsciiString() }
+        val headers = expectedMap.mapValues { listOf(it.value) }
 
         // When
         val result = testedExtractor.extractResponseHeaders(headers, mockInternalLogger)
 
         // Then
-        assertThat(result).containsExactlyInAnyOrderEntriesOf(
-            mapOf(
-                "content-type" to "text/html",
-                "etag" to "\"abc123\"",
-                "content-length" to "1024"
-            )
-        )
+        assertThat(result).containsExactlyEntriesOf(expectedMap)
     }
 
     @Test
-    fun `M join multi-value headers W extractResponseHeaders()`() {
+    fun `M normalize header keys to lowercase W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val headers = mapOf(
-            "Vary" to listOf("Accept", "Accept-Encoding", "Origin")
-        )
-
-        // When
-        val result = testedExtractor.extractResponseHeaders(headers, mockInternalLogger)
-
-        // Then
-        assertThat(result).containsExactlyInAnyOrderEntriesOf(
-            mapOf("vary" to "Accept, Accept-Encoding, Origin")
-        )
-    }
-
-    @Test
-    fun `M skip non-configured headers W extractRequestHeaders()`() {
-        // Given: headers not in the configured capture list are ignored
-        val headers = mapOf(
-            "Authorization" to listOf("Bearer token"),
-            "Content-Type" to listOf("application/json"),
-            "Cookie" to listOf("session=abc")
-        )
+        val headerName = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS)
+        val fakeValue = forge.anAsciiString()
+        val headers = mapOf(headerName.uppercase(Locale.US) to listOf(fakeValue))
 
         // When
         val result = testedExtractor.extractRequestHeaders(headers, mockInternalLogger)
 
         // Then
-        assertThat(result).containsExactlyInAnyOrderEntriesOf(
-            mapOf("content-type" to "application/json")
+        assertThat(result).containsExactlyEntriesOf(
+            mapOf(headerName to fakeValue)
+        )
+    }
+
+    @Test
+    fun `M join multi-value headers W extractResponseHeaders()`(forge: Forge) {
+        // Given
+        val headerName = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_RESPONSE_HEADERS)
+        val fakeValues = forge.aList(forge.anInt(2, 5)) { anAsciiString() }
+        val headers = mapOf(headerName to fakeValues)
+
+        // When
+        val result = testedExtractor.extractResponseHeaders(headers, mockInternalLogger)
+
+        // Then
+        assertThat(result).containsExactlyEntriesOf(
+            mapOf(headerName to fakeValues.joinToString(", "))
+        )
+    }
+
+    @Test
+    fun `M skip non-configured headers W extractRequestHeaders()`(forge: Forge) {
+        // Given
+        val configuredHeader = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS)
+        val fakeValue = forge.anAsciiString()
+        val nonConfiguredHeaders = forge.anHttpHeaderMap().mapValues { listOf(it.value) }
+        val headers = nonConfiguredHeaders + mapOf(configuredHeader to listOf(fakeValue))
+
+        // When
+        val result = testedExtractor.extractRequestHeaders(headers, mockInternalLogger)
+
+        // Then
+        assertThat(result).containsExactlyEntriesOf(
+            mapOf(configuredHeader to fakeValue)
         )
     }
 
@@ -125,10 +130,11 @@ internal class ResourceHeadersExtractorTest {
     }
 
     @Test
-    fun `M return empty map W extractResponseHeaders() { no matching headers }`() {
+    fun `M return empty map W extractResponseHeaders() { no matching headers }`(forge: Forge) {
         // Given
         val headers = mapOf(
-            "x-custom-untracked" to listOf("value")
+            "x-custom-${forge.anAlphabeticalString()}" to
+                listOf(forge.anAsciiString())
         )
 
         // When
@@ -143,53 +149,60 @@ internal class ResourceHeadersExtractorTest {
     // region Truncation
 
     @Test
-    fun `M truncate value exceeding 128 bytes W extractRequestHeaders()`() {
+    fun `M truncate value exceeding 128 bytes W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val longValue = "a".repeat(200)
+        val headerName = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS)
+        val longValue = forge.aStringMatching("[A-Za-z0-9]{200,300}")
         val headers = mapOf(
-            "Content-Type" to listOf(longValue)
+            headerName to listOf(longValue)
         )
 
         // When
         val result = testedExtractor.extractRequestHeaders(headers, mockInternalLogger)
 
         // Then
-        val value = checkNotNull(result["content-type"])
+        val value = checkNotNull(result[headerName])
         assertThat(value.toByteArray(Charsets.UTF_8).size).isLessThanOrEqualTo(128)
     }
 
     @Test
-    fun `M return original string W truncateToByteLimit() { under limit }`() {
+    fun `M return original string and byte size W truncateToUtf8ByteSize() { under limit }`(forge: Forge) {
+        // Given
+        val shortString = forge.aStringMatching("[A-Za-z0-9 /;=.-]{1,50}")
+
         // When
-        val result = ResourceHeadersExtractor.truncateToByteLimit("hello", 128)
+        val (result, byteSize) = shortString.truncateToUtf8ByteSize(128)
 
         // Then
-        assertThat(result).isEqualTo("hello")
+        assertThat(result).isEqualTo(shortString)
+        assertThat(byteSize).isEqualTo(shortString.toByteArray(Charsets.UTF_8).size)
     }
 
     @Test
-    fun `M truncate to byte limit W truncateToByteLimit() { over limit }`() {
+    fun `M truncate to byte limit W truncateToUtf8ByteSize() { over limit }`(forge: Forge) {
         // Given
-        val longString = "a".repeat(200)
+        val longString = forge.aStringMatching("[A-Za-z0-9 /;=.-]{200,500}")
 
         // When
-        val result = ResourceHeadersExtractor.truncateToByteLimit(longString, 128)
+        val (result, byteSize) = longString.truncateToUtf8ByteSize(128)
 
         // Then
         assertThat(result.toByteArray(Charsets.UTF_8).size).isLessThanOrEqualTo(128)
+        assertThat(byteSize).isEqualTo(result.toByteArray(Charsets.UTF_8).size)
     }
 
     @Test
-    fun `M handle multibyte chars safely W truncateToByteLimit()`() {
+    fun `M handle multibyte chars safely W truncateToUtf8ByteSize()`() {
         // Given: string with multibyte UTF-8 characters (each emoji is 4 bytes)
         val emojiString = "\uD83D\uDE00".repeat(40) // 160 bytes
         assertThat(emojiString.toByteArray(Charsets.UTF_8).size).isGreaterThan(128)
 
         // When
-        val result = ResourceHeadersExtractor.truncateToByteLimit(emojiString, 128)
+        val (result, byteSize) = emojiString.truncateToUtf8ByteSize(128)
 
         // Then
-        assertThat(result.toByteArray(Charsets.UTF_8).size).isLessThanOrEqualTo(128)
+        assertThat(byteSize).isLessThanOrEqualTo(128)
+        assertThat(result.toByteArray(Charsets.UTF_8).size).isEqualTo(byteSize)
         // Should not contain replacement characters
         assertThat(result).doesNotContain("\uFFFD")
     }

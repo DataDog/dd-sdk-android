@@ -8,6 +8,8 @@ package com.datadog.android.rum.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
+import com.datadog.android.rum.configuration.ResourceHeadersConfiguration.Companion.HEADER_SIZE_LIMIT_BYTES
+import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
 import java.util.Locale
 
 /**
@@ -58,10 +60,11 @@ class ResourceHeadersExtractor(private val configuration: ResourceHeadersConfigu
             if (result.size >= MAX_HEADERS_COUNT) break
 
             normalizedHeaders[headerName]?.let { values ->
-                val value = truncateToByteLimit(values.joinToString(", "), MAX_HEADER_VALUE_BYTES)
-                val entrySize = headerName.length + 1 + value.toByteArray(Charsets.UTF_8).size
+                val (value, valueByteSize) = values.joinToString(", ")
+                    .truncateToUtf8ByteSize(MAX_HEADER_VALUE_BYTES)
+                val entrySize = headerName.length + 1 + valueByteSize
 
-                if (currentSize + entrySize > ResourceHeadersConfiguration.HEADER_SIZE_LIMIT_BYTES) {
+                if (currentSize + entrySize > HEADER_SIZE_LIMIT_BYTES) {
                     internalLogger.log(
                         InternalLogger.Level.DEBUG,
                         InternalLogger.Target.USER,
@@ -82,14 +85,6 @@ class ResourceHeadersExtractor(private val configuration: ResourceHeadersConfigu
 
     companion object {
         private const val MAX_HEADER_VALUE_BYTES = 128
-        private const val HEADER_SIZE_LIMIT_BYTES = ResourceHeadersConfiguration.HEADER_SIZE_LIMIT_BYTES
         private const val MAX_HEADERS_COUNT = 100
-
-        internal fun truncateToByteLimit(value: String, maxBytes: Int): String {
-            val bytes = value.toByteArray(Charsets.UTF_8)
-            if (bytes.size <= maxBytes) return value
-            // Decode back to string to avoid splitting multibyte characters
-            return String(bytes, 0, maxBytes, Charsets.UTF_8).trimEnd('\uFFFD')
-        }
     }
 }
