@@ -10,9 +10,9 @@ import com.datadog.android.internal.utils.computeDiffIfChanged
 import com.datadog.android.internal.utils.computeDiffRequired
 
 @Suppress("LongMethod")
-internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): RumViewUpdateEvent {
+internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): ViewUpdateEvent {
     return computeDiffRequired(old = old, new = new) {
-        RumViewUpdateEvent(
+        ViewUpdateEvent(
             date = diffRequired(ViewEvent::date),
             application = diffApplication(old.application, new.application),
             session = diffSession(old.session, new.session),
@@ -30,17 +30,16 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): RumViewUpdateEvent {
             connectivity = diffEquals(ViewEvent::connectivity)?.toRum(),
             display = diffEquals(ViewEvent::display)?.toRum(),
             synthetics = diffEquals(ViewEvent::synthetics)?.let {
-                RumViewUpdateEvent.Synthetics(testId = it.testId, resultId = it.resultId, injected = it.injected)
+                ViewUpdateEvent.Synthetics(testId = it.testId, resultId = it.resultId, injected = it.injected)
             },
             ciTest = diffEquals(ViewEvent::ciTest)?.let {
-                RumViewUpdateEvent.CiTest(testExecutionId = it.testExecutionId)
+                ViewUpdateEvent.CiTest(testExecutionId = it.testExecutionId)
             },
             os = diffEquals(ViewEvent::os)?.toRum(),
             device = diffEquals(ViewEvent::device)?.toRum(),
-            context = diffEquals(ViewEvent::context)?.let { RumViewUpdateEvent.FeatureFlags(it.additionalProperties) },
-            stream = diffEquals(ViewEvent::stream)?.let { RumViewUpdateEvent.Stream(id = it.id) },
+            context = diffEquals(ViewEvent::context)?.let { ViewUpdateEvent.FeatureFlags(it.additionalProperties) },
             container = diffEquals(ViewEvent::container)?.toRum(),
-            privacy = diffEquals(ViewEvent::privacy)?.let { RumViewUpdateEvent.Privacy(replayLevel = it.replayLevel.toRum()) },
+            privacy = diffEquals(ViewEvent::privacy)?.let { ViewUpdateEvent.Privacy(replayLevel = it.replayLevel.toRum()) },
         )
     }
 }
@@ -50,9 +49,9 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): RumViewUpdateEvent {
 private fun diffApplication(
     old: ViewEvent.Application,
     new: ViewEvent.Application
-): RumViewUpdateEvent.Application {
+): ViewUpdateEvent.Application {
     return computeDiffRequired(old = old, new = new) {
-        RumViewUpdateEvent.Application(
+        ViewUpdateEvent.Application(
             id = diffRequired(ViewEvent.Application::id),
             currentLocale = diffEquals(ViewEvent.Application::currentLocale),
         )
@@ -62,9 +61,9 @@ private fun diffApplication(
 private fun diffSession(
     old: ViewEvent.ViewEventSession,
     new: ViewEvent.ViewEventSession
-): RumViewUpdateEvent.RumViewUpdateEventSession {
+): ViewUpdateEvent.ViewUpdateEventSession {
     return computeDiffRequired(old = old, new = new) {
-        RumViewUpdateEvent.RumViewUpdateEventSession(
+        ViewUpdateEvent.ViewUpdateEventSession(
             id = diffRequired(ViewEvent.ViewEventSession::id),
             type = diffRequired(ViewEvent.ViewEventSession::type).toRum(),
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
@@ -78,12 +77,12 @@ private fun diffSession(
 private fun diffView(
     old: ViewEvent.ViewEventView,
     new: ViewEvent.ViewEventView
-): RumViewUpdateEvent.RumViewUpdateEventView {
+): ViewUpdateEvent.ViewUpdateEventView {
     return computeDiffRequired(old = old, new = new) {
         val slowFrames = diffList(ViewEvent.ViewEventView::slowFrames)
         val inForegroundPeriods = diffList(ViewEvent.ViewEventView::inForegroundPeriods)
 
-        RumViewUpdateEvent.RumViewUpdateEventView(
+        ViewUpdateEvent.ViewUpdateEventView(
             id = diffRequired(ViewEvent.ViewEventView::id),
             url = diffRequired(ViewEvent.ViewEventView::url),
             referrer = diffEquals(ViewEvent.ViewEventView::referrer),
@@ -110,18 +109,18 @@ private fun diffView(
             domInteractive = diffEquals(ViewEvent.ViewEventView::domInteractive),
             loadEvent = diffEquals(ViewEvent.ViewEventView::loadEvent),
             firstByte = diffEquals(ViewEvent.ViewEventView::firstByte),
-            customTimings = diffEquals(ViewEvent.ViewEventView::customTimings)?.let { RumViewUpdateEvent.CustomTimings(it.additionalProperties) },
+            customTimings = diffEquals(ViewEvent.ViewEventView::customTimings)?.let { ViewUpdateEvent.CustomTimings(it.additionalProperties) },
             isActive = diffEquals(ViewEvent.ViewEventView::isActive),
             isSlowRendered = diffEquals(ViewEvent.ViewEventView::isSlowRendered),
-            action = diffEquals(ViewEvent.ViewEventView::action)?.let { RumViewUpdateEvent.Action(it.count) },
-            error = diffEquals(ViewEvent.ViewEventView::error)?.let { RumViewUpdateEvent.Error(it.count) },
-            crash = diffEquals(ViewEvent.ViewEventView::crash)?.let { RumViewUpdateEvent.Crash(it.count) },
-            longTask = diffEquals(ViewEvent.ViewEventView::longTask)?.let { RumViewUpdateEvent.LongTask(it.count) },
-            frozenFrame = diffEquals(ViewEvent.ViewEventView::frozenFrame)?.let { RumViewUpdateEvent.FrozenFrame(it.count) },
-            slowFrames = slowFrames?.map { RumViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) },
-            resource = diffEquals(ViewEvent.ViewEventView::resource)?.let { RumViewUpdateEvent.Resource(it.count) },
-            frustration = diffEquals(ViewEvent.ViewEventView::frustration)?.let { RumViewUpdateEvent.Frustration(it.count) },
-            inForegroundPeriods = inForegroundPeriods?.map { RumViewUpdateEvent.InForegroundPeriod(start = it.start, duration = it.duration) },
+            action = diffEquals(ViewEvent.ViewEventView::action)?.let { ViewUpdateEvent.Action(it.count) },
+            error = diffEquals(ViewEvent.ViewEventView::error)?.let { ViewUpdateEvent.Error(it.count) },
+            crash = diffEquals(ViewEvent.ViewEventView::crash)?.let { ViewUpdateEvent.Crash(it.count) },
+            longTask = diffEquals(ViewEvent.ViewEventView::longTask)?.let { ViewUpdateEvent.LongTask(it.count) },
+            frozenFrame = diffEquals(ViewEvent.ViewEventView::frozenFrame)?.let { ViewUpdateEvent.FrozenFrame(it.count) },
+            slowFrames = slowFrames?.map { ViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) },
+            resource = diffEquals(ViewEvent.ViewEventView::resource)?.let { ViewUpdateEvent.Resource(it.count) },
+            frustration = diffEquals(ViewEvent.ViewEventView::frustration)?.let { ViewUpdateEvent.Frustration(it.count) },
+            inForegroundPeriods = inForegroundPeriods?.map { ViewUpdateEvent.InForegroundPeriod(start = it.start, duration = it.duration) },
             memoryAverage = diffEquals(ViewEvent.ViewEventView::memoryAverage),
             memoryMax = diffEquals(ViewEvent.ViewEventView::memoryMax),
             cpuTicksCount = diffEquals(ViewEvent.ViewEventView::cpuTicksCount),
@@ -139,18 +138,18 @@ private fun diffView(
     }
 }
 
-private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): RumViewUpdateEvent.Dd {
+private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
     return computeDiffRequired(old = old, new = new) {
-        RumViewUpdateEvent.Dd(
+        ViewUpdateEvent.Dd(
             documentVersion = diffRequired(ViewEvent.Dd::documentVersion),
             session = diffEquals(ViewEvent.Dd::session)?.let {
-                RumViewUpdateEvent.DdSession(
+                ViewUpdateEvent.DdSession(
                     plan = it.plan?.toRum(),
                     sessionPrecondition = it.sessionPrecondition?.toRum(),
                 )
             },
             configuration = diffEquals(ViewEvent.Dd::configuration)?.let {
-                RumViewUpdateEvent.Configuration(
+                ViewUpdateEvent.Configuration(
                     sessionSampleRate = it.sessionSampleRate,
                     sessionReplaySampleRate = it.sessionReplaySampleRate,
                     profilingSampleRate = it.profilingSampleRate,
@@ -167,31 +166,31 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): RumViewUpdateEvent.Dd 
 
 // region Diff helpers — nullable merged sub-objects
 
-private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): RumViewUpdateEvent.FeatureFlags? {
+private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): ViewUpdateEvent.FeatureFlags? {
     return computeDiffIfChanged(old = old, new = new) {
-        RumViewUpdateEvent.FeatureFlags(diffMap(ViewEvent.Context::additionalProperties).toMutableMap()) // TODO WAHAHA
+        ViewUpdateEvent.FeatureFlags(diffMap(ViewEvent.Context::additionalProperties).toMutableMap()) // TODO WAHAHA
     }
 }
 
-private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performance): RumViewUpdateEvent.Performance? {
+private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performance): ViewUpdateEvent.Performance? {
     return computeDiffIfChanged(old = old, new = new) {
-        RumViewUpdateEvent.Performance(
+        ViewUpdateEvent.Performance(
             cls = diffEquals(ViewEvent.Performance::cls)?.toRum(),
-            fcp = diffEquals(ViewEvent.Performance::fcp)?.let { RumViewUpdateEvent.Fcp(timestamp = it.timestamp) },
+            fcp = diffEquals(ViewEvent.Performance::fcp)?.let { ViewUpdateEvent.Fcp(timestamp = it.timestamp) },
             fid = diffEquals(ViewEvent.Performance::fid)?.let {
-                RumViewUpdateEvent.Fid(duration = it.duration, timestamp = it.timestamp, targetSelector = it.targetSelector)
+                ViewUpdateEvent.Fid(duration = it.duration, timestamp = it.timestamp, targetSelector = it.targetSelector)
             },
             inp = diffEquals(ViewEvent.Performance::inp)?.toRum(),
             lcp = diffEquals(ViewEvent.Performance::lcp)?.toRum(),
-            fbc = diffEquals(ViewEvent.Performance::fbc)?.let { RumViewUpdateEvent.Fbc(timestamp = it.timestamp) },
+            fbc = diffEquals(ViewEvent.Performance::fbc)?.let { ViewUpdateEvent.Fbc(timestamp = it.timestamp) },
         )
     }
 }
 
 @Suppress("LongMethod")
-private fun diffAccessibility(old: ViewEvent.Accessibility, new: ViewEvent.Accessibility): RumViewUpdateEvent.Accessibility? {
+private fun diffAccessibility(old: ViewEvent.Accessibility, new: ViewEvent.Accessibility): ViewUpdateEvent.Accessibility? {
     return computeDiffIfChanged(old = old, new = new) {
-        RumViewUpdateEvent.Accessibility(
+        ViewUpdateEvent.Accessibility(
             textSize = diffEquals(ViewEvent.Accessibility::textSize),
             screenReaderEnabled = diffEquals(ViewEvent.Accessibility::screenReaderEnabled),
             boldTextEnabled = diffEquals(ViewEvent.Accessibility::boldTextEnabled),
@@ -222,7 +221,7 @@ private fun diffAccessibility(old: ViewEvent.Accessibility, new: ViewEvent.Acces
 
 // region Type conversions
 
-private fun ViewEvent.Usr.toRum() = RumViewUpdateEvent.Usr(
+private fun ViewEvent.Usr.toRum() = ViewUpdateEvent.Usr(
     id = id,
     name = name,
     email = email,
@@ -230,34 +229,34 @@ private fun ViewEvent.Usr.toRum() = RumViewUpdateEvent.Usr(
     additionalProperties = additionalProperties,
 )
 
-private fun ViewEvent.Account.toRum() = RumViewUpdateEvent.Account(
+private fun ViewEvent.Account.toRum() = ViewUpdateEvent.Account(
     id = id,
     name = name,
     additionalProperties = additionalProperties,
 )
 
-private fun ViewEvent.Connectivity.toRum() = RumViewUpdateEvent.Connectivity(
+private fun ViewEvent.Connectivity.toRum() = ViewUpdateEvent.Connectivity(
     status = status.toRum(),
     interfaces = interfaces?.map { it.toRum() },
     effectiveType = effectiveType?.toRum(),
-    cellular = cellular?.let { RumViewUpdateEvent.Cellular(it.technology, it.carrierName) },
+    cellular = cellular?.let { ViewUpdateEvent.Cellular(it.technology, it.carrierName) },
 )
 
-private fun ViewEvent.Display.toRum() = RumViewUpdateEvent.Display(
+private fun ViewEvent.Display.toRum() = ViewUpdateEvent.Display(
     scroll = scroll?.let {
-        RumViewUpdateEvent.Scroll(it.maxDepth, it.maxScrollHeight, it.maxScrollHeight, it.maxScrollHeightTime)
+        ViewUpdateEvent.Scroll(it.maxDepth, it.maxScrollHeight, it.maxScrollHeight, it.maxScrollHeightTime)
     },
-    viewport = viewport?.let { RumViewUpdateEvent.Viewport(it.width, it.height) },
+    viewport = viewport?.let { ViewUpdateEvent.Viewport(it.width, it.height) },
 )
 
-private fun ViewEvent.Os.toRum() = RumViewUpdateEvent.Os(
+private fun ViewEvent.Os.toRum() = ViewUpdateEvent.Os(
     name = name,
     version = version,
     build = build,
     versionMajor = versionMajor,
 )
 
-private fun ViewEvent.Device.toRum() = RumViewUpdateEvent.Device(
+private fun ViewEvent.Device.toRum() = ViewUpdateEvent.Device(
     type = type?.toRum(),
     name = name,
     model = model,
@@ -274,41 +273,41 @@ private fun ViewEvent.Device.toRum() = RumViewUpdateEvent.Device(
     isLowRam = isLowRam,
 )
 
-private fun ViewEvent.Container.toRum() = RumViewUpdateEvent.Container(
-    view = RumViewUpdateEvent.ContainerView(view.id),
+private fun ViewEvent.Container.toRum() = ViewUpdateEvent.Container(
+    view = ViewUpdateEvent.ContainerView(view.id),
     source = source.toRumSource(),
 )
 
-private fun ViewEvent.FlutterBuildTime.toRum() = RumViewUpdateEvent.FlutterBuildTime(
+private fun ViewEvent.FlutterBuildTime.toRum() = ViewUpdateEvent.FlutterBuildTime(
     min = min,
     max = max,
     average = average,
     metricMax = metricMax,
 )
 
-private fun ViewEvent.PerformanceCls.toRum() = RumViewUpdateEvent.Cls(
+private fun ViewEvent.PerformanceCls.toRum() = ViewUpdateEvent.Cls(
     score = score,
     timestamp = timestamp,
     targetSelector = targetSelector,
-    previousRect = previousRect?.let { RumViewUpdateEvent.PreviousRect(it.x, it.y, it.width, it.height) },
-    currentRect = currentRect?.let { RumViewUpdateEvent.PreviousRect(it.x, it.y, it.width, it.height) },
+    previousRect = previousRect?.let { ViewUpdateEvent.PreviousRect(it.x, it.y, it.width, it.height) },
+    currentRect = currentRect?.let { ViewUpdateEvent.PreviousRect(it.x, it.y, it.width, it.height) },
 )
 
-private fun ViewEvent.Inp.toRum() = RumViewUpdateEvent.Inp(
+private fun ViewEvent.Inp.toRum() = ViewUpdateEvent.Inp(
     duration = duration,
     timestamp = timestamp,
     targetSelector = targetSelector,
     subParts = subParts?.let {
-        RumViewUpdateEvent.InpSubParts(it.inputDelay, it.processingTime, it.presentationDelay)
+        ViewUpdateEvent.InpSubParts(it.inputDelay, it.processingTime, it.presentationDelay)
     },
 )
 
-private fun ViewEvent.Lcp.toRum() = RumViewUpdateEvent.Lcp(
+private fun ViewEvent.Lcp.toRum() = ViewUpdateEvent.Lcp(
     timestamp = timestamp,
     targetSelector = targetSelector,
     resourceUrl = resourceUrl,
     subParts = subParts?.let {
-        RumViewUpdateEvent.LcpSubParts(it.loadDelay, it.loadTime, it.renderDelay)
+        ViewUpdateEvent.LcpSubParts(it.loadDelay, it.loadTime, it.renderDelay)
     },
 )
 
@@ -317,88 +316,88 @@ private fun ViewEvent.Lcp.toRum() = RumViewUpdateEvent.Lcp(
 // region Enum conversions
 
 private fun ViewEvent.ViewEventSource.toRumSource() = when (this) {
-    ViewEvent.ViewEventSource.ANDROID -> RumViewUpdateEvent.RumViewUpdateEventSource.ANDROID
-    ViewEvent.ViewEventSource.IOS -> RumViewUpdateEvent.RumViewUpdateEventSource.IOS
-    ViewEvent.ViewEventSource.BROWSER -> RumViewUpdateEvent.RumViewUpdateEventSource.BROWSER
-    ViewEvent.ViewEventSource.FLUTTER -> RumViewUpdateEvent.RumViewUpdateEventSource.FLUTTER
-    ViewEvent.ViewEventSource.REACT_NATIVE -> RumViewUpdateEvent.RumViewUpdateEventSource.REACT_NATIVE
-    ViewEvent.ViewEventSource.ROKU -> RumViewUpdateEvent.RumViewUpdateEventSource.ROKU
-    ViewEvent.ViewEventSource.UNITY -> RumViewUpdateEvent.RumViewUpdateEventSource.UNITY
-    ViewEvent.ViewEventSource.KOTLIN_MULTIPLATFORM -> RumViewUpdateEvent.RumViewUpdateEventSource.KOTLIN_MULTIPLATFORM
-    ViewEvent.ViewEventSource.ELECTRON -> RumViewUpdateEvent.RumViewUpdateEventSource.ELECTRON
+    ViewEvent.ViewEventSource.ANDROID -> ViewUpdateEvent.ViewUpdateEventSource.ANDROID
+    ViewEvent.ViewEventSource.IOS -> ViewUpdateEvent.ViewUpdateEventSource.IOS
+    ViewEvent.ViewEventSource.BROWSER -> ViewUpdateEvent.ViewUpdateEventSource.BROWSER
+    ViewEvent.ViewEventSource.FLUTTER -> ViewUpdateEvent.ViewUpdateEventSource.FLUTTER
+    ViewEvent.ViewEventSource.REACT_NATIVE -> ViewUpdateEvent.ViewUpdateEventSource.REACT_NATIVE
+    ViewEvent.ViewEventSource.ROKU -> ViewUpdateEvent.ViewUpdateEventSource.ROKU
+    ViewEvent.ViewEventSource.UNITY -> ViewUpdateEvent.ViewUpdateEventSource.UNITY
+    ViewEvent.ViewEventSource.KOTLIN_MULTIPLATFORM -> ViewUpdateEvent.ViewUpdateEventSource.KOTLIN_MULTIPLATFORM
+    ViewEvent.ViewEventSource.ELECTRON -> ViewUpdateEvent.ViewUpdateEventSource.ELECTRON
 }
 
 private fun ViewEvent.ViewEventSessionType.toRum() = when (this) {
-    ViewEvent.ViewEventSessionType.USER -> RumViewUpdateEvent.RumViewUpdateEventSessionType.USER
-    ViewEvent.ViewEventSessionType.SYNTHETICS -> RumViewUpdateEvent.RumViewUpdateEventSessionType.SYNTHETICS
-    ViewEvent.ViewEventSessionType.CI_TEST -> RumViewUpdateEvent.RumViewUpdateEventSessionType.CI_TEST
+    ViewEvent.ViewEventSessionType.USER -> ViewUpdateEvent.ViewUpdateEventSessionType.USER
+    ViewEvent.ViewEventSessionType.SYNTHETICS -> ViewUpdateEvent.ViewUpdateEventSessionType.SYNTHETICS
+    ViewEvent.ViewEventSessionType.CI_TEST -> ViewUpdateEvent.ViewUpdateEventSessionType.CI_TEST
 }
 
 private fun ViewEvent.LoadingType.toRum() = when (this) {
-    ViewEvent.LoadingType.INITIAL_LOAD -> RumViewUpdateEvent.LoadingType.INITIAL_LOAD
-    ViewEvent.LoadingType.ROUTE_CHANGE -> RumViewUpdateEvent.LoadingType.ROUTE_CHANGE
-    ViewEvent.LoadingType.ACTIVITY_DISPLAY -> RumViewUpdateEvent.LoadingType.ACTIVITY_DISPLAY
-    ViewEvent.LoadingType.ACTIVITY_REDISPLAY -> RumViewUpdateEvent.LoadingType.ACTIVITY_REDISPLAY
-    ViewEvent.LoadingType.FRAGMENT_DISPLAY -> RumViewUpdateEvent.LoadingType.FRAGMENT_DISPLAY
-    ViewEvent.LoadingType.FRAGMENT_REDISPLAY -> RumViewUpdateEvent.LoadingType.FRAGMENT_REDISPLAY
-    ViewEvent.LoadingType.VIEW_CONTROLLER_DISPLAY -> RumViewUpdateEvent.LoadingType.VIEW_CONTROLLER_DISPLAY
-    ViewEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY -> RumViewUpdateEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY
+    ViewEvent.LoadingType.INITIAL_LOAD -> ViewUpdateEvent.LoadingType.INITIAL_LOAD
+    ViewEvent.LoadingType.ROUTE_CHANGE -> ViewUpdateEvent.LoadingType.ROUTE_CHANGE
+    ViewEvent.LoadingType.ACTIVITY_DISPLAY -> ViewUpdateEvent.LoadingType.ACTIVITY_DISPLAY
+    ViewEvent.LoadingType.ACTIVITY_REDISPLAY -> ViewUpdateEvent.LoadingType.ACTIVITY_REDISPLAY
+    ViewEvent.LoadingType.FRAGMENT_DISPLAY -> ViewUpdateEvent.LoadingType.FRAGMENT_DISPLAY
+    ViewEvent.LoadingType.FRAGMENT_REDISPLAY -> ViewUpdateEvent.LoadingType.FRAGMENT_REDISPLAY
+    ViewEvent.LoadingType.VIEW_CONTROLLER_DISPLAY -> ViewUpdateEvent.LoadingType.VIEW_CONTROLLER_DISPLAY
+    ViewEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY -> ViewUpdateEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY
 }
 
 private fun ViewEvent.ConnectivityStatus.toRum() = when (this) {
-    ViewEvent.ConnectivityStatus.CONNECTED -> RumViewUpdateEvent.Status.CONNECTED
-    ViewEvent.ConnectivityStatus.NOT_CONNECTED -> RumViewUpdateEvent.Status.NOT_CONNECTED
-    ViewEvent.ConnectivityStatus.MAYBE -> RumViewUpdateEvent.Status.MAYBE
+    ViewEvent.ConnectivityStatus.CONNECTED -> ViewUpdateEvent.Status.CONNECTED
+    ViewEvent.ConnectivityStatus.NOT_CONNECTED -> ViewUpdateEvent.Status.NOT_CONNECTED
+    ViewEvent.ConnectivityStatus.MAYBE -> ViewUpdateEvent.Status.MAYBE
 }
 
 private fun ViewEvent.Interface.toRum() = when (this) {
-    ViewEvent.Interface.BLUETOOTH -> RumViewUpdateEvent.Interface.BLUETOOTH
-    ViewEvent.Interface.CELLULAR -> RumViewUpdateEvent.Interface.CELLULAR
-    ViewEvent.Interface.ETHERNET -> RumViewUpdateEvent.Interface.ETHERNET
-    ViewEvent.Interface.WIFI -> RumViewUpdateEvent.Interface.WIFI
-    ViewEvent.Interface.WIMAX -> RumViewUpdateEvent.Interface.WIMAX
-    ViewEvent.Interface.MIXED -> RumViewUpdateEvent.Interface.MIXED
-    ViewEvent.Interface.OTHER -> RumViewUpdateEvent.Interface.OTHER
-    ViewEvent.Interface.UNKNOWN -> RumViewUpdateEvent.Interface.UNKNOWN
-    ViewEvent.Interface.NONE -> RumViewUpdateEvent.Interface.NONE
+    ViewEvent.Interface.BLUETOOTH -> ViewUpdateEvent.Interface.BLUETOOTH
+    ViewEvent.Interface.CELLULAR -> ViewUpdateEvent.Interface.CELLULAR
+    ViewEvent.Interface.ETHERNET -> ViewUpdateEvent.Interface.ETHERNET
+    ViewEvent.Interface.WIFI -> ViewUpdateEvent.Interface.WIFI
+    ViewEvent.Interface.WIMAX -> ViewUpdateEvent.Interface.WIMAX
+    ViewEvent.Interface.MIXED -> ViewUpdateEvent.Interface.MIXED
+    ViewEvent.Interface.OTHER -> ViewUpdateEvent.Interface.OTHER
+    ViewEvent.Interface.UNKNOWN -> ViewUpdateEvent.Interface.UNKNOWN
+    ViewEvent.Interface.NONE -> ViewUpdateEvent.Interface.NONE
 }
 
 private fun ViewEvent.EffectiveType.toRum() = when (this) {
-    ViewEvent.EffectiveType.SLOW_2G -> RumViewUpdateEvent.EffectiveType.SLOW_2G
-    ViewEvent.EffectiveType.`2G` -> RumViewUpdateEvent.EffectiveType.`2G`
-    ViewEvent.EffectiveType.`3G` -> RumViewUpdateEvent.EffectiveType.`3G`
-    ViewEvent.EffectiveType.`4G` -> RumViewUpdateEvent.EffectiveType.`4G`
+    ViewEvent.EffectiveType.SLOW_2G -> ViewUpdateEvent.EffectiveType.SLOW_2G
+    ViewEvent.EffectiveType.`2G` -> ViewUpdateEvent.EffectiveType.`2G`
+    ViewEvent.EffectiveType.`3G` -> ViewUpdateEvent.EffectiveType.`3G`
+    ViewEvent.EffectiveType.`4G` -> ViewUpdateEvent.EffectiveType.`4G`
 }
 
 private fun ViewEvent.DeviceType.toRum() = when (this) {
-    ViewEvent.DeviceType.MOBILE -> RumViewUpdateEvent.DeviceType.MOBILE
-    ViewEvent.DeviceType.DESKTOP -> RumViewUpdateEvent.DeviceType.DESKTOP
-    ViewEvent.DeviceType.TABLET -> RumViewUpdateEvent.DeviceType.TABLET
-    ViewEvent.DeviceType.TV -> RumViewUpdateEvent.DeviceType.TV
-    ViewEvent.DeviceType.GAMING_CONSOLE -> RumViewUpdateEvent.DeviceType.GAMING_CONSOLE
-    ViewEvent.DeviceType.BOT -> RumViewUpdateEvent.DeviceType.BOT
-    ViewEvent.DeviceType.OTHER -> RumViewUpdateEvent.DeviceType.OTHER
+    ViewEvent.DeviceType.MOBILE -> ViewUpdateEvent.DeviceType.MOBILE
+    ViewEvent.DeviceType.DESKTOP -> ViewUpdateEvent.DeviceType.DESKTOP
+    ViewEvent.DeviceType.TABLET -> ViewUpdateEvent.DeviceType.TABLET
+    ViewEvent.DeviceType.TV -> ViewUpdateEvent.DeviceType.TV
+    ViewEvent.DeviceType.GAMING_CONSOLE -> ViewUpdateEvent.DeviceType.GAMING_CONSOLE
+    ViewEvent.DeviceType.BOT -> ViewUpdateEvent.DeviceType.BOT
+    ViewEvent.DeviceType.OTHER -> ViewUpdateEvent.DeviceType.OTHER
 }
 
 private fun ViewEvent.ReplayLevel.toRum() = when (this) {
-    ViewEvent.ReplayLevel.ALLOW -> RumViewUpdateEvent.ReplayLevel.ALLOW
-    ViewEvent.ReplayLevel.MASK -> RumViewUpdateEvent.ReplayLevel.MASK
-    ViewEvent.ReplayLevel.MASK_USER_INPUT -> RumViewUpdateEvent.ReplayLevel.MASK_USER_INPUT
+    ViewEvent.ReplayLevel.ALLOW -> ViewUpdateEvent.ReplayLevel.ALLOW
+    ViewEvent.ReplayLevel.MASK -> ViewUpdateEvent.ReplayLevel.MASK
+    ViewEvent.ReplayLevel.MASK_USER_INPUT -> ViewUpdateEvent.ReplayLevel.MASK_USER_INPUT
 }
 
 private fun ViewEvent.Plan.toRum() = when (this) {
-    ViewEvent.Plan.PLAN_1 -> RumViewUpdateEvent.Plan.PLAN_1
-    ViewEvent.Plan.PLAN_2 -> RumViewUpdateEvent.Plan.PLAN_2
+    ViewEvent.Plan.PLAN_1 -> ViewUpdateEvent.Plan.PLAN_1
+    ViewEvent.Plan.PLAN_2 -> ViewUpdateEvent.Plan.PLAN_2
 }
 
 private fun ViewEvent.SessionPrecondition.toRum() = when (this) {
-    ViewEvent.SessionPrecondition.USER_APP_LAUNCH -> RumViewUpdateEvent.SessionPrecondition.USER_APP_LAUNCH
-    ViewEvent.SessionPrecondition.INACTIVITY_TIMEOUT -> RumViewUpdateEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-    ViewEvent.SessionPrecondition.MAX_DURATION -> RumViewUpdateEvent.SessionPrecondition.MAX_DURATION
-    ViewEvent.SessionPrecondition.BACKGROUND_LAUNCH -> RumViewUpdateEvent.SessionPrecondition.BACKGROUND_LAUNCH
-    ViewEvent.SessionPrecondition.PREWARM -> RumViewUpdateEvent.SessionPrecondition.PREWARM
-    ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION -> RumViewUpdateEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
-    ViewEvent.SessionPrecondition.EXPLICIT_STOP -> RumViewUpdateEvent.SessionPrecondition.EXPLICIT_STOP
+    ViewEvent.SessionPrecondition.USER_APP_LAUNCH -> ViewUpdateEvent.SessionPrecondition.USER_APP_LAUNCH
+    ViewEvent.SessionPrecondition.INACTIVITY_TIMEOUT -> ViewUpdateEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+    ViewEvent.SessionPrecondition.MAX_DURATION -> ViewUpdateEvent.SessionPrecondition.MAX_DURATION
+    ViewEvent.SessionPrecondition.BACKGROUND_LAUNCH -> ViewUpdateEvent.SessionPrecondition.BACKGROUND_LAUNCH
+    ViewEvent.SessionPrecondition.PREWARM -> ViewUpdateEvent.SessionPrecondition.PREWARM
+    ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION -> ViewUpdateEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    ViewEvent.SessionPrecondition.EXPLICIT_STOP -> ViewUpdateEvent.SessionPrecondition.EXPLICIT_STOP
 }
 
 // endregion

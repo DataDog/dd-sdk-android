@@ -16,7 +16,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumViewUpdateEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -39,7 +39,7 @@ internal class RumEventSerializer(
             is ViewEvent -> {
                 serializeViewEvent(model)
             }
-            is RumViewUpdateEvent -> {
+            is ViewUpdateEvent -> {
                 serializeViewUpdateEvent(model)
             }
             is ErrorEvent -> {
@@ -85,7 +85,7 @@ internal class RumEventSerializer(
 
     // region Internal
 
-    private fun serializeViewUpdateEvent(model: RumViewUpdateEvent): String {
+    private fun serializeViewUpdateEvent(model: ViewUpdateEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
