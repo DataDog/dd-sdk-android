@@ -32,15 +32,12 @@ import com.datadog.android.rum.internal.toResource
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
+import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.google.gson.JsonParser
 import java.net.MalformedURLException
 import java.net.URL
-import java.nio.ByteBuffer
-import java.nio.CharBuffer
-import java.nio.charset.CoderMalfunctionError
-import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 
@@ -256,7 +253,9 @@ internal class RumResourceScope(
 
         // The decision whether to send payloads is determined by a DatadogApolloInterceptor parameter
         val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
-        val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+        val graphqlPayload = rawPayload
+            ?.truncateToUtf8ByteSize(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES, sdkCore.internalLogger)
+            ?.first
 
         val graphqlErrorsJson = resourceAttributes.remove(RumAttributes.GRAPHQL_ERRORS) as? String
         val graphqlErrors = parseGraphQLErrors(graphqlErrorsJson)
@@ -613,52 +612,6 @@ internal class RumResourceScope(
             )
             null
         }
-    }
-
-    @Suppress("ReturnCount", "SwallowedException")
-    private fun String.truncateToUtf8Bytes(maxBytes: Int): String {
-        val encoder =
-            // will not throw UnsupportedOperationException
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            StandardCharsets.UTF_8.newEncoder()
-
-        // will not throw IllegalArgumentException
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val dst = ByteBuffer.allocate(maxBytes)
-
-        // will not throw IndexOutOfBoundsException
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val src = CharBuffer.wrap(this)
-
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            // Encode as much as fits. The encoder will not consume a character
-            // if doing so would overflow the byte buffer.
-            encoder.encode(src, dst, true)
-        } catch (e: IllegalStateException) {
-            logPayloadTruncationFailure(e)
-            return ""
-        } catch (e: CoderMalfunctionError) {
-            logPayloadTruncationFailure(e)
-            return ""
-        } catch (e: NullPointerException) {
-            logPayloadTruncationFailure(e)
-            return ""
-        }
-
-        // will not throw IndexOutOfBoundsException
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        return substring(0, src.position())
-    }
-
-    private fun logPayloadTruncationFailure(e: Throwable) {
-        val logger = sdkCore.internalLogger
-        logger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { "Failed to truncate payload" },
-            throwable = e
-        )
     }
 
     // endregion

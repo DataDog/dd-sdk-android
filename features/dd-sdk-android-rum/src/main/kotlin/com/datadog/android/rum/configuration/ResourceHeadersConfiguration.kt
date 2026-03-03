@@ -34,7 +34,7 @@ class ResourceHeadersConfiguration internal constructor(
 
         internal var logger: InternalLogger = InternalLogger.UNBOUND
 
-        private var customHeaders: List<String> = emptyList()
+        private val customHeaders = mutableListOf<String>()
 
         /**
          * Specifies additional header names to capture from both requests and responses.
@@ -44,7 +44,7 @@ class ResourceHeadersConfiguration internal constructor(
          * @return this builder for chaining.
          */
         fun captureHeaders(headers: List<String>): Builder = apply {
-            customHeaders += headers.map { it.lowercase(Locale.US) }
+            customHeaders.addAll(headers.map { it.lowercase(Locale.US) })
         }
 
         /**

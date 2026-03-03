@@ -45,6 +45,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
 import com.datadog.tools.unit.forge.anException
+import com.datadog.tools.unit.forge.anHttpHeaderMap
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -3948,8 +3949,8 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val requestHeaders = mapOf("content-type" to "application/json", "cache-control" to "no-cache")
-        val responseHeaders = mapOf("etag" to "\"abc123\"", "content-length" to "1024")
+        val requestHeaders = forge.anHttpHeaderMap()
+        val responseHeaders = forge.anHttpHeaderMap()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
                 RumAttributes.REQUEST_HEADERS to requestHeaders,
@@ -4000,8 +4001,8 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val requestHeaders = mapOf("content-type" to "application/json")
-        val responseHeaders = mapOf("etag" to "\"abc123\"")
+        val requestHeaders = forge.anHttpHeaderMap()
+        val responseHeaders = forge.anHttpHeaderMap()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
                 RumAttributes.REQUEST_HEADERS to requestHeaders,
