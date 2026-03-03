@@ -16,6 +16,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -37,6 +38,9 @@ internal class RumEventSerializer(
         return when (model) {
             is ViewEvent -> {
                 serializeViewEvent(model)
+            }
+            is ViewUpdateEvent -> {
+                serializeViewUpdateEvent(model)
             }
             is ErrorEvent -> {
                 serializeErrorEvent(model)
@@ -80,6 +84,39 @@ internal class RumEventSerializer(
     // endregion
 
     // region Internal
+
+    private fun serializeViewUpdateEvent(model: ViewUpdateEvent): String {
+        val sanitizedUser = model.usr?.copy(
+            additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedContext = model.context?.copy(
+            additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedView = model.view.copy(
+            customTimings = model.view.customTimings?.copy(
+                additionalProperties = dataConstraints.validateTimings(
+                    model.view.customTimings.additionalProperties
+                )
+            )
+        )
+        val sanitizedModel = model.copy(
+            usr = sanitizedUser,
+            account = sanitizedAccount,
+            context = sanitizedContext,
+            view = sanitizedView
+        )
+
+        return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
+    }
 
     private fun serializeViewEvent(model: ViewEvent): String {
         val sanitizedUser = model.usr?.copy(

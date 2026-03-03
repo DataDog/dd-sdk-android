@@ -28,6 +28,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -47,7 +48,7 @@ import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -96,11 +97,12 @@ internal class DatadogRumMonitor(
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
     rumSessionTypeOverride: RumSessionType?,
-    accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    private val viewEventMapper: ViewEventMapper
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -119,11 +121,12 @@ internal class DatadogRumMonitor(
         lastInteractionIdentifier = lastInteractionIdentifier,
         slowFramesListener = slowFramesListener,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        accessibilityInfoProvider = accessibilityInfoProvider,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        viewEventMapper = viewEventMapper
     )
 
     internal var debugListener: RumDebugListener? = null

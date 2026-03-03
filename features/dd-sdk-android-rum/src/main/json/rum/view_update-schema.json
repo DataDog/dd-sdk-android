@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "rum/view_update-schema.json",
+  "title": "ViewUpdateEvent",
+  "type": "object",
+  "description": "Schema of all properties of a View Update event",
+  "allOf": [
+    {
+      "$ref": "_view-container-schema.json"
+    },
+    {
+      "$ref": "_view-properties.json"
+    },
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "RUM event type",
+          "const": "view_update",
+          "readOnly": true
+        },
+        "_dd": {
+          "type": "object",
+          "description": "Internal properties",
+          "required": ["document_version"],
+          "properties": {
+            "document_version": {
+              "type": "integer",
+              "description": "Version of the update of the view event",
+              "minimum": 0,
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}

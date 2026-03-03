@@ -29,7 +29,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -45,7 +45,6 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
-import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
@@ -54,9 +53,12 @@ import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.event.ViewEventMapper
+import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.diffViewEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 import java.util.UUID
@@ -86,10 +88,11 @@ internal open class RumViewScope(
     private val slowFramesListener: SlowFramesListener?,
     private val viewEndedMetricDispatcher: ViewMetricDispatcher,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    internal val viewEventMapper: ViewEventMapper
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -133,6 +136,8 @@ internal open class RumViewScope(
     internal var hasReplay = false
 
     internal var stopped: Boolean = false
+
+    internal var prevViewEvent: ViewEvent? = null
 
     // region Vitals Fields
 
@@ -469,10 +474,11 @@ internal open class RumViewScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            accessibilityInfoProvider = accessibilityInfoProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper
         )
     }
 
@@ -1190,7 +1196,7 @@ internal open class RumViewScope(
             )
         }
 
-        val accessibility = accessibilitySnapshotManager.getIfChanged()?.let {
+        val accessibility = accessibilityInfoProvider.getState().let {
             ViewEvent.Accessibility(
                 textSize = it.textSize,
                 invertColorsEnabled = it.isColorInversionEnabled,
@@ -1243,7 +1249,8 @@ internal open class RumViewScope(
                 syntheticsAttribute == null -> ViewEvent.ViewEventSessionType.USER
                 else -> ViewEvent.ViewEventSessionType.SYNTHETICS
             }
-            ViewEvent(
+
+            val viewEvent =  ViewEvent(
                 date = eventTimestamp,
                 featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
                 view = ViewEvent.ViewEventView(
@@ -1351,9 +1358,23 @@ internal open class RumViewScope(
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
                 ddtags = buildDDTagsString(datadogContext)
-            ).apply {
-                sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
+            )
+
+            val mappedViewEvent = viewEventMapper.map(viewEvent)
+
+            val prev = prevViewEvent
+
+            val newEvent = if (prev == null) {
+                mappedViewEvent
+            } else {
+                diffViewEvent(prev, mappedViewEvent)
             }
+
+            prevViewEvent = mappedViewEvent
+
+            sessionEndedMetricDispatcher.onViewTracked(sessionId, mappedViewEvent)
+
+            newEvent
         }.submit()
     }
 
@@ -1653,10 +1674,11 @@ internal open class RumViewScope(
             networkSettledResourceIdentifier: InitialResourceIdentifier,
             slowFramesListener: SlowFramesListener?,
             rumSessionTypeOverride: RumSessionType?,
-            accessibilitySnapshotManager: AccessibilitySnapshotManager,
+            accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            viewEventMapper: ViewEventMapper
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1690,10 +1712,11 @@ internal open class RumViewScope(
                 viewEndedMetricDispatcher = viewEndedMetricDispatcher,
                 slowFramesListener = slowFramesListener,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                accessibilitySnapshotManager = accessibilitySnapshotManager,
+                accessibilityInfoProvider = accessibilityInfoProvider,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                viewEventMapper = viewEventMapper
             )
         }
 

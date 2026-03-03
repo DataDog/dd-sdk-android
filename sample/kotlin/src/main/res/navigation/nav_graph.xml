@@ -149,4 +149,8 @@
         android:name="com.datadog.android.sample.traces.OtelTracesFragment"
         android:label="@string/title_otel_traces"/>
 
+    <fragment android:id="@+id/fragment_feature_flag_evaluation"
+        android:name="com.datadog.android.sample.rum.FeatureFlagEvaluationFragment"
+        android:label="@string/title_feature_flag_evaluation"/>
+
 </navigation>

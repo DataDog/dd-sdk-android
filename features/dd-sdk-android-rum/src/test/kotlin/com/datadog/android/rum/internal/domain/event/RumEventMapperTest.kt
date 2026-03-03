@@ -84,7 +84,6 @@ internal class RumEventMapperTest {
 
         testedRumEventMapper = RumEventMapper(
             actionEventMapper = mockActionEventMapper,
-            viewEventMapper = mockViewEventMapper,
             resourceEventMapper = mockResourceEventMapper,
             errorEventMapper = mockErrorEventMapper,
             longTaskEventMapper = mockLongTaskEventMapper,

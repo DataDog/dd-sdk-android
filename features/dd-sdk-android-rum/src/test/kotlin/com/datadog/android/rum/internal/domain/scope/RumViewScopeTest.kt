@@ -39,7 +39,8 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.event.ViewEventMapper
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
@@ -162,7 +163,10 @@ internal class RumViewScopeTest {
     lateinit var mockCpuVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
+
+    @Mock
+    lateinit var mockViewEventMapper: ViewEventMapper
 
     @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
@@ -291,7 +295,7 @@ internal class RumViewScopeTest {
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
-        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
@@ -9294,10 +9298,11 @@ internal class RumViewScopeTest {
         slowFramesListener = slowFramesMetricListener,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         rumSessionTypeOverride = fakeRumSessionType,
-        accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+        accessibilityInfoProvider = mockAccessibilityInfoProvider,
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
-        insightsCollector = mockInsightsCollector
+        insightsCollector = mockInsightsCollector,
+        viewEventMapper = mockViewEventMapper
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

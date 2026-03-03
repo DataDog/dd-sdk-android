@@ -765,3 +765,4 @@ internal fun RumStartupScenario.toVitalAppLaunchStartupType(): VitalAppLaunchEve
     }
 }
 // endregion
+
