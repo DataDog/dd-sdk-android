@@ -80,8 +80,9 @@ private fun diffView(
     new: ViewEvent.ViewEventView
 ): RumViewUpdateEvent.RumViewUpdateEventView {
     return computeDiffRequired(old = old, new = new) {
-        val slowFrames = diffList<ViewEvent.SlowFrame> { slowFrames ?: emptyList() }
-        val inForegroundPeriods = diffList<ViewEvent.InForegroundPeriod> { inForegroundPeriods ?: emptyList() }
+        val slowFrames = diffList(ViewEvent.ViewEventView::slowFrames)
+        val inForegroundPeriods = diffList(ViewEvent.ViewEventView::inForegroundPeriods)
+
         RumViewUpdateEvent.RumViewUpdateEventView(
             id = diffRequired(ViewEvent.ViewEventView::id),
             url = diffRequired(ViewEvent.ViewEventView::url),
@@ -109,9 +110,7 @@ private fun diffView(
             domInteractive = diffEquals(ViewEvent.ViewEventView::domInteractive),
             loadEvent = diffEquals(ViewEvent.ViewEventView::loadEvent),
             firstByte = diffEquals(ViewEvent.ViewEventView::firstByte),
-            customTimings = diffEquals(ViewEvent.ViewEventView::customTimings)?.let {
-                RumViewUpdateEvent.CustomTimings(it.additionalProperties)
-            },
+            customTimings = diffEquals(ViewEvent.ViewEventView::customTimings)?.let { RumViewUpdateEvent.CustomTimings(it.additionalProperties) },
             isActive = diffEquals(ViewEvent.ViewEventView::isActive),
             isSlowRendered = diffEquals(ViewEvent.ViewEventView::isSlowRendered),
             action = diffEquals(ViewEvent.ViewEventView::action)?.let { RumViewUpdateEvent.Action(it.count) },
@@ -119,14 +118,10 @@ private fun diffView(
             crash = diffEquals(ViewEvent.ViewEventView::crash)?.let { RumViewUpdateEvent.Crash(it.count) },
             longTask = diffEquals(ViewEvent.ViewEventView::longTask)?.let { RumViewUpdateEvent.LongTask(it.count) },
             frozenFrame = diffEquals(ViewEvent.ViewEventView::frozenFrame)?.let { RumViewUpdateEvent.FrozenFrame(it.count) },
-            slowFrames = slowFrames.takeIf { it.isNotEmpty() }?.map {
-                RumViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration)
-            },
+            slowFrames = slowFrames?.map { RumViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) },
             resource = diffEquals(ViewEvent.ViewEventView::resource)?.let { RumViewUpdateEvent.Resource(it.count) },
             frustration = diffEquals(ViewEvent.ViewEventView::frustration)?.let { RumViewUpdateEvent.Frustration(it.count) },
-            inForegroundPeriods = inForegroundPeriods.takeIf { it.isNotEmpty() }?.map {
-                RumViewUpdateEvent.InForegroundPeriod(start = it.start, duration = it.duration)
-            },
+            inForegroundPeriods = inForegroundPeriods?.map { RumViewUpdateEvent.InForegroundPeriod(start = it.start, duration = it.duration) },
             memoryAverage = diffEquals(ViewEvent.ViewEventView::memoryAverage),
             memoryMax = diffEquals(ViewEvent.ViewEventView::memoryMax),
             cpuTicksCount = diffEquals(ViewEvent.ViewEventView::cpuTicksCount),

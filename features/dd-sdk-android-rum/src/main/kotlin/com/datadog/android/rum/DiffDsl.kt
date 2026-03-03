@@ -11,7 +11,7 @@ interface DiffDsl<D> {
 
     fun <T> diffEquals(getter: D.() -> T): T?
     fun <K : Any, V> diffMap(getter: D.() -> Map<K,V>): Map<K, V>
-    fun <T> diffList(getter: D.() -> List<T>): List<T>
+    fun <T> diffList(getter: D.() -> List<T>?): List<T>?
     fun <T, R : Any> diffMerge(getter: D.() -> T, diffFunc: (old: T, new: T) -> R?): R?
     fun <T> diffRequired(getter: D.() -> T): T
 }
@@ -72,17 +72,18 @@ class DiffDslImpl<D>(private val oldObj: D, private val newObj: D): DiffDsl<D> {
         return diff
     }
 
-    override fun <T> diffList(getter: D.() -> List<T>): List<T> {
-        val old = getter(oldObj)
-        val new = getter(newObj)
+    override fun <T> diffList(getter: D.() -> List<T>?): List<T>? {
+        val old = getter(oldObj) ?: emptyList()
+        val new = getter(newObj) ?: emptyList()
 
         val diff = new.drop(old.size)
 
         if (diff.isNotEmpty()) {
             changed = true
+            return diff
         }
 
-        return diff
+        return null
     }
 
     override fun <T, R : Any> diffMerge(getter: D.() -> T, diffFunc: (old: T, new: T) -> R?): R? {
