@@ -24,7 +24,6 @@ import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import java.util.Locale
 
 internal data class RumEventMapper(
-    val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),

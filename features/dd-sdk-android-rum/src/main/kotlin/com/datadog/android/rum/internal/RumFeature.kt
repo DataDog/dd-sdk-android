@@ -376,7 +376,6 @@ internal class RumFeature(
     ): DataWriter<Any> {
         return RumDataWriter(
             eventMapper = RumEventMapper(
-                viewEventMapper = configuration.viewEventMapper,
                 errorEventMapper = configuration.errorEventMapper,
                 resourceEventMapper = configuration.resourceEventMapper,
                 actionEventMapper = configuration.actionEventMapper,
