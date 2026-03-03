@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum
 
-interface DiffDsl<D> {
+interface DiffDsl<D : Any> {
     fun anythingChanged(): Boolean
 
     fun <T> diffEquals(getter: D.() -> T): T?
@@ -16,7 +16,7 @@ interface DiffDsl<D> {
     fun <T> diffRequired(getter: D.() -> T): T
 }
 
-fun <D, R : Any> computeDiff(old: D, new: D, block: DiffDsl<D>.() -> R): R? {
+fun <D : Any, R : Any> computeDiff(old: D, new: D, block: DiffDsl<D>.() -> R): R? {
     val dsl = DiffDslImpl(oldObj = old, newObj = new)
     val result: R = dsl.block()
 
@@ -27,12 +27,12 @@ fun <D, R : Any> computeDiff(old: D, new: D, block: DiffDsl<D>.() -> R): R? {
     }
 }
 
-fun <D, R : Any> computeDiffRequired(old: D, new: D, block: DiffDsl<D>.() -> R): R {
+fun <D : Any, R : Any> computeDiffRequired(old: D, new: D, block: DiffDsl<D>.() -> R): R {
     val dsl = DiffDslImpl(oldObj = old, newObj = new)
     return dsl.block()
 }
 
-class DiffDslImpl<D>(private val oldObj: D, private val newObj: D): DiffDsl<D> {
+class DiffDslImpl<D : Any>(private val oldObj: D, private val newObj: D): DiffDsl<D> {
     private var changed: Boolean = false
 
     override fun anythingChanged(): Boolean {

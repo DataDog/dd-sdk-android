@@ -18,7 +18,7 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): RumViewUpdateEvent? 
             session = diffSession(old.session, new.session),
             view = diffView(old.view, new.view),
             dd = diffDd(old.dd, new.dd),
-            featureFlags = diffMerge(ViewEvent::featureFlags, ::diffContext),
+            featureFlags = diffMerge({ featureFlags ?: ViewEvent.Context() }, ::diffFeatureFlags),
             service = diffEquals(ViewEvent::service),
             version = diffEquals(ViewEvent::version),
             buildVersion = diffEquals(ViewEvent::buildVersion),
@@ -133,8 +133,8 @@ private fun diffView(
             flutterBuildTime = diffEquals(ViewEvent.ViewEventView::flutterBuildTime)?.toRum(),
             flutterRasterTime = diffEquals(ViewEvent.ViewEventView::flutterRasterTime)?.toRum(),
             jsRefreshRate = diffEquals(ViewEvent.ViewEventView::jsRefreshRate)?.toRum(),
-            performance = diffMerge(ViewEvent.ViewEventView::performance, ::diffPerformance),
-            accessibility = diffMerge(ViewEvent.ViewEventView::accessibility, ::diffAccessibility),
+            performance = diffMerge({ performance ?: ViewEvent.Performance() }, ::diffPerformance),
+            accessibility = diffMerge({ accessibility ?: ViewEvent.Accessibility() }, ::diffAccessibility),
         )
     }
 }
@@ -167,16 +167,14 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): RumViewUpdateEvent.Dd 
 
 // region Diff helpers — nullable merged sub-objects
 
-private fun diffContext(old: ViewEvent.Context?, new: ViewEvent.Context?): RumViewUpdateEvent.FeatureFlags? {
-    if (new == null) return null
-    return computeDiff(old = old ?: ViewEvent.Context(), new = new) {
-        RumViewUpdateEvent.FeatureFlags(diffMap(ViewEvent.Context::additionalProperties).toMutableMap())
+private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): RumViewUpdateEvent.FeatureFlags? {
+    return computeDiff(old = old, new = new) {
+        RumViewUpdateEvent.FeatureFlags(diffMap(ViewEvent.Context::additionalProperties).toMutableMap()) // TODO WAHAHA
     }
 }
 
-private fun diffPerformance(old: ViewEvent.Performance?, new: ViewEvent.Performance?): RumViewUpdateEvent.Performance? {
-    if (new == null) return null
-    return computeDiff(old = old ?: ViewEvent.Performance(), new = new) {
+private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performance): RumViewUpdateEvent.Performance? {
+    return computeDiff(old = old, new = new) {
         RumViewUpdateEvent.Performance(
             cls = diffEquals(ViewEvent.Performance::cls)?.toRum(),
             fcp = diffEquals(ViewEvent.Performance::fcp)?.let { RumViewUpdateEvent.Fcp(timestamp = it.timestamp) },
@@ -191,9 +189,8 @@ private fun diffPerformance(old: ViewEvent.Performance?, new: ViewEvent.Performa
 }
 
 @Suppress("LongMethod")
-private fun diffAccessibility(old: ViewEvent.Accessibility?, new: ViewEvent.Accessibility?): RumViewUpdateEvent.Accessibility? {
-    if (new == null) return null
-    return computeDiff(old = old ?: ViewEvent.Accessibility(), new = new) {
+private fun diffAccessibility(old: ViewEvent.Accessibility, new: ViewEvent.Accessibility): RumViewUpdateEvent.Accessibility? {
+    return computeDiff(old = old, new = new) {
         RumViewUpdateEvent.Accessibility(
             textSize = diffEquals(ViewEvent.Accessibility::textSize),
             screenReaderEnabled = diffEquals(ViewEvent.Accessibility::screenReaderEnabled),
