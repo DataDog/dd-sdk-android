@@ -4,9 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.internal.utils
 
-interface DiffDsl<D : Any> {
+import kotlin.collections.iterator
+
+interface DiffBuilder<D : Any> {
     fun anythingChanged(): Boolean
 
     fun <T> diffEquals(getter: D.() -> T): T?
@@ -16,8 +18,8 @@ interface DiffDsl<D : Any> {
     fun <T> diffRequired(getter: D.() -> T): T
 }
 
-fun <D : Any, R : Any> computeDiff(old: D, new: D, block: DiffDsl<D>.() -> R): R? {
-    val dsl = DiffDslImpl(oldObj = old, newObj = new)
+fun <D : Any, R : Any> computeDiffIfChanged(old: D, new: D, block: DiffBuilder<D>.() -> R): R? {
+    val dsl = DiffBuilderImpl(oldObj = old, newObj = new)
     val result: R = dsl.block()
 
     return if (dsl.anythingChanged()) {
@@ -27,12 +29,12 @@ fun <D : Any, R : Any> computeDiff(old: D, new: D, block: DiffDsl<D>.() -> R): R
     }
 }
 
-fun <D : Any, R : Any> computeDiffRequired(old: D, new: D, block: DiffDsl<D>.() -> R): R {
-    val dsl = DiffDslImpl(oldObj = old, newObj = new)
+fun <D : Any, R : Any> computeDiffRequired(old: D, new: D, block: DiffBuilder<D>.() -> R): R {
+    val dsl = DiffBuilderImpl(oldObj = old, newObj = new)
     return dsl.block()
 }
 
-class DiffDslImpl<D : Any>(private val oldObj: D, private val newObj: D): DiffDsl<D> {
+private class DiffBuilderImpl<D : Any>(private val oldObj: D, private val newObj: D): DiffBuilder<D> {
     private var changed: Boolean = false
 
     override fun anythingChanged(): Boolean {
@@ -105,7 +107,7 @@ class DiffDslImpl<D : Any>(private val oldObj: D, private val newObj: D): DiffDs
     }
 }
 
-// example usage
+// example usage TODO WAHAHA
 
 data class SomeState(
     val x: Int,
@@ -132,7 +134,7 @@ data class SomeStateDiff(
 }
 
 fun diffSomeState(old: SomeState, new: SomeState): SomeStateDiff? {
-    return computeDiff(old = old, new = new) {
+    return computeDiffIfChanged(old = old, new = new) {
         SomeStateDiff(
             x = diffEquals(SomeState::x),
             y = diffEquals(SomeState::y),
@@ -142,7 +144,7 @@ fun diffSomeState(old: SomeState, new: SomeState): SomeStateDiff? {
 }
 
 fun diffNested(old: SomeState.Nested, new: SomeState.Nested): SomeStateDiff.NestedDiff? {
-    return computeDiff(old = old, new = new) {
+    return computeDiffIfChanged(old = old, new = new) {
         SomeStateDiff.NestedDiff(
             flags = diffMap(SomeState.Nested::flags),
             arr = diffList(SomeState.Nested::arr),

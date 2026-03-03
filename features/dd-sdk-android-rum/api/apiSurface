@@ -1,31 +1,4 @@
 fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
-interface com.datadog.android.rum.DiffDsl<D: Any>
-  fun anythingChanged(): Boolean
-  fun <T> diffEquals(D.() -> T): T?
-  fun <K: Any, V> diffMap(D.() -> Map<K, V>): Map<K, V>
-  fun <T> diffList(D.() -> List<T>?): List<T>?
-  fun <T, R: Any> diffMerge(D.() -> T, (T) -> R?): R?
-  fun <T> diffRequired(D.() -> T): T
-fun <D: Any, R: Any> computeDiff(D, D, DiffDsl<D>.() -> R): R?
-fun <D: Any, R: Any> computeDiffRequired(D, D, DiffDsl<D>.() -> R): R
-class com.datadog.android.rum.DiffDslImpl<D: Any> : DiffDsl<D>
-  constructor(D, D)
-  override fun anythingChanged(): Boolean
-  override fun <T> diffEquals(D.() -> T): T?
-  override fun <K: Any, V> diffMap(D.() -> Map<K, V>): Map<K, V>
-  override fun <T> diffList(D.() -> List<T>?): List<T>?
-  override fun <T, R: Any> diffMerge(D.() -> T, (T) -> R?): R?
-  override fun <T> diffRequired(D.() -> T): T
-data class com.datadog.android.rum.SomeState
-  constructor(Int, Int, Nested)
-  data class Nested
-    constructor(String, Map<String, Any?>, List<Int>)
-data class com.datadog.android.rum.SomeStateDiff
-  constructor(Int?, Int?, NestedDiff?)
-  data class NestedDiff
-    constructor(String, Map<String, Any?>?, List<Int>?)
-fun diffSomeState(SomeState, SomeState): SomeStateDiff?
-fun diffNested(SomeState.Nested, SomeState.Nested): SomeStateDiff.NestedDiff?
 annotation com.datadog.android.rum.ExperimentalRumApi
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean

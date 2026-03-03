@@ -6,12 +6,12 @@
 
 package com.datadog.android.rum.model
 
-import com.datadog.android.rum.computeDiff
-import com.datadog.android.rum.computeDiffRequired
+import com.datadog.android.internal.utils.computeDiffIfChanged
+import com.datadog.android.internal.utils.computeDiffRequired
 
 @Suppress("LongMethod")
-internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): RumViewUpdateEvent? {
-    return computeDiff(old = old, new = new) {
+internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): RumViewUpdateEvent {
+    return computeDiffRequired(old = old, new = new) {
         RumViewUpdateEvent(
             date = diffRequired(ViewEvent::date),
             application = diffApplication(old.application, new.application),
@@ -168,13 +168,13 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): RumViewUpdateEvent.Dd 
 // region Diff helpers — nullable merged sub-objects
 
 private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): RumViewUpdateEvent.FeatureFlags? {
-    return computeDiff(old = old, new = new) {
+    return computeDiffIfChanged(old = old, new = new) {
         RumViewUpdateEvent.FeatureFlags(diffMap(ViewEvent.Context::additionalProperties).toMutableMap()) // TODO WAHAHA
     }
 }
 
 private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performance): RumViewUpdateEvent.Performance? {
-    return computeDiff(old = old, new = new) {
+    return computeDiffIfChanged(old = old, new = new) {
         RumViewUpdateEvent.Performance(
             cls = diffEquals(ViewEvent.Performance::cls)?.toRum(),
             fcp = diffEquals(ViewEvent.Performance::fcp)?.let { RumViewUpdateEvent.Fcp(timestamp = it.timestamp) },
@@ -190,7 +190,7 @@ private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performan
 
 @Suppress("LongMethod")
 private fun diffAccessibility(old: ViewEvent.Accessibility, new: ViewEvent.Accessibility): RumViewUpdateEvent.Accessibility? {
-    return computeDiff(old = old, new = new) {
+    return computeDiffIfChanged(old = old, new = new) {
         RumViewUpdateEvent.Accessibility(
             textSize = diffEquals(ViewEvent.Accessibility::textSize),
             screenReaderEnabled = diffEquals(ViewEvent.Accessibility::screenReaderEnabled),

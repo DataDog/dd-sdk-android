@@ -168,6 +168,25 @@ interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   val listenersCount: Int
   companion object 
     fun <T: Any> create(): DDCoreSubscription<T>
+interface com.datadog.android.internal.utils.DiffBuilder<D: Any>
+  fun anythingChanged(): Boolean
+  fun <T> diffEquals(D.() -> T): T?
+  fun <K: Any, V> diffMap(D.() -> Map<K, V>): Map<K, V>
+  fun <T> diffList(D.() -> List<T>?): List<T>?
+  fun <T, R: Any> diffMerge(D.() -> T, (T) -> R?): R?
+  fun <T> diffRequired(D.() -> T): T
+fun <D: Any, R: Any> computeDiffIfChanged(D, D, DiffBuilder<D>.() -> R): R?
+fun <D: Any, R: Any> computeDiffRequired(D, D, DiffBuilder<D>.() -> R): R
+data class com.datadog.android.internal.utils.SomeState
+  constructor(Int, Int, Nested)
+  data class Nested
+    constructor(String, Map<String, Any?>, List<Int>)
+data class com.datadog.android.internal.utils.SomeStateDiff
+  constructor(Int?, Int?, NestedDiff?)
+  data class NestedDiff
+    constructor(String, Map<String, Any?>?, List<Int>?)
+fun diffSomeState(SomeState, SomeState): SomeStateDiff?
+fun diffNested(SomeState.Nested, SomeState.Nested): SomeStateDiff.NestedDiff?
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect
   fun calculateClipping(android.graphics.Rect, android.graphics.Rect, Float): android.graphics.Rect
