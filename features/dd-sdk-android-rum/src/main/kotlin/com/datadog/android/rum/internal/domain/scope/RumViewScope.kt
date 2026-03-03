@@ -58,7 +58,7 @@ import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.diff
+import com.datadog.android.rum.model.diffViewEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import java.util.Locale
 import java.util.UUID
@@ -1367,8 +1367,7 @@ internal open class RumViewScope(
             val newEvent = if (prev == null) {
                 mappedViewEvent
             } else {
-                val diff = prev.diff(mappedViewEvent)
-                diff.toUpdateEvent()
+                diffViewEvent(prev, mappedViewEvent)!!
             }
 
             prevViewEvent = mappedViewEvent
