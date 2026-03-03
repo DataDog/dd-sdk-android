@@ -41,3 +41,4 @@ package com.datadog.android.rum.model
 
 import com.datadog.tools.diff.DiffConfig
 import com.datadog.tools.diff.DiffVisibility
+

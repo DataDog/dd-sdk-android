@@ -255,6 +255,8 @@ class com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIden
   companion object 
 typealias RumVitalAppLaunchEvent = VitalAppLaunchEvent
 typealias RumVitalOperationStepEvent = VitalOperationStepEvent
+interface com.datadog.android.rum.model.DiffDsl
+  fun <T> makeDiff(T, T): T
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
