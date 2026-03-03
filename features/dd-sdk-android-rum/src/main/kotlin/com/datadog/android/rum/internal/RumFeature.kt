@@ -46,11 +46,8 @@ import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.battery.NoOpBatteryInfoProvider
@@ -169,7 +166,6 @@ internal class RumFeature(
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
     internal var accessibilityReader: InfoProvider<AccessibilityInfo> = NoOpAccessibilityReader()
-    internal var accessibilitySnapshotManager: AccessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
@@ -192,7 +188,6 @@ internal class RumFeature(
                 applicationContext = appContext,
                 timeProvider = sdkCore.timeProvider
             )
-            accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
@@ -366,7 +361,6 @@ internal class RumFeature(
         if (configuration.collectAccessibility) {
             accessibilityReader.cleanup()
             accessibilityReader = NoOpAccessibilityReader()
-            accessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
         }
 
         batteryInfoProvider.cleanup()
