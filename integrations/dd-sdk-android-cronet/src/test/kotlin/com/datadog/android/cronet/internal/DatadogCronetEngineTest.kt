@@ -6,13 +6,14 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.cronet.DatadogCronetEngine
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.chromium.net.BidirectionalStream
 import org.chromium.net.CronetEngine
 import org.chromium.net.NetworkQualityRttListener
@@ -45,7 +46,13 @@ internal class DatadogCronetEngineTest {
     lateinit var mockDelegate: CronetEngine
 
     @Mock
-    lateinit var mockRumResourceInstrumentation: RumResourceInstrumentation
+    lateinit var mockRumNetworkInstrumentation: RumNetworkInstrumentation
+
+    @Mock
+    lateinit var mockApmNetworkInstrumentation: ApmNetworkInstrumentation
+
+    @Mock
+    lateinit var mockDistributedTracingInstrumentation: ApmNetworkInstrumentation
 
     lateinit var testedEngine: DatadogCronetEngine
 
@@ -53,7 +60,9 @@ internal class DatadogCronetEngineTest {
     fun setup() {
         testedEngine = DatadogCronetEngine(
             mockDelegate,
-            mockRumResourceInstrumentation
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
+            apmNetworkInstrumentation = null,
+            distributedTracingInstrumentation = null
         )
     }
 
@@ -282,11 +291,67 @@ internal class DatadogCronetEngineTest {
         val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
 
         // Then
-        verify(mockDelegate).newUrlRequestBuilder(
-            eq(url),
-            any<UrlRequest.Callback>(),
-            eq(mockExecutor)
+        assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
+    }
+
+    @Test
+    fun `M return DatadogUrlRequestBuilder with tracingInstrumentation W newUrlRequestBuilder() {tracing enabled}`(
+        @StringForgery url: String
+    ) {
+        // Given
+        testedEngine = DatadogCronetEngine(
+            mockDelegate,
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
+            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
+            distributedTracingInstrumentation = mockDistributedTracingInstrumentation
         )
-        check(result is DatadogUrlRequestBuilder)
+        val mockCallback = mock<UrlRequest.Callback>()
+        val mockExecutor = mock<Executor>()
+        val mockBuilder = mock<UrlRequest.Builder>()
+        whenever(
+            mockDelegate.newUrlRequestBuilder(
+                eq(url),
+                any<UrlRequest.Callback>(),
+                eq(mockExecutor)
+            )
+        ).thenReturn(mockBuilder)
+
+        // When
+        val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
+
+        // Then
+        assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
+        assertThat(testedEngine.apmNetworkInstrumentation)
+            .isSameAs(mockApmNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M return DatadogUrlRequestBuilder with null tracingInstrumentation W newUrlRequestBuilder()`(
+        @StringForgery url: String
+    ) {
+        // Given
+        testedEngine = DatadogCronetEngine(
+            mockDelegate,
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
+            apmNetworkInstrumentation = null,
+            distributedTracingInstrumentation = null
+        )
+        val mockCallback = mock<UrlRequest.Callback>()
+        val mockExecutor = mock<Executor>()
+        val mockBuilder = mock<UrlRequest.Builder>()
+        whenever(
+            mockDelegate.newUrlRequestBuilder(
+                eq(url),
+                any<UrlRequest.Callback>(),
+                eq(mockExecutor)
+            )
+        ).thenReturn(mockBuilder)
+
+        // When
+        val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
+
+        // Then
+        assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
+        assertThat(testedEngine.apmNetworkInstrumentation).isNull()
     }
 }

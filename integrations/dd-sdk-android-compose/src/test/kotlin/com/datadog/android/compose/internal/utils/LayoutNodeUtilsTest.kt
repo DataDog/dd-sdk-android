@@ -22,22 +22,36 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsModifier
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.compose.DatadogSemanticsPropertyKey
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.tools.unit.getFieldValue
+import com.datadog.tools.unit.getStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.ArgumentMatchers.isA
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.same
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.stream.Stream
@@ -53,6 +67,25 @@ import java.util.stream.Stream
 class LayoutNodeUtilsTest {
 
     private val testedLayoutNodeUtils = LayoutNodeUtils()
+
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val registry: Any = Datadog::class.java.getStaticValue("registry")
+        val instances: MutableMap<String, SdkCore> = registry.getFieldValue("instances")
+        instances += DEFAULT_INSTANCE_NAME to mockSdkCore
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.stopInstance(DEFAULT_INSTANCE_NAME)
+    }
 
     // region Legacy Compose (SemanticsModifier)
 
@@ -131,6 +164,60 @@ class LayoutNodeUtilsTest {
 
     // endregion
 
+    // region Error Handling
+
+    @Test
+    fun `M log WARN to telemetry W resolveLayoutNode() {getModifierInfo throws}`() {
+        // Given
+        val exception = RuntimeException("test exception")
+        val mockNode = mock<LayoutNode>()
+        whenever(mockNode.getModifierInfo()).thenThrow(exception)
+
+        // When
+        val result = testedLayoutNodeUtils.resolveLayoutNode(mockNode)
+
+        // Then
+        assertThat(result).isNull()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                same(exception),
+                eq(true),
+                eq(null)
+            )
+            assertThat(firstValue()).isEqualTo("LayoutNodeUtils execution failure in resolveLayoutNode.")
+        }
+    }
+
+    @Test
+    fun `M log WARN to telemetry W getLayoutNodeBoundsInWindow() {layoutDelegate access throws}`() {
+        // Given
+        // mock<LayoutNode>() returns null for unstubbed layoutDelegate, causing NPE when chained
+        val mockNode = mock<LayoutNode>()
+
+        // When
+        val result = testedLayoutNodeUtils.getLayoutNodeBoundsInWindow(mockNode)
+
+        // Then
+        assertThat(result).isNull()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                isA(NullPointerException::class.java),
+                eq(true),
+                eq(null)
+            )
+            assertThat(firstValue())
+                .isEqualTo("LayoutNodeUtils execution failure in getLayoutNodeBoundsInWindow.")
+        }
+    }
+
+    // endregion
+
     // region Private
 
     private fun mockLayoutNodeWithModifiers(
@@ -192,6 +279,13 @@ class LayoutNodeUtilsTest {
     }
 
     companion object {
+
+        /**
+         * LayoutNodeUtils sends telemetry with default SDK core instance, so in the test we must
+         * register the mocked SDK core with default name from [SdkCoreRegistry.DEFAULT_INSTANCE_NAME].
+         */
+        private const val DEFAULT_INSTANCE_NAME = "_dd.sdk_core.default"
+
         @JvmStatic
         fun clickableModifierElements(): Stream<ModifierTestCase> = Stream.of(
             ModifierTestCase("TriStateToggleableElement", TriStateToggleableElement()),

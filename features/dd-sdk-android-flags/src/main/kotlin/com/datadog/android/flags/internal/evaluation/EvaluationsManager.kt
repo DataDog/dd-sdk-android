@@ -7,6 +7,8 @@
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
@@ -25,6 +27,7 @@ import java.util.concurrent.ExecutorService
  * to provide atomic updates of flag evaluations. All operations are performed asynchronously
  * on a dedicated executor to avoid blocking the calling thread.
  *
+ * @param sdkCore SDK core
  * @param executorService dedicated executor for background operations
  * @param internalLogger logger for debug and error messages
  * @param flagsRepository local storage for flag data and evaluation context
@@ -33,6 +36,7 @@ import java.util.concurrent.ExecutorService
  * @param flagStateManager channel for notifying state change listeners
  */
 internal class EvaluationsManager(
+    private val sdkCore: FeatureSdkCore,
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     private val flagsRepository: FlagsRepository,
@@ -57,45 +61,48 @@ internal class EvaluationsManager(
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         flagStateManager.updateState(FlagsClientState.Reconciling)
 
-        executorService.executeSafe(
-            operationName = FETCH_AND_STORE_OPERATION_NAME,
-            internalLogger = internalLogger
-        ) {
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Processing evaluation context: ${context.targetingKey}" }
-            )
+        sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
+            ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
+                executorService.executeSafe(
+                    operationName = FETCH_AND_STORE_OPERATION_NAME,
+                    internalLogger = internalLogger
+                ) {
+                    internalLogger.log(
+                        InternalLogger.Level.DEBUG,
+                        InternalLogger.Target.MAINTAINER,
+                        { "Processing evaluation context: ${context.targetingKey}" }
+                    )
 
-            val hadFlags = flagsRepository.hasFlags()
-            val response = assignmentsReader.readPrecomputedFlags(context)
-            if (response != null) {
-                val flagsMap = precomputeMapper.map(response)
-                flagsRepository.setFlagsAndContext(context, flagsMap)
-                internalLogger.log(
-                    InternalLogger.Level.DEBUG,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                )
+                    val hadFlags = flagsRepository.hasFlags()
+                    val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
+                    if (response != null) {
+                        val flagsMap = precomputeMapper.map(response)
+                        flagsRepository.setFlagsAndContext(context, flagsMap)
+                        internalLogger.log(
+                            InternalLogger.Level.DEBUG,
+                            InternalLogger.Target.MAINTAINER,
+                            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+                        )
 
-                flagStateManager.updateState(FlagsClientState.Ready)
-                callback?.onSuccess()
-            } else {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { NETWORK_REQUEST_FAILED_MESSAGE }
-                )
+                        flagStateManager.updateState(FlagsClientState.Ready)
+                        callback?.onSuccess()
+                    } else {
+                        internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            InternalLogger.Target.USER,
+                            { NETWORK_REQUEST_FAILED_MESSAGE }
+                        )
 
-                val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
-                if (hadFlags) {
-                    flagStateManager.updateState(FlagsClientState.Stale)
-                } else {
-                    flagStateManager.updateState(FlagsClientState.Error(throwable))
+                        val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
+                        if (hadFlags) {
+                            flagStateManager.updateState(FlagsClientState.Stale)
+                        } else {
+                            flagStateManager.updateState(FlagsClientState.Error(throwable))
+                        }
+                        callback?.onFailure(throwable)
+                    }
                 }
-                callback?.onFailure(throwable)
             }
-        }
     }
 
     companion object {

@@ -87,7 +87,7 @@ class Navigation3Test {
             fakeStableKey,
             fakeViewName,
             expectedAttributes.toMutableMap()
-                .enrichWithConstantAttribute(ViewScopeInstrumentationType.COMPOSE)
+                .enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.COMPOSE)
         )
         verify(mockRumMonitor, never()).stopView(any(), any())
     }

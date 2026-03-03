@@ -7,6 +7,7 @@
 package com.datadog.android.rum.utils.assertj
 
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.tools.unit.assertj.withGsonIntEqualsForFields
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -24,6 +25,7 @@ internal class DeserializedActionEventAssert(actual: ActionEvent) :
             .isEqualTo(expected)
         assertThat(actual.device)
             .usingRecursiveComparison()
+            .withGsonIntEqualsForFields("totalRam", "logicalCpuCount")
             .ignoringFields("batteryLevel", "brightnessLevel")
             .isEqualTo(expected.device)
         assertNumberFieldEquals(actual.device?.batteryLevel, expected.device?.batteryLevel)

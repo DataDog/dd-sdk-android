@@ -17,6 +17,8 @@ variables:
   ANDROID_API: "36"
   ANDROID_SDK_VERSION: "commandlinetools-mac-13114758_latest"
 
+  CACHE_FALLBACK_KEY: "develop"
+
 include:
   - local: 'ci/pipelines/default-pipeline.yml'
     rules:

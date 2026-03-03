@@ -10,18 +10,27 @@ interface com.datadog.android.internal.attributes.LocalAttribute
 fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
 fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
 fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
-enum com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
-  - MANUAL
-  - COMPOSE
-  - ACTIVITY
-  - FRAGMENT
-  override val key: LocalAttribute.Key
+sealed interface com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  val value: String
+  enum Native : ViewScopeInstrumentationType
+    constructor(String)
+    - MANUAL
+    - COMPOSE
+    - ACTIVITY
+    - FRAGMENT
+    override val key: LocalAttribute.Key
+  class Custom : ViewScopeInstrumentationType
+    override val value: String
+    override val key: LocalAttribute.Key
+    companion object 
+      fun create(String): Custom
 class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
+  constructor(Int, java.util.Deque<T>)
   constructor(Int = Int.MAX_VALUE)
-  override val size: Int
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+  fun lastOrNull(): T?
 interface com.datadog.android.internal.data.PreferencesStorage
   fun putFloat(String, Float)
   fun getFloat(String, Float = 0f): Float
@@ -69,16 +78,44 @@ object com.datadog.android.internal.network.HttpSpec
     const val OPTIONS: String
     const val CONNECT: String
     fun values()
-  object Headers
+    fun isMethodWithBody(String)
+  object Header
     const val CONTENT_TYPE: String
     const val CONTENT_LENGTH: String
+    const val LOCATION: String
+    const val RETRY_AFTER: String
     const val WEBSOCKET_ACCEPT_HEADER: String
+    fun values()
+  object StatusCode
+    const val OK: Int
+    const val MOVED_PERMANENTLY: Int
+    const val FOUND: Int
+    const val SEE_OTHER: Int
+    const val TEMPORARY_REDIRECT: Int
+    const val PERMANENT_REDIRECT: Int
+    const val BAD_REQUEST: Int
+    const val UNAUTHORIZED: Int
+    const val FORBIDDEN: Int
+    const val NOT_FOUND: Int
+    const val METHOD_NOT_ALLOWED: Int
+    const val REQUEST_TIMEOUT: Int
+    const val TOO_MANY_REQUESTS: Int
+    const val INTERNAL_ERROR: Int
+    const val BAD_GATEWAY: Int
+    const val SERVICE_UNAVAILABLE: Int
+    const val GATEWAY_TIMEOUT: Int
+    const val NETWORK_AUTHENTICATION_REQUIRED: Int
+    fun values()
+    fun clientErrors()
+    fun serverErrors()
   object ContentType
+    const val APPLICATION_JSON: String
     const val TEXT_PLAIN: String
     const val TEXT_EVENT_STREAM: String
     const val APPLICATION_GRPC: String
     const val APPLICATION_GRPC_PROTO: String
     const val APPLICATION_GRPC_JSON: String
+    fun values()
     fun isStream(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)

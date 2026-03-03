@@ -20,19 +20,35 @@ public final class com/datadog/android/internal/attributes/LocalAttributeKt {
 	public static final fun enrichWithNonNullAttribute (Ljava/util/Map;Lcom/datadog/android/internal/attributes/LocalAttribute$Key;Ljava/lang/Object;)Ljava/util/Map;
 }
 
-public final class com/datadog/android/internal/attributes/ViewScopeInstrumentationType : java/lang/Enum, com/datadog/android/internal/attributes/LocalAttribute$Constant {
-	public static final field ACTIVITY Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
-	public static final field COMPOSE Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
-	public static final field FRAGMENT Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
-	public static final field MANUAL Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+public abstract interface class com/datadog/android/internal/attributes/ViewScopeInstrumentationType : com/datadog/android/internal/attributes/LocalAttribute$Constant {
+	public abstract fun getValue ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/attributes/ViewScopeInstrumentationType$Custom : com/datadog/android/internal/attributes/ViewScopeInstrumentationType {
+	public static final field Companion Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Custom$Companion;
 	public fun getKey ()Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
-	public static fun values ()[Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+	public fun getValue ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/attributes/ViewScopeInstrumentationType$Custom$Companion {
+	public final fun create (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Custom;
+}
+
+public final class com/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native : java/lang/Enum, com/datadog/android/internal/attributes/ViewScopeInstrumentationType {
+	public static final field ACTIVITY Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
+	public static final field COMPOSE Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
+	public static final field FRAGMENT Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
+	public static final field MANUAL Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
+	public fun getKey ()Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public fun getValue ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
+	public static fun values ()[Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
 }
 
 public final class com/datadog/android/internal/collections/EvictingQueue : java/util/Queue {
 	public fun <init> (I)V
 	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/util/Deque;)V
 	public fun add (Ljava/lang/Object;)Z
 	public fun addAll (Ljava/util/Collection;)Z
 	public fun clear ()V
@@ -42,6 +58,7 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun getSize ()I
 	public fun isEmpty ()Z
 	public fun iterator ()Ljava/util/Iterator;
+	public final fun lastOrNull ()Ljava/lang/Object;
 	public fun offer (Ljava/lang/Object;)Z
 	public fun peek ()Ljava/lang/Object;
 	public fun poll ()Ljava/lang/Object;
@@ -124,17 +141,22 @@ public final class com/datadog/android/internal/network/HttpSpec$ContentType {
 	public static final field APPLICATION_GRPC Ljava/lang/String;
 	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
 	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
+	public static final field APPLICATION_JSON Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$ContentType;
 	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
 	public static final field TEXT_PLAIN Ljava/lang/String;
 	public final fun isStream (Ljava/lang/String;)Z
+	public final fun values ()Ljava/util/List;
 }
 
-public final class com/datadog/android/internal/network/HttpSpec$Headers {
+public final class com/datadog/android/internal/network/HttpSpec$Header {
 	public static final field CONTENT_LENGTH Ljava/lang/String;
 	public static final field CONTENT_TYPE Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$Headers;
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$Header;
+	public static final field LOCATION Ljava/lang/String;
+	public static final field RETRY_AFTER Ljava/lang/String;
 	public static final field WEBSOCKET_ACCEPT_HEADER Ljava/lang/String;
+	public final fun values ()Ljava/util/List;
 }
 
 public final class com/datadog/android/internal/network/HttpSpec$Method {
@@ -148,6 +170,32 @@ public final class com/datadog/android/internal/network/HttpSpec$Method {
 	public static final field POST Ljava/lang/String;
 	public static final field PUT Ljava/lang/String;
 	public static final field TRACE Ljava/lang/String;
+	public final fun isMethodWithBody (Ljava/lang/String;)Z
+	public final fun values ()Ljava/util/List;
+}
+
+public final class com/datadog/android/internal/network/HttpSpec$StatusCode {
+	public static final field BAD_GATEWAY I
+	public static final field BAD_REQUEST I
+	public static final field FORBIDDEN I
+	public static final field FOUND I
+	public static final field GATEWAY_TIMEOUT I
+	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$StatusCode;
+	public static final field INTERNAL_ERROR I
+	public static final field METHOD_NOT_ALLOWED I
+	public static final field MOVED_PERMANENTLY I
+	public static final field NETWORK_AUTHENTICATION_REQUIRED I
+	public static final field NOT_FOUND I
+	public static final field OK I
+	public static final field PERMANENT_REDIRECT I
+	public static final field REQUEST_TIMEOUT I
+	public static final field SEE_OTHER I
+	public static final field SERVICE_UNAVAILABLE I
+	public static final field TEMPORARY_REDIRECT I
+	public static final field TOO_MANY_REQUESTS I
+	public static final field UNAUTHORIZED I
+	public final fun clientErrors ()Ljava/util/List;
+	public final fun serverErrors ()Ljava/util/List;
 	public final fun values ()Ljava/util/List;
 }
 

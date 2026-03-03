@@ -220,7 +220,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -232,6 +235,65 @@ internal class DatadogLateCrashReporterTest {
                 .hasVersion(fakeViewEvent.dd.documentVersion + 1)
                 .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
                 .isActive(false)
+        }
+    }
+
+    @Test
+    fun `M propagate feature flags to error event W handleNdkCrashEvent()`(
+        @StringForgery crashMessage: String,
+        @LongForgery(min = 1) fakeTimestamp: Long,
+        @LongForgery(min = 1) fakeTimeSinceAppStartMs: Long,
+        @StringForgery fakeSignalName: String,
+        @StringForgery fakeStacktrace: String,
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeFeatureFlags = ViewEvent.Context(
+            additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+        )
+        val fakeViewEvent = viewEvent.copy(
+            date = fakeCurrentTimeMs - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            ),
+            featureFlags = fakeFeatureFlags
+        )
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson))
+            .doReturn(fakeViewEvent)
+
+        val fakeEvent = mapOf(
+            "timestamp" to fakeTimestamp,
+            "timeSinceAppStartMs" to fakeTimeSinceAppStartMs,
+            "signalName" to fakeSignalName,
+            "stacktrace" to fakeStacktrace,
+            "message" to crashMessage,
+            "lastViewEvent" to fakeViewEventJson
+        )
+
+        // When
+        testedHandler.handleNdkCrashEvent(fakeEvent, mockRumWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+
+            val errorEvent = firstValue as ErrorEvent
+            val expectedFeatureFlags = ErrorEvent.Context(
+                additionalProperties = fakeFeatureFlags.additionalProperties.toMutableMap()
+            )
+            ErrorEventAssert.assertThat(errorEvent)
+                .hasFeatureFlags(expectedFeatureFlags)
         }
     }
 
@@ -323,7 +385,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -470,7 +535,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -576,7 +644,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -778,7 +849,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -791,6 +865,58 @@ internal class DatadogLateCrashReporterTest {
                 .hasVersion(fakeViewEvent.dd.documentVersion + 1)
                 .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
                 .isActive(false)
+        }
+    }
+
+    @Test
+    fun `M propagate feature flags to error event W handleAnrCrash()`(
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFeatureFlags = ViewEvent.Context(
+            additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+        )
+        val fakeViewEvent = viewEvent.copy(
+            date = fakeCurrentTimeMs - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            ),
+            featureFlags = fakeFeatureFlags
+        )
+        val fakeTimestamp = fakeViewEvent.date + forge.aLong(min = 1L, max = 1000000L)
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
+
+        val fakeThreadsDump = forge.anrCrashThreadDump()
+        whenever(mockAndroidTraceParser.parse(any())) doReturn fakeThreadsDump
+        val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
+            whenever(traceInputStream) doReturn mock()
+            whenever(timestamp) doReturn fakeTimestamp
+        }
+
+        // When
+        testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+
+            val errorEvent = firstValue as ErrorEvent
+            val expectedFeatureFlags = ErrorEvent.Context(
+                additionalProperties = fakeFeatureFlags.additionalProperties.toMutableMap()
+            )
+            ErrorEventAssert.assertThat(errorEvent)
+                .hasFeatureFlags(expectedFeatureFlags)
         }
     }
 
@@ -863,7 +989,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,
@@ -963,7 +1092,10 @@ internal class DatadogLateCrashReporterTest {
                     fakeDatadogContext.deviceInfo.deviceModel,
                     fakeDatadogContext.deviceInfo.deviceBrand,
                     fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
+                    fakeDatadogContext.deviceInfo.architecture,
+                    fakeDatadogContext.deviceInfo.isLowRam,
+                    fakeDatadogContext.deviceInfo.logicalCpuCount,
+                    fakeDatadogContext.deviceInfo.totalRam
                 )
                 .hasOsInfo(
                     fakeDatadogContext.deviceInfo.osName,

@@ -128,7 +128,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
     }
@@ -776,7 +777,8 @@ internal class DatadogFlagsClientTest {
             flagsRepository = customRepository,
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -974,6 +976,106 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
+    fun `M track error evaluation W resolve() { flag not found and trackEvaluations enabled }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+
+        val clientWithEvaluationTracking = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackEvaluations = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        val result = clientWithEvaluationTracking.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
+
+        // Verify error evaluation was tracked
+        verify(mockEvaluationsFeature).processEvaluation(
+            flagKey = eq(fakeFlagKey),
+            context = eq(fakeContext),
+            variantKey = isNull(),
+            allocationKey = isNull(),
+            errorCode = eq(ErrorCode.FLAG_NOT_FOUND.name),
+            errorMessage = eq("Flag not found")
+        )
+    }
+
+    @Test
+    fun `M track success evaluation W resolve() { successful resolution and trackEvaluations enabled }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.anAlphabeticalString()
+        val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeAllocationKey = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = fakeFlagValue,
+            variationKey = fakeVariationKey,
+            allocationKey = fakeAllocationKey,
+            reason = "STATIC",
+            doLog = true
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        val clientWithEvaluationTracking = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackEvaluations = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        val result = clientWithEvaluationTracking.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.reason).isEqualTo(ResolutionReason.STATIC)
+
+        // Verify success evaluation was tracked
+        verify(mockEvaluationsFeature).processEvaluation(
+            flagKey = eq(fakeFlagKey),
+            context = eq(fakeContext),
+            variantKey = eq(fakeVariationKey),
+            allocationKey = eq(fakeAllocationKey),
+            errorCode = isNull(),
+            errorMessage = isNull()
+        )
+    }
+
+    @Test
     fun `M track exposure W resolve() { successful resolution and trackExposures enabled }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
@@ -1163,7 +1265,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1268,7 +1371,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
@@ -1863,7 +1967,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 
@@ -1902,7 +2007,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
 

@@ -41,6 +41,9 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -147,6 +150,61 @@ internal class ANRDetectorRunnableTest {
             verify(mockHandler).post(capture())
             lastValue.run()
         }
+    }
+
+    @Test
+    fun `M not block callback W addError takes long time`() {
+        // Given
+        val callbackPosted = CountDownLatch(1)
+        val addErrorStarted = CountDownLatch(1)
+        val releaseAddError = CountDownLatch(1)
+        val callbackRef = AtomicReference<Runnable>()
+
+        whenever(mockHandler.post(any())) doAnswer {
+            callbackRef.set(it.getArgument(0))
+            callbackPosted.countDown()
+            true
+        }
+        whenever(
+            rumMonitor.mockInstance.addError(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ) doAnswer {
+            addErrorStarted.countDown()
+            releaseAddError.await(3, TimeUnit.SECONDS)
+            Unit
+        }
+
+        val detectorThread = Thread(testedRunnable)
+
+        // When
+        detectorThread.start()
+        assertThat(callbackPosted.await(1, TimeUnit.SECONDS)).isTrue()
+        assertThat(addErrorStarted.await(TEST_ANR_THRESHOLD_MS + 500, TimeUnit.MILLISECONDS)).isTrue()
+
+        val callback = checkNotNull(callbackRef.get())
+        val callbackStartNs = System.nanoTime()
+        callback.run()
+
+        // Then
+        val callbackDurationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - callbackStartNs)
+        assertThat(callbackDurationMs).isLessThan(100L)
+
+        releaseAddError.countDown()
+        testedRunnable.stop()
+        detectorThread.interrupt()
+        detectorThread.join(1_000)
+
+        verify(rumMonitor.mockInstance)
+            .addError(
+                eq(ANRDetectorRunnable.ANR_MESSAGE),
+                eq(RumErrorSource.SOURCE),
+                isA<ANRException>(),
+                any()
+            )
     }
 
     @Test

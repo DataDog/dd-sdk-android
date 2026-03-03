@@ -8,9 +8,14 @@ package com.datadog.android.flags.internal.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Request
 import okio.Buffer
@@ -23,28 +28,39 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
+    @Forgery
+    lateinit var fakeRumApplicationId: UUID
+
     private lateinit var testedFactory: PrecomputedAssignmentsRequestFactory
 
     @BeforeEach
-    fun `set up`() {
-        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger)
+    fun `set up`(forge: Forge) {
+        fakeDatadogContext = fakeDatadogContext.copy(
+            site = forge.aValueFrom(DatadogSite::class.java, exclude = listOf(DatadogSite.US1_FED)),
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
+        )
+
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)
     }
 
     // region create() - Success cases
 
     @Test
     fun `M create valid request W create() { all fields present }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -52,29 +68,24 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             targetingKey = fakeTargetingKey,
             attributes = mapOf("attr1" to "value1", "attr2" to "value2")
         )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv
+        fakeDatadogContext = fakeDatadogContext.copy(
+            site = DatadogSite.US1
         )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         // Then
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
         assertThat(request.method).isEqualTo("POST")
-        assertThat(request.header("dd-client-token")).isEqualTo(fakeClientToken)
-        assertThat(request.header("dd-application-id")).isEqualTo(fakeApplicationId)
+        assertThat(request.header("dd-client-token")).isEqualTo(fakeDatadogContext.clientToken)
+        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumApplicationId.toString())
         assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 
     @Test
     fun `M create valid request W create() { no application id }`(
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -82,46 +93,36 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             targetingKey = fakeTargetingKey,
             attributes = emptyMap()
         )
-        val flagsContext = FlagsContext(
-            applicationId = null,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext
+                .toMutableMap()
+                .apply { remove(Feature.RUM_FEATURE_NAME) }
         )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         // Then
         checkNotNull(request)
-        assertThat(request.header("dd-client-token")).isEqualTo(fakeClientToken)
+        assertThat(request.header("dd-client-token")).isEqualTo(fakeDatadogContext.clientToken)
         assertThat(request.header("dd-application-id")).isNull()
         assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 
     @Test
     fun `M use custom endpoint W create() { custom endpoint configured }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
         val fakeCustomEndpoint = "https://custom-proxy.example.com/flags/assignments"
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, fakeCustomEndpoint)
         val context = EvaluationContext(
             targetingKey = fakeTargetingKey,
             attributes = emptyMap()
         )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = fakeCustomEndpoint
-        )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
@@ -133,9 +134,6 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M create correct JSON body W create() { with attributes }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -147,15 +145,9 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
                 "age" to "25"
             )
         )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv
-        )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         // Then
         checkNotNull(request)
@@ -170,6 +162,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Validate attributes structure
         val attributes = data.getJSONObject("attributes")
         assertThat(attributes.has("env")).isTrue()
+        assertThat(attributes.has("source")).isTrue()
         assertThat(attributes.has("subject")).isTrue()
 
         // Validate subject
@@ -185,14 +178,16 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         // Validate env
         val env = attributes.getJSONObject("env")
-        assertThat(env.getString("dd_env")).isEqualTo(fakeEnv)
+        assertThat(env.getString("dd_env")).isEqualTo(fakeDatadogContext.env)
+
+        // Validate source
+        val source = attributes.getJSONObject("source")
+        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
+        assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
     }
 
     @Test
     fun `M create correct JSON body W create() { empty attributes }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -200,15 +195,9 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             targetingKey = fakeTargetingKey,
             attributes = emptyMap()
         )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv
-        )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         // Then
         checkNotNull(request)
@@ -226,9 +215,6 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M handle various attributes W create() { multiple string attributes }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -241,15 +227,9 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
                 "attr4" to "value4"
             )
         )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv
-        )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         // Then
         checkNotNull(request)
@@ -274,9 +254,6 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M return null W create() { unsupported site and no custom endpoint }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -284,15 +261,12 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             targetingKey = fakeTargetingKey,
             attributes = emptyMap()
         )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1_FED,
-            env = fakeEnv
+        fakeDatadogContext = fakeDatadogContext.copy(
+            site = DatadogSite.US1_FED
         )
 
         // When
-        val request = testedFactory.create(context, flagsContext)
+        val request = testedFactory.create(context, fakeDatadogContext)
 
         // Then
         assertThat(request).isNull()

@@ -34,6 +34,7 @@ import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.google.gson.JsonParser
 import java.net.MalformedURLException
 import java.net.URL
 import java.nio.ByteBuffer
@@ -257,11 +258,15 @@ internal class RumResourceScope(
         val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
         val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
 
+        val graphqlErrorsJson = resourceAttributes.remove(RumAttributes.GRAPHQL_ERRORS) as? String
+        val graphqlErrors = parseGraphQLErrors(graphqlErrorsJson)
+
         val graphql = resolveGraphQLAttributes(
             operationType = graphqlOperationType,
             operationName = graphqlOperationName,
             variables = graphqlVariables,
-            payload = graphqlPayload
+            payload = graphqlPayload,
+            errors = graphqlErrors
         )
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
@@ -271,7 +276,7 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             val duration = resolveResourceDuration(eventTime)
-            insightsCollector.onNetworkRequest(eventTimestamp, duration)
+            insightsCollector.onNetworkRequest(duration)
             ResourceEvent(
                 date = eventTimestamp,
                 resource = ResourceEvent.Resource(
@@ -341,7 +346,10 @@ internal class RumResourceScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture,
                     locales = datadogContext.deviceInfo.localeInfo.locales,
-                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                    logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
                 context = ResourceEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ResourceEvent.Dd(
@@ -502,7 +510,10 @@ internal class RumResourceScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                    totalRam = datadogContext.deviceInfo.totalRam,
+                    isLowRam = datadogContext.deviceInfo.isLowRam
                 ),
                 context = ErrorEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ErrorEvent.Dd(
@@ -554,18 +565,39 @@ internal class RumResourceScope(
         operationType: String?,
         operationName: String?,
         variables: String?,
-        payload: String?
+        payload: String?,
+        errors: List<ResourceEvent.Error>?
     ): ResourceEvent.Graphql? {
         operationType?.toOperationType(sdkCore.internalLogger)?.let {
             return ResourceEvent.Graphql(
                 operationType = it,
                 operationName = operationName,
                 variables = variables,
-                payload = payload
+                payload = payload,
+                errorCount = errors?.size?.toLong(),
+                errors = errors
             )
         }
 
         return null
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun parseGraphQLErrors(jsonString: String?): List<ResourceEvent.Error>? {
+        if (jsonString.isNullOrEmpty()) return null
+
+        return try {
+            val jsonArray = JsonParser.parseString(jsonString).asJsonArray
+            jsonArray.map { ResourceEvent.Error.fromJsonObject(it.asJsonObject) }
+        } catch (e: Exception) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Failed to parse GraphQL errors from attribute" },
+                e
+            )
+            null
+        }
     }
 
     @Suppress("ReturnCount", "SwallowedException")

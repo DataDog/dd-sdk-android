@@ -315,7 +315,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -388,7 +391,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -478,7 +484,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -556,7 +565,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -629,7 +641,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -725,7 +740,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -789,7 +807,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -844,7 +865,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -976,7 +1000,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1050,7 +1077,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1125,7 +1155,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1201,7 +1234,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1280,7 +1316,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1363,7 +1402,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1442,7 +1484,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1543,7 +1588,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1645,7 +1693,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1744,7 +1795,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1844,7 +1898,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1927,7 +1984,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2010,7 +2070,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2092,7 +2155,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2175,7 +2241,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2262,7 +2331,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2350,7 +2422,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2533,7 +2608,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2604,7 +2682,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2676,7 +2757,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2801,7 +2885,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2871,7 +2958,10 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
                         fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
-                        fakeDatadogContext.deviceInfo.architecture
+                        fakeDatadogContext.deviceInfo.architecture,
+                        fakeDatadogContext.deviceInfo.isLowRam,
+                        fakeDatadogContext.deviceInfo.logicalCpuCount,
+                        fakeDatadogContext.deviceInfo.totalRam
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -3400,6 +3490,184 @@ internal class RumResourceScopeTest {
         }
     }
 
+    @Test
+    fun `M use graphql errors W handleEvent { errors attribute present }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+        val errorsJson = """[{"message":"field not found","code":"VALIDATION_ERROR",""" +
+            """"locations":[{"line":2,"column":3}],"path":["user","name"]}]"""
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_VARIABLES to variables,
+                RumAttributes.GRAPHQL_ERRORS to errorsJson
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isEqualTo(1L)
+            val errors = checkNotNull(graphql.errors)
+            assertThat(errors).hasSize(1)
+            val error = errors[0]
+            assertThat(error.message).isEqualTo("field not found")
+            assertThat(error.code).isEqualTo("VALIDATION_ERROR")
+            val locations = checkNotNull(error.locations)
+            assertThat(locations).hasSize(1)
+            assertThat(locations[0].line).isEqualTo(2L)
+            assertThat(locations[0].column).isEqualTo(3L)
+            assertThat(error.path).hasSize(2)
+        }
+    }
+
+    @Test
+    fun `M use graphql errors with multiple errors W handleEvent`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val errorsJson = """[{"message":"error one"},{"message":"error two"}]"""
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_ERRORS to errorsJson
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isEqualTo(2L)
+            val errors = checkNotNull(graphql.errors)
+            assertThat(errors).hasSize(2)
+            assertThat(errors[0].message).isEqualTo("error one")
+            assertThat(errors[1].message).isEqualTo("error two")
+        }
+    }
+
+    @Test
+    fun `M ignore graphql errors W handleEvent { errors attribute is null }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
+            assertThat(graphql.errors).isNull()
+        }
+    }
+
+    @Test
+    fun `M ignore graphql errors W handleEvent { errors attribute is empty string }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_ERRORS to ""
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
+            assertThat(graphql.errors).isNull()
+        }
+    }
+
+    @Test
+    fun `M ignore graphql errors W handleEvent { errors attribute is invalid JSON }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_ERRORS to "not valid json"
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
+            assertThat(graphql.errors).isNull()
+        }
+    }
+
     // region write notification
 
     @Test
@@ -3594,7 +3862,7 @@ internal class RumResourceScopeTest {
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockInsightsCollector).onNetworkRequest(any(), any())
+        verify(mockInsightsCollector).onNetworkRequest(any())
     }
 
     // endregion

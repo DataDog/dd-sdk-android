@@ -25,7 +25,7 @@ internal class TracesRequestFactory(
         executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request? {
+    ): Request {
         val requestId = UUID.randomUUID().toString()
 
         val baseUrl = customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/spans")

@@ -7,6 +7,10 @@
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -15,8 +19,11 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreSubscription
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
@@ -32,7 +39,10 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -43,6 +53,7 @@ import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationsManagerTest {
 
@@ -64,6 +75,12 @@ internal class EvaluationsManagerTest {
     @Mock
     lateinit var mockFlagsStateManager: FlagsStateManager
 
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockFlagsFeatureScope: FeatureScope
+
     @StringForgery
     lateinit var fakeTargetingKey: String
 
@@ -72,6 +89,9 @@ internal class EvaluationsManagerTest {
 
     @StringForgery
     lateinit var fakeAttributeValue: String
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var evaluationsManager: EvaluationsManager
@@ -82,6 +102,7 @@ internal class EvaluationsManagerTest {
         mockWebServer.start()
 
         evaluationsManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
             executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
@@ -89,6 +110,13 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager
         )
+
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
+        whenever(
+            mockFlagsFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
+        ) doAnswer {
+            it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
+        }
 
         // Mock executor to run tasks synchronously for testing
         whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
@@ -140,7 +168,8 @@ internal class EvaluationsManagerTest {
             )
         )
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(mockResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(mockResponse)
         whenever(mockPrecomputeMapper.map(mockResponse)).thenReturn(expectedFlags)
 
         // When
@@ -164,7 +193,8 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(context)
@@ -196,7 +226,12 @@ internal class EvaluationsManagerTest {
         val context = publicContext
 
         val invalidResponse = "{ invalid json }"
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(invalidResponse)
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                context,
+                fakeDatadogContext
+            )
+        ).thenReturn(invalidResponse)
         whenever(mockPrecomputeMapper.map(invalidResponse)).thenReturn(emptyMap())
 
         // When
@@ -212,7 +247,8 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(context)
@@ -240,7 +276,8 @@ internal class EvaluationsManagerTest {
         val mockResponse = "{}"
         val expectedFlags = mapOf<String, PrecomputedFlag>()
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(mockResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(mockResponse)
         whenever(mockPrecomputeMapper.map(mockResponse)).thenReturn(expectedFlags)
 
         // When
@@ -259,7 +296,8 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext)
@@ -267,7 +305,7 @@ internal class EvaluationsManagerTest {
         // Then
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
-            verify(mockFlagsStateManager).updateState(org.mockito.kotlin.argThat { this is FlagsClientState.Error })
+            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
         }
     }
 
@@ -277,7 +315,8 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext)
@@ -297,7 +336,8 @@ internal class EvaluationsManagerTest {
         val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(jsonResponse)
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
 
         // When
@@ -314,7 +354,8 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
@@ -333,7 +374,8 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
@@ -352,7 +394,8 @@ internal class EvaluationsManagerTest {
         val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(jsonResponse)
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
 
         // When/Then - should not throw
@@ -367,6 +410,7 @@ internal class EvaluationsManagerTest {
         )
 
         val evaluationsManagerWithRealState = EvaluationsManager(
+            sdkCore = mockSdkCore,
             executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
@@ -391,7 +435,8 @@ internal class EvaluationsManagerTest {
             }
         }
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext)).thenReturn(jsonResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+            .thenReturn(jsonResponse)
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(flagsMap)
 
         // When

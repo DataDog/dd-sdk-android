@@ -219,8 +219,12 @@ internal class DatadogRumMonitorTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    private var eventTimeMs: Long = 0L
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        eventTimeMs = forge.aLong(min = 0L)
+
         whenever(mockExecutorService.execute(any<Runnable>())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
@@ -231,8 +235,11 @@ internal class DatadogRumMonitorTest {
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mock()
+        whenever(mockSdkCore.timeProvider.getDeviceTimestampMillis()) doReturn eventTimeMs
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
-        whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
+        whenever(
+            mockSlowFramesListener.resolveReport(any(), any(), any())
+        ) doReturn fakeViewUIPerformanceReport.snapshot()
         whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
@@ -346,6 +353,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StartView
             assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -463,6 +471,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StopView
             assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -489,6 +498,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -515,6 +525,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isTrue
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -540,6 +551,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -567,6 +579,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.method).isEqualTo(method)
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -596,6 +609,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -623,6 +637,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -661,6 +676,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -702,6 +718,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stackTrace).isEqualTo(stackTrace)
             assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -732,6 +749,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -759,6 +777,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.method).isEqualTo(method)
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -788,6 +807,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -815,6 +835,8 @@ internal class DatadogRumMonitorTest {
             assertThat(event.kind).isEqualTo(kind)
             assertThat(event.size).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -853,6 +875,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -894,6 +917,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stackTrace).isEqualTo(stackTrace)
             assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -924,6 +948,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -955,6 +980,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -986,6 +1012,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1160,6 +1187,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isEqualTo(event.eventTime.nanoTime - appStartTimeNs)
             assertThat(event.attributes).isEmpty()
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1486,6 +1514,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.threads).isEqualTo(allThreads)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1583,6 +1612,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1621,6 +1651,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1672,6 +1703,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -1959,65 +1991,6 @@ internal class DatadogRumMonitorTest {
             assertThat(event.featureFlags).isSameAs(batch)
         }
         verifyNoMoreInteractions(mockWriter)
-    }
-
-    @Test
-    fun `sends keep alive event to rootScope regularly`() {
-        argumentCaptor<Runnable> {
-            inOrder(mockApplicationScope, mockWriter, mockHandler) {
-                verify(mockHandler).postDelayed(capture(), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verifyNoInteractions(mockApplicationScope)
-                val runnable = firstValue
-                runnable.run()
-                verify(mockHandler).removeCallbacks(same(runnable))
-                verify(mockApplicationScope).handleEvent(
-                    argThat { this is RumRawEvent.KeepAlive },
-                    same(fakeDatadogContext),
-                    same(mockEventWriteScope),
-                    same(mockWriter)
-                )
-                verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verify(mockApplicationScope).activeSession
-                verify(mockApplicationScope).getRumContext()
-                verifyNoMoreInteractions()
-            }
-        }
-    }
-
-    @Test
-    fun `delays keep alive runnable on other event`() {
-        val mockEvent: RumRawEvent = mock()
-        val runnable = testedMonitor.keepAliveRunnable
-
-        testedMonitor.handleEvent(mockEvent)
-
-        argumentCaptor<Runnable> {
-            inOrder(mockApplicationScope, mockWriter, mockHandler) {
-                verify(mockHandler).removeCallbacks(same(runnable))
-                verify(mockApplicationScope).handleEvent(
-                    same(mockEvent),
-                    same(fakeDatadogContext),
-                    same(mockEventWriteScope),
-                    same(mockWriter)
-                )
-                verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
-                verify(mockApplicationScope).activeSession
-                verify(mockApplicationScope).getRumContext()
-                verifyNoMoreInteractions()
-            }
-        }
-    }
-
-    @Test
-    fun `removes callback from handler on stopKeepAliveCallback`() {
-        // When
-        testedMonitor.stopKeepAliveCallback()
-
-        // Then
-        // initial post
-        verify(mockHandler).postDelayed(any(), any())
-        verify(mockHandler).removeCallbacks(same(testedMonitor.keepAliveRunnable))
-        verifyNoMoreInteractions(mockHandler, mockWriter, mockApplicationScope)
     }
 
     @Test

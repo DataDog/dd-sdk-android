@@ -67,7 +67,7 @@ internal class ComposeNavigationObserver(
             arguments.convertToRumViewAttributes().toMutableMap()
         } else {
             mutableMapOf()
-        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.COMPOSE)
+        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.Native.COMPOSE)
 
         rumMonitor.startView(key = route, name = viewName, attributes = attributes)
     }

@@ -6,8 +6,9 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.rum.internal.net.RumResourceInstrumentation.Companion.buildResourceId
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation.Companion.buildResourceId
+import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
@@ -27,6 +29,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.io.IOException
+import java.util.concurrent.Executor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -36,7 +39,7 @@ import java.io.IOException
 @ForgeConfiguration(Configurator::class)
 internal class CronetRequestResourceIdentifierTest {
 
-    @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")
+    @StringForgery(regex = URL_FORGERY_PATTERN)
     private lateinit var fakeUrl: String
 
     @StringForgery(regex = "x-[a-z]+/[a-z]+")
@@ -44,6 +47,15 @@ internal class CronetRequestResourceIdentifierTest {
 
     @StringForgery
     private lateinit var fakeBody: String
+
+    @Mock
+    lateinit var mockEngine: DatadogCronetEngine
+
+    @Mock
+    lateinit var mockCallback: CronetRequestCallback
+
+    @Mock
+    lateinit var mockExecutor: Executor
 
     private var fakeContentLength: Long = 0L
 
@@ -81,7 +93,7 @@ internal class CronetRequestResourceIdentifierTest {
     }
 
     @Test
-    fun `M return {method rul contentLength contentType} W uniqueId {POST request with content length and type}`() {
+    fun `M return {method url contentLength contentType} W uniqueId {POST request with content length and type}`() {
         // Given
         val request = newRequestInfo(
             method = HttpSpec.Method.POST,
@@ -215,13 +227,20 @@ internal class CronetRequestResourceIdentifierTest {
         method: String
     ) {
         // Given
-        val request = CronetHttpRequestInfo(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
-            method = method,
-            headers = mapOf(HttpSpec.Headers.CONTENT_TYPE to listOf(fakeContentType)),
-            uploadDataProvider = mock<UploadDataProvider> { on { length } doThrow IOException("") },
-            annotations = emptyList()
+            engine = mockEngine,
+            requestCallback = mockCallback,
+            executor = mockExecutor
+        ).apply { setHttpMethod(method) }
+
+        requestContext.addHeader(HttpSpec.Header.CONTENT_TYPE, fakeContentType)
+        requestContext.setUploadDataProvider(
+            mock<UploadDataProvider> { on { length } doThrow IOException("") },
+            mockExecutor
         )
+
+        val request = requestContext.asCronetRequestInfo()
 
         // When
         val actual = request.uniqueId
@@ -235,17 +254,23 @@ internal class CronetRequestResourceIdentifierTest {
         url: String = fakeUrl,
         method: String = HttpSpec.Method.GET,
         contentLength: Long? = null,
-        contentType: String? = null,
-        annotations: List<Any> = emptyList()
-    ) = CronetHttpRequestInfo(
-        url = url,
-        method = method,
-        headers = contentType?.let { mapOf(HttpSpec.Headers.CONTENT_TYPE to listOf(it)) } ?: emptyMap(),
-        uploadDataProvider = contentLength?.let {
-            mock<UploadDataProvider> { on { length } doReturn contentLength }
-        },
-        annotations = annotations
-    )
+        contentType: String? = null
+    ): CronetHttpRequestInfo {
+        val requestContext = CronetRequestContext(
+            url = url,
+            engine = mockEngine,
+            requestCallback = mockCallback,
+            executor = mockExecutor
+        ).apply { setHttpMethod(method) }
+        contentType?.let { requestContext.addHeader(HttpSpec.Header.CONTENT_TYPE, it) }
+        contentLength?.let {
+            requestContext.setUploadDataProvider(
+                mock<UploadDataProvider> { on { length } doReturn contentLength },
+                mockExecutor
+            )
+        }
+        return requestContext.asCronetRequestInfo()
+    }
 
     private val CronetHttpRequestInfo.uniqueId: String
         get() = buildResourceId(this, false).key

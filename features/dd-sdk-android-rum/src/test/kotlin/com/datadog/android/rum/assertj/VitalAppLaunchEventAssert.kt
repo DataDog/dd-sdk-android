@@ -97,34 +97,26 @@ internal class VitalAppLaunchEventAssert(
             .isEqualTo(hasReplay)
     }
 
-    fun hasNullView() = apply {
-        assertThat(actual.view)
+    fun hasViewId(expectedId: String) = apply {
+        assertThat(actual.view.id)
             .overridingErrorMessage(
-                "Expected event data to have view equal to null"
-            )
-            .isNull()
-    }
-
-    fun hasViewId(expectedId: String?) = apply {
-        assertThat(actual.view?.id)
-            .overridingErrorMessage(
-                "Expected event data to have view.id $expectedId but was ${actual.view?.id}"
+                "Expected event data to have view.id $expectedId but was ${actual.view.id}"
             )
             .isEqualTo(expectedId)
     }
 
     fun hasName(expected: String?) = apply {
-        assertThat(actual.view?.name)
+        assertThat(actual.view.name)
             .overridingErrorMessage(
-                "Expected event data to have view.name $expected but was ${actual.view?.name}"
+                "Expected event data to have view.name $expected but was ${actual.view.name}"
             )
             .isEqualTo(expected)
     }
 
-    fun hasUrl(expected: String?) = apply {
-        assertThat(actual.view?.url)
+    fun hasUrl(expected: String) = apply {
+        assertThat(actual.view.url)
             .overridingErrorMessage(
-                "Expected event data to have view.url $expected but was ${actual.view?.url}"
+                "Expected event data to have view.url $expected but was ${actual.view.url}"
             )
             .isEqualTo(expected)
     }
@@ -218,7 +210,10 @@ internal class VitalAppLaunchEventAssert(
         model: String,
         brand: String,
         type: VitalAppLaunchEvent.DeviceType,
-        architecture: String
+        architecture: String,
+        isLowRam: Boolean?,
+        logicalCpuCount: Number?,
+        totalRam: Number?
     ) = apply {
         assertThat(actual.device?.name)
             .overridingErrorMessage(
@@ -246,6 +241,21 @@ internal class VitalAppLaunchEventAssert(
                     " but was ${actual.device?.architecture}"
             )
             .isEqualTo(architecture)
+        assertThat(actual.device?.isLowRam)
+            .overridingErrorMessage(
+                "Expected event data to have device.isLowRam $isLowRam" +
+                    " but was ${actual.device?.isLowRam}"
+            ).isEqualTo(isLowRam)
+        assertThat(actual.device?.logicalCpuCount)
+            .overridingErrorMessage(
+                "Expected event data to have device.logicalCpuCount $logicalCpuCount" +
+                    " but was ${actual.device?.logicalCpuCount}"
+            ).isEqualTo(logicalCpuCount)
+        assertThat(actual.device?.totalRam)
+            .overridingErrorMessage(
+                "Expected event data to have device.totalRam $totalRam" +
+                    " but was ${actual.device?.totalRam}"
+            ).isEqualTo(totalRam)
     }
 
     fun hasOsInfo(

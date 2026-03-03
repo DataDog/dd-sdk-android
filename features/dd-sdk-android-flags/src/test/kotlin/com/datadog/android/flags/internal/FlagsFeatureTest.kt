@@ -9,13 +9,11 @@ package com.datadog.android.flags.internal
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -75,35 +73,7 @@ internal class FlagsFeatureTest {
         )
     }
 
-    // region onContextUpdate
-
-    @Test
-    fun `M update applicationId W onContextUpdate { rum feature with non-null application_id }`(forge: Forge) {
-        // Given
-        val fakeContext = mapOf(
-            "application_id" to fakeApplicationId,
-            "other_key" to forge.anAlphabeticalString()
-        )
-
-        // When
-        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
-
-        // Then
-        assertThat(testedFeature.applicationId).isEqualTo(fakeApplicationId)
-    }
-
-    // endregion
-
     // region Lifecycle Methods
-
-    @Test
-    fun `M set context update receiver W onInitialize`() {
-        // When
-        testedFeature.onInitialize(mockContext)
-
-        // Then
-        verify(mockSdkCore).setContextUpdateReceiver(testedFeature)
-    }
 
     @Test
     fun `M initialize processor and dataWriter W onInitialize`() {
@@ -127,15 +97,6 @@ internal class FlagsFeatureTest {
         assertThat(
             testedFeature.precomputedRequestFactory
         ).isNotNull()
-    }
-
-    @Test
-    fun `M remove context update receiver W onStop`() {
-        // When
-        testedFeature.onStop()
-
-        // Then
-        verify(mockSdkCore).removeContextUpdateReceiver(testedFeature)
     }
 
     @Test

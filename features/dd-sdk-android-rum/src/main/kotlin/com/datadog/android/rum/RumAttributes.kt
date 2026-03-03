@@ -79,6 +79,27 @@ object RumAttributes {
      */
     internal const val INTERNAL_ALL_THREADS: String = "_dd.error.threads"
 
+    /**
+     * Overrides the default view instrumentation type with a custom one.
+     * Used by cross-platform SDKs (Flutter, React Native, Unity, etc.) to report
+     * their specific navigation patterns in telemetry.
+     *
+     * Accepts any non-empty string value. If not provided or empty, defaults to "manual".
+     * Takes precedence over native instrumentation types (Activity, Fragment, Compose).
+     *
+     * Example:
+     * ```kotlin
+     * rumMonitor.startView(
+     *     key = "HomeScreen",
+     *     name = "Home",
+     *     attributes = mapOf(
+     *         RumAttributes.INTERNAL_INSTRUMENTATION_TYPE to "cross_platform_navigator"
+     *     )
+     * )
+     * ```
+     */
+    const val INTERNAL_INSTRUMENTATION_TYPE: String = "_dd.instrumentation_type"
+
     // endregion
 
     // region Resource
@@ -125,6 +146,12 @@ object RumAttributes {
      * JSON representation of GraphQL variables (String).
      */
     const val GRAPHQL_VARIABLES: String = "_dd.graphql.variables"
+
+    /**
+     * JSON representation of GraphQL errors from the response (String).
+     * Expects a JSON array of error objects, each with at least a "message" field.
+     */
+    const val GRAPHQL_ERRORS: String = "_dd.graphql.errors"
 
     // endregion
 

@@ -9,9 +9,12 @@ package com.datadog.android.flags
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -28,6 +31,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -71,18 +75,62 @@ internal class FlagsTest {
     // region enable()
 
     @Test
-    fun `M register FlagsFeature W enable()`() {
+    fun `M register FlagsFeature and EvaluationsFeature W enable() { standard configuration }`() {
         // Given
-        val config = FlagsConfiguration.Builder().trackExposures(false).build()
+        val configuration = FlagsConfiguration.Builder().build()
+
+        // When
+        Flags.enable(configuration, mockSdkCore)
+
+        // Then - both Flags and Evaluations features registered
+        val featureCaptor = argumentCaptor<Feature>()
+        verify(mockSdkCore, times(2)).registerFeature(featureCaptor.capture())
+
+        val registeredFeatures = featureCaptor.allValues
+        assertThat(registeredFeatures).hasSize(2)
+        assertThat(registeredFeatures.map { it.name }).containsExactly(
+            FLAGS_EVALUATIONS_FEATURE_NAME,
+            FLAGS_FEATURE_NAME
+        )
+    }
+
+    @Test
+    fun `M register only FlagsFeature W enable() { trackEvaluations disabled }`() {
+        // Given
+        val config = FlagsConfiguration.Builder()
+            .trackEvaluations(false)
+            .build()
 
         // When
         Flags.enable(config, mockSdkCore)
 
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-        }
+        // Then - only FLAGS feature registered (not evaluations)
+        val featureCaptor = argumentCaptor<Feature>()
+        verify(mockSdkCore, times(1)).registerFeature(featureCaptor.capture())
+
+        assertThat(featureCaptor.firstValue.name).isEqualTo(FLAGS_FEATURE_NAME)
+    }
+
+    @Test
+    fun `M register only FlagsFeature W enable() { trackEvaluations enabled }`() {
+        // Given
+        val config = FlagsConfiguration.Builder()
+            .trackEvaluations(true)
+            .build()
+
+        // When
+        Flags.enable(config, mockSdkCore)
+
+        // Then - both Flags and Evaluations features registered
+        val featureCaptor = argumentCaptor<Feature>()
+        verify(mockSdkCore, times(2)).registerFeature(featureCaptor.capture())
+
+        val registeredFeatures = featureCaptor.allValues
+        assertThat(registeredFeatures).hasSize(2)
+        assertThat(registeredFeatures.map { it.name }).containsExactly(
+            FLAGS_EVALUATIONS_FEATURE_NAME,
+            FLAGS_FEATURE_NAME
+        )
     }
 
     @Test
@@ -93,26 +141,6 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.trackExposures).isTrue()
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration).isEqualTo(FlagsConfiguration.default)
-        }
-    }
-
-    @Test
-    fun `M pass default configuration to FlagsFeature W enable() { default config }`() {
-        // Given
-        val defaultConfiguration = FlagsConfiguration.default
-
-        // When
-        Flags.enable(defaultConfiguration, mockSdkCore)
-
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.trackExposures).isTrue()
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
             assertThat(lastValue.flagsConfiguration).isEqualTo(FlagsConfiguration.default)
         }
     }
@@ -120,24 +148,37 @@ internal class FlagsTest {
     @Test
     fun `M pass configuration to FlagsFeature W enable() { with custom config }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEvaluationEndpoint: String
+
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeCustomEndpoint)
             .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
+            .useCustomEvaluationEndpoint(fakeCustomEvaluationEndpoint)
+            .trackEvaluations(true)
             .build()
 
         // When
         Flags.enable(fakeConfiguration, mockSdkCore)
 
         // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
-        }
+        val featureCaptor = argumentCaptor<Feature>()
+        verify(mockSdkCore, times(2)).registerFeature(featureCaptor.capture())
+
+        val registeredFeatures = featureCaptor.allValues
+        assertThat(registeredFeatures).hasSize(2)
+        assertThat(registeredFeatures.map { it.name }).containsExactly(
+            FLAGS_EVALUATIONS_FEATURE_NAME,
+            FLAGS_FEATURE_NAME
+        )
+
+        // Verify both features receive the same configuration
+        val evaluationsFeature = registeredFeatures.first() as EvaluationsFeature
+        val flagsFeature = registeredFeatures.last() as FlagsFeature
+        assertThat(evaluationsFeature.flagsConfiguration).isEqualTo(fakeConfiguration)
+        assertThat(flagsFeature.flagsConfiguration).isEqualTo(fakeConfiguration)
     }
 
     // endregion

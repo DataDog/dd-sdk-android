@@ -15,6 +15,8 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * A Runnable running on a background thread detecting ANR on the main thread.
@@ -28,55 +30,27 @@ internal class ANRDetectorRunnable(
     private val anrTestDelayMs: Long = ANR_TEST_DELAY_MS
 ) : Runnable {
 
+    @Volatile
     private var shouldStop = false
 
     // region Runnable
 
     override fun run() {
-        while (!Thread.interrupted()) {
+        while (!Thread.currentThread().isInterrupted) {
             if (shouldStop) return
 
             try {
-                val callback = CallbackRunnable()
+                @Suppress("UnsafeThirdPartyFunctionCall") // argument is positive
+                val callbackDone = CountDownLatch(1)
+                val callback = CallbackRunnable(callbackDone)
+                if (!handler.post(callback)) {
+                    // callback can't be posted, usually means that the looper is exiting
+                    return
+                }
 
-                // Synchronization is required to use `wait`
-                synchronized(callback) {
-                    if (!handler.post(callback)) {
-                        // callback can't be posted, usually means that the looper is exiting
-                        return
-                    }
-                    callback.wait(anrThresholdMs)
-
-                    if (!callback.wasCalled()) {
-                        val anrThread = handler.looper.thread
-                        val anrException = ANRException(anrThread)
-                        val allThreads = mutableListOf(
-                            ThreadDump(
-                                name = anrThread.name,
-                                state = anrThread.state.asString(),
-                                stack = anrException.loggableStackTrace(),
-                                crashed = false
-                            )
-                        ) + safeGetAllStacktraces()
-                            .filterKeys { it != anrThread }
-                            .filterValues { it.isNotEmpty() }
-                            .map {
-                                val thread = it.key
-                                ThreadDump(
-                                    name = thread.name,
-                                    state = thread.state.asString(),
-                                    stack = thread.stackTrace.loggableStackTrace(),
-                                    crashed = false
-                                )
-                            }
-                        GlobalRumMonitor.get(sdkCore).addError(
-                            ANR_MESSAGE,
-                            RumErrorSource.SOURCE,
-                            anrException,
-                            mapOf(RumAttributes.INTERNAL_ALL_THREADS to allThreads)
-                        )
-                        callback.wait()
-                    }
+                if (!callbackDone.await(anrThresholdMs, TimeUnit.MILLISECONDS)) {
+                    reportAnr()
+                    waitForAnrResolution(callbackDone)
                 }
 
                 if (anrTestDelayMs > 0) {
@@ -84,6 +58,10 @@ internal class ANRDetectorRunnable(
                     Thread.sleep(anrTestDelayMs)
                 }
             } catch (e: InterruptedException) {
+                // If SecurityException is thrown, let it propagate and kill this thread
+                // New one will be created on executor
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                Thread.currentThread().interrupt()
                 break
             }
         }
@@ -93,6 +71,59 @@ internal class ANRDetectorRunnable(
 
     fun stop() {
         shouldStop = true
+    }
+
+    private fun reportAnr() {
+        val anrThread = handler.looper.thread
+        val anrException = ANRException(anrThread)
+        val allThreads = mutableListOf(
+            ThreadDump(
+                name = anrThread.name,
+                state = anrThread.state.asString(),
+                stack = anrException.loggableStackTrace(),
+                crashed = false
+            )
+        ) + safeGetAllStacktraces()
+            .filterKeys { it != anrThread }
+            .filterValues { it.isNotEmpty() }
+            .map {
+                val thread = it.key
+                ThreadDump(
+                    name = thread.name,
+                    state = thread.state.asString(),
+                    stack = thread.stackTrace.loggableStackTrace(),
+                    crashed = false
+                )
+            }
+        GlobalRumMonitor.get(sdkCore).addError(
+            ANR_MESSAGE,
+            RumErrorSource.SOURCE,
+            anrException,
+            mapOf(RumAttributes.INTERNAL_ALL_THREADS to allThreads)
+        )
+    }
+
+    private fun waitForAnrResolution(callbackDone: CountDownLatch) {
+        try {
+            callbackDone.await()
+        } catch (ie: InterruptedException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Interrupted while waiting for ANR resolution." },
+                ie
+            )
+            try {
+                Thread.currentThread().interrupt()
+            } catch (se: SecurityException) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Failed to restore interrupted state during ANR resolution." },
+                    se
+                )
+            }
+        }
     }
 
     private fun safeGetAllStacktraces(): Map<Thread, Array<StackTraceElement>> {
@@ -110,21 +141,12 @@ internal class ANRDetectorRunnable(
         }
     }
 
-    // We need to let this class extend java's Object
-    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-    internal class CallbackRunnable : Object(), Runnable {
+    internal class CallbackRunnable(
+        private val callbackDone: CountDownLatch
+    ) : Runnable {
 
-        private var called = false
-
-        // Synchronization is required to use `wait`
-        @Synchronized
         override fun run() {
-            called = true
-            notifyAll()
-        }
-
-        fun wasCalled(): Boolean {
-            return called
+            callbackDone.countDown()
         }
     }
 

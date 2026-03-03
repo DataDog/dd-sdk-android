@@ -11,10 +11,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.propagation.DatadogPropagation
@@ -1230,6 +1230,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         // need this setup, otherwise #intercept actually throws NPE, which pollutes the log
         val localSpanBuilder: DatadogSpanBuilder = mock()
         val localSpan: DatadogSpan = mock()
+        whenever(localSpanBuilder.withOrigin(anyOrNull())) doReturn localSpanBuilder
         whenever(localSpanBuilder.withParentContext(null)) doReturn localSpanBuilder
         whenever(localSpanBuilder.start()) doReturn localSpan
         whenever(localSpan.context()) doReturn mockSpanContext

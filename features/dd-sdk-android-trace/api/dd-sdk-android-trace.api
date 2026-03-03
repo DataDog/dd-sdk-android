@@ -1,7 +1,40 @@
+public final class com/datadog/android/trace/ApmNetworkInstrumentationConfiguration {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;)V
+	public final fun copy ()Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun getTraceOrigin ()Ljava/lang/String;
+	public final fun isHeaderPropagationOnly ()Z
+	public final fun set404ResourcesRedacted (Z)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setHeaderPropagationOnly ()Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceContextInjection (Lcom/datadog/android/trace/TraceContextInjection;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceOrigin (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceSampleRate (F)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceScope (Lcom/datadog/android/trace/ApmNetworkTracingScope;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTracedRequestListener (Lcom/datadog/android/trace/NetworkTracedRequestListener;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+}
+
+public final class com/datadog/android/trace/ApmNetworkTracingScope : java/lang/Enum {
+	public static final field ALL Lcom/datadog/android/trace/ApmNetworkTracingScope;
+	public static final field EXCLUDE_INTERNAL_REDIRECTS Lcom/datadog/android/trace/ApmNetworkTracingScope;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkTracingScope;
+	public static fun values ()[Lcom/datadog/android/trace/ApmNetworkTracingScope;
+}
+
 public final class com/datadog/android/trace/DatadogTracing {
 	public static final field INSTANCE Lcom/datadog/android/trace/DatadogTracing;
 	public static final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+}
+
+public class com/datadog/android/trace/DeterministicTraceSampler : com/datadog/android/core/sampling/DeterministicSampler {
+	public fun <init> (D)V
+	public fun <init> (F)V
+	public fun <init> (Lkotlin/jvm/functions/Function0;)V
+}
+
+public abstract interface annotation class com/datadog/android/trace/ExperimentalTraceApi : java/lang/annotation/Annotation {
 }
 
 public final class com/datadog/android/trace/GlobalDatadogTracer {
@@ -14,6 +47,10 @@ public final class com/datadog/android/trace/GlobalDatadogTracer {
 
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
 	public abstract fun getCoreTracerWriter ()Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
+}
+
+public abstract interface class com/datadog/android/trace/NetworkTracedRequestListener {
+	public abstract fun onRequestIntercepted (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;Ljava/lang/Throwable;)V
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
@@ -44,13 +81,43 @@ public final class com/datadog/android/trace/TraceConfiguration$Builder {
 	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/trace/TraceConfiguration$Builder;
 }
 
+public final class com/datadog/android/trace/TraceContextInjection : java/lang/Enum {
+	public static final field ALL Lcom/datadog/android/trace/TraceContextInjection;
+	public static final field SAMPLED Lcom/datadog/android/trace/TraceContextInjection;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/TraceContextInjection;
+	public static fun values ()[Lcom/datadog/android/trace/TraceContextInjection;
+}
+
 public abstract interface class com/datadog/android/trace/event/SpanEventMapper : com/datadog/android/event/EventMapper {
 	public abstract fun map (Lcom/datadog/android/trace/model/SpanEvent;)Lcom/datadog/android/trace/model/SpanEvent;
 }
 
+public final class com/datadog/android/trace/internal/ApmNetworkInstrumentation {
+	public final fun getLocalHeaderTypes ()Ljava/util/Set;
+	public final fun getNetworkTracingScope ()Lcom/datadog/android/trace/ApmNetworkTracingScope;
+	public final fun getSampleRate ()Ljava/lang/Float;
+	public final fun getSdkCoreReference ()Lcom/datadog/android/core/SdkReference;
+	public final fun getTraceOrigin ()Ljava/lang/String;
+	public final fun onRequest (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Lcom/datadog/android/trace/internal/net/RequestTracingState;
+	public final fun onResponseFailed (Lcom/datadog/android/trace/internal/net/RequestTracingState;Ljava/lang/Throwable;)V
+	public final fun onResponseSucceeded (Lcom/datadog/android/trace/internal/net/RequestTracingState;Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)V
+	public final fun removeTracingHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;)V
+	public final fun reportInstrumentationError (Lkotlin/jvm/functions/Function0;)V
+}
+
 public final class com/datadog/android/trace/internal/DatadogPropagationHelper {
+	public static final field Companion Lcom/datadog/android/trace/internal/DatadogPropagationHelper$Companion;
 	public final fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public final fun extractParentContext (Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public final fun extractSamplingDecision (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Ljava/lang/Boolean;
 	public final fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+	public final fun propagateNotSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Set;Lcom/datadog/android/trace/TraceContextInjection;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public final fun propagateSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Set;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public final fun removeAllTracingHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public final fun setTraceContext (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Ljava/lang/String;Ljava/lang/String;I)V
+}
+
+public final class com/datadog/android/trace/internal/DatadogPropagationHelper$Companion {
 }
 
 public final class com/datadog/android/trace/internal/DatadogSpanIdConverter {
@@ -67,6 +134,7 @@ public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
 	public static final field spanIdConverter Lcom/datadog/android/trace/internal/DatadogSpanIdConverter;
 	public static final fun activateSpan (Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Z)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public static final fun addThrowable (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Throwable;B)V
+	public final fun createApmNetworkInstrumentation (Ljava/lang/String;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;)Lcom/datadog/android/trace/internal/ApmNetworkInstrumentation;
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
 	public final fun mergeBaggage (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public final fun setSdkV2Compatible (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
@@ -82,6 +150,44 @@ public final class com/datadog/android/trace/internal/RumContextPropagator {
 public final class com/datadog/android/trace/internal/RumContextPropagator$Companion {
 	public final fun extractRumContext (Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;Z)Lcom/datadog/android/trace/api/span/DatadogSpan;
 	public static synthetic fun extractRumContext$default (Lcom/datadog/android/trace/internal/RumContextPropagator$Companion;Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;ZILjava/lang/Object;)Lcom/datadog/android/trace/api/span/DatadogSpan;
+}
+
+public final class com/datadog/android/trace/internal/net/RequestTracingState {
+	public fun <init> (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;)V
+	public synthetic fun <init> (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public final fun component2 ()Z
+	public final fun component3 ()Lcom/datadog/android/trace/api/span/DatadogSpan;
+	public final fun component4 ()Ljava/lang/Float;
+	public final fun copy (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;)Lcom/datadog/android/trace/internal/net/RequestTracingState;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/internal/net/RequestTracingState;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;ILjava/lang/Object;)Lcom/datadog/android/trace/internal/net/RequestTracingState;
+	public final fun createModifiedRequestInfo ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSampleRate ()Ljava/lang/Float;
+	public final fun getSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
+	public final fun getTracedRequestInfoBuilder ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+	public fun hashCode ()I
+	public final fun isSampled ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/trace/internal/net/RequestTracingStateKt {
+	public static final fun toAttributesMap (Lcom/datadog/android/trace/internal/net/RequestTracingState;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;
+}
+
+public final class com/datadog/android/trace/internal/net/TraceContext {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()I
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/internal/net/TraceContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/internal/net/TraceContext;Ljava/lang/String;Ljava/lang/String;IILjava/lang/Object;)Lcom/datadog/android/trace/internal/net/TraceContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSamplingPriority ()I
+	public final fun getSpanId ()Ljava/lang/String;
+	public final fun getTraceId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/trace/model/SpanEvent {
@@ -237,11 +343,14 @@ public final class com/datadog/android/trace/model/SpanEvent$Dd$Companion {
 public final class com/datadog/android/trace/model/SpanEvent$Device {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Device$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;)V
-	public synthetic fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/trace/model/SpanEvent$Type;
 	public final fun component10 ()Ljava/lang/Boolean;
 	public final fun component11 ()Ljava/lang/Number;
+	public final fun component12 ()Ljava/lang/Number;
+	public final fun component13 ()Ljava/lang/Number;
+	public final fun component14 ()Ljava/lang/Boolean;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
@@ -250,8 +359,8 @@ public final class com/datadog/android/trace/model/SpanEvent$Device {
 	public final fun component7 ()Ljava/util/List;
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Ljava/lang/Number;
-	public final fun copy (Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;)Lcom/datadog/android/trace/model/SpanEvent$Device;
-	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Device;
+	public final fun copy (Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;)Lcom/datadog/android/trace/model/SpanEvent$Device;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Type;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Device;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Device;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent$Device;
@@ -261,12 +370,15 @@ public final class com/datadog/android/trace/model/SpanEvent$Device {
 	public final fun getBrightnessLevel ()Ljava/lang/Number;
 	public final fun getLocale ()Ljava/lang/String;
 	public final fun getLocales ()Ljava/util/List;
+	public final fun getLogicalCpuCount ()Ljava/lang/Number;
 	public final fun getModel ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getPowerSavingMode ()Ljava/lang/Boolean;
 	public final fun getTimeZone ()Ljava/lang/String;
+	public final fun getTotalRam ()Ljava/lang/Number;
 	public final fun getType ()Lcom/datadog/android/trace/model/SpanEvent$Type;
 	public fun hashCode ()I
+	public final fun isLowRam ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }

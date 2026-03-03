@@ -46,7 +46,10 @@ class VitalAppLaunchEventForgeryFactory : ForgeryFactory<VitalAppLaunchEvent> {
                     model = forge.aString(),
                     brand = forge.aString(),
                     type = forge.aValueFrom(VitalAppLaunchEvent.DeviceType::class.java),
-                    architecture = forge.aString()
+                    architecture = forge.aString(),
+                    isLowRam = forge.aNullable { aBool() },
+                    logicalCpuCount = forge.aNullable { anInt() },
+                    totalRam = forge.aNullable { anInt() }
                 )
             },
             context = forge.aNullable {
@@ -59,14 +62,12 @@ class VitalAppLaunchEventForgeryFactory : ForgeryFactory<VitalAppLaunchEvent> {
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             ),
             ddtags = forge.aNullable { ddTagsString() },
-            view = forge.aNullable {
-                VitalAppLaunchEvent.VitalAppLaunchEventView(
-                    id = forge.getForgery<UUID>().toString(),
-                    referrer = forge.aNullable { getForgery<URL>().toString() },
-                    url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
-                    name = forge.aNullable { anAlphabeticalString() }
-                )
-            },
+            view = VitalAppLaunchEvent.VitalAppLaunchEventView(
+                id = forge.getForgery<UUID>().toString(),
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                name = forge.aNullable { anAlphabeticalString() }
+            ),
             vital = VitalAppLaunchEvent.Vital(
                 id = forge.aString(),
                 name = forge.aNullable { aString() },

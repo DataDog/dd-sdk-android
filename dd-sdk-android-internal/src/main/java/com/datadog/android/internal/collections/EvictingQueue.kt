@@ -5,6 +5,7 @@
  */
 package com.datadog.android.internal.collections
 
+import java.util.Deque
 import java.util.LinkedList
 import java.util.Queue
 import kotlin.math.max
@@ -20,9 +21,9 @@ import kotlin.math.max
  *                The default value is [Int.MAX_VALUE], which effectively means there is no practical bound.
  * @param delegate the underlying [LinkedList] that stores the elements and to which all [Queue] operations are delegated.
  */
-class EvictingQueue<T> private constructor(
+class EvictingQueue<T> constructor(
     maxSize: Int,
-    private val delegate: LinkedList<T>
+    private val delegate: Deque<T>
 ) : Queue<T> by delegate {
 
     /**
@@ -32,8 +33,6 @@ class EvictingQueue<T> private constructor(
      */
     constructor(maxSize: Int = Int.MAX_VALUE) : this(maxSize, LinkedList())
 
-    override val size: Int
-        get() = delegate.size
     private val maxSize: Int = max(0, maxSize)
 
     /**
@@ -74,7 +73,7 @@ class EvictingQueue<T> private constructor(
     }
 
     /**
-     * Adds all of the elements in the specified [elements] collection to the end of this queue.
+     * Adds all the elements in the specified [elements] collection to the end of this queue.
      *
      * If the number of elements in [elements] is greater than or equal to [maxSize], the queue is cleared first,
      * and only the last [maxSize] elements from [elements] are added.
@@ -108,4 +107,11 @@ class EvictingQueue<T> private constructor(
             }
         }
     }
+
+    /**
+     * Trick to have the last element in O(1) instead of O(N) for this queue.
+     *
+     * @return Last element or null if queue is empty.
+     */
+    fun lastOrNull(): T? = delegate.peekLast()
 }

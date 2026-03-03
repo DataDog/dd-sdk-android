@@ -6,6 +6,7 @@
 
 package com.datadog.android.tests.elmyr
 
+import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import org.json.JSONArray
 import org.json.JSONObject
@@ -13,6 +14,8 @@ import java.io.File
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+
+const val URL_FORGERY_PATTERN = "http(s?)://[a-z]+\\.com/[a-z]+"
 
 fun Forge.exhaustiveAttributes(
     excludedKeys: Set<String> = emptySet()
@@ -55,3 +58,10 @@ fun <T : Forge> T.useCoreFactories(): T {
 
     return this
 }
+
+fun Forge.aHostName(): String {
+    val regionSize = anInt(min = 2, max = 4)
+    return "${anAlphabeticalString(Case.LOWER)}.${anAlphabeticalString(Case.LOWER, regionSize)}"
+}
+
+fun Forge.anUrlString(): String = aStringMatching(URL_FORGERY_PATTERN)

@@ -9,11 +9,8 @@
       "$ref": "_vital-common-schema.json"
     },
     {
-      "required": ["view", "vital"],
+      "required": ["vital"],
       "properties": {
-        "view": {
-          "type": "object"
-        },
         "vital": {
           "type": "object",
           "description": "Vital properties",

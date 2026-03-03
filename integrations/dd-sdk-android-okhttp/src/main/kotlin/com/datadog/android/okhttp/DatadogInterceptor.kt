@@ -29,6 +29,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer

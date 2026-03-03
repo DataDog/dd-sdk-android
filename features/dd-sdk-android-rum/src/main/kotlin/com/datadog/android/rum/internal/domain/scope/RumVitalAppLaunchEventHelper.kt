@@ -62,19 +62,12 @@ internal class RumVitalAppLaunchEventHelper(
         val displayInfo = displayInfoProvider.getState()
         val user = datadogContext.userInfo
 
-        val viewId = rumContext.viewId
-        val viewUrl = rumContext.viewUrl
-
-        val view = if (viewId != null && viewUrl != null) {
-            VitalAppLaunchEvent.VitalAppLaunchEventView(
-                id = viewId,
-                referrer = null,
-                url = viewUrl,
-                name = rumContext.viewName
-            )
-        } else {
-            null
-        }
+        val view = VitalAppLaunchEvent.VitalAppLaunchEventView(
+            id = rumContext.viewId ?: RumContext.NULL_UUID,
+            referrer = null,
+            url = rumContext.viewUrl ?: "",
+            name = rumContext.viewName
+        )
 
         return VitalAppLaunchEvent(
             date = timestampMs,
@@ -135,7 +128,10 @@ internal class RumVitalAppLaunchEventHelper(
                 timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
                 batteryLevel = batteryInfo.batteryLevel,
                 powerSavingMode = batteryInfo.lowPowerMode,
-                brightnessLevel = displayInfo.screenBrightness
+                brightnessLevel = displayInfo.screenBrightness,
+                isLowRam = datadogContext.deviceInfo.isLowRam,
+                logicalCpuCount = datadogContext.deviceInfo.logicalCpuCount,
+                totalRam = datadogContext.deviceInfo.totalRam
             ),
             os = VitalAppLaunchEvent.Os(
                 name = datadogContext.deviceInfo.osName,

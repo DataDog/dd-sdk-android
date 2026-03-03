@@ -1,0 +1,81 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.api.instrumentation.network
+
+import com.datadog.android.lint.InternalApi
+
+/**
+ * For internal usage only.
+ *
+ * A builder interface for modifying [com.datadog.android.api.instrumentation.network.HttpRequestInfo] instances.
+ * This interface allows to build new [com.datadog.android.api.instrumentation.network.HttpRequestInfo] with
+ * modified HTTP request properties such as URL, headers, and tags.
+ *
+ * Use [com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo.newBuilder] to obtain a builder instance.
+ */
+@InternalApi
+interface HttpRequestInfoBuilder {
+
+    /**
+     * Sets the URL for this request.
+     * @param url the new URL to set.
+     * @return this modifier for chaining.
+     */
+    fun setUrl(url: String): HttpRequestInfoBuilder
+
+    /**
+     * Adds a header with the specified key and values.
+     * If a header with the same key already exists, the new values are appended.
+     * @param key the header name.
+     * @param values the header values.
+     * @return this modifier for chaining.
+     */
+    fun addHeader(key: String, vararg values: String): HttpRequestInfoBuilder
+
+    /**
+     * Removes a header with the specified key.
+     * @param key the header name to remove.
+     * @return this modifier for chaining.
+     */
+    fun removeHeader(key: String): HttpRequestInfoBuilder
+
+    /**
+     * Replaces a header with the specified key and value.
+     * This is equivalent to removing the existing header and adding a new one.
+     * @param key the header name.
+     * @param value the new header value.
+     * @return this modifier for chaining.
+     */
+    fun replaceHeader(key: String, value: String): HttpRequestInfoBuilder = apply {
+        removeHeader(key)
+        addHeader(key, value)
+    }
+
+    /**
+     * Adds a tag of the specified type to this request.
+     * Tags can be used to attach arbitrary metadata to requests for later retrieval.
+     * @param T the type of the tag.
+     * @param type the class representing the tag type.
+     * @param tag the tag value, or null to remove the tag.
+     * @return this modifier for chaining.
+     */
+    fun <T> addTag(type: Class<in T>, tag: T?): HttpRequestInfoBuilder
+
+    /**
+     * Sets the HTTP method for this request.
+     * @param method the HTTP method to set (e.g., "GET", "POST").
+     * @param body the optional request body, typically used with POST, PUT, or PATCH methods.
+     * @return this modifier for chaining.
+     */
+    fun setMethod(method: String, body: HttpRequestBody? = null): HttpRequestInfoBuilder
+
+    /**
+     * Builds and returns the modified [com.datadog.android.api.instrumentation.network.HttpRequestInfo].
+     * @return the resulting [com.datadog.android.api.instrumentation.network.HttpRequestInfo] with all modifications applied.
+     */
+    fun build(): HttpRequestInfo
+}

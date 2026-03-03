@@ -6,6 +6,8 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration.Companion.createInstrumentation
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
@@ -104,4 +106,17 @@ object DatadogTracingToolkit {
             .mergeWith(Baggage.from(newHeader))
             .toString()
     }
+
+    /**
+     * Creates an [ApmNetworkInstrumentation] instance from the provided configuration.
+     *
+     * @param name the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
+     * @param configuration the configuration containing tracing settings such as traced hosts,
+     *        sample rate, trace context injection behavior, and tracing scope.
+     * @return a new [ApmNetworkInstrumentation] instance configured with the provided settings.
+     */
+    fun createApmNetworkInstrumentation(
+        name: String,
+        configuration: ApmNetworkInstrumentationConfiguration
+    ) = configuration.createInstrumentation(name)
 }

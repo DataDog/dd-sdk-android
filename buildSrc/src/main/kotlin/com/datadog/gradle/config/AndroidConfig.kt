@@ -8,7 +8,6 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.CompileOptions
 import com.android.build.gradle.LibraryExtension
-import com.datadog.gradle.plugin.licenses.DependencyLicensesExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -20,7 +19,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
-    val VERSION = Version(3, 6, 0, Version.Type.Release)
+    val VERSION = Version(3, 7, 0, Version.Type.Release)
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode
@@ -91,9 +90,5 @@ fun Project.androidLibraryConfig() {
                 )
             }
         }
-    }
-
-    extensionConfig<DependencyLicensesExtension> {
-        transitiveDependencies = true
     }
 }

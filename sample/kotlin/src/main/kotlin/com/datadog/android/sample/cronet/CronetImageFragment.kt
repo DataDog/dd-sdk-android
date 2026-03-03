@@ -14,9 +14,12 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.cronet.configureDatadogInstrumentation
 import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.sample.R
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ExperimentalTraceApi
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
 import org.chromium.net.UrlRequest
@@ -41,7 +44,13 @@ internal class CronetImageFragment : Fragment() {
         "https://storage.googleapis.com/cronet/walnut.jpg"
     )
 
-    @OptIn(ExperimentalRumApi::class)
+    private val tracedHosts = listOf(
+        "datadoghq.com",
+        "127.0.0.1",
+        "storage.googleapis.com"
+    )
+
+    @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -53,12 +62,17 @@ internal class CronetImageFragment : Fragment() {
     ).also { rootView ->
         imageView = rootView.findViewById(R.id.cronet_image_view)
         loadButton = rootView.findViewById(R.id.cronet_load_button)
+        loadButton.setOnClickListener { loadRandomImage() }
 
-        cronetEngine = DatadogCronetEngine.Builder(requireContext())
+        cronetEngine = CronetEngine.Builder(requireContext())
             .enableQuic(true)
             .enableHttp2(true)
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
+                    .setHeaderPropagationOnly()
+            )
             .build()
-        loadButton.setOnClickListener { loadRandomImage() }
     }
 
     private fun loadRandomImage() {
