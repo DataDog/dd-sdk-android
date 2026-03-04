@@ -105,6 +105,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun collectAccessibility (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun disableUserInteractionTracking ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setAppStartupActivityPredicate (Lcom/datadog/android/rum/startup/AppStartupActivityPredicate;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInitialResourceIdentifier (Lcom/datadog/android/rum/metric/networksettled/InitialResourceIdentifier;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setLastInteractionIdentifier (Lcom/datadog/android/rum/metric/interactiontonextview/LastInteractionIdentifier;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -7941,6 +7942,10 @@ public final class com/datadog/android/rum/resource/RumResourceInputStream : jav
 	public fun read ([BII)I
 	public fun reset ()V
 	public fun skip (J)J
+}
+
+public abstract interface class com/datadog/android/rum/startup/AppStartupActivityPredicate {
+	public abstract fun shouldTrackStartup (Landroid/app/Activity;)Z
 }
 
 public class com/datadog/android/rum/tracking/AcceptAllActivities : com/datadog/android/rum/tracking/ComponentPredicate {

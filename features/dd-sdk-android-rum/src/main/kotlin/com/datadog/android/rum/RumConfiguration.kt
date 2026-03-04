@@ -27,6 +27,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -373,6 +374,39 @@ data class RumConfiguration internal constructor(
          */
         fun trackAnonymousUser(enabled: Boolean): Builder {
             rumConfig = rumConfig.copy(trackAnonymousUser = enabled)
+            return this
+        }
+
+        /**
+         * Sets a predicate to filter which Activities are considered for app startup
+         * Time To Initial Display (TTID) measurement.
+         *
+         * Use this to exclude "interstitial Activities" - Activities that are launched during
+         * app startup but immediately launch another Activity in their onCreate() method and
+         * call finish() on themselves (e.g., splash screens, authentication screens).
+         * These Activities may never draw a frame, which can prevent TTID from being reported.
+         *
+         * By default, all Activities are included in TTID measurement.
+         *
+         * **Performance Note:** The predicate is called on the main thread for every Activity
+         * during app startup. Ensure the implementation is fast and doesn't perform expensive
+         * operations.
+         *
+         * Example:
+         * ```
+         * .setAppStartupActivityPredicate { activity ->
+         *     // Exclude AuthenticationActivity from TTID measurement
+         *     activity !is AuthenticationActivity
+         * }
+         * ```
+         *
+         * @param predicate The [AppStartupActivityPredicate] to determine which Activities
+         * should be measured for app startup TTID.
+         * @see [AppStartupActivityPredicate]
+         */
+        @ExperimentalRumApi
+        fun setAppStartupActivityPredicate(predicate: AppStartupActivityPredicate): Builder {
+            rumConfig = rumConfig.copy(appStartupActivityPredicate = predicate)
             return this
         }
 

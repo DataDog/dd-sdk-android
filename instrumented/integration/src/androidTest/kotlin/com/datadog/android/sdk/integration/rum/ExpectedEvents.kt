@@ -61,6 +61,7 @@ internal data class ExpectedErrorEvent(
 
 internal data class ExpectedVitalAppLaunchEvent(
     val appLaunchMetric: AppLaunchMetric,
+    val viewArguments: Map<String, Any?> = mapOf(),
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 

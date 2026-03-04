@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.integration.rum
 
 import android.app.Activity
+import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.assertj.HeadersAssert
@@ -16,6 +17,7 @@ import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import java.lang.Long.max
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
@@ -23,6 +25,13 @@ import java.util.concurrent.TimeUnit
 internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>> {
 
     protected abstract fun runInstrumentationScenario(mockServerRule: T): List<ExpectedEvent>
+
+    @After
+    fun tearDown() {
+        // Ensure SDK is stopped and wait for cleanup to complete
+        Datadog.stopInstance()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+    }
 
     @Suppress("NestedBlockDepth")
     protected fun verifyExpectedEvents(
