@@ -703,19 +703,41 @@ internal class RumFeature(
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     val activity = scenario.activity.get() ?: return
-                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
 
                     rumMonitor.sendAppStartEvent(scenario)
+                    subscribeToFirstFrameDrawn(scenario, activity, rumMonitor, wasForwarded = false)
+                }
 
+                override fun onNextActivityCreated(
+                    pendingScenario: RumStartupScenario,
+                    activity: Activity
+                ) {
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+                    subscribeToFirstFrameDrawn(pendingScenario, activity, rumMonitor, wasForwarded = true)
+                }
+
+                private fun subscribeToFirstFrameDrawn(
+                    scenario: RumStartupScenario,
+                    activity: Activity,
+                    rumMonitor: AdvancedRumMonitor,
+                    wasForwarded: Boolean
+                ) {
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
+                            // Another activity may have already reported TTID
+                            val pending = rumAppStartupDetector?.getPendingScenario()
+                            if (pending !== scenario) return
+
                             val durationNs = timestampNs - scenario.initialTime.nanoTime
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = durationNs
+                                durationNs = durationNs,
+                                wasForwarded = wasForwarded
                             )
 
                             rumMonitor.sendTTIDEvent(info)
+                            rumAppStartupDetector?.clearPendingScenario()
                         }
                     }
 

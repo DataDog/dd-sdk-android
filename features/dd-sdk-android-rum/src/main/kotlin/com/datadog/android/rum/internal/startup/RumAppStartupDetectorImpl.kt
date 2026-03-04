@@ -11,6 +11,7 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
 import java.util.Collections
@@ -29,6 +30,7 @@ internal class RumAppStartupDetectorImpl(
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess: Boolean = true
+    private var pendingScenario: RumStartupScenario? = null
 
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
@@ -83,7 +85,22 @@ internal class RumAppStartupDetectorImpl(
             trackedActivities.add(activity)
         }
 
-        if (trackedActivities.size == 1 && !isChangingConfigurations && shouldTrackStartup) {
+        // Clear a stale pending scenario so a re-launch in the same process
+        // is not blocked by an interstitial that never forwarded TTID.
+        val stalePending = pendingScenario
+        if (stalePending != null &&
+            now.nanoTime - stalePending.initialTime.nanoTime > MAX_TTID_DURATION_NS
+        ) {
+            pendingScenario = null
+        }
+
+        val isFirstTrackedActivityWithNoPendingStartup =
+            trackedActivities.size == 1 &&
+                !isChangingConfigurations &&
+                shouldTrackStartup &&
+                pendingScenario == null
+
+        if (isFirstTrackedActivityWithNoPendingStartup) {
             val processStartTime = appStartupTimeProvider()
 
             val gapNs = now.nanoTime - processStartTime.nanoTime
@@ -114,12 +131,29 @@ internal class RumAppStartupDetectorImpl(
                 )
             }
 
+            pendingScenario = scenario
             listener.onAppStartupDetected(scenario)
             isFirstActivityForProcess = false
         }
+
+        // If a pending scenario exists and this is a different qualifying activity,
+        // notify the listener so it can subscribe to this activity's first frame too.
+        val currentPendingScenario = pendingScenario
+        if (currentPendingScenario != null && shouldTrackStartup &&
+            currentPendingScenario.activity.get() !== activity
+        ) {
+            listener.onNextActivityCreated(currentPendingScenario, activity)
+        }
+    }
+
+    override fun getPendingScenario(): RumStartupScenario? = pendingScenario
+
+    override fun clearPendingScenario() {
+        pendingScenario = null
     }
 
     override fun destroy() {
+        pendingScenario = null
         application.unregisterActivityLifecycleCallbacks(this)
     }
 
