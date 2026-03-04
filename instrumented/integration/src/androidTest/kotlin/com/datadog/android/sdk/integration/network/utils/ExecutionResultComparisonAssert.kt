@@ -37,12 +37,14 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
         }
     }
 
-    fun haveExpectedClients() = apply {
+    fun haveExpectedClients() = haveExpectedClients(EXPECTED_CLIENTS_ALL)
+
+    fun haveExpectedClients(expected: Set<String>) = apply {
         assertThat(actual.keys)
             .overridingErrorMessage {
-                "Expected composite execution result to have clients:$EXPECTED_CLIENTS but was ${actual.keys}"
+                "Expected composite execution result to have clients:$expected but was ${actual.keys}"
             }
-            .containsAll(EXPECTED_CLIENTS)
+            .containsAll(expected)
     }
 
     fun haveResponseStatusCode(expected: Int) = apply {
@@ -102,7 +104,8 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
         .forEach { (client1Result, client2Result) -> block(client1Result, client2Result) }
 
     companion object {
-        private val EXPECTED_CLIENTS = setOf("Cronet", "OkHttp")
+        private val EXPECTED_CLIENTS_ALL = setOf("Cronet", "OkHttp", "InstrumentedOkHttp")
+        internal val EXPECTED_OKHTTP_CLIENTS = setOf("OkHttp", "InstrumentedOkHttp")
 
         internal fun assertThat(actual: Map<String, ClientExecutionResult>) = ExecutionResultComparisonAssert(actual)
 

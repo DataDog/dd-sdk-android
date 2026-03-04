@@ -29,23 +29,26 @@ internal fun Request.buildResourceId(generateUuid: Boolean) =
         generateUuid = generateUuid
     )
 
-internal class OkHttpRequestInfo(internal val request: Request) :
+/**
+ * [HttpRequestInfo] implementation backed by an OkHttp [Request].
+ */
+internal class OkHttpRequestInfo(internal val originalRequest: Request) :
     HttpRequestInfo,
     ExtendedRequestInfo,
     MutableHttpRequestInfo {
 
-    override val method: String get() = request.method
-    override val url: String get() = request.url.toString()
-    override val headers: Map<String, List<String>> get() = request.headers.toMultimap()
-    override val contentType: String? get() = request.body?.contentType()?.toString()
-    override fun <T> tag(type: Class<out T>): T? = request.tag(type)
+    override val method: String get() = originalRequest.method
+    override val url: String get() = originalRequest.url.toString()
+    override val headers: Map<String, List<String>> get() = originalRequest.headers.toMultimap()
+    override val contentType: String? get() = originalRequest.body?.contentType()?.toString()
+    override fun <T> tag(type: Class<out T>): T? = originalRequest.tag(type)
     override fun contentLength(): Long? = try {
-        request.body?.contentLength()
+        originalRequest.body?.contentLength()
     } catch (@Suppress("SwallowedException") _: IOException) {
         null
     }
 
-    override fun newBuilder() = OkHttpRequestInfoBuilder(request.newBuilder())
+    override fun newBuilder() = OkHttpRequestInfoBuilder(originalRequest.newBuilder())
 }
 
 /**
@@ -60,22 +63,28 @@ internal class OkHttpRequestInfo(internal val request: Request) :
 @Suppress("UnsafeThirdPartyFunctionCall") // OkHttp builder methods are safe
 class OkHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : HttpRequestInfoBuilder {
 
+    /** @inheritdoc */
     override fun setUrl(url: String) = apply { requestBuilder.url(url) }
 
+    /** @inheritdoc */
     override fun addHeader(key: String, vararg values: String) = apply {
         values.forEach { value ->
             requestBuilder.addHeader(key, value)
         }
     }
 
+    /** @inheritdoc */
     override fun setMethod(
         method: String,
         body: HttpRequestBody?
     ) = apply { requestBuilder.method(method, (body as? OkHttpRequestBody)?.body) }
 
+    /** @inheritdoc */
     override fun removeHeader(key: String) = apply { requestBuilder.removeHeader(key) }
 
+    /** @inheritdoc */
     override fun <T> addTag(type: Class<in T>, tag: T?) = apply { requestBuilder.tag(type, tag) }
 
+    /** @inheritdoc */
     override fun build(): HttpRequestInfo = OkHttpRequestInfo(requestBuilder.build())
 }

@@ -53,7 +53,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapter(
         return delegate.onProvideAttributes(request, response, throwable).ifEmpty {
             @Suppress("DEPRECATION")
             delegate.onProvideAttributes(
-                request = (request as? OkHttpRequestInfo)?.request ?: return emptyMap(),
+                request = (request as? OkHttpRequestInfo)?.originalRequest ?: return emptyMap(),
                 response = (response as? OkHttpHttpResponseInfo)?.response,
                 throwable = throwable
             )

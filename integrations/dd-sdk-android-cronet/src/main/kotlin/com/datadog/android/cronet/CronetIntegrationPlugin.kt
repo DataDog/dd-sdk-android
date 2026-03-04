@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit
  * Configures Datadog network instrumentation on this [CronetEngine.Builder].
  * Returns a [CronetIntegrationPlugin] that can be further configured before calling [CronetIntegrationPlugin.build].
  *
+ * @param apmInstrumentationConfiguration optional APM tracing configuration. When provided, trace spans
+ * will be created for HTTP requests and tracing headers will be injected for first-party hosts.
  * @param rumInstrumentationConfiguration optional RUM configuration. When provided, HTTP requests
  * will be automatically tracked as RUM resources with timing information.
  * @param apmInstrumentationConfiguration optional APM tracing configuration. When provided, trace spans
@@ -88,7 +90,7 @@ class CronetIntegrationPlugin internal constructor(
                         CRONET_NETWORK_INSTRUMENTATION_NAME,
                         configuration
                             .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
-                            .setTraceOriginIfNull(ORIGIN_RUM)
+                            .setTraceOrigin(ORIGIN_RUM, replace = false)
                     )
                 }
         }
@@ -126,12 +128,5 @@ class CronetIntegrationPlugin internal constructor(
             TimeUnit.SECONDS,
             SynchronousQueue()
         )
-
-        private fun ApmNetworkInstrumentationConfiguration.setTraceOriginIfNull(origin: String) =
-            if (getTraceOrigin() == null) {
-                setTraceOrigin(origin)
-            } else {
-                this
-            }
     }
 }

@@ -156,6 +156,7 @@ internal class CronetIntegrationPluginTest {
         assertThat(engine.distributedTracingInstrumentation).isNull()
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M use custom executor W build() {setListenerExecutor called}`() {
         // Given

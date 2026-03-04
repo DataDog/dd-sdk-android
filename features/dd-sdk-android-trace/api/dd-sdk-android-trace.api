@@ -2,13 +2,13 @@ public final class com/datadog/android/trace/ApmNetworkInstrumentationConfigurat
 	public fun <init> (Ljava/util/List;)V
 	public fun <init> (Ljava/util/Map;)V
 	public final fun copy ()Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
-	public final fun getTraceOrigin ()Ljava/lang/String;
 	public final fun isHeaderPropagationOnly ()Z
 	public final fun set404ResourcesRedacted (Z)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setHeaderPropagationOnly ()Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceContextInjection (Lcom/datadog/android/trace/TraceContextInjection;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
-	public final fun setTraceOrigin (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public final fun setTraceOrigin (Ljava/lang/String;Z)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
+	public static synthetic fun setTraceOrigin$default (Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceSampleRate (F)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceSampler (Lcom/datadog/android/core/sampling/Sampler;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun setTraceScope (Lcom/datadog/android/trace/ApmNetworkTracingScope;)Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
