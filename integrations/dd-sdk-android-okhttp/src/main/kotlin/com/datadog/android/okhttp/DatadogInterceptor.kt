@@ -19,7 +19,6 @@ import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatib
 import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
@@ -28,9 +27,8 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
-import com.datadog.android.rum.internal.net.ResourceHeadersExtractor
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -476,14 +474,13 @@ open class DatadogInterceptor internal constructor(
         /**
          * Enables capturing HTTP request and response headers in RUM Resource events.
          *
-         * @param configuration the [ResourceHeadersConfiguration] specifying which headers to capture.
+         * @param extractor the [ResourceHeadersExtractor] specifying which headers to capture.
          * Defaults to a configuration that captures common safe headers.
          * @return this builder for chaining.
          */
-        @ExperimentalRumApi
         fun trackResourceHeaders(
-            configuration: ResourceHeadersConfiguration = ResourceHeadersConfiguration.Builder().build()
-        ): Builder = apply { resourceHeadersExtractor = ResourceHeadersExtractor(configuration) }
+            extractor: ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
+        ): Builder = apply { resourceHeadersExtractor = extractor }
     }
 
     // endregion

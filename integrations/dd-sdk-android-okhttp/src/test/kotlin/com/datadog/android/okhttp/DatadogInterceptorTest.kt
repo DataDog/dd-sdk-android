@@ -21,8 +21,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
-import com.datadog.android.rum.internal.net.ResourceHeadersExtractor
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
@@ -1118,11 +1117,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         forge: Forge
     ) {
         // Given
-        val config = ResourceHeadersConfiguration.Builder(includeDefaults = false)
-            .captureHeaders(listOf("x-request-id"))
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id")
             .build()
 
-        resourceHeadersExtractor = ResourceHeadersExtractor(config)
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
         fakeRequest = forgeRequest(forge) { it.addHeader("X-Request-Id", "abc-123") }
@@ -1177,11 +1175,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         forge: Forge
     ) {
         // Given
-        val config = ResourceHeadersConfiguration.Builder(includeDefaults = false)
-            .captureHeaders(listOf("x-cache"))
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-cache")
             .build()
 
-        resourceHeadersExtractor = ResourceHeadersExtractor(config)
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
         fakeRequest = forgeRequest(forge)

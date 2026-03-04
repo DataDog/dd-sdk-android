@@ -4,15 +4,15 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.net
+package com.datadog.android.rum.resource
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
 import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
-import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.DEFAULT_REQUEST_HEADERS
+import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.DEFAULT_RESPONSE_HEADERS
+import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.HEADER_SIZE_LIMIT_BYTES
 import com.datadog.tools.unit.forge.anHttpHeaderMap
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +27,6 @@ import java.util.Locale
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@ForgeConfiguration(Configurator::class)
 internal class ResourceHeadersExtractorTest {
 
     private lateinit var testedExtractor: ResourceHeadersExtractor
@@ -37,8 +36,7 @@ internal class ResourceHeadersExtractorTest {
 
     @BeforeEach
     fun `set up`() {
-        val config = ResourceHeadersConfiguration.Builder().build()
-        testedExtractor = ResourceHeadersExtractor(config)
+        testedExtractor = ResourceHeadersExtractor.Builder().build()
     }
 
     // region Extraction
@@ -46,7 +44,7 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M extract matching request headers W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val expectedMap = ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS
+        val expectedMap = DEFAULT_REQUEST_HEADERS
             .associateWith { forge.anAsciiString() }
         val headers = expectedMap.mapValues { listOf(it.value) }
 
@@ -60,7 +58,7 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M extract matching response headers W extractResponseHeaders()`(forge: Forge) {
         // Given
-        val expectedMap = ResourceHeadersConfiguration.DEFAULT_RESPONSE_HEADERS
+        val expectedMap = DEFAULT_RESPONSE_HEADERS
             .associateWith { forge.anAsciiString() }
         val headers = expectedMap.mapValues { listOf(it.value) }
 
@@ -74,7 +72,7 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M normalize header keys to lowercase W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val headerName = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS)
+        val headerName = forge.anElementFrom(DEFAULT_REQUEST_HEADERS)
         val fakeValue = forge.anAsciiString()
         val headers = mapOf(headerName.uppercase(Locale.US) to listOf(fakeValue))
 
@@ -90,7 +88,7 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M join multi-value headers W extractResponseHeaders()`(forge: Forge) {
         // Given
-        val headerName = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_RESPONSE_HEADERS)
+        val headerName = forge.anElementFrom(DEFAULT_RESPONSE_HEADERS)
         val fakeValues = forge.aList(forge.anInt(2, 5)) { anAsciiString() }
         val headers = mapOf(headerName to fakeValues)
 
@@ -106,7 +104,7 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M skip non-configured headers W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val configuredHeader = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS)
+        val configuredHeader = forge.anElementFrom(DEFAULT_REQUEST_HEADERS)
         val fakeValue = forge.anAsciiString()
         val nonConfiguredHeaders = forge.anHttpHeaderMap().mapValues { listOf(it.value) }
         val headers = nonConfiguredHeaders + mapOf(configuredHeader to listOf(fakeValue))
@@ -151,7 +149,7 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M truncate value exceeding 128 bytes W extractRequestHeaders()`(forge: Forge) {
         // Given
-        val headerName = forge.anElementFrom(ResourceHeadersConfiguration.DEFAULT_REQUEST_HEADERS)
+        val headerName = forge.anElementFrom(DEFAULT_REQUEST_HEADERS)
         val longValue = forge.aStringMatching("[A-Za-z0-9]{200,300}")
         val headers = mapOf(
             headerName to listOf(longValue)
@@ -210,10 +208,10 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M enforce 2KB total limit W extractResponseHeaders()`() {
         // Given
-        val config = ResourceHeadersConfiguration.Builder(includeDefaults = false)
-            .captureHeaders((1..50).map { "x-header-$it" })
+        val headerNames = (1..50).map { "x-header-$it" }.toTypedArray()
+        testedExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(*headerNames)
             .build()
-        testedExtractor = ResourceHeadersExtractor(config)
 
         // Build headers where each has a ~100 byte value (enough to exceed 2KB with ~20 headers)
         val headers = (1..50).associate { "x-header-$it" to listOf("v".repeat(100)) }
@@ -223,17 +221,16 @@ internal class ResourceHeadersExtractorTest {
 
         // Then
         val totalSize = result.entries.sumOf { it.key.length + 1 + it.value.toByteArray(Charsets.UTF_8).size }
-        assertThat(totalSize).isLessThanOrEqualTo(ResourceHeadersConfiguration.HEADER_SIZE_LIMIT_BYTES)
+        assertThat(totalSize).isLessThanOrEqualTo(HEADER_SIZE_LIMIT_BYTES)
     }
 
     @Test
     fun `M stop at 100 headers max W extractRequestHeaders()`() {
         // Given
-        val headerNames = (1..150).map { "x-header-$it" }
-        val config = ResourceHeadersConfiguration.Builder(includeDefaults = false)
-            .captureHeaders(headerNames)
+        val headerNames = (1..150).map { "x-header-$it" }.toTypedArray()
+        testedExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(*headerNames)
             .build()
-        testedExtractor = ResourceHeadersExtractor(config)
 
         // Each header has a tiny value to avoid hitting 2KB limit first
         val headers = headerNames.associateWith { listOf("v") }
