@@ -10,10 +10,9 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.rum.configuration.ResourceHeadersConfiguration
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -254,7 +253,6 @@ internal class DatadogInterceptorBuilderTest {
         assertThat(interceptor.resourceHeadersExtractor).isNull()
     }
 
-    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M store default extractor W build { trackResourceHeaders() }`() {
         // When
@@ -266,17 +264,16 @@ internal class DatadogInterceptorBuilderTest {
         assertThat(interceptor.resourceHeadersExtractor).isNotNull
     }
 
-    @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M store custom extractor W build { trackResourceHeaders(config) }`() {
+    fun `M store custom extractor W build { trackResourceHeaders(extractor) }`() {
         // Given
-        val customConfig = ResourceHeadersConfiguration.Builder(includeDefaults = false)
-            .captureHeaders(listOf("x-request-id"))
+        val customExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id")
             .build()
 
         // When
         val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType)
-            .trackResourceHeaders(customConfig)
+            .trackResourceHeaders(customExtractor)
             .build()
 
         // Then

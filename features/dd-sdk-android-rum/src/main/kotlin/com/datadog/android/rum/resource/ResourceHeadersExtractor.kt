@@ -4,55 +4,56 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.configuration
+package com.datadog.android.rum.resource
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.lint.InternalApi
+import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
+import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.SECURITY_PATTERN
 import java.util.Locale
 
 /**
- * Configuration for capturing HTTP request and response headers in RUM Resource events.
+ * Extracts allowed HTTP headers from network requests and responses.
  *
- * Headers are captured from network requests and included in the resource event payload.
- * Headers matching a security pattern (containing sensitive data like authorization tokens,
- * cookies, secrets, or IP addresses) are automatically filtered out.
+ *  Headers are captured from network requests and included in the resource event payload.
+ *  Headers matching the [SECURITY_PATTERN] are automatically filtered out.
  *
- * @see Builder
+ *  @see Builder
  */
-class ResourceHeadersConfiguration internal constructor(
+class ResourceHeadersExtractor private constructor(
     internal val requestHeaders: List<String>,
     internal val responseHeaders: List<String>
 ) {
 
     /**
-     * Builder for [ResourceHeadersConfiguration].
+     * Builder for [ResourceHeadersExtractor].
      *
-     * @param includeDefaults When `true` (default), the built configuration will include
+     * @param includeDefaults When `true` (default), the built extractor will include
      * [DEFAULT_REQUEST_HEADERS] and [DEFAULT_RESPONSE_HEADERS] in addition to any custom
      * headers specified via [captureHeaders]. When `false`, only custom headers are captured.
      */
     class Builder(private val includeDefaults: Boolean = true) {
 
-        internal var logger: InternalLogger = InternalLogger.UNBOUND
-
+        private val logger = InternalLogger.UNBOUND
         private val customHeaders = mutableListOf<String>()
 
         /**
          * Specifies additional header names to capture from both requests and responses.
          * Headers matching the [SECURITY_PATTERN] are silently filtered out.
          *
-         * @param headers the list of header names to capture (case-insensitive).
+         * @param headers the header names to capture (case-insensitive).
          * @return this builder for chaining.
          */
-        fun captureHeaders(headers: List<String>): Builder = apply {
+        fun captureHeaders(vararg headers: String): Builder = apply {
             customHeaders.addAll(headers.map { it.lowercase(Locale.US) })
         }
 
         /**
-         * Builds the [ResourceHeadersConfiguration].
+         * Builds the [ResourceHeadersExtractor].
          *
-         * @return a new [ResourceHeadersConfiguration] instance.
+         * @return a new [ResourceHeadersExtractor] instance.
          */
-        fun build(): ResourceHeadersConfiguration {
+        fun build(): ResourceHeadersExtractor {
             val (sensitiveRequested, filteredCustom) = customHeaders.partition(SECURITY_PATTERN::containsMatchIn)
 
             if (sensitiveRequested.isNotEmpty()) {
@@ -85,14 +86,78 @@ class ResourceHeadersConfiguration internal constructor(
                 )
             }
 
-            return ResourceHeadersConfiguration(
+            return ResourceHeadersExtractor(
                 requestHeaders = requestHeaders,
                 responseHeaders = responseHeaders
             )
         }
     }
 
-    companion object {
+    /**
+     * Extracts the allowed request headers from the given [headers] map.
+     * @param headers the raw request headers (key to list of values).
+     * @param internalLogger logger for debug messages.
+     * @return a map of allowed header names to their joined values.
+     */
+    @InternalApi
+    fun extractRequestHeaders(
+        headers: Map<String, List<String>>,
+        internalLogger: InternalLogger
+    ): Map<String, String> {
+        return extractHeaders(headers, requestHeaders, internalLogger)
+    }
+
+    /**
+     * Extracts the allowed response headers from the given [headers] map.
+     * @param headers the raw response headers (key to list of values).
+     * @param internalLogger logger for debug messages.
+     * @return a map of allowed header names to their joined values.
+     */
+    @InternalApi
+    fun extractResponseHeaders(
+        headers: Map<String, List<String>>,
+        internalLogger: InternalLogger
+    ): Map<String, String> {
+        return extractHeaders(headers, responseHeaders, internalLogger)
+    }
+
+    private fun extractHeaders(
+        headers: Map<String, List<String>>,
+        allowedHeaders: List<String>,
+        internalLogger: InternalLogger
+    ): Map<String, String> {
+        val normalizedHeaders = headers.mapKeys { it.key.lowercase(Locale.US) }
+        val result = mutableMapOf<String, String>()
+        var currentSize = 0
+
+        for (headerName in allowedHeaders) {
+            if (result.size >= MAX_HEADERS_COUNT) break
+
+            normalizedHeaders[headerName]?.let { values ->
+                val (value, valueByteSize) = values.joinToString(", ")
+                    .truncateToUtf8ByteSize(MAX_HEADER_VALUE_BYTES)
+                val entrySize = headerName.length + 1 + valueByteSize
+
+                if (currentSize + entrySize > HEADER_SIZE_LIMIT_BYTES) {
+                    internalLogger.log(
+                        InternalLogger.Level.DEBUG,
+                        InternalLogger.Target.USER,
+                        {
+                            "Skipping header '$headerName': " +
+                                "adding it would exceed the $HEADER_SIZE_LIMIT_BYTES byte limit."
+                        }
+                    )
+                } else {
+                    result[headerName] = value
+                    currentSize += entrySize
+                }
+            }
+        }
+
+        return result
+    }
+
+    internal companion object {
 
         /**
          * Default request headers captured when `includeDefaults` is `true`.
@@ -136,13 +201,19 @@ class ResourceHeadersConfiguration internal constructor(
          */
         const val HEADER_SIZE_LIMIT_BYTES: Int = 2048
 
-        internal const val NO_HEADERS_WARNING =
-            "ResourceHeadersConfiguration was built with no headers to capture." +
+        /** Maximum size in bytes for a single header value. Values exceeding this are truncated. */
+        const val MAX_HEADER_VALUE_BYTES = 128
+
+        /** Maximum number of headers captured per request or response direction. */
+        const val MAX_HEADERS_COUNT = 100
+
+        const val NO_HEADERS_WARNING =
+            "ResourceHeadersExtractor was built with no headers to capture." +
                 " Did you mean to use includeDefaults = true or call captureHeaders()?"
 
-        internal const val SENSITIVE_HEADER_WARNING =
+        const val SENSITIVE_HEADER_WARNING =
             "The following headers were requested but match the security pattern" +
                 " and will not be captured: %s." +
-                " See ResourceHeadersConfiguration.SECURITY_PATTERN for details."
+                " See ResourceHeadersExtractor.SECURITY_PATTERN for details."
     }
 }

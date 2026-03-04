@@ -756,6 +756,7 @@ datadog:
       - "kotlin.Array.forEachIndexed(kotlin.Function2)"
       - "kotlin.Array.isNotEmpty()"
       - "kotlin.Array.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
+      - "kotlin.Array.map(kotlin.Function1)"
       - "kotlin.Array.none(kotlin.Function1)"
       - "kotlin.Array.orEmpty()"
       - "kotlin.Array.sorted()"
