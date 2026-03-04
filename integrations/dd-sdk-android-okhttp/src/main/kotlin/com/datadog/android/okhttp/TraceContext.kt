@@ -16,7 +16,7 @@ import com.datadog.android.lint.InternalApi
 @Deprecated(
     "Use com.datadog.android.trace.internal.net.TraceContext instead.",
     replaceWith = ReplaceWith(
-        "TraceContextInjection",
+        "TraceContext",
         imports = ["com.datadog.android.trace.internal.net.TraceContext"]
     )
 )
