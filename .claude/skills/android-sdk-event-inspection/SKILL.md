@@ -15,7 +15,7 @@ The Android SDK uses `CurlInterceptor` to log every outgoing HTTP request as a `
 
 - Verifying a change emits the correct event type or fields
 - Checking custom attributes appear on a log, trace, RUM, Session Replay or Profiling event
-- Debugging why RUM/logs/traces are not showing up in Datadog
+- Debugging why RUM/logs/traces/Session Replay/Profiling are not showing up in Datadog
 - Validating SDK behavior with the `sample/kotlin` app
 
 ## Related Tools
