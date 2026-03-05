@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.graphics.drawable.Drawable
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.internal.recorder.mapper.DrawableStyleExtractor
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -35,6 +37,8 @@ abstract class BaseWireframeMapper<in T : View>(
     protected val drawableToColorMapper: DrawableToColorMapper
 ) : WireframeMapper<T> {
 
+    internal val drawableStyleExtractor = DrawableStyleExtractor(drawableToColorMapper)
+
     /**
      * Resolves the [View] unique id to be used in the mapped [MobileSegment.Wireframe].
      */
@@ -56,5 +60,40 @@ abstract class BaseWireframeMapper<in T : View>(
         } else {
             null
         }
+    }
+
+    /**
+     * Resolves both [MobileSegment.ShapeStyle] and [MobileSegment.ShapeBorder] from a drawable,
+     * extracting fill color, corner radius, and stroke/border info.
+     */
+    protected fun resolveBackgroundStyleInfo(
+        drawable: Drawable,
+        viewAlpha: Float,
+        density: Float,
+        internalLogger: InternalLogger
+    ): Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?> {
+        val styleInfo = drawableStyleExtractor.extractStyleInfo(drawable, internalLogger)
+
+        val shapeStyle = if (styleInfo.color != null) {
+            MobileSegment.ShapeStyle(
+                backgroundColor = colorStringFormatter.formatColorAsHexString(styleInfo.color),
+                opacity = viewAlpha,
+                cornerRadius = styleInfo.cornerRadius.toLong().densityNormalized(density)
+            )
+        } else {
+            null
+        }
+
+        val shapeBorder = if (styleInfo.borderColor != null && styleInfo.borderWidth > 0f) {
+            MobileSegment.ShapeBorder(
+                color = colorStringFormatter.formatColorAsHexString(styleInfo.borderColor),
+                width = styleInfo.borderWidth.toLong().densityNormalized(density)
+            )
+        } else {
+            null
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return Pair(shapeStyle, shapeBorder)
     }
 }
