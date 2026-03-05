@@ -123,7 +123,7 @@ private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, An
 fun Forge.anHttpHeaderMap(size: Int = anInt(min = 1, max = 5)): Map<String, String> {
     return aMap(size = size) {
         aStringMatching("[a-z][a-z0-9-]{2,20}") to
-            aList(anInt(min = 1, max = 3)) { anAsciiString() }.joinToString(", ")
+            aList(anInt(min = 1, max = 3)) { anAsciiString().trim() }.joinToString(", ")
     }
 }
 

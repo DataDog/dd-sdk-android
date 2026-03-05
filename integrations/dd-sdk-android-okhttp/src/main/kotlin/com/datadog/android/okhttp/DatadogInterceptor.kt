@@ -252,7 +252,7 @@ open class DatadogInterceptor internal constructor(
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
             kind,
-            attributes + headerAttributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
+            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null) + headerAttributes
         )
     }
 
