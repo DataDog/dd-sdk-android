@@ -13,6 +13,7 @@ import com.datadog.android.sdk.integration.network.models.TestRequest
 import com.datadog.android.sdk.integration.network.models.TestResponse
 import com.datadog.android.sdk.integration.network.wrappers.HttpTestClientWrapper
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,6 +42,7 @@ internal class InstrumentedOkHttpClientWrapper(private val baseUrl: String) : Ht
                         HttpTestClientWrapper.tracedHosts
                     )
                         .setTraceSampleRate(100f)
+                        .setTraceScope(ApmNetworkTracingScope.ALL)
                         .setTracedRequestListener(spansCollector)
                 )
                 .build()

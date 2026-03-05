@@ -513,7 +513,7 @@ internal class RumNetworkInstrumentationTest {
     @Test
     fun `M call reportNetworkingLibraryType W sdkCoreReference resolved`() {
         // When
-        testedInstrumentation.sdkCoreReference.get()
+        testedInstrumentation.sdkCore
 
         // Then
         verify(mockRumMonitor).reportNetworkingLibraryType(fakeLibraryType)

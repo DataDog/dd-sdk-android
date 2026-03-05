@@ -49,13 +49,16 @@ class RumNetworkInstrumentation internal constructor(
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 ) {
-    /** Reference to the SDK core instance. */
-    val sdkCoreReference = SdkReference(sdkInstanceName) {
+    private val sdkCoreReference = SdkReference(sdkInstanceName) {
         it.networkMonitor?.apply {
             notifyInterceptorInstantiated()
             reportNetworkingLibraryType(libraryType)
         }
     }
+
+    /** SDK core instance. */
+    val sdkCore: SdkCore?
+        get() = sdkCoreReference.get()
 
     /**
      * Sends an event to indicate that resource timing information is expected for this request.
@@ -138,10 +141,10 @@ class RumNetworkInstrumentation internal constructor(
     }
 
     private fun ifRumEnabled(block: (FeatureSdkCore) -> Unit) {
-        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
-        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
+        val featureSdkCore = sdkCore as? FeatureSdkCore
+        val rumFeature = featureSdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
-            block(sdkCore)
+            block(featureSdkCore)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -149,7 +152,7 @@ class RumNetworkInstrumentation internal constructor(
                 "SDK instance with name=$sdkInstanceName"
             }
 
-            (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
+            (featureSdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, networkInstrumentationName, prefix) }

@@ -37,6 +37,14 @@ public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/d
 	public static synthetic fun trackResourceHeaders$default (Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;ILjava/lang/Object;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
 }
 
+public final class com/datadog/android/okhttp/OkHttpIntegrationPlugin {
+	public final fun build ()Lokhttp3/OkHttpClient;
+}
+
+public final class com/datadog/android/okhttp/OkHttpIntegrationPluginKt {
+	public static final fun configureDatadogInstrumentation (Lokhttp3/OkHttpClient$Builder;Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;)Lcom/datadog/android/okhttp/OkHttpIntegrationPlugin;
+}
+
 public final class com/datadog/android/okhttp/TraceContext {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
 	public final fun component1 ()Ljava/lang/String;

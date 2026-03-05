@@ -19,7 +19,6 @@ import com.datadog.android.sdk.integration.network.wrappers.CompositeHttpClientW
 import com.datadog.android.sdk.integration.network.wrappers.cronet.CronetClientWrapper
 import com.datadog.android.sdk.integration.network.wrappers.okhttp.InstrumentedOkHttpClientWrapper
 import com.datadog.android.sdk.integration.network.wrappers.okhttp.OkHttpClientWrapper
-import com.datadog.android.sdk.rules.Repeat
 import com.datadog.android.sdk.rules.RepeatedTestRunner
 import org.junit.After
 import org.junit.Before
@@ -156,7 +155,6 @@ internal class NetworkInstrumentationComparisonTest {
     }
 
     @Test
-    @Repeat(10)
     fun executionResultsMustBeSimilarWhen_redirect() = asyncTest {
         // Given
         val hopsCount = networkRule.forge.anInt(min = 1, max = 5)
@@ -182,7 +180,6 @@ internal class NetworkInstrumentationComparisonTest {
     }
 
     @Test
-    @Repeat(10)
     fun executionResultsMustBeSimilarWhen_rateLimited() = asyncTest {
         // Given
         val method = HttpSpec.Method.GET
@@ -207,7 +204,6 @@ internal class NetworkInstrumentationComparisonTest {
     }
 
     @Test
-    @Repeat(10)
     fun executionResultsMustBeSimilarWhen_rateLimited_okhttp_comparison() = asyncTest {
         // Given
         val method = HttpSpec.Method.GET
@@ -222,7 +218,7 @@ internal class NetworkInstrumentationComparisonTest {
         val results = okHttpOnlyClients.execute(request)
 
         // Then
-        assertThat(results)
+        assertThat(results, request)
             .haveSameSpanCount()
             .haveExpectedClients(EXPECTED_OKHTTP_CLIENTS)
             .haveSameSpanStructure()

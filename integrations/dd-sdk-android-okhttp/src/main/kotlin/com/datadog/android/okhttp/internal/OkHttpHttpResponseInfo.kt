@@ -12,21 +12,21 @@ import okhttp3.ResponseBody
 import java.io.IOException
 
 internal class OkHttpHttpResponseInfo(
-    internal val response: Response,
+    internal val originalResponse: Response,
     internal val internalLogger: InternalLogger
 ) : HttpResponseInfo {
 
     override val contentType: String?
-        get() = response.body?.contentType()?.let {
+        get() = originalResponse.body?.contentType()?.let {
             // manually rebuild the mimetype as `toString()` can also include the charsets
             it.type + "/" + it.subtype
         }
 
-    override val statusCode: Int get() = response.code
+    override val statusCode: Int get() = originalResponse.code
 
-    override val url: String get() = response.request.url.toString()
+    override val url: String get() = originalResponse.request.url.toString()
 
-    override val headers: Map<String, List<String>> get() = response.headers.toMultimap()
+    override val headers: Map<String, List<String>> get() = originalResponse.headers.toMultimap()
 
     override val contentLength: Long?
         get() = try {
@@ -34,7 +34,8 @@ internal class OkHttpHttpResponseInfo(
             // however, OkHttp will drop Content-Length header if transparent compression is
             // used (since the value reported cannot be applied to decompressed body), so to be
             // able to still read it, we force decompression by calling peekBody
-            response.body?.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK_BYTES).contentLengthOrNull()
+            originalResponse.body?.contentLengthOrNull()
+                ?: originalResponse.peekBody(MAX_BODY_PEEK_BYTES).contentLengthOrNull()
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,

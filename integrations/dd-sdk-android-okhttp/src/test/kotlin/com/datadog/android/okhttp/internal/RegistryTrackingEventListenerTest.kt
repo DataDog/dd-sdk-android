@@ -19,6 +19,7 @@ import okhttp3.HttpUrl
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,19 +42,13 @@ import java.net.Proxy
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(BaseConfigurator::class)
-internal class CompositeEventListenerFactoryTest {
+internal class RegistryTrackingEventListenerTest {
 
     @Mock
-    lateinit var mockFactory1: EventListener.Factory
+    lateinit var mockDelegateFactory: EventListener.Factory
 
     @Mock
-    lateinit var mockFactory2: EventListener.Factory
-
-    @Mock
-    lateinit var mockListener1: EventListener
-
-    @Mock
-    lateinit var mockListener2: EventListener
+    lateinit var mockDelegate: EventListener
 
     @Mock
     lateinit var mockCall: Call
@@ -73,17 +68,101 @@ internal class CompositeEventListenerFactoryTest {
     @Mock
     lateinit var mockHttpUrl: HttpUrl
 
-    private lateinit var testedFactory: CompositeEventListener.Factory
+    @Mock
+    lateinit var mockRegistry: RequestTracingStateRegistry
+
+    private lateinit var testedFactory: RegistryTrackingEventListener.Factory
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockFactory1.create(mockCall)) doReturn mockListener1
-        whenever(mockFactory2.create(mockCall)) doReturn mockListener2
-        testedFactory = CompositeEventListener.Factory(listOf(mockFactory1, mockFactory2))
+        whenever(mockDelegateFactory.create(mockCall)) doReturn mockDelegate
+        testedFactory = RegistryTrackingEventListener.Factory(mockRegistry, mockDelegateFactory)
     }
 
     @Test
-    fun `M delegate to all listeners W callStart()`() {
+    fun `M register call in registry W create()`() {
+        // When
+        testedFactory.create(mockCall)
+
+        // Then
+        verify(mockRegistry).register(mockCall)
+    }
+
+    @Test
+    fun `M delegate to inner factory W create()`() {
+        // When
+        testedFactory.create(mockCall)
+
+        // Then
+        verify(mockDelegateFactory).create(mockCall)
+    }
+
+    @Test
+    fun `M clean up registry W create() { delegate factory throws }`() {
+        // Given
+        val fakeException = IllegalStateException("test")
+        whenever(mockDelegateFactory.create(mockCall)).thenThrow(fakeException)
+
+        // When + Then
+        assertThatThrownBy { testedFactory.create(mockCall) }
+            .isSameAs(fakeException)
+        verify(mockRegistry).remove(mockCall)
+    }
+
+    @Test
+    fun `M clean up registry W callEnd()`() {
+        // Given
+        val listener = testedFactory.create(mockCall)
+
+        // When
+        listener.callEnd(mockCall)
+
+        // Then
+        verify(mockRegistry).remove(mockCall)
+    }
+
+    @Test
+    fun `M clean up registry W callEnd() { delegate throws }`() {
+        // Given
+        val listener = testedFactory.create(mockCall)
+        val fakeException = IllegalStateException("test")
+        whenever(mockDelegate.callEnd(mockCall)).thenThrow(fakeException)
+
+        // When + Then
+        assertThatThrownBy { listener.callEnd(mockCall) }
+            .isSameAs(fakeException)
+        verify(mockRegistry).remove(mockCall)
+    }
+
+    @Test
+    fun `M clean up registry W callFailed()`() {
+        // Given
+        val listener = testedFactory.create(mockCall)
+        val ioe = IOException("test")
+
+        // When
+        listener.callFailed(mockCall, ioe)
+
+        // Then
+        verify(mockRegistry).remove(mockCall)
+    }
+
+    @Test
+    fun `M clean up registry W callFailed() { delegate throws }`() {
+        // Given
+        val listener = testedFactory.create(mockCall)
+        val ioe = IOException("test")
+        val fakeException = IllegalStateException("test")
+        whenever(mockDelegate.callFailed(mockCall, ioe)).thenThrow(fakeException)
+
+        // When + Then
+        assertThatThrownBy { listener.callFailed(mockCall, ioe) }
+            .isSameAs(fakeException)
+        verify(mockRegistry).remove(mockCall)
+    }
+
+    @Test
+    fun `M delegate W callStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -91,12 +170,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.callStart(mockCall)
 
         // Then
-        verify(mockListener1).callStart(mockCall)
-        verify(mockListener2).callStart(mockCall)
+        verify(mockDelegate).callStart(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W proxySelectStart()`() {
+    fun `M delegate W proxySelectStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -104,12 +182,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.proxySelectStart(mockCall, mockHttpUrl)
 
         // Then
-        verify(mockListener1).proxySelectStart(mockCall, mockHttpUrl)
-        verify(mockListener2).proxySelectStart(mockCall, mockHttpUrl)
+        verify(mockDelegate).proxySelectStart(mockCall, mockHttpUrl)
     }
 
     @Test
-    fun `M delegate to all listeners W proxySelectEnd()`() {
+    fun `M delegate W proxySelectEnd()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val proxies = listOf(Proxy.NO_PROXY)
@@ -118,12 +195,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.proxySelectEnd(mockCall, mockHttpUrl, proxies)
 
         // Then
-        verify(mockListener1).proxySelectEnd(mockCall, mockHttpUrl, proxies)
-        verify(mockListener2).proxySelectEnd(mockCall, mockHttpUrl, proxies)
+        verify(mockDelegate).proxySelectEnd(mockCall, mockHttpUrl, proxies)
     }
 
     @Test
-    fun `M delegate to all listeners W dnsStart()`(
+    fun `M delegate W dnsStart()`(
         @StringForgery fakeDomainName: String
     ) {
         // Given
@@ -133,12 +209,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.dnsStart(mockCall, fakeDomainName)
 
         // Then
-        verify(mockListener1).dnsStart(mockCall, fakeDomainName)
-        verify(mockListener2).dnsStart(mockCall, fakeDomainName)
+        verify(mockDelegate).dnsStart(mockCall, fakeDomainName)
     }
 
     @Test
-    fun `M delegate to all listeners W dnsEnd()`(
+    fun `M delegate W dnsEnd()`(
         @StringForgery fakeDomainName: String
     ) {
         // Given
@@ -149,12 +224,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.dnsEnd(mockCall, fakeDomainName, inetAddressList)
 
         // Then
-        verify(mockListener1).dnsEnd(mockCall, fakeDomainName, inetAddressList)
-        verify(mockListener2).dnsEnd(mockCall, fakeDomainName, inetAddressList)
+        verify(mockDelegate).dnsEnd(mockCall, fakeDomainName, inetAddressList)
     }
 
     @Test
-    fun `M delegate to all listeners W connectStart()`() {
+    fun `M delegate W connectStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val socketAddress = InetSocketAddress(0)
@@ -164,12 +238,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.connectStart(mockCall, socketAddress, proxy)
 
         // Then
-        verify(mockListener1).connectStart(mockCall, socketAddress, proxy)
-        verify(mockListener2).connectStart(mockCall, socketAddress, proxy)
+        verify(mockDelegate).connectStart(mockCall, socketAddress, proxy)
     }
 
     @Test
-    fun `M delegate to all listeners W connectEnd()`() {
+    fun `M delegate W connectEnd()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val socketAddress = InetSocketAddress(0)
@@ -180,12 +253,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.connectEnd(mockCall, socketAddress, proxy, protocol)
 
         // Then
-        verify(mockListener1).connectEnd(mockCall, socketAddress, proxy, protocol)
-        verify(mockListener2).connectEnd(mockCall, socketAddress, proxy, protocol)
+        verify(mockDelegate).connectEnd(mockCall, socketAddress, proxy, protocol)
     }
 
     @Test
-    fun `M delegate to all listeners W connectFailed()`() {
+    fun `M delegate W connectFailed()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val socketAddress = InetSocketAddress(0)
@@ -197,12 +269,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.connectFailed(mockCall, socketAddress, proxy, protocol, ioe)
 
         // Then
-        verify(mockListener1).connectFailed(mockCall, socketAddress, proxy, protocol, ioe)
-        verify(mockListener2).connectFailed(mockCall, socketAddress, proxy, protocol, ioe)
+        verify(mockDelegate).connectFailed(mockCall, socketAddress, proxy, protocol, ioe)
     }
 
     @Test
-    fun `M delegate to all listeners W secureConnectStart()`() {
+    fun `M delegate W secureConnectStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -210,12 +281,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.secureConnectStart(mockCall)
 
         // Then
-        verify(mockListener1).secureConnectStart(mockCall)
-        verify(mockListener2).secureConnectStart(mockCall)
+        verify(mockDelegate).secureConnectStart(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W secureConnectEnd()`() {
+    fun `M delegate W secureConnectEnd()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -223,12 +293,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.secureConnectEnd(mockCall, mockHandshake)
 
         // Then
-        verify(mockListener1).secureConnectEnd(mockCall, mockHandshake)
-        verify(mockListener2).secureConnectEnd(mockCall, mockHandshake)
+        verify(mockDelegate).secureConnectEnd(mockCall, mockHandshake)
     }
 
     @Test
-    fun `M delegate to all listeners W connectionAcquired()`() {
+    fun `M delegate W connectionAcquired()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -236,12 +305,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.connectionAcquired(mockCall, mockConnection)
 
         // Then
-        verify(mockListener1).connectionAcquired(mockCall, mockConnection)
-        verify(mockListener2).connectionAcquired(mockCall, mockConnection)
+        verify(mockDelegate).connectionAcquired(mockCall, mockConnection)
     }
 
     @Test
-    fun `M delegate to all listeners W connectionReleased()`() {
+    fun `M delegate W connectionReleased()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -249,12 +317,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.connectionReleased(mockCall, mockConnection)
 
         // Then
-        verify(mockListener1).connectionReleased(mockCall, mockConnection)
-        verify(mockListener2).connectionReleased(mockCall, mockConnection)
+        verify(mockDelegate).connectionReleased(mockCall, mockConnection)
     }
 
     @Test
-    fun `M delegate to all listeners W requestHeadersStart()`() {
+    fun `M delegate W requestHeadersStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -262,12 +329,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.requestHeadersStart(mockCall)
 
         // Then
-        verify(mockListener1).requestHeadersStart(mockCall)
-        verify(mockListener2).requestHeadersStart(mockCall)
+        verify(mockDelegate).requestHeadersStart(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W requestHeadersEnd()`() {
+    fun `M delegate W requestHeadersEnd()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -275,12 +341,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.requestHeadersEnd(mockCall, mockRequest)
 
         // Then
-        verify(mockListener1).requestHeadersEnd(mockCall, mockRequest)
-        verify(mockListener2).requestHeadersEnd(mockCall, mockRequest)
+        verify(mockDelegate).requestHeadersEnd(mockCall, mockRequest)
     }
 
     @Test
-    fun `M delegate to all listeners W requestBodyStart()`() {
+    fun `M delegate W requestBodyStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -288,12 +353,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.requestBodyStart(mockCall)
 
         // Then
-        verify(mockListener1).requestBodyStart(mockCall)
-        verify(mockListener2).requestBodyStart(mockCall)
+        verify(mockDelegate).requestBodyStart(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W requestBodyEnd()`(
+    fun `M delegate W requestBodyEnd()`(
         @LongForgery(min = 0) fakeByteCount: Long
     ) {
         // Given
@@ -303,12 +367,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.requestBodyEnd(mockCall, fakeByteCount)
 
         // Then
-        verify(mockListener1).requestBodyEnd(mockCall, fakeByteCount)
-        verify(mockListener2).requestBodyEnd(mockCall, fakeByteCount)
+        verify(mockDelegate).requestBodyEnd(mockCall, fakeByteCount)
     }
 
     @Test
-    fun `M delegate to all listeners W requestFailed()`() {
+    fun `M delegate W requestFailed()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val ioe = IOException("test")
@@ -317,12 +380,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.requestFailed(mockCall, ioe)
 
         // Then
-        verify(mockListener1).requestFailed(mockCall, ioe)
-        verify(mockListener2).requestFailed(mockCall, ioe)
+        verify(mockDelegate).requestFailed(mockCall, ioe)
     }
 
     @Test
-    fun `M delegate to all listeners W responseHeadersStart()`() {
+    fun `M delegate W responseHeadersStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -330,12 +392,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.responseHeadersStart(mockCall)
 
         // Then
-        verify(mockListener1).responseHeadersStart(mockCall)
-        verify(mockListener2).responseHeadersStart(mockCall)
+        verify(mockDelegate).responseHeadersStart(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W responseHeadersEnd()`() {
+    fun `M delegate W responseHeadersEnd()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -343,12 +404,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.responseHeadersEnd(mockCall, mockResponse)
 
         // Then
-        verify(mockListener1).responseHeadersEnd(mockCall, mockResponse)
-        verify(mockListener2).responseHeadersEnd(mockCall, mockResponse)
+        verify(mockDelegate).responseHeadersEnd(mockCall, mockResponse)
     }
 
     @Test
-    fun `M delegate to all listeners W responseBodyStart()`() {
+    fun `M delegate W responseBodyStart()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -356,12 +416,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.responseBodyStart(mockCall)
 
         // Then
-        verify(mockListener1).responseBodyStart(mockCall)
-        verify(mockListener2).responseBodyStart(mockCall)
+        verify(mockDelegate).responseBodyStart(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W responseBodyEnd()`(
+    fun `M delegate W responseBodyEnd()`(
         @LongForgery(min = 0) fakeByteCount: Long
     ) {
         // Given
@@ -371,12 +430,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.responseBodyEnd(mockCall, fakeByteCount)
 
         // Then
-        verify(mockListener1).responseBodyEnd(mockCall, fakeByteCount)
-        verify(mockListener2).responseBodyEnd(mockCall, fakeByteCount)
+        verify(mockDelegate).responseBodyEnd(mockCall, fakeByteCount)
     }
 
     @Test
-    fun `M delegate to all listeners W responseFailed()`() {
+    fun `M delegate W responseFailed()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val ioe = IOException("test")
@@ -385,12 +443,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.responseFailed(mockCall, ioe)
 
         // Then
-        verify(mockListener1).responseFailed(mockCall, ioe)
-        verify(mockListener2).responseFailed(mockCall, ioe)
+        verify(mockDelegate).responseFailed(mockCall, ioe)
     }
 
     @Test
-    fun `M delegate to all listeners W cacheHit()`() {
+    fun `M delegate W cacheHit()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -398,12 +455,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.cacheHit(mockCall, mockResponse)
 
         // Then
-        verify(mockListener1).cacheHit(mockCall, mockResponse)
-        verify(mockListener2).cacheHit(mockCall, mockResponse)
+        verify(mockDelegate).cacheHit(mockCall, mockResponse)
     }
 
     @Test
-    fun `M delegate to all listeners W cacheMiss()`() {
+    fun `M delegate W cacheMiss()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -411,12 +467,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.cacheMiss(mockCall)
 
         // Then
-        verify(mockListener1).cacheMiss(mockCall)
-        verify(mockListener2).cacheMiss(mockCall)
+        verify(mockDelegate).cacheMiss(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W cacheConditionalHit()`() {
+    fun `M delegate W cacheConditionalHit()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -424,12 +479,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.cacheConditionalHit(mockCall, mockResponse)
 
         // Then
-        verify(mockListener1).cacheConditionalHit(mockCall, mockResponse)
-        verify(mockListener2).cacheConditionalHit(mockCall, mockResponse)
+        verify(mockDelegate).cacheConditionalHit(mockCall, mockResponse)
     }
 
     @Test
-    fun `M delegate to all listeners W satisfactionFailure()`() {
+    fun `M delegate W satisfactionFailure()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -437,12 +491,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.satisfactionFailure(mockCall, mockResponse)
 
         // Then
-        verify(mockListener1).satisfactionFailure(mockCall, mockResponse)
-        verify(mockListener2).satisfactionFailure(mockCall, mockResponse)
+        verify(mockDelegate).satisfactionFailure(mockCall, mockResponse)
     }
 
     @Test
-    fun `M delegate to all listeners W canceled()`() {
+    fun `M delegate W canceled()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -450,12 +503,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.canceled(mockCall)
 
         // Then
-        verify(mockListener1).canceled(mockCall)
-        verify(mockListener2).canceled(mockCall)
+        verify(mockDelegate).canceled(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W callEnd()`() {
+    fun `M delegate W callEnd()`() {
         // Given
         val listener = testedFactory.create(mockCall)
 
@@ -463,12 +515,11 @@ internal class CompositeEventListenerFactoryTest {
         listener.callEnd(mockCall)
 
         // Then
-        verify(mockListener1).callEnd(mockCall)
-        verify(mockListener2).callEnd(mockCall)
+        verify(mockDelegate).callEnd(mockCall)
     }
 
     @Test
-    fun `M delegate to all listeners W callFailed()`() {
+    fun `M delegate W callFailed()`() {
         // Given
         val listener = testedFactory.create(mockCall)
         val ioe = IOException("test")
@@ -477,20 +528,6 @@ internal class CompositeEventListenerFactoryTest {
         listener.callFailed(mockCall, ioe)
 
         // Then
-        verify(mockListener1).callFailed(mockCall, ioe)
-        verify(mockListener2).callFailed(mockCall, ioe)
-    }
-
-    @Test
-    fun `M create composite listener from factories W create()`() {
-        // When
-        val listener = testedFactory.create(mockCall)
-
-        // Then
-        verify(mockFactory1).create(mockCall)
-        verify(mockFactory2).create(mockCall)
-        listener.callStart(mockCall)
-        verify(mockListener1).callStart(mockCall)
-        verify(mockListener2).callStart(mockCall)
+        verify(mockDelegate).callFailed(mockCall, ioe)
     }
 }

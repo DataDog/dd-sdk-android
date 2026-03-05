@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
-import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -32,6 +33,9 @@ import org.mockito.quality.Strictness
 internal class DatadogTracingToolkitTest {
 
     private lateinit var fakeTracedHosts: Map<String, Set<TracingHeaderType>>
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @StringForgery
     lateinit var fakeInstrumentationName: String

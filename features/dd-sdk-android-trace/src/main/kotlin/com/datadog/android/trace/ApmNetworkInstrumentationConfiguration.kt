@@ -67,6 +67,14 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
     )
 
     /**
+     * Creates a configuration with a list of traced hosts using default header types
+     * ([TracingHeaderType.DATADOG] and [TracingHeaderType.TRACECONTEXT]).
+     *
+     * @param tracedHosts a vararg list of hosts to trace.
+     */
+    constructor(vararg tracedHosts: String) : this(tracedHosts.toList())
+
+    /**
      * Creates a configuration with a map of hosts to their associated tracing header types.
      *
      * @param tracedHostsWithHeaderType a map of host names to sets of [TracingHeaderType]
@@ -80,6 +88,8 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
     /**
      * Set the origin of the trace.
      * @param traceOrigin the origin of the trace.
+     * @param replace if true (default), always replaces the current trace origin;
+     * if false, only sets the trace origin when it hasn't been set yet.
      */
     @JvmOverloads
     fun setTraceOrigin(traceOrigin: String, replace: Boolean = true) = apply {
@@ -87,7 +97,6 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
             this.traceOrigin = traceOrigin
         }
     }
-
 
     /**
      * Returns the origin of the trace, or null if not set.
@@ -195,7 +204,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      *
      * @return `true` if client-side APM spans are disabled and only tracing headers
      * are propagated, `false` otherwise.
-     * @see headerPropagationOnly
+     * @see setHeaderPropagationOnly
      */
     fun isHeaderPropagationOnly(): Boolean {
         return headerPropagationOnly

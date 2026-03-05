@@ -6,10 +6,13 @@
 
 package com.datadog.android.okhttp.internal
 
-import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.tag
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.internal.net.RequestTracingState
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.BaseConfigurator
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -25,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.UUID
@@ -45,11 +49,14 @@ internal class RequestTracingStateRegistryTest {
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         val fakeRequest = Request.Builder().url(fakeUrl).build()
         whenever(mockCall.request()) doReturn fakeRequest
-        testedRegistry = RequestTracingStateRegistry()
+        testedRegistry = RequestTracingStateRegistry(mockInternalLogger)
     }
 
     @Test
@@ -59,7 +66,7 @@ internal class RequestTracingStateRegistryTest {
         val result = testedRegistry.get(mockCall)
 
         // Then
-        val requestInfo = checkNotNull(result).createModifiedRequestInfo()
+        val requestInfo = checkNotNull(result).createRequestInfo()
         assertThat(requestInfo).isInstanceOf(OkHttpRequestInfo::class.java)
         assertThat(requestInfo.url).isEqualTo(fakeUrl)
     }
@@ -71,7 +78,8 @@ internal class RequestTracingStateRegistryTest {
         val result = testedRegistry.get(mockCall)
 
         // Then
-        assertThat(checkNotNull(result).createModifiedRequestInfo().tag(UUID::class.java)).isNotNull
+        val requestInfo = checkNotNull(result).createRequestInfo()
+        assertThat(requestInfo.tag(UUID::class.java)).isNotNull
     }
 
     @Test
@@ -84,7 +92,7 @@ internal class RequestTracingStateRegistryTest {
     }
 
     @Test
-    fun `M return info and remove W unregister()`() {
+    fun `M return info and remove W remove()`() {
         // Given
         testedRegistry.register(mockCall)
 
@@ -92,12 +100,13 @@ internal class RequestTracingStateRegistryTest {
         val result = testedRegistry.remove(mockCall)
 
         // Then
-        assertThat(checkNotNull(result).createModifiedRequestInfo().url).isEqualTo(fakeUrl)
+        val requestInfo = checkNotNull(result).createRequestInfo()
+        assertThat(requestInfo.url).isEqualTo(fakeUrl)
         assertThat(testedRegistry.get(mockCall)).isNull()
     }
 
     @Test
-    fun `M return null W unregister() { not registered }`() {
+    fun `M return null W remove() { not registered }`() {
         // When
         val result = testedRegistry.remove(mockCall)
 
@@ -119,12 +128,15 @@ internal class RequestTracingStateRegistryTest {
         testedRegistry.register(mockCall2)
 
         // Then
-        assertThat(checkNotNull(testedRegistry.get(mockCall)).createModifiedRequestInfo().url).isEqualTo(fakeUrl)
-        assertThat(checkNotNull(testedRegistry.get(mockCall2)).createModifiedRequestInfo().url).isEqualTo(fakeUrl2)
+        val requestInfo1 = checkNotNull(testedRegistry.get(mockCall)).createRequestInfo()
+        assertThat(requestInfo1.url).isEqualTo(fakeUrl)
+
+        val requestInfo2 = checkNotNull(testedRegistry.get(mockCall2)).createRequestInfo()
+        assertThat(requestInfo2.url).isEqualTo(fakeUrl2)
     }
 
     @Test
-    fun `M not affect other calls W unregister()`() {
+    fun `M not affect other calls W remove()`() {
         // Given
         val fakeUrl2 = "https://other.com/path"
         val fakeRequest2 = Request.Builder().url(fakeUrl2).build()
@@ -143,80 +155,187 @@ internal class RequestTracingStateRegistryTest {
     }
 
     @Test
-    fun `M apply block and return result W update() { call registered }`() {
+    fun `M return merged state W setTracingState() { call registered }`() {
         // Given
         testedRegistry.register(mockCall)
-        val mockRequestBuilder = mock<HttpRequestInfoBuilder>()
-        val updatedState = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+        val newRequestBuilder = OkHttpRequestInfoBuilder(
+            Request.Builder().url(fakeUrl)
+                .addHeader("x-trace", "123")
+        )
+        val newState = RequestTracingState(
+            requestInfoBuilder = newRequestBuilder,
             isSampled = true
         )
 
         // When
-        val result = testedRegistry.update(mockCall) { _, _ -> updatedState }
+        val result = testedRegistry.setTracingState(mockCall, newState)
 
         // Then
-        assertThat(result).isSameAs(updatedState)
+        assertThat(result).isNotNull
     }
 
     @Test
-    fun `M return null W update() { call not registered }`() {
+    fun `M return null W setTracingState() { call not registered }`() {
+        // Given
+        val newState = RequestTracingState(
+            requestInfoBuilder = OkHttpRequestInfoBuilder(
+                Request.Builder().url(fakeUrl)
+            ),
+            isSampled = true
+        )
+
         // When
-        val result = testedRegistry.update(mockCall) { _, _ ->
-            RequestTracingState(
-                tracedRequestInfoBuilder = mock(),
-                isSampled = true
-            )
-        }
+        val result = testedRegistry.setTracingState(mockCall, newState)
 
         // Then
         assertThat(result).isNull()
     }
 
     @Test
-    fun `M receive current state in block W update() { call registered }`() {
+    fun `M preserve UUID tag W setTracingState() { call registered }`() {
         // Given
         testedRegistry.register(mockCall)
-        val originalState = testedRegistry.get(mockCall)
-        var receivedState: RequestTracingState? = null
+        val originalUuid = testedRegistry.get(mockCall)!!
+            .createRequestInfo().tag(UUID::class.java)
 
-        // When
-        testedRegistry.update(mockCall) { _, state ->
-            receivedState = state
-            state
-        }
-
-        // Then
-        assertThat(receivedState).isSameAs(originalState)
-    }
-
-    @Test
-    fun `M update stored state W update() { block returns new state }`() {
-        // Given
-        testedRegistry.register(mockCall)
-        val mockRequestBuilder = mock<HttpRequestInfoBuilder>()
-        val updatedState = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+        val newRequestBuilder = OkHttpRequestInfoBuilder(
+            Request.Builder().url(fakeUrl).addHeader("x-trace", "123")
+        )
+        val newState = RequestTracingState(
+            requestInfoBuilder = newRequestBuilder,
             isSampled = true
         )
 
         // When
-        testedRegistry.update(mockCall) { _, _ -> updatedState }
+        val result = testedRegistry.setTracingState(mockCall, newState)
 
         // Then
-        assertThat(testedRegistry.get(mockCall)).isSameAs(updatedState)
+        val resultUuid = result!!.createRequestInfo().tag(UUID::class.java)
+        assertThat(resultUuid).isEqualTo(originalUuid)
     }
 
     @Test
-    fun `M remove entry W update() { block returns null }`() {
+    fun `M update stored state W setTracingState() { call registered }`() {
         // Given
         testedRegistry.register(mockCall)
+        val newRequestBuilder = OkHttpRequestInfoBuilder(
+            Request.Builder().url(fakeUrl).addHeader("x-trace", "123")
+        )
+        val newState = RequestTracingState(
+            requestInfoBuilder = newRequestBuilder,
+            isSampled = true
+        )
 
         // When
-        val result = testedRegistry.update(mockCall) { _, _ -> null }
+        testedRegistry.setTracingState(mockCall, newState)
+
+        // Then
+        val stored = testedRegistry.get(mockCall)
+        assertThat(stored).isNotNull
+        assertThat(stored).isNotSameAs(newState)
+    }
+
+    @Test
+    fun `M return tagged request W restoreUUIDTag() { call registered }`() {
+        // Given
+        testedRegistry.register(mockCall)
+        val newRequest = Request.Builder().url(fakeUrl)
+            .addHeader("x-custom", "value")
+            .build()
+
+        // When
+        val result = testedRegistry.restoreUUIDTag(mockCall, newRequest)
+
+        // Then
+        assertThat(result).isNotNull
+        assertThat(result!!.header("x-custom")).isEqualTo("value")
+        assertThat(result.tag(UUID::class.java)).isNotNull
+    }
+
+    @Test
+    fun `M return null W restoreUUIDTag() { call not registered }`() {
+        // When
+        val result = testedRegistry.restoreUUIDTag(
+            mockCall,
+            Request.Builder().url(fakeUrl).build()
+        )
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M log warning and not register W register() { max tracked calls reached }`() {
+        // Given
+        repeat(RequestTracingStateRegistry.MAX_TRACKED_CALLS) { index ->
+            val request = Request.Builder().url("https://host$index.com/path").build()
+            val call = mock<Call> {
+                on { request() } doReturn request
+            }
+            testedRegistry.register(call)
+        }
+
+        // When
+        testedRegistry.register(mockCall)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RequestTracingStateRegistry.WARNING_MAX_TRACKED_CALLS,
+            onlyOnce = true
+        )
         assertThat(testedRegistry.get(mockCall)).isNull()
+    }
+
+    @Test
+    fun `M not log warning W register() { below max tracked calls }`() {
+        // When
+        testedRegistry.register(mockCall)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+        assertThat(testedRegistry.get(mockCall)).isNotNull
+    }
+
+    @Test
+    fun `M preserve span and sampling fields W setTracingState() { call registered }`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // Given
+        testedRegistry.register(mockCall)
+        val originalUuid = checkNotNull(testedRegistry.get(mockCall))
+            .createRequestInfo().tag(UUID::class.java)
+
+        val mockSpan = mock<DatadogSpan>()
+        val newRequestBuilder = OkHttpRequestInfoBuilder(
+            Request.Builder()
+                .url(fakeUrl)
+                .addHeader("x-trace", "123")
+        )
+        val newState = RequestTracingState(
+            requestInfoBuilder = newRequestBuilder,
+            isSampled = true,
+            span = mockSpan,
+            sampleRate = fakeSampleRate
+        )
+
+        // When
+        val result = testedRegistry.setTracingState(mockCall, newState)
+
+        // Then
+        checkNotNull(result).apply {
+            assertThat(span).isSameAs(mockSpan)
+            assertThat(isSampled).isTrue()
+            assertThat(sampleRate).isEqualTo(fakeSampleRate)
+            assertThat(createRequestInfo().tag(UUID::class.java)).isEqualTo(originalUuid)
+        }
+
+        checkNotNull(testedRegistry.get(mockCall)).apply {
+            assertThat(span).isSameAs(mockSpan)
+            assertThat(isSampled).isTrue()
+            assertThat(sampleRate).isEqualTo(fakeSampleRate)
+            assertThat(createRequestInfo().tag(UUID::class.java)).isEqualTo(originalUuid)
+        }
     }
 }

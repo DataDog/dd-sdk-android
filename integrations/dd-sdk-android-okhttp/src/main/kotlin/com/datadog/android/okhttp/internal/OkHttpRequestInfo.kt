@@ -125,5 +125,5 @@ class OkHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : Ht
     override fun <T> addTag(type: Class<in T>, tag: T?) = apply { requestBuilder.tag(type, tag) }
 
     /** @inheritdoc */
-    override fun build(): HttpRequestInfo = OkHttpRequestInfo(requestBuilder.build())
+    override fun build(): HttpRequestInfo = requestBuilder.build().toHttpRequestInfo()
 }

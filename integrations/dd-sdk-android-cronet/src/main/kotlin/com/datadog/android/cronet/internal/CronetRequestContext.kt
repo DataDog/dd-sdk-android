@@ -25,6 +25,7 @@ internal class CronetRequestContext internal constructor(
 ) {
     internal val method: String
         get() = requestParams.method
+
     internal val uploadDataProvider: UploadDataProvider?
         get() = requestParams.uploadDataProviderParams?.uploadDataProvider
 

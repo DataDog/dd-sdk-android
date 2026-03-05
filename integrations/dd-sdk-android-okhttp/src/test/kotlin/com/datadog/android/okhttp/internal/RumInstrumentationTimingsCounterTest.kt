@@ -10,7 +10,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
-import com.datadog.android.core.SdkReference
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTracingState
@@ -32,10 +31,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -92,7 +92,7 @@ internal class RumInstrumentationTimingsCounterTest {
             .build()
 
         whenever(mockRequestBuilder.build()) doReturn mockRequestInfo
-        val fakeTracingState = RequestTracingState(tracedRequestInfoBuilder = mockRequestBuilder)
+        val fakeTracingState = RequestTracingState(requestInfoBuilder = mockRequestBuilder)
         whenever(mockRequestInfoRegistry.get(mockCall)) doReturn fakeTracingState
 
         whenever(mockSdkCore.time).thenReturn(
@@ -176,10 +176,116 @@ internal class RumInstrumentationTimingsCounterTest {
     }
 
     @Test
+    fun `M not send waitForResourceTiming W dnsStart() { no request info }`() {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.dnsStart(mockCall, fakeDomain)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send waitForResourceTiming W connectStart() { no request info }`() {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.connectStart(mockCall, InetSocketAddress(0), Proxy.NO_PROXY)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send waitForResourceTiming W secureConnectStart() { no request info }`() {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.secureConnectStart(mockCall)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send waitForResourceTiming W responseHeadersStart() { no request info }`() {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.responseHeadersStart(mockCall)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send waitForResourceTiming W responseBodyStart() { no request info }`() {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.responseBodyStart(mockCall)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send timing W responseHeadersEnd() { no request info, error status }`(
+        @IntForgery(min = 400, max = 600) statusCode: Int
+    ) {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+        fakeResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_2)
+            .code(statusCode)
+            .message("Error")
+            .build()
+
+        // When
+        testedListener.responseHeadersEnd(mockCall, fakeResponse)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send timing W callEnd() { no request info }`() {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.callEnd(mockCall)
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
+    fun `M not send timing W callFailed() { no request info }`(
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        whenever(mockRequestInfoRegistry.get(mockCall)) doReturn null
+
+        // When
+        testedListener.callFailed(mockCall, IOException(fakeErrorMessage))
+
+        // Then
+        verifyNoInteractions(mockRumNetworkInstrumentation)
+    }
+
+    @Test
     fun `M send timing W callEnd() { full request lifecycle }`() {
         // Given
         whenever(mockRequestInfoRegistry.remove(mockCall)) doReturn
-            RequestTracingState(tracedRequestInfoBuilder = mockRequestBuilder)
+            RequestTracingState(requestInfoBuilder = mockRequestBuilder)
 
         // When
         testedListener.callStart(mockCall)
@@ -219,7 +325,7 @@ internal class RumInstrumentationTimingsCounterTest {
     ) {
         // Given
         whenever(mockRequestInfoRegistry.remove(mockCall)) doReturn
-            RequestTracingState(tracedRequestInfoBuilder = mockRequestBuilder)
+            RequestTracingState(requestInfoBuilder = mockRequestBuilder)
 
         // When
         testedListener.callStart(mockCall)
@@ -261,10 +367,30 @@ internal class RumInstrumentationTimingsCounterTest {
     }
 
     @Test
+    fun `M not send timing W responseHeadersEnd() { success status code }`(
+        @IntForgery(min = 200, max = 399) statusCode: Int
+    ) {
+        // Given
+        fakeResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_2)
+            .code(statusCode)
+            .message("OK")
+            .build()
+
+        // When
+        testedListener.callStart(mockCall)
+        testedListener.responseHeadersEnd(mockCall, fakeResponse)
+
+        // Then
+        verify(mockRumNetworkInstrumentation, never()).sendTiming(any(), any())
+    }
+
+    @Test
     fun `M send timing with zeroes for missing phases W callEnd() { reused connection }`() {
         // Given
         whenever(mockRequestInfoRegistry.remove(mockCall)) doReturn
-                RequestTracingState(tracedRequestInfoBuilder = mockRequestBuilder)
+            RequestTracingState(requestInfoBuilder = mockRequestBuilder)
 
         // When
         testedListener.callStart(mockCall)
@@ -307,10 +433,7 @@ internal class RumInstrumentationTimingsCounterTest {
     @Test
     fun `M register call and create listener W Factory create() { sdkCore available }`() {
         // Given
-        val mockSdkReference = mock<SdkReference> {
-            on { get() } doReturn mockSdkCore
-        }
-        whenever(mockRumNetworkInstrumentation.sdkCoreReference) doReturn mockSdkReference
+        whenever(mockRumNetworkInstrumentation.sdkCore) doReturn mockSdkCore
         val factory = RumInstrumentationTimingsCounter.Factory(
             mockRumNetworkInstrumentation,
             mockRequestInfoRegistry
@@ -326,10 +449,7 @@ internal class RumInstrumentationTimingsCounterTest {
     @Test
     fun `M return no-op listener W Factory create() { sdkCore not available }`() {
         // Given
-        val mockSdkReference = mock<SdkReference> {
-            on { get() } doReturn null
-        }
-        whenever(mockRumNetworkInstrumentation.sdkCoreReference) doReturn mockSdkReference
+        whenever(mockRumNetworkInstrumentation.sdkCore) doReturn null
         val factory = RumInstrumentationTimingsCounter.Factory(
             mockRumNetworkInstrumentation,
             mockRequestInfoRegistry

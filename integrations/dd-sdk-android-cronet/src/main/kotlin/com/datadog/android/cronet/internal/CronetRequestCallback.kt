@@ -31,7 +31,7 @@ internal class CronetRequestCallback(
         val distributedTracingState = distributedTracingInstrumentation?.onRequest(initialRequestInfo)
             .also(distributedTracingStateHolder::set)
 
-        val finalRequestInfo = distributedTracingState?.createModifiedRequestInfo() ?: initialRequestInfo
+        val finalRequestInfo = distributedTracingState?.createRequestInfo() ?: initialRequestInfo
 
         rumNetworkInstrumentation?.apply {
             startResource(finalRequestInfo)
@@ -55,7 +55,7 @@ internal class CronetRequestCallback(
             return
         }
 
-        val requestInfo = apmTracingStateHolder.get()?.createModifiedRequestInfo()
+        val requestInfo = apmTracingStateHolder.get()?.createRequestInfo()
 
         finishSuccessRequestTracing(cronetResponse)
 

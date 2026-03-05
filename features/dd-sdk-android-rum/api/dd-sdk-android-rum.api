@@ -419,7 +419,7 @@ public final class com/datadog/android/rum/internal/net/GraphQLExtractor$Compani
 
 public final class com/datadog/android/rum/internal/net/RumNetworkInstrumentation {
 	public static final field Companion Lcom/datadog/android/rum/internal/net/RumNetworkInstrumentation$Companion;
-	public final fun getSdkCoreReference ()Lcom/datadog/android/core/SdkReference;
+	public final fun getSdkCore ()Lcom/datadog/android/api/SdkCore;
 	public final fun reportInstrumentationError (Lkotlin/jvm/functions/Function0;)V
 	public final fun sendTiming (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Lcom/datadog/android/rum/internal/domain/event/ResourceTiming;)V
 	public final fun sendWaitForResourceTimingEvent (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)V

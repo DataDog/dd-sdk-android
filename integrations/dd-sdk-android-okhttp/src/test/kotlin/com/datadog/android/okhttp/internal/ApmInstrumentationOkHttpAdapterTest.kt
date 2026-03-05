@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.core.SdkReference
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -21,6 +22,7 @@ import okhttp3.Call
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -41,7 +43,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
-import java.util.function.BiFunction
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -88,13 +89,10 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         whenever(mockSdkReference.get()) doReturn mockSdkCore
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
-        val initialRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
-        val initialState = RequestTracingState(tracedRequestInfoBuilder = initialRequestBuilder)
-        whenever(mockRegistry.update(eq(mockCall), any())).thenAnswer { invocation ->
-            @Suppress("UNCHECKED_CAST")
-            val block = invocation.getArgument<BiFunction<Call, RequestTracingState, RequestTracingState?>>(1)
-            block.apply(mockCall, initialState)
-        }
+        whenever(mockRegistry.restoreUUIDTag(eq(mockCall), any()))
+            .thenAnswer { invocation ->
+                invocation.getArgument<Request>(1)
+            }
 
         testedInterceptor = ApmInstrumentationOkHttpAdapter(mockApmNetworkInstrumentation, mockRegistry)
     }
@@ -108,7 +106,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
@@ -120,7 +118,10 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val response = testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(mockApmNetworkInstrumentation).onRequest(any<OkHttpRequestInfo>())
+        argumentCaptor<OkHttpRequestInfo> {
+            verify(mockApmNetworkInstrumentation).onRequest(capture())
+            assertThat(firstValue.originalRequest).isSameAs(fakeRequest)
+        }
         verify(mockApmNetworkInstrumentation).onResponseSucceeded(
             eq(fakeTracingState),
             any<OkHttpHttpResponseInfo>()
@@ -137,7 +138,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
@@ -160,7 +161,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        whenever(mockRegistry.update(eq(mockCall), any())) doReturn null
+        whenever(mockRegistry.restoreUUIDTag(eq(mockCall), any())) doReturn null
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
 
@@ -180,7 +181,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        whenever(mockRegistry.update(eq(mockCall), any())) doReturn null
+        whenever(mockRegistry.restoreUUIDTag(eq(mockCall), any())) doReturn null
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
 
@@ -197,7 +198,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val modifiedRequestInfo = OkHttpRequestInfo(fakeRequest)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
@@ -220,7 +221,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         // Given
         val mockRequestBuilder = mockRequestInfoBuilder(null)
         val fakeTracingState = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
@@ -239,9 +240,9 @@ internal class ApmInstrumentationOkHttpAdapterTest {
     }
 
     @Test
-    fun `M propagate exception W intercept() { requestInfo build throws in registry update }`() {
+    fun `M propagate exception W intercept() { mergeTagsToRequest throws }`() {
         // Given
-        whenever(mockRegistry.update(eq(mockCall), any())).thenAnswer {
+        whenever(mockRegistry.restoreUUIDTag(eq(mockCall), any())).thenAnswer {
             throw IllegalStateException("test")
         }
 
@@ -250,6 +251,221 @@ internal class ApmInstrumentationOkHttpAdapterTest {
             testedInterceptor.intercept(mockChain)
         }
     }
+
+    @Test
+    fun `M report instrumentation error W intercept() { restoreUUIDTag returns null }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockRegistry.restoreUUIDTag(eq(mockCall), any())) doReturn null
+        whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockApmNetworkInstrumentation).reportInstrumentationError(any())
+    }
+
+    @Test
+    fun `M proceed with original request W intercept() { onRequest returns null }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn null
+        val fakeResponse = forgeResponse(statusCode)
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue).isSameAs(fakeRequest)
+        }
+        assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `M not call response handlers W intercept() { onRequest returns null }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn null
+        whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockApmNetworkInstrumentation, never()).onResponseSucceeded(any(), any())
+        verify(mockApmNetworkInstrumentation, never()).onResponseFailed(any(), any())
+    }
+
+    @Test
+    fun `M store tracing state in registry W intercept() { onRequest returns state }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val modifiedRequestInfo = OkHttpRequestInfo(fakeRequest)
+        val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
+        val fakeTracingState = RequestTracingState(
+            requestInfoBuilder = mockRequestBuilder,
+            isSampled = true
+        )
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
+        whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockRegistry).setTracingState(eq(mockCall), eq(fakeTracingState))
+    }
+
+    // region upstream interceptor data preservation
+
+    @Test
+    fun `M pass chain request to onRequest W intercept() { upstream adds headers }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery headerValue: String
+    ) {
+        // Given
+        val upstreamRequest = fakeRequest.newBuilder()
+            .addHeader("Authorization", headerValue)
+            .build()
+        whenever(mockChain.request()) doReturn upstreamRequest
+
+        val modifiedRequest = upstreamRequest.newBuilder().addHeader("x-trace", "123").build()
+        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
+        val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
+        val fakeTracingState = RequestTracingState(
+            requestInfoBuilder = mockRequestBuilder,
+            isSampled = true
+        )
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
+
+        val fakeResponse = forgeResponse(statusCode)
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<OkHttpRequestInfo> {
+            verify(mockApmNetworkInstrumentation).onRequest(capture())
+            assertThat(firstValue.originalRequest.header("Authorization")).isEqualTo(headerValue)
+        }
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.header("Authorization")).isEqualTo(headerValue)
+            assertThat(firstValue.header("x-trace")).isEqualTo("123")
+        }
+    }
+
+    @Test
+    fun `M pass chain request to onRequest W intercept() { upstream adds tags }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery tagValue: String
+    ) {
+        // Given
+        val upstreamRequest = fakeRequest.newBuilder()
+            .tag(String::class.java, tagValue)
+            .build()
+        whenever(mockChain.request()) doReturn upstreamRequest
+
+        val modifiedRequest = upstreamRequest.newBuilder().addHeader("x-trace", "123").build()
+        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
+        val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
+        val fakeTracingState = RequestTracingState(
+            requestInfoBuilder = mockRequestBuilder,
+            isSampled = true
+        )
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
+
+        val fakeResponse = forgeResponse(statusCode)
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<OkHttpRequestInfo> {
+            verify(mockApmNetworkInstrumentation).onRequest(capture())
+            assertThat(firstValue.originalRequest.tag(String::class.java)).isEqualTo(tagValue)
+        }
+    }
+
+    @Test
+    fun `M pass chain request to onRequest W intercept() { upstream changes URL }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") modifiedUrl: String
+    ) {
+        // Given
+        val upstreamRequest = Request.Builder().url(modifiedUrl).get().build()
+        whenever(mockChain.request()) doReturn upstreamRequest
+
+        val tracedRequest = upstreamRequest.newBuilder().addHeader("x-trace", "123").build()
+        val tracedRequestInfo = OkHttpRequestInfo(tracedRequest)
+        val mockRequestBuilder = mockRequestInfoBuilder(tracedRequestInfo)
+        val fakeTracingState = RequestTracingState(
+            requestInfoBuilder = mockRequestBuilder,
+            isSampled = true
+        )
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
+
+        val fakeResponse = forgeResponse(statusCode)
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<OkHttpRequestInfo> {
+            verify(mockApmNetworkInstrumentation).onRequest(capture())
+            assertThat(firstValue.url).isEqualTo(modifiedUrl)
+        }
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.url.toString()).isEqualTo(modifiedUrl)
+        }
+    }
+
+    @Test
+    fun `M pass chain request to onRequest W intercept() { upstream changes body }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery bodyContent: String
+    ) {
+        // Given
+        val upstreamRequest = fakeRequest.newBuilder()
+            .post(bodyContent.toRequestBody())
+            .build()
+        whenever(mockChain.request()) doReturn upstreamRequest
+
+        val modifiedRequestInfo = OkHttpRequestInfo(upstreamRequest)
+        val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
+        val fakeTracingState = RequestTracingState(
+            requestInfoBuilder = mockRequestBuilder,
+            isSampled = true
+        )
+        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
+
+        val fakeResponse = forgeResponse(statusCode)
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<OkHttpRequestInfo> {
+            verify(mockApmNetworkInstrumentation).onRequest(capture())
+            assertThat(firstValue.originalRequest.method).isEqualTo(HttpSpec.Method.POST)
+            assertThat(firstValue.originalRequest.body).isNotNull
+        }
+    }
+
+    // endregion
 
     private fun forgeResponse(statusCode: Int): Response {
         return Response.Builder()

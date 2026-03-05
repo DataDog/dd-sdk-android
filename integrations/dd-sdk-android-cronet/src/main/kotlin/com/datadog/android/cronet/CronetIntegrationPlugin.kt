@@ -5,15 +5,20 @@
  */
 package com.datadog.android.cronet
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.logToUser
 import com.datadog.android.cronet.internal.CronetRequestFinishedInfoListener
 import com.datadog.android.cronet.internal.DatadogCronetEngine
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
+import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import org.chromium.net.CronetEngine
 import java.util.concurrent.Executor
@@ -48,8 +53,8 @@ fun CronetEngine.Builder.configureDatadogInstrumentation(
  */
 class CronetIntegrationPlugin internal constructor(
     private val delegate: CronetEngine.Builder,
-    private val rumInstrumentationConfiguration: RumNetworkInstrumentationConfiguration?,
-    private val apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?
+    private val rumConfiguration: RumNetworkInstrumentationConfiguration?,
+    private val apmConfiguration: ApmNetworkInstrumentationConfiguration?
 ) {
     private var listenerExecutor: Executor? = null
 
@@ -68,60 +73,81 @@ class CronetIntegrationPlugin internal constructor(
      * @return an instrumented [CronetEngine] instance, or a plain one if no instrumentation was configured.
      */
     fun build(): CronetEngine {
-        val rumNetworkInstrumentation = rumInstrumentationConfiguration?.let { configuration ->
-            _RumInternalProxy.createRumNetworkInstrumentation(
-                CRONET_NETWORK_INSTRUMENTATION_NAME,
-                LibraryType.CRONET,
-                configuration
-            )
-        }
+        val rumInstrumentation = rumConfiguration?.createRumInstrumentation()
+        val apmInstrumentation = apmConfiguration?.createApmInstrumentation(rumInstrumentation != null)
 
-        val apmInstrumentation = apmInstrumentationConfiguration
-            ?.takeUnless { it.isHeaderPropagationOnly() }
-            ?.let { configuration ->
-                DatadogTracingToolkit.createApmNetworkInstrumentation(
-                    CRONET_NETWORK_INSTRUMENTATION_NAME,
-                    configuration
-                )
-            }
-
-        val distributedTracingInstrumentation = rumNetworkInstrumentation?.let {
-            apmInstrumentationConfiguration
-                ?.copy()
-                ?.let { configuration ->
-                    DatadogTracingToolkit.createApmNetworkInstrumentation(
-                        CRONET_NETWORK_INSTRUMENTATION_NAME,
-                        configuration
-                            .setHeaderPropagationOnly()
-                            .setTraceOrigin(ORIGIN_RUM, replace = false)
-                            .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
-                    )
+        requireInternalLogger(rumInstrumentation, apmInstrumentation).let { internalLogger ->
+            if (apmInstrumentation == null && rumInstrumentation == null) {
+                internalLogger.logToUser(InternalLogger.Level.WARN) {
+                    "Datadog network instrumentation configuration is incorrect:" +
+                        " both RUM and APM instrumentations are null."
                 }
+                return delegate.build()
+            }
         }
 
-        val requestFinishedListener = rumNetworkInstrumentation?.let { instrumentation ->
+        val distributedTracingInstrumentation = apmConfiguration?.createDistributedTracingInstrumentation(
+            rumInstrumentation != null
+        )
+
+        val requestFinishedListener = rumInstrumentation?.let { instrumentation ->
             CronetRequestFinishedInfoListener(
                 rumNetworkInstrumentation = instrumentation,
                 executor = listenerExecutor ?: newListenerExecutor()
             )
         }
 
-        return if (rumNetworkInstrumentation == null && apmInstrumentation == null) {
-            delegate.build()
-        } else {
-            DatadogCronetEngine(
-                delegate = delegate.build(),
-                apmNetworkInstrumentation = apmInstrumentation,
-                rumNetworkInstrumentation = rumNetworkInstrumentation,
-                distributedTracingInstrumentation = distributedTracingInstrumentation
-            ).also { it.addRequestFinishedListener(requestFinishedListener) }
-        }
+        return DatadogCronetEngine(
+            delegate = delegate.build(),
+            apmNetworkInstrumentation = apmInstrumentation,
+            rumNetworkInstrumentation = rumInstrumentation,
+            distributedTracingInstrumentation = distributedTracingInstrumentation
+        ).also { it.addRequestFinishedListener(requestFinishedListener) }
     }
 
     internal companion object {
         const val ORIGIN_RUM = "rum"
         const val DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60L
         const val CRONET_NETWORK_INSTRUMENTATION_NAME = "cronet"
+
+        private fun requireInternalLogger(
+            rumNetworkInstrumentation: RumNetworkInstrumentation?,
+            apmInstrumentation: ApmNetworkInstrumentation?
+        ): InternalLogger = (
+            (rumNetworkInstrumentation?.sdkCore as? FeatureSdkCore)?.internalLogger
+                ?: (apmInstrumentation?.sdkCore as? FeatureSdkCore)?.internalLogger
+                ?: InternalLogger.UNBOUND
+            )
+
+        private fun RumNetworkInstrumentationConfiguration.createRumInstrumentation(): RumNetworkInstrumentation =
+            _RumInternalProxy.createRumNetworkInstrumentation(
+                CRONET_NETWORK_INSTRUMENTATION_NAME,
+                LibraryType.CRONET,
+                this
+            )
+
+        private fun ApmNetworkInstrumentationConfiguration.createDistributedTracingInstrumentation(
+            rumInstrumentationExist: Boolean
+        ): ApmNetworkInstrumentation? = if (rumInstrumentationExist) {
+            DatadogTracingToolkit.createApmNetworkInstrumentation(
+                CRONET_NETWORK_INSTRUMENTATION_NAME,
+                copy().setHeaderPropagationOnly().setTraceOrigin(ORIGIN_RUM, replace = false)
+                    .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
+            )
+        } else {
+            null
+        }
+
+        private fun ApmNetworkInstrumentationConfiguration.createApmInstrumentation(
+            rumInstrumentationExist: Boolean
+        ): ApmNetworkInstrumentation? = if (!isHeaderPropagationOnly() || !rumInstrumentationExist) {
+            DatadogTracingToolkit.createApmNetworkInstrumentation(
+                CRONET_NETWORK_INSTRUMENTATION_NAME,
+                this
+            )
+        } else {
+            null
+        }
 
         // Exception thrown only for wrong arguments, but those ones are correct
         @Suppress("UnsafeThirdPartyFunctionCall")

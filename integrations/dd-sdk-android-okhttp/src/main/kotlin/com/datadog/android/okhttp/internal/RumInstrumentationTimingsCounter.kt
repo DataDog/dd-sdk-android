@@ -142,11 +142,11 @@ internal class RumInstrumentationTimingsCounter(
     // region Internal
 
     private fun sendWaitForResourceTimingEvent(requestTracingState: RequestTracingState) {
-        rumNetworkInstrumentation.sendWaitForResourceTimingEvent(requestTracingState.createModifiedRequestInfo())
+        rumNetworkInstrumentation.sendWaitForResourceTimingEvent(requestTracingState.createRequestInfo())
     }
 
     private fun sendTiming(requestTracingState: RequestTracingState) {
-        rumNetworkInstrumentation.sendTiming(requestTracingState.createModifiedRequestInfo(), buildTiming())
+        rumNetworkInstrumentation.sendTiming(requestTracingState.createRequestInfo(), buildTiming())
     }
 
     private fun buildTiming(): ResourceTiming {
@@ -197,17 +197,14 @@ internal class RumInstrumentationTimingsCounter(
         private val requestTracingStateRegistry: RequestTracingStateRegistry
     ) : EventListener.Factory {
         override fun create(call: Call): EventListener {
-            val sdkCore = rumNetworkInstrumentation.sdkCoreReference.get()
+            val sdkCore = rumNetworkInstrumentation.sdkCore
             return if (sdkCore != null) {
                 RumInstrumentationTimingsCounter(sdkCore, rumNetworkInstrumentation, requestTracingStateRegistry)
             } else {
                 InternalLogger.UNBOUND.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
-                    {
-                        "No SDK instance is available, skipping tracking" +
-                            " timing information of request with url ${call.request().url}."
-                    }
+                    { "No SDK instance is available, skipping tracking timing information." }
                 )
                 NO_OP_EVENT_LISTENER
             }

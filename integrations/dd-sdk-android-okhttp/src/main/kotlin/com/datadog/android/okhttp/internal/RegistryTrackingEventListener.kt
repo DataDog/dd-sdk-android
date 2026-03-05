@@ -18,44 +18,52 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
 
-// Most of the methods are just delegation
-@Suppress("UnsafeThirdPartyFunctionCall")
-internal class CompositeEventListener(
-    private val delegates: List<EventListener>
+@Suppress("UnsafeThirdPartyFunctionCall") // Most of the methods are just delegation
+internal class RegistryTrackingEventListener(
+    private val registry: RequestTracingStateRegistry,
+    private val delegate: EventListener
 ) : EventListener() {
 
     internal class Factory(
-        private val delegates: List<EventListener.Factory>
+        private val registry: RequestTracingStateRegistry,
+        private val delegateFactory: EventListener.Factory
     ) : EventListener.Factory {
 
         override fun create(call: Call): EventListener {
-            val listeners = delegates.map { it.create(call) }
-            return CompositeEventListener(listeners)
+            registry.register(call)
+            return try {
+                val delegate = delegateFactory.create(call)
+                RegistryTrackingEventListener(registry, delegate)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                registry.remove(call)
+                @Suppress("ThrowingInternalException")
+                throw e
+            }
         }
     }
 
     override fun callStart(call: Call) {
-        delegates.forEach { it.callStart(call) }
+        delegate.callStart(call)
     }
 
     override fun proxySelectStart(call: Call, url: HttpUrl) {
-        delegates.forEach { it.proxySelectStart(call, url) }
+        delegate.proxySelectStart(call, url)
     }
 
     override fun proxySelectEnd(call: Call, url: HttpUrl, proxies: List<Proxy>) {
-        delegates.forEach { it.proxySelectEnd(call, url, proxies) }
+        delegate.proxySelectEnd(call, url, proxies)
     }
 
     override fun dnsStart(call: Call, domainName: String) {
-        delegates.forEach { it.dnsStart(call, domainName) }
+        delegate.dnsStart(call, domainName)
     }
 
     override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
-        delegates.forEach { it.dnsEnd(call, domainName, inetAddressList) }
+        delegate.dnsEnd(call, domainName, inetAddressList)
     }
 
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
-        delegates.forEach { it.connectStart(call, inetSocketAddress, proxy) }
+        delegate.connectStart(call, inetSocketAddress, proxy)
     }
 
     override fun connectEnd(
@@ -64,7 +72,7 @@ internal class CompositeEventListener(
         proxy: Proxy,
         protocol: Protocol?
     ) {
-        delegates.forEach { it.connectEnd(call, inetSocketAddress, proxy, protocol) }
+        delegate.connectEnd(call, inetSocketAddress, proxy, protocol)
     }
 
     override fun connectFailed(
@@ -74,90 +82,98 @@ internal class CompositeEventListener(
         protocol: Protocol?,
         ioe: IOException
     ) {
-        delegates.forEach { it.connectFailed(call, inetSocketAddress, proxy, protocol, ioe) }
+        delegate.connectFailed(call, inetSocketAddress, proxy, protocol, ioe)
     }
 
     override fun secureConnectStart(call: Call) {
-        delegates.forEach { it.secureConnectStart(call) }
+        delegate.secureConnectStart(call)
     }
 
     override fun secureConnectEnd(call: Call, handshake: Handshake?) {
-        delegates.forEach { it.secureConnectEnd(call, handshake) }
+        delegate.secureConnectEnd(call, handshake)
     }
 
     override fun connectionAcquired(call: Call, connection: Connection) {
-        delegates.forEach { it.connectionAcquired(call, connection) }
+        delegate.connectionAcquired(call, connection)
     }
 
     override fun connectionReleased(call: Call, connection: Connection) {
-        delegates.forEach { it.connectionReleased(call, connection) }
+        delegate.connectionReleased(call, connection)
     }
 
     override fun requestHeadersStart(call: Call) {
-        delegates.forEach { it.requestHeadersStart(call) }
+        delegate.requestHeadersStart(call)
     }
 
     override fun requestHeadersEnd(call: Call, request: Request) {
-        delegates.forEach { it.requestHeadersEnd(call, request) }
+        delegate.requestHeadersEnd(call, request)
     }
 
     override fun requestBodyStart(call: Call) {
-        delegates.forEach { it.requestBodyStart(call) }
+        delegate.requestBodyStart(call)
     }
 
     override fun requestBodyEnd(call: Call, byteCount: Long) {
-        delegates.forEach { it.requestBodyEnd(call, byteCount) }
+        delegate.requestBodyEnd(call, byteCount)
     }
 
     override fun requestFailed(call: Call, ioe: IOException) {
-        delegates.forEach { it.requestFailed(call, ioe) }
+        delegate.requestFailed(call, ioe)
     }
 
     override fun responseHeadersStart(call: Call) {
-        delegates.forEach { it.responseHeadersStart(call) }
+        delegate.responseHeadersStart(call)
     }
 
     override fun responseHeadersEnd(call: Call, response: Response) {
-        delegates.forEach { it.responseHeadersEnd(call, response) }
+        delegate.responseHeadersEnd(call, response)
     }
 
     override fun responseBodyStart(call: Call) {
-        delegates.forEach { it.responseBodyStart(call) }
+        delegate.responseBodyStart(call)
     }
 
     override fun responseBodyEnd(call: Call, byteCount: Long) {
-        delegates.forEach { it.responseBodyEnd(call, byteCount) }
+        delegate.responseBodyEnd(call, byteCount)
     }
 
     override fun responseFailed(call: Call, ioe: IOException) {
-        delegates.forEach { it.responseFailed(call, ioe) }
+        delegate.responseFailed(call, ioe)
     }
 
     override fun cacheHit(call: Call, response: Response) {
-        delegates.forEach { it.cacheHit(call, response) }
+        delegate.cacheHit(call, response)
     }
 
     override fun cacheMiss(call: Call) {
-        delegates.forEach { it.cacheMiss(call) }
+        delegate.cacheMiss(call)
     }
 
     override fun cacheConditionalHit(call: Call, cachedResponse: Response) {
-        delegates.forEach { it.cacheConditionalHit(call, cachedResponse) }
+        delegate.cacheConditionalHit(call, cachedResponse)
     }
 
     override fun satisfactionFailure(call: Call, response: Response) {
-        delegates.forEach { it.satisfactionFailure(call, response) }
+        delegate.satisfactionFailure(call, response)
     }
 
     override fun canceled(call: Call) {
-        delegates.forEach { it.canceled(call) }
+        delegate.canceled(call)
     }
 
     override fun callEnd(call: Call) {
-        delegates.forEach { it.callEnd(call) }
+        try {
+            delegate.callEnd(call)
+        } finally {
+            registry.remove(call)
+        }
     }
 
     override fun callFailed(call: Call, ioe: IOException) {
-        delegates.forEach { it.callFailed(call, ioe) }
+        try {
+            delegate.callFailed(call, ioe)
+        } finally {
+            registry.remove(call)
+        }
     }
 }

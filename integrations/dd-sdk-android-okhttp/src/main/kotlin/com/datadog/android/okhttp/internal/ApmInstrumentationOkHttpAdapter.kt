@@ -9,7 +9,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
-import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.trace.TracingHeaderType
@@ -23,10 +23,10 @@ internal class ApmInstrumentationOkHttpAdapter(
 ) : Interceptor {
 
     private val sdkCore: FeatureSdkCore?
-        get() = apmNetworkInstrumentation.sdkCoreReference.get() as? FeatureSdkCore
+        get() = apmNetworkInstrumentation.sdkCore as? FeatureSdkCore
 
-    private val internalLogger: InternalLogger
-        get() = sdkCore?.internalLogger ?: InternalLogger.UNBOUND
+    private val internalLogger: InternalLogger?
+        get() = sdkCore?.internalLogger
 
     init {
         // update meta for the configuration telemetry reporting, can be done directly from this thread
@@ -34,29 +34,39 @@ internal class ApmInstrumentationOkHttpAdapter(
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = apmNetworkInstrumentation.sampleRate
             it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
                 types = apmNetworkInstrumentation.localHeaderTypes
-                    .map(TracingHeaderType::toInternalTracingHeaderType)
+                    .map(TracingHeaderType::toTelemetryTracingHeaderType)
                     .toSet()
             )
         }
     }
 
+    @Suppress("ReturnCount")
     override fun intercept(chain: Interceptor.Chain): Response {
         val call = chain.call()
         val request = chain.request()
-        val tracingState = registry.update(call) { _, state ->
-            apmNetworkInstrumentation.onRequest(state.createModifiedRequestInfo())
+        // Request might be changed by customer's upstream interceptor(s)
+        val taggedOkHttpRequest = registry.restoreUUIDTag(call, request)
+        if (taggedOkHttpRequest == null) {
+            apmNetworkInstrumentation.reportInstrumentationError { "OkHttp request is missed" }
+            @Suppress("UnsafeThirdPartyFunctionCall") // intercept() allows throwing IOException
+            return chain.proceed(request)
         }
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // intercept() allows throwing IOException
-        if (tracingState == null) return chain.proceed(request)
+        val tracingState = apmNetworkInstrumentation.onRequest(taggedOkHttpRequest.toHttpRequestInfo())
+            ?.also { registry.setTracingState(call, it) }
 
-        val processedRequest = (tracingState.createModifiedRequestInfo() as? OkHttpRequestInfo)?.originalRequest ?: request
+        @Suppress("UnsafeThirdPartyFunctionCall") // intercept() allows throwing IOException
+        if (tracingState == null) {
+            return chain.proceed(request)
+        }
+
+        val processedOkHttpRequest = tracingState.createRequestInfo().toOkHttpRequest() ?: taggedOkHttpRequest
 
         return try {
-            chain.proceed(processedRequest).also { response ->
+            chain.proceed(processedOkHttpRequest).also { okHttpResponse ->
                 apmNetworkInstrumentation.onResponseSucceeded(
                     requestTracingState = tracingState,
-                    response = OkHttpHttpResponseInfo(response, internalLogger)
+                    response = okHttpResponse.toHttpResponseInfo(internalLogger ?: InternalLogger.UNBOUND)
                 )
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {

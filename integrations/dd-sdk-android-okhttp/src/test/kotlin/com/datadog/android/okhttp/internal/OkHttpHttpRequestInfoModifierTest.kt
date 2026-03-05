@@ -174,7 +174,7 @@ internal class OkHttpHttpRequestInfoModifierTest {
     }
 
     @Test
-    fun `M return OkHttpHttpRequestInfo W result()`() {
+    fun `M return OkHttpHttpRequestInfo W build()`() {
         // When
         val result = testedModifier.build()
 
@@ -183,7 +183,7 @@ internal class OkHttpHttpRequestInfoModifierTest {
     }
 
     @Test
-    fun `M preserve original url W result() { no modifications }`() {
+    fun `M preserve original url W build() { no modifications }`() {
         // When
         val result = testedModifier.build()
 
