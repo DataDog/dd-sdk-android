@@ -495,6 +495,84 @@ internal class DatadogFlagsProviderTest {
         assertThat(events).isEmpty()
     }
 
+    // region Initial State Delivery
+
+    @Test
+    fun `M emit initial ProviderReady W observe() {already in Ready state}`() = runTest {
+        // Given - provider is already in Ready state before collecting
+        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Ready)
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then - initial Ready state is emitted immediately
+        assertThat(events).hasSize(1)
+        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+    }
+
+    @Test
+    fun `M emit initial ProviderStale W observe() {already in Stale state}`() = runTest {
+        // Given - provider is already in Stale state before collecting
+        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then - initial Stale state is emitted immediately
+        assertThat(events).hasSize(1)
+        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
+    }
+
+    @Test
+    fun `M emit initial ProviderError W observe() {already in Error state}`() = runTest {
+        // Given - provider is already in Error state before collecting
+        val errorState = FlagsClientState.Error(RuntimeException("test error"))
+        whenever(mockStateObservable.getCurrentState()).thenReturn(errorState)
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then - initial Error state is emitted immediately
+        assertThat(events).hasSize(1)
+        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
+    }
+
+    @Test
+    fun `M not emit initial event W observe() {in NotReady or Reconciling state}`() = runTest {
+        listOf(FlagsClientState.NotReady, FlagsClientState.Reconciling).forEach { state ->
+            // Given - provider is in a filtered state
+            whenever(mockStateObservable.getCurrentState()).thenReturn(state)
+            val events = mutableListOf<OpenFeatureProviderEvents>()
+
+            // When
+            val job = launch {
+                provider.observe().collect { events.add(it) }
+            }
+            testScheduler.runCurrent()
+            job.cancel()
+
+            // Then - no initial event emitted for filtered states
+            assertThat(events).isEmpty()
+        }
+    }
+
+    // endregion
+
     @Test
     fun `M unregister listener W observe() {flow cancelled}`() = runTest {
         // When

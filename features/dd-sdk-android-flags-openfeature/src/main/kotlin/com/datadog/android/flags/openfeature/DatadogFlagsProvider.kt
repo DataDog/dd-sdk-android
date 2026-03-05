@@ -205,6 +205,11 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * - [FlagsClientState.NotReady]: Pre-initialization state, [initialize] blocks
      * - [FlagsClientState.Reconciling]: Context reconciliation, SDK handles via blocking [onContextSet]
      *
+     * **Initial State Delivery**:
+     * When the flow is collected, the current state is emitted immediately if it maps to a
+     * provider event. This ensures handlers attached after the provider is already in an
+     * associated state receive the event immediately.
+     *
      * The Flow automatically cleans up the listener when the collector is cancelled.
      *
      * @return Flow of provider state change events
@@ -212,18 +217,12 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     // Safe: We properly call awaitClose to cleanup listener, satisfying callbackFlow requirements
     @Suppress("UnsafeThirdPartyFunctionCall")
     override fun observe(): Flow<OpenFeatureProviderEvents> = callbackFlow {
+        // Emit initial state immediately when flow is collected
+        mapStateToEvent(flagsClient.state.getCurrentState())?.let { trySend(it) }
+
         val listener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                val providerEvent: OpenFeatureProviderEvents? = when (newState) {
-                    FlagsClientState.NotReady -> null // SDK handles via blocking initialize()
-                    FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
-                    FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
-                    FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
-                    is FlagsClientState.Error -> OpenFeatureProviderEvents.ProviderError(
-                        error = OpenFeatureError.ProviderFatalError()
-                    )
-                }
-                providerEvent?.let { trySend(it) }
+                mapStateToEvent(newState)?.let { trySend(it) }
             }
         }
 
@@ -232,6 +231,18 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         @Suppress("UnsafeThirdPartyFunctionCall")
         awaitClose {
             flagsClient.state.removeListener(listener)
+        }
+    }
+
+    private fun mapStateToEvent(state: FlagsClientState): OpenFeatureProviderEvents? {
+        return when (state) {
+            FlagsClientState.NotReady -> null // SDK handles via blocking initialize()
+            FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
+            FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
+            FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
+            is FlagsClientState.Error -> OpenFeatureProviderEvents.ProviderError(
+                error = OpenFeatureError.ProviderFatalError()
+            )
         }
     }
 
