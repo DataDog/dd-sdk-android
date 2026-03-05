@@ -62,8 +62,11 @@ Token format must be `pub` + 32 hex chars. Any UUID works for `rumApplicationId`
 Ensure `JAVA_HOME` and `ANDROID_HOME` are set in your environment, then run:
 
 ```sh
-./gradlew :sample:kotlin:installUs1Debug
+./gradlew :sample:kotlin:install{Flavor}Debug
+# e.g. installUs1Debug, installStagingDebug
 ```
+
+> Full environment setup (Java, Android SDK, emulator) belongs in `AGENTS.md` (not yet created — tracked as follow-up work).
 
 ### 4. Launch the App
 
@@ -110,11 +113,13 @@ Each `Curl` log line is a single `curl` command. The `-d` argument contains the 
 ]
 ```
 
-**Session Replay** (`/api/v2/replay`): `multipart/form-data` with WebP image parts — body will be binary.
+**Session Replay** (`/api/v2/replay`): `multipart/form-data` — image parts (WebP) are only present when recording in image mode; wireframe mode produces a different body structure.
 
 **RUM** (`/api/v2/rum`): newline-delimited JSON events.
 
 **Traces** (`/api/v2/traces`): `application/msgpack` — binary, not readable as text.
+
+**Profiling** (`/api/v2/profile`): `multipart/form-data` with a `perfetto.proto` attachment.
 
 ## Key Fields
 
