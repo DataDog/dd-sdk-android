@@ -310,11 +310,12 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M notify RECONCILING then STALE W updateEvaluationsForContext() { network failure, has previous flags }`() {
+    fun `M notify STALE W updateEvaluationsForContext() { network failure, cached flags, context matches }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(publicContext)
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
             .thenReturn(null)
 
@@ -325,6 +326,27 @@ internal class EvaluationsManagerTest {
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
             verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        }
+    }
+
+    @Test
+    fun `M notify ERROR W updateEvaluationsForContext() { network failure, cached flags, context mismatch }`() {
+        // Given
+        val requestedContext = EvaluationContext(fakeTargetingKey, emptyMap())
+        val cachedContext = EvaluationContext("different-user", emptyMap())
+
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(requestedContext, fakeDatadogContext))
+            .thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext)
+
+        // Then
+        inOrder(mockFlagsStateManager) {
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
+            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
         }
     }
 
