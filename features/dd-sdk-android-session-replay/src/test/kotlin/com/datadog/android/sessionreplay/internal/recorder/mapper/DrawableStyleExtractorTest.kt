@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.graphics.Paint
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -67,7 +68,12 @@ internal class DrawableStyleExtractorTest {
         // Given
         assumeTrue(DrawableStyleExtractor.strokePaintField != null)
         val gradientDrawable = GradientDrawable()
-        gradientDrawable.setStroke(fakeStrokeWidth.toInt(), fakeStrokeColor)
+        // Mock the Paint since Robolectric's Paint shadow may not properly
+        // store/return color via getColor() in CI
+        val strokePaint = mock<Paint>()
+        whenever(strokePaint.color).thenReturn(fakeStrokeColor)
+        whenever(strokePaint.strokeWidth).thenReturn(fakeStrokeWidth)
+        DrawableStyleExtractor.strokePaintField!!.set(gradientDrawable, strokePaint)
         whenever(mockDrawableToColorMapper.mapDrawableToColor(eq(gradientDrawable), any()))
             .thenReturn(fakeFillColor)
 
@@ -77,7 +83,7 @@ internal class DrawableStyleExtractorTest {
         // Then
         assertThat(result.color).isEqualTo(fakeFillColor)
         assertThat(result.borderColor).isEqualTo(fakeStrokeColor)
-        assertThat(result.borderWidth).isGreaterThan(0f)
+        assertThat(result.borderWidth).isEqualTo(fakeStrokeWidth)
     }
 
     @Test
@@ -142,8 +148,8 @@ internal class DrawableStyleExtractorTest {
         // Given
         val gradientDrawable = GradientDrawable()
         gradientDrawable.cornerRadius = fakeRadius
-        val stateListDrawable = StateListDrawable()
-        stateListDrawable.addState(intArrayOf(), gradientDrawable)
+        val stateListDrawable = mock<StateListDrawable>()
+        whenever(stateListDrawable.current).thenReturn(gradientDrawable)
         whenever(mockDrawableToColorMapper.mapDrawableToColor(eq(stateListDrawable), any()))
             .thenReturn(fakeFillColor)
 
@@ -161,7 +167,8 @@ internal class DrawableStyleExtractorTest {
         // Given
         val gradientDrawable = GradientDrawable()
         gradientDrawable.cornerRadius = fakeRadius
-        val insetDrawable = InsetDrawable(gradientDrawable, 0)
+        val insetDrawable = mock<InsetDrawable>()
+        whenever(insetDrawable.drawable).thenReturn(gradientDrawable)
         whenever(mockDrawableToColorMapper.mapDrawableToColor(eq(insetDrawable), any()))
             .thenReturn(fakeFillColor)
 

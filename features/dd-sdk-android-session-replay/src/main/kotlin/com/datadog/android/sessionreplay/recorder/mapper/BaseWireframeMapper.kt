@@ -75,10 +75,11 @@ abstract class BaseWireframeMapper<in T : View>(
         val styleInfo = drawableStyleExtractor.extractStyleInfo(drawable, internalLogger)
 
         val shapeStyle = if (styleInfo.color != null) {
+            val cornerRadiusNormalized = styleInfo.cornerRadius.toLong().densityNormalized(density)
             MobileSegment.ShapeStyle(
                 backgroundColor = colorStringFormatter.formatColorAsHexString(styleInfo.color),
                 opacity = viewAlpha,
-                cornerRadius = styleInfo.cornerRadius.toLong().densityNormalized(density)
+                cornerRadius = if (cornerRadiusNormalized > 0) cornerRadiusNormalized else null
             )
         } else {
             null
