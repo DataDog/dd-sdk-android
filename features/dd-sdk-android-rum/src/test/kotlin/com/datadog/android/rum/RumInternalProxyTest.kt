@@ -13,6 +13,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -100,10 +101,9 @@ internal class RumInternalProxyTest {
     @Test
     fun `M return RumNetworkInstrumentation W createInstrumentation()`(
         @StringForgery fakeInstrumentationName: String,
-        forge: Forge
+        @Forgery fakeLibraryType: LibraryType
     ) {
         // Given
-        val fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
         val builder = RumNetworkInstrumentationConfiguration()
 
         // When
@@ -114,15 +114,15 @@ internal class RumInternalProxyTest {
         // Then
         assertThat(result).isNotNull()
         assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
+        assertThat(result.libraryType).isEqualTo(fakeLibraryType)
     }
 
     @Test
     fun `M return RumNetworkInstrumentation W createRumNetworkInstrumentation()`(
         @StringForgery fakeInstrumentationName: String,
-        forge: Forge
+        @Forgery fakeLibraryType: LibraryType
     ) {
         // Given
-        val fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
         val configuration = RumNetworkInstrumentationConfiguration()
 
         // When
@@ -135,5 +135,6 @@ internal class RumInternalProxyTest {
         // Then
         assertThat(result).isNotNull()
         assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
+        assertThat(result.libraryType).isEqualTo(fakeLibraryType)
     }
 }

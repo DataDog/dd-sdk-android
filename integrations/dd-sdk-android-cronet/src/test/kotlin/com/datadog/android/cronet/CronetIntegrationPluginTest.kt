@@ -7,9 +7,7 @@
 package com.datadog.android.cronet
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.verifyApiUsage
 import com.datadog.android.cronet.internal.DatadogCronetEngine
-import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
@@ -260,19 +258,17 @@ internal class CronetIntegrationPluginTest {
     }
 
     @Test
-    fun `M send network instrumentation telemetry W build()`() {
+    fun `M not send network instrumentation telemetry W build {no rumInstrumentation}()`() {
         // When
         mockDelegateBuilder
             .configureDatadogInstrumentation(
                 rumInstrumentationConfiguration = null,
-                apmInstrumentationConfiguration = null
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
             )
             .build()
 
         // Then
-        mockInternalLogger.verifyApiUsage(
-            NetworkInstrumentation(NetworkInstrumentation.LibraryType.CRONET)
-        )
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test

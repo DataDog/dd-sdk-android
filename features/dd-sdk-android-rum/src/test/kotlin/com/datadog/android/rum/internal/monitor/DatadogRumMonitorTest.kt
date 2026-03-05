@@ -2228,6 +2228,49 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle NetworkInstrumentation telemetry W reportNetworkingLibraryType()`(
+        @Forgery fakeLibraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+    ) {
+        // When
+        testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            val event = lastValue.event
+            assertThat(event).isInstanceOf(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation::class.java)
+            assertThat((event as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation).type)
+                .isEqualTo(fakeLibraryType)
+        }
+    }
+
+    @Test
+    fun `M forward each event W reportNetworkingLibraryType() {called multiple times}`(
+        @Forgery fakeLibraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+    ) {
+        // When
+        testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
+        testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler, times(2)).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            allValues.forEach { wrapper ->
+                val event = wrapper.event
+                assertThat(event).isInstanceOf(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation::class.java)
+                assertThat((event as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation).type)
+                    .isEqualTo(fakeLibraryType)
+            }
+        }
+    }
+
+    @Test
     fun `M call enableJankStatsTracking on RUM feature W enableJankStatsTracking`() {
         // Given
         val mockActivity = mock<Activity>()

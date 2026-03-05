@@ -494,7 +494,7 @@ internal class DatadogRumMonitor(
     override fun start() {
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         handleEvent(
             RumRawEvent.SdkInit(isAppInForeground)
         )
@@ -748,7 +748,7 @@ internal class DatadogRumMonitor(
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
             "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
-                    " with the following failure reason: $failureReason."
+                " with the following failure reason: $failureReason."
         }
         sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
     }

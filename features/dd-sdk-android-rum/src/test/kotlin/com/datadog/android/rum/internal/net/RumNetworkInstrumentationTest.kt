@@ -100,12 +100,11 @@ internal class RumNetworkInstrumentationTest {
 
     private lateinit var fakeRequestInfo: StubHttpRequestInfo
 
+    @Forgery
     private lateinit var fakeLibraryType: LibraryType
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeLibraryType = forge.anElementFrom(LibraryType.values().toList())
-
+    fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeature
 
