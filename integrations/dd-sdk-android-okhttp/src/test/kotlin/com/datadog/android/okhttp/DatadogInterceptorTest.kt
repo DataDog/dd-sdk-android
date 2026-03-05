@@ -29,6 +29,7 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.tools.unit.forge.anHttpHeaderMap
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -1205,6 +1206,65 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val resHeaders = attrsCaptor.firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
         assertThat(resHeaders).isNotNull
         assertThat(resHeaders).containsEntry("x-cache", "HIT")
+    }
+
+    @Test
+    fun `M header attributes override provider attributes W intercept() { conflicting keys }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            RumAttributes.REQUEST_HEADERS to forge.anHttpHeaderMap(),
+            RumAttributes.RESPONSE_HEADERS to forge.anHttpHeaderMap()
+        )
+
+        @Suppress("DEPRECATION")
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
+            )
+        ) doReturn fakeProviderAttributes
+
+        val fakeActualRequestHeaders = forge.anHttpHeaderMap()
+        val fakeActualResponseHeaders = forge.anHttpHeaderMap()
+
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(*(fakeActualResponseHeaders.keys + fakeActualRequestHeaders.keys).toTypedArray())
+            .build()
+
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        fakeRequest = forgeRequest(forge) { builder ->
+            fakeActualRequestHeaders.forEach { (key, value) -> builder.addHeader(key, value) }
+        }
+        stubChain(mockChain, statusCode) {
+            fakeActualResponseHeaders.forEach { (key, value) -> header(key, value) }
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            any<ResourceId>(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        @Suppress("UNCHECKED_CAST")
+        val reqHeaders = attrsCaptor.firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+        assertThat(reqHeaders).isNotNull
+        assertThat(reqHeaders).isEqualTo(fakeActualRequestHeaders)
+
+        @Suppress("UNCHECKED_CAST")
+        val resHeaders = attrsCaptor.firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
+        assertThat(resHeaders).isNotNull
+        assertThat(resHeaders).isEqualTo(fakeActualResponseHeaders)
     }
 
     // endregion
