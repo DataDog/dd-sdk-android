@@ -18,11 +18,15 @@ The Android SDK uses `CurlInterceptor` to log every outgoing HTTP request as a `
 - Debugging why RUM/logs/traces are not showing up in Datadog
 - Validating SDK behavior with the `sample/kotlin` app
 
+## Related Tools
+
+[mobile-mcp](https://github.com/mobile-next/mobile-mcp) — use alongside this skill to interact with the device and generate events (taps, navigation, actions) that you then observe via logcat.
+
 ## Setup
 
 ### 1. Enable Request Body Logging
 
-Edit `dd-sdk-android-core/src/main/kotlin/com/datadog/android/core/internal/CoreFeature.kt` line ~632:
+In `dd-sdk-android-core/src/main/kotlin/com/datadog/android/core/internal/CoreFeature.kt`, find the `OkHttpClient` builder block inside `if (BuildConfig.DEBUG)` and enable body printing on the `CurlInterceptor`:
 
 ```kotlin
 // Before (body suppressed):
@@ -36,7 +40,7 @@ This change is gated by `BuildConfig.DEBUG` — it only runs in debug builds.
 
 ### 2. Configure Build-Time Credentials
 
-Create `config/{flavor}.json` (e.g., `config/us1.json`) — values are injected into `BuildConfig` at compile time:
+Create `config/{flavor}.json` (e.g., `config/us1.json`) — values are injected into `BuildConfig` at compile time. **Fake/placeholder values are fine** — real Datadog credentials are not required for local event inspection:
 
 ```json
 {
@@ -51,32 +55,30 @@ Create `config/{flavor}.json` (e.g., `config/us1.json`) — values are injected 
 }
 ```
 
-Token format must be `pub` + 32 hex chars. Any UUID works for `rumApplicationId`.
+Token format must be `pub` + 32 hex chars. Any UUID works for `rumApplicationId`. The SDK will emit and batch events locally even with fake credentials (`401` errors on intake are expected and harmless).
 
 ### 3. Build and Install
 
+Ensure `JAVA_HOME` and `ANDROID_HOME` are set in your environment, then run:
+
 ```sh
-JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
-ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
 ./gradlew :sample:kotlin:installUs1Debug
 ```
 
 ### 4. Launch the App
 
 ```sh
-ADB=/opt/homebrew/share/android-commandlinetools/platform-tools/adb
-
 # Find the launcher activity (run once to confirm):
-$ADB shell dumpsys package com.datadog.android.sample | grep -A2 "MAIN"
+adb shell dumpsys package com.datadog.android.sample | grep -A2 "MAIN"
 # → com.datadog.android.sample/.NavActivity
 
-$ADB shell am start -n com.datadog.android.sample/.NavActivity
+adb shell am start -n com.datadog.android.sample/.NavActivity
 ```
 
 ### 5. Stream Logcat
 
 ```sh
-$ADB logcat -s "Datadog" "DD_LOG" "Curl" "*:S"
+adb logcat -s "Datadog" "DD_LOG" "Curl" "*:S"
 ```
 
 ## Log Tags Quick Reference
