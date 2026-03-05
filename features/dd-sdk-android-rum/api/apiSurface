@@ -33,6 +33,8 @@ object com.datadog.android.rum.RumAttributes
   const val GRAPHQL_PAYLOAD: String
   const val GRAPHQL_VARIABLES: String
   const val GRAPHQL_ERRORS: String
+  const val REQUEST_HEADERS: String
+  const val RESPONSE_HEADERS: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
@@ -260,6 +262,13 @@ typealias RumVitalOperationStepEvent = VitalOperationStepEvent
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
+class com.datadog.android.rum.resource.ResourceHeadersExtractor
+  class Builder
+    constructor(Boolean = true)
+    fun captureHeaders(String): Builder
+    fun build(): ResourceHeadersExtractor
+  fun extractRequestHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
+  fun extractResponseHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
 class com.datadog.android.rum.resource.ResourceId
   constructor(String, String?)
   override fun equals(Any?): Boolean
