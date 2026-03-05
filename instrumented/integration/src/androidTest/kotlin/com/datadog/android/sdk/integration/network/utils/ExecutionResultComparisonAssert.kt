@@ -7,11 +7,15 @@
 package com.datadog.android.sdk.integration.network.utils
 
 import com.datadog.android.sdk.integration.network.models.ClientExecutionResult
+import com.datadog.android.sdk.integration.network.models.TestRequest
 import com.datadog.android.trace.api.span.DatadogSpan
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecutionResult>) :
+internal class ExecutionResultComparisonAssert(
+    actual: Map<String, ClientExecutionResult>,
+    private val request: TestRequest
+) :
     AbstractObjectAssert<ExecutionResultComparisonAssert, Map<String, ClientExecutionResult>>(
         actual,
         ExecutionResultComparisonAssert::class.java
@@ -21,7 +25,8 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
         actual.values.forEach {
             assertThat(it.request?.method)
                 .overridingErrorMessage {
-                    "Expected client ${it.name} to have request method: $expected but was ${it.request?.method}"
+                    "Expected client ${it.name} to have request method:" +
+                        " $expected but was ${it.request?.method}. ${requestState()}"
                 }
                 .isEqualTo(expected)
         }
@@ -31,7 +36,8 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
         actual.values.forEach {
             assertThat(it.request?.url)
                 .overridingErrorMessage {
-                    "Expected client ${it.name} to have request url: $expected but was ${it.request?.url}"
+                    "Expected client ${it.name} to have request url: " +
+                        "$expected but was ${it.request?.url}. ${requestState()}"
                 }
                 .isEqualTo(expected)
         }
@@ -40,7 +46,8 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
     fun haveExpectedClients() = apply {
         assertThat(actual.keys)
             .overridingErrorMessage {
-                "Expected composite execution result to have clients:$EXPECTED_CLIENTS but was ${actual.keys}"
+                "Expected composite execution result to have clients: " +
+                    "$EXPECTED_CLIENTS but was ${actual.keys}. ${requestState()}"
             }
             .containsAll(EXPECTED_CLIENTS)
     }
@@ -50,7 +57,7 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
             assertThat(it.response?.statusCode)
                 .overridingErrorMessage {
                     "Expected client ${it.name} to have response status code: $expected " +
-                        "but was ${it.response?.statusCode}"
+                        "but was ${it.response?.statusCode}. ${requestState()}"
                 }
                 .isEqualTo(expected)
         }
@@ -61,9 +68,9 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
             assertThat(client1Result.response?.statusCode)
                 .overridingErrorMessage {
                     "Expected that all composite execution results to have same response status code, " +
-                        "but discrepancy found:\n" +
-                        "${client1Result.name}=${client1Result.response?.statusCode}\n" +
-                        "${client2Result.name}=${client2Result.response?.statusCode}\n"
+                        "but discrepancy found:" +
+                        "${client1Result.name}=${client1Result.response?.statusCode}, " +
+                        "${client2Result.name}=${client2Result.response?.statusCode}. ${requestState()}"
                 }
                 .isEqualTo(client2Result.response?.statusCode)
         }
@@ -74,9 +81,9 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
             assertThat(client1Result.collectedSpans.size)
                 .overridingErrorMessage {
                     "Expected that all composite execution results to have same response span count, " +
-                        "but discrepancy found:\n" +
-                        "${client1Result.name}=${client1Result.collectedSpans.size}\n" +
-                        "${client2Result.name}=${client2Result.collectedSpans.size}\n"
+                        "but discrepancy found: " +
+                        "${client1Result.name}=${client1Result.collectedSpans.size}, " +
+                        "${client2Result.name}=${client2Result.collectedSpans.size}. ${requestState()}"
                 }
                 .isEqualTo(client2Result.collectedSpans.size)
         }
@@ -87,9 +94,9 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
             assertThat(client1Result.collectedSpans.hash())
                 .overridingErrorMessage {
                     "Expected that all composite execution results to have same span structure, " +
-                        "but discrepancy found:\n" +
-                        "${client1Result.name}=${client1Result.collectedSpans.hash()}\n" +
-                        "${client2Result.name}=${client2Result.collectedSpans.hash()}\n"
+                        "but discrepancy found: " +
+                        "${client1Result.name}=${client1Result.collectedSpans.hash()}, " +
+                        "${client2Result.name}=${client2Result.collectedSpans.hash()}. ${requestState()}"
                 }
                 .isEqualTo(client2Result.collectedSpans.hash())
         }
@@ -101,10 +108,13 @@ internal class ExecutionResultComparisonAssert(actual: Map<String, ClientExecuti
         .windowed(2, 1)
         .forEach { (client1Result, client2Result) -> block(client1Result, client2Result) }
 
+    private fun requestState() = request.toString()
+
     companion object {
         private val EXPECTED_CLIENTS = setOf("Cronet", "OkHttp")
 
-        internal fun assertThat(actual: Map<String, ClientExecutionResult>) = ExecutionResultComparisonAssert(actual)
+        internal fun assertThat(actual: Map<String, ClientExecutionResult>, request: TestRequest) =
+            ExecutionResultComparisonAssert(actual, request)
 
         fun List<DatadogSpan>.associateById(): Map<Long, DatadogSpan> = associateBy { it.context().spanId }
 

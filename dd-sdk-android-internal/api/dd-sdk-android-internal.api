@@ -194,7 +194,7 @@ public final class com/datadog/android/internal/network/HttpSpec$StatusCode {
 	public static final field TEMPORARY_REDIRECT I
 	public static final field TOO_MANY_REQUESTS I
 	public static final field UNAUTHORIZED I
-	public final fun clientErrors ()Ljava/util/List;
+	public final fun clientErrors ([I)Ljava/util/List;
 	public final fun serverErrors ()Ljava/util/List;
 	public final fun values ()Ljava/util/List;
 }
