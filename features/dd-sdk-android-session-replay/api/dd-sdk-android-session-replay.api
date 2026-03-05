@@ -1518,7 +1518,8 @@ public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseAsyn
 	public fun <init> (Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;Lcom/datadog/android/sessionreplay/utils/ColorStringFormatter;Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;)V
 	public fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
 	protected fun resolveBackgroundAsImageWireframe (Landroid/view/View;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;IILcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
-	protected fun resolveBackgroundAsShapeWireframe (Landroid/view/View;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;IILcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ShapeWireframe;
+	protected fun resolveBackgroundAsShapeWireframe (Landroid/view/View;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;IILcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ShapeWireframe;
+	public static synthetic fun resolveBackgroundAsShapeWireframe$default (Lcom/datadog/android/sessionreplay/recorder/mapper/BaseAsyncBackgroundWireframeMapper;Landroid/view/View;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;IILcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ShapeWireframe;
 	protected fun resolveViewBackground (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
@@ -1535,6 +1536,7 @@ public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseWire
 	protected final fun getDrawableToColorMapper ()Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
 	protected final fun getViewBoundsResolver ()Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;
 	protected final fun getViewIdentifierResolver ()Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;
+	protected final fun resolveBackgroundStyleInfo (Landroid/graphics/drawable/Drawable;FFLcom/datadog/android/api/InternalLogger;)Lkotlin/Pair;
 	protected final fun resolveShapeStyle (Landroid/graphics/drawable/Drawable;FLcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	protected final fun resolveViewId (Landroid/view/View;)J
 }
