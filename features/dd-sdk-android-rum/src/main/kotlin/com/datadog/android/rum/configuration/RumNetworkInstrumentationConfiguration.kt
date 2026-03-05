@@ -46,6 +46,5 @@ class RumNetworkInstrumentationConfiguration {
         networkInstrumentationName = instrumentationName,
         rumResourceAttributesProvider = resourceAttributesProvider,
         libraryType = libraryType
-
     )
 }
