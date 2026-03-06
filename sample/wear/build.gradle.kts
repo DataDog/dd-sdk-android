@@ -73,9 +73,9 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
 
-    implementation("androidx.wear:wear:1.2.0")
-    implementation("androidx.core:core-ktx:1.7.0")
+    implementation("androidx.wear:wear:1.4.0")
+    implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")
 }

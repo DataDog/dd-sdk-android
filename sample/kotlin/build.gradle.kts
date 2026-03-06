@@ -200,11 +200,11 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation("androidx.media:media:1.3.1")
-    implementation("androidx.vectordrawable:vectordrawable:1.1.0")
+    implementation("androidx.media:media:1.7.1")
+    implementation("androidx.vectordrawable:vectordrawable:1.2.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
-    implementation("androidx.preference:preference-ktx:1.1.1")
+    implementation("androidx.preference:preference-ktx:1.2.1")
 
     // Image Loading Library
     implementation(libs.coil)
@@ -224,16 +224,16 @@ dependencies {
 
     // Multithreading
     implementation(libs.rxJava3)
-    implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
+    implementation("com.squareup.retrofit2:adapter-rxjava3:2.12.0")
     implementation(libs.rxJava3Android)
     implementation(libs.coroutinesCore)
 
     // Network
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:retrofit:2.12.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.12.0")
     implementation(libs.okHttp)
     implementation(libs.gson)
-    implementation("com.launchdarkly:okhttp-eventsource:2.5.0")
+    implementation("com.launchdarkly:okhttp-eventsource:2.7.1")
 
     // Misc
     implementation(libs.timber)
