@@ -46,6 +46,7 @@ internal class DatadogCronetEngine(
             requestCallback = datadogCallback,
             executor = executor
         )
+
         return CronetUrlRequestBuilder(
             requestContext = requestContext,
             requestCallback = datadogCallback

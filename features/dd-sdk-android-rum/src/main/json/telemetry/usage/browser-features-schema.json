@@ -52,6 +52,50 @@
           "const": "add-duration-vital"
         }
       }
+    },
+    {
+      "required": ["feature"],
+      "title": "StartAction",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "startAction API",
+          "const": "start-action"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "StopAction",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "stopAction API",
+          "const": "stop-action"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "StartResource",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "startResource API",
+          "const": "start-resource"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "StopResource",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "stopResource API",
+          "const": "stop-resource"
+        }
+      }
     }
   ]
 }
