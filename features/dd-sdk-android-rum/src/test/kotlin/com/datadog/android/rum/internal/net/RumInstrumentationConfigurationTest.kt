@@ -11,7 +11,6 @@ import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -46,7 +45,7 @@ internal class RumInstrumentationConfigurationTest {
     private lateinit var fakeLibraryType: LibraryType
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         testedConfiguration = RumNetworkInstrumentationConfiguration()
     }
 

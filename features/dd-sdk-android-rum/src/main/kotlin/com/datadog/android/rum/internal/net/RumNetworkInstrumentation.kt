@@ -28,15 +28,19 @@ import java.util.Locale
 import java.util.UUID
 
 /**
+ * For internal usage only.
+ *
  * Handles RUM (Real User Monitoring) instrumentation for network resources.
  * This class provides methods to track HTTP requests and responses as RUM resources.
  *
  * This class operates as a middle layer between any specific library instrumentation and SDK core
- * components, making possible to share same logic between different networking libraries (OkHttp, Cronet, etc)
+ * components, making it possible to share the same logic between different networking libraries
+ * (OkHttp, Cronet, etc).
  *
  * @param sdkInstanceName the name of the SDK instance to use, or null for the default instance
  * @param networkInstrumentationName the name of the network layer being instrumented (e.g., "OkHttp", "Cronet")
  * @param rumResourceAttributesProvider provider for custom attributes to attach to RUM resources
+ * @param libraryType the type of networking library being instrumented, used for telemetry reporting
  */
 @InternalApi
 class RumNetworkInstrumentation internal constructor(
