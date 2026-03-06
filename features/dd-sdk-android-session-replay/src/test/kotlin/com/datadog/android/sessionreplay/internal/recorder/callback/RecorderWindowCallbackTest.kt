@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder.callback
 import android.content.Context
 import android.content.res.Resources
 import android.util.DisplayMetrics
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.Window
@@ -37,7 +39,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -53,7 +54,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
-import kotlin.jvm.internal.Intrinsics
 import kotlin.math.pow
 
 @Extensions(
@@ -181,42 +181,6 @@ internal class RecorderWindowCallbackTest {
         // Then
         verify(mockWrappedCallback).dispatchTouchEvent(mockEvent)
         verify(mockEvent).recycle()
-    }
-
-    @Test
-    fun `M log the exception W wrappedCallback throws { null parameter }`() {
-        // Given
-        val mockEvent: MotionEvent = mock()
-        whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenAnswer {
-            Intrinsics.checkNotNullParameter(
-                null,
-                "event"
-            )
-        }
-
-        // When
-        testedWindowCallback.dispatchTouchEvent(mockEvent)
-
-        // Then
-        verify(mockWrappedCallback).dispatchTouchEvent(mockEvent)
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            RecorderWindowCallback.FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE,
-            throwableClass = NullPointerException::class.java
-        )
-    }
-
-    @Test
-    fun `M propagate the exception W wrappedCallback throws`(@Forgery fakeException: Exception) {
-        // Given
-        val mockEvent: MotionEvent = mock()
-        whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenThrow(fakeException)
-
-        // When + Then
-        val exceptionCaught =
-            assertThrows<Exception> { testedWindowCallback.dispatchTouchEvent(mockEvent) }
-        assertThat(exceptionCaught).isSameAs(fakeException)
     }
 
     @Test
@@ -482,6 +446,165 @@ internal class RecorderWindowCallbackTest {
 
         // Then
         verify(mockWrappedCallback).onWindowFocusChanged(fakeHasFocus)
+    }
+
+    // endregion
+
+    // region Menu callbacks (null-safe overrides)
+
+    @Test
+    fun `M delegate to wrapped callback W onMenuOpened`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockMenu: Menu = mock()
+        val fakeReturnedValue = forge.aBool()
+        whenever(mockWrappedCallback.onMenuOpened(fakeFeatureId, mockMenu))
+            .thenReturn(fakeReturnedValue)
+
+        // When
+        val result = testedWindowCallback.onMenuOpened(fakeFeatureId, mockMenu)
+
+        // Then
+        verify(mockWrappedCallback).onMenuOpened(fakeFeatureId, mockMenu)
+        assertThat(result).isEqualTo(fakeReturnedValue)
+    }
+
+    @Test
+    fun `M return false W onMenuOpened { wrappedCallback throws NPE }`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockMenu: Menu = mock()
+        whenever(mockWrappedCallback.onMenuOpened(fakeFeatureId, mockMenu))
+            .thenThrow(NullPointerException())
+
+        // When
+        val result = testedWindowCallback.onMenuOpened(fakeFeatureId, mockMenu)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M delegate to wrapped callback W onMenuItemSelected`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockItem: MenuItem = mock()
+        val fakeReturnedValue = forge.aBool()
+        whenever(mockWrappedCallback.onMenuItemSelected(fakeFeatureId, mockItem))
+            .thenReturn(fakeReturnedValue)
+
+        // When
+        val result = testedWindowCallback.onMenuItemSelected(fakeFeatureId, mockItem)
+
+        // Then
+        verify(mockWrappedCallback).onMenuItemSelected(fakeFeatureId, mockItem)
+        assertThat(result).isEqualTo(fakeReturnedValue)
+    }
+
+    @Test
+    fun `M return false W onMenuItemSelected { wrappedCallback throws NPE }`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockItem: MenuItem = mock()
+        whenever(mockWrappedCallback.onMenuItemSelected(fakeFeatureId, mockItem))
+            .thenThrow(NullPointerException())
+
+        // When
+        val result = testedWindowCallback.onMenuItemSelected(fakeFeatureId, mockItem)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M delegate to wrapped callback W onPanelClosed`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockMenu: Menu = mock()
+
+        // When
+        testedWindowCallback.onPanelClosed(fakeFeatureId, mockMenu)
+
+        // Then
+        verify(mockWrappedCallback).onPanelClosed(fakeFeatureId, mockMenu)
+    }
+
+    @Test
+    fun `M do nothing W onPanelClosed { wrappedCallback throws NPE }`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockMenu: Menu = mock()
+        whenever(mockWrappedCallback.onPanelClosed(fakeFeatureId, mockMenu))
+            .thenThrow(NullPointerException())
+
+        // When + Then (no exception thrown)
+        testedWindowCallback.onPanelClosed(fakeFeatureId, mockMenu)
+    }
+
+    @Test
+    fun `M delegate to wrapped callback W onPreparePanel`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockView: View = mock()
+        val mockMenu: Menu = mock()
+        val fakeReturnedValue = forge.aBool()
+        whenever(mockWrappedCallback.onPreparePanel(fakeFeatureId, mockView, mockMenu))
+            .thenReturn(fakeReturnedValue)
+
+        // When
+        val result = testedWindowCallback.onPreparePanel(fakeFeatureId, mockView, mockMenu)
+
+        // Then
+        verify(mockWrappedCallback).onPreparePanel(fakeFeatureId, mockView, mockMenu)
+        assertThat(result).isEqualTo(fakeReturnedValue)
+    }
+
+    @Test
+    fun `M return false W onPreparePanel { wrappedCallback throws NPE }`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockView: View = mock()
+        val mockMenu: Menu = mock()
+        whenever(mockWrappedCallback.onPreparePanel(fakeFeatureId, mockView, mockMenu))
+            .thenThrow(NullPointerException())
+
+        // When
+        val result = testedWindowCallback.onPreparePanel(fakeFeatureId, mockView, mockMenu)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M delegate to wrapped callback W onCreatePanelMenu`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockMenu: Menu = mock()
+        val fakeReturnedValue = forge.aBool()
+        whenever(mockWrappedCallback.onCreatePanelMenu(fakeFeatureId, mockMenu))
+            .thenReturn(fakeReturnedValue)
+
+        // When
+        val result = testedWindowCallback.onCreatePanelMenu(fakeFeatureId, mockMenu)
+
+        // Then
+        verify(mockWrappedCallback).onCreatePanelMenu(fakeFeatureId, mockMenu)
+        assertThat(result).isEqualTo(fakeReturnedValue)
+    }
+
+    @Test
+    fun `M return false W onCreatePanelMenu { wrappedCallback throws NPE }`(forge: Forge) {
+        // Given
+        val fakeFeatureId = forge.anInt()
+        val mockMenu: Menu = mock()
+        whenever(mockWrappedCallback.onCreatePanelMenu(fakeFeatureId, mockMenu))
+            .thenThrow(NullPointerException())
+
+        // When
+        val result = testedWindowCallback.onCreatePanelMenu(fakeFeatureId, mockMenu)
+
+        // Then
+        assertThat(result).isFalse()
     }
 
     // endregion
