@@ -154,6 +154,36 @@ public final class com/datadog/android/sessionreplay/internal/TouchPrivacyManage
 	public final fun addTouchOverrideArea (Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/TouchPrivacy;)V
 }
 
+public class com/datadog/android/sessionreplay/internal/recorder/callback/FixedWindowCallback : android/view/Window$Callback {
+	public fun <init> (Landroid/view/Window$Callback;)V
+	public fun dispatchGenericMotionEvent (Landroid/view/MotionEvent;)Z
+	public fun dispatchKeyEvent (Landroid/view/KeyEvent;)Z
+	public fun dispatchKeyShortcutEvent (Landroid/view/KeyEvent;)Z
+	public fun dispatchPopulateAccessibilityEvent (Landroid/view/accessibility/AccessibilityEvent;)Z
+	public fun dispatchTouchEvent (Landroid/view/MotionEvent;)Z
+	public fun dispatchTrackballEvent (Landroid/view/MotionEvent;)Z
+	public fun getDelegate ()Landroid/view/Window$Callback;
+	public fun onActionModeFinished (Landroid/view/ActionMode;)V
+	public fun onActionModeStarted (Landroid/view/ActionMode;)V
+	public fun onAttachedToWindow ()V
+	public fun onContentChanged ()V
+	public fun onCreatePanelMenu (ILandroid/view/Menu;)Z
+	public fun onCreatePanelView (I)Landroid/view/View;
+	public fun onDetachedFromWindow ()V
+	public fun onMenuItemSelected (ILandroid/view/MenuItem;)Z
+	public fun onMenuOpened (ILandroid/view/Menu;)Z
+	public fun onPanelClosed (ILandroid/view/Menu;)V
+	public fun onPointerCaptureChanged (Z)V
+	public fun onPreparePanel (ILandroid/view/View;Landroid/view/Menu;)Z
+	public fun onProvideKeyboardShortcuts (Ljava/util/List;Landroid/view/Menu;I)V
+	public fun onSearchRequested ()Z
+	public fun onSearchRequested (Landroid/view/SearchEvent;)Z
+	public fun onWindowAttributesChanged (Landroid/view/WindowManager$LayoutParams;)V
+	public fun onWindowFocusChanged (Z)V
+	public fun onWindowStartingActionMode (Landroid/view/ActionMode$Callback;)Landroid/view/ActionMode;
+	public fun onWindowStartingActionMode (Landroid/view/ActionMode$Callback;I)Landroid/view/ActionMode;
+}
+
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion;
 	public abstract fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
