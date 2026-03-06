@@ -8,7 +8,10 @@ package com.datadog.android.sessionreplay.internal.recorder.callback
 
 import android.content.Context
 import android.graphics.Point
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
+import android.view.View
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
@@ -81,12 +84,51 @@ internal class RecorderWindowCallback(
             )
         }
 
-        @Suppress("SwallowedException")
+        return wrappedCallback.dispatchTouchEvent(event)
+    }
+
+    @Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall") // NPE caught below
+    override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
         return try {
-            wrappedCallback.dispatchTouchEvent(event)
+            wrappedCallback.onMenuOpened(featureId, menu)
         } catch (e: NullPointerException) {
-            logOrRethrowWrappedCallbackException(e)
-            EVENT_CONSUMED
+            false
+        }
+    }
+
+    @Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall") // NPE caught below
+    override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
+        return try {
+            wrappedCallback.onMenuItemSelected(featureId, item)
+        } catch (e: NullPointerException) {
+            false
+        }
+    }
+
+    @Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall") // NPE caught below
+    override fun onPanelClosed(featureId: Int, menu: Menu) {
+        try {
+            wrappedCallback.onPanelClosed(featureId, menu)
+        } catch (_: NullPointerException) {
+            // no-op
+        }
+    }
+
+    @Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall") // NPE caught below
+    override fun onPreparePanel(featureId: Int, view: View?, menu: Menu): Boolean {
+        return try {
+            wrappedCallback.onPreparePanel(featureId, view, menu)
+        } catch (e: NullPointerException) {
+            false
+        }
+    }
+
+    @Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall") // NPE caught below
+    override fun onCreatePanelMenu(featureId: Int, menu: Menu): Boolean {
+        return try {
+            wrappedCallback.onCreatePanelMenu(featureId, menu)
+        } catch (e: NullPointerException) {
+            false
         }
     }
 
@@ -165,25 +207,6 @@ internal class RecorderWindowCallback(
         lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNanos()
     }
 
-    private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {
-        // When calling delegate callback, we may have something like
-        // java.lang.NullPointerException: Parameter specified as non-null is null:
-        // method xxx, parameter xxx
-        // This happens because Kotlin delegate expects non-null value incorrectly inferring
-        // non-null type from Java interface definition (seems to be solved in Kotlin 1.8 though)
-        if (e.message?.contains("Parameter specified as non-null is null") == true) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE },
-                e
-            )
-        } else {
-            @Suppress("ThrowingInternalException") // we need to let client exception to propagate
-            throw e
-        }
-    }
-
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
         if (rootViews.isNotEmpty()) {
@@ -202,8 +225,6 @@ internal class RecorderWindowCallback(
     // endregion
 
     companion object {
-        private const val EVENT_CONSUMED: Boolean = true
-
         // every frame we collect the move event positions
         internal val MOTION_UPDATE_DELAY_THRESHOLD_NS: Long =
             TimeUnit.MILLISECONDS.toNanos(16)
@@ -212,7 +233,5 @@ internal class RecorderWindowCallback(
         internal val FLUSH_BUFFER_THRESHOLD_NS: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS * 10
         internal const val MOTION_EVENT_WAS_NULL_ERROR_MESSAGE =
             "RecorderWindowCallback: intercepted null motion event"
-        internal const val FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE =
-            "RecorderWindowCallback: wrapped callback failed to handle the motion event"
     }
 }
