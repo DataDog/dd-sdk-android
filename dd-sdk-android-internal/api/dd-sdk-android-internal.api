@@ -295,6 +295,7 @@ public abstract interface class com/datadog/android/internal/system/BuildSdkVers
 	public abstract fun isAtLeastR ()Z
 	public abstract fun isAtLeastS ()Z
 	public abstract fun isAtLeastTiramisu ()Z
+	public abstract fun isAtLeastVanillaIceCream ()Z
 }
 
 public final class com/datadog/android/internal/system/BuildSdkVersionProvider$Companion {

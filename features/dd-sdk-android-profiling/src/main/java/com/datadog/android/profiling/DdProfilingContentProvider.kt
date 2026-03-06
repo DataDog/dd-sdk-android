@@ -16,44 +16,65 @@ import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider.Companion.DEFAULT
+import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 
 /**
  * A [ContentProvider] to start Profiling request as early as possible in the app's
  * lifecycle.
  */
 @OptIn(ExperimentalProfilingApi::class)
-class DdProfilingContentProvider : ContentProvider() {
+class DdProfilingContentProvider(
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DEFAULT
+) : ContentProvider() {
 
     override fun onCreate(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            context?.let {
-                val instanceNames = ProfilingStorage.getProfilingEnabledInstanceNames(it)
-                if (instanceNames.isNotEmpty() && isProcessFromLauncher()) {
-                    sampleProfiling(it, instanceNames)
-                }
+        context?.let { onStart(it) }
+        return true
+    }
+
+    internal fun onStart(context: Context) {
+        if (buildSdkVersionProvider.isAtLeastVanillaIceCream) {
+            val instanceNames = ProfilingStorage.getProfilingEnabledInstanceNames(context)
+            if (instanceNames.isNotEmpty()) {
+                sampleProfiling(context, instanceNames)
             }
         }
-        return true
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private fun sampleProfiling(context: Context, instanceNames: Set<String>) {
+        val appStartInfo = getAppStartInfo(context) ?: return
         val sampleRate = ProfilingStorage.getSampleRate(context)
         if (RateBasedSampler<Unit>(sampleRate).sample(Unit)) {
-            Profiling.start(context, instanceNames)
+            Profiling.start(
+                context = context,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH,
+                additionalAttributes = mapOf(PerfettoProfiler.TELEMETRY_KEY_APP_START_INFO to appStartInfo),
+                sdkInstanceNames = instanceNames
+            )
         }
         ProfilingStorage.removeSampleRate(context)
     }
 
+    /**
+     * Returns the Android [ApplicationStartInfo] start reason as a telemetry string if this
+     * process was started from an eligible launcher reason, or null if profiling should not run.
+     */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    private fun isProcessFromLauncher(): Boolean {
-        val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+    private fun getAppStartInfo(context: Context): String? {
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         val startReason = manager?.getHistoricalProcessStartReasons(1)
             ?.firstOrNull()?.reason
-        // TODO RUM-14061: Add all the necessary start reason for application profiling
-        return startReason == ApplicationStartInfo.START_REASON_LAUNCHER ||
-            startReason == ApplicationStartInfo.START_REASON_START_ACTIVITY
+        return when (startReason) {
+            ApplicationStartInfo.START_REASON_LAUNCHER -> TELEMETRY_APP_START_INFO_LAUNCHER
+            ApplicationStartInfo.START_REASON_START_ACTIVITY -> TELEMETRY_APP_START_INFO_ACTIVITY
+            ApplicationStartInfo.START_REASON_LAUNCHER_RECENTS -> TELEMETRY_APP_START_INFO_RECENTS
+            else -> null
+        }
     }
 
     override fun query(
@@ -85,5 +106,11 @@ class DdProfilingContentProvider : ContentProvider() {
         selectionArgs: Array<out String>?
     ): Int {
         return 0
+    }
+
+    internal companion object {
+        internal const val TELEMETRY_APP_START_INFO_LAUNCHER = "launcher"
+        internal const val TELEMETRY_APP_START_INFO_ACTIVITY = "start_activity"
+        internal const val TELEMETRY_APP_START_INFO_RECENTS = "recents"
     }
 }
