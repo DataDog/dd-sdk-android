@@ -10,14 +10,17 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
+import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStorage
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -188,6 +191,31 @@ class ProfilingFeatureTest {
 
         // Then
         verify(mockProfiler).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M write profiling event W TTID received { perfetto result has non-launch tag }`(
+        @Forgery fakeTTIDEvent: ProfilerStopEvent.TTID,
+        @StringForgery fakeNonLaunchTag: String
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        verify(mockProfiler).registerProfilingCallback(eq(fakeInstanceName), callbackCaptor.capture())
+
+        val fakePerfettoResult = PerfettoResult(
+            start = 0L,
+            end = 1L,
+            tag = fakeNonLaunchTag,
+            resultFilePath = "/fake/path"
+        )
+
+        // When — profiler finishes first (sets perfettoResult), then TTID arrives
+        callbackCaptor.firstValue.onSuccess(fakePerfettoResult)
+        testedFeature.onReceive(fakeTTIDEvent)
+
+        // Then — dataWriter.write is triggered (ProfilingDataWriter calls sdkCore.getFeature)
+        verify(mockSdkCore).getFeature(Feature.PROFILING_FEATURE_NAME)
     }
 
     @Test

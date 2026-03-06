@@ -20,7 +20,6 @@ import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
-import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -123,7 +122,6 @@ internal class ProfilingFeature(
     private fun tryWriteProfilingEvent() {
         val perfettoResult = perfettoResult ?: return
         val ttidRumContext = ttidRumContext ?: return
-        if (perfettoResult.tag != PerfettoProfiler.PROFILING_TAG_APPLICATION_LAUNCH) return
         if (!isTtidProfileSent.getAndSet(true)) {
             dataWriter.write(
                 profilingResult = perfettoResult,

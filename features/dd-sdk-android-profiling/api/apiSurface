@@ -1,4 +1,5 @@
 class com.datadog.android.profiling.DdProfilingContentProvider : android.content.ContentProvider
+  constructor(com.datadog.android.internal.system.BuildSdkVersionProvider = DEFAULT)
   override fun onCreate(): Boolean
   override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
   override fun getType(android.net.Uri): String?
