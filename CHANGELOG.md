@@ -1,3 +1,7 @@
+# 3.7.1 / 2026-03-05
+
+* [BUGFIX] Deprecated classes restored to preserve backward compatibility. See [#3215](https://github.com/DataDog/dd-sdk-android/pull/3215)
+
 # 3.7.0 / 2026-03-03
 
 * [FEATURE] APM support for Cronet instrumentation:

@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.okhttp.trace
 
 import androidx.annotation.FloatRange
@@ -41,6 +43,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
 import java.util.concurrent.atomic.AtomicReference
+import com.datadog.android.okhttp.TraceContext as DeprecatedTraceContext
 
 /**
  * Provides automatic trace integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -351,7 +354,7 @@ internal constructor(
     private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         val datadogSpan = request.tag(DatadogSpan::class.java)
-        val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
+        val openTelemetrySpanSamplingPriority = request.getTraceContextTag()?.samplingPriority
 
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
@@ -362,6 +365,12 @@ internal constructor(
             openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
             else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
+    }
+
+    internal fun Request.getTraceContextTag(): TraceContext? {
+        return this.tag(DeprecatedTraceContext::class.java)?.let {
+            TraceContext(it.traceId, it.spanId, it.samplingPriority)
+        } ?: this.tag(TraceContext::class.java)
     }
 
     @Suppress("ReturnCount")
@@ -432,7 +441,7 @@ internal constructor(
     }
 
     private fun extractTraceContext(request: Request): DatadogSpanContext? =
-        request.tag(TraceContext::class.java)?.let {
+        request.getTraceContextTag()?.let {
             DatadogTracingToolkit.propagationHelper.createExtractedContext(
                 it.traceId,
                 it.spanId,
@@ -821,6 +830,28 @@ internal constructor(
         fun setTraceContextInjection(traceContextInjection: TraceContextInjection): R {
             this.traceContextInjection = traceContextInjection
             return getThis()
+        }
+
+        /**
+         * Deprecated. Use setTraceContextInjection(com.datadog.android.trace.TraceContextInjection) instead.
+         *
+         * Set the trace context injection behavior for this interceptor in the intercepted requests.
+         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
+         * will be propagated in the intercepted requests no matter if the span created around the request
+         * is sampled or not.
+         * @param traceContextInjection the trace context injection option.
+         * @see TraceContextInjection.ALL
+         * @see TraceContextInjection.SAMPLED
+         */
+        @Deprecated("Use setTraceContextInjection(com.datadog.android.trace.TraceContextInjection) instead")
+        fun setTraceContextInjection(traceContextInjection: com.datadog.android.okhttp.TraceContextInjection): R {
+            return setTraceContextInjection(
+                when (traceContextInjection) {
+                    com.datadog.android.okhttp.TraceContextInjection.ALL -> TraceContextInjection.ALL
+                    com.datadog.android.okhttp.TraceContextInjection.SAMPLED -> TraceContextInjection.SAMPLED
+                }
+            )
         }
 
         /**

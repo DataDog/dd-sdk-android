@@ -80,7 +80,7 @@ internal class NetworkInstrumentationComparisonTest {
         val results = compositeClient.execute(request)
 
         // Then
-        assertThat(results)
+        assertThat(results, request)
             .haveSameSpanCount()
             .haveExpectedClients()
             .haveSameSpanStructure()
@@ -93,7 +93,11 @@ internal class NetworkInstrumentationComparisonTest {
     fun executionResultsMustBeSimilarWhen_clientError() = asyncTest {
         // Given
         val method = networkRule.forge.anElementFrom(ALLOWED_METHODS)
-        val error = networkRule.forge.anElementFrom(HttpSpec.StatusCode.clientErrors())
+        // https://github.com/RunningTheSnail/Okhttp/blob/84cbd2dae1708967c3b1bd71ccecdecefd6354f5/okhttp/src/main/java/okhttp3/internal/http/RetryAndFollowUpInterceptor.java#L318
+        // OkHttp will retry on 408 status code by default, se we excluding this code here
+        val error = networkRule.forge.anElementFrom(
+            HttpSpec.StatusCode.clientErrors(HttpSpec.StatusCode.REQUEST_TIMEOUT)
+        )
         val url = NetworkTestConfig.Endpoint.error(error, method)
         val request = TestRequest(
             url = url,
@@ -105,7 +109,7 @@ internal class NetworkInstrumentationComparisonTest {
         val results = compositeClient.execute(request)
 
         // Then
-        assertThat(results)
+        assertThat(results, request)
             .haveSameSpanCount()
             .haveExpectedClients()
             .haveSameSpanStructure()
@@ -130,7 +134,7 @@ internal class NetworkInstrumentationComparisonTest {
         val results = compositeClient.execute(request)
 
         // Then
-        assertThat(results)
+        assertThat(results, request)
             .haveSameSpanCount()
             .haveExpectedClients()
             .haveSameSpanStructure()
@@ -156,7 +160,7 @@ internal class NetworkInstrumentationComparisonTest {
         val results = compositeClient.execute(request)
 
         // Then
-        assertThat(results)
+        assertThat(results, request)
             .haveSameSpanCount()
             .haveSameStatusCode()
             .haveExpectedClients()
@@ -181,7 +185,7 @@ internal class NetworkInstrumentationComparisonTest {
         val results = compositeClient.execute(request)
 
         // Then
-        assertThat(results)
+        assertThat(results, request)
             .haveSameSpanCount()
             .haveExpectedClients()
             .haveSameSpanStructure()
