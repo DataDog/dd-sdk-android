@@ -106,7 +106,7 @@ object com.datadog.android.internal.network.HttpSpec
     const val GATEWAY_TIMEOUT: Int
     const val NETWORK_AUTHENTICATION_REQUIRED: Int
     fun values()
-    fun clientErrors()
+    fun clientErrors(Int): List<Int>
     fun serverErrors()
   object ContentType
     const val APPLICATION_JSON: String

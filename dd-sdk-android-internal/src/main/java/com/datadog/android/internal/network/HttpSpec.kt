@@ -170,10 +170,14 @@ object HttpSpec {
         )
 
         /**
-         * Returns a list of common HTTP client error status codes (4xx).
-         * @return list containing BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, and NOT_FOUND
+         * Returns a list of HTTP client error status codes (4xx).
+         * @param exclude status codes to exclude from the result
+         * @return list of 4xx status codes from [values], excluding any codes specified in [exclude]
          */
-        fun clientErrors() = values().filter { it / STATUS_CODE_TYPE == STATUS_CODE_TYPE_CLIENT }
+        fun clientErrors(vararg exclude: Int): List<Int> {
+            val prohibited = exclude.toSet()
+            return values().filterNot { it in prohibited }.filter { it / STATUS_CODE_TYPE == STATUS_CODE_TYPE_CLIENT }
+        }
 
         /**
          * Returns a list of common HTTP server error status codes (5xx).
