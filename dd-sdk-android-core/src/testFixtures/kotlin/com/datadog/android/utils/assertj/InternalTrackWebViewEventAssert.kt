@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.utils.assertj
+package com.datadog.android.utils.assertj
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class InternalTrackWebViewEventAssert(actual: InternalTelemetryEvent.ApiUsage.TrackWebView) :
+class InternalTrackWebViewEventAssert(actual: InternalTelemetryEvent.ApiUsage.TrackWebView) :
     AbstractAssert<InternalTrackWebViewEventAssert, InternalTelemetryEvent.ApiUsage.TrackWebView>(
         actual,
         InternalTrackWebViewEventAssert::class.java

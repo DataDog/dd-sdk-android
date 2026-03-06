@@ -8,8 +8,8 @@ package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.okhttp.internal.OkHttpHttpResponseInfo.Companion.ERROR_PEEK_BODY
-import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.tests.elmyr.exhaustiveAttributes
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge

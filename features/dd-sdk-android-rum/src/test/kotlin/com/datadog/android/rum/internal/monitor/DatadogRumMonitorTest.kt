@@ -59,9 +59,9 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.verifyApiUsage
-import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.utils.verifyApiUsage
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge

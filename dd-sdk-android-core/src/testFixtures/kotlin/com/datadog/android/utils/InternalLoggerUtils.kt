@@ -9,6 +9,8 @@
 package com.datadog.android.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.utils.assertj.InternalApiUsageEventAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.ArgumentMatchers.isA
 import org.mockito.kotlin.argumentCaptor
@@ -36,8 +38,13 @@ fun InternalLogger.verifyLog(
             eq(onlyOnce),
             eq(additionalProperties)
         )
-        allValues.forEach {
-            assertThat(it()).isEqualTo(message)
+        if (allValues.isNotEmpty()) {
+            assertThat(allValues.any { it() == message })
+                .overridingErrorMessage {
+                    "Expected at least one log message=\"$message\"" +
+                        " but found: ${allValues.map { it() }}"
+                }
+                .isTrue()
         }
     }
 }
@@ -84,7 +91,9 @@ fun InternalLogger.verifyLog(
             eq(onlyOnce),
             eq(additionalProperties)
         )
-        assertThat(firstValue()).isEqualTo(message)
+        allValues.forEach {
+            assertThat(it()).isEqualTo(message)
+        }
     }
 }
 
@@ -106,7 +115,9 @@ fun <T : Throwable> InternalLogger.verifyLog(
             eq(onlyOnce),
             eq(additionalProperties)
         )
-        assertThat(firstValue()).isEqualTo(message)
+        allValues.forEach {
+            assertThat(it()).isEqualTo(message)
+        }
     }
 }
 
@@ -129,31 +140,7 @@ fun InternalLogger.verifyLog(
             eq(additionalProperties)
         )
         allValues.forEach {
-            assertThat(firstValue()).matches(messageMatcher)
-        }
-    }
-}
-
-fun <T : Throwable> InternalLogger.verifyLog(
-    level: InternalLogger.Level,
-    target: InternalLogger.Target,
-    messageMatcher: (String) -> Boolean,
-    throwableClass: Class<T>,
-    onlyOnce: Boolean = false,
-    mode: VerificationMode = times(1),
-    additionalProperties: Map<String, Any?>? = null
-) {
-    argumentCaptor<() -> String> {
-        verify(this@verifyLog, mode).log(
-            eq(level),
-            eq(target),
-            capture(),
-            isA(throwableClass),
-            eq(onlyOnce),
-            eq(additionalProperties)
-        )
-        allValues.forEach {
-            assertThat(firstValue()).matches(messageMatcher)
+            assertThat(it()).matches(messageMatcher)
         }
     }
 }
@@ -176,28 +163,18 @@ fun InternalLogger.verifyLog(
             eq(onlyOnce),
             eq(additionalProperties)
         )
-        assertThat(firstValue()).matches(messageMatcher)
+        allValues.forEach {
+            assertThat(it()).matches(messageMatcher)
+        }
     }
 }
 
-fun <T : Throwable> InternalLogger.verifyLog(
-    level: InternalLogger.Level,
-    targets: List<InternalLogger.Target>,
-    messageMatcher: (String) -> Boolean,
-    throwableClass: Class<T>,
-    onlyOnce: Boolean = false,
-    mode: VerificationMode = times(1),
-    additionalProperties: Map<String, Any?>? = null
+fun InternalLogger.verifyApiUsage(
+    apiUsage: InternalTelemetryEvent.ApiUsage,
+    samplingRate: Float
 ) {
-    argumentCaptor<() -> String> {
-        verify(this@verifyLog, mode).log(
-            eq(level),
-            eq(targets),
-            capture(),
-            isA(throwableClass),
-            eq(onlyOnce),
-            eq(additionalProperties)
-        )
-        assertThat(firstValue()).matches(messageMatcher)
+    argumentCaptor<() -> InternalTelemetryEvent.ApiUsage> {
+        verify(this@verifyApiUsage).logApiUsage(eq(samplingRate), capture())
+        InternalApiUsageEventAssert.assertThat(firstValue()).isEqualTo(apiUsage)
     }
 }

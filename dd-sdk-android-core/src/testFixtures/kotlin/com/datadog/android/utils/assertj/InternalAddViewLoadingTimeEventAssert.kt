@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.utils.assertj
+package com.datadog.android.utils.assertj
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class InternalAddViewLoadingTimeEventAssert(actual: InternalTelemetryEvent.ApiUsage.AddViewLoadingTime) :
+class InternalAddViewLoadingTimeEventAssert(actual: InternalTelemetryEvent.ApiUsage.AddViewLoadingTime) :
     AbstractAssert<InternalAddViewLoadingTimeEventAssert, InternalTelemetryEvent.ApiUsage.AddViewLoadingTime>(
         actual,
         InternalAddViewLoadingTimeEventAssert::class.java
