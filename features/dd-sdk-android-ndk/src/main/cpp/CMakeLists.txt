@@ -35,3 +35,23 @@ set_target_properties(datadog-native-lib
         PROPERTIES
         COMPILE_OPTIONS
         -Werror -Wall -pedantic)
+
+# Size optimizations for non-Debug builds
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(datadog-native-lib PRIVATE
+            -Oz
+            -fvisibility=hidden
+            -fno-exceptions
+            -fno-rtti
+            -ffunction-sections
+            -fdata-sections
+            -flto=thin
+            )
+    target_link_options(datadog-native-lib PRIVATE
+            -Oz
+            -flto=thin
+            -Wl,--gc-sections
+            -Wl,--exclude-libs,ALL
+            -Wl,--icf=safe
+            )
+endif()
