@@ -8,7 +8,7 @@ package com.datadog.android.trace.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
-import com.datadog.android.trace.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import org.assertj.core.api.Assertions.assertThat

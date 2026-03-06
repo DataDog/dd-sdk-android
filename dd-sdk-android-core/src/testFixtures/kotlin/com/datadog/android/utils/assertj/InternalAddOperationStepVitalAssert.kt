@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.utils.assertj
+package com.datadog.android.utils.assertj
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class InternalAddOperationStepVitalAssert(actual: InternalTelemetryEvent.ApiUsage.AddOperationStepVital) :
+class InternalAddOperationStepVitalAssert(actual: InternalTelemetryEvent.ApiUsage.AddOperationStepVital) :
     AbstractAssert<InternalAddOperationStepVitalAssert, InternalTelemetryEvent.ApiUsage.AddOperationStepVital>(
         actual,
         InternalAddOperationStepVitalAssert::class.java

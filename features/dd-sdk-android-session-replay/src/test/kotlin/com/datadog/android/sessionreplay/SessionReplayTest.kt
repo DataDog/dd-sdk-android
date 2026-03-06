@@ -14,7 +14,7 @@ import com.datadog.android.sessionreplay.SessionReplay.IS_ALREADY_REGISTERED_WAR
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
-import com.datadog.android.sessionreplay.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
