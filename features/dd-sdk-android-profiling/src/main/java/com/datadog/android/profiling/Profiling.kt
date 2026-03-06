@@ -16,6 +16,7 @@ import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.internal.NoOpProfiler
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
+import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import java.util.concurrent.Executors
@@ -59,12 +60,19 @@ object Profiling {
      * Start profiling with given SDK instances names.
      *
      * @param context application context
+     * @param startReason reason to start a profiling session
+     * @param additionalAttributes additional attributes to include in the profiling telemetry
      * @param sdkInstanceNames the set of the SDK instances name
      */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    internal fun start(context: Context, sdkInstanceNames: Set<String>) {
+    internal fun start(
+        context: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>,
+        sdkInstanceNames: Set<String>
+    ) {
         initializeProfiler()
-        profiler.start(context, sdkInstanceNames)
+        profiler.start(context, startReason, additionalAttributes, sdkInstanceNames)
         ProfilingStorage.removeProfilingFlag(context, sdkInstanceNames)
     }
 
@@ -72,11 +80,18 @@ object Profiling {
      * Start profiling for a given SDK instance.
      *
      * @param context application context
+     * @param startReason reason to start a profiling session
+     * @param additionalAttributes additional attributes to include in the profiling telemetry
      * @param sdkCore SDK instance to start profiling with. If not provided, default SDK instance.
      */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    internal fun start(context: Context, sdkCore: SdkCore = Datadog.getInstance()) {
-        start(context, setOf(sdkCore.name))
+    internal fun start(
+        context: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        start(context, startReason, additionalAttributes, setOf(sdkCore.name))
     }
 
     /**
