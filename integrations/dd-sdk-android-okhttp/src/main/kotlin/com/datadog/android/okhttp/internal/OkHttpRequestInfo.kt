@@ -11,9 +11,10 @@ import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+import com.datadog.android.rum.resource.ResourceId
 import okhttp3.Request
 import okio.IOException
+import java.util.UUID
 
 @Deprecated(
     "This code will be replaced with RequestExt.kt and OkHttpHttpRequestInfo in the further releases.",
@@ -23,11 +24,49 @@ import okio.IOException
             ")"
     )
 )
-internal fun Request.buildResourceId(generateUuid: Boolean) =
-    RumNetworkInstrumentation.buildResourceId(
-        OkHttpRequestInfo(this),
-        generateUuid = generateUuid
+internal fun Request.buildResourceId(generateUuid: Boolean): ResourceId {
+    val uuid = tag(UUID::class.java) ?: (if (generateUuid) UUID.randomUUID() else null)
+
+    @Suppress("DEPRECATION")
+    val key = identifyRequest(this)
+
+    return ResourceId(key, uuid?.toString())
+}
+
+@Deprecated(
+    "This code will be replaced with RequestExt.kt and OkHttpHttpRequestInfo in the further releases.",
+    replaceWith = ReplaceWith(
+        "rumNetworkInstrumentation.buildResourceId(" +
+            "OkHttpHttpRequestInfo(request).buildResourceId(generateUuid)" +
+            ")"
     )
+)
+internal fun identifyRequest(request: Request): String {
+    val method = request.method
+    val url = request.url
+    val body = request.body
+    return if (body == null) {
+        "$method•$url"
+    } else {
+        val contentLength = try {
+            body.contentLength()
+        } catch (@Suppress("SwallowedException") ioe: java.io.IOException) {
+            0
+        }
+        val contentType = body.contentType()
+        // TODO RUM-648 It is possible that if requests are say GZIPed (as an example), or maybe
+        //  streaming case (?), they all will have contentLength = -1, so if they target the same URL
+        //  they are going to have same identifier, messing up reporting.
+        //  -1 is valid return value for contentLength() call according to the docs and stands
+        //  for "unknown" case.
+        //  We need to have a more precise identification.
+        if (contentType != null || contentLength != 0L) {
+            "$method•$url•$contentLength•$contentType"
+        } else {
+            "$method•$url"
+        }
+    }
+}
 
 internal class OkHttpRequestInfo(internal val request: Request) :
     HttpRequestInfo,

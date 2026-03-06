@@ -33,7 +33,7 @@ internal class OkHttpClientWrapper(private val baseUrl: String) : HttpTestClient
 
             val client = OkHttpClient.Builder()
                 .addNetworkInterceptor(
-                    TracingInterceptor.Builder(HttpTestClientWrapper.Companion.tracedHosts)
+                    TracingInterceptor.Builder(HttpTestClientWrapper.tracedHosts)
                         .setTracedRequestListener(spansCollector)
                         .setTraceSampleRate(100f)
                         .build()
