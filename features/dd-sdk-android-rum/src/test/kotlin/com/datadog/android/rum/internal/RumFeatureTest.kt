@@ -33,9 +33,7 @@ import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITOR
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
@@ -659,7 +657,7 @@ internal class RumFeatureTest {
         assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
         val serializer = (testedFeature.dataWriter as RumDataWriter).eventSerializer
         assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
-        val eventMapper = (serializer as MapperSerializer)
+        val eventMapper = (serializer as MapperSerializer<*>)
             .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
         assertThat(eventMapper).isInstanceOf(RumEventMapper::class.java)
         val rumEventMapper = eventMapper as RumEventMapper
@@ -669,8 +667,6 @@ internal class RumFeatureTest {
             .isSameAs(fakeConfiguration.errorEventMapper)
         assertThat(rumEventMapper.resourceEventMapper)
             .isSameAs(fakeConfiguration.resourceEventMapper)
-        assertThat(rumEventMapper.viewEventMapper)
-            .isSameAs(fakeConfiguration.viewEventMapper)
         assertThat(rumEventMapper.longTaskEventMapper)
             .isSameAs(fakeConfiguration.longTaskEventMapper)
         assertThat(rumEventMapper.telemetryConfigurationMapper)
@@ -1502,9 +1498,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     @Test
@@ -1525,9 +1518,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(DefaultAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(DefaultAccessibilitySnapshotManager::class.java)
     }
 
     @Test
@@ -1550,9 +1540,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     @Test

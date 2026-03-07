@@ -31,7 +31,6 @@ import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
-import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -47,11 +46,8 @@ import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.battery.NoOpBatteryInfoProvider
@@ -109,6 +105,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -172,7 +169,6 @@ internal class RumFeature(
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
     internal var accessibilityReader: InfoProvider<AccessibilityInfo> = NoOpAccessibilityReader()
-    internal var accessibilitySnapshotManager: AccessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
@@ -195,7 +191,6 @@ internal class RumFeature(
                 applicationContext = appContext,
                 timeProvider = sdkCore.timeProvider
             )
-            accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
@@ -369,7 +364,6 @@ internal class RumFeature(
         if (configuration.collectAccessibility) {
             accessibilityReader.cleanup()
             accessibilityReader = NoOpAccessibilityReader()
-            accessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
         }
 
         batteryInfoProvider.cleanup()
@@ -383,20 +377,17 @@ internal class RumFeature(
         sdkCore: InternalSdkCore
     ): DataWriter<Any> {
         return RumDataWriter(
-            eventSerializer = MapperSerializer(
-                RumEventMapper(
-                    viewEventMapper = configuration.viewEventMapper,
-                    errorEventMapper = configuration.errorEventMapper,
-                    resourceEventMapper = configuration.resourceEventMapper,
-                    actionEventMapper = configuration.actionEventMapper,
-                    longTaskEventMapper = configuration.longTaskEventMapper,
-                    vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
-                    vitalAppLaunchEventMapper = configuration.vitalAppLaunchEventMapper,
-                    telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
-                    internalLogger = sdkCore.internalLogger
-                ),
-                RumEventSerializer(sdkCore.internalLogger)
+            eventMapper = RumEventMapper(
+                errorEventMapper = configuration.errorEventMapper,
+                resourceEventMapper = configuration.resourceEventMapper,
+                actionEventMapper = configuration.actionEventMapper,
+                longTaskEventMapper = configuration.longTaskEventMapper,
+                vitalOperationStepEventMapper = configuration.vitalOperationStepEventMapper,
+                vitalAppLaunchEventMapper = configuration.vitalAppLaunchEventMapper,
+                telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
+                internalLogger = sdkCore.internalLogger
             ),
+            eventSerializer = RumEventSerializer(sdkCore.internalLogger),
             eventMetaSerializer = RumEventMetaSerializer(),
             sdkCore = sdkCore
         )
@@ -763,7 +754,7 @@ internal class RumFeature(
         val interactionPredicate: InteractionPredicate,
         val viewTrackingStrategy: ViewTrackingStrategy?,
         val longTaskTrackingStrategy: TrackingStrategy?,
-        val viewEventMapper: EventMapper<ViewEvent>,
+        val viewEventMapper: ViewEventMapper,
         val errorEventMapper: EventMapper<ErrorEvent>,
         val resourceEventMapper: EventMapper<ResourceEvent>,
         val actionEventMapper: EventMapper<ActionEvent>,
@@ -817,7 +808,7 @@ internal class RumFeature(
             interactionPredicate = NoOpInteractionPredicate(),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
-            viewEventMapper = NoOpEventMapper(),
+            viewEventMapper = ViewEventMapper { event -> event },
             errorEventMapper = NoOpEventMapper(),
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),
