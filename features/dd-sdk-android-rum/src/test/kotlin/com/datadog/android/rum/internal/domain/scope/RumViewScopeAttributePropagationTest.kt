@@ -28,7 +28,9 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.event.ViewEventMapper
+import com.datadog.android.rum.internal.domain.scope.RumViewEventWriter
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -99,7 +101,13 @@ internal class RumViewScopeAttributePropagationTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
+
+    @Mock
+    lateinit var mockViewEventMapper: ViewEventMapper
+
+    @Mock
+    lateinit var mockRumViewEventWriter: RumViewEventWriter
 
     @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
@@ -657,7 +665,7 @@ internal class RumViewScopeAttributePropagationTest {
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
         slowFramesListener: SlowFramesListener = mockSlowFramesListener,
         rumSessionType: RumSessionType? = fakeRumSessionType,
-        accessibilitySnapshotManager: AccessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+        accessibilityInfoProvider: InfoProvider<AccessibilityInfo> = mockAccessibilityInfoProvider,
         batteryInfoProvider: InfoProvider<BatteryInfo> = mockBatteryInfoProvider,
         displayInfoProvider: InfoProvider<DisplayInfo> = mockDisplayInfoProvider,
         insightsCollector: InsightsCollector = mockInsightsCollector
@@ -681,11 +689,12 @@ internal class RumViewScopeAttributePropagationTest {
         networkSettledMetricResolver = networkSettledMetricResolver,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         slowFramesListener = slowFramesListener,
-        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        accessibilityInfoProvider = accessibilityInfoProvider,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionTypeOverride = rumSessionType,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        rumViewEventWriter = mockRumViewEventWriter
     )
 
     // endregion

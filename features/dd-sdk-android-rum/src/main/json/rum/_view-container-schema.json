@@ -27,7 +27,17 @@
         "source": {
           "type": "string",
           "description": "Source of the parent view",
-          "enum": ["android", "ios", "browser", "flutter", "react-native", "roku", "unity", "kotlin-multiplatform"],
+          "enum": [
+            "android",
+            "ios",
+            "browser",
+            "flutter",
+            "react-native",
+            "roku",
+            "unity",
+            "kotlin-multiplatform",
+            "electron"
+          ],
           "readOnly": true
         }
       },

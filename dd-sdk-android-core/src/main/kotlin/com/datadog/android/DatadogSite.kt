@@ -11,14 +11,14 @@ package com.datadog.android
  *
  * @param siteName Explicit site name property introduced in order to have a consistent SDK
  * instance ID (because this value is used there) in case if enum values are renamed.
- * @param intakeHostName the host name for the given site.
+ * @param intakeEndpoint the intake endpoint url for the given site.
  */
-enum class DatadogSite private constructor(internal val siteName: String, private val intakeHostName: String) {
+enum class DatadogSite(internal val siteName: String, val intakeEndpoint: String) {
 
     /**
      *  The US1 site: [app.datadoghq.com](https://app.datadoghq.com).
      */
-    US1("us1", "browser-intake-datadoghq.com"),
+    US1("us1", "https://browser-intake-datadoghq.com"),
 
     /**
      *  The US3 site: [us3.datadoghq.com](https://us3.datadoghq.com).
@@ -33,7 +33,7 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
     /**
      *  The EU1 site: [app.datadoghq.eu](https://app.datadoghq.eu).
      */
-    EU1("eu1", "browser-intake-datadoghq.eu"),
+    EU1("eu1", "https://browser-intake-datadoghq.eu"),
 
     /**
      *  The AP1 site: [ap1.datadoghq.com](https://ap1.datadoghq.com).
@@ -48,12 +48,18 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
     /**
      *  The US1_FED site (FedRAMP compatible): [app.ddog-gov.com](https://app.ddog-gov.com).
      */
-    US1_FED("us1_fed", "browser-intake-ddog-gov.com"),
+    US1_FED("us1_fed", "https://browser-intake-ddog-gov.com"),
 
     /**
      *  The STAGING site (internal usage only): [app.datad0g.com](https://app.datad0g.com).
      */
-    STAGING("staging", "browser-intake-datad0g.com");
+    STAGING("staging", "https://browser-intake-datad0g.com"),
+
+    /**
+     * Local capture server (development only): routes all SDK traffic to a local proxy at
+     * [http://10.0.2.2:8080](http://10.0.2.2:8080) (Android emulator → host machine).
+     */
+    LOCAL("local", "http://10.0.2.2:8080");
 
     /**
      * Constructor using the generic way to build the intake endpoint host from the site name.
@@ -62,9 +68,6 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
      */
     private constructor(siteName: String) : this(
         siteName,
-        "browser-intake-$siteName-datadoghq.com"
+        "https://browser-intake-$siteName-datadoghq.com"
     )
-
-    /** The intake endpoint url. */
-    val intakeEndpoint: String = "https://$intakeHostName"
 }

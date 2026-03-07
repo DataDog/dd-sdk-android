@@ -43,6 +43,23 @@ internal sealed class RumEventMeta {
         }
     }
 
+    data class ViewUpdate(
+        val viewId: String,
+        val documentVersion: Long
+    ) : RumEventMeta() {
+
+        override val type: String = VIEW_UPDATE_TYPE_VALUE
+
+        override fun toJson(): JsonObject {
+            val model = super.toJson()
+
+            model.addProperty(VIEW_ID_KEY, viewId)
+            model.addProperty(DOCUMENT_VERSION_KEY, documentVersion)
+
+            return model
+        }
+    }
+
     companion object {
 
         private const val UNKNOWN_RUM_EVENT_META_TYPE_ERROR = "Unknown RUM event meta type value [%s]"
@@ -50,6 +67,7 @@ internal sealed class RumEventMeta {
 
         const val TYPE_KEY = "type"
         const val VIEW_TYPE_VALUE = "view"
+        const val VIEW_UPDATE_TYPE_VALUE = "view_update"
         const val VIEW_ID_KEY = "viewId"
         const val HAS_ACCESSIBILITY_KEY = "hasAccessibility"
         const val DOCUMENT_VERSION_KEY = "documentVersion"

@@ -305,6 +305,8 @@ class JsonSchemaReader(
             }
         } else if (definition.type == JsonType.OBJECT) {
             generateDataClass(typeName, definition, fromFile)
+        } else if (definition.required?.isNotEmpty() == true) {
+            generateDataClass(typeName, definition, fromFile)
         } else {
             throw UnsupportedOperationException("Unsupported schema definition\n$definition")
         }
