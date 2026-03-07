@@ -36,6 +36,6 @@ internal class LongTaskEventTest {
         val result = LongTaskEvent.fromJson(json)
 
         // Then
-        Assertions.assertThat(result).isEqualTo(result)
+        Assertions.assertThat(result.toJson().toString()).isEqualTo(json)
     }
 }

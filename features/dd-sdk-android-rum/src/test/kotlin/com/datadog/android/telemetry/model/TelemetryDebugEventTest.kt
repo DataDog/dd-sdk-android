@@ -36,6 +36,6 @@ class TelemetryDebugEventTest {
         val result = TelemetryDebugEvent.fromJson(json)
 
         // Then
-        Assertions.assertThat(result).isEqualTo(result)
+        Assertions.assertThat(result.toJson().toString()).isEqualTo(json)
     }
 }

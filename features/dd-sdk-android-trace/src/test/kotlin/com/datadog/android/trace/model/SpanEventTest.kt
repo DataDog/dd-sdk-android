@@ -36,6 +36,6 @@ internal class SpanEventTest {
         val result = SpanEvent.fromJson(json)
 
         // Then
-        Assertions.assertThat(result).isEqualTo(result)
+        Assertions.assertThat(result.toJson().toString()).isEqualTo(json)
     }
 }
