@@ -40,10 +40,13 @@ internal class ViewWireframeMapper(
             view,
             mappingContext.systemInformation.screenDensity
         )
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
+        val background = view.background ?: return emptyList()
 
-        if (shapeStyle != null) {
-            return listOf(
+        val density = mappingContext.systemInformation.screenDensity
+        val (shapeStyle, shapeBorder) = resolveBackgroundStyleInfo(background, view.alpha, density, internalLogger)
+
+        return if (shapeStyle != null) {
+            listOf(
                 MobileSegment.Wireframe.ShapeWireframe(
                     resolveViewId(view),
                     viewGlobalBounds.x,
@@ -51,11 +54,11 @@ internal class ViewWireframeMapper(
                     viewGlobalBounds.width,
                     viewGlobalBounds.height,
                     shapeStyle = shapeStyle,
-                    border = null
+                    border = shapeBorder
                 )
             )
         } else {
-            return emptyList()
+            emptyList()
         }
     }
 }

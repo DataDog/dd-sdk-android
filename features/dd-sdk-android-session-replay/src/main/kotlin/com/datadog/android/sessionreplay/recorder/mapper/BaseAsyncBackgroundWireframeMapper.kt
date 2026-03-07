@@ -72,9 +72,11 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): MobileSegment.Wireframe? {
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
+        val background = view.background ?: return null
+        val density = mappingContext.systemInformation.screenDensity
+        val (shapeStyle, shapeBorder) = resolveBackgroundStyleInfo(background, view.alpha, density, internalLogger)
 
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.systemInformation.screenDensity)
+        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
         val width = view.width
         val height = view.height
 
@@ -93,7 +95,8 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
                 bounds = bounds,
                 width = width,
                 height = height,
-                shapeStyle = shapeStyle
+                shapeStyle = shapeStyle,
+                border = shapeBorder
             )
         }
     }
@@ -106,13 +109,15 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
      *  @param width the view width.
      *  @param height the view height.
      *  @param shapeStyle the optional [MobileSegment.ShapeStyle] to use.
+     *  @param border the optional [MobileSegment.ShapeBorder] to use.
      */
     protected open fun resolveBackgroundAsShapeWireframe(
         view: View,
         bounds: GlobalBounds,
         width: Int,
         height: Int,
-        shapeStyle: MobileSegment.ShapeStyle?
+        shapeStyle: MobileSegment.ShapeStyle?,
+        border: MobileSegment.ShapeBorder? = null
     ): MobileSegment.Wireframe.ShapeWireframe? {
         val id = uniqueIdentifierGenerator.resolveChildUniqueIdentifier(
             view,
@@ -128,7 +133,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
             width = width.densityNormalized(density).toLong(),
             height = height.densityNormalized(density).toLong(),
             shapeStyle = shapeStyle,
-            border = null
+            border = border
         )
     }
 

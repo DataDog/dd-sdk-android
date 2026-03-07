@@ -46,26 +46,30 @@ internal class ActionBarContainerMapper(
         // Fortunately, the ActionBarContainer.mBackground field we're interested in is package private,
         // which allows us to access it via the DatadogActionBarContainerAccessor.
         val background = DatadogActionBarContainerAccessor(view).getBackgroundDrawable()
-        val shapeStyle = background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, PREFIX_BACKGROUND_DRAWABLE)
 
-        if ((shapeStyle != null) && (id != null)) {
+        return if (background != null && id != null) {
             val density = mappingContext.systemInformation.screenDensity
-            val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+            val (shapeStyle, shapeBorder) = resolveBackgroundStyleInfo(background, view.alpha, density, internalLogger)
 
-            return listOf(
-                MobileSegment.Wireframe.ShapeWireframe(
-                    id,
-                    x = bounds.x,
-                    y = bounds.y,
-                    width = bounds.width,
-                    height = bounds.height,
-                    shapeStyle = shapeStyle,
-                    border = null
+            if (shapeStyle != null) {
+                val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+                listOf(
+                    MobileSegment.Wireframe.ShapeWireframe(
+                        id,
+                        x = bounds.x,
+                        y = bounds.y,
+                        width = bounds.width,
+                        height = bounds.height,
+                        shapeStyle = shapeStyle,
+                        border = shapeBorder
+                    )
                 )
-            )
+            } else {
+                emptyList()
+            }
         } else {
-            return emptyList()
+            emptyList()
         }
     }
 }
