@@ -71,7 +71,7 @@ internal class WindowCallbackInterceptor(
     private fun unwrapWindowCallback(window: Window) {
         val callback = window.callback
         if (callback is RecorderWindowCallback) {
-            val wrappedCallback = callback.wrappedCallback
+            val wrappedCallback = callback.delegate
             if (wrappedCallback !is NoOpWindowCallback) {
                 window.callback = wrappedCallback
             } else {

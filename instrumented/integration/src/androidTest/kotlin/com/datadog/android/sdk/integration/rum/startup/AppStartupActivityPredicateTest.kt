@@ -6,9 +6,7 @@
 
 package com.datadog.android.sdk.integration.rum.startup
 
-import android.app.Activity
 import android.app.ActivityManager
-import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -29,8 +27,6 @@ import com.datadog.tools.unit.ConditionWatcher
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented test verifying that AppStartupActivityPredicate correctly filters
@@ -55,12 +51,6 @@ internal class AppStartupActivityPredicateTest :
         val expectedEvents = mutableListOf<ExpectedEvent>()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
 
-        // The lifecycle callback was registered in beforeActivityLaunched() (before the activity
-        // was launched), so the latch is guaranteed to fire even on fast devices where
-        // MainContentActivity reaches RESUMED before runInstrumentationScenario is called.
-        check(mockServerRule.mainActivityResumed.await(MAIN_ACTIVITY_WAIT_SECONDS, TimeUnit.SECONDS)) {
-            "MainContentActivity did not reach RESUMED state within $MAIN_ACTIVITY_WAIT_SECONDS seconds"
-        }
         instrumentation.waitForIdleSync()
         waitForPendingRUMEvents()
 
@@ -92,10 +82,6 @@ internal class AppStartupActivityPredicateTest :
         return expectedEvents
     }
 
-    companion object {
-        private const val MAIN_ACTIVITY_WAIT_SECONDS = 30L
-    }
-
     @Test
     fun verifyTTIDReportedForMainActivityWhenInterstitialExcluded() {
         val expectedEvents = runInstrumentationScenario(mockServerRule)
@@ -113,64 +99,36 @@ internal class AppStartupActivityPredicateTest :
 
     /**
      * Test rule that configures RUM with a predicate excluding InterstitialSplashActivity.
-     *
-     * The [mainActivityResumed] latch is registered in [beforeActivityLaunched], before the
-     * activity is launched, to avoid a race where MainContentActivity reaches RESUMED before
-     * [runInstrumentationScenario] has a chance to register the callback.
      */
     internal class AppStartupPredicateTestRule : RumMockServerActivityTestRule<InterstitialSplashActivity>(
         activityClass = InterstitialSplashActivity::class.java,
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
     ) {
-        val mainActivityResumed = CountDownLatch(1)
-        private var mainActivityResumedCallback: Application.ActivityLifecycleCallbacks =
-            NoOpActivityLifecycleCallbacks()
-
         @OptIn(ExperimentalRumApi::class)
         override fun beforeActivityLaunched() {
             super.beforeActivityLaunched()
-            val appContext = InstrumentationRegistry.getInstrumentation()
-                .targetContext.applicationContext
+            val config = RuntimeConfig.configBuilder()
+                .build()
 
-            // Register before the activity launches so we can't miss the RESUMED callback.
-            mainActivityResumedCallback = object : NoOpActivityLifecycleCallbacks() {
-                override fun onActivityResumed(activity: Activity) {
-                    if (activity is MainContentActivity) mainActivityResumed.countDown()
+            val sdkCore = Datadog.initialize(
+                InstrumentationRegistry.getInstrumentation().targetContext.applicationContext,
+                config,
+                trackingConsent
+            )
+            checkNotNull(sdkCore)
+
+            val rumConfig = RuntimeConfig.rumConfigBuilder()
+                .trackUserInteractions()
+                .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
+                .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
+                // Exclude InterstitialSplashActivity from TTID measurement
+                .setAppStartupActivityPredicate { activity ->
+                    activity !is InterstitialSplashActivity
                 }
-            }
-            (appContext as Application).registerActivityLifecycleCallbacks(mainActivityResumedCallback)
-
-            try {
-                val config = RuntimeConfig.configBuilder()
-                    .build()
-
-                val sdkCore = Datadog.initialize(appContext, config, trackingConsent)
-                checkNotNull(sdkCore)
-
-                val rumConfig = RuntimeConfig.rumConfigBuilder()
-                    .trackUserInteractions()
-                    .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
-                    .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
-                    // Exclude InterstitialSplashActivity from TTID measurement
-                    .setAppStartupActivityPredicate { activity ->
-                        activity !is InterstitialSplashActivity
-                    }
-                    .build()
-                Rum.enable(rumConfig, sdkCore)
-                DdRumContentProvider.processImportance =
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            } catch (e: Throwable) {
-                appContext.unregisterActivityLifecycleCallbacks(mainActivityResumedCallback)
-                throw e
-            }
-        }
-
-        override fun afterActivityFinished() {
-            super.afterActivityFinished()
-            val appContext = InstrumentationRegistry.getInstrumentation()
-                .targetContext.applicationContext as Application
-            appContext.unregisterActivityLifecycleCallbacks(mainActivityResumedCallback)
+                .build()
+            Rum.enable(rumConfig, sdkCore)
+            DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         }
     }
 }

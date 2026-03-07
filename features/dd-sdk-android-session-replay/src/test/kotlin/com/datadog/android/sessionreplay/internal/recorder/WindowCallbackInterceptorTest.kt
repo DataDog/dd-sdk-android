@@ -103,7 +103,7 @@ internal class WindowCallbackInterceptorTest {
             val captor = argumentCaptor<Window.Callback>()
             verify(it).callback = captor.capture()
             assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
-            assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
+            assertThat((captor.firstValue as RecorderWindowCallback).delegate)
                 .isEqualTo(it.callback)
         }
     }
@@ -123,7 +123,7 @@ internal class WindowCallbackInterceptorTest {
             val captor = argumentCaptor<Window.Callback>()
             verify(it).callback = captor.capture()
             assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
-            assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
+            assertThat((captor.firstValue as RecorderWindowCallback).delegate)
                 .isInstanceOf(NoOpWindowCallback::class.java)
         }
     }

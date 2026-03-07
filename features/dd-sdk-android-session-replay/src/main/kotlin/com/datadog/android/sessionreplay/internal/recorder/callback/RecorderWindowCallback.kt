@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 internal class RecorderWindowCallback(
     appContext: Context,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
-    internal val wrappedCallback: Window.Callback,
+    wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
     private val rumContextProvider: RumContextProvider,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
@@ -45,7 +45,7 @@ internal class RecorderWindowCallback(
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
     private val windowInspector: WindowInspector = WindowInspector
-) : Window.Callback by wrappedCallback {
+) : FixedWindowCallback(wrappedCallback) {
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
@@ -81,13 +81,22 @@ internal class RecorderWindowCallback(
             )
         }
 
-        @Suppress("SwallowedException")
-        return try {
-            wrappedCallback.dispatchTouchEvent(event)
-        } catch (e: NullPointerException) {
-            logOrRethrowWrappedCallbackException(e)
-            EVENT_CONSUMED
+        return super.dispatchTouchEvent(event)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
+        if (rootViews.isNotEmpty()) {
+            // a new window was added or removed so we stop recording the previous root views
+            // and we start recording the new ones.
+            viewOnDrawInterceptor.stopIntercepting()
+            viewOnDrawInterceptor.intercept(
+                decorViews = rootViews,
+                textAndInputPrivacy = privacy,
+                imagePrivacy = imagePrivacy
+            )
         }
+        super.onWindowFocusChanged(hasFocus)
     }
 
     // endregion
@@ -165,45 +174,9 @@ internal class RecorderWindowCallback(
         lastPerformedFlushTimeInNs = timeProvider.getDeviceElapsedTimeNanos()
     }
 
-    private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {
-        // When calling delegate callback, we may have something like
-        // java.lang.NullPointerException: Parameter specified as non-null is null:
-        // method xxx, parameter xxx
-        // This happens because Kotlin delegate expects non-null value incorrectly inferring
-        // non-null type from Java interface definition (seems to be solved in Kotlin 1.8 though)
-        if (e.message?.contains("Parameter specified as non-null is null") == true) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE },
-                e
-            )
-        } else {
-            @Suppress("ThrowingInternalException") // we need to let client exception to propagate
-            throw e
-        }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
-        if (rootViews.isNotEmpty()) {
-            // a new window was added or removed so we stop recording the previous root views
-            // and we start recording the new ones.
-            viewOnDrawInterceptor.stopIntercepting()
-            viewOnDrawInterceptor.intercept(
-                decorViews = rootViews,
-                textAndInputPrivacy = privacy,
-                imagePrivacy = imagePrivacy
-            )
-        }
-        wrappedCallback.onWindowFocusChanged(hasFocus)
-    }
-
     // endregion
 
     companion object {
-        private const val EVENT_CONSUMED: Boolean = true
-
         // every frame we collect the move event positions
         internal val MOTION_UPDATE_DELAY_THRESHOLD_NS: Long =
             TimeUnit.MILLISECONDS.toNanos(16)
@@ -212,7 +185,5 @@ internal class RecorderWindowCallback(
         internal val FLUSH_BUFFER_THRESHOLD_NS: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS * 10
         internal const val MOTION_EVENT_WAS_NULL_ERROR_MESSAGE =
             "RecorderWindowCallback: intercepted null motion event"
-        internal const val FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE =
-            "RecorderWindowCallback: wrapped callback failed to handle the motion event"
     }
 }
