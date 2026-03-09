@@ -406,6 +406,17 @@ public final class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMo
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/rum/resource/ResourceId;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
+public final class com/datadog/android/rum/internal/net/GraphQLExtractor {
+	public static final field Companion Lcom/datadog/android/rum/internal/net/GraphQLExtractor$Companion;
+	public static final field MAX_GRAPHQL_BODY_PEEK J
+	public fun <init> ()V
+	public final fun extractGraphQLAttributes (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Ljava/util/Map;
+	public final fun extractGraphQLErrors (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/internal/net/GraphQLExtractor$Companion {
+}
+
 public final class com/datadog/android/rum/internal/net/RumNetworkInstrumentation {
 	public static final field Companion Lcom/datadog/android/rum/internal/net/RumNetworkInstrumentation$Companion;
 	public final fun reportInstrumentationError (Lkotlin/jvm/functions/Function0;)V

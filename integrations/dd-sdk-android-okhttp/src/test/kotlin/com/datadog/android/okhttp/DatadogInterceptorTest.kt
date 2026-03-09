@@ -6,11 +6,12 @@
 
 package com.datadog.android.okhttp
 
-import android.util.Base64
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.utils.toBase64
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
@@ -473,11 +474,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
             }
         }
-    }
-
-    private fun String.toBase64(): String {
-        val bytes = this.toByteArray(Charsets.UTF_8)
-        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     @Test
@@ -1063,6 +1059,170 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
         assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    // endregion
+
+    // region GraphQL attributes when not sampled
+
+    @Test
+    fun `M not pass GraphQL attributes W intercept() {request with GraphQL headers + not sampled}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample(any())).thenReturn(false)
+        fakeRequest = forgeRequest { builder ->
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
+        }
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+
+                val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    any(),
+                    stopAttrsCaptor.capture()
+                )
+
+                // Neither GraphQL nor trace attributes should be present when not sampled
+                assertThat(stopAttrsCaptor.firstValue.keys).doesNotContainAnyElementsOf(
+                    listOf(
+                        RumAttributes.GRAPHQL_OPERATION_NAME,
+                        RumAttributes.GRAPHQL_OPERATION_TYPE,
+                        RumAttributes.TRACE_ID,
+                        RumAttributes.SPAN_ID
+                    )
+                )
+
+                assertThat(firstValue).isEqualTo(secondValue)
+                assertThat(firstValue.uuid).isEqualTo(secondValue.uuid).isNotNull
+            }
+        }
+    }
+
+    // endregion
+
+    // region GraphQL errors
+
+    @Test
+    fun `M pass GraphQL errors W intercept() {GraphQL response with errors}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest { builder ->
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
+        }
+        val graphQLResponseBody = """{"data":null,"errors":[{"message":"Something went wrong"}]}"""
+        stubChain(mockChain, statusCode) {
+            body(graphQLResponseBody.toResponseBody(HttpSpec.ContentType.APPLICATION_JSON.toMediaType()))
+            header(TracingInterceptor.HEADER_CT, HttpSpec.ContentType.APPLICATION_JSON)
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<ResourceId> {
+            val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
+            verify(rumMonitor.mockInstance).stopResource(
+                capture(),
+                eq(statusCode),
+                any(),
+                any(),
+                stopAttrsCaptor.capture()
+            )
+
+            val actualStopAttrs = stopAttrsCaptor.firstValue
+            assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_NAME]).isEqualTo(fakeGraphQLName)
+            assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_TYPE]).isEqualTo(fakeGraphQLType)
+            assertThat(actualStopAttrs[RumAttributes.GRAPHQL_ERRORS]).isNotNull
+            assertThat(actualStopAttrs[RumAttributes.GRAPHQL_ERRORS] as? String).contains("Something went wrong")
+        }
+    }
+
+    @Test
+    fun `M not pass GraphQL errors W intercept() {GraphQL response without errors}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest { builder ->
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
+        }
+        val graphQLResponseBody = """{"data":{"user":{"name":"John"}}}"""
+        stubChain(mockChain, statusCode) {
+            body(graphQLResponseBody.toResponseBody(HttpSpec.ContentType.APPLICATION_JSON.toMediaType()))
+            header(TracingInterceptor.HEADER_CT, HttpSpec.ContentType.APPLICATION_JSON)
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<ResourceId> {
+            val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
+            verify(rumMonitor.mockInstance).stopResource(
+                capture(),
+                eq(statusCode),
+                any(),
+                any(),
+                stopAttrsCaptor.capture()
+            )
+
+            assertThat(stopAttrsCaptor.firstValue).doesNotContainKey(RumAttributes.GRAPHQL_ERRORS)
+        }
+    }
+
+    @Test
+    fun `M not pass GraphQL errors W intercept() {non-GraphQL request}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        // No GraphQL headers on fakeRequest
+        val responseBody = """{"errors":[{"message":"Something went wrong"}]}"""
+        stubChain(mockChain, statusCode) {
+            body(responseBody.toResponseBody("application/json".toMediaType()))
+            header(TracingInterceptor.HEADER_CT, "application/json")
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<ResourceId> {
+            val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
+            verify(rumMonitor.mockInstance).stopResource(
+                capture(),
+                eq(statusCode),
+                any(),
+                any(),
+                stopAttrsCaptor.capture()
+            )
+
+            assertThat(stopAttrsCaptor.firstValue).doesNotContainKey(RumAttributes.GRAPHQL_ERRORS)
+        }
     }
 
     // endregion

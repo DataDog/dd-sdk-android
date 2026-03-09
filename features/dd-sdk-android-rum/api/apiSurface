@@ -231,6 +231,11 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+class com.datadog.android.rum.internal.net.GraphQLExtractor
+  fun extractGraphQLAttributes(com.datadog.android.api.instrumentation.network.HttpRequestInfo): Map<String, Any?>
+  fun extractGraphQLErrors(String?, String?, com.datadog.android.api.InternalLogger): String?
+  companion object 
+    const val MAX_GRAPHQL_BODY_PEEK: Long
 class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
