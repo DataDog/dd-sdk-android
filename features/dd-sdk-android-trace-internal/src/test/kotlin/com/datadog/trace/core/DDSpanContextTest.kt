@@ -315,6 +315,45 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         span.finish()
     }
 
+    @Test
+    fun `getResourceName returns correct value when resource name set via builder withTag`() {
+        // Given: a span where resource.name is set via builder withTag (exact user scenario from #2374)
+        // This exercises the full chain: builder.withTag → setAllTags → tagInterceptor → setResourceName
+        val span = tracer.buildSpan(instrumentationName, "fakeOperation")
+            .withServiceName("fakeService")
+            .withTag(DDTags.RESOURCE_NAME, "custom-resource-from-builder-tag")
+            .start()
+        val context = span.context() as DDSpanContext
+
+        // Then: resource name should reflect the tag value, not fall back to operation name
+        assertThat(context.hasResourceName()).isTrue()
+        assertThat(context.resourceName.toString()).isEqualTo("custom-resource-from-builder-tag")
+
+        // Tear down
+        span.finish()
+        writer.waitForTraces(1)
+    }
+
+    @Test
+    fun `getResourceName returns correct value when resource name set via setTag after start`() {
+        // Given: a span started without a resource name
+        val span = tracer.buildSpan(instrumentationName, "fakeOperation")
+            .withServiceName("fakeService")
+            .start()
+        val context = span.context() as DDSpanContext
+
+        // When: resource.name is set via setTag after span start
+        context.setTag(DDTags.RESOURCE_NAME, "resource-set-after-start")
+
+        // Then: resource name should reflect the tag value
+        assertThat(context.hasResourceName()).isTrue()
+        assertThat(context.resourceName.toString()).isEqualTo("resource-set-after-start")
+
+        // Tear down
+        span.finish()
+        writer.waitForTraces(1)
+    }
+
     private fun dataTagFormat(name: String): String {
         return "_dd.$name.json"
     }
