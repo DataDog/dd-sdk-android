@@ -50,7 +50,6 @@ android {
 dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
-    compileOnly(project(":features:dd-sdk-android-rum"))
     implementation(libs.okHttp)
     implementation(libs.kotlin)
     implementation(libs.gson)
@@ -58,7 +57,6 @@ dependencies {
 
     ksp(project(":tools:noopfactory"))
 
-    testImplementation(project(":features:dd-sdk-android-rum"))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

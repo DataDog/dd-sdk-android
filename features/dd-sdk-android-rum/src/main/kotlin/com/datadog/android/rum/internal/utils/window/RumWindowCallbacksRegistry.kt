@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.utils.window
 import android.app.Activity
 import android.view.Window
 import com.datadog.android.internal.utils.DDCoreSubscription
-import com.datadog.android.rum.internal.FixedWindowCallback
+import com.datadog.android.internal.utils.FixedWindowCallback
 import java.util.WeakHashMap
 import kotlin.collections.getOrPut
 import kotlin.let
