@@ -400,9 +400,17 @@ public class DDSpanContext
     this.topLevel = isTopLevel(parentServiceName, this.serviceName);
   }
 
-  // TODO this logic is inconsistent with hasResourceName
   public CharSequence getResourceName() {
-    return isResourceNameSet() ? resourceName : operationName;
+    if (isResourceNameSet()) {
+      return resourceName;
+    }
+    Object tagValue = getTag(DDTags.RESOURCE_NAME);
+    if (tagValue instanceof CharSequence) {
+      return (CharSequence) tagValue;
+    } else if (tagValue != null) {
+      return String.valueOf(tagValue);
+    }
+    return operationName;
   }
 
   public boolean hasResourceName() {

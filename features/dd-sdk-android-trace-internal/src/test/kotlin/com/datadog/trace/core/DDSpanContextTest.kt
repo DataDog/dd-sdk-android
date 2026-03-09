@@ -277,6 +277,44 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         assertThat(span.resourceName).isEqualTo("fakeResource")
     }
 
+    @Test
+    fun `getResourceName returns tag value when resourceName field is not set`() {
+        // Given: a span with no explicit resource name
+        val span = tracer.buildSpan(instrumentationName, "fakeOperation")
+            .withServiceName("fakeService")
+            .start()
+        val context = span.context() as DDSpanContext
+
+        // When: resource.name tag is set directly in unsafeTags (simulating interceptor disabled)
+        context.unsafeSetTag(DDTags.RESOURCE_NAME, "custom-resource-from-tag")
+
+        // Then: getResourceName should return the tag value, not the operation name
+        assertThat(context.hasResourceName()).isTrue()
+        assertThat(context.resourceName.toString()).isEqualTo("custom-resource-from-tag")
+
+        // Tear down
+        span.finish()
+    }
+
+    @Test
+    fun `getResourceName prefers resourceName field over tag value`() {
+        // Given: a span with an explicit resource name
+        val span = tracer.buildSpan(instrumentationName, "fakeOperation")
+            .withServiceName("fakeService")
+            .withResourceName("explicit-resource")
+            .start()
+        val context = span.context() as DDSpanContext
+
+        // When: resource.name tag is also set in unsafeTags
+        context.unsafeSetTag(DDTags.RESOURCE_NAME, "tag-resource")
+
+        // Then: getResourceName should prefer the explicit field value
+        assertThat(context.resourceName.toString()).isEqualTo("explicit-resource")
+
+        // Tear down
+        span.finish()
+    }
+
     private fun dataTagFormat(name: String): String {
         return "_dd.$name.json"
     }
