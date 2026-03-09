@@ -13,6 +13,8 @@ import com.datadog.trace.api.TracePropagationStyle
 import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
+import com.datadog.trace.common.sampling.DeterministicSampler
+import com.datadog.trace.common.sampling.SamplingRule
 import com.datadog.trace.common.writer.ListWriter
 import com.datadog.trace.core.propagation.ExtractedContext
 import org.assertj.core.api.Assertions.assertThat
@@ -348,6 +350,42 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         // Then: resource name should reflect the tag value
         assertThat(context.hasResourceName()).isTrue()
         assertThat(context.resourceName.toString()).isEqualTo("resource-set-after-start")
+
+        // Tear down
+        span.finish()
+        writer.waitForTraces(1)
+    }
+
+    @Test
+    fun `sampling rule matches resource name from tag fallback`() {
+        // Given: a span with resource.name set only via unsafeTags (simulating interceptor disabled)
+        val span = tracer.buildSpan(instrumentationName, "fakeOperation")
+            .withServiceName("fakeService")
+            .start()
+        val context = span.context() as DDSpanContext
+        context.unsafeSetTag(DDTags.RESOURCE_NAME, "specific-resource")
+
+        // When: a sampling rule targets this resource name
+        val rule = SamplingRule.TraceSamplingRule(
+            "*",
+            "*",
+            "specific-resource",
+            emptyMap(),
+            DeterministicSampler.TraceSampler(1.0)
+        )
+
+        // Then: the rule should match (not miss because getResourceName() returned operationName)
+        assertThat(rule.matches(span as DDSpan)).isTrue()
+
+        // And: a rule targeting the operation name should NOT match
+        val wrongRule = SamplingRule.TraceSamplingRule(
+            "*",
+            "*",
+            "fakeOperation",
+            emptyMap(),
+            DeterministicSampler.TraceSampler(1.0)
+        )
+        assertThat(wrongRule.matches(span)).isFalse()
 
         // Tear down
         span.finish()
