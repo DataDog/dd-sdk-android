@@ -9,6 +9,7 @@ The root `build.gradle.kts` registers aggregate tasks that run across all submod
 ./gradlew unitTestRelease            # unit tests, all modules, release variant
 ./gradlew lintCheckAll               # lint all modules
 ./gradlew checkAll                   # lint + unit tests + instrumented tests
+./gradlew instrumentTestAll          # all instrumented (integration) tests — requires connected device/emulator
 ```
 
 
@@ -32,6 +33,24 @@ Every publishable module has `api/apiSurface` and `api/<module>.api` checked int
 ```
 
 Or for all modules: `./gradlew checkApiSurfaceChangesAll` (verifies) vs. running the update tasks per-module.
+
+# Integration Tests
+
+Integration tests live under `instrumented/integration` and `reliability/` and run on a connected device or emulator.
+
+```bash
+./gradlew instrumentTestAll                                        # all integration tests
+./gradlew :instrumented:integration:connectedDebugAndroidTest     # legacy integration suite
+./gradlew :reliability:core-it:connectedDebugAndroidTest          # core integration tests
+```
+
+Individual reliability modules (each requires a connected device):
+```bash
+./gradlew :reliability:single-fit:logs:connectedDebugAndroidTest
+./gradlew :reliability:single-fit:rum:connectedDebugAndroidTest
+./gradlew :reliability:single-fit:trace:connectedDebugAndroidTest
+./gradlew :reliability:single-fit:okhttp:connectedDebugAndroidTest
+```
 
 # Testing Conventions
 
@@ -97,3 +116,9 @@ Some modules generate Kotlin data classes from JSON schemas at build time (e.g. 
 
 - Default branch for PRs: **`develop`**
 - All commits must be **GPG-signed** (repo policy).
+- Commit title format: `RUM-XXXXX: <short description>` (ticket number prefix required)
+- Each commit must reference the ticket number in the title.
+
+# Pull Requests
+
+- Use the project PR template (`.github/PULL_REQUEST_TEMPLATE.md`). 
