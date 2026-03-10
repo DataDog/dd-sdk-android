@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal;
+package com.datadog.android.internal.utils;
 
 import android.os.Build;
 import android.view.ActionMode;
@@ -23,8 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
-import com.datadog.android.lint.InternalApi;
-
 import java.util.List;
 
 /**
@@ -33,7 +31,6 @@ import java.util.List;
  * with a null menu parameter.
  * To track the issue: https://issuetracker.google.com/issues/188568911
  */
-@InternalApi
 public class FixedWindowCallback implements Window.Callback {
 
     private final Window.Callback delegate;

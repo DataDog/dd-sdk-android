@@ -13,6 +13,7 @@ import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.internal.utils.FixedWindowCallback
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -45,7 +46,7 @@ internal class RecorderWindowCallback(
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
     private val windowInspector: WindowInspector = WindowInspector
-) : Window.Callback by wrappedCallback {
+) : FixedWindowCallback(wrappedCallback) {
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
@@ -83,11 +84,26 @@ internal class RecorderWindowCallback(
 
         @Suppress("SwallowedException")
         return try {
-            wrappedCallback.dispatchTouchEvent(event)
+            super.dispatchTouchEvent(event)
         } catch (e: NullPointerException) {
             logOrRethrowWrappedCallbackException(e)
             EVENT_CONSUMED
         }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
+        if (rootViews.isNotEmpty()) {
+            // a new window was added or removed so we stop recording the previous root views
+            // and we start recording the new ones.
+            viewOnDrawInterceptor.stopIntercepting()
+            viewOnDrawInterceptor.intercept(
+                decorViews = rootViews,
+                textAndInputPrivacy = privacy,
+                imagePrivacy = imagePrivacy
+            )
+        }
+        super.onWindowFocusChanged(hasFocus)
     }
 
     // endregion
@@ -182,21 +198,6 @@ internal class RecorderWindowCallback(
             @Suppress("ThrowingInternalException") // we need to let client exception to propagate
             throw e
         }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
-        if (rootViews.isNotEmpty()) {
-            // a new window was added or removed so we stop recording the previous root views
-            // and we start recording the new ones.
-            viewOnDrawInterceptor.stopIntercepting()
-            viewOnDrawInterceptor.intercept(
-                decorViews = rootViews,
-                textAndInputPrivacy = privacy,
-                imagePrivacy = imagePrivacy
-            )
-        }
-        wrappedCallback.onWindowFocusChanged(hasFocus)
     }
 
     // endregion
