@@ -62,6 +62,7 @@ fun Project.createJsonModelsGenerationTask(
         inputDirPath.convention("")
         targetPackageName.convention("")
         extraInputWatchDir.convention(null)
+        deduplicateStructurallyEqualClasses.convention(true)
 
         action()
 

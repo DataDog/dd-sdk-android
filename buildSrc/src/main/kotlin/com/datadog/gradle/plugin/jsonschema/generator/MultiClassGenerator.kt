@@ -20,10 +20,12 @@ class MultiClassGenerator(
     val classGenerator: KotlinSpecGenerator<TypeDefinition.Class, TypeSpec.Builder>,
     val oneOfPrimitiveOptionGenerator: KotlinSpecGenerator<TypeDefinition.Primitive, TypeSpec.Builder>,
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>
+    knownTypes: MutableSet<KotlinTypeWrapper>,
+    deduplicateStructurallyEqualClasses: Boolean = true
 ) : TypeSpecGenerator<TypeDefinition.OneOfClass>(
     packageName,
-    knownTypes
+    knownTypes,
+    deduplicateStructurallyEqualClasses
 ) {
 
     //region TypeSpecGenerator

@@ -28,14 +28,16 @@ import com.squareup.kotlinpoet.TypeSpec
 
 class ClassGenerator(
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>
+    knownTypes: MutableSet<KotlinTypeWrapper>,
+    deduplicateStructurallyEqualClasses: Boolean = true
 ) : TypeSpecGenerator<TypeDefinition.Class>(
     packageName,
-    knownTypes
+    knownTypes,
+    deduplicateStructurallyEqualClasses
 ) {
 
-    private val deserializer = ClassJsonElementDeserializerGenerator(packageName, knownTypes)
-    private val stringDeserializer = ClassStringDeserializerGenerator(packageName, knownTypes)
+    private val deserializer = ClassJsonElementDeserializerGenerator(packageName, knownTypes, deduplicateStructurallyEqualClasses)
+    private val stringDeserializer = ClassStringDeserializerGenerator(packageName, knownTypes, deduplicateStructurallyEqualClasses)
 
     // region TypeSpecGenerator
 
