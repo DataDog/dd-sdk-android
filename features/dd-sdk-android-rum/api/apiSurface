@@ -184,6 +184,8 @@ class com.datadog.android.rum._RumInternalProxy
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
     fun createRumNetworkInstrumentation(String, com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration)
+    fun extractRequestHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
+    fun extractResponseHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
 class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
@@ -229,11 +231,6 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
-class com.datadog.android.rum.internal.net.ResourceHeadersExtractor
-  constructor(com.datadog.android.rum.configuration.ResourceHeadersConfiguration)
-  fun extractRequestHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
-  fun extractResponseHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
-  companion object
 class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
@@ -273,8 +270,6 @@ class com.datadog.android.rum.resource.ResourceHeadersExtractor
     constructor(Boolean = true)
     fun captureHeaders(String): Builder
     fun build(): ResourceHeadersExtractor
-  fun extractRequestHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
-  fun extractResponseHeaders(Map<String, List<String>>, com.datadog.android.api.InternalLogger): Map<String, String>
 class com.datadog.android.rum.resource.ResourceId
   constructor(String, String?)
   override fun equals(Any?): Boolean
@@ -3065,7 +3060,7 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
     class GraphQLRequest : Usage
       val feature: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
-      companion object
+      companion object 
         fun fromJson(kotlin.String): GraphQLRequest
         fun fromJsonObject(com.google.gson.JsonObject): GraphQLRequest
     data class StartSessionReplayRecording : Usage
@@ -3096,25 +3091,25 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
     class StartAction : Usage
       val feature: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
-      companion object
+      companion object 
         fun fromJson(kotlin.String): StartAction
         fun fromJsonObject(com.google.gson.JsonObject): StartAction
     class StopAction : Usage
       val feature: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
-      companion object
+      companion object 
         fun fromJson(kotlin.String): StopAction
         fun fromJsonObject(com.google.gson.JsonObject): StopAction
     class StartResource : Usage
       val feature: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
-      companion object
+      companion object 
         fun fromJson(kotlin.String): StartResource
         fun fromJsonObject(com.google.gson.JsonObject): StartResource
     class StopResource : Usage
       val feature: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
-      companion object
+      companion object 
         fun fromJson(kotlin.String): StopResource
         fun fromJsonObject(com.google.gson.JsonObject): StopResource
     data class AddViewLoadingTime : Usage
@@ -3134,10 +3129,10 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
       constructor(Type)
       val feature: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
-      companion object
+      companion object 
         fun fromJson(kotlin.String): AndroidNetworkInstrumentation
         fun fromJsonObject(com.google.gson.JsonObject): AndroidNetworkInstrumentation
-    companion object
+    companion object 
       fun fromJson(kotlin.String): Usage
       fun fromJsonElement(com.google.gson.JsonElement): Usage
   enum Source
@@ -3175,5 +3170,5 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
     - CRONET
     - OKHTTP
     fun toJson(): com.google.gson.JsonElement
-    companion object
+    companion object 
       fun fromJson(kotlin.String): Type

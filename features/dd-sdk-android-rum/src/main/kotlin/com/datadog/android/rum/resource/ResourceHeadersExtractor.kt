@@ -7,7 +7,6 @@
 package com.datadog.android.rum.resource
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
 import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.SECURITY_PATTERN
 import java.util.Locale
@@ -99,8 +98,7 @@ class ResourceHeadersExtractor private constructor(
      * @param internalLogger logger for debug messages.
      * @return a map of allowed header names to their joined values.
      */
-    @InternalApi
-    fun extractRequestHeaders(
+    internal fun extractRequestHeaders(
         headers: Map<String, List<String>>,
         internalLogger: InternalLogger
     ): Map<String, String> {
@@ -113,8 +111,7 @@ class ResourceHeadersExtractor private constructor(
      * @param internalLogger logger for debug messages.
      * @return a map of allowed header names to their joined values.
      */
-    @InternalApi
-    fun extractResponseHeaders(
+    internal fun extractResponseHeaders(
         headers: Map<String, List<String>>,
         internalLogger: InternalLogger
     ): Map<String, String> {

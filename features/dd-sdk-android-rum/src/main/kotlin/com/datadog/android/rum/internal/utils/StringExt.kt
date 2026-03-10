@@ -45,13 +45,13 @@ internal fun String.truncateToUtf8ByteSize(
         // if doing so would overflow the byte buffer.
         encoder.encode(src, dst, true)
     } catch (e: IllegalStateException) {
-        logTruncationFailure(internalLogger, e)
+        internalLogger?.logTruncationFailure(e)
         return Pair("", 0)
     } catch (e: CoderMalfunctionError) {
-        logTruncationFailure(internalLogger, e)
+        internalLogger?.logTruncationFailure(e)
         return Pair("", 0)
     } catch (e: NullPointerException) {
-        logTruncationFailure(internalLogger, e)
+        internalLogger?.logTruncationFailure(e)
         return Pair("", 0)
     }
 
@@ -61,8 +61,8 @@ internal fun String.truncateToUtf8ByteSize(
     return Pair(truncated, dst.position())
 }
 
-private fun logTruncationFailure(internalLogger: InternalLogger?, e: Throwable) {
-    internalLogger?.log(
+private fun InternalLogger.logTruncationFailure(e: Throwable) {
+    log(
         level = InternalLogger.Level.ERROR,
         target = InternalLogger.Target.MAINTAINER,
         messageBuilder = { "Failed to truncate string to UTF-8 byte limit" },

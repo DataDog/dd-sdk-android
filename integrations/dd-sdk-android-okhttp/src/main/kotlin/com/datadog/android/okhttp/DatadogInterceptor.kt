@@ -27,6 +27,7 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -199,8 +200,16 @@ open class DatadogInterceptor internal constructor(
         response: Response
     ): Map<String, Any?> {
         val extractor = resourceHeadersExtractor ?: return emptyMap()
-        val reqHeaders = extractor.extractRequestHeaders(request.headers.toMultimap(), sdkCore.internalLogger)
-        val resHeaders = extractor.extractResponseHeaders(response.headers.toMultimap(), sdkCore.internalLogger)
+        val reqHeaders = _RumInternalProxy.extractRequestHeaders(
+            extractor,
+            request.headers.toMultimap(),
+            sdkCore.internalLogger
+        )
+        val resHeaders = _RumInternalProxy.extractResponseHeaders(
+            extractor,
+            response.headers.toMultimap(),
+            sdkCore.internalLogger
+        )
         return buildMap {
             if (reqHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, reqHeaders)
             if (resHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, resHeaders)
