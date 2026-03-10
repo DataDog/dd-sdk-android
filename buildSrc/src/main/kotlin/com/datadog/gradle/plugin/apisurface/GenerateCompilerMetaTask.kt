@@ -39,10 +39,11 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
         val classFile = classesDir
             .walkTopDown()
             .filter {
+                val relativePath = it.relativeTo(classesDir).path
                 it.extension == "class" &&
                     !it.name.contains("$") &&
                     it.path.contains("datadog") &&
-                    !it.path.contains("test", ignoreCase = true)
+                    !relativePath.contains("test", ignoreCase = true)
             }
             .firstOrNull()
 
