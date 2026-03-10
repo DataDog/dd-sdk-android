@@ -391,6 +391,13 @@ internal class RumViewScopeTest {
             callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
+        whenever(mockRumViewEventWriter.writeViewEvent(any(), any(), any(), any(), any())) doAnswer {
+            val viewEvent = it.getArgument<ViewEvent>(0)
+            val writer = it.getArgument<DataWriter<Any>>(3)
+            val eventType = it.getArgument<EventType>(4)
+            writer.write(mockEventBatchWriter, viewEvent, eventType)
+            Unit
+        }
         fakeReplayStats = ViewEvent.ReplayStats(recordsCount = fakeReplayRecordsCount)
 
         // Mock battery and brightness providers

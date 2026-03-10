@@ -37,6 +37,7 @@ import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityRe
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
@@ -655,12 +656,10 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
-        val serializer = (testedFeature.dataWriter as RumDataWriter).eventSerializer
-        assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
-        val eventMapper = (serializer as MapperSerializer<*>)
-            .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
-        assertThat(eventMapper).isInstanceOf(RumEventMapper::class.java)
-        val rumEventMapper = eventMapper as RumEventMapper
+        val rumDataWriter = testedFeature.dataWriter as RumDataWriter
+        assertThat(rumDataWriter.eventSerializer).isInstanceOf(RumEventSerializer::class.java)
+        val rumEventMapper = rumDataWriter.eventMapper
+        assertThat(rumEventMapper).isInstanceOf(RumEventMapper::class.java)
         assertThat(rumEventMapper.actionEventMapper)
             .isSameAs(fakeConfiguration.actionEventMapper)
         assertThat(rumEventMapper.errorEventMapper)

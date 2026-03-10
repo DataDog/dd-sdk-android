@@ -138,11 +138,9 @@ internal class RumDataWriterTest {
         // Given
         whenever(mockEventMapper.map(fakeViewEvent)) doReturn fakeViewEvent
         whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
-        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
-            documentVersion = fakeViewEvent.dd.documentVersion,
-            hasAccessibility = hasAccessibility
+            documentVersion = fakeViewEvent.dd.documentVersion
         )
         val fakeSerializedViewEventMeta = forge.aString()
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
@@ -293,31 +291,6 @@ internal class RumDataWriterTest {
         assertThat(metaData.hasAccessibility).isFalse
     }
 
-    @Test
-    fun `M hasAccessibility true W write() { non-null accessibility }`(
-        forge: Forge
-    ) {
-        // Given
-        val viewEvent = forge.getForgery<ViewEvent>()
-        val newView = viewEvent.view.copy(
-            accessibility = forge.getForgery()
-        )
-        val newViewEvent = viewEvent.copy(
-            view = newView
-        )
-
-        whenever(mockEventMapper.map(newViewEvent)) doReturn newViewEvent
-        whenever(mockEventSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
-
-        // When
-        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
-
-        // Then
-        val captor = argumentCaptor<RumEventMeta.View>()
-        verify(mockEventMetaSerializer).serialize(captor.capture())
-        val metaData = captor.firstValue
-        assertThat(metaData.hasAccessibility).isTrue
-    }
 
     // endregion
 

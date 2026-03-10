@@ -29,6 +29,8 @@ config/*
 # Kotlin
 .kotlin/
 
+.claude/worktrees
+
 # dd-sdk-android tools
 gh_token
 sdk_classpath

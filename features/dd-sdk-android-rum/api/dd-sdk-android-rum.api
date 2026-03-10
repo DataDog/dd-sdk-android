@@ -293,6 +293,10 @@ public final class com/datadog/android/rum/configuration/RumNetworkInstrumentati
 public abstract interface class com/datadog/android/rum/configuration/RumViewEventWriteConfig {
 }
 
+public final class com/datadog/android/rum/configuration/RumViewEventWriteConfig$AlwaysFullView : com/datadog/android/rum/configuration/RumViewEventWriteConfig {
+	public static final field INSTANCE Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig$AlwaysFullView;
+}
+
 public final class com/datadog/android/rum/configuration/RumViewEventWriteConfig$FullViewOnlyAtStart : com/datadog/android/rum/configuration/RumViewEventWriteConfig {
 	public static final field INSTANCE Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig$FullViewOnlyAtStart;
 }

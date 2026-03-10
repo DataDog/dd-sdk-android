@@ -217,6 +217,12 @@ internal class DatadogRumMonitorTest {
     lateinit var fakeTimeInfo: TimeInfo
 
     @Forgery
+    lateinit var fakeBatteryInfo: BatteryInfo
+
+    @Forgery
+    lateinit var fakeDisplayInfo: DisplayInfo
+
+    @Forgery
     lateinit var fakeViewUIPerformanceReport: ViewUIPerformanceReport
 
     @Forgery
@@ -246,6 +252,8 @@ internal class DatadogRumMonitorTest {
             mockSlowFramesListener.resolveReport(any(), any(), any())
         ) doReturn fakeViewUIPerformanceReport.snapshot()
         whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
+        whenever(mockBatteryInfoProvider.getState()) doReturn fakeBatteryInfo
+        whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 

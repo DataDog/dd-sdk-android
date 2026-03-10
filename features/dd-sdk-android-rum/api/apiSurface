@@ -187,6 +187,7 @@ class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfigurati
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
 sealed interface com.datadog.android.rum.configuration.RumViewEventWriteConfig
+  object AlwaysFullView : RumViewEventWriteConfig
   object FullViewOnlyAtStart : RumViewEventWriteConfig
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)

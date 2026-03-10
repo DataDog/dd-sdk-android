@@ -98,7 +98,7 @@ internal class RumConfigurationBuilderTest {
             assertThat(interactionPredicate).isEqualTo(NoOpInteractionPredicate())
             assertThat(viewTrackingStrategy)
                 .isEqualTo(ActivityViewTrackingStrategy(false))
-            assertThat(viewEventMapper).isEqualTo(NoOpEventMapper<ViewEvent>())
+            assertThat(viewEventMapper).isInstanceOf(ViewEventMapper::class.java)
             assertThat(errorEventMapper).isEqualTo(NoOpEventMapper<ErrorEvent>())
             assertThat(actionEventMapper).isEqualTo(NoOpEventMapper<ActionEvent>())
             assertThat(resourceEventMapper).isEqualTo(NoOpEventMapper<ResourceEvent>())

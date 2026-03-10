@@ -153,6 +153,12 @@ internal class RumApplicationScopeTest {
     var fakeTrackFrustrations: Boolean = true
 
     @Forgery
+    lateinit var fakeBatteryInfo: BatteryInfo
+
+    @Forgery
+    lateinit var fakeDisplayInfo: DisplayInfo
+
+    @Forgery
     lateinit var fakeTimeInfoAtScopeStart: TimeInfo
 
     @Forgery
@@ -173,6 +179,8 @@ internal class RumApplicationScopeTest {
             mockSlowFramesListener.resolveReport(any(), any(), any())
         ) doReturn viewUIPerformanceReport.snapshot()
         whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
+        whenever(mockBatteryInfoProvider.getState()) doReturn fakeBatteryInfo
+        whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 

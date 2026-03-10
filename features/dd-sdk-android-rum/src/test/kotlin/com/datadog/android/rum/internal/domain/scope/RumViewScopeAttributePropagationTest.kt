@@ -73,6 +73,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -263,6 +264,14 @@ internal class RumViewScopeAttributePropagationTest {
             callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), any())) doReturn true
+        whenever(mockRumViewEventWriter.writeViewEvent(any(), any(), any(), any(), any())) doAnswer {
+            val viewEvent = it.getArgument<ViewEvent>(0)
+            val writer = it.getArgument<DataWriter<Any>>(3)
+            val eventType = it.getArgument<EventType>(4)
+            writer.write(mockEventBatchWriter, viewEvent, eventType)
+            Unit
+        }
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
         whenever(mockBatteryInfoProvider.getState()) doReturn BatteryInfo(
             batteryLevel = fakeBatteryLevel,
             lowPowerMode = fakeLowPowerMode

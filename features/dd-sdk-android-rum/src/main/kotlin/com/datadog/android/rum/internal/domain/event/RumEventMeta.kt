@@ -91,6 +91,12 @@ internal sealed class RumEventMeta {
                         View(viewId, docVersion, hasAccessibility)
                     }
 
+                    VIEW_UPDATE_TYPE_VALUE -> {
+                        val viewId = model.get(VIEW_ID_KEY).asString
+                        val docVersion = model.get(DOCUMENT_VERSION_KEY).asLong
+                        ViewUpdate(viewId, docVersion)
+                    }
+
                     else -> {
                         internalLogger.log(
                             InternalLogger.Level.ERROR,
