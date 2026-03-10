@@ -516,7 +516,7 @@ internal class RumNetworkInstrumentationTest {
         testedInstrumentation.sdkCoreReference.get()
 
         // Then
-        verify(mockRumMonitor).reportNetworkingLibraryType(eq(fakeLibraryType))
+        verify(mockRumMonitor).reportNetworkingLibraryType(fakeLibraryType)
     }
 
     @Test

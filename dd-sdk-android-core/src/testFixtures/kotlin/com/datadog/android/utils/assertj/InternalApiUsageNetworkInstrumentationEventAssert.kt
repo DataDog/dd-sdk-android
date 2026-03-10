@@ -3,11 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.rum.utils.assertj
+
+package com.datadog.android.utils.assertj
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import org.assertj.core.api.AbstractAssert
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 
 internal class InternalApiUsageNetworkInstrumentationEventAssert(
     actual: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation
@@ -25,7 +26,7 @@ internal class InternalApiUsageNetworkInstrumentationEventAssert(
     }
 
     private fun hasType(expected: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType) = apply {
-        assertThat(actual.type)
+        Assertions.assertThat(actual.type)
             .overridingErrorMessage(
                 "Expected NetworkInstrumentation event to have" +
                     " type $expected but was ${actual.type}"
@@ -34,7 +35,7 @@ internal class InternalApiUsageNetworkInstrumentationEventAssert(
     }
 
     private fun hasAdditionalProperties(expected: Map<String, Any?>) = apply {
-        assertThat(actual.additionalProperties)
+        Assertions.assertThat(actual.additionalProperties)
             .overridingErrorMessage(
                 "Expected NetworkInstrumentation event to have" +
                     " additionalProperties $expected but was ${actual.additionalProperties}"
