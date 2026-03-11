@@ -33,6 +33,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.milliseconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -119,7 +120,13 @@ class RumViewUpdateTest : BaseTest() {
         )
 
         val httpClient = HttpClient(OkHttp) {
-            install(ContentNegotiation) { json() }
+            install(ContentNegotiation) {
+                json(
+                    json = Json {
+                        ignoreUnknownKeys = true
+                    }
+                )
+            }
             defaultRequest {
                 headers.append("DD-API-KEY", apiKey)
                 headers.append("DD-APPLICATION-KEY", appKey)
@@ -172,7 +179,10 @@ class RumViewUpdateTest : BaseTest() {
             )
 
             val viewEvent = checkNotNull(response?.optionalResult?.data?.firstOrNull())
-            assertThat(viewEvent.attributes.attributes.view?.action?.count).isEqualTo(2)
+
+            RumSearchResponseViewEventAssert.assertThat(viewEvent).apply {
+                hasActionCount(2)
+            }
         }
     }
 
