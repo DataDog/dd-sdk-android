@@ -6,8 +6,13 @@
 
 package com.datadog.android.core.integration.tests.rum
 
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.float
+import kotlinx.serialization.json.int
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEvent) :
     AbstractAssert<RumSearchResponseViewEventAssert, RumSearchResponse.ViewEvent>(
@@ -75,6 +80,22 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
         assertThat(actual.attributes.attributes.session?.id)
             .overridingErrorMessage("Expected session id to be <%s> but was <%s>", sessionId, actual.attributes.attributes.session?.id)
             .isEqualTo(sessionId)
+        return this
+    }
+
+    fun hasFeatureFlagBoolean(name: String, value: Boolean): RumSearchResponseViewEventAssert {
+        val actual = (actual.attributes.attributes.featureFlags?.get(name) as? JsonPrimitive)?.boolean
+        assertThat(actual)
+            .overridingErrorMessage("Expected feature flag <%s> to be <%b> but was <%b>", name, value, actual)
+            .isEqualTo(value)
+        return this
+    }
+
+    fun hasFeatureFlagInt(name: String, value: Int): RumSearchResponseViewEventAssert {
+        val actual = (actual.attributes.attributes.featureFlags?.get(name) as? JsonPrimitive)?.float
+        assertThat(actual)
+            .overridingErrorMessage("Expected feature flag <%s> to be <%d> but was <%f>", name, value, actual)
+            .isEqualTo(value.toFloat(), Offset.offset(0.001f))
         return this
     }
 

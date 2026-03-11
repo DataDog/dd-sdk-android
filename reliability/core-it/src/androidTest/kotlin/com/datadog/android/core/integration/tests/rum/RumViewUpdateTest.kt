@@ -159,11 +159,19 @@ class RumViewUpdateTest : BaseTest() {
             delay(1000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
             delay(5000)
+            rumMonitor.addFeatureFlagEvaluation("flag_bool", true)
+            delay(1000)
+            rumMonitor.addFeatureFlagEvaluation("flag_int", 42)
+            delay(1000)
             val resourceKey = UUID.randomUUID().toString()
             rumMonitor.startResource(resourceKey, RumResourceMethod.GET, "https://httpbin.org/get")
             delay(1000)
             rumMonitor.stopResource(resourceKey, 200, null, RumResourceKind.FETCH)
             delay(5000)
+            rumMonitor.addFeatureFlagEvaluation("flag_bool", false)
+            delay(1000)
+            rumMonitor.addFeatureFlagEvaluation("flag_int", 100)
+            delay(1000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
             delay(5000)
             rumMonitor.stopView(viewKey)
@@ -176,7 +184,7 @@ class RumViewUpdateTest : BaseTest() {
                         name = VIEW_NAME,
                         contextAttributes = mapOf(
                             "test_view_uuid" to testViewUuid,
-                            "test_view_index" to 4
+                            "test_view_index" to 8
                         )
                     )
                 },
@@ -190,6 +198,8 @@ class RumViewUpdateTest : BaseTest() {
             RumSearchResponseViewEventAssert.assertThat(viewEvent).apply {
                 hasActionCount(2)
                 hasResourceCount(1)
+                hasFeatureFlagBoolean("flag_bool", false)
+                hasFeatureFlagInt("flag_int", 100)
             }
         }
     }

@@ -44,6 +44,7 @@ internal data class RumSearchResponse(
         @SerialName("usr") val usr: Usr? = null,
         @SerialName("service") val service: String? = null,
         @SerialName("context") val context: JsonObject? = null,
+        @SerialName("feature_flags") val featureFlags: JsonObject? = null,
         @SerialName("device") val device: Device? = null,
         @SerialName("_dd") val dd: Dd? = null
     )
