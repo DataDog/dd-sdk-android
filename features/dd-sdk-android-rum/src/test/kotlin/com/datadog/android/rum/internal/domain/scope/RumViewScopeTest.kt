@@ -821,6 +821,160 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M send view event with sessionReplaySampleRate W handleEvent(StopView) { SR enabled }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSrSampleRate = forge.aLong(min = 0L, max = 100L)
+        val contextWithSr = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(
+                    Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
+                        RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSrSampleRate
+                    )
+                )
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            contextWithSr,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasSessionReplaySampleRate(fakeSrSampleRate)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+    }
+
+    @Test
+    fun `M send view event with traceSampleRate W handleEvent(StopView) { tracing enabled }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeTraceSampleRate = forge.aFloat(min = 0f, max = 100f)
+        val contextWithTracing = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(
+                    Feature.TRACING_FEATURE_NAME to mapOf(
+                        RumViewScope.TRACE_SAMPLE_RATE to fakeTraceSampleRate
+                    )
+                )
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            contextWithTracing,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasTraceSampleRate(fakeTraceSampleRate)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+    }
+
+    @Test
+    fun `M send view event with null sample rates W handleEvent(StopView) { no SR or tracing }`() {
+        // Given - fakeDatadogContext has no SR or tracing feature context
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasSessionReplaySampleRate(null)
+                    hasTraceSampleRate(null)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+    }
+
+    @Test
+    fun `M send view event with null sessionReplaySampleRate W handleEvent(StopView) { SR key present but null }`() {
+        // Given
+        val contextWithNullSrRate = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(
+                    Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
+                        RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY to null
+                    )
+                )
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            contextWithNullSrRate,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasSessionReplaySampleRate(null)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+    }
+
+    @Test
+    fun `M send view event with null traceSampleRate W handleEvent(StopView) { trace key present but null }`() {
+        // Given
+        val contextWithNullTraceRate = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(
+                    Feature.TRACING_FEATURE_NAME to mapOf(
+                        RumViewScope.TRACE_SAMPLE_RATE to null
+                    )
+                )
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            contextWithNullTraceRate,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasTraceSampleRate(null)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+    }
+
+    @Test
     fun `M send event W handleEvent(StopView) on active view { pending attributes are negative }`(
         forge: Forge
     ) {

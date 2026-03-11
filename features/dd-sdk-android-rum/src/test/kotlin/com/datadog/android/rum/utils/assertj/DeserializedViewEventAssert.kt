@@ -21,8 +21,9 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
     fun isEqualTo(expected: ViewEvent): DeserializedViewEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("context", "usr", "account", "view", "device")
+            .ignoringFields("context", "usr", "account", "view", "device", "dd.configuration")
             .isEqualTo(expected)
+        assertConfigurationEquals(actual.dd.configuration, expected.dd.configuration)
         assertThat(actual.view)
             .usingRecursiveComparison()
             .ignoringFields(
@@ -77,6 +78,23 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
             expected.context?.additionalProperties
         )
         return this
+    }
+
+    private fun assertConfigurationEquals(
+        actual: ViewEvent.Configuration?,
+        expected: ViewEvent.Configuration?
+    ) {
+        if (expected == null) {
+            assertThat(actual).isNull()
+            return
+        }
+        assertThat(actual).isNotNull()
+        assertNumberFieldEquals(actual!!.sessionSampleRate, expected.sessionSampleRate)
+        assertNumberFieldEquals(actual.sessionReplaySampleRate, expected.sessionReplaySampleRate)
+        assertNumberFieldEquals(actual.profilingSampleRate, expected.profilingSampleRate)
+        assertNumberFieldEquals(actual.traceSampleRate, expected.traceSampleRate)
+        assertThat(actual.startSessionReplayRecordingManually)
+            .isEqualTo(expected.startSessionReplayRecordingManually)
     }
 
     private fun assertPropertiesEquals(actual: Map<String, Any?>?, expected: Map<String, Any?>?) {

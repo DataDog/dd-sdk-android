@@ -249,7 +249,8 @@ internal class DatadogRumMonitorTest {
                 eq(
                     setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        Feature.PROFILING_FEATURE_NAME
+                        Feature.PROFILING_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ),
                 any()

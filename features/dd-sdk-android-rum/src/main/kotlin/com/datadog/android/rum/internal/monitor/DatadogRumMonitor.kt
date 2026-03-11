@@ -818,7 +818,8 @@ internal class DatadogRumMonitor(
                 ?.withWriteContext(
                     withFeatureContexts = setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        Feature.PROFILING_FEATURE_NAME
+                        Feature.PROFILING_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ) { datadogContext, writeScope ->
                     // avoid trowing a RejectedExecutionException
