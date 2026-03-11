@@ -20,6 +20,9 @@ local.properties
 repo/
 config/*
 
+run-rum-view-update-test.sh
+.run/RumViewUpdateTest.run.xml
+
 # MacOS garbage
 .DS_Store
 

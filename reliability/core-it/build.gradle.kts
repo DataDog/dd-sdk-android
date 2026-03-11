@@ -44,8 +44,11 @@ android {
         resources {
             excludes += listOf(
                 "META-INF/jvm.kotlin_module",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/DEPENDENCIES"
             )
         }
     }
@@ -86,6 +89,8 @@ dependencies {
     androidTestImplementation(libs.okHttp)
     androidTestImplementation(libs.okHttpMock)
     androidTestImplementation(libs.gson)
+    androidTestImplementation(libs.datadogApiClient)
+    androidTestImplementation(project(":features:dd-sdk-android-rum"))
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24
         androidTestImplementation(project(":tools:javabackport"))

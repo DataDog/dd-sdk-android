@@ -1,6 +1,7 @@
 [versions]
 # Commons
 apollo = "4.3.3"
+datadogApiClient = "2.51.0"
 cronetApi = "141.7340.3"
 cronetPlayServices = "18.1.1"
 gson = "2.10.1"
@@ -127,6 +128,7 @@ roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
 # Common
 
+datadogApiClient = { module = "com.datadoghq:datadog-api-client", version.ref = "datadogApiClient" }
 kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 

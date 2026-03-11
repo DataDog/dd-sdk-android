@@ -440,7 +440,7 @@ class SampleApplication : Application() {
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
 
-        configBuilder.useSite(DatadogSite.LOCAL)
+        configBuilder.useSite(DatadogSite.STAGING)
 
         configBuilder.setBackpressureStrategy(
             BackPressureStrategy(
