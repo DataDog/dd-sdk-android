@@ -112,6 +112,22 @@ private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, An
 }
 
 /**
+ * Generates a map of random HTTP headers with spec-compliant names and values.
+ *
+ * Header names follow the HTTP token format (lowercase alphanumeric + hyphens).
+ * Header values use printable ASCII characters commonly found in HTTP header values.
+ *
+ * @param size Number of headers to generate. If not specified, a random size between 1 and 5
+ * will be used.
+ */
+fun Forge.anHttpHeaderMap(size: Int = anInt(min = 1, max = 5)): Map<String, String> {
+    return aMap(size = size) {
+        aStringMatching("[a-z][a-z0-9-]{2,20}") to
+            aList(anInt(min = 1, max = 3)) { anAsciiString().trim() }.joinToString(", ")
+    }
+}
+
+/**
  * Adds all the tools factories to the Forge instance.
  */
 fun <T : Forge> T.useToolsFactories(): T {

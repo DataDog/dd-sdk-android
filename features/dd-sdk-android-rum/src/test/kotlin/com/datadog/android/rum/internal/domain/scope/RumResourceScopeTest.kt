@@ -45,6 +45,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
 import com.datadog.tools.unit.forge.anException
+import com.datadog.tools.unit.forge.anHttpHeaderMap
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -3933,6 +3934,91 @@ internal class RumResourceScopeTest {
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasNoGraphql()
+        }
+    }
+
+    // endregion
+
+    // region Resource Headers
+
+    @Test
+    fun `M map request and response headers to ResourceEvent W handleEvent { header attributes present }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val requestHeaders = forge.anHttpHeaderMap()
+        val responseHeaders = forge.anHttpHeaderMap()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.REQUEST_HEADERS to requestHeaders,
+                RumAttributes.RESPONSE_HEADERS to responseHeaders
+            )
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasRequestHeaders(requestHeaders)
+                .hasResponseHeaders(responseHeaders)
+        }
+    }
+
+    @Test
+    fun `M have no request or response W handleEvent { no header attributes }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasNoRequestHeaders()
+                .hasNoResponseHeaders()
+        }
+    }
+
+    @Test
+    fun `M remove header attributes from custom context W handleEvent { header attributes present }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val requestHeaders = forge.anHttpHeaderMap()
+        val responseHeaders = forge.anHttpHeaderMap()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.REQUEST_HEADERS to requestHeaders,
+                RumAttributes.RESPONSE_HEADERS to responseHeaders
+            )
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val contextProperties = firstValue.context?.additionalProperties
+            assertThat(contextProperties).doesNotContainKey(RumAttributes.REQUEST_HEADERS)
+            assertThat(contextProperties).doesNotContainKey(RumAttributes.RESPONSE_HEADERS)
         }
     }
 

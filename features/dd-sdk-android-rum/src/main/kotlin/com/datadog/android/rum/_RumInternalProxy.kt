@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.content.Intent
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.lint.InternalApi
@@ -15,6 +16,7 @@ import com.datadog.android.rum.RumConfiguration.Builder
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 
@@ -138,5 +140,17 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             libraryType: LibraryType,
             configuration: RumNetworkInstrumentationConfiguration
         ) = configuration.createInstrumentation(name, libraryType)
+
+        fun extractRequestHeaders(
+            extractor: ResourceHeadersExtractor,
+            headers: Map<String, List<String>>,
+            internalLogger: InternalLogger
+        ) = extractor.extractRequestHeaders(headers, internalLogger)
+
+        fun extractResponseHeaders(
+            extractor: ResourceHeadersExtractor,
+            headers: Map<String, List<String>>,
+            internalLogger: InternalLogger
+        ) = extractor.extractResponseHeaders(headers, internalLogger)
     }
 }

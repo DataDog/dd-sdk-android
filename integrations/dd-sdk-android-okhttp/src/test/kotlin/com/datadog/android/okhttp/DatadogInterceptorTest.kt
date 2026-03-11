@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
@@ -28,6 +29,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.tools.unit.forge.anHttpHeaderMap
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -87,6 +89,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     private lateinit var fakeAttributes: Map<String, Any?>
 
+    private var resourceHeadersExtractor: ResourceHeadersExtractor? = null
+
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
         globalTracerProvider: () -> DatadogTracer?,
@@ -103,7 +107,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = localTracerFactory,
-            globalTracerProvider = globalTracerProvider
+            globalTracerProvider = globalTracerProvider,
+            resourceHeadersExtractor = resourceHeadersExtractor
         )
     }
 
@@ -113,6 +118,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
+        resourceHeadersExtractor = null
         super.`set up`(forge)
         fakeAttributes = forge.exhaustiveAttributes()
         @Suppress("DEPRECATION")
@@ -1100,6 +1106,165 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
         assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    // endregion
+
+    // region Resource Headers
+
+    @Test
+    fun `M include header attributes in stopResource W intercept() { trackResourceHeaders enabled }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id")
+            .build()
+
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        fakeRequest = forgeRequest(forge) { it.addHeader("X-Request-Id", "abc-123") }
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val keyCaptor = argumentCaptor<ResourceId>()
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            keyCaptor.capture(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        @Suppress("UNCHECKED_CAST")
+        val reqHeaders = attrsCaptor.firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+        assertThat(reqHeaders).isNotNull
+        assertThat(reqHeaders).containsEntry("x-request-id", "abc-123")
+    }
+
+    @Test
+    fun `M not include header attributes in stopResource W intercept() { no trackResourceHeaders }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val keyCaptor = argumentCaptor<ResourceId>()
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            keyCaptor.capture(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        assertThat(attrsCaptor.firstValue).doesNotContainKey(RumAttributes.REQUEST_HEADERS)
+        assertThat(attrsCaptor.firstValue).doesNotContainKey(RumAttributes.RESPONSE_HEADERS)
+    }
+
+    @Test
+    fun `M capture response headers W intercept() { trackResourceHeaders enabled }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-cache")
+            .build()
+
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        fakeRequest = forgeRequest(forge)
+        fakeResponseBody = forge.anAlphabeticalString()
+        fakeMediaType = "text/plain".toMediaType()
+        stubChain(mockChain, statusCode) {
+            header("X-Cache", "HIT")
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val keyCaptor = argumentCaptor<ResourceId>()
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            keyCaptor.capture(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        @Suppress("UNCHECKED_CAST")
+        val resHeaders = attrsCaptor.firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
+        assertThat(resHeaders).isNotNull
+        assertThat(resHeaders).containsEntry("x-cache", "HIT")
+    }
+
+    @Test
+    fun `M header attributes override provider attributes W intercept() { conflicting keys }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            RumAttributes.REQUEST_HEADERS to forge.anHttpHeaderMap(),
+            RumAttributes.RESPONSE_HEADERS to forge.anHttpHeaderMap()
+        )
+
+        @Suppress("DEPRECATION")
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
+            )
+        ) doReturn fakeProviderAttributes
+
+        val fakeActualRequestHeaders = forge.anHttpHeaderMap()
+        val fakeActualResponseHeaders = forge.anHttpHeaderMap()
+
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(*(fakeActualResponseHeaders.keys + fakeActualRequestHeaders.keys).toTypedArray())
+            .build()
+
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        fakeRequest = forgeRequest(forge) { builder ->
+            fakeActualRequestHeaders.forEach { (key, value) -> builder.addHeader(key, value) }
+        }
+        stubChain(mockChain, statusCode) {
+            fakeActualResponseHeaders.forEach { (key, value) -> header(key, value) }
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            any<ResourceId>(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        @Suppress("UNCHECKED_CAST")
+        val reqHeaders = attrsCaptor.firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+        assertThat(reqHeaders).isNotNull
+        assertThat(reqHeaders).isEqualTo(fakeActualRequestHeaders)
+
+        @Suppress("UNCHECKED_CAST")
+        val resHeaders = attrsCaptor.firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
+        assertThat(resHeaders).isNotNull
+        assertThat(resHeaders).isEqualTo(fakeActualResponseHeaders)
     }
 
     // endregion
