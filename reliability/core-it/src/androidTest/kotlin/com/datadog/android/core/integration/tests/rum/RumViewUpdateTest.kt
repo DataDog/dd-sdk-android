@@ -21,31 +21,31 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.datadog.android.core.integration.tests.utils.DatadogRestApiClientImpl
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.Instant
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class RumViewUpdateTest : BaseTest() {
 
     private lateinit var sdkCore: SdkCore
-    private lateinit var apiKey: String
-    private lateinit var appKey: String
+    private lateinit var datadogApiClient: DatadogRestApiClientImpl
     private var sdkStopped = false
-
-    private val okHttpClient = OkHttpClient()
 
     @Before
     fun setUp() {
@@ -56,10 +56,10 @@ class RumViewUpdateTest : BaseTest() {
         val rumAppId = requireNotNull(args.getString("DD_RUM_APP_ID")) {
             "Missing instrumentation argument: DD_RUM_APP_ID"
         }
-        apiKey = requireNotNull(args.getString("DD_API_KEY")) {
+        val apiKey = requireNotNull(args.getString("DD_API_KEY")) {
             "Missing instrumentation argument: DD_API_KEY"
         }
-        appKey = requireNotNull(args.getString("DD_APP_KEY")) {
+        val appKey = requireNotNull(args.getString("DD_APP_KEY")) {
             "Missing instrumentation argument: DD_APP_KEY"
         }
 
@@ -96,6 +96,15 @@ class RumViewUpdateTest : BaseTest() {
                 .build(),
             sdkCore
         )
+
+        val httpClient = HttpClient(OkHttp) {
+            install(ContentNegotiation) { json() }
+            defaultRequest {
+                headers.append("DD-API-KEY", apiKey)
+                headers.append("DD-APPLICATION-KEY", appKey)
+            }
+        }
+        datadogApiClient = DatadogRestApiClientImpl(httpClient, "https://dd.datad0g.com")
     }
 
     @After
@@ -111,7 +120,6 @@ class RumViewUpdateTest : BaseTest() {
             // Given
             val viewKey = UUID.randomUUID().toString()
             val viewName = "RumViewUpdateTest/${UUID.randomUUID()}"
-            val testStartTime = Instant.now().minusSeconds(60)
 
             // When
             val rumMonitor = GlobalRumMonitor.get(sdkCore)
@@ -124,45 +132,23 @@ class RumViewUpdateTest : BaseTest() {
 
             // Then
             val deadline = System.currentTimeMillis() + POLLING_TIMEOUT_MS
-            var viewCount = 0
+            var actionCount = 0
             while (System.currentTimeMillis() < deadline) {
-                viewCount = searchRumActionCount(
-                    query = """@type:view @view.name:"$viewName""""
-                )
-                if (viewCount >= 1) break
+                val response = datadogApiClient.getRumViewEvent(viewName)
+                val viewEvent = response.optionalResult
+                    ?.get("data")?.jsonArray
+                    ?.firstOrNull()?.jsonObject
+                actionCount = viewEvent
+                    ?.get("attributes")?.jsonObject
+                    ?.get("action")?.jsonObject
+                    ?.get("count")?.jsonPrimitive?.int
+                    ?: 0
+                if (viewEvent != null) break
                 delay(POLLING_INTERVAL_MS)
             }
 
-            assertThat(viewCount).isEqualTo(1)
+            assertThat(actionCount).isEqualTo(1)
         }
-
-    }
-
-    private fun searchRumActionCount(query: String): Int {
-        val filterObject = JsonObject().apply {
-            addProperty("query", query)
-            addProperty("from", "now-15m")
-            addProperty("to", "now")
-        }
-        val requestBody = JsonObject().apply {
-            add("filter", filterObject)
-        }
-        val request = Request.Builder()
-            .url("https://dd.datad0g.com/api/v2/rum/events/search")
-            .addHeader("DD-API-KEY", apiKey)
-            .addHeader("DD-APPLICATION-KEY", appKey)
-            .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val responseBody = okHttpClient.newCall(request).execute().use { response ->
-            checkNotNull(response.body).string()
-        }
-
-        return JsonParser.parseString(responseBody)
-            .asJsonObject
-            .getAsJsonArray("data")
-            ?.size()
-            ?: 0
     }
 
     companion object {
