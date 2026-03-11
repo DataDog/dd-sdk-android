@@ -23,6 +23,8 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.google.gson.JsonParser
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -105,41 +107,43 @@ class RumViewUpdateTest : BaseTest() {
 
     @Test
     fun must_report2Actions_when_2ClickActionsAdded() {
-        // Given
-        val viewKey = UUID.randomUUID().toString()
-        val viewName = "RumViewUpdateTest/${UUID.randomUUID()}"
-        val testStartTime = Instant.now().minusSeconds(60)
+        runBlocking {
+            // Given
+            val viewKey = UUID.randomUUID().toString()
+            val viewName = "RumViewUpdateTest/${UUID.randomUUID()}"
+            val testStartTime = Instant.now().minusSeconds(60)
 
-        // When
-        val rumMonitor = GlobalRumMonitor.get(sdkCore)
-        rumMonitor.startView(viewKey, viewName)
-        rumMonitor.addAction(RumActionType.TAP, "click1", emptyMap())
-        rumMonitor.addAction(RumActionType.TAP, "click2", emptyMap())
-        rumMonitor.stopView(viewKey)
+            // When
+            val rumMonitor = GlobalRumMonitor.get(sdkCore)
+            rumMonitor.startView(viewKey, viewName)
+            delay(1000)
+            rumMonitor.addAction(RumActionType.TAP, "click1", emptyMap())
+            delay(1000)
+            rumMonitor.addAction(RumActionType.TAP, "click2", emptyMap())
+            delay(10000)
 
-        Datadog.stopInstance()
-        sdkStopped = true
+            // Then
+            val deadline = System.currentTimeMillis() + POLLING_TIMEOUT_MS
+            var actionCount = 0
+            while (System.currentTimeMillis() < deadline) {
+                actionCount = searchRumActionCount(
+                    query = """@type:view @view.name:"$viewName"""",
+                    from = testStartTime,
+                    to = Instant.now().plusSeconds(POLLING_TIMEOUT_MS / 1000)
+                )
+                if (actionCount >= 2) break
+                delay(POLLING_INTERVAL_MS)
+            }
 
-        // Then
-        val deadline = System.currentTimeMillis() + POLLING_TIMEOUT_MS
-        var actionCount = 0
-        while (System.currentTimeMillis() < deadline) {
-            actionCount = searchRumActionCount(
-                query = """@type:action @view.name:"$viewName"""",
-                from = testStartTime,
-                to = Instant.now().plusSeconds(POLLING_TIMEOUT_MS / 1000)
-            )
-            if (actionCount >= 2) break
-            Thread.sleep(POLLING_INTERVAL_MS)
+            assertThat(actionCount).isEqualTo(2)
         }
 
-        assertThat(actionCount).isEqualTo(2)
     }
 
     private fun searchRumActionCount(query: String, from: Instant, to: Instant): Int {
         val body = """{"filter":{"query":"$query","from":"$from","to":"$to"}}"""
         val request = Request.Builder()
-            .url("https://api.datadoghq.com/api/v2/rum/events/search")
+            .url("https://dd.datad0g.com/api/v2/rum/events/search")
             .addHeader("DD-API-KEY", apiKey)
             .addHeader("DD-APPLICATION-KEY", appKey)
             .post(body.toRequestBody("application/json".toMediaType()))
