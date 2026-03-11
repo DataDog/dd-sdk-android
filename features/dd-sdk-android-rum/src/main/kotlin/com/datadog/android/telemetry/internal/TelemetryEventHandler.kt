@@ -71,7 +71,7 @@ internal class TelemetryEventHandler(
         if (!canWrite(event)) return
 
         eventIDsSeenInCurrentSession.add(event.identity)
-        totalEventsSeenInCurrentSession++
+        if (event !is InternalTelemetryEvent.Configuration) totalEventsSeenInCurrentSession++
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext(
             withFeatureContexts = setOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME,
@@ -161,8 +161,8 @@ internal class TelemetryEventHandler(
     private fun canWrite(event: InternalTelemetryEvent): Boolean {
         if (!eventSampler.sample(event)) return false
 
-        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample(event)) {
-            return false
+        if (event is InternalTelemetryEvent.Configuration) {
+            return configurationExtraSampler.sample(event)
         }
 
         val eventIdentity = event.identity
