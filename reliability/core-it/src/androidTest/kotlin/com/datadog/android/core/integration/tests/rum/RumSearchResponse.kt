@@ -12,11 +12,11 @@ import kotlinx.serialization.json.JsonObject
 
 @Serializable
 internal data class RumSearchResponse(
-    @SerialName("data") val data: List<RumEvent> = emptyList(),
+    @SerialName("data") val data: List<ViewEvent> = emptyList(),
     @SerialName("meta") val meta: Meta? = null
 ) {
     @Serializable
-    data class RumEvent(
+    data class ViewEvent(
         @SerialName("id") val id: String,
         @SerialName("type") val type: String,
         @SerialName("attributes") val attributes: RumEventAttributes
