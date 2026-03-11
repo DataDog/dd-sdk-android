@@ -16,22 +16,20 @@ import java.io.File
 class FileGenerator(
     private val outputDir: File,
     private val packageName: String,
-    private val logger: Logger,
-    private val deduplicateStructurallyEqualClasses: Boolean = true
+    private val logger: Logger
 ) {
 
     private val knownTypes: MutableSet<KotlinTypeWrapper> = mutableSetOf()
 
-    private val classGenerator = ClassGenerator(packageName, knownTypes, deduplicateStructurallyEqualClasses)
-    private val enumGenerator = EnumClassGenerator(packageName, knownTypes, deduplicateStructurallyEqualClasses)
+    private val classGenerator = ClassGenerator(packageName, knownTypes)
+    private val enumGenerator = EnumClassGenerator(packageName, knownTypes)
     private val oneOfPrimitiveOptionGenerator = OneOfPrimitiveOptionGenerator(packageName)
 
     private val multiClassGenerator = MultiClassGenerator(
         classGenerator = classGenerator,
         oneOfPrimitiveOptionGenerator = oneOfPrimitiveOptionGenerator,
         packageName = packageName,
-        knownTypes = knownTypes,
-        deduplicateStructurallyEqualClasses = deduplicateStructurallyEqualClasses
+        knownTypes = knownTypes
     )
 
     // region FileGenerator

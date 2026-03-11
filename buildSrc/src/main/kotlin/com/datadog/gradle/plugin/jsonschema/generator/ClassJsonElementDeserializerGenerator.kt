@@ -19,12 +19,10 @@ import com.squareup.kotlinpoet.jvm.throws
 
 class ClassJsonElementDeserializerGenerator(
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>,
-    deduplicateStructurallyEqualClasses: Boolean = true
+    knownTypes: MutableSet<KotlinTypeWrapper>
 ) : KotlinSpecGenerator<TypeDefinition.Class, FunSpec>(
     packageName,
-    knownTypes,
-    deduplicateStructurallyEqualClasses
+    knownTypes
 ) {
 
     override fun generate(definition: TypeDefinition.Class, rootTypeName: String): FunSpec {

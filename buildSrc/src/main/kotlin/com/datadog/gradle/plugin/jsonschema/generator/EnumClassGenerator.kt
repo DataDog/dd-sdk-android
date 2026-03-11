@@ -18,12 +18,10 @@ import com.squareup.kotlinpoet.asTypeName
 
 class EnumClassGenerator(
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>,
-    deduplicateStructurallyEqualClasses: Boolean = true
+    knownTypes: MutableSet<KotlinTypeWrapper>
 ) : TypeSpecGenerator<TypeDefinition.Enum>(
     packageName,
-    knownTypes,
-    deduplicateStructurallyEqualClasses
+    knownTypes
 ) {
 
     // region TypeSpecGenerator

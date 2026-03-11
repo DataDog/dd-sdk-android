@@ -19,8 +19,7 @@ import com.squareup.kotlinpoet.TypeName
 
 abstract class KotlinSpecGenerator<I : Any, O : Any>(
     val packageName: String,
-    val knownTypes: MutableSet<KotlinTypeWrapper>,
-    val deduplicateStructurallyEqualClasses: Boolean = true
+    val knownTypes: MutableSet<KotlinTypeWrapper>
 ) {
 
     /**
@@ -92,10 +91,8 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
     }
 
     fun TypeDefinition.Class.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
-        val matchingClass = if (deduplicateStructurallyEqualClasses) {
-            knownTypes.firstOrNull { it.type.matches(this) }
-        } else {
-            null
+        val matchingClass = knownTypes.firstOrNull {
+            it.type.matches(this)
         }
         return if (matchingClass == null) {
             val uniqueName = name.uniqueTypeName()
@@ -115,10 +112,8 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
     }
 
     private fun TypeDefinition.Enum.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
-        val matchingEnum = if (deduplicateStructurallyEqualClasses) {
-            knownTypes.firstOrNull { it.type.matches(this) }
-        } else {
-            null
+        val matchingEnum = knownTypes.firstOrNull {
+            it.type.matches(this)
         }
         return if (matchingEnum == null) {
             val uniqueName = name.uniqueTypeName()
@@ -134,10 +129,8 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
     }
 
     private fun TypeDefinition.OneOfClass.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
-        val matchingOneOf = if (deduplicateStructurallyEqualClasses) {
-            knownTypes.firstOrNull { it.type.matches(this) }
-        } else {
-            null
+        val matchingOneOf = knownTypes.firstOrNull {
+            it.type.matches(this)
         }
         return if (matchingOneOf == null) {
             val uniqueName = name.uniqueTypeName()

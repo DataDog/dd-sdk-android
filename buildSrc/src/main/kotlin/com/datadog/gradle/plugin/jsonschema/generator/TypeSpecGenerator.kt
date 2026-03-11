@@ -11,10 +11,8 @@ import com.squareup.kotlinpoet.TypeSpec
 
 abstract class TypeSpecGenerator<T : TypeDefinition>(
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>,
-    deduplicateStructurallyEqualClasses: Boolean = true
+    knownTypes: MutableSet<KotlinTypeWrapper>
 ) : KotlinSpecGenerator<T, TypeSpec.Builder>(
     packageName,
-    knownTypes,
-    deduplicateStructurallyEqualClasses
+    knownTypes
 )

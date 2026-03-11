@@ -104,15 +104,6 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     @get:OutputDirectory
     abstract val destinationPackageDirectory: DirectoryProperty
 
-    /**
-     * Whether to deduplicate structurally equal classes during code generation.
-     * When `true` (the default), classes with identical properties and structure are merged
-     * into a single generated class. When `false`, each schema field gets its own distinct
-     * class even if structurally identical to another.
-     */
-    @get:Input
-    abstract val deduplicateStructurallyEqualClasses: Property<Boolean>
-
     // endregion
 
     // region Task action
@@ -132,7 +123,7 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
         val reader = JsonSchemaReader(inputNameMapping.get(), logger)
-        val generator = FileGenerator(outputDir, targetPackageName.get(), logger, deduplicateStructurallyEqualClasses.get())
+        val generator = FileGenerator(outputDir, targetPackageName.get(), logger)
         files.forEach {
             val type = reader.readSchema(it)
             generator.generate(type)
