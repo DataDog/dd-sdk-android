@@ -21,6 +21,8 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.core.integration.tests.utils.DatadogRestApiClientImpl
 import com.datadog.android.core.integration.tests.utils.poll
 import com.datadog.android.rum._RumInternalProxy
@@ -157,6 +159,11 @@ class RumViewUpdateTest : BaseTest() {
             delay(1000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
             delay(5000)
+            val resourceKey = UUID.randomUUID().toString()
+            rumMonitor.startResource(resourceKey, RumResourceMethod.GET, "https://httpbin.org/get")
+            delay(1000)
+            rumMonitor.stopResource(resourceKey, 200, null, RumResourceKind.FETCH)
+            delay(5000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
             delay(5000)
             rumMonitor.stopView(viewKey)
@@ -169,7 +176,7 @@ class RumViewUpdateTest : BaseTest() {
                         name = VIEW_NAME,
                         contextAttributes = mapOf(
                             "test_view_uuid" to testViewUuid,
-                            "test_view_index" to 3
+                            "test_view_index" to 4
                         )
                     )
                 },
@@ -182,6 +189,7 @@ class RumViewUpdateTest : BaseTest() {
 
             RumSearchResponseViewEventAssert.assertThat(viewEvent).apply {
                 hasActionCount(2)
+                hasResourceCount(1)
             }
         }
     }
