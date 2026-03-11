@@ -132,11 +132,16 @@ class RumViewUpdateTest : BaseTest() {
 
             // When
             val rumMonitor = GlobalRumMonitor.get(sdkCore)
-            rumMonitor.startView(viewKey, viewName)
+            rumMonitor.startView(
+                key = viewKey,
+                name = viewName,
+            )
             delay(1000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
             delay(5000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
+            delay(5000)
+            rumMonitor.stopView(viewKey)
             delay(60000)
 
             // Then
