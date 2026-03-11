@@ -630,6 +630,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun reportNetworkingLibraryType(type: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType) {
+        handleEvent(
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(type))
+        )
+    }
+
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }

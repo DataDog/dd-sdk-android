@@ -38,6 +38,22 @@
           "const": "trackWebView"
         }
       }
+    },
+    {
+      "required": ["feature", "type"],
+      "title": "AndroidNetworkInstrumentation",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "Android network instrumentation",
+          "const": "androidNetworkInstrumentation"
+        },
+        "type": {
+          "type": "string",
+          "description": "The network instrumentation API used",
+          "enum": ["CRONET", "OKHTTP"]
+        }
+      }
     }
   ]
 }

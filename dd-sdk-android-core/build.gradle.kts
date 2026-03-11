@@ -140,6 +140,14 @@ dependencies {
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.testTools)
     testFixturesImplementation(project(":dd-sdk-android-internal"))
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
 }
 
 unMock {
