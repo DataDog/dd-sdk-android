@@ -23,7 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension
 class DatadogSemanticsElementTest {
 
     @Test
-    fun `M create node with correct properties W create()`(@StringForgery name: String, @BoolForgery isImage: Boolean) {
+    fun `M create node with correct properties W create()`(
+        @StringForgery name: String,
+        @BoolForgery isImage: Boolean
+    ) {
         // Given
         val element = DatadogSemanticsElement(name, isImage)
 
@@ -55,7 +58,10 @@ class DatadogSemanticsElementTest {
     }
 
     @Test
-    fun `M be equal W same properties`(@StringForgery name: String, @BoolForgery isImage: Boolean) {
+    fun `M be equal W same properties`(
+        @StringForgery name: String,
+        @BoolForgery isImage: Boolean
+    ) {
         // Given
         val element1 = DatadogSemanticsElement(name, isImage)
         val element2 = DatadogSemanticsElement(name, isImage)
