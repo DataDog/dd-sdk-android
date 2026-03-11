@@ -61,7 +61,7 @@ internal var SemanticsPropertyReceiver.datadog by DatadogSemanticsPropertyKey
  * node is explicitly excluded from the layout measurement chain, ensuring it never modifies
  * constraints passed to child composables.
  */
-internal data class DatadogSemanticsElement(val name: String, val isImage: Boolean) :
+internal class DatadogSemanticsElement(private val name: String, private val isImage: Boolean) :
     ModifierNodeElement<DatadogSemanticsNode>() {
     override fun create(): DatadogSemanticsNode = DatadogSemanticsNode(name, isImage)
 
@@ -73,6 +73,18 @@ internal data class DatadogSemanticsElement(val name: String, val isImage: Boole
     override fun InspectorInfo.inspectableProperties() {
         this.properties["name"] = name
         this.properties["isImage"] = isImage
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is DatadogSemanticsElement) return false
+        return name == other.name && isImage == other.isImage
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + isImage.hashCode()
+        return result
     }
 }
 
