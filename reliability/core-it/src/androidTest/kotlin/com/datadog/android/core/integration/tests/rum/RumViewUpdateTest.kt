@@ -23,6 +23,8 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.core.integration.tests.utils.DatadogRestApiClientImpl
 import com.datadog.android.core.integration.tests.utils.poll
+import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.model.ViewEvent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -46,6 +48,7 @@ class RumViewUpdateTest : BaseTest() {
     private lateinit var datadogApiClient: DatadogRestApiClientImpl
     private var sdkStopped = false
     private val viewEventsList = mutableListOf<ViewEvent>()
+    private lateinit var testViewUuid: String
 
     @Before
     fun setUp() {
@@ -83,24 +86,35 @@ class RumViewUpdateTest : BaseTest() {
 
         Datadog.setVerbosity(android.util.Log.VERBOSE)
 
-        Rum.enable(
-            RumConfiguration
-                .Builder(rumAppId)
-                .setTelemetrySampleRate(100f)
-                .trackUserInteractions()
-                .trackLongTasks(250L)
-                .trackNonFatalAnrs(true)
-                .setViewEventMapper { viewEvent ->
-                    synchronized(viewEventsList) {
-                        viewEvent.context?.additionalProperties?.put("test_view_index", viewEventsList.size)
-                        viewEventsList.add(viewEvent)
-                    }
-                    viewEvent
+        testViewUuid = UUID.randomUUID().toString()
+
+        val rumConfig = RumConfiguration
+            .Builder(rumAppId)
+            .setTelemetrySampleRate(100f)
+            .trackUserInteractions()
+            .trackLongTasks(250L)
+            .trackNonFatalAnrs(true)
+            .setViewEventMapper { viewEvent ->
+                synchronized(viewEventsList) {
+                    viewEvent.context?.additionalProperties?.put("test_view_index", viewEventsList.size)
+                    viewEvent.context?.additionalProperties?.put("test_view_uuid", testViewUuid)
+                    viewEventsList.add(viewEvent)
                 }
-                .trackBackgroundEvents(true)
-                .trackAnonymousUser(true)
-                .collectAccessibility(true)
-                .build(),
+                viewEvent
+            }
+            .trackBackgroundEvents(true)
+            .trackAnonymousUser(true)
+            .collectAccessibility(true)
+            .apply {
+                _RumInternalProxy.setRumViewEventWriteConfig(
+                    builder = this@apply,
+                    config = RumViewEventWriteConfig.AlwaysFullView
+                )
+            }
+            .build()
+
+        Rum.enable(
+            rumConfig,
             sdkCore
         )
 
@@ -126,13 +140,12 @@ class RumViewUpdateTest : BaseTest() {
         runBlocking {
             // Given
             val viewKey = UUID.randomUUID().toString()
-            val viewName = "rum-view-update-test-${UUID.randomUUID()}"
 
             // When
             val rumMonitor = GlobalRumMonitor.get(sdkCore)
             rumMonitor.startView(
                 key = viewKey,
-                name = viewName,
+                name = VIEW_NAME,
             )
             delay(1000)
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
@@ -144,20 +157,27 @@ class RumViewUpdateTest : BaseTest() {
 
             // Then
             val response = poll(
-                block = { datadogApiClient.getRumViewEvent(viewName) },
+                block = {
+                    datadogApiClient.getRumViewEvent(
+                        name = VIEW_NAME,
+                        contextAttributes = mapOf(
+                            "test_view_uuid" to testViewUuid,
+                            "test_view_index" to 3
+                        )
+                    )
+                },
                 predicate = { it.optionalResult?.data?.firstOrNull() != null },
                 interval = POLLING_INTERVAL_MS.milliseconds,
                 timeout = POLLING_TIMEOUT_MS.milliseconds
             )
 
-            val viewCount = response.optionalResult
-                ?.data.orEmpty().size
-
-            assertThat(viewCount).isEqualTo(1)
+            val viewEvent = checkNotNull(response?.optionalResult?.data?.firstOrNull())
+            assertThat(viewEvent.attributes.attributes.view?.action?.count).isEqualTo(2)
         }
     }
 
     companion object {
+        private const val VIEW_NAME = "rum-view-update-test"
         private const val POLLING_TIMEOUT_MS = 300_000L
         private const val POLLING_INTERVAL_MS = 5_000L
     }

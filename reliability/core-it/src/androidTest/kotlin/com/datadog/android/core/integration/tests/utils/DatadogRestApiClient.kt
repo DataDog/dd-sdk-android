@@ -13,7 +13,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 internal interface DatadogRestApiClient {
-    suspend fun getRumViewEvent(name: String): KtorHttpResponse<RumSearchResponse>
+    suspend fun getRumViewEvent(
+        name: String,
+        contextAttributes: Map<String, Any> = emptyMap()
+    ): KtorHttpResponse<RumSearchResponse>
 }
 
 internal class DatadogRestApiClientImpl(
@@ -21,10 +24,16 @@ internal class DatadogRestApiClientImpl(
     private val baseUrl: String
 ) : DatadogRestApiClient {
 
-    override suspend fun getRumViewEvent(name: String): KtorHttpResponse<RumSearchResponse> {
+    override suspend fun getRumViewEvent(
+        name: String,
+        contextAttributes: Map<String, Any>
+    ): KtorHttpResponse<RumSearchResponse> {
+        val contextFilterQuery = contextAttributes.entries
+            .joinToString(separator = " ") { (key, value) -> "@context.$key:$value" }
+        val query = """@type:view @view.name:"$name" $contextFilterQuery""".trim()
         val requestBody = buildJsonObject {
             put("filter", buildJsonObject {
-                put("query", """@type:view @view.name:"$name"""")
+                put("query", query)
                 put("from", "now-15m")
                 put("to", "now")
             })

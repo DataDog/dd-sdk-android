@@ -12,12 +12,12 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
 @OptIn(ExperimentalTime::class)
-internal suspend fun <T> poll(
+internal suspend fun <T : Any> poll(
     block: suspend () -> T,
     predicate: (T) -> Boolean,
     interval: Duration,
     timeout: Duration
-): T {
+): T? {
     val mark = TimeSource.Monotonic.markNow()
 
     while (mark.elapsedNow() < timeout) {
@@ -25,5 +25,5 @@ internal suspend fun <T> poll(
         if (predicate(result)) return result
         delay(interval)
     }
-    return block()
+    return null
 }
