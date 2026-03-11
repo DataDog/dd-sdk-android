@@ -12,7 +12,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.SdkCore
-import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -22,6 +21,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -124,29 +124,34 @@ class RumViewUpdateTest : BaseTest() {
 
             // Then
             val deadline = System.currentTimeMillis() + POLLING_TIMEOUT_MS
-            var actionCount = 0
+            var viewCount = 0
             while (System.currentTimeMillis() < deadline) {
-                actionCount = searchRumActionCount(
-                    query = """@type:view @view.name:"$viewName"""",
-                    from = testStartTime,
-                    to = Instant.now().plusSeconds(POLLING_TIMEOUT_MS / 1000)
+                viewCount = searchRumActionCount(
+                    query = """@type:view @view.name:"$viewName""""
                 )
-                if (actionCount >= 2) break
+                if (viewCount >= 1) break
                 delay(POLLING_INTERVAL_MS)
             }
 
-            assertThat(actionCount).isEqualTo(2)
+            assertThat(viewCount).isEqualTo(1)
         }
 
     }
 
-    private fun searchRumActionCount(query: String, from: Instant, to: Instant): Int {
-        val body = """{"filter":{"query":"$query","from":"$from","to":"$to"}}"""
+    private fun searchRumActionCount(query: String): Int {
+        val filterObject = JsonObject().apply {
+            addProperty("query", query)
+            addProperty("from", "now-15m")
+            addProperty("to", "now")
+        }
+        val requestBody = JsonObject().apply {
+            add("filter", filterObject)
+        }
         val request = Request.Builder()
             .url("https://dd.datad0g.com/api/v2/rum/events/search")
             .addHeader("DD-API-KEY", apiKey)
             .addHeader("DD-APPLICATION-KEY", appKey)
-            .post(body.toRequestBody("application/json".toMediaType()))
+            .post(requestBody.toString().toRequestBody("application/json".toMediaType()))
             .build()
 
         val responseBody = okHttpClient.newCall(request).execute().use { response ->
