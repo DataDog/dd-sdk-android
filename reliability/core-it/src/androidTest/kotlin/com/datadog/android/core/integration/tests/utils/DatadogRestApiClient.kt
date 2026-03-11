@@ -29,6 +29,6 @@ internal class DatadogRestApiClientImpl(
                 put("to", "now")
             })
         }
-        return httpClient.safePost(Url("$baseUrl/api/v2/rum/events/search"), requestBody)
+        return httpClient.safePost(Url("$baseUrl/api/v2/rum/events/search"), requestBody.toString())
     }
 }

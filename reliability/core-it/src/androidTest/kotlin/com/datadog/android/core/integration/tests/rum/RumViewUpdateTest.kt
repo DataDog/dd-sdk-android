@@ -22,6 +22,7 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.core.integration.tests.utils.DatadogRestApiClientImpl
+import com.datadog.android.rum.model.ViewEvent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -46,6 +47,7 @@ class RumViewUpdateTest : BaseTest() {
     private lateinit var sdkCore: SdkCore
     private lateinit var datadogApiClient: DatadogRestApiClientImpl
     private var sdkStopped = false
+    private val viewEventsList = mutableListOf<ViewEvent>()
 
     @Before
     fun setUp() {
@@ -68,7 +70,7 @@ class RumViewUpdateTest : BaseTest() {
             env = "test",
             variant = "debug"
         )
-            .useSite(DatadogSite.STAGING)
+            .useSite(DatadogSite.LOCAL)
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
             .build()
@@ -90,6 +92,13 @@ class RumViewUpdateTest : BaseTest() {
                 .trackUserInteractions()
                 .trackLongTasks(250L)
                 .trackNonFatalAnrs(true)
+                .setViewEventMapper { viewEvent ->
+                    synchronized(viewEventsList) {
+                        viewEvent.context?.additionalProperties?.put("test_view_index", viewEventsList.size)
+                        viewEventsList.add(viewEvent)
+                    }
+                    viewEvent
+                }
                 .trackBackgroundEvents(true)
                 .trackAnonymousUser(true)
                 .collectAccessibility(true)
@@ -119,16 +128,16 @@ class RumViewUpdateTest : BaseTest() {
         runBlocking {
             // Given
             val viewKey = UUID.randomUUID().toString()
-            val viewName = "RumViewUpdateTest/${UUID.randomUUID()}"
+            val viewName = "rum-view-update-test-${UUID.randomUUID()}"
 
             // When
             val rumMonitor = GlobalRumMonitor.get(sdkCore)
             rumMonitor.startView(viewKey, viewName)
             delay(1000)
-            rumMonitor.addAction(RumActionType.TAP, "click1", emptyMap())
-            delay(1000)
-            rumMonitor.addAction(RumActionType.TAP, "click2", emptyMap())
-            delay(10000)
+            rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
+            delay(5000)
+            rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
+            delay(60000)
 
             // Then
             val deadline = System.currentTimeMillis() + POLLING_TIMEOUT_MS

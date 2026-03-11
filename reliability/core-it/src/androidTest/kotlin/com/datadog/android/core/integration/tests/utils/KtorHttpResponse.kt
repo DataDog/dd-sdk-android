@@ -11,10 +11,13 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
-import io.ktor.http.contentType
+import io.ktor.http.content.TextContent
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import okio.IOException
 
 internal sealed interface KtorHttpResponse<out T : Any> {
@@ -28,17 +31,18 @@ internal sealed interface KtorHttpResponse<out T : Any> {
 }
 
 @Suppress("TooGenericExceptionCaught", "MagicNumber")
-internal suspend inline fun <reified T : Any> HttpClient.safePost(url: Url, body: Any): KtorHttpResponse<T> {
+internal suspend inline fun <reified T : Any> HttpClient.safePost(url: Url, body: String): KtorHttpResponse<T> {
     return try {
         val response = post(url) {
-            contentType(ContentType.Application.Json)
-            setBody(body)
+            setBody(TextContent(body, ContentType.Application.Json))
         }
         val statusCode = response.status
         when (statusCode.value) {
             in 500..599 -> KtorHttpResponse.ServerError(statusCode)
             in 400..499 -> KtorHttpResponse.ClientError(statusCode)
-            else -> KtorHttpResponse.Success(response.body())
+            else -> KtorHttpResponse.Success(
+                Json.parseToJsonElement(response.bodyAsText()).jsonObject as T
+            )
         }
     } catch (e: IOException) {
         KtorHttpResponse.IOError(e)
