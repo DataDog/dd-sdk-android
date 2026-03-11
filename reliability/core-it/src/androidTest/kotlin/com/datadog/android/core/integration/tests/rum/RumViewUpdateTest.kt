@@ -22,6 +22,7 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.core.integration.tests.utils.DatadogRestApiClientImpl
+import com.datadog.android.core.integration.tests.utils.poll
 import com.datadog.android.rum.model.ViewEvent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -30,6 +31,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.milliseconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -138,22 +140,20 @@ class RumViewUpdateTest : BaseTest() {
             rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
             delay(5000)
             rumMonitor.stopView(viewKey)
-            delay(60000)
+            delay(5000)
 
             // Then
-            val deadline = System.currentTimeMillis() + POLLING_TIMEOUT_MS
-            var actionCount = 0
-            while (System.currentTimeMillis() < deadline) {
-                val response = datadogApiClient.getRumViewEvent(viewName)
-                val viewEvent = response.optionalResult?.data?.firstOrNull()
-                actionCount = viewEvent
-                    ?.attributes?.attributes?.view?.action?.count
-                    ?: 0
-                if (viewEvent != null) break
-                delay(POLLING_INTERVAL_MS)
-            }
+            val response = poll(
+                block = { datadogApiClient.getRumViewEvent(viewName) },
+                predicate = { it.optionalResult?.data?.firstOrNull() != null },
+                interval = POLLING_INTERVAL_MS.milliseconds,
+                timeout = POLLING_TIMEOUT_MS.milliseconds
+            )
 
-            assertThat(actionCount).isEqualTo(1)
+            val viewCount = response.optionalResult
+                ?.data.orEmpty().size
+
+            assertThat(viewCount).isEqualTo(1)
         }
     }
 
