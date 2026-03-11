@@ -30,10 +30,6 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -149,13 +145,9 @@ class RumViewUpdateTest : BaseTest() {
             var actionCount = 0
             while (System.currentTimeMillis() < deadline) {
                 val response = datadogApiClient.getRumViewEvent(viewName)
-                val viewEvent = response.optionalResult
-                    ?.get("data")?.jsonArray
-                    ?.firstOrNull()?.jsonObject
+                val viewEvent = response.optionalResult?.data?.firstOrNull()
                 actionCount = viewEvent
-                    ?.get("attributes")?.jsonObject
-                    ?.get("action")?.jsonObject
-                    ?.get("count")?.jsonPrimitive?.int
+                    ?.attributes?.attributes?.view?.action?.count
                     ?: 0
                 if (viewEvent != null) break
                 delay(POLLING_INTERVAL_MS)

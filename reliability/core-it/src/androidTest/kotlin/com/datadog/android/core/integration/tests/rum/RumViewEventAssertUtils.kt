@@ -7,7 +7,9 @@
 package com.datadog.android.core.integration.tests.rum
 
 import com.datadog.android.rum.model.ViewEvent
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -26,3 +28,10 @@ object RumViewEventAssertUtils {
         )
     }
 }
+
+internal data class ViewResponseData(
+    val obj: JsonObject
+)
+
+internal val JsonObject.data: JsonArray
+    get() = getValue("data").jsonArray

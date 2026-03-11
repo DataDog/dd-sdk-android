@@ -17,8 +17,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.content.TextContent
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import okio.IOException
+
+private val json = Json { ignoreUnknownKeys = true }
 
 internal sealed interface KtorHttpResponse<out T : Any> {
     data class Success<T : Any>(val result: T) : KtorHttpResponse<T>
@@ -40,9 +41,7 @@ internal suspend inline fun <reified T : Any> HttpClient.safePost(url: Url, body
         when (statusCode.value) {
             in 500..599 -> KtorHttpResponse.ServerError(statusCode)
             in 400..499 -> KtorHttpResponse.ClientError(statusCode)
-            else -> KtorHttpResponse.Success(
-                Json.parseToJsonElement(response.bodyAsText()).jsonObject as T
-            )
+            else -> KtorHttpResponse.Success(response.body())
         }
     } catch (e: IOException) {
         KtorHttpResponse.IOError(e)

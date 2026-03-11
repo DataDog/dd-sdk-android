@@ -6,14 +6,14 @@
 
 package com.datadog.android.core.integration.tests.utils
 
+import com.datadog.android.core.integration.tests.rum.RumSearchResponse
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 internal interface DatadogRestApiClient {
-    suspend fun getRumViewEvent(name: String): KtorHttpResponse<JsonObject>
+    suspend fun getRumViewEvent(name: String): KtorHttpResponse<RumSearchResponse>
 }
 
 internal class DatadogRestApiClientImpl(
@@ -21,7 +21,7 @@ internal class DatadogRestApiClientImpl(
     private val baseUrl: String
 ) : DatadogRestApiClient {
 
-    override suspend fun getRumViewEvent(name: String): KtorHttpResponse<JsonObject> {
+    override suspend fun getRumViewEvent(name: String): KtorHttpResponse<RumSearchResponse> {
         val requestBody = buildJsonObject {
             put("filter", buildJsonObject {
                 put("query", """@type:view @view.name:"$name"""")
