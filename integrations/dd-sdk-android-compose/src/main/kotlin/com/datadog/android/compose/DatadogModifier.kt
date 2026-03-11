@@ -61,10 +61,8 @@ internal var SemanticsPropertyReceiver.datadog by DatadogSemanticsPropertyKey
  * node is explicitly excluded from the layout measurement chain, ensuring it never modifies
  * constraints passed to child composables.
  */
-internal data class DatadogSemanticsElement(
-    val name: String,
-    val isImage: Boolean
-) : ModifierNodeElement<DatadogSemanticsNode>() {
+internal data class DatadogSemanticsElement(val name: String, val isImage: Boolean) :
+    ModifierNodeElement<DatadogSemanticsNode>() {
     override fun create(): DatadogSemanticsNode = DatadogSemanticsNode(name, isImage)
 
     override fun update(node: DatadogSemanticsNode) {
@@ -83,10 +81,9 @@ internal data class DatadogSemanticsElement(
  * This node does NOT implement `LayoutModifierNode`, so it is never consulted during
  * layout measurement and cannot modify constraints.
  */
-internal class DatadogSemanticsNode(
-    var name: String,
-    var isImage: Boolean
-) : Modifier.Node(), SemanticsModifierNode {
+internal class DatadogSemanticsNode(var name: String, var isImage: Boolean) :
+    Modifier.Node(),
+    SemanticsModifierNode {
     override val shouldMergeDescendantSemantics: Boolean get() = false
     override val shouldClearDescendantSemantics: Boolean get() = false
 
