@@ -496,7 +496,7 @@ internal class TelemetryEventHandler(
                     InternalLogger.Target.TELEMETRY,
                     {
                         "GlobalDatadogTracer class exists in the runtime classpath, " +
-                            "but there is an error invoking isRegistered method"
+                            "but there is an error invoking getOrNull method"
                     },
                     t
                 )
