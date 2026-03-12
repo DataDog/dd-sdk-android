@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.integration.tests.rum
 
+import com.datadog.android.rum.model.ViewEvent
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.float
@@ -322,6 +323,31 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
         assertThat(actual.attributes.attributes.view?.networkSettledTime)
             .overridingErrorMessage("Expected network_settled_time to be <%d> but was <%s>", expected, actual.attributes.attributes.view?.networkSettledTime)
             .isEqualTo(expected)
+        return this
+    }
+
+    // accessibility
+    fun hasAccessibility(local: ViewEvent.Accessibility?): RumSearchResponseViewEventAssert {
+        if (local == null) return this
+        val backend = actual.attributes.attributes.view?.accessibility
+        assertThat(backend?.screenReaderEnabled)
+            .overridingErrorMessage("Expected accessibility.screen_reader_enabled to be <%s> but was <%s>", local.screenReaderEnabled, backend?.screenReaderEnabled)
+            .isEqualTo(local.screenReaderEnabled)
+        assertThat(backend?.rtlEnabled)
+            .overridingErrorMessage("Expected accessibility.rtl_enabled to be <%s> but was <%s>", local.rtlEnabled, backend?.rtlEnabled)
+            .isEqualTo(local.rtlEnabled)
+        assertThat(backend?.invertColorsEnabled)
+            .overridingErrorMessage("Expected accessibility.invert_colors_enabled to be <%s> but was <%s>", local.invertColorsEnabled, backend?.invertColorsEnabled)
+            .isEqualTo(local.invertColorsEnabled)
+        assertThat(backend?.closedCaptioningEnabled)
+            .overridingErrorMessage("Expected accessibility.closed_captioning_enabled to be <%s> but was <%s>", local.closedCaptioningEnabled, backend?.closedCaptioningEnabled)
+            .isEqualTo(local.closedCaptioningEnabled)
+        assertThat(backend?.singleAppModeEnabled)
+            .overridingErrorMessage("Expected accessibility.single_app_mode_enabled to be <%s> but was <%s>", local.singleAppModeEnabled, backend?.singleAppModeEnabled)
+            .isEqualTo(local.singleAppModeEnabled)
+        assertThat(backend?.textSize)
+            .overridingErrorMessage("Expected accessibility.text_size to be <%s> but was <%s>", local.textSize, backend?.textSize)
+            .isEqualTo(local.textSize)
         return this
     }
 

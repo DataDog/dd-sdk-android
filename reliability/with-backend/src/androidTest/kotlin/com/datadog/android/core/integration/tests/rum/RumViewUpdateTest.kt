@@ -14,8 +14,10 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,17 +79,20 @@ class RumViewUpdateTest : BaseRumViewTest() {
             )
             delay(1000)
 
-            rumMonitor.addTiming("screen_loaded")                    // view index 11
+            withContext(Dispatchers.Main) { Thread.sleep(300) }       // blocks main thread → long task detected
+            delay(1000)                                              // wait for long task event → view index 11
+
+            rumMonitor.addTiming("screen_loaded")                    // view index 12
             delay(1000)
 
             @OptIn(ExperimentalRumApi::class)
-            rumMonitor.addViewLoadingTime(overwrite = false)         // view index 12
+            rumMonitor.addViewLoadingTime(overwrite = false)         // view index 13
             delay(1000)
 
-            rumMonitor.stopView(viewKey)                             // view index 13
+            rumMonitor.stopView(viewKey)                             // view index 14
             delay(5000)
 
-            val localLastViewEvent = synchronized(viewEventsList) { viewEventsList.find { it.context?.additionalProperties?.get("test_view_index") == 13 } }!!
+            val localLastViewEvent = synchronized(viewEventsList) { viewEventsList.find { it.context?.additionalProperties?.get("test_view_index") == 14 } }!!
             val viewId = localLastViewEvent.view.id
 
             // Then
@@ -95,7 +100,7 @@ class RumViewUpdateTest : BaseRumViewTest() {
                 block = {
                     datadogApiClient.getRumViewEventById(
                         viewId = viewId,
-                        contextAttributes = mapOf("test_view_index" to 13)
+                        contextAttributes = mapOf("test_view_index" to 14)
                     )
                 },
                 predicate = { it.optionalResult?.data?.firstOrNull() != null },
@@ -110,6 +115,7 @@ class RumViewUpdateTest : BaseRumViewTest() {
                 hasActionCount(2)
                 hasResourceCount(1)    // only successful resources
                 hasErrorCount(3)       // 2× addError + 1× stopResourceWithError
+                hasLongTaskCount(1)    // 1× main thread block > 250ms
 
                 // View state
                 isNotActive()
@@ -182,6 +188,9 @@ class RumViewUpdateTest : BaseRumViewTest() {
 
                 // Network settled time — auto-computed after resources settle
                 hasNetworkSettledTime(localLastViewEvent.view.networkSettledTime)
+
+                // Accessibility — collectAccessibility(true) is configured; cross-check vs local
+                hasAccessibility(localLastViewEvent.view.accessibility)
 
                 // Global attribute added via addAttribute
                 hasContextAttribute("custom_attr_1", "attr_value_1")
