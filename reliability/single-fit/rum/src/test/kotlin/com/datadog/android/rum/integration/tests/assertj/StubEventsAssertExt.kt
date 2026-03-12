@@ -6,12 +6,22 @@
 
 package com.datadog.android.rum.integration.tests.assertj
 
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.tests.assertj.StubEventsAssert
+import org.assertj.core.api.Assertions
 
 fun StubEventsAssert.hasRumEvent(index: Int, assertion: RumEventAssert.() -> Unit): StubEventsAssert {
     hasJsonObject(index) {
         val rumEventAssert = RumEventAssert(it)
         rumEventAssert.assertion()
+    }
+    return this
+}
+
+fun StubEventsAssert.hasRumViewUpdateEvent(index: Int, expected: ViewUpdateEvent): StubEventsAssert {
+    hasJsonObject(index) { jsonObject ->
+        val actual = ViewUpdateEvent.fromJsonObject(jsonObject)
+        Assertions.assertThat(actual).isEqualTo(expected)
     }
     return this
 }
