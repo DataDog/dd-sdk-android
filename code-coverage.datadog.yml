@@ -1,0 +1,5 @@
+schema-version: v1
+ignore:
+  - "build/"
+  - "**/build/"
+  - "**/src/test/"
