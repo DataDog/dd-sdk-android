@@ -146,7 +146,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasViewIsActive(true)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -157,7 +157,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasViewIsActive(false)
-                hasDocumentVersion(2)
+                hasDocumentVersion(3)
             }
     }
 
@@ -189,7 +189,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 doesNotHaveField("feature_flag")
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -200,7 +200,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasFeatureFlag(ffKey, ffValue)
-                hasDocumentVersion(2)
+                hasDocumentVersion(3)
             }
     }
 
@@ -234,7 +234,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasActionCount(0)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 // Custom event
@@ -258,7 +258,7 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionCount(1)
                 doesNotHaveField("feature_flag")
-                hasDocumentVersion(2)
+                hasDocumentVersion(3)
             }
             .hasRumEvent(index = 3) {
                 // View updated with FF
@@ -270,7 +270,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasActionCount(1)
                 hasViewName(viewName)
-                hasDocumentVersion(3)
+                hasDocumentVersion(4)
             }
     }
 

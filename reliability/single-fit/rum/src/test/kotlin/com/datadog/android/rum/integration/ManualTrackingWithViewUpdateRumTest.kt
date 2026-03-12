@@ -96,6 +96,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
+                hasDocumentVersion(2)
             }
     }
 
@@ -125,7 +126,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasViewIsActive(true)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumViewUpdateEvent(
                 index = 1,
@@ -176,7 +177,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 doesNotHaveField("feature_flag")
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumViewUpdateEvent(
                 index = 1,
@@ -232,7 +233,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasActionCount(0)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -316,6 +317,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(viewName)
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -401,6 +403,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -490,6 +493,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -577,6 +581,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
             .hasRumViewUpdateEvent(
                 index = 1,
@@ -632,6 +637,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
             .hasRumViewUpdateEvent(
                 index = 1,
@@ -689,6 +695,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
             .hasRumViewUpdateEvent(
                 index = 1,
@@ -769,6 +776,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
             .hasRumViewUpdateEvent(
                 index = 1,
@@ -838,6 +846,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 }
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
     }
 
@@ -878,6 +887,7 @@ class ManualTrackingWithViewUpdateRumTest {
                 }
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
     }
 

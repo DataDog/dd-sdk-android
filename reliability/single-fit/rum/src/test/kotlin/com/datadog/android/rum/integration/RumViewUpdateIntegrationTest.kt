@@ -85,7 +85,7 @@ class RumViewUpdateIntegrationTest {
                 hasViewName(viewName)
                 hasViewIsActive(true)
                 hasActionCount(0)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 // Action event
@@ -107,7 +107,7 @@ class RumViewUpdateIntegrationTest {
                 hasActionCount(1)                   // changed
                 doesNotHaveField("view.name")       // unchanged — omitted from diff
                 doesNotHaveField("view.is_active")  // unchanged — omitted from diff
-                hasDocumentVersion(2)
+                hasDocumentVersion(3)
             }
             .hasRumEvent(index = 3) {
                 // ViewUpdateEvent: diff from event 2's underlying ViewEvent — only changed fields present
@@ -119,7 +119,7 @@ class RumViewUpdateIntegrationTest {
                 hasViewIsActive(false)              // changed
                 doesNotHaveField("view.action")     // unchanged — omitted from diff
                 doesNotHaveField("view.name")       // unchanged — omitted from diff
-                hasDocumentVersion(3)
+                hasDocumentVersion(4)
             }
     }
 

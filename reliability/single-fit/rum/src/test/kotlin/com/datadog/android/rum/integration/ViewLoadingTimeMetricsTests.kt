@@ -16,6 +16,8 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
@@ -1405,6 +1407,12 @@ class ViewLoadingTimeMetricsTests {
     }
 
     private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)
+        .apply {
+            _RumInternalProxy.setRumViewEventWriteConfig(
+                builder = this,
+                config = RumViewEventWriteConfig.AlwaysFullView
+            )
+        }
         .trackNonFatalAnrs(false)
 
     // endregion

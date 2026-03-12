@@ -12,6 +12,8 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
@@ -63,6 +65,12 @@ class ActivityViewTrackingStrategyTest {
 
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
             .trackNonFatalAnrs(false) // required to prevent infinite loop in tests
+            .apply {
+                _RumInternalProxy.setRumViewEventWriteConfig(
+                    builder = this,
+                    config = RumViewEventWriteConfig.AlwaysFullView
+                )
+            }
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
 
