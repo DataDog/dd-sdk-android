@@ -116,6 +116,8 @@ internal data class RumSearchResponse(
         @SerialName("action") val action: CountWrapper? = null,
         @SerialName("id") val id: String? = null,
         @SerialName("url_path") val urlPath: String? = null,
+        @SerialName("loading_time") val loadingTime: Long? = null,
+        @SerialName("network_settled_time") val networkSettledTime: Long? = null,
         @SerialName("cpu_ticks_count") val cpuTicksCount: Double? = null,
         @SerialName("cpu_ticks_per_second") val cpuTicksPerSecond: Double? = null,
         @SerialName("custom_timings") val customTimings: JsonObject? = null,
@@ -162,6 +164,8 @@ internal data class RumSearchResponse(
     @Serializable
     data class Usr(
         @SerialName("id") val id: String? = null,
+        @SerialName("name") val name: String? = null,
+        @SerialName("email") val email: String? = null,
         @SerialName("anonymous_id") val anonymousId: String? = null,
         @SerialName("id_from_anonymous") val idFromAnonymous: Boolean? = null
     )

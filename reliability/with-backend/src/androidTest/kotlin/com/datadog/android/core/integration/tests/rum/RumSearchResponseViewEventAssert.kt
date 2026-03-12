@@ -13,6 +13,7 @@ import kotlinx.serialization.json.int
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import java.time.OffsetDateTime
 
 internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEvent) :
     AbstractAssert<RumSearchResponseViewEventAssert, RumSearchResponse.ViewEvent>(
@@ -298,11 +299,59 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
         return this
     }
 
+    // date
+    fun hasDate(dateMs: Long): RumSearchResponseViewEventAssert {
+        val parsedMs = OffsetDateTime.parse(actual.attributes.timestamp).toInstant().toEpochMilli()
+        assertThat(parsedMs)
+            .overridingErrorMessage("Expected date to be <%d> but was <%d>", dateMs, parsedMs)
+            .isEqualTo(dateMs)
+        return this
+    }
+
+    // view loading
+    fun hasLoadingTimeNonNull(): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.view?.loadingTime)
+            .overridingErrorMessage("Expected view.loading_time to be non-null but was null")
+            .isNotNull()
+            .isGreaterThan(0L)
+        return this
+    }
+
+    fun hasNetworkSettledTime(expected: Long?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        assertThat(actual.attributes.attributes.view?.networkSettledTime)
+            .overridingErrorMessage("Expected network_settled_time to be <%d> but was <%s>", expected, actual.attributes.attributes.view?.networkSettledTime)
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasContextAttribute(key: String, value: String): RumSearchResponseViewEventAssert {
         val actual = (actual.attributes.attributes.context?.get(key) as? JsonPrimitive)?.content
         assertThat(actual)
             .overridingErrorMessage("Expected context attribute <%s> to be <%s> but was <%s>", key, value, actual)
             .isEqualTo(value)
+        return this
+    }
+
+    // usr
+    fun hasUserId(id: String): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.usr?.id)
+            .overridingErrorMessage("Expected usr.id to be <%s> but was <%s>", id, actual.attributes.attributes.usr?.id)
+            .isEqualTo(id)
+        return this
+    }
+
+    fun hasUserName(name: String): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.usr?.name)
+            .overridingErrorMessage("Expected usr.name to be <%s> but was <%s>", name, actual.attributes.attributes.usr?.name)
+            .isEqualTo(name)
+        return this
+    }
+
+    fun hasUserEmail(email: String): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.usr?.email)
+            .overridingErrorMessage("Expected usr.email to be <%s> but was <%s>", email, actual.attributes.attributes.usr?.email)
+            .isEqualTo(email)
         return this
     }
 

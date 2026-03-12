@@ -57,7 +57,8 @@ abstract class BaseRumViewTest {
         val config = Configuration.Builder(
             clientToken = clientToken,
             env = "test",
-            variant = "debug"
+            variant = "debug",
+            service = "test-service"
         )
             .useSite(DatadogSite.LOCAL)
             .setBatchSize(BatchSize.SMALL)
@@ -73,6 +74,12 @@ abstract class BaseRumViewTest {
         )
 
         Datadog.setVerbosity(android.util.Log.VERBOSE)
+        Datadog.setUserInfo(
+            id = "test-user-id",
+            name = "Test User",
+            email = "test@example.com",
+            sdkCore = sdkCore
+        )
 
         val rumConfig = RumConfiguration
             .Builder(rumAppId)

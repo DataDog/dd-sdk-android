@@ -8,6 +8,7 @@ package com.datadog.android.core.integration.tests.rum
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.datadog.android.core.integration.tests.utils.poll
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -33,7 +34,7 @@ class RumViewUpdateTest : BaseRumViewTest() {
             rumMonitor.startView(key = viewKey, name = VIEW_NAME)
             delay(1000)
 
-            rumMonitor.addAttribute("custom_attr", "hello_world") // no view update triggered
+            rumMonitor.addAttribute("custom_attr_1", "attr_value_1") // no view update triggered
 
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
             delay(5000) // wait for action to be finalized → view index 1
@@ -53,6 +54,8 @@ class RumViewUpdateTest : BaseRumViewTest() {
             delay(1000)
             rumMonitor.addFeatureFlagEvaluation("flag_int", 100)    // view index 6
             delay(1000)
+
+            rumMonitor.addAttribute("custom_attr_2", "attr_value_2") // no view update triggered
 
             rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
             delay(5000) // wait for action to be finalized → view index 7
@@ -77,10 +80,14 @@ class RumViewUpdateTest : BaseRumViewTest() {
             rumMonitor.addTiming("screen_loaded")                    // view index 11
             delay(1000)
 
-            rumMonitor.stopView(viewKey)                             // view index 12
+            @OptIn(ExperimentalRumApi::class)
+            rumMonitor.addViewLoadingTime(overwrite = false)         // view index 12
+            delay(1000)
+
+            rumMonitor.stopView(viewKey)                             // view index 13
             delay(5000)
 
-            val localLastViewEvent = synchronized(viewEventsList) { viewEventsList.find { it.context?.additionalProperties?.get("test_view_index") == 12 } }!!
+            val localLastViewEvent = synchronized(viewEventsList) { viewEventsList.find { it.context?.additionalProperties?.get("test_view_index") == 13 } }!!
             val viewId = localLastViewEvent.view.id
 
             // Then
@@ -88,7 +95,7 @@ class RumViewUpdateTest : BaseRumViewTest() {
                 block = {
                     datadogApiClient.getRumViewEventById(
                         viewId = viewId,
-                        contextAttributes = mapOf("test_view_index" to 12)
+                        contextAttributes = mapOf("test_view_index" to 13)
                     )
                 },
                 predicate = { it.optionalResult?.data?.firstOrNull() != null },
@@ -159,8 +166,26 @@ class RumViewUpdateTest : BaseRumViewTest() {
                 // Anonymous user (trackAnonymousUser = true in config)
                 hasAnonymousUserIdNonNull()
 
+                // User info — set via Datadog.setUserInfo in base setUp
+                hasUserId("test-user-id")
+                hasUserName("Test User")
+                hasUserEmail("test@example.com")
+
+                // Service — set in Configuration.Builder in base setUp
+                hasService("test-service")
+
+                // Date — cross-checked against the local SDK event
+                hasDate(localLastViewEvent.date)
+
+                // Loading time — set via addViewLoadingTime
+                hasLoadingTimeNonNull()
+
+                // Network settled time — auto-computed after resources settle
+                hasNetworkSettledTime(localLastViewEvent.view.networkSettledTime)
+
                 // Global attribute added via addAttribute
-                hasContextAttribute("custom_attr", "hello_world")
+                hasContextAttribute("custom_attr_1", "attr_value_1")
+                hasContextAttribute("custom_attr_2", "attr_value_2")
             }
         }
     }
