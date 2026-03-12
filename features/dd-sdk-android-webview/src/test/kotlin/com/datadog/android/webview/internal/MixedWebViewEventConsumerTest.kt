@@ -198,7 +198,7 @@ internal class MixedWebViewEventConsumerTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
                 US,
-                fakeWebEvent
+                fakeWebEvent.keySet()
             )
         )
     }
@@ -230,7 +230,7 @@ internal class MixedWebViewEventConsumerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            MixedWebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
+            MixedWebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent.keySet())
         )
     }
 
@@ -273,7 +273,7 @@ internal class MixedWebViewEventConsumerTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             MixedWebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
                 US,
-                fakeBadJsonFormatEvent
+                fakeBadJsonFormatEvent.length
             ),
             JsonParseException::class.java
         )

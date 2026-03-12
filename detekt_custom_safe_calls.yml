@@ -440,6 +440,7 @@ datadog:
       - "com.google.gson.JsonObject.getAsJsonObject(kotlin.String?)"
       - "com.google.gson.JsonObject.getAsJsonPrimitive(kotlin.String?)"
       - "com.google.gson.JsonObject.has(kotlin.String?)"
+      - "com.google.gson.JsonObject.keySet()"
       - "com.google.gson.JsonObject.remove(kotlin.String?)"
       - "com.google.gson.JsonObject.toString()"
       - "com.google.gson.JsonParseException.constructor(kotlin.String?)"
