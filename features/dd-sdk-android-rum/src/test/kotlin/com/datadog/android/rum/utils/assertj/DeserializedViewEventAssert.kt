@@ -88,8 +88,8 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
             assertThat(actual).isNull()
             return
         }
-        assertThat(actual).isNotNull()
-        assertNumberFieldEquals(actual!!.sessionSampleRate, expected.sessionSampleRate)
+        checkNotNull(actual)
+        assertNumberFieldEquals(actual.sessionSampleRate, expected.sessionSampleRate)
         assertNumberFieldEquals(actual.sessionReplaySampleRate, expected.sessionReplaySampleRate)
         assertNumberFieldEquals(actual.profilingSampleRate, expected.profilingSampleRate)
         assertNumberFieldEquals(actual.traceSampleRate, expected.traceSampleRate)
