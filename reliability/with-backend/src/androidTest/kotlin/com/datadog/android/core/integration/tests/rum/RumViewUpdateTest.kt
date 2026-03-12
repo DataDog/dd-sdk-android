@@ -15,7 +15,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.integration.tests.BaseTest
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
@@ -45,7 +44,7 @@ import org.junit.runner.RunWith
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
-class RumViewUpdateTest : BaseTest() {
+class RumViewUpdateTest {
 
     private lateinit var sdkCore: SdkCore
     private lateinit var datadogApiClient: DatadogRestApiClientImpl
@@ -206,7 +205,7 @@ class RumViewUpdateTest : BaseTest() {
 
     companion object {
         private const val VIEW_NAME = "rum-view-update-test"
-        private const val POLLING_TIMEOUT_MS = 300_000L
+        private const val POLLING_TIMEOUT_MS = 30_000L
         private const val POLLING_INTERVAL_MS = 5_000L
     }
 }

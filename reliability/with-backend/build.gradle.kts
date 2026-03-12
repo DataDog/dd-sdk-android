@@ -15,6 +15,7 @@ plugins {
     // Build
     id("com.android.application")
     kotlin("android")
+    kotlin("plugin.serialization")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -24,7 +25,7 @@ android {
 
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
-    namespace = "com.datadog.android.core.integration"
+    namespace = "com.datadog.android.reliability.withbackend"
 
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
@@ -73,23 +74,12 @@ dependencies {
     implementation(libs.kotlin)
 
     // Testing
-    androidTestImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("art")
-            )
-        }
-    }
-    androidTestImplementation(project(":reliability:stub-feature"))
     androidTestImplementation(libs.assertJ)
-    androidTestImplementation(libs.mockitoAndroid)
     androidTestImplementation(libs.bundles.integrationTests)
-    androidTestImplementation(libs.elmyrJVM)
-    androidTestImplementation(libs.okHttp)
-    androidTestImplementation(libs.okHttpMock)
-    androidTestImplementation(libs.gson)
-    androidTestImplementation(libs.datadogApiClient)
+    androidTestImplementation(project(":features:dd-sdk-android-rum"))
+    androidTestImplementation(libs.coroutinesCore)
+    androidTestImplementation(libs.bundles.ktorClient)
+    androidTestImplementation(libs.kotlinxSerializationJson)
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24
         androidTestImplementation(project(":tools:javabackport"))
