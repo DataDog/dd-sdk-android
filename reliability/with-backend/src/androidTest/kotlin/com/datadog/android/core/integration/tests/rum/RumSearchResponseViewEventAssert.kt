@@ -106,6 +106,36 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
         return this
     }
 
+    fun hasTimeSpent(timeSpentNs: Long): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.view?.timeSpent)
+            .overridingErrorMessage("Expected time_spent to be <%d> but was <%d>", timeSpentNs, actual.attributes.attributes.view?.timeSpent)
+            .isEqualTo(timeSpentNs)
+        return this
+    }
+
+    fun hasCpuTicksCount(expected: Number?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        val actual = actual.attributes.attributes.view?.cpuTicksCount
+        assertThat(actual?.toLong())
+            .overridingErrorMessage("Expected cpu_ticks_count to be <%d> but was <%s>", expected.toLong(), actual)
+            .isEqualTo(expected.toLong())
+        return this
+    }
+
+    fun hasCustomTiming(name: String): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.view?.customTimings?.get(name))
+            .overridingErrorMessage("Expected custom timing <%s> to be present but was absent from %s", name, actual.attributes.attributes.view?.customTimings)
+            .isNotNull()
+        return this
+    }
+
+    fun hasAnonymousUserIdNonNull(): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.usr?.anonymousId)
+            .overridingErrorMessage("Expected usr.anonymous_id to be non-null but was null")
+            .isNotNull()
+        return this
+    }
+
     companion object {
         fun assertThat(actual: RumSearchResponse.ViewEvent) = RumSearchResponseViewEventAssert(actual)
     }

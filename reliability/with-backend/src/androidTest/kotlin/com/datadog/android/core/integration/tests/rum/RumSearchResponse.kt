@@ -114,7 +114,10 @@ internal data class RumSearchResponse(
         @SerialName("name") val name: String? = null,
         @SerialName("action") val action: CountWrapper? = null,
         @SerialName("id") val id: String? = null,
-        @SerialName("url_path") val urlPath: String? = null
+        @SerialName("url_path") val urlPath: String? = null,
+        @SerialName("cpu_ticks_count") val cpuTicksCount: Double? = null,
+        @SerialName("cpu_ticks_per_second") val cpuTicksPerSecond: Double? = null,
+        @SerialName("custom_timings") val customTimings: JsonObject? = null
     )
 
     @Serializable
