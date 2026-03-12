@@ -14,6 +14,13 @@ val localProperties = Properties().apply {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.core:core:1.15.0")
+        force("androidx.core:core-ktx:1.15.0")
+    }
+}
+
 android {
     namespace = "com.datadog.cronet.sample"
     compileSdk = 35

@@ -5,10 +5,14 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.cronet.configureDatadogInstrumentation
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import org.chromium.net.CronetEngine
@@ -16,7 +20,7 @@ import org.chromium.net.CronetEngine
 class SampleApplication : Application() {
     internal lateinit var cronetEngine: CronetEngine
 
-    @OptIn(ExperimentalRumApi::class)
+    @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
     override fun onCreate() {
         super.onCreate()
         val tracedHosts = listOf("storage.googleapis.com")
@@ -48,6 +52,10 @@ class SampleApplication : Application() {
         Trace.enable(traceConfig)
 
         cronetEngine = CronetEngine.Builder(this)
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
+            )
             .build()
     }
 }
