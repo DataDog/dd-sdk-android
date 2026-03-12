@@ -175,7 +175,6 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-cronet"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
-    implementation(project(":tools:benchmark"))
 
     // Desugaring SDK
     coreLibraryDesugaring(libs.androidDesugaringSdk)
