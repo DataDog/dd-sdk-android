@@ -129,6 +129,14 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
         return this
     }
 
+    fun hasContextAttribute(key: String, value: String): RumSearchResponseViewEventAssert {
+        val actual = (actual.attributes.attributes.context?.get(key) as? JsonPrimitive)?.content
+        assertThat(actual)
+            .overridingErrorMessage("Expected context attribute <%s> to be <%s> but was <%s>", key, value, actual)
+            .isEqualTo(value)
+        return this
+    }
+
     fun hasAnonymousUserIdNonNull(): RumSearchResponseViewEventAssert {
         assertThat(actual.attributes.attributes.usr?.anonymousId)
             .overridingErrorMessage("Expected usr.anonymous_id to be non-null but was null")

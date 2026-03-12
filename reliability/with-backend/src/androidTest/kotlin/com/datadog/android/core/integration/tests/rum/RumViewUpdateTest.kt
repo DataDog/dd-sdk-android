@@ -33,6 +33,8 @@ class RumViewUpdateTest : BaseRumViewTest() {
             rumMonitor.startView(key = viewKey, name = VIEW_NAME)
             delay(1000)
 
+            rumMonitor.addAttribute("custom_attr", "hello_world") // no view update triggered
+
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
             delay(5000) // wait for action to be finalized → view index 1
 
@@ -123,6 +125,9 @@ class RumViewUpdateTest : BaseRumViewTest() {
 
                 // Anonymous user (trackAnonymousUser = true in config)
                 hasAnonymousUserIdNonNull()
+
+                // Global attribute added via addAttribute
+                hasContextAttribute("custom_attr", "hello_world")
             }
         }
     }
