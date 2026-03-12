@@ -118,6 +118,39 @@ class RumViewUpdateTest : BaseRumViewTest() {
                 // Time and performance — cross-checked against the local SDK event
                 hasTimeSpent(localLastViewEvent.view.timeSpent)
                 hasCpuTicksCount(localLastViewEvent.view.cpuTicksCount)
+                hasCpuTicksPerSecond(localLastViewEvent.view.cpuTicksPerSecond)
+                hasMemoryAverage(localLastViewEvent.view.memoryAverage)
+                hasMemoryMax(localLastViewEvent.view.memoryMax)
+                hasRefreshRateAverage(localLastViewEvent.view.refreshRateAverage)
+                hasRefreshRateMin(localLastViewEvent.view.refreshRateMin)
+
+                // View url — cross-checked against the local SDK event
+                hasViewUrl(localLastViewEvent.view.url)
+
+                // OS — cross-checked against the local SDK event
+                hasOsName(localLastViewEvent.os?.name)
+                hasOsVersion(localLastViewEvent.os?.version)
+                hasOsVersionMajor(localLastViewEvent.os?.versionMajor)
+
+                // Device — cross-checked against the local SDK event
+                hasDeviceName(localLastViewEvent.device?.name)
+                hasDeviceModel(localLastViewEvent.device?.model)
+                hasDeviceBrand(localLastViewEvent.device?.brand)
+                hasDeviceArchitecture(localLastViewEvent.device?.architecture)
+                hasDeviceLocale(localLastViewEvent.device?.locale)
+                hasDeviceTimeZone(localLastViewEvent.device?.timeZone)
+
+                // Connectivity
+                hasConnectivityStatusNonNull()
+
+                // Session
+                hasSessionType("user")
+
+                // Application
+                hasApplicationCurrentLocale(localLastViewEvent.application.currentLocale)
+
+                // Version
+                hasBuildVersion(localLastViewEvent.buildVersion)
 
                 // Identity — verify backend matches local SDK state
                 hasSessionId(localLastViewEvent.session.id)

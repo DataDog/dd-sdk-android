@@ -33,6 +33,7 @@ internal data class RumSearchResponse(
     @Serializable
     data class RumAttributes(
         @SerialName("os") val os: Os? = null,
+        @SerialName("version") val version: String? = null,
         @SerialName("build_version") val buildVersion: String? = null,
         @SerialName("session") val session: Session? = null,
         @SerialName("type") val type: String? = null,
@@ -117,7 +118,11 @@ internal data class RumSearchResponse(
         @SerialName("url_path") val urlPath: String? = null,
         @SerialName("cpu_ticks_count") val cpuTicksCount: Double? = null,
         @SerialName("cpu_ticks_per_second") val cpuTicksPerSecond: Double? = null,
-        @SerialName("custom_timings") val customTimings: JsonObject? = null
+        @SerialName("custom_timings") val customTimings: JsonObject? = null,
+        @SerialName("memory_average") val memoryAverage: Double? = null,
+        @SerialName("memory_max") val memoryMax: Double? = null,
+        @SerialName("refresh_rate_average") val refreshRateAverage: Double? = null,
+        @SerialName("refresh_rate_min") val refreshRateMin: Double? = null
     )
 
     @Serializable
@@ -168,6 +173,7 @@ internal data class RumSearchResponse(
         @SerialName("brand") val brand: String? = null,
         @SerialName("type") val type: String? = null,
         @SerialName("architecture") val architecture: String? = null,
+        @SerialName("locale") val locale: String? = null,
         @SerialName("battery_level") val batteryLevel: Double? = null,
         @SerialName("power_saving_mode") val powerSavingMode: Boolean? = null,
         @SerialName("is_low_end") val isLowEnd: Boolean? = null,

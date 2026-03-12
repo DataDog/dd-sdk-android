@@ -129,6 +129,175 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
         return this
     }
 
+    // view
+    fun hasViewUrl(url: String): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.view?.url)
+            .overridingErrorMessage("Expected view.url to be <%s> but was <%s>", url, actual.attributes.attributes.view?.url)
+            .isEqualTo(url)
+        return this
+    }
+
+    fun hasCpuTicksPerSecond(expected: Number?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        val actual = actual.attributes.attributes.view?.cpuTicksPerSecond
+        assertThat(actual)
+            .overridingErrorMessage("Expected cpu_ticks_per_second to be <%s> but was <%s>", expected, actual)
+            .isNotNull()
+        return this
+    }
+
+    fun hasMemoryAverage(expected: Number?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        val actual = actual.attributes.attributes.view?.memoryAverage
+        assertThat(actual?.toLong())
+            .overridingErrorMessage("Expected memory_average to be <%d> but was <%s>", expected.toLong(), actual)
+            .isEqualTo(expected.toLong())
+        return this
+    }
+
+    fun hasMemoryMax(expected: Number?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        val actual = actual.attributes.attributes.view?.memoryMax
+        assertThat(actual?.toLong())
+            .overridingErrorMessage("Expected memory_max to be <%d> but was <%s>", expected.toLong(), actual)
+            .isEqualTo(expected.toLong())
+        return this
+    }
+
+    fun hasRefreshRateAverage(expected: Number?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        val actual = actual.attributes.attributes.view?.refreshRateAverage
+        assertThat(actual)
+            .overridingErrorMessage("Expected refresh_rate_average to be <%s> but was <%s>", expected, actual)
+            .isNotNull()
+        return this
+    }
+
+    fun hasRefreshRateMin(expected: Number?): RumSearchResponseViewEventAssert {
+        if (expected == null) return this
+        val actual = actual.attributes.attributes.view?.refreshRateMin
+        assertThat(actual)
+            .overridingErrorMessage("Expected refresh_rate_min to be <%s> but was <%s>", expected, actual)
+            .isNotNull()
+        return this
+    }
+
+    // os
+    fun hasOsName(name: String?): RumSearchResponseViewEventAssert {
+        if (name == null) return this
+        assertThat(actual.attributes.attributes.os?.name)
+            .overridingErrorMessage("Expected os.name to be <%s> but was <%s>", name, actual.attributes.attributes.os?.name)
+            .isEqualTo(name)
+        return this
+    }
+
+    fun hasOsVersion(version: String?): RumSearchResponseViewEventAssert {
+        if (version == null) return this
+        assertThat(actual.attributes.attributes.os?.version)
+            .overridingErrorMessage("Expected os.version to be <%s> but was <%s>", version, actual.attributes.attributes.os?.version)
+            .isEqualTo(version)
+        return this
+    }
+
+    fun hasOsVersionMajor(versionMajor: String?): RumSearchResponseViewEventAssert {
+        if (versionMajor == null) return this
+        assertThat(actual.attributes.attributes.os?.versionMajor)
+            .overridingErrorMessage("Expected os.version_major to be <%s> but was <%s>", versionMajor, actual.attributes.attributes.os?.versionMajor)
+            .isEqualTo(versionMajor)
+        return this
+    }
+
+    // device
+    fun hasDeviceName(name: String?): RumSearchResponseViewEventAssert {
+        if (name == null) return this
+        assertThat(actual.attributes.attributes.device?.name)
+            .overridingErrorMessage("Expected device.name to be <%s> but was <%s>", name, actual.attributes.attributes.device?.name)
+            .isEqualTo(name)
+        return this
+    }
+
+    fun hasDeviceModel(model: String?): RumSearchResponseViewEventAssert {
+        if (model == null) return this
+        assertThat(actual.attributes.attributes.device?.model)
+            .overridingErrorMessage("Expected device.model to be <%s> but was <%s>", model, actual.attributes.attributes.device?.model)
+            .isEqualTo(model)
+        return this
+    }
+
+    fun hasDeviceBrand(brand: String?): RumSearchResponseViewEventAssert {
+        if (brand == null) return this
+        assertThat(actual.attributes.attributes.device?.brand)
+            .overridingErrorMessage("Expected device.brand to be <%s> but was <%s>", brand, actual.attributes.attributes.device?.brand)
+            .isEqualTo(brand)
+        return this
+    }
+
+    fun hasDeviceArchitecture(architecture: String?): RumSearchResponseViewEventAssert {
+        if (architecture == null) return this
+        assertThat(actual.attributes.attributes.device?.architecture)
+            .overridingErrorMessage("Expected device.architecture to be <%s> but was <%s>", architecture, actual.attributes.attributes.device?.architecture)
+            .isEqualTo(architecture)
+        return this
+    }
+
+    fun hasDeviceLocale(locale: String?): RumSearchResponseViewEventAssert {
+        if (locale == null) return this
+        assertThat(actual.attributes.attributes.device?.locale)
+            .overridingErrorMessage("Expected device.locale to be <%s> but was <%s>", locale, actual.attributes.attributes.device?.locale)
+            .isEqualTo(locale)
+        return this
+    }
+
+    fun hasDeviceTimeZone(timeZone: String?): RumSearchResponseViewEventAssert {
+        if (timeZone == null) return this
+        assertThat(actual.attributes.attributes.device?.timeZone)
+            .overridingErrorMessage("Expected device.time_zone to be <%s> but was <%s>", timeZone, actual.attributes.attributes.device?.timeZone)
+            .isEqualTo(timeZone)
+        return this
+    }
+
+    // connectivity
+    fun hasConnectivityStatusNonNull(): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.connectivity?.status)
+            .overridingErrorMessage("Expected connectivity.status to be non-null but was null")
+            .isNotNull()
+        return this
+    }
+
+    // session
+    fun hasSessionType(type: String): RumSearchResponseViewEventAssert {
+        assertThat(actual.attributes.attributes.session?.type)
+            .overridingErrorMessage("Expected session.type to be <%s> but was <%s>", type, actual.attributes.attributes.session?.type)
+            .isEqualTo(type)
+        return this
+    }
+
+    // application
+    fun hasApplicationCurrentLocale(locale: String?): RumSearchResponseViewEventAssert {
+        if (locale == null) return this
+        assertThat(actual.attributes.attributes.application?.currentLocale)
+            .overridingErrorMessage("Expected application.current_locale to be <%s> but was <%s>", locale, actual.attributes.attributes.application?.currentLocale)
+            .isEqualTo(locale)
+        return this
+    }
+
+    // version
+    fun hasVersion(version: String?): RumSearchResponseViewEventAssert {
+        if (version == null) return this
+        assertThat(actual.attributes.attributes.version)
+            .overridingErrorMessage("Expected version to be <%s> but was <%s>", version, actual.attributes.attributes.version)
+            .isEqualTo(version)
+        return this
+    }
+
+    fun hasBuildVersion(buildVersion: String?): RumSearchResponseViewEventAssert {
+        if (buildVersion == null) return this
+        assertThat(actual.attributes.attributes.buildVersion)
+            .overridingErrorMessage("Expected build_version to be <%s> but was <%s>", buildVersion, actual.attributes.attributes.buildVersion)
+            .isEqualTo(buildVersion)
+        return this
+    }
+
     fun hasContextAttribute(key: String, value: String): RumSearchResponseViewEventAssert {
         val actual = (actual.attributes.attributes.context?.get(key) as? JsonPrimitive)?.content
         assertThat(actual)
