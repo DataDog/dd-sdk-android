@@ -29,14 +29,12 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Before
-import java.util.UUID
 
 abstract class BaseRumViewTest {
 
     internal lateinit var sdkCore: SdkCore
     internal lateinit var datadogApiClient: DatadogRestApiClientImpl
     internal val viewEventsList = mutableListOf<ViewEvent>()
-    internal lateinit var testViewUuid: String
 
     private var sdkStopped = false
 
@@ -76,8 +74,6 @@ abstract class BaseRumViewTest {
 
         Datadog.setVerbosity(android.util.Log.VERBOSE)
 
-        testViewUuid = UUID.randomUUID().toString()
-
         val rumConfig = RumConfiguration
             .Builder(rumAppId)
             .setTelemetrySampleRate(100f)
@@ -87,7 +83,6 @@ abstract class BaseRumViewTest {
             .setViewEventMapper { viewEvent ->
                 synchronized(viewEventsList) {
                     viewEvent.context?.additionalProperties?.put("test_view_index", viewEventsList.size)
-                    viewEvent.context?.additionalProperties?.put("test_view_uuid", testViewUuid)
                     viewEventsList.add(viewEvent)
                 }
                 viewEvent

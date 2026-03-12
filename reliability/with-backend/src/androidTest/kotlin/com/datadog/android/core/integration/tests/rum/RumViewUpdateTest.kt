@@ -78,17 +78,15 @@ class RumViewUpdateTest : BaseRumViewTest() {
             rumMonitor.stopView(viewKey)                             // view index 12
             delay(5000)
 
-            val localLastViewEvent = synchronized(viewEventsList) { viewEventsList.last() }
+            val localLastViewEvent = synchronized(viewEventsList) { viewEventsList.find { it.context?.additionalProperties?.get("test_view_index") == 12 } }!!
+            val viewId = localLastViewEvent.view.id
 
             // Then
             val response = poll(
                 block = {
-                    datadogApiClient.getRumViewEvent(
-                        name = VIEW_NAME,
-                        contextAttributes = mapOf(
-                            "test_view_uuid" to testViewUuid,
-                            "test_view_index" to 12
-                        )
+                    datadogApiClient.getRumViewEventById(
+                        viewId = viewId,
+                        contextAttributes = mapOf("test_view_index" to 12)
                     )
                 },
                 predicate = { it.optionalResult?.data?.firstOrNull() != null },
