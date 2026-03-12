@@ -105,17 +105,9 @@ internal constructor(
     private val rumContextPropagator = RumContextPropagator { sdkCoreReference.get() as? FeatureSdkCore }
 
     init {
-        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
-
-        // update meta for the configuration telemetry reporting, can be done directly from this thread
-        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
-            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
-            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
-                tracedHosts.values.flatten()
-                    .map(TracingHeaderType::toInternalTracingHeaderType)
-                    .toSet()
-            )
-        }
+        // Trigger SDK instance acquisition. If the SDK is already initialized, this will invoke
+        // [onSdkInstanceReady] synchronously, where we populate the tracing feature context.
+        sdkCoreReference.get()
     }
 
     // region Interceptor
@@ -213,6 +205,7 @@ internal constructor(
     // region Internal
 
     internal open fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
+        updateTracingFeatureContext(sdkCore)
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
             sdkCore.firstPartyHostResolver.isEmpty()
         ) {
@@ -221,6 +214,18 @@ internal constructor(
                 InternalLogger.Target.USER,
                 { WARNING_TRACING_NO_HOSTS },
                 onlyOnce = true
+            )
+        }
+    }
+
+    private fun updateTracingFeatureContext(sdkCore: FeatureSdkCore) {
+        // Update meta for the configuration telemetry reporting, can be done directly from this thread.
+        sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
+                tracedHosts.values.flatten()
+                    .map(TracingHeaderType::toInternalTracingHeaderType)
+                    .toSet()
             )
         }
     }

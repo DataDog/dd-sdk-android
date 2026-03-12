@@ -1577,6 +1577,36 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M update tracing feature context W onSdkInstanceReady { sdk initialized after interceptor construction }`(
+        @FloatForgery(min = 0f, max = 100f) sampleRate: Float
+    ) {
+        // Given
+        datadogCore.clearRegistry()
+        whenever(mockTraceSampler.getSampleRate()) doReturn sampleRate
+
+        val contextMock = mock<MutableMap<String, Any?>>()
+        whenever(rumMonitor.mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())) doAnswer {
+            val updater = it.getArgument<(MutableMap<String, Any?>) -> Unit>(it.arguments.lastIndex)
+            updater(contextMock)
+        }
+
+        // When
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // Then
+        verifyNoInteractions(contextMock)
+
+        // When
+        testedInterceptor.onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        verify(contextMock)[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = sampleRate
+        verify(contextMock)[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
+            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+        verifyNoMoreInteractions(contextMock)
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery existingBaggageKey: String,
