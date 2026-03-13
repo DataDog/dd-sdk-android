@@ -18,5 +18,8 @@
       "Bash(ktlint:*)",
       "Bash(./gradlew *)"
     ]
+  },
+  "enabledPlugins": {
+    "kotlin-lsp@claude-plugins-official": true
   }
 }

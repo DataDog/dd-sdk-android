@@ -701,6 +701,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -725,23 +728,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -753,13 +754,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     @ParameterizedTest
@@ -777,6 +778,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -801,23 +805,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -829,14 +831,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     @RepeatedTest(10)
@@ -856,6 +857,8 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
@@ -870,14 +873,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveInteractionToNextViewTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumEvent(index = 1) {
-                // Previous view stopped (no action event since it was dropped)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 1,
+                expected = expectedViewUpdate(u1, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u1.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u1.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 2) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -889,14 +891,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 3) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = viewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
     }
 
     @RepeatedTest(10)
@@ -920,6 +921,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -944,23 +948,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -972,13 +974,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     @RepeatedTest(10)
@@ -1002,6 +1004,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -1026,23 +1031,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1054,14 +1057,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     @RepeatedTest(10)
@@ -1079,6 +1081,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -1103,23 +1108,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1131,13 +1134,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     @RepeatedTest(2)
@@ -1166,6 +1169,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -1190,23 +1196,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1218,14 +1222,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     @RepeatedTest(2)
@@ -1255,6 +1258,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
+        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
+        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
@@ -1279,23 +1285,21 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with action count
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                hasActionCount(1)
-                doesNotHaveInteractionToNextViewTime()
-            }
-            .hasRumEvent(index = 3) {
-                // Previous view stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(previousViewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 2,
+                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u2.view.id, url = previousViewKey,
+                    action = ViewUpdateEvent.Action(count = 1),
+                    timeSpent = u2.view.timeSpent
+                ))
+            )
+            .hasRumViewUpdateEvent(
+                index = 3,
+                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u3.view.id, url = previousViewKey,
+                    isActive = false, timeSpent = u3.view.timeSpent
+                ))
+            )
             .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1307,14 +1311,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
-                // View stopped
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasViewUrl(viewKey)
-                hasType("view_update")
-                doesNotHaveInteractionToNextViewTime()
-            }
+            .hasRumViewUpdateEvent(
+                index = 5,
+                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
+                    id = u5.view.id, url = viewKey,
+                    isActive = false, timeSpent = u5.view.timeSpent
+                ))
+            )
     }
 
     // endregion
