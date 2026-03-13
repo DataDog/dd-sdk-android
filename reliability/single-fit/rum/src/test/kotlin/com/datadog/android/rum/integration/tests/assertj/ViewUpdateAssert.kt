@@ -560,11 +560,25 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoCustomTimings(): ViewUpdateEventViewAssert {
+            assertThat(actual.customTimings)
+                .overridingErrorMessage("Expected view.customTimings to be null but was <%s>", actual.customTimings)
+                .isNull()
+            return this
+        }
+
         fun action(block: ActionAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.action)
                 .overridingErrorMessage("Expected view.action to be non-null but was null")
                 .isNotNull
             ActionAssert(actual.action!!).block()
+            return this
+        }
+
+        fun hasNoAction(): ViewUpdateEventViewAssert {
+            assertThat(actual.action)
+                .overridingErrorMessage("Expected view.action to be null but was <%s>", actual.action)
+                .isNull()
             return this
         }
 
@@ -576,11 +590,25 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoError(): ViewUpdateEventViewAssert {
+            assertThat(actual.error)
+                .overridingErrorMessage("Expected view.error to be null but was <%s>", actual.error)
+                .isNull()
+            return this
+        }
+
         fun crash(block: CrashAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.crash)
                 .overridingErrorMessage("Expected view.crash to be non-null but was null")
                 .isNotNull
             CrashAssert(actual.crash!!).block()
+            return this
+        }
+
+        fun hasNoCrash(): ViewUpdateEventViewAssert {
+            assertThat(actual.crash)
+                .overridingErrorMessage("Expected view.crash to be null but was <%s>", actual.crash)
+                .isNull()
             return this
         }
 
@@ -592,11 +620,25 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoLongTask(): ViewUpdateEventViewAssert {
+            assertThat(actual.longTask)
+                .overridingErrorMessage("Expected view.longTask to be null but was <%s>", actual.longTask)
+                .isNull()
+            return this
+        }
+
         fun frozenFrame(block: FrozenFrameAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.frozenFrame)
                 .overridingErrorMessage("Expected view.frozenFrame to be non-null but was null")
                 .isNotNull
             FrozenFrameAssert(actual.frozenFrame!!).block()
+            return this
+        }
+
+        fun hasNoFrozenFrame(): ViewUpdateEventViewAssert {
+            assertThat(actual.frozenFrame)
+                .overridingErrorMessage("Expected view.frozenFrame to be null but was <%s>", actual.frozenFrame)
+                .isNull()
             return this
         }
 
@@ -615,11 +657,25 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoResource(): ViewUpdateEventViewAssert {
+            assertThat(actual.resource)
+                .overridingErrorMessage("Expected view.resource to be null but was <%s>", actual.resource)
+                .isNull()
+            return this
+        }
+
         fun frustration(block: FrustrationAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.frustration)
                 .overridingErrorMessage("Expected view.frustration to be non-null but was null")
                 .isNotNull
             FrustrationAssert(actual.frustration!!).block()
+            return this
+        }
+
+        fun hasNoFrustration(): ViewUpdateEventViewAssert {
+            assertThat(actual.frustration)
+                .overridingErrorMessage("Expected view.frustration to be null but was <%s>", actual.frustration)
+                .isNull()
             return this
         }
 
@@ -638,11 +694,25 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoFlutterBuildTime(): ViewUpdateEventViewAssert {
+            assertThat(actual.flutterBuildTime)
+                .overridingErrorMessage("Expected view.flutterBuildTime to be null but was <%s>", actual.flutterBuildTime)
+                .isNull()
+            return this
+        }
+
         fun flutterRasterTime(block: FlutterBuildTimeAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.flutterRasterTime)
                 .overridingErrorMessage("Expected view.flutterRasterTime to be non-null but was null")
                 .isNotNull
             FlutterBuildTimeAssert(actual.flutterRasterTime!!).block()
+            return this
+        }
+
+        fun hasNoFlutterRasterTime(): ViewUpdateEventViewAssert {
+            assertThat(actual.flutterRasterTime)
+                .overridingErrorMessage("Expected view.flutterRasterTime to be null but was <%s>", actual.flutterRasterTime)
+                .isNull()
             return this
         }
 
@@ -654,6 +724,13 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoJsRefreshRate(): ViewUpdateEventViewAssert {
+            assertThat(actual.jsRefreshRate)
+                .overridingErrorMessage("Expected view.jsRefreshRate to be null but was <%s>", actual.jsRefreshRate)
+                .isNull()
+            return this
+        }
+
         fun performance(block: PerformanceAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.performance)
                 .overridingErrorMessage("Expected view.performance to be non-null but was null")
@@ -662,11 +739,25 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNoPerformance(): ViewUpdateEventViewAssert {
+            assertThat(actual.performance)
+                .overridingErrorMessage("Expected view.performance to be null but was <%s>", actual.performance)
+                .isNull()
+            return this
+        }
+
         fun accessibility(block: AccessibilityAssert.() -> Unit): ViewUpdateEventViewAssert {
             assertThat(actual.accessibility)
                 .overridingErrorMessage("Expected view.accessibility to be non-null but was null")
                 .isNotNull
             AccessibilityAssert(actual.accessibility!!).block()
+            return this
+        }
+
+        fun hasNoAccessibility(): ViewUpdateEventViewAssert {
+            assertThat(actual.accessibility)
+                .overridingErrorMessage("Expected view.accessibility to be null but was <%s>", actual.accessibility)
+                .isNull()
             return this
         }
     }
