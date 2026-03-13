@@ -13,7 +13,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
-import org.gradle.process.internal.ExecException
+import org.gradle.process.ProcessExecutionException
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
@@ -92,7 +92,7 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
                 standardOutput = outputStream
                 errorOutput = errorStream
             }.assertNormalExitValue()
-        } catch (e: ExecException) {
+        } catch (e: ProcessExecutionException) {
             logger.error(errorStream.toString(Charsets.UTF_8))
             throw e
         }
