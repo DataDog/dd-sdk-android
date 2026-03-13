@@ -95,7 +95,7 @@ bool copyString(const std::string &str, char *ptr, size_t max_size) {
     size_t str_size = str.size();
     size_t copy_size = std::min(str_size, max_size - 1);
     memcpy(ptr, str.data(), copy_size);
-    ptr[str.size()] = '\0';
+    ptr[copy_size] = '\0';
     return copy_size == str_size;
 }
 
@@ -119,7 +119,3 @@ bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size
     }
     return copyString(backtrace, backtrace_ptr, max_size);
 }
-
-
-
-

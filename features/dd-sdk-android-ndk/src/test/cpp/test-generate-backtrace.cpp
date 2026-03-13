@@ -7,6 +7,8 @@
 #include "greatest/greatest.h"
 #include "utils/backtrace-handler.h"
 
+extern bool copyString(const std::string &str, char *ptr, size_t max_size);
+
 TEST test_generate_backtrace(void) {
     char backtrace[max_stack_size];
     const bool was_successful = generate_backtrace(backtrace, 0, max_stack_size);
@@ -55,10 +57,25 @@ TEST test_generate_backtrace_will_return_truncated_string_if_size_is_exceeded(vo
             PASS();
 }
 
+TEST test_copy_string_will_null_terminate_within_bounds_when_truncated(void) {
+    const std::string source = "abcdef";
+    char destination[4] = {'x', 'x', 'x', 'z'};
+
+    const bool was_copied = copyString(source, destination, sizeof(destination));
+
+            ASSERT_FALSE(was_copied);
+            ASSERT_EQ(destination[0], 'a');
+            ASSERT_EQ(destination[1], 'b');
+            ASSERT_EQ(destination[2], 'c');
+            ASSERT_EQ(destination[3], '\0');
+            PASS();
+}
+
 
 SUITE (backtrace_generation) {
             RUN_TEST(test_generate_backtrace);
             RUN_TEST(test_generate_backtrace_will_return_false_if_size_is_exceeded);
             RUN_TEST(test_generate_backtrace_will_return_truncated_string_if_size_is_exceeded);
             RUN_TEST(test_generate_backtrace_starts_from_the_given_frame_index);
+            RUN_TEST(test_copy_string_will_null_terminate_within_bounds_when_truncated);
 }
