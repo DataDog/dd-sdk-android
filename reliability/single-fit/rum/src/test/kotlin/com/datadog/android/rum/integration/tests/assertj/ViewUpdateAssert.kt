@@ -9,10 +9,11 @@ package com.datadog.android.rum.integration.tests.assertj
 import com.datadog.android.rum.model.ViewUpdateEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 class ViewUpdateAssert(
     actual: ViewUpdateEvent
-) : AbstractObjectAssert<ViewUpdateAssert, ViewUpdateEvent>(actual, ViewUpdateEvent::class.java) {
+) : AbstractObjectAssert<ViewUpdateAssert, ViewUpdateEvent>(actual, ViewUpdateAssert::class.java) {
 
     fun hasService(service: String?): ViewUpdateAssert {
         assertThat(actual.service)
@@ -275,7 +276,7 @@ class ViewUpdateAssert(
     class ViewUpdateEventViewAssert(
         actual: ViewUpdateEvent.ViewUpdateEventView
     ) : AbstractObjectAssert<ViewUpdateEventViewAssert, ViewUpdateEvent.ViewUpdateEventView>(
-        actual, ViewUpdateEvent.ViewUpdateEventView::class.java
+        actual, ViewUpdateEventViewAssert::class.java
     ) {
         fun hasId(id: String): ViewUpdateEventViewAssert {
             assertThat(actual.id)
@@ -522,6 +523,28 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasTimeSpentNotNull(): ViewUpdateEventViewAssert {
+            assertThat(actual.timeSpent)
+                .overridingErrorMessage("Expected view.timeSpent to be non-null but was null")
+                .isNotNull
+            return this
+        }
+
+        fun hasNetworkSettledTimeNotNull(): ViewUpdateEventViewAssert {
+            assertThat(actual.networkSettledTime)
+                .overridingErrorMessage("Expected view.networkSettledTime to be non-null but was null")
+                .isNotNull
+            return this
+        }
+
+        fun hasLoadingTimeCloseTo(expected: Long, offset: Offset<Long>): ViewUpdateEventViewAssert {
+            assertThat(actual.loadingTime)
+                .overridingErrorMessage("Expected view.loadingTime to be close to <%s> but was <%s>", expected, actual.loadingTime)
+                .isNotNull
+                .isCloseTo(expected, offset)
+            return this
+        }
+
         fun hasFreezeRate(freezeRate: Number?): ViewUpdateEventViewAssert {
             assertThat(actual.freezeRate)
                 .overridingErrorMessage("Expected view.freezeRate to be <%s> but was <%s>", freezeRate, actual.freezeRate)
@@ -651,7 +674,7 @@ class ViewUpdateAssert(
     class ViewUpdateEventSessionAssert(
         actual: ViewUpdateEvent.ViewUpdateEventSession
     ) : AbstractObjectAssert<ViewUpdateEventSessionAssert, ViewUpdateEvent.ViewUpdateEventSession>(
-        actual, ViewUpdateEvent.ViewUpdateEventSession::class.java
+        actual, ViewUpdateEventSessionAssert::class.java
     ) {
         fun hasId(id: String): ViewUpdateEventSessionAssert {
             assertThat(actual.id)
@@ -692,7 +715,7 @@ class ViewUpdateAssert(
     class ApplicationAssert(
         actual: ViewUpdateEvent.Application
     ) : AbstractObjectAssert<ApplicationAssert, ViewUpdateEvent.Application>(
-        actual, ViewUpdateEvent.Application::class.java
+        actual, ApplicationAssert::class.java
     ) {
         fun hasId(id: String): ApplicationAssert {
             assertThat(actual.id)
@@ -712,7 +735,7 @@ class ViewUpdateAssert(
     class DdAssert(
         actual: ViewUpdateEvent.Dd
     ) : AbstractObjectAssert<DdAssert, ViewUpdateEvent.Dd>(
-        actual, ViewUpdateEvent.Dd::class.java
+        actual, DdAssert::class.java
     ) {
         fun hasDocumentVersion(documentVersion: Long): DdAssert {
             assertThat(actual.documentVersion)
@@ -762,7 +785,7 @@ class ViewUpdateAssert(
     class ContainerAssert(
         actual: ViewUpdateEvent.Container
     ) : AbstractObjectAssert<ContainerAssert, ViewUpdateEvent.Container>(
-        actual, ViewUpdateEvent.Container::class.java
+        actual, ContainerAssert::class.java
     ) {
         fun hasSource(source: ViewUpdateEvent.ViewUpdateEventSource): ContainerAssert {
             assertThat(actual.source)
@@ -780,7 +803,7 @@ class ViewUpdateAssert(
     class ContainerViewAssert(
         actual: ViewUpdateEvent.ContainerView
     ) : AbstractObjectAssert<ContainerViewAssert, ViewUpdateEvent.ContainerView>(
-        actual, ViewUpdateEvent.ContainerView::class.java
+        actual, ContainerViewAssert::class.java
     ) {
         fun hasId(id: String): ContainerViewAssert {
             assertThat(actual.id)
@@ -793,7 +816,7 @@ class ViewUpdateAssert(
     class FeatureFlagsAssert(
         actual: ViewUpdateEvent.FeatureFlags
     ) : AbstractObjectAssert<FeatureFlagsAssert, ViewUpdateEvent.FeatureFlags>(
-        actual, ViewUpdateEvent.FeatureFlags::class.java
+        actual, FeatureFlagsAssert::class.java
     ) {
         fun hasAdditionalProperties(additionalProperties: Map<String, Any?>): FeatureFlagsAssert {
             assertThat(actual.additionalProperties)
@@ -813,7 +836,7 @@ class ViewUpdateAssert(
     class PrivacyAssert(
         actual: ViewUpdateEvent.Privacy
     ) : AbstractObjectAssert<PrivacyAssert, ViewUpdateEvent.Privacy>(
-        actual, ViewUpdateEvent.Privacy::class.java
+        actual, PrivacyAssert::class.java
     ) {
         fun hasReplayLevel(replayLevel: ViewUpdateEvent.ReplayLevel): PrivacyAssert {
             assertThat(actual.replayLevel)
@@ -826,7 +849,7 @@ class ViewUpdateAssert(
     class DisplayAssert(
         actual: ViewUpdateEvent.Display
     ) : AbstractObjectAssert<DisplayAssert, ViewUpdateEvent.Display>(
-        actual, ViewUpdateEvent.Display::class.java
+        actual, DisplayAssert::class.java
     ) {
         fun scroll(block: ScrollAssert.() -> Unit): DisplayAssert {
             assertThat(actual.scroll)
@@ -848,7 +871,7 @@ class ViewUpdateAssert(
     class ScrollAssert(
         actual: ViewUpdateEvent.Scroll
     ) : AbstractObjectAssert<ScrollAssert, ViewUpdateEvent.Scroll>(
-        actual, ViewUpdateEvent.Scroll::class.java
+        actual, ScrollAssert::class.java
     ) {
         fun hasMaxDepth(maxDepth: Number): ScrollAssert {
             assertThat(actual.maxDepth)
@@ -882,7 +905,7 @@ class ViewUpdateAssert(
     class ViewportAssert(
         actual: ViewUpdateEvent.Viewport
     ) : AbstractObjectAssert<ViewportAssert, ViewUpdateEvent.Viewport>(
-        actual, ViewUpdateEvent.Viewport::class.java
+        actual, ViewportAssert::class.java
     ) {
         fun hasWidth(width: Number): ViewportAssert {
             assertThat(actual.width)
@@ -902,7 +925,7 @@ class ViewUpdateAssert(
     class UsrAssert(
         actual: ViewUpdateEvent.Usr
     ) : AbstractObjectAssert<UsrAssert, ViewUpdateEvent.Usr>(
-        actual, ViewUpdateEvent.Usr::class.java
+        actual, UsrAssert::class.java
     ) {
         fun hasId(id: String?): UsrAssert {
             assertThat(actual.id)
@@ -943,7 +966,7 @@ class ViewUpdateAssert(
     class AccountAssert(
         actual: ViewUpdateEvent.Account
     ) : AbstractObjectAssert<AccountAssert, ViewUpdateEvent.Account>(
-        actual, ViewUpdateEvent.Account::class.java
+        actual, AccountAssert::class.java
     ) {
         fun hasId(id: String): AccountAssert {
             assertThat(actual.id)
@@ -970,7 +993,7 @@ class ViewUpdateAssert(
     class ConnectivityAssert(
         actual: ViewUpdateEvent.Connectivity
     ) : AbstractObjectAssert<ConnectivityAssert, ViewUpdateEvent.Connectivity>(
-        actual, ViewUpdateEvent.Connectivity::class.java
+        actual, ConnectivityAssert::class.java
     ) {
         fun hasStatus(status: ViewUpdateEvent.Status): ConnectivityAssert {
             assertThat(actual.status)
@@ -1005,7 +1028,7 @@ class ViewUpdateAssert(
     class CellularAssert(
         actual: ViewUpdateEvent.Cellular
     ) : AbstractObjectAssert<CellularAssert, ViewUpdateEvent.Cellular>(
-        actual, ViewUpdateEvent.Cellular::class.java
+        actual, CellularAssert::class.java
     ) {
         fun hasTechnology(technology: String?): CellularAssert {
             assertThat(actual.technology)
@@ -1025,7 +1048,7 @@ class ViewUpdateAssert(
     class SyntheticsAssert(
         actual: ViewUpdateEvent.Synthetics
     ) : AbstractObjectAssert<SyntheticsAssert, ViewUpdateEvent.Synthetics>(
-        actual, ViewUpdateEvent.Synthetics::class.java
+        actual, SyntheticsAssert::class.java
     ) {
         fun hasTestId(testId: String): SyntheticsAssert {
             assertThat(actual.testId)
@@ -1052,7 +1075,7 @@ class ViewUpdateAssert(
     class CiTestAssert(
         actual: ViewUpdateEvent.CiTest
     ) : AbstractObjectAssert<CiTestAssert, ViewUpdateEvent.CiTest>(
-        actual, ViewUpdateEvent.CiTest::class.java
+        actual, CiTestAssert::class.java
     ) {
         fun hasTestExecutionId(testExecutionId: String): CiTestAssert {
             assertThat(actual.testExecutionId)
@@ -1065,7 +1088,7 @@ class ViewUpdateAssert(
     class OsAssert(
         actual: ViewUpdateEvent.Os
     ) : AbstractObjectAssert<OsAssert, ViewUpdateEvent.Os>(
-        actual, ViewUpdateEvent.Os::class.java
+        actual, OsAssert::class.java
     ) {
         fun hasName(name: String): OsAssert {
             assertThat(actual.name)
@@ -1099,7 +1122,7 @@ class ViewUpdateAssert(
     class DeviceAssert(
         actual: ViewUpdateEvent.Device
     ) : AbstractObjectAssert<DeviceAssert, ViewUpdateEvent.Device>(
-        actual, ViewUpdateEvent.Device::class.java
+        actual, DeviceAssert::class.java
     ) {
         fun hasType(type: ViewUpdateEvent.DeviceType?): DeviceAssert {
             assertThat(actual.type)
@@ -1203,7 +1226,7 @@ class ViewUpdateAssert(
     class DdSessionAssert(
         actual: ViewUpdateEvent.DdSession
     ) : AbstractObjectAssert<DdSessionAssert, ViewUpdateEvent.DdSession>(
-        actual, ViewUpdateEvent.DdSession::class.java
+        actual, DdSessionAssert::class.java
     ) {
         fun hasPlan(plan: ViewUpdateEvent.Plan?): DdSessionAssert {
             assertThat(actual.plan)
@@ -1223,7 +1246,7 @@ class ViewUpdateAssert(
     class ConfigurationAssert(
         actual: ViewUpdateEvent.Configuration
     ) : AbstractObjectAssert<ConfigurationAssert, ViewUpdateEvent.Configuration>(
-        actual, ViewUpdateEvent.Configuration::class.java
+        actual, ConfigurationAssert::class.java
     ) {
         fun hasSessionSampleRate(sessionSampleRate: Number): ConfigurationAssert {
             assertThat(actual.sessionSampleRate)
@@ -1257,7 +1280,7 @@ class ViewUpdateAssert(
     class CustomTimingsAssert(
         actual: ViewUpdateEvent.CustomTimings
     ) : AbstractObjectAssert<CustomTimingsAssert, ViewUpdateEvent.CustomTimings>(
-        actual, ViewUpdateEvent.CustomTimings::class.java
+        actual, CustomTimingsAssert::class.java
     ) {
         fun hasAdditionalProperties(additionalProperties: Map<String, Long>): CustomTimingsAssert {
             assertThat(actual.additionalProperties)
@@ -1277,7 +1300,7 @@ class ViewUpdateAssert(
     class ActionAssert(
         actual: ViewUpdateEvent.Action
     ) : AbstractObjectAssert<ActionAssert, ViewUpdateEvent.Action>(
-        actual, ViewUpdateEvent.Action::class.java
+        actual, ActionAssert::class.java
     ) {
         fun hasCount(count: Long): ActionAssert {
             assertThat(actual.count)
@@ -1290,7 +1313,7 @@ class ViewUpdateAssert(
     class ErrorAssert(
         actual: ViewUpdateEvent.Error
     ) : AbstractObjectAssert<ErrorAssert, ViewUpdateEvent.Error>(
-        actual, ViewUpdateEvent.Error::class.java
+        actual, ErrorAssert::class.java
     ) {
         fun hasCount(count: Long): ErrorAssert {
             assertThat(actual.count)
@@ -1303,7 +1326,7 @@ class ViewUpdateAssert(
     class CrashAssert(
         actual: ViewUpdateEvent.Crash
     ) : AbstractObjectAssert<CrashAssert, ViewUpdateEvent.Crash>(
-        actual, ViewUpdateEvent.Crash::class.java
+        actual, CrashAssert::class.java
     ) {
         fun hasCount(count: Long): CrashAssert {
             assertThat(actual.count)
@@ -1316,7 +1339,7 @@ class ViewUpdateAssert(
     class LongTaskAssert(
         actual: ViewUpdateEvent.LongTask
     ) : AbstractObjectAssert<LongTaskAssert, ViewUpdateEvent.LongTask>(
-        actual, ViewUpdateEvent.LongTask::class.java
+        actual, LongTaskAssert::class.java
     ) {
         fun hasCount(count: Long): LongTaskAssert {
             assertThat(actual.count)
@@ -1329,7 +1352,7 @@ class ViewUpdateAssert(
     class FrozenFrameAssert(
         actual: ViewUpdateEvent.FrozenFrame
     ) : AbstractObjectAssert<FrozenFrameAssert, ViewUpdateEvent.FrozenFrame>(
-        actual, ViewUpdateEvent.FrozenFrame::class.java
+        actual, FrozenFrameAssert::class.java
     ) {
         fun hasCount(count: Long): FrozenFrameAssert {
             assertThat(actual.count)
@@ -1342,7 +1365,7 @@ class ViewUpdateAssert(
     class ResourceAssert(
         actual: ViewUpdateEvent.Resource
     ) : AbstractObjectAssert<ResourceAssert, ViewUpdateEvent.Resource>(
-        actual, ViewUpdateEvent.Resource::class.java
+        actual, ResourceAssert::class.java
     ) {
         fun hasCount(count: Long): ResourceAssert {
             assertThat(actual.count)
@@ -1355,7 +1378,7 @@ class ViewUpdateAssert(
     class FrustrationAssert(
         actual: ViewUpdateEvent.Frustration
     ) : AbstractObjectAssert<FrustrationAssert, ViewUpdateEvent.Frustration>(
-        actual, ViewUpdateEvent.Frustration::class.java
+        actual, FrustrationAssert::class.java
     ) {
         fun hasCount(count: Long?): FrustrationAssert {
             assertThat(actual.count)
@@ -1368,7 +1391,7 @@ class ViewUpdateAssert(
     class FlutterBuildTimeAssert(
         actual: ViewUpdateEvent.FlutterBuildTime
     ) : AbstractObjectAssert<FlutterBuildTimeAssert, ViewUpdateEvent.FlutterBuildTime>(
-        actual, ViewUpdateEvent.FlutterBuildTime::class.java
+        actual, FlutterBuildTimeAssert::class.java
     ) {
         fun hasMin(min: Number): FlutterBuildTimeAssert {
             assertThat(actual.min)
@@ -1402,7 +1425,7 @@ class ViewUpdateAssert(
     class PerformanceAssert(
         actual: ViewUpdateEvent.Performance
     ) : AbstractObjectAssert<PerformanceAssert, ViewUpdateEvent.Performance>(
-        actual, ViewUpdateEvent.Performance::class.java
+        actual, PerformanceAssert::class.java
     ) {
         fun cls(block: ClsAssert.() -> Unit): PerformanceAssert {
             assertThat(actual.cls)
@@ -1456,7 +1479,7 @@ class ViewUpdateAssert(
     class ClsAssert(
         actual: ViewUpdateEvent.Cls
     ) : AbstractObjectAssert<ClsAssert, ViewUpdateEvent.Cls>(
-        actual, ViewUpdateEvent.Cls::class.java
+        actual, ClsAssert::class.java
     ) {
         fun hasScore(score: Number): ClsAssert {
             assertThat(actual.score)
@@ -1499,7 +1522,7 @@ class ViewUpdateAssert(
     class PreviousRectAssert(
         actual: ViewUpdateEvent.PreviousRect
     ) : AbstractObjectAssert<PreviousRectAssert, ViewUpdateEvent.PreviousRect>(
-        actual, ViewUpdateEvent.PreviousRect::class.java
+        actual, PreviousRectAssert::class.java
     ) {
         fun hasX(x: Number): PreviousRectAssert {
             assertThat(actual.x)
@@ -1533,7 +1556,7 @@ class ViewUpdateAssert(
     class FcpAssert(
         actual: ViewUpdateEvent.Fcp
     ) : AbstractObjectAssert<FcpAssert, ViewUpdateEvent.Fcp>(
-        actual, ViewUpdateEvent.Fcp::class.java
+        actual, FcpAssert::class.java
     ) {
         fun hasTimestamp(timestamp: Long): FcpAssert {
             assertThat(actual.timestamp)
@@ -1546,7 +1569,7 @@ class ViewUpdateAssert(
     class FidAssert(
         actual: ViewUpdateEvent.Fid
     ) : AbstractObjectAssert<FidAssert, ViewUpdateEvent.Fid>(
-        actual, ViewUpdateEvent.Fid::class.java
+        actual, FidAssert::class.java
     ) {
         fun hasDuration(duration: Long): FidAssert {
             assertThat(actual.duration)
@@ -1573,7 +1596,7 @@ class ViewUpdateAssert(
     class InpAssert(
         actual: ViewUpdateEvent.Inp
     ) : AbstractObjectAssert<InpAssert, ViewUpdateEvent.Inp>(
-        actual, ViewUpdateEvent.Inp::class.java
+        actual, InpAssert::class.java
     ) {
         fun hasDuration(duration: Long): InpAssert {
             assertThat(actual.duration)
@@ -1608,7 +1631,7 @@ class ViewUpdateAssert(
     class InpSubPartsAssert(
         actual: ViewUpdateEvent.InpSubParts
     ) : AbstractObjectAssert<InpSubPartsAssert, ViewUpdateEvent.InpSubParts>(
-        actual, ViewUpdateEvent.InpSubParts::class.java
+        actual, InpSubPartsAssert::class.java
     ) {
         fun hasInputDelay(inputDelay: Long): InpSubPartsAssert {
             assertThat(actual.inputDelay)
@@ -1635,7 +1658,7 @@ class ViewUpdateAssert(
     class LcpAssert(
         actual: ViewUpdateEvent.Lcp
     ) : AbstractObjectAssert<LcpAssert, ViewUpdateEvent.Lcp>(
-        actual, ViewUpdateEvent.Lcp::class.java
+        actual, LcpAssert::class.java
     ) {
         fun hasTimestamp(timestamp: Long): LcpAssert {
             assertThat(actual.timestamp)
@@ -1670,7 +1693,7 @@ class ViewUpdateAssert(
     class LcpSubPartsAssert(
         actual: ViewUpdateEvent.LcpSubParts
     ) : AbstractObjectAssert<LcpSubPartsAssert, ViewUpdateEvent.LcpSubParts>(
-        actual, ViewUpdateEvent.LcpSubParts::class.java
+        actual, LcpSubPartsAssert::class.java
     ) {
         fun hasLoadDelay(loadDelay: Long): LcpSubPartsAssert {
             assertThat(actual.loadDelay)
@@ -1697,7 +1720,7 @@ class ViewUpdateAssert(
     class FbcAssert(
         actual: ViewUpdateEvent.Fbc
     ) : AbstractObjectAssert<FbcAssert, ViewUpdateEvent.Fbc>(
-        actual, ViewUpdateEvent.Fbc::class.java
+        actual, FbcAssert::class.java
     ) {
         fun hasTimestamp(timestamp: Long): FbcAssert {
             assertThat(actual.timestamp)
@@ -1710,7 +1733,7 @@ class ViewUpdateAssert(
     class AccessibilityAssert(
         actual: ViewUpdateEvent.Accessibility
     ) : AbstractObjectAssert<AccessibilityAssert, ViewUpdateEvent.Accessibility>(
-        actual, ViewUpdateEvent.Accessibility::class.java
+        actual, AccessibilityAssert::class.java
     ) {
         fun hasTextSize(textSize: String?): AccessibilityAssert {
             assertThat(actual.textSize)

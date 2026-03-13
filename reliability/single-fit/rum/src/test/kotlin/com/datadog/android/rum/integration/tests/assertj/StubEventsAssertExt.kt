@@ -25,3 +25,11 @@ fun StubEventsAssert.hasRumViewUpdateEvent(index: Int, expected: ViewUpdateEvent
     }
     return this
 }
+
+fun StubEventsAssert.hasRumViewUpdateEvent(index: Int, assertion: ViewUpdateAssert.() -> Unit): StubEventsAssert {
+    hasJsonObject(index) { jsonObject ->
+        val actual = ViewUpdateEvent.fromJsonObject(jsonObject)
+        ViewUpdateAssert.assertThat(actual).assertion()
+    }
+    return this
+}

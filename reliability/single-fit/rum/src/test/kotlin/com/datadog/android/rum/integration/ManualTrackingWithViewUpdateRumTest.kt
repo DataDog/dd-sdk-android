@@ -36,7 +36,6 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -114,7 +113,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -128,25 +126,18 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewIsActive(true)
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = ViewUpdateEvent(
-                    date = u1.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u1.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = viewKey,
-                        timeSpent = u1.view.timeSpent,
-                        isActive = false
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasIsActive(false)
+                }
+            }
     }
 
     @RepeatedTest(16)
@@ -165,7 +156,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -179,27 +169,21 @@ class ManualTrackingWithViewUpdateRumTest {
                 doesNotHaveField("feature_flag")
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = ViewUpdateEvent(
-                    date = u1.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u1.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = viewKey,
-                        timeSpent = u1.view.timeSpent
-                    ),
-                    featureFlags = ViewUpdateEvent.FeatureFlags(
-                        additionalProperties = mutableMapOf(ffKey to JsonPrimitive(ffValue) as Any?)
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                }
+                featureFlags {
+                    containsProperty(ffKey, JsonPrimitive(ffValue))
+                }
+            }
     }
 
     @RepeatedTest(16)
@@ -220,8 +204,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
@@ -245,44 +227,32 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(viewName)
                 hasActionName(actionName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = ViewUpdateEvent(
-                    date = u2.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u2.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        timeSpent = u2.view.timeSpent,
-                        action = ViewUpdateEvent.Action(count = 1)
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = ViewUpdateEvent(
-                    date = u3.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u3.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 4),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        timeSpent = u3.view.timeSpent,
-                        isActive = false
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                }
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                }
+            }
     }
 
     @RepeatedTest(16)
@@ -303,8 +273,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
@@ -328,44 +296,32 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = ViewUpdateEvent(
-                    date = u2.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u2.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        timeSpent = u2.view.timeSpent,
-                        error = ViewUpdateEvent.Error(count = 1)
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = ViewUpdateEvent(
-                    date = u3.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u3.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 4),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        timeSpent = u3.view.timeSpent,
-                        isActive = false
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    error { hasCount(1) }
+                }
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                }
+            }
     }
 
     @RepeatedTest(16)
@@ -389,8 +345,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
@@ -415,45 +369,33 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasResourceUrl(resourceUrl.toString())
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = ViewUpdateEvent(
-                    date = u2.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u2.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = key,
-                        timeSpent = u2.view.timeSpent,
-                        networkSettledTime = u2.view.networkSettledTime,
-                        resource = ViewUpdateEvent.Resource(count = 1)
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = ViewUpdateEvent(
-                    date = u3.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u3.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 4),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = key,
-                        timeSpent = u3.view.timeSpent,
-                        isActive = false
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    resource { hasCount(1) }
+                }
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                }
+            }
     }
 
     @RepeatedTest(16)
@@ -479,8 +421,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
@@ -505,45 +445,33 @@ class ManualTrackingWithViewUpdateRumTest {
                 hasViewName(name)
                 hasResourceUrl(resourceUrl.toString())
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = ViewUpdateEvent(
-                    date = u2.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u2.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = key,
-                        timeSpent = u2.view.timeSpent,
-                        networkSettledTime = u2.view.networkSettledTime,
-                        resource = ViewUpdateEvent.Resource(count = 1)
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = ViewUpdateEvent(
-                    date = u3.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u3.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 4),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = key,
-                        timeSpent = u3.view.timeSpent,
-                        isActive = false
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    resource { hasCount(1) }
+                }
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                }
+            }
     }
 
     // endregion
@@ -568,7 +496,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -583,28 +510,19 @@ class ManualTrackingWithViewUpdateRumTest {
                 doesNotHaveViewLoadingTime()
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = ViewUpdateEvent(
-                    date = u1.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u1.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = key,
-                        timeSpent = u1.view.timeSpent,
-                        loadingTime = u1.view.loadingTime
-                    )
-                )
-            )
-        assertThat(u1.view.loadingTime)
-            .isNotNull()
-            .isCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                }
+            }
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -624,7 +542,6 @@ class ManualTrackingWithViewUpdateRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -639,25 +556,19 @@ class ManualTrackingWithViewUpdateRumTest {
                 doesNotHaveViewLoadingTime()
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = ViewUpdateEvent(
-                    date = u1.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u1.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = key,
-                        timeSpent = u1.view.timeSpent,
-                        isActive = false
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasIsActive(false)
+                    hasLoadingTime(null)
+                }
+            }
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -681,8 +592,6 @@ class ManualTrackingWithViewUpdateRumTest {
         val expectedFirstViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
         val expectedSecondViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
         assertThat(eventsWritten)
             .hasSize(3)
             .hasRumEvent(index = 0) {
@@ -697,50 +606,32 @@ class ManualTrackingWithViewUpdateRumTest {
                 doesNotHaveViewLoadingTime()
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = ViewUpdateEvent(
-                    date = u1.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u1.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = key,
-                        timeSpent = u1.view.timeSpent,
-                        loadingTime = u1.view.loadingTime
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = ViewUpdateEvent(
-                    date = u2.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u2.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 4),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = key,
-                        timeSpent = u2.view.timeSpent,
-                        loadingTime = u2.view.loadingTime
-                    )
-                )
-            )
-        assertThat(u1.view.loadingTime)
-            .isNotNull()
-            .isCloseTo(expectedFirstViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
-        assertThat(u2.view.loadingTime)
-            .isNotNull()
-            .isCloseTo(expectedSecondViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedFirstViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                }
+            }
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedSecondViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                }
+            }
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -763,7 +654,6 @@ class ManualTrackingWithViewUpdateRumTest {
         // Then
         val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -778,28 +668,19 @@ class ManualTrackingWithViewUpdateRumTest {
                 doesNotHaveViewLoadingTime()
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = ViewUpdateEvent(
-                    date = u1.date,
-                    application = ViewUpdateEvent.Application(id = fakeApplicationId),
-                    session = ViewUpdateEvent.ViewUpdateEventSession(
-                        id = u1.session.id,
-                        type = ViewUpdateEvent.ViewUpdateEventSessionType.USER,
-                        isActive = null
-                    ),
-                    dd = ViewUpdateEvent.Dd(documentVersion = 3),
-                    view = ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = key,
-                        timeSpent = u1.view.timeSpent,
-                        loadingTime = u1.view.loadingTime
-                    )
-                )
-            )
-        assertThat(u1.view.loadingTime)
-            .isNotNull()
-            .isCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                }
+            }
     }
 
     @Test
