@@ -8,16 +8,15 @@
 
 #include <jni.h>
 #include <string>
-#include <stdexcept>
 
 namespace stringutils {
 
     std::string copy_to_string(JNIEnv *env, jstring from) {
         if (from == nullptr) {
-            return std::string();
+            return {};
         }
 
-        const char *raw_str = env->GetStringUTFChars(from, 0);
+        const char *raw_str = env->GetStringUTFChars(from, nullptr);
 
         std::string result(raw_str);
 
