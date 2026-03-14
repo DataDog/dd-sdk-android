@@ -11,17 +11,13 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
-import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
-import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -89,7 +85,6 @@ class ManualTrackingRumTest {
         val result = GlobalRumMonitor.get(stubSdkCore)
 
         // Then
-        // We use reflection because that class is marked internal
         val classDatadogRum = Class.forName("com.datadog.android.rum.internal.monitor.DatadogRumMonitor")
         assertThat(result).isInstanceOf(classDatadogRum)
     }
@@ -104,7 +99,7 @@ class ManualTrackingRumTest {
         @StringForgery viewName: String
     ) {
         // When
-        GlobalRumMonitor.get(stubSdkCore).startView(viewKey, viewName)
+        stubSdkCore.runStartView(viewKey, viewName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -126,12 +121,8 @@ class ManualTrackingRumTest {
         @StringForgery viewKey: String,
         @StringForgery viewName: String
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        rumMonitor.startView(viewKey, viewName)
-        rumMonitor.stopView(viewKey)
+        stubSdkCore.runStartViewAndStop(viewKey, viewName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -168,16 +159,11 @@ class ManualTrackingRumTest {
         @StringForgery ffKey: String,
         @StringForgery ffValue: String
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        rumMonitor.startView(viewKey, viewName)
-        rumMonitor.addFeatureFlagEvaluation(ffKey, ffValue)
+        stubSdkCore.runStartViewAndAddFeatureFlag(viewKey, viewName, ffKey, ffValue)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        print(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -210,22 +196,14 @@ class ManualTrackingRumTest {
         @StringForgery viewName: String,
         @StringForgery actionName: String
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        rumMonitor.startView(viewKey, viewName)
-        rumMonitor.addAction(RumActionType.CUSTOM, actionName)
-        stubSdkCore.advanceTimeBy(100)
-        // Used to trigger the action event
-        rumMonitor.stopView(viewKey)
+        stubSdkCore.runStartViewWithActionAndStop(viewKey, viewName, actionName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -237,7 +215,6 @@ class ManualTrackingRumTest {
                 hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -248,7 +225,6 @@ class ManualTrackingRumTest {
                 hasActionName(actionName)
             }
             .hasRumEvent(index = 2) {
-                // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -261,7 +237,6 @@ class ManualTrackingRumTest {
                 hasDocumentVersion(3)
             }
             .hasRumEvent(index = 3) {
-                // View updated with FF
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -282,20 +257,14 @@ class ManualTrackingRumTest {
         @Forgery errorSource: RumErrorSource,
         @Forgery exception: Exception
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        rumMonitor.startView(viewKey, viewName)
-        rumMonitor.addError(errorMessage, errorSource, exception)
-        rumMonitor.stopView(viewKey)
+        stubSdkCore.runStartViewWithErrorAndStop(viewKey, viewName, errorMessage, errorSource, exception)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -307,7 +276,6 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -317,7 +285,6 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
             }
             .hasRumEvent(index = 2) {
-                // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -329,7 +296,6 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 3) {
-                // View updated with FF
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -349,22 +315,14 @@ class ManualTrackingRumTest {
         @IntForgery(200, 599) resourceStatus: Int,
         @LongForgery(0) resourceSize: Long
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        rumMonitor.startView(key, name)
-        rumMonitor.startResource(resourceKey, RumResourceMethod.GET, resourceUrl.toString())
-        stubSdkCore.advanceTimeBy(100)
-        rumMonitor.stopResource(resourceKey, resourceStatus, resourceSize, RumResourceKind.NATIVE)
-        rumMonitor.stopView(key)
+        stubSdkCore.runStartViewWithResourceAndStop(key, name, resourceKey, resourceUrl.toString(), resourceStatus, resourceSize)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -376,7 +334,6 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -387,7 +344,6 @@ class ManualTrackingRumTest {
                 hasResourceUrl(resourceUrl.toString())
             }
             .hasRumEvent(index = 2) {
-                // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -398,7 +354,6 @@ class ManualTrackingRumTest {
                 hasResourceCount(1)
             }
             .hasRumEvent(index = 3) {
-                // View stopped
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -419,23 +374,15 @@ class ManualTrackingRumTest {
         @IntForgery(200, 599) resourceStatus: Int,
         @LongForgery(0) resourceSize: Long
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
-        val resourceId = ResourceId(resourceKey, resourceUuid.toString())
-
         // When
-        rumMonitor.startView(key, name)
-        rumMonitor.startResource(resourceId, RumResourceMethod.GET, resourceUrl.toString())
-        stubSdkCore.advanceTimeBy(100)
-        rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE)
-        rumMonitor.stopView(key)
+        val resourceId = ResourceId(resourceKey, resourceUuid.toString())
+        stubSdkCore.runStartViewWithResourceIdAndStop(key, name, resourceId, resourceUrl.toString(), resourceStatus, resourceSize)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -447,7 +394,6 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -458,7 +404,6 @@ class ManualTrackingRumTest {
                 hasResourceUrl(resourceUrl.toString())
             }
             .hasRumEvent(index = 2) {
-                // View updated with event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -469,7 +414,6 @@ class ManualTrackingRumTest {
                 hasResourceCount(1)
             }
             .hasRumEvent(index = 3) {
-                // View stopped
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -491,21 +435,15 @@ class ManualTrackingRumTest {
         @StringForgery name: String,
         @BoolForgery overwrite: Boolean
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        rumMonitor.startView(key, name)
-
         // When
-        stubSdkCore.advanceTimeBy(100)
+        stubSdkCore.runStartViewAndAddLoadingTime(key, name, overwrite)
         val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
-        rumMonitor.addViewLoadingTime(overwrite)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -517,7 +455,6 @@ class ManualTrackingRumTest {
                 doesNotHaveViewLoadingTime()
             }
             .hasRumEvent(index = 1) {
-                // view updated with loading time
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -539,20 +476,14 @@ class ManualTrackingRumTest {
         @StringForgery name: String,
         @BoolForgery overwrite: Boolean
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        rumMonitor.startView(key, name)
-        rumMonitor.stopView(key)
-
         // When
-        rumMonitor.addViewLoadingTime(overwrite)
+        stubSdkCore.runStartViewStopAndAddLoadingTime(key, name, overwrite)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -564,7 +495,6 @@ class ManualTrackingRumTest {
                 doesNotHaveViewLoadingTime()
             }
             .hasRumEvent(index = 1) {
-                // view stopped
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -583,15 +513,8 @@ class ManualTrackingRumTest {
         @StringForgery name: String,
         @BoolForgery overwrite: Boolean
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        rumMonitor.startView(key, name)
-        stubSdkCore.advanceTimeBy(50)
-        rumMonitor.addViewLoadingTime(overwrite)
-
         // When
-        stubSdkCore.advanceTimeBy(50)
-        rumMonitor.addViewLoadingTime(true)
+        stubSdkCore.runStartViewAndOverwriteLoadingTime(key, name, overwrite)
 
         // Then
         val expectedFirstViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
@@ -600,7 +523,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(3)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -612,7 +534,6 @@ class ManualTrackingRumTest {
                 doesNotHaveViewLoadingTime()
             }
             .hasRumEvent(index = 1) {
-                // first view loading time
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -626,7 +547,6 @@ class ManualTrackingRumTest {
                 )
             }
             .hasRumEvent(index = 2) {
-                // second view loading time
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -648,15 +568,8 @@ class ManualTrackingRumTest {
         @StringForgery name: String,
         @BoolForgery overwrite: Boolean
     ) {
-        // Given
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        rumMonitor.startView(key, name)
-        stubSdkCore.advanceTimeBy(50)
-        rumMonitor.addViewLoadingTime(overwrite)
-
         // When
-        stubSdkCore.advanceTimeBy(50)
-        rumMonitor.addViewLoadingTime(false)
+        stubSdkCore.runStartViewAndNoOverwriteLoadingTime(key, name, overwrite)
 
         // Then
         val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
@@ -664,7 +577,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -676,7 +588,6 @@ class ManualTrackingRumTest {
                 doesNotHaveViewLoadingTime()
             }
             .hasRumEvent(index = 1) {
-                // first view loading time
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -704,23 +615,15 @@ class ManualTrackingRumTest {
         val userAdditionalAttributes = forge.aMap {
             Pair(this.anAlphabeticalString(), this.anAlphabeticalString())
         }
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
-        stubSdkCore.setUserInfo(
-            fakeUserId,
-            fakeUserName,
-            fakeUserEmail,
-            userAdditionalAttributes
-        )
 
         // When
-        rumMonitor.startView(key, name)
+        stubSdkCore.runSetUserInfoAndStartView(key, name, fakeUserId, fakeUserName, fakeUserEmail, userAdditionalAttributes)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(1)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -751,18 +654,15 @@ class ManualTrackingRumTest {
         val accountExtraInfo = forge.aMap {
             Pair(this.anAlphabeticalString(), this.anAlphabeticalString())
         }
-        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
-        stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, accountExtraInfo)
 
         // When
-        rumMonitor.startView(key, name)
+        stubSdkCore.runSetAccountInfoAndStartView(key, name, fakeAccountId, fakeAccountName, accountExtraInfo)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
             .hasSize(1)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
