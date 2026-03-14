@@ -7,24 +7,9 @@
 package com.datadog.android.rum.integration.tests.view_update
 
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.ExperimentalRumApi
-import com.datadog.android.rum.Rum
-import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.integration.runSetAccountInfoAndStartView
-import com.datadog.android.rum.integration.runSetUserInfoAndStartView
-import com.datadog.android.rum.integration.runStartView
-import com.datadog.android.rum.integration.runStartViewAndAddFeatureFlag
-import com.datadog.android.rum.integration.runStartViewAndAddLoadingTime
-import com.datadog.android.rum.integration.runStartViewAndNoOverwriteLoadingTime
-import com.datadog.android.rum.integration.runStartViewAndOverwriteLoadingTime
-import com.datadog.android.rum.integration.runStartViewAndStop
-import com.datadog.android.rum.integration.runStartViewStopAndAddLoadingTime
-import com.datadog.android.rum.integration.runStartViewWithActionAndStop
-import com.datadog.android.rum.integration.runStartViewWithErrorAndStop
-import com.datadog.android.rum.integration.runStartViewWithResourceAndStop
-import com.datadog.android.rum.integration.runStartViewWithResourceIdAndStop
+import com.datadog.android.rum.integration.BaseManualTrackingRumTest
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
@@ -45,7 +30,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.data.Offset
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -64,22 +48,7 @@ import java.util.concurrent.TimeUnit
 )
 @ForgeConfiguration(RumIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ManualTrackingWithViewUpdateRumTest {
-
-    private lateinit var stubSdkCore: StubSDKCore
-
-    @StringForgery
-    private lateinit var fakeApplicationId: String
-
-    @BeforeEach
-    fun `set up`(forge: Forge) {
-        stubSdkCore = StubSDKCore(forge)
-
-        val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
-            .trackNonFatalAnrs(false)
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-    }
+class ManualTrackingWithViewUpdateRumTest : BaseManualTrackingRumTest() {
 
     // region Basic Scenarios
 
@@ -89,7 +58,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @StringForgery viewName: String
     ) {
         // When
-        stubSdkCore.runStartView(viewKey, viewName)
+        runStartView(viewKey, viewName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -113,7 +82,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @StringForgery viewName: String
     ) {
         // When
-        stubSdkCore.runStartViewAndStop(viewKey, viewName)
+        runStartViewAndStop(viewKey, viewName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -179,7 +148,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @StringForgery ffValue: String
     ) {
         // When
-        stubSdkCore.runStartViewAndAddFeatureFlag(viewKey, viewName, ffKey, ffValue)
+        runStartViewAndAddFeatureFlag(viewKey, viewName, ffKey, ffValue)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -246,7 +215,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @StringForgery actionName: String
     ) {
         // When
-        stubSdkCore.runStartViewWithActionAndStop(viewKey, viewName, actionName)
+        runStartViewWithActionAndStop(viewKey, viewName, actionName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -363,7 +332,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @Forgery exception: Exception
     ) {
         // When
-        stubSdkCore.runStartViewWithErrorAndStop(viewKey, viewName, errorMessage, errorSource, exception)
+        runStartViewWithErrorAndStop(viewKey, viewName, errorMessage, errorSource, exception)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -481,7 +450,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @LongForgery(0) resourceSize: Long
     ) {
         // When
-        stubSdkCore.runStartViewWithResourceAndStop(key, name, resourceKey, resourceUrl.toString(), resourceStatus, resourceSize)
+        runStartViewWithResourceAndStop(key, name, resourceKey, resourceUrl.toString(), resourceStatus, resourceSize)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -594,7 +563,7 @@ class ManualTrackingWithViewUpdateRumTest {
     ) {
         // When
         val resourceId = ResourceId(resourceKey, resourceUuid.toString())
-        stubSdkCore.runStartViewWithResourceIdAndStop(key, name, resourceId, resourceUrl.toString(), resourceStatus, resourceSize)
+        runStartViewWithResourceIdAndStop(key, name, resourceId, resourceUrl.toString(), resourceStatus, resourceSize)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -715,7 +684,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @BoolForgery overwrite: Boolean
     ) {
         // When
-        stubSdkCore.runStartViewAndAddLoadingTime(key, name, overwrite)
+        runStartViewAndAddLoadingTime(key, name, overwrite)
         val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
@@ -783,7 +752,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @BoolForgery overwrite: Boolean
     ) {
         // When
-        stubSdkCore.runStartViewStopAndAddLoadingTime(key, name, overwrite)
+        runStartViewStopAndAddLoadingTime(key, name, overwrite)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -850,7 +819,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @BoolForgery overwrite: Boolean
     ) {
         // When
-        stubSdkCore.runStartViewAndOverwriteLoadingTime(key, name, overwrite)
+        runStartViewAndOverwriteLoadingTime(key, name, overwrite)
 
         // Then
         val expectedFirstViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
@@ -958,7 +927,7 @@ class ManualTrackingWithViewUpdateRumTest {
         @BoolForgery overwrite: Boolean
     ) {
         // When
-        stubSdkCore.runStartViewAndNoOverwriteLoadingTime(key, name, overwrite)
+        runStartViewAndNoOverwriteLoadingTime(key, name, overwrite)
 
         // Then
         val expectedViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(50)
@@ -1033,7 +1002,7 @@ class ManualTrackingWithViewUpdateRumTest {
         }
 
         // When
-        stubSdkCore.runSetUserInfoAndStartView(key, name, fakeUserId, fakeUserName, fakeUserEmail, userAdditionalAttributes)
+        runSetUserInfoAndStartView(key, name, fakeUserId, fakeUserName, fakeUserEmail, userAdditionalAttributes)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -1073,7 +1042,7 @@ class ManualTrackingWithViewUpdateRumTest {
         }
 
         // When
-        stubSdkCore.runSetAccountInfoAndStartView(key, name, fakeAccountId, fakeAccountName, accountExtraInfo)
+        runSetAccountInfoAndStartView(key, name, fakeAccountId, fakeAccountName, accountExtraInfo)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
