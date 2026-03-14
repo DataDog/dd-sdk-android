@@ -7,38 +7,27 @@
 package com.datadog.android.rum.integration
 
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.stub.StubSDKCore
-import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.rum.resource.RumResourceInputStream
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -47,26 +36,13 @@ import java.io.InputStream
 )
 @ForgeConfiguration(RumIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class RumResourceInputStreamTest {
+class RumResourceInputStreamTest : BaseRumResourceInputStreamTest() {
 
-    private lateinit var stubSdkCore: StubSDKCore
-
-    @StringForgery
-    private lateinit var fakeApplicationId: String
-
-    @BeforeEach
-    fun `set up`(forge: Forge) {
-        stubSdkCore = StubSDKCore(forge)
-        val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
-            .trackNonFatalAnrs(false)
-            .apply {
-                _RumInternalProxy.setRumViewEventWriteConfig(
-                    builder = this,
-                    config = RumViewEventWriteConfig.AlwaysFullView
-                )
-            }
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
+    override fun configureRumBuilder(builder: RumConfiguration.Builder) {
+        _RumInternalProxy.setRumViewEventWriteConfig(
+            builder = builder,
+            config = RumViewEventWriteConfig.AlwaysFullView
+        )
     }
 
     @RepeatedTest(4)
@@ -76,20 +52,11 @@ class RumResourceInputStreamTest {
         @StringForgery resourceUrl: String,
         @StringForgery data: String
     ) {
-        // Given
-        GlobalRumMonitor.get(stubSdkCore).startView(viewKey, viewName)
-        val input = data.toByteArray()
-        val inputStream = input.inputStream()
-        val rumResourceInputStream = RumResourceInputStream(inputStream, resourceUrl, stubSdkCore)
-        val outputStream = ByteArrayOutputStream(input.size)
-
         // When
-        rumResourceInputStream.use {
-            it.transferTo(outputStream)
-        }
+        val output = runResourceTransfer(viewKey, viewName, resourceUrl, data)
 
         // Then
-        assertThat(outputStream.toByteArray()).isEqualTo(input)
+        assertThat(output).isEqualTo(data.toByteArray())
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(3)
             .hasRumEvent(index = 0) {
@@ -128,19 +95,8 @@ class RumResourceInputStreamTest {
         @StringForgery resourceUrl: String,
         @Forgery error: Throwable
     ) {
-        // Given
-        GlobalRumMonitor.get(stubSdkCore).startView(viewKey, viewName)
-        val inputStream: InputStream = mock()
-        val rumResourceInputStream = RumResourceInputStream(inputStream, resourceUrl, stubSdkCore)
-        whenever(inputStream.read()) doThrow error
-
         // When
-        var forwardedError: Throwable? = null
-        try {
-            rumResourceInputStream.read()
-        } catch (e: Throwable) {
-            forwardedError = e
-        }
+        val forwardedError = runResourceReadWithError(viewKey, viewName, resourceUrl, error)
 
         // Then
         assertThat(forwardedError).isEqualTo(error)
