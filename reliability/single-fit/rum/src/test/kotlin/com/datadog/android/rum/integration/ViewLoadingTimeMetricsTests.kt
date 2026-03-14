@@ -7,15 +7,11 @@
 package com.datadog.android.rum.integration
 
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
@@ -33,13 +29,10 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.data.Offset
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -57,49 +50,13 @@ import java.util.concurrent.TimeUnit
 )
 @ForgeConfiguration(RumIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ViewLoadingTimeMetricsTests {
+class ViewLoadingTimeMetricsTests : BaseViewLoadingTimeMetricsTests() {
 
-    private lateinit var stubSdkCore: StubSDKCore
-
-    @StringForgery
-    private lateinit var fakeApplicationId: String
-
-    @StringForgery
-    private lateinit var viewKey: String
-
-    @StringForgery
-    private lateinit var viewName: String
-
-    @StringForgery
-    private lateinit var previousViewKey: String
-
-    @StringForgery
-    private lateinit var previousViewName: String
-
-    @StringForgery
-    private lateinit var resourceKey: String
-
-    @StringForgery(regex = "https://[a-z]+/[a-z]+\\.com")
-    private lateinit var resourceUrl: String
-
-    @StringForgery
-    private lateinit var lastInteractionName: String
-
-    @IntForgery(200, 599)
-    private var resourceStatus: Int = 0
-
-    @LongForgery(0)
-    var resourceSize: Long = 0L
-
-    @Forgery
-    private lateinit var rumResourceMethod: RumResourceMethod
-
-    @Forgery
-    private lateinit var rumResourceKind: RumResourceKind
-
-    @BeforeEach
-    fun `set up`(forge: Forge) {
-        stubSdkCore = StubSDKCore(forge)
+    override fun configureRumBuilder(builder: RumConfiguration.Builder) {
+        _RumInternalProxy.setRumViewEventWriteConfig(
+            builder = builder,
+            config = RumViewEventWriteConfig.AlwaysFullView
+        )
     }
 
     // region Time to network settle
@@ -1376,52 +1333,10 @@ class ViewLoadingTimeMetricsTests {
 
     // endregion
 
-    // region internals
-
-    private fun Forge.aValidLastInteractionActionType(): RumActionType {
-        return aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.CUSTOM, RumActionType.SCROLL))
-    }
-
-    private fun runSuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType): Long {
-        monitor.startView(previousViewKey, previousViewName)
-        monitor.startAction(rumActionType, lastInteractionName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopAction(rumActionType, lastInteractionName)
-        monitor.stopView(previousViewKey)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.startView(viewKey, viewName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopView(viewKey)
-        return TimeUnit.MILLISECONDS.toNanos(100)
-    }
-
-    private fun runUnsuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType) {
-        monitor.startView(previousViewKey, previousViewName)
-        monitor.startAction(rumActionType, lastInteractionName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopAction(rumActionType, lastInteractionName)
-        monitor.stopView(previousViewKey)
-        monitor.startView(viewKey, viewName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopView(viewKey)
-    }
-
-    private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)
-        .apply {
-            _RumInternalProxy.setRumViewEventWriteConfig(
-                builder = this,
-                config = RumViewEventWriteConfig.AlwaysFullView
-            )
-        }
-        .trackNonFatalAnrs(false)
-
     // endregion
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
-
-        private val TTNS_METRIC_OFFSET_IN_NANOSECONDS = Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
-        private val ITNV_METRIC_OFFSET_IN_NANOSECONDS = Offset.offset(TimeUnit.MILLISECONDS.toNanos(10))
 
         @TestConfigurationsProvider
         @JvmStatic
