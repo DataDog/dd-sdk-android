@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.integration
+package com.datadog.android.rum.integration.tests.view_update
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
@@ -85,7 +85,6 @@ class RumResourceInputStreamWithViewUpdateTest {
         // Then
         assertThat(outputStream.toByteArray()).isEqualTo(input)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
         assertThat(eventsWritten).hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -105,18 +104,42 @@ class RumResourceInputStreamWithViewUpdateTest {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        timeSpent = u2.view.timeSpent,
-                        networkSettledTime = u2.view.networkSettledTime,
-                        resource = ViewUpdateEvent.Resource(count = 1)
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(4)
@@ -143,7 +166,6 @@ class RumResourceInputStreamWithViewUpdateTest {
         // Then
         assertThat(forwardedError).isEqualTo(error)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
         assertThat(eventsWritten).hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -164,34 +186,43 @@ class RumResourceInputStreamWithViewUpdateTest {
                 hasViewName(viewName)
                 hasErrorType(error.javaClass.name)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        timeSpent = u2.view.timeSpent,
-                        networkSettledTime = u2.view.networkSettledTime,
-                        error = ViewUpdateEvent.Error(count = 1)
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    error { hasCount(1) }
+                    hasNoAction()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
-
-    private fun expectedViewUpdate(
-        actual: ViewUpdateEvent,
-        view: ViewUpdateEvent.ViewUpdateEventView
-    ) = ViewUpdateEvent(
-        date = actual.date,
-        application = ViewUpdateEvent.Application(id = fakeApplicationId),
-        session = ViewUpdateEvent.ViewUpdateEventSession(
-            id = actual.session.id,
-            type = actual.session.type,
-            isActive = null
-        ),
-        dd = actual.dd,
-        view = view
-    )
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
