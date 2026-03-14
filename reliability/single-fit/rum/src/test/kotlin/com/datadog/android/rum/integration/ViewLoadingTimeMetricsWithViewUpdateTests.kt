@@ -118,16 +118,12 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
         stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.stopView(viewKey)
-        val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -140,7 +136,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -150,31 +145,83 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(
-                    u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        resource = ViewUpdateEvent.Resource(count = 1),
-                        networkSettledTime = u2.view.networkSettledTime,
-                        timeSpent = u2.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(
-                    u3,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u3.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -196,18 +243,12 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
         stubSdkCore.advanceTimeBy(100)
         monitor.addTiming(forge.anAlphabeticalString())
         monitor.stopView(viewKey)
-        val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u4 = ViewUpdateEvent.fromJson(eventsWritten[4].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -220,7 +261,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -230,55 +270,156 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(
-                    u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        resource = ViewUpdateEvent.Resource(count = 1),
-                        networkSettledTime = u2.view.networkSettledTime,
-                        timeSpent = u2.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(
-                    u3,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        customTimings = u3.view.customTimings,
-                        timeSpent = u3.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 4,
-                expected = expectedViewUpdate(
-                    u4,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u4.view.id,
-                        url = viewKey,
-                        customTimings = u4.view.customTimings,
-                        timeSpent = u4.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(
-                    u5,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u5.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u5.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 4) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -299,16 +440,12 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
         stubSdkCore.advanceTimeBy(100)
         monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
         monitor.stopView(viewKey)
-        val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -321,7 +458,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -330,31 +466,83 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(
-                    u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        error = ViewUpdateEvent.Error(count = 1),
-                        networkSettledTime = u2.view.networkSettledTime,
-                        timeSpent = u2.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(
-                    u3,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u3.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    error { hasCount(1) }
+                    hasNoAction()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -379,11 +567,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -395,18 +581,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveNetworkSettledTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = expectedViewUpdate(
-                    u1,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u1.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -427,11 +640,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -443,18 +654,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveNetworkSettledTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = expectedViewUpdate(
-                    u1,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u1.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u1.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -476,12 +714,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -494,7 +729,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -504,30 +738,83 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl.toString())
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(
-                    u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        resource = ViewUpdateEvent.Resource(count = 1),
-                        timeSpent = u2.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(
-                    u3,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u3.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -552,12 +839,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -570,7 +854,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -580,30 +863,83 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(
-                    u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        resource = ViewUpdateEvent.Resource(count = 1),
-                        timeSpent = u2.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(
-                    u3,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u3.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -628,12 +964,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -646,7 +979,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -656,30 +988,83 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(
-                    u2,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u2.view.id,
-                        url = viewKey,
-                        resource = ViewUpdateEvent.Resource(count = 1),
-                        timeSpent = u2.view.timeSpent
-                    )
-                )
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(
-                    u3,
-                    ViewUpdateEvent.ViewUpdateEventView(
-                        id = u3.view.id,
-                        url = viewKey,
-                        isActive = false,
-                        timeSpent = u3.view.timeSpent
-                    )
-                )
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     // endregion
@@ -701,13 +1086,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -719,7 +1100,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -728,23 +1108,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -754,13 +1195,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @ParameterizedTest
@@ -778,13 +1251,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -796,7 +1265,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -805,23 +1273,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -831,13 +1360,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -857,12 +1418,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u1 = ViewUpdateEvent.fromJson(eventsWritten[1].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -873,15 +1431,46 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveInteractionToNextViewTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(
-                index = 1,
-                expected = expectedViewUpdate(u1, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u1.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u1.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 2) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -891,13 +1480,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = viewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -921,13 +1542,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -939,7 +1556,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -948,23 +1564,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -974,13 +1651,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -1004,13 +1713,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1022,7 +1727,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1031,23 +1735,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1057,13 +1822,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(10)
@@ -1081,13 +1878,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1099,7 +1892,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1108,23 +1900,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1134,13 +1987,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(2)
@@ -1169,13 +2054,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1187,7 +2068,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1196,23 +2076,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1222,13 +2163,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     @RepeatedTest(2)
@@ -1258,13 +2231,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        val u2 = ViewUpdateEvent.fromJson(eventsWritten[2].eventData)
-        val u3 = ViewUpdateEvent.fromJson(eventsWritten[3].eventData)
-        val u5 = ViewUpdateEvent.fromJson(eventsWritten[5].eventData)
         assertThat(eventsWritten)
             .hasSize(6)
             .hasRumEvent(index = 0) {
-                // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1276,7 +2245,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 doesNotHaveField("feature_flag")
             }
             .hasRumEvent(index = 1) {
-                // Action event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1285,23 +2253,84 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(
-                index = 2,
-                expected = expectedViewUpdate(u2, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u2.view.id, url = previousViewKey,
-                    action = ViewUpdateEvent.Action(count = 1),
-                    timeSpent = u2.view.timeSpent
-                ))
-            )
-            .hasRumViewUpdateEvent(
-                index = 3,
-                expected = expectedViewUpdate(u3, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u3.view.id, url = previousViewKey,
-                    isActive = false, timeSpent = u3.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(previousViewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
             .hasRumEvent(index = 4) {
-                // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -1311,13 +2340,45 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(
-                index = 5,
-                expected = expectedViewUpdate(u5, ViewUpdateEvent.ViewUpdateEventView(
-                    id = u5.view.id, url = viewKey,
-                    isActive = false, timeSpent = u5.view.timeSpent
-                ))
-            )
+            .hasRumViewUpdateEvent(index = 5) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
+            }
     }
 
     // endregion
@@ -1354,21 +2415,6 @@ class ViewLoadingTimeMetricsWithViewUpdateTests {
 
     private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)
         .trackNonFatalAnrs(false)
-
-    private fun expectedViewUpdate(
-        actual: ViewUpdateEvent,
-        view: ViewUpdateEvent.ViewUpdateEventView
-    ) = ViewUpdateEvent(
-        date = actual.date,
-        application = ViewUpdateEvent.Application(id = fakeApplicationId),
-        session = ViewUpdateEvent.ViewUpdateEventSession(
-            id = actual.session.id,
-            type = actual.session.type,
-            isActive = null
-        ),
-        dd = actual.dd,
-        view = view
-    )
 
     // endregion
 
