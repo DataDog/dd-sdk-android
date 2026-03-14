@@ -545,6 +545,22 @@ class ViewUpdateAssert(
             return this
         }
 
+        fun hasNetworkSettledTimeCloseTo(expected: Long, offset: Offset<Long>): ViewUpdateEventViewAssert {
+            assertThat(actual.networkSettledTime)
+                .overridingErrorMessage("Expected view.networkSettledTime to be close to <%s> but was <%s>", expected, actual.networkSettledTime)
+                .isNotNull
+                .isCloseTo(expected, offset)
+            return this
+        }
+
+        fun hasInteractionToNextViewTimeCloseTo(expected: Long, offset: Offset<Long>): ViewUpdateEventViewAssert {
+            assertThat(actual.interactionToNextViewTime)
+                .overridingErrorMessage("Expected view.interactionToNextViewTime to be close to <%s> but was <%s>", expected, actual.interactionToNextViewTime)
+                .isNotNull
+                .isCloseTo(expected, offset)
+            return this
+        }
+
         fun hasFreezeRate(freezeRate: Number?): ViewUpdateEventViewAssert {
             assertThat(actual.freezeRate)
                 .overridingErrorMessage("Expected view.freezeRate to be <%s> but was <%s>", freezeRate, actual.freezeRate)
