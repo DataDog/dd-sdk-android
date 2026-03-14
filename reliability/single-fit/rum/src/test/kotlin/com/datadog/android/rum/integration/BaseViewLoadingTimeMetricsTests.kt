@@ -8,8 +8,10 @@ package com.datadog.android.rum.integration
 
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
@@ -78,9 +80,63 @@ abstract class BaseViewLoadingTimeMetricsTests {
 
     // region Shared Scenario Helpers
 
+    protected fun enableRum(configure: RumConfiguration.Builder.() -> Unit = {}): RumMonitor {
+        val builder = configurationBuilder()
+        builder.configure()
+        Rum.enable(builder.build(), stubSdkCore)
+        return GlobalRumMonitor.get(stubSdkCore)
+    }
+
     protected fun Forge.aValidLastInteractionActionType(): RumActionType {
         return aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.CUSTOM, RumActionType.SCROLL))
     }
+
+    // region TTNS Scenarios
+
+    protected fun runTtnsResourceScenario(monitor: RumMonitor) {
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
+        stubSdkCore.advanceTimeBy(100)
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
+    }
+
+    protected fun runTtnsResourceWithTimingsScenario(monitor: RumMonitor, forge: Forge) {
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
+        stubSdkCore.advanceTimeBy(100)
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.addTiming(forge.anAlphabeticalString())
+        stubSdkCore.advanceTimeBy(100)
+        monitor.addTiming(forge.anAlphabeticalString())
+        monitor.stopView(viewKey)
+    }
+
+    protected fun runTtnsResourceErrorScenario(
+        monitor: RumMonitor,
+        errorMessage: String,
+        errorSource: RumErrorSource,
+        throwable: Throwable
+    ) {
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
+        stubSdkCore.advanceTimeBy(100)
+        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
+        monitor.stopView(viewKey)
+    }
+
+    protected fun runTtnsDelayedResourceScenario(monitor: RumMonitor, delayMs: Long) {
+        monitor.startView(viewKey, viewName)
+        stubSdkCore.advanceTimeBy(delayMs)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
+        stubSdkCore.advanceTimeBy(100)
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
+    }
+
+    // endregion
+
+    // region ITNV Scenarios
 
     protected fun runSuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType): Long {
         monitor.startView(previousViewKey, previousViewName)
@@ -105,6 +161,24 @@ abstract class BaseViewLoadingTimeMetricsTests {
         stubSdkCore.advanceTimeBy(100)
         monitor.stopView(viewKey)
     }
+
+    protected fun runItnvThresholdSurpassedScenario(
+        monitor: RumMonitor,
+        rumActionType: RumActionType,
+        delayMs: Long
+    ) {
+        monitor.startView(previousViewKey, previousViewName)
+        monitor.startAction(rumActionType, lastInteractionName)
+        stubSdkCore.advanceTimeBy(100)
+        monitor.stopAction(rumActionType, lastInteractionName)
+        monitor.stopView(previousViewKey)
+        stubSdkCore.advanceTimeBy(delayMs)
+        monitor.startView(viewKey, viewName)
+        stubSdkCore.advanceTimeBy(100)
+        monitor.stopView(viewKey)
+    }
+
+    // endregion
 
     // endregion
 

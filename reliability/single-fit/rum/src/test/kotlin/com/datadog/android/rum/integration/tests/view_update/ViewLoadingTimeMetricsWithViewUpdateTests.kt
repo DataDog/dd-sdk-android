@@ -55,18 +55,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
 
     @RepeatedTest(10)
     fun `M provide the TTNS metric for each view W initial resource was stopped and sent`() {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
-        monitor.stopView(viewKey)
+        val monitor = enableRum()
+        runTtnsResourceScenario(monitor)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -177,21 +168,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M provide consistent TTNS metric for each view event W view updated multiple times`(
         forge: Forge
     ) {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
-        monitor.addTiming(forge.anAlphabeticalString())
-        stubSdkCore.advanceTimeBy(100)
-        monitor.addTiming(forge.anAlphabeticalString())
-        monitor.stopView(viewKey)
+        val monitor = enableRum()
+        runTtnsResourceWithTimingsScenario(monitor, forge)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -377,18 +356,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
         @Forgery errorSource: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
-        monitor.stopView(viewKey)
+        val monitor = enableRum()
+        runTtnsResourceErrorScenario(monitor, errorMessage, errorSource, throwable)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -500,19 +470,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
         @Forgery errorSource: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .setErrorEventMapper { null }
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
-        monitor.stopView(viewKey)
+        val monitor = enableRum { setErrorEventMapper { null } }
+        runTtnsResourceErrorScenario(monitor, errorMessage, errorSource, throwable)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -573,19 +533,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
 
     @RepeatedTest(10)
     fun `M not provide the TTNS metric W initial resource dropped through mapper`() {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .setResourceEventMapper({ null })
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
-        monitor.stopView(viewKey)
+        val monitor = enableRum { setResourceEventMapper { null } }
+        runTtnsResourceScenario(monitor)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -646,20 +596,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
 
     @RepeatedTest(10)
     fun `M not provide TTNS metric W default identifier, resource dropped`() {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        // wait for more than the default threshold in the default identifier (100ms)
-        stubSdkCore.advanceTimeBy(110)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
-        monitor.stopView(viewKey)
+        val monitor = enableRum()
+        runTtnsDelayedResourceScenario(monitor, 110)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -770,21 +709,11 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M not provide TTNS metric W default identifier, custom threshold, resource dropped`(
         @LongForgery(min = 100, max = 400) resourceIdentifierThresholdMs: Long
     ) {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .setInitialResourceIdentifier(TimeBasedInitialResourceIdentifier(resourceIdentifierThresholdMs))
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(viewKey, viewName)
-        // wait for more than the custom threshold
-        stubSdkCore.advanceTimeBy(resourceIdentifierThresholdMs + 10)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
-        monitor.stopView(viewKey)
+        val monitor = enableRum {
+            setInitialResourceIdentifier(TimeBasedInitialResourceIdentifier(resourceIdentifierThresholdMs))
+        }
+        runTtnsDelayedResourceScenario(monitor, resourceIdentifierThresholdMs + 10)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -893,23 +822,15 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
 
     @RepeatedTest(10)
     fun `M not provide TNS metric W custom identifier, not valid resource`() {
-        // Given
-        val fakeRumConfiguration = configurationBuilder()
-            .setInitialResourceIdentifier(object : InitialResourceIdentifier {
+        // When
+        val monitor = enableRum {
+            setInitialResourceIdentifier(object : InitialResourceIdentifier {
                 override fun validate(context: NetworkSettledResourceContext): Boolean {
                     return false
                 }
             })
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
-        // When
-        monitor.startView(viewKey, viewName)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
-        monitor.stopView(viewKey)
+        }
+        runTtnsResourceScenario(monitor)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -1025,12 +946,8 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M provide the ITNV metric for current view W last action on previous view was sent { valid type }`(
         validActionType: RumActionType
     ) {
-        // Given
-        val fakeRumConfiguration = configurationBuilder().build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
+        val monitor = enableRum()
         val appExpectedItnvTime = runSuccessfulItnvTestScenario(monitor, validActionType)
 
         // Then
@@ -1190,12 +1107,8 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M not provide the ITNV metric for current view W last action on previous view was sent { invalid type }`(
         invalidActionType: RumActionType
     ) {
-        // Given
-        val fakeRumConfiguration = configurationBuilder().build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
+        val monitor = enableRum()
         runSuccessfulItnvTestScenario(monitor, invalidActionType)
 
         // Then
@@ -1354,15 +1267,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M not provide the ITNV metric for current view W last action on previous view was dropped`(
         forge: Forge
     ) {
-        // Given
-        val validActionType = forge.aValidLastInteractionActionType()
-        val fakeRumConfiguration = configurationBuilder()
-            .setActionEventMapper { null }
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
+        val validActionType = forge.aValidLastInteractionActionType()
+        val monitor = enableRum { setActionEventMapper { null } }
         runSuccessfulItnvTestScenario(monitor, validActionType)
 
         // Then
@@ -1474,19 +1381,15 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M provide the ITNV metric for current view W using custom identifier, action validated`(
         forge: Forge
     ) {
-        // Given
+        // When
         val validActionType = forge.aValidLastInteractionActionType()
-        val fakeRumConfiguration = configurationBuilder()
-            .setLastInteractionIdentifier(object : LastInteractionIdentifier {
+        val monitor = enableRum {
+            setLastInteractionIdentifier(object : LastInteractionIdentifier {
                 override fun validate(context: PreviousViewLastInteractionContext): Boolean {
                     return true
                 }
             })
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
-        // When
+        }
         val appExpectedItnvTime = runSuccessfulItnvTestScenario(monitor, validActionType)
 
         // Then
@@ -1645,19 +1548,15 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M not provide the ITNV metric for current view W using custom identifier, action not validated`(
         forge: Forge
     ) {
-        // Given
+        // When
         val validActionType = forge.aValidLastInteractionActionType()
-        val fakeRumConfiguration = configurationBuilder()
-            .setLastInteractionIdentifier(object : LastInteractionIdentifier {
+        val monitor = enableRum {
+            setLastInteractionIdentifier(object : LastInteractionIdentifier {
                 override fun validate(context: PreviousViewLastInteractionContext): Boolean {
                     return false
                 }
             })
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
-        // When
+        }
         runUnsuccessfulItnvTestScenario(monitor, validActionType)
 
         // Then
@@ -1816,13 +1715,9 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M provide the ITNV metric for current view W using time based identifier, threshold respected`(
         forge: Forge
     ) {
-        // Given
+        // When
         val validActionType = forge.aValidLastInteractionActionType()
-        val fakeRumConfiguration = configurationBuilder()
-            .setLastInteractionIdentifier(TimeBasedInteractionIdentifier())
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
+        val monitor = enableRum { setLastInteractionIdentifier(TimeBasedInteractionIdentifier()) }
         val appExpectedItnvTime = runSuccessfulItnvTestScenario(monitor, validActionType)
 
         // Then
@@ -1981,25 +1876,10 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M not provide the ITNV metric for current view W using time based identifier, threshold surpassed`(
         forge: Forge
     ) {
-        // Given
-        val validActionType = forge.aValidLastInteractionActionType()
-        val fakeRumConfiguration = configurationBuilder()
-            .setLastInteractionIdentifier(TimeBasedInteractionIdentifier())
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
         // When
-        monitor.startView(previousViewKey, previousViewName)
-        monitor.startAction(validActionType, lastInteractionName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopAction(validActionType, lastInteractionName)
-        monitor.stopView(previousViewKey)
-        // Wait for more than the default threshold in the default identifier (3000ms)
-        stubSdkCore.advanceTimeBy(3010)
-        monitor.startView(viewKey, viewName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopView(viewKey)
+        val validActionType = forge.aValidLastInteractionActionType()
+        val monitor = enableRum { setLastInteractionIdentifier(TimeBasedInteractionIdentifier()) }
+        runItnvThresholdSurpassedScenario(monitor, validActionType, 3010)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -2157,26 +2037,13 @@ class ViewLoadingTimeMetricsWithViewUpdateTests : BaseViewLoadingTimeMetricsTest
     fun `M not provide the ITNV metric for current view W using time based identifier {custom threshold, failed}`(
         forge: Forge
     ) {
-        // Given
+        // When
         val customThreshold = forge.aLong(min = 300, max = 4000)
         val validActionType = forge.aValidLastInteractionActionType()
-        val fakeRumConfiguration = configurationBuilder()
-            .setLastInteractionIdentifier(TimeBasedInteractionIdentifier(customThreshold))
-            .build()
-        Rum.enable(fakeRumConfiguration, stubSdkCore)
-        val monitor = GlobalRumMonitor.get(stubSdkCore)
-
-        // When
-        monitor.startView(previousViewKey, previousViewName)
-        monitor.startAction(validActionType, lastInteractionName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopAction(validActionType, lastInteractionName)
-        monitor.stopView(previousViewKey)
-        // Wait for more than the custom threshold
-        stubSdkCore.advanceTimeBy(customThreshold + 10)
-        monitor.startView(viewKey, viewName)
-        stubSdkCore.advanceTimeBy(100)
-        monitor.stopView(viewKey)
+        val monitor = enableRum {
+            setLastInteractionIdentifier(TimeBasedInteractionIdentifier(customThreshold))
+        }
+        runItnvThresholdSurpassedScenario(monitor, validActionType, customThreshold + 10)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
