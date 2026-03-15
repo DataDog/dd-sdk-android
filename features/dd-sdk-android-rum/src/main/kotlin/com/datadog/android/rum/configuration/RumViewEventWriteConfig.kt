@@ -4,11 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain.accessibility
+package com.datadog.android.rum.configuration
 
-import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.lint.InternalApi
 
-@NoOpImplementation
-internal interface AccessibilitySnapshotManager {
-    fun getIfChanged(): AccessibilityInfo?
+@InternalApi
+sealed interface RumViewEventWriteConfig {
+    object AlwaysFullView: RumViewEventWriteConfig
+    object FullViewOnlyAtStart: RumViewEventWriteConfig
 }

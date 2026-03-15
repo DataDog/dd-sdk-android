@@ -17,14 +17,17 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
+import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -110,6 +113,7 @@ class ManualTrackingRumTest {
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
+                hasDocumentVersion(2)
             }
     }
 
@@ -138,18 +142,46 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasViewIsActive(true)
-                hasDocumentVersion(1)
-            }
-            .hasRumEvent(index = 1) {
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
-                hasViewIsActive(false)
                 hasDocumentVersion(2)
+            }
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -169,7 +201,6 @@ class ManualTrackingRumTest {
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        print(eventsWritten[1].eventData)
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
@@ -181,18 +212,48 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 doesNotHaveField("feature_flag")
-                hasDocumentVersion(1)
-            }
-            .hasRumEvent(index = 1) {
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
-                hasFeatureFlag(ffKey, ffValue)
                 hasDocumentVersion(2)
+            }
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                featureFlags {
+                    containsProperty(ffKey, JsonPrimitive(ffValue))
+                }
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -217,7 +278,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -226,10 +286,9 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasActionCount(0)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -239,30 +298,84 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionName(actionName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with event
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
-                hasActionCount(1)
-                doesNotHaveField("feature_flag")
-                hasDocumentVersion(2)
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
-            .hasRumEvent(index = 3) {
-                // View updated with FF
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasActionCount(1)
-                hasViewName(viewName)
-                hasDocumentVersion(3)
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -287,7 +400,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -297,9 +409,9 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -308,27 +420,84 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
             }
-            .hasRumEvent(index = 2) {
-                // View updated with event
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
-                hasErrorCount(1)
-                doesNotHaveField("feature_flag")
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    error { hasCount(1) }
+                    hasNoAction()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
-            .hasRumEvent(index = 3) {
-                // View updated with FF
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -356,7 +525,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -366,9 +534,9 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -378,26 +546,84 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasResourceUrl(resourceUrl.toString())
             }
-            .hasRumEvent(index = 2) {
-                // View updated with event
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                hasResourceCount(1)
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
-            .hasRumEvent(index = 3) {
-                // View stopped
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -427,7 +653,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(4)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -437,9 +662,9 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
-                // Custom event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -449,26 +674,84 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasResourceUrl(resourceUrl.toString())
             }
-            .hasRumEvent(index = 2) {
-                // View updated with event
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                hasResourceCount(1)
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasNetworkSettledTimeNotNull()
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
-            .hasRumEvent(index = 3) {
-                // View stopped
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
+            .hasRumViewUpdateEvent(index = 3) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -497,7 +780,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -507,20 +789,46 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
-            .hasRumEvent(index = 1) {
-                // view updated with loading time
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                hasViewLoadingTime(
-                    expectedViewLoadingTime,
-                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
-                )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -544,7 +852,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -554,17 +861,46 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
-            .hasRumEvent(index = 1) {
-                // view stopped
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                doesNotHaveViewLoadingTime()
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasIsActive(false)
+                    hasLoadingTime(null)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -592,7 +928,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(3)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -602,34 +937,85 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
-            .hasRumEvent(index = 1) {
-                // first view loading time
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                hasViewLoadingTime(
-                    expectedFirstViewLoadingTime,
-                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
-                )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedFirstViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
-            .hasRumEvent(index = 2) {
-                // second view loading time
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                hasViewLoadingTime(
-                    expectedSecondViewLoadingTime,
-                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
-                )
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedSecondViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -656,7 +1042,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(2)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -666,20 +1051,46 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasActionCount(0)
                 doesNotHaveViewLoadingTime()
+                hasDocumentVersion(2)
             }
-            .hasRumEvent(index = 1) {
-                // first view loading time
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(key)
-                hasViewName(name)
-                hasViewLoadingTime(
-                    expectedViewLoadingTime,
-                    offset = Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
-                )
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(key)
+                    hasTimeSpentNotNull()
+                    hasLoadingTimeCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
@@ -712,7 +1123,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(1)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -728,6 +1138,7 @@ class ManualTrackingRumTest {
                 }
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
     }
 
@@ -754,7 +1165,6 @@ class ManualTrackingRumTest {
         assertThat(eventsWritten)
             .hasSize(1)
             .hasRumEvent(index = 0) {
-                // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
                 hasSessionType("user")
@@ -769,6 +1179,7 @@ class ManualTrackingRumTest {
                 }
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
+                hasDocumentVersion(2)
             }
     }
     // endregion

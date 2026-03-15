@@ -1,0 +1,135 @@
+{
+  "data" : [ {
+    "id" : "AwAAAZzdATIikerM5QAAABhBWnpkQVRJaUFBQmN2aUMzdmJMX29yUF8AAAAkMTE5Y2RkMDEtOTc5ZS00OTJiLTk5MjItNWNiN2JjM2VkNWJkAAADHg",
+    "type" : "rum",
+    "attributes" : {
+      "service" : "com.datadog.android.core.integration",
+      "attributes" : {
+        "os" : {
+          "name" : "Android",
+          "version" : "15",
+          "version_major" : "15"
+        },
+        "build_version" : "0",
+        "session" : {
+          "is_replay_available" : false,
+          "ip" : "91.197.137.154",
+          "useragent" : "",
+          "retention_reason" : "rum_retention_filter",
+          "id" : "886e35ab-243e-4e26-b3fa-76ab709df78a",
+          "matching_retention_filter" : {
+            "name" : "Sessions",
+            "id" : "default_sessions"
+          },
+          "type" : "user",
+          "plan" : "legacy",
+          "has_full_snapshot" : false
+        },
+        "type" : "view",
+        "geo" : {
+          "continent" : "Europe",
+          "country" : "France",
+          "as" : {
+            "domain" : "mediactivegroup.com",
+            "name" : "MEDIACTIVE SAS",
+            "type" : "hosting"
+          },
+          "country_iso_code" : "FR",
+          "city" : "Paris",
+          "latitude" : 48.85341,
+          "continent_code" : "EU",
+          "country_subdivision_iso_code" : "FR-IDF",
+          "location" : [ 2.3488, 48.85341 ],
+          "country_subdivision" : "Île-de-France",
+          "longitude" : 2.3488
+        },
+        "view" : {
+          "is_active" : true,
+          "resource" : {
+            "count" : 0
+          },
+          "accessibility" : {
+            "rtl_enabled" : false,
+            "single_app_mode_enabled" : false,
+            "invert_colors_enabled" : false,
+            "text_size" : "1.0",
+            "closed_captioning_enabled" : false,
+            "screen_reader_enabled" : false
+          },
+          "frustration" : {
+            "count" : 0
+          },
+          "frozen_frame" : {
+            "count" : 0
+          },
+          "long_task" : {
+            "count" : 0
+          },
+          "error" : {
+            "count" : 0
+          },
+          "is_slow_rendered" : false,
+          "url" : "e387a388-8747-4927-b7ca-bf5eb8baa614",
+          "time_spent" : 1,
+          "crash" : {
+            "count" : 0
+          },
+          "url_path_group" : "e387a388-8747-4927-b7ca-bf5eb8baa614",
+          "name" : "RumViewUpdateTest/8de9d885-b14a-497a-a3f6-dcc917af2b07",
+          "action" : {
+            "count" : 0
+          },
+          "id" : "987f7478-bbd2-4383-8cf4-c83fc2e413b3",
+          "url_path" : "e387a388-8747-4927-b7ca-bf5eb8baa614"
+        },
+        "application" : {
+          "name" : "Sasha Gringauz test app",
+          "current_locale" : "en-US",
+          "short_name" : "sasha_gringauz_test_app",
+          "id" : "11ef939f-6d24-484b-924a-4eb2d9300190"
+        },
+        "connectivity" : {
+          "interfaces" : [ "cellular" ],
+          "status" : "connected"
+        },
+        "profiling" : {
+          "has_profile" : false
+        },
+        "usr" : {
+          "anonymous_id" : "14345a80-8cee-4657-a216-a9c3f2fa9283",
+          "id_from_anonymous" : true,
+          "id" : "14345a80-8cee-4657-a216-a9c3f2fa9283"
+        },
+        "service" : "com.datadog.android.core.integration",
+        "context" : {
+          "test_view_index" : 0.0
+        },
+        "device" : {
+          "battery_level" : 1.0,
+          "power_saving_mode" : false,
+          "is_low_end" : false,
+          "type" : "Mobile",
+          "time_zone" : "Europe/Paris",
+          "brightness_level" : 0.4,
+          "locales" : [ "en-US" ],
+          "logical_cpu_count" : 4,
+          "name" : "Google sdk_gphone16k_arm64",
+          "model" : "sdk_gphone16k_arm64",
+          "brand" : "Google",
+          "architecture" : "aarch64",
+          "total_ram" : 1998
+        },
+        "_dd" : {
+          "format_version" : 2
+        }
+      },
+      "timestamp" : "2026-03-11T13:06:09.058Z",
+      "tags" : [ "datacenter:us1", "datadog.submission_auth:client_token", "env.0:test", "env.1:prod", "env:prod", "env:test", "first_version:0", "sdk_version:3.8.0-snapshot", "service.0:com.datadog.android.core.integration", "service.1:android-sample", "service:android-sample", "service:com.datadog.android.core.integration", "source:android", "variant:debug", "version:0" ]
+    }
+  } ],
+  "meta" : {
+    "elapsed" : 97,
+    "request_id" : "pddv1ChZMMFFXbUY3OFE0eWVNZW4wLTRlbml3Ii0KHcyN4TmmRbsZIZMReJgjqK9CLNX6j5iaHFDKRc9HEgyWYU2qnFPf3vgJWvQ",
+    "status" : "done"
+  }
+}

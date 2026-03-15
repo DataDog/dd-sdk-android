@@ -13,8 +13,10 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
+import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -62,7 +64,7 @@ class ActivityViewTrackingStrategyTest {
         stubSdkCore = StubSDKCore(forge)
 
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
-            .trackNonFatalAnrs(false) // required to prevent infinite loop in tests
+            .trackNonFatalAnrs(false)
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
 
@@ -98,6 +100,7 @@ class ActivityViewTrackingStrategyTest {
                 hasType("view")
                 hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
                 hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
+                hasDocumentVersion(2)
             }
     }
 
@@ -122,16 +125,47 @@ class ActivityViewTrackingStrategyTest {
                 hasType("view")
                 hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
                 hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
+                hasViewIsActive(true)
+                hasDocumentVersion(2)
             }
-            .hasRumEvent(index = 1) {
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
-                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
-                hasViewIsActive(false)
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 

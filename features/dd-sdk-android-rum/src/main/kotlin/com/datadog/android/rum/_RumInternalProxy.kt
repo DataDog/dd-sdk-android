@@ -12,6 +12,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumConfiguration.Builder
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
@@ -137,5 +138,12 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             name: String,
             configuration: RumNetworkInstrumentationConfiguration
         ): RumNetworkInstrumentation = configuration.createInstrumentation(name)
+
+        fun setRumViewEventWriteConfig(
+            builder: Builder,
+            config: RumViewEventWriteConfig
+        ): Builder {
+            return builder.setRumViewEventWriteConfig(config = config)
+        }
     }
 }
