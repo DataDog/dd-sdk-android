@@ -32,20 +32,16 @@ internal abstract class ActivityTrackingTest :
         instrumentation.waitForIdleSync()
         waitForPendingRUMEvents()
 
-        // ignore first view event for application launch, it will be reduced
-
-        // Stop launch view
+        // app launch view stopped
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
                 docVersion = 2
             )
         )
 
-        // ignore view event for view start, it will be reduced
-
-        // one for view stop
+        // view stop
         expectedEvents.add(
-            ExpectedViewEvent(
+            ExpectedViewUpdateEvent(
                 viewUrl,
                 docVersion = 3,
                 viewArguments = expectedViewArguments
@@ -78,11 +74,9 @@ internal abstract class ActivityTrackingTest :
         // give time to view id to update
         Thread.sleep(500)
 
-        // ignore view event for loading time update, it will be reduced
-
-        // one for view stopped
+        // view stopped
         expectedEvents.add(
-            ExpectedViewEvent(
+            ExpectedViewUpdateEvent(
                 viewUrl,
                 docVersion = 3,
                 viewArguments = expectedViewArguments
