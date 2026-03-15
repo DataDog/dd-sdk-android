@@ -101,25 +101,8 @@ internal fun List<JsonObject>.verifyViewUpdateEventsMatches(
                 this.joinToString("\n") { "\t>> $it" }
         )
         .isEqualTo(expected.size)
-    expected.forEach { expectedEvent ->
-        val matchingEvent = this.find { actualEvent ->
-            val viewId = actualEvent
-                .getAsJsonObject("view")
-                .getAsJsonPrimitive("id").asString
-            val applicationId = actualEvent
-                .getAsJsonObject("application")
-                .getAsJsonPrimitive("id").asString
-            val sessionId = actualEvent
-                .getAsJsonObject("session")
-                .getAsJsonPrimitive("id").asString
-            expectedEvent.rumContext.viewId == viewId &&
-                expectedEvent.rumContext.applicationId == applicationId &&
-                expectedEvent.rumContext.sessionId == sessionId
-        }
-        checkNotNull(matchingEvent) {
-            "No matching view update event found for $expectedEvent"
-        }
-        matchingEvent.verifyEventMatches(expectedEvent)
+    this.forEachIndexed { index, event ->
+        event.verifyEventMatches(expected[index])
     }
 }
 
