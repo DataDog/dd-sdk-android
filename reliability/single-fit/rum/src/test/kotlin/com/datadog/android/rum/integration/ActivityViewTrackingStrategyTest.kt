@@ -6,24 +6,35 @@
 
 package com.datadog.android.rum.integration
 
+import android.app.Activity
+import android.app.Application
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
-import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
+import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.rum.model.ViewUpdateEvent
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -33,21 +44,49 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(RumIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ActivityViewTrackingStrategyTest : BaseActivityViewTrackingStrategyTest() {
+class ActivityViewTrackingStrategyTest {
 
-    override fun configureRumBuilder(builder: RumConfiguration.Builder) {
-        _RumInternalProxy.setRumViewEventWriteConfig(
-            builder = builder,
-            config = RumViewEventWriteConfig.AlwaysFullView
-        )
+    private lateinit var stubSdkCore: StubSDKCore
+
+    private lateinit var testedViewTrackingStrategy: ActivityViewTrackingStrategy
+
+    @Mock
+    lateinit var stubActivity: StubActivity
+
+    @Mock
+    lateinit var mockApplicationContext: Application
+
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
+    @BeforeEach
+    fun `set up`(forge: Forge) {
+        stubSdkCore = StubSDKCore(forge)
+
+        val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
+            .trackNonFatalAnrs(false)
+            .build()
+        Rum.enable(fakeRumConfiguration, stubSdkCore)
+
+        testedViewTrackingStrategy = ActivityViewTrackingStrategy(true)
+        testedViewTrackingStrategy.register(stubSdkCore, mockApplicationContext)
+        verify(mockApplicationContext).registerActivityLifecycleCallbacks(testedViewTrackingStrategy)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        testedViewTrackingStrategy.unregister(mockApplicationContext)
+        verify(mockApplicationContext).unregisterActivityLifecycleCallbacks(testedViewTrackingStrategy)
     }
 
     // region Activity Lifecycle
 
     @RepeatedTest(4)
     fun `M send RUM View W onActivityResumed()`() {
+        // Given
+
         // When
-        runOnActivityResumed()
+        testedViewTrackingStrategy.onActivityResumed(stubActivity)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -59,15 +98,20 @@ class ActivityViewTrackingStrategyTest : BaseActivityViewTrackingStrategyTest() 
                 hasSessionType("user")
                 hasSource("android")
                 hasType("view")
-                hasViewUrl("com/datadog/android/rum/integration/BaseActivityViewTrackingStrategyTest/StubActivity")
-                hasViewName("com.datadog.android.rum.integration.BaseActivityViewTrackingStrategyTest.StubActivity")
+                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
+                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
+                hasDocumentVersion(2)
             }
     }
 
     @RepeatedTest(4)
     fun `M send RUM View update W onActivityResumed() + onActivityStopped()`() {
+        // Given
+
         // When
-        runOnActivityResumedAndStopped()
+        testedViewTrackingStrategy.onActivityResumed(stubActivity)
+        testedViewTrackingStrategy.onActivityStopped(stubActivity)
+        Thread.sleep(250L)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -79,25 +123,59 @@ class ActivityViewTrackingStrategyTest : BaseActivityViewTrackingStrategyTest() 
                 hasSessionType("user")
                 hasSource("android")
                 hasType("view")
-                hasViewUrl("com/datadog/android/rum/integration/BaseActivityViewTrackingStrategyTest/StubActivity")
-                hasViewName("com.datadog.android.rum.integration.BaseActivityViewTrackingStrategyTest.StubActivity")
+                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
+                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
+                hasViewIsActive(true)
+                hasDocumentVersion(2)
             }
-            .hasRumEvent(index = 1) {
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl("com/datadog/android/rum/integration/BaseActivityViewTrackingStrategyTest/StubActivity")
-                hasViewName("com.datadog.android.rum.integration.BaseActivityViewTrackingStrategyTest.StubActivity")
-                hasViewIsActive(false)
+            .hasRumViewUpdateEvent(index = 1) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
+                    hasIsActive(false)
+                    hasNoAction()
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoFlutterBuildTime()
+                    hasNoFlutterRasterTime()
+                    hasNoJsRefreshRate()
+                    hasNoPerformance()
+                    hasNoAccessibility()
+                }
+                hasNoFeatureFlags()
+                hasNoContainer()
+                hasNoPrivacy()
+                hasNoDisplay()
+                hasNoUsr()
+                hasNoAccount()
+                hasNoConnectivity()
+                hasNoSynthetics()
+                hasNoCiTest()
+                hasNoOs()
+                hasNoDevice()
+                hasNoContext()
             }
     }
 
     @RepeatedTest(4)
     fun `M not send RUM View update W onActivityStopped() {start not tracked}`() {
+        // Given
+
         // When
-        runOnActivityStopped()
+        testedViewTrackingStrategy.onActivityStopped(stubActivity)
+        Thread.sleep(250L)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -105,6 +183,8 @@ class ActivityViewTrackingStrategyTest : BaseActivityViewTrackingStrategyTest() 
     }
 
     // endregion
+
+    class StubActivity : Activity()
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
