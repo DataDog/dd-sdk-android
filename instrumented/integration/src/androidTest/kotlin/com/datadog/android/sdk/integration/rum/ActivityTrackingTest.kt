@@ -39,7 +39,16 @@ internal abstract class ActivityTrackingTest :
             )
         )
 
-        // view stop
+        // activity view started
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 2,
+                viewArguments = expectedViewArguments
+            )
+        )
+
+        // activity view stopped
         expectedEvents.add(
             ExpectedViewUpdateEvent(
                 viewUrl,
@@ -74,7 +83,16 @@ internal abstract class ActivityTrackingTest :
         // give time to view id to update
         Thread.sleep(500)
 
-        // view stopped
+        // activity view started (after resume)
+        expectedEvents.add(
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 2,
+                viewArguments = expectedViewArguments
+            )
+        )
+
+        // activity view stopped
         expectedEvents.add(
             ExpectedViewUpdateEvent(
                 viewUrl,
