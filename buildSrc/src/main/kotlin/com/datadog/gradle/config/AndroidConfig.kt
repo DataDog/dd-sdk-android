@@ -7,7 +7,7 @@
 package com.datadog.gradle.config
 
 import com.android.build.api.dsl.CompileOptions
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -51,11 +51,6 @@ fun Project.androidLibraryConfig() {
         }
         sourceSets.named("main") {
             java.srcDir("build/generated/json2kotlin/main/kotlin")
-        }
-        libraryVariants.configureEach {
-            addJavaSourceFoldersToModel(
-                layout.buildDirectory.dir("generated/ksp/$name/kotlin").get().asFile
-            )
         }
 
         @Suppress("UnstableApiUsage")

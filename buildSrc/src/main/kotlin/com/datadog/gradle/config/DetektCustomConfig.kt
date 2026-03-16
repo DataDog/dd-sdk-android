@@ -4,85 +4,107 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("MatchingDeclarationName")
+
 package com.datadog.gradle.config
 
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.register
 import java.io.File
 import java.util.Properties
 
-fun Project.detektCustomConfig() {
-    val ext = extensions.findByType<LibraryExtension>()
+abstract class PrintDetektClassPath : DefaultTask() {
 
-    tasks.register("printDetektClasspath") {
+    @get:Input
+    abstract val compileClassPath: Property<FileCollection>
+
+    @get:Input
+    abstract val projectDirectoryPath: Property<String>
+
+    init {
         group = "datadog"
-
-        doLast {
-            val fileTreeClassPathCollector = UnionFileTree(
-                DefaultTaskDependencyFactory.withNoAssociatedProject()
-            )
-            val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
-
-            val classpath = ext?.libraryVariants.orEmpty()
-                .filter { it.name == "jvmDebug" || it.name == "debug" }
-                .map { libVariant ->
-                    // returns also test part of classpath for now, no idea how to filter it out
-                    libVariant.getCompileClasspath(null).filter { it.exists() }
-                }
-                .firstOrNull()
-
-            if (classpath is FileTree) {
-                fileTreeClassPathCollector.addToUnion(classpath)
-            } else if (classpath != null) {
-                nonFileTreeClassPathCollector += classpath
-            }
-
-            val fileCollections = mutableListOf<FileCollection>()
-            fileCollections.addAll(nonFileTreeClassPathCollector)
-            if (!fileTreeClassPathCollector.isEmpty) {
-                fileCollections.add(fileTreeClassPathCollector)
-            }
-            val result = fileCollections.flatMap {
-                it.files
-            }.toMutableSet()
-            val localPropertiesFile = File(project.rootDir, "local.properties")
-            if (localPropertiesFile.exists()) {
-                val localProperties = Properties().apply {
-                    localPropertiesFile.inputStream().use { load(it) }
-                }
-                val sdkDirPath = localProperties["sdk.dir"]
-                val androidJarFilePath = listOf(
-                    sdkDirPath,
-                    "platforms",
-                    "android-${AndroidConfig.TARGET_SDK}",
-                    "android.jar"
-                )
-                result += File(androidJarFilePath.joinToString(File.separator))
-            }
-            val envSdkHome = System.getenv("ANDROID_SDK_ROOT")
-            if (!envSdkHome.isNullOrBlank()) {
-                val androidJarFilePath = listOf(
-                    envSdkHome,
-                    "platforms",
-                    "android-${AndroidConfig.TARGET_SDK}",
-                    "android.jar"
-                )
-                result += File(androidJarFilePath.joinToString(File.separator))
-            }
-
-            val output = result.joinToString(File.pathSeparator) { it.absolutePath }
-            File(projectDir, "detekt_classpath").writeText(output)
-        }
     }
+
+    @TaskAction
+    fun applyTask() {
+        val fileTreeClassPathCollector = UnionFileTree(
+            DefaultTaskDependencyFactory.withNoAssociatedProject()
+        )
+        val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
+
+        if (compileClassPath.get() is FileTree) {
+            fileTreeClassPathCollector.addToUnion(compileClassPath.get())
+        } else {
+            nonFileTreeClassPathCollector += compileClassPath.get()
+        }
+
+        val fileCollections = mutableListOf<FileCollection>()
+        fileCollections.addAll(nonFileTreeClassPathCollector)
+        if (!fileTreeClassPathCollector.isEmpty) {
+            fileCollections.add(fileTreeClassPathCollector)
+        }
+        val result = fileCollections.flatMap {
+            it.files
+        }.toMutableSet()
+        val localPropertiesFile = File(project.rootDir, "local.properties")
+        if (localPropertiesFile.exists()) {
+            val localProperties = Properties().apply {
+                localPropertiesFile.inputStream().use { load(it) }
+            }
+            val sdkDirPath = localProperties["sdk.dir"]
+            val androidJarFilePath = listOf(
+                sdkDirPath,
+                "platforms",
+                "android-${AndroidConfig.TARGET_SDK}",
+                "android.jar"
+            )
+            result += File(androidJarFilePath.joinToString(File.separator))
+        }
+        val envSdkHome = System.getenv("ANDROID_SDK_ROOT")
+        if (!envSdkHome.isNullOrBlank()) {
+            val androidJarFilePath = listOf(
+                envSdkHome,
+                "platforms",
+                "android-${AndroidConfig.TARGET_SDK}",
+                "android.jar"
+            )
+            result += File(androidJarFilePath.joinToString(File.separator))
+        }
+
+        project.layout.projectDirectory
+        val output = result.joinToString(File.pathSeparator) { it.absolutePath }
+        File(File(projectDirectoryPath.get()), "detekt_classpath").writeText(output)
+    }
+}
+
+fun Project.detektCustomConfig() {
+    val printDetektClassPathTask = tasks.register<PrintDetektClassPath>("printDetektClasspath") {
+        projectDirectoryPath.set(project.projectDir.absolutePath)
+    }
+
+    extensions.findByType<LibraryAndroidComponentsExtension>()
+        ?.onVariants { variant ->
+            if (variant.name == "jvmDebug" || variant.name == "debug") {
+                // normally should be only one item anyway
+                printDetektClassPathTask.configure {
+                    compileClassPath.set(variant.compileClasspath.filter { it.exists() })
+                    compileClassPath.finalizeValue()
+                }
+            }
+        }
 
     tasks.register<Copy>("unzipAarForDetekt") {
         from(zipTree(layout.buildDirectory.file("outputs/aar/${project.name}-release.aar")))

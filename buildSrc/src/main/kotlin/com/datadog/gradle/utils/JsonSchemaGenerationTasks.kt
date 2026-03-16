@@ -14,7 +14,8 @@ import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.io.File
 import java.nio.file.Paths
 
@@ -88,7 +89,7 @@ fun Project.createJsonModelsGenerationTask(
         dependsOn(task)
     }
 
-    taskConfig<KotlinCompile> {
+    taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
         dependsOn(task)
     }
 

@@ -6,7 +6,6 @@
 
 package com.datadog.gradle.plugin.verification
 
-import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
@@ -15,14 +14,15 @@ class VerificationXmlPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
         val genTask = target.tasks
-            .register<GenerateVerificationXmlTask>(TASK_GEN_VERIFICATION_XML)
-
-        genTask.dependsOn("bundleReleaseAar")
-        genTask.dependsOn("javaDocReleaseJar")
-        genTask.dependsOn("sourceReleaseJar")
-        genTask.dependsOn("generatePomFileForReleasePublication")
-        genTask.dependsOn("generateMetadataFileForReleasePublication")
-        genTask.dependsOn("signReleasePublication")
+            .register<GenerateVerificationXmlTask>(TASK_GEN_VERIFICATION_XML) {
+                dependsOn("bundleReleaseAar")
+                dependsOn("bundleReleaseAar")
+                dependsOn("javaDocReleaseJar")
+                dependsOn("sourceReleaseJar")
+                dependsOn("generatePomFileForReleasePublication")
+                dependsOn("generateMetadataFileForReleasePublication")
+                dependsOn("signReleasePublication")
+            }
 
         target.tasks.named { it == "publishToSonatype" }.configureEach {
             dependsOn(genTask)

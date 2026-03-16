@@ -12,6 +12,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -66,3 +67,8 @@ publishingConfig(
     "Tracing engine API specification used for internal module communication."
 )
 detektCustomConfig()
+
+taskConfig<Test> {
+    // this module has no tests
+    failOnNoDiscoveredTests = false
+}
