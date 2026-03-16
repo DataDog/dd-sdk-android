@@ -1243,6 +1243,7 @@ datadog:
       - "kotlin.String.toIntOrNull(kotlin.Int)"
       - "kotlin.String.toLongOrNull()"
       - "kotlin.String.toLongOrNull(kotlin.Int)"
+      - "kotlin.String.toULongOrNull(kotlin.Int)"
       - "kotlin.String.toMediaTypeOrNull()"
       - "kotlin.String.toMethod()"
       - "kotlin.String.trim()"

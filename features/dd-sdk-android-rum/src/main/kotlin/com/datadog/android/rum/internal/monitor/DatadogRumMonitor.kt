@@ -24,6 +24,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
@@ -79,7 +80,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class DatadogRumMonitor(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
-    internal val sampleRate: Float,
+    internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
@@ -106,7 +107,7 @@ internal class DatadogRumMonitor(
     internal var rootScope = RumApplicationScope(
         applicationId = applicationId,
         sdkCore = sdkCore,
-        sampleRate = sampleRate,
+        sessionSampler = sessionSampler,
         backgroundTrackingEnabled = backgroundTrackingEnabled,
         trackFrustrations = trackFrustrations,
         firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,

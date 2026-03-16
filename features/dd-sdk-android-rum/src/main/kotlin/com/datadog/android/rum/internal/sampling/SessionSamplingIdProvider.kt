@@ -15,8 +15,7 @@ internal object SessionSamplingIdProvider {
     fun provideId(sessionId: String): ULong {
         return sessionId.split('-')
             .lastOrNull()
-            ?.toLongOrNull(HEX_RADIX)
-            ?.toULong()
+            ?.toULongOrNull(HEX_RADIX)
             ?: 0uL
     }
 }
