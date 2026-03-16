@@ -25,7 +25,7 @@ internal fun DatadogSite.getFlagsEndpoint(customerDomain: String): String? {
  * @return Flags host string in format `<customerDomain>.ff-cdn.<site>.<tld>`, or null if site not supported
  */
 private fun DatadogSite.flagsHost(customerDomain: String): String? = when (this) {
-    DatadogSite.US1_FED -> null
+    DatadogSite.US1_FED, DatadogSite.LOCAL -> null
 
     DatadogSite.STAGING -> "$customerDomain.ff-cdn.datad0g.com"
     DatadogSite.EU1 -> buildFlagsHostString(customerDomain, tld = "eu") // No site in the host, .eu TLD

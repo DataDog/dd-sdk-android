@@ -18,6 +18,7 @@ plugins {
     alias(libs.plugins.dependencyLicenseGradlePlugin)
 }
 
+group = "com.datadoghq"
 version = AndroidConfig.VERSION.name
 
 buildscript {

@@ -216,6 +216,7 @@
     <string name="nav_item_suggested_edits">Edits</string>
     <string name="nav_item_more">More</string>
 
+    <string name="title_feature_flag_evaluation">Feature Flag Evaluation (RUM)</string>
     <string name="title_openfeature">OpenFeature Flags</string>
     <string name="description_openfeature">Evaluate feature flags using the OpenFeature SDK integrated with Datadog Flags.</string>
     <string name="hint_flag_key">Flag Key</string>

@@ -24,6 +24,7 @@ private fun DatadogSite?.browserSite(): String {
     return when (this) {
         DatadogSite.US1,
         DatadogSite.STAGING,
+        DatadogSite.LOCAL,
         null -> "datadoghq.com"
 
         DatadogSite.US3 -> "us3.datadoghq.com"

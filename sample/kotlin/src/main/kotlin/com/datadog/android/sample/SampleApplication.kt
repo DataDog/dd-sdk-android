@@ -440,11 +440,7 @@ class SampleApplication : Application() {
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
 
-        try {
-            configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
-        } catch (e: IllegalArgumentException) {
-            Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
-        }
+        configBuilder.useSite(DatadogSite.LOCAL)
 
         configBuilder.setBackpressureStrategy(
             BackPressureStrategy(
