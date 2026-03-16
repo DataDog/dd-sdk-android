@@ -160,7 +160,7 @@ internal constructor(
          * Let the SDK target your preferred Datadog's site.
          */
         fun useSite(site: DatadogSite): Builder {
-            coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
+            coreConfig = coreConfig.copy(needsClearTextHttp = site == DatadogSite.LOCAL, site = site)
             return this
         }
 

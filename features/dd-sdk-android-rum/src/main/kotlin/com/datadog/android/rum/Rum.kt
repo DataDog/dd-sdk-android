@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.Datadog
+import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -161,7 +163,7 @@ object Rum {
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
-            accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
+            accessibilityInfoProvider = rumFeature.accessibilityReader,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
             rumSessionScopeStartupManagerFactory = {
@@ -171,7 +173,9 @@ object Rum {
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )
             },
-            insightsCollector = rumFeature.insightsCollector
+            insightsCollector = rumFeature.insightsCollector,
+            viewEventMapper = rumFeature.configuration.viewEventMapper,
+            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig
         )
     }
 

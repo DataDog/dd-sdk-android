@@ -484,6 +484,22 @@ public final class com/datadog/android/internal/utils/DDCoreSubscription$Compani
 	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
 }
 
+public abstract interface class com/datadog/android/internal/utils/DiffBuilder {
+	public abstract fun anythingChanged ()Z
+	public abstract fun diffEquals (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public abstract fun diffList (Lkotlin/jvm/functions/Function1;)Ljava/util/List;
+	public abstract fun diffMap (Lkotlin/jvm/functions/Function1;)Ljava/util/Map;
+	public abstract fun diffMerge (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public abstract fun diffRequired (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class com/datadog/android/internal/utils/DiffBuilderKt {
+	public static final fun computeDiffIfChanged (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun computeDiffRequired (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun diffNested (Lcom/datadog/android/internal/utils/SomeState$Nested;Lcom/datadog/android/internal/utils/SomeState$Nested;)Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;
+	public static final fun diffSomeState (Lcom/datadog/android/internal/utils/SomeState;Lcom/datadog/android/internal/utils/SomeState;)Lcom/datadog/android/internal/utils/SomeStateDiff;
+}
+
 public class com/datadog/android/internal/utils/FixedWindowCallback : android/view/Window$Callback {
 	public fun <init> (Landroid/view/Window$Callback;)V
 	public fun dispatchGenericMotionEvent (Landroid/view/MotionEvent;)Z
@@ -538,6 +554,66 @@ public final class com/datadog/android/internal/utils/NumberExtKt {
 	public static final fun toHexString (I)Ljava/lang/String;
 	public static final fun toHexString (J)Ljava/lang/String;
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/SomeState {
+	public fun <init> (IILcom/datadog/android/internal/utils/SomeState$Nested;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()Lcom/datadog/android/internal/utils/SomeState$Nested;
+	public final fun copy (IILcom/datadog/android/internal/utils/SomeState$Nested;)Lcom/datadog/android/internal/utils/SomeState;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/utils/SomeState;IILcom/datadog/android/internal/utils/SomeState$Nested;ILjava/lang/Object;)Lcom/datadog/android/internal/utils/SomeState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNested ()Lcom/datadog/android/internal/utils/SomeState$Nested;
+	public final fun getX ()I
+	public final fun getY ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/SomeState$Nested {
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/Map;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)Lcom/datadog/android/internal/utils/SomeState$Nested;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/utils/SomeState$Nested;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/internal/utils/SomeState$Nested;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArr ()Ljava/util/List;
+	public final fun getFlags ()Ljava/util/Map;
+	public final fun getId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/SomeStateDiff {
+	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;)V
+	public final fun component1 ()Ljava/lang/Integer;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;
+	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;)Lcom/datadog/android/internal/utils/SomeStateDiff;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/utils/SomeStateDiff;Ljava/lang/Integer;Ljava/lang/Integer;Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;ILjava/lang/Object;)Lcom/datadog/android/internal/utils/SomeStateDiff;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNested ()Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;
+	public final fun getX ()Ljava/lang/Integer;
+	public final fun getY ()Ljava/lang/Integer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/SomeStateDiff$NestedDiff {
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/Map;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/internal/utils/SomeStateDiff$NestedDiff;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArr ()Ljava/util/List;
+	public final fun getFlags ()Ljava/util/Map;
+	public final fun getId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/internal/utils/StrictModeExtKt {

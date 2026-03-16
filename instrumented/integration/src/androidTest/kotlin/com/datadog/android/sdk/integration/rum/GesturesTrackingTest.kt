@@ -75,9 +75,11 @@ internal abstract class GesturesTrackingTest :
         activity: GesturesTrackingPlaygroundActivity
     ): List<ExpectedEvent> {
         return listOf(
-            // ignore first view event for application launch, it will be reduced
             ExpectedApplicationLaunchViewEvent(docVersion = 2),
-            // ignore first view event, it will be reduced
+            ExpectedViewEvent(
+                viewUrl,
+                docVersion = 2
+            ),
             ExpectedGestureEvent(
                 Gesture.TAP,
                 activity.button.targetName(),
@@ -104,7 +106,15 @@ internal abstract class GesturesTrackingTest :
                     RumAttributes.ACTION_GESTURE_DIRECTION to "down"
                 )
             ),
-            ExpectedViewEvent(
+            ExpectedViewUpdateEvent(
+                viewUrl,
+                docVersion = 3
+            ),
+            ExpectedViewUpdateEvent(
+                viewUrl,
+                docVersion = 4
+            ),
+            ExpectedViewUpdateEvent(
                 viewUrl,
                 docVersion = 5
             )

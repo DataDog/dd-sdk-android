@@ -40,18 +40,18 @@ internal class SessionEndedMetric(
     /**
      * Called on view tracked event, return true if the view is recorded by the metric, false otherwise.
      */
-    fun onViewTracked(rumViewEvent: ViewEvent): Boolean {
-        if (rumViewEvent.session.id != sessionId) {
+    fun onViewTracked(viewEvent: ViewEvent): Boolean {
+        if (viewEvent.session.id != sessionId) {
             return false
         }
         val trackedView = TrackedView(
-            viewUrl = trackedViewsById[rumViewEvent.view.id]?.viewUrl ?: rumViewEvent.view.url,
-            startMs = trackedViewsById[rumViewEvent.view.id]?.startMs ?: rumViewEvent.date,
-            durationNs = rumViewEvent.view.timeSpent,
-            hasReplay = rumViewEvent.session.hasReplay ?: false
+            viewUrl = trackedViewsById[viewEvent.view.id]?.viewUrl ?: viewEvent.view.url,
+            startMs = trackedViewsById[viewEvent.view.id]?.startMs ?: viewEvent.date,
+            durationNs = viewEvent.view.timeSpent,
+            hasReplay = viewEvent.session.hasReplay ?: false
         )
 
-        trackedViewsById[rumViewEvent.view.id] = trackedView
+        trackedViewsById[viewEvent.view.id] = trackedView
         if (firstTrackedView == null) {
             firstTrackedView = trackedView
         }

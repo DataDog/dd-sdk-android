@@ -67,19 +67,24 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
         waitForPendingRUMEvents()
 
-        // ignore first view event for application launch, it will be reduced
-
-        // Stop launch view
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
                 docVersion = 2
             )
         )
 
-        // No events on this view - one for view stop view / stop session
-        // ignore first view event, it will be reduced
+        // kiosk splash view started
         expectedEvents.add(
             ExpectedViewEvent(
+                firstViewUrl,
+                docVersion = 2,
+                viewArguments = mapOf()
+            )
+        )
+
+        // kiosk splash view stopped / session ended
+        expectedEvents.add(
+            ExpectedViewUpdateEvent(
                 firstViewUrl,
                 docVersion = 3,
                 viewArguments = mapOf(),
@@ -95,12 +100,18 @@ internal class KioskTrackingTest :
         onView(withId(R.id.start_kiosk)).perform(click())
         instrumentation.waitForIdleSync()
 
-        // one for view start
-        // ignore first view event, it will be reduced
-
-        // one for view stop
+        // kiosk tracked view started
         expectedEvents.add(
             ExpectedViewEvent(
+                secondViewUrl,
+                docVersion = 2,
+                viewArguments = mapOf()
+            )
+        )
+
+        // kiosk tracked view stopped
+        expectedEvents.add(
+            ExpectedViewUpdateEvent(
                 secondViewUrl,
                 docVersion = 3,
                 viewArguments = mapOf(),
@@ -116,11 +127,18 @@ internal class KioskTrackingTest :
         instrumentation.waitForIdleSync()
         Thread.sleep(4000) // give some time to settle and register the events
 
-        // No events on this view - one for view stop view / stop session
-        // ignore first view event, it will be reduced
-
+        // kiosk splash view started (again)
         expectedEvents.add(
             ExpectedViewEvent(
+                firstViewUrl,
+                docVersion = 2,
+                viewArguments = mapOf()
+            )
+        )
+
+        // kiosk splash view stopped / session ended
+        expectedEvents.add(
+            ExpectedViewUpdateEvent(
                 firstViewUrl,
                 docVersion = 3,
                 viewArguments = mapOf(),

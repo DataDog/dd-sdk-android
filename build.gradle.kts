@@ -33,6 +33,7 @@ plugins {
     // alias(libs.plugins.versionsGradlePlugin) apply false
 }
 
+group = "com.datadoghq"
 version = AndroidConfig.VERSION.name
 
 buildscript {
