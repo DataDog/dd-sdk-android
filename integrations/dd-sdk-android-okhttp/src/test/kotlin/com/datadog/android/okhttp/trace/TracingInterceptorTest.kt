@@ -13,7 +13,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
@@ -1571,7 +1571,7 @@ internal open class TracingInterceptorTest {
             contextMock
         ).put(
             OKHTTP_INTERCEPTOR_HEADER_TYPES,
-            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toTelemetryTracingHeaderType() }.toSet())
         )
         verifyNoMoreInteractions(contextMock)
     }
@@ -1602,7 +1602,7 @@ internal open class TracingInterceptorTest {
         // Then
         verify(contextMock)[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = sampleRate
         verify(contextMock)[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
-            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toTelemetryTracingHeaderType() }.toSet())
         verifyNoMoreInteractions(contextMock)
     }
 

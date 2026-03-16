@@ -7,14 +7,13 @@
 package com.datadog.android.okhttp.internal.trace
 
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.internal.telemetry.TracingHeaderType as TelemetryTracingHeaderType
 
-private typealias InternalTracingHeaderType = com.datadog.android.internal.telemetry.TracingHeaderType
-
-internal fun TracingHeaderType.toInternalTracingHeaderType(): InternalTracingHeaderType {
+internal fun TracingHeaderType.toTelemetryTracingHeaderType(): TelemetryTracingHeaderType {
     return when (this) {
-        TracingHeaderType.DATADOG -> InternalTracingHeaderType.DATADOG
-        TracingHeaderType.B3 -> InternalTracingHeaderType.B3
-        TracingHeaderType.B3MULTI -> InternalTracingHeaderType.B3MULTI
-        TracingHeaderType.TRACECONTEXT -> InternalTracingHeaderType.TRACECONTEXT
+        TracingHeaderType.DATADOG -> TelemetryTracingHeaderType.DATADOG
+        TracingHeaderType.B3 -> TelemetryTracingHeaderType.B3
+        TracingHeaderType.B3MULTI -> TelemetryTracingHeaderType.B3MULTI
+        TracingHeaderType.TRACECONTEXT -> TelemetryTracingHeaderType.TRACECONTEXT
     }
 }
