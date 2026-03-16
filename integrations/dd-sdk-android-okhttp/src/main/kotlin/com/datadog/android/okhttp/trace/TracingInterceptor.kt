@@ -22,7 +22,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.GlobalDatadogTracer
@@ -224,7 +224,7 @@ internal constructor(
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
             it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
                 tracedHosts.values.flatten()
-                    .map(TracingHeaderType::toInternalTracingHeaderType)
+                    .map(TracingHeaderType::toTelemetryTracingHeaderType)
                     .toSet()
             )
         }

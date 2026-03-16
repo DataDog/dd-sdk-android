@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.rules
 
 import android.util.Log
+import org.junit.Test
 import org.junit.runner.Description
 import org.junit.runner.manipulation.Filter
 import org.junit.runner.manipulation.NoTestsRemainException
@@ -39,7 +40,7 @@ class RepeatedTestRunner(clazz: Class<*>) : BlockJUnit4ClassRunner(clazz) {
     @Throws(NoTestsRemainException::class)
     override fun filter(filter: Filter) {
         // Detect if filtering to a single method
-        val methods = testClass.getAnnotatedMethods(org.junit.Test::class.java)
+        val methods = testClass.getAnnotatedMethods(Test::class.java)
         val matchingMethods = methods.filter { method ->
             val desc = Description.createTestDescription(testClass.javaClass, method.name)
             filter.shouldRun(desc)
