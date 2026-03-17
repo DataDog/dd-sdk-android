@@ -19,6 +19,8 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -191,6 +193,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockEventWriteScope: EventWriteScope
 
+    @Mock
+    lateinit var mockSessionSampler: Sampler<String>
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -267,10 +272,12 @@ internal class DatadogRumMonitorTest {
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
+
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -302,7 +309,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -330,7 +337,7 @@ internal class DatadogRumMonitorTest {
         val rootScope = testedMonitor.rootScope
 
         // Then
-        assertThat(rootScope.sampleRate).isEqualTo(fakeSampleRate)
+        assertThat(rootScope.sessionSampler).isSameAs(mockSessionSampler)
         assertThat(rootScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
     }
 
@@ -377,7 +384,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = 100.0f,
+            sessionSampler = DeterministicSampler({ _ -> 0uL }, 100f),
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -420,7 +427,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = 0.0f,
+            sessionSampler = DeterministicSampler({ _ -> 0uL }, 0f),
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2003,7 +2010,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2043,7 +2050,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2084,7 +2091,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2300,7 +2307,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = 100.0f,
+            sessionSampler = DeterministicSampler({ _ -> 0uL }, 100f),
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,

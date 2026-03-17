@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -163,7 +164,8 @@ internal class RumTest {
                     .applicationId == fakeRumConfiguration.applicationId
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
-        assertThat(monitor.sampleRate)
+        assertThat(monitor.sessionSampler).isInstanceOf(DeterministicSampler::class.java)
+        assertThat(monitor.sessionSampler.getSampleRate())
             .isEqualTo(fakeRumConfiguration.featureConfiguration.sampleRate)
         assertThat(monitor.backgroundTrackingEnabled)
             .isEqualTo(fakeRumConfiguration.featureConfiguration.backgroundEventTracking)
