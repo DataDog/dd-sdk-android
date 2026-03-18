@@ -16,6 +16,7 @@ class TTIDRumContextFactory : ForgeryFactory<TTIDRumContext> {
             applicationId = forge.anAlphabeticalString(),
             sessionId = forge.anAlphabeticalString(),
             vitalId = forge.anAlphabeticalString(),
+            vitalName = forge.aNullable { anAlphabeticalString() },
             viewId = forge.aNullable { anAlphabeticalString() },
             viewName = forge.aNullable { anAlphabeticalString() }
         )

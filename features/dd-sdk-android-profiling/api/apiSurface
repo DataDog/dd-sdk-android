@@ -16,7 +16,7 @@ data class com.datadog.android.profiling.ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration
 data class com.datadog.android.profiling.model.ProfileEvent
-  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, Application, Session, View? = null, Vital)
+  constructor(Application, Session? = null, View? = null, LongTask? = null, Vital? = null, kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, Family, Family, kotlin.Long, kotlin.String)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): ProfileEvent
@@ -34,14 +34,28 @@ data class com.datadog.android.profiling.model.ProfileEvent
       fun fromJson(kotlin.String): Session
       fun fromJsonObject(com.google.gson.JsonObject): Session
   data class View
-    constructor(kotlin.String, kotlin.String)
+    constructor(kotlin.collections.List<kotlin.String>, kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): View
       fun fromJsonObject(com.google.gson.JsonObject): View
+  data class LongTask
+    constructor(kotlin.collections.List<kotlin.String>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LongTask
+      fun fromJsonObject(com.google.gson.JsonObject): LongTask
   data class Vital
-    constructor(kotlin.String)
+    constructor(kotlin.collections.List<kotlin.String>, kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vital
       fun fromJsonObject(com.google.gson.JsonObject): Vital
+  enum Family
+    constructor(kotlin.String)
+    - ANDROID
+    - CHROME
+    - IOS
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Family

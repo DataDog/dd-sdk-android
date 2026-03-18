@@ -267,20 +267,22 @@ public final class com/datadog/android/internal/profiling/ProfilerStopEvent$TTID
 }
 
 public final class com/datadog/android/internal/profiling/TTIDRumContext {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/TTIDRumContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/TTIDRumContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/TTIDRumContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApplicationId ()Ljava/lang/String;
 	public final fun getSessionId ()Ljava/lang/String;
 	public final fun getViewId ()Ljava/lang/String;
 	public final fun getViewName ()Ljava/lang/String;
 	public final fun getVitalId ()Ljava/lang/String;
+	public final fun getVitalName ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
