@@ -15,6 +15,7 @@ import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.NoOpProfiler
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
+import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -93,7 +94,7 @@ class ProfilingTest {
 
         // When
         Profiling.enable(fakeConfiguration, mockSdkCore)
-        Profiling.start(mockContext, sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
 
         // Then
         verify(mockSdkCore).registerFeature(any<ProfilingFeature>())
@@ -120,7 +121,7 @@ class ProfilingTest {
         val sdkInstanceNames = setOf(fakeInstanceName)
 
         // When
-        Profiling.start(mockContext, sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
         Profiling.enable(fakeConfiguration, mockSdkCore)
 
         // Then
@@ -136,11 +137,11 @@ class ProfilingTest {
         val sdkInstanceNames = setOf(fakeInstanceName)
 
         // When
-        Profiling.start(mockContext, sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
 
         val firstProfiler = Profiling.profiler
 
-        Profiling.start(mockContext, sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
 
         val secondProfiler = Profiling.profiler
 
@@ -159,10 +160,10 @@ class ProfilingTest {
         Profiling.isProfilerInitialized.set(true)
 
         // When
-        Profiling.start(mockContext, sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
 
         // Then
-        verify(mockProfiler).start(mockContext, sdkInstanceNames)
+        verify(mockProfiler).start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
     }
 
     @Test
@@ -173,10 +174,15 @@ class ProfilingTest {
         Profiling.isProfilerInitialized.set(true)
 
         // When
-        Profiling.start(mockContext, mockSdkCore)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), mockSdkCore)
 
         // Then
-        verify(mockProfiler).start(mockContext, setOf(fakeInstanceName))
+        verify(mockProfiler).start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
     }
 
     @Test
@@ -187,7 +193,7 @@ class ProfilingTest {
         Profiling.isProfilerInitialized.set(true)
 
         // When
-        Profiling.start(mockContext, mockSdkCore)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), mockSdkCore)
         Profiling.stop(mockSdkCore)
 
         // Then

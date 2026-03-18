@@ -155,6 +155,7 @@ interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val isAtLeastR: Boolean
   val isAtLeastS: Boolean
   val isAtLeastTiramisu: Boolean
+  val isAtLeastVanillaIceCream: Boolean
   companion object 
     val DEFAULT: BuildSdkVersionProvider
 sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
