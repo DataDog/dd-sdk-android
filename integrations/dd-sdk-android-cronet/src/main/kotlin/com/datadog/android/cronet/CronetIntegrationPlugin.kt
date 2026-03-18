@@ -92,8 +92,9 @@ class CronetIntegrationPlugin internal constructor(
                     DatadogTracingToolkit.createApmNetworkInstrumentation(
                         CRONET_NETWORK_INSTRUMENTATION_NAME,
                         configuration
-                            .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
+                            .setHeaderPropagationOnly()
                             .setTraceOriginIfNull(ORIGIN_RUM)
+                            .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
                     )
                 }
         }

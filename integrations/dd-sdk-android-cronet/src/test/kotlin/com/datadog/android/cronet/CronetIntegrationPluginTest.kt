@@ -20,6 +20,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -269,6 +270,60 @@ internal class CronetIntegrationPluginTest {
 
         // Then
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M preserve custom traceOrigin on distributedTracing W build() {APM has custom origin}`(
+        @StringForgery fakeCustomOrigin: String
+    ) {
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+                    .setTraceOrigin(fakeCustomOrigin)
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.distributedTracingInstrumentation?.traceOrigin)
+            .isEqualTo(fakeCustomOrigin)
+    }
+
+    @Test
+    fun `M override traceScope on distributedTracing W build() {APM has ALL scope}`() {
+        // Given
+        val apmConfig = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+            .setTraceScope(ApmNetworkTracingScope.ALL)
+
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = apmConfig
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.distributedTracingInstrumentation?.networkTracingScope)
+            .isEqualTo(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
+    }
+
+    @Test
+    fun `M not modify original APM config scope W build() {RUM + APM}`() {
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+                    .setTraceScope(ApmNetworkTracingScope.ALL)
+
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.apmNetworkInstrumentation?.networkTracingScope)
+            .isEqualTo(ApmNetworkTracingScope.ALL)
     }
 
     @Test
