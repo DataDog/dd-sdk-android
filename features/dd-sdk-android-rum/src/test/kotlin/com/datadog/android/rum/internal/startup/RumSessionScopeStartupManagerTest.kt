@@ -291,6 +291,7 @@ internal class RumSessionScopeStartupManagerTest {
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,
                         vitalId = lastValue.vital.id,
+                        vitalName = lastValue.vital.name,
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
                     )

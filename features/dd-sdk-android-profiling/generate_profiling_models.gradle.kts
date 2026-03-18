@@ -7,9 +7,11 @@
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 createJsonModelsGenerationTask("generateProfilingModelsFromJson") {
-    inputDirPath = "src/main/json/profiling"
-    ignoredFiles = listOf(
-        "_common-schema.json"
+    inputDirPath = "src/main/json/profiling/mobile"
+    // watch for changes in the referenced schema
+    extraInputWatchDir = project.layout.projectDirectory.dir("src/main/json/profiling")
+    inputNameMapping = mapOf(
+        "profile-event-schema.json" to "ProfileEvent"
     )
     targetPackageName = "com.datadog.android.profiling.model"
 }

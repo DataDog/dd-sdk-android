@@ -77,17 +77,20 @@ internal class ProfilingDataWriter(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
             attachments = listOf(PERFETTO_ATTACHMENT_NAME),
-            family = ANDROID_FAMILY_NAME,
-            runtime = ANDROID_RUNTIME_NAME,
+            family = ProfileEvent.Family.ANDROID,
+            runtime = ProfileEvent.Family.ANDROID,
             version = VERSION_NUMBER,
             tagsProfiler = buildTags(context),
             application = ProfileEvent.Application(id = ttidRumContext.applicationId),
             session = ProfileEvent.Session(id = ttidRumContext.sessionId),
-            vital = ProfileEvent.Vital(id = ttidRumContext.vitalId),
+            vital = ProfileEvent.Vital(
+                id = listOf(ttidRumContext.vitalId),
+                label = listOf(ttidRumContext.vitalName.orEmpty())
+            ),
             view = if (rumViewId != null && rumViewName != null) {
                 ProfileEvent.View(
-                    id = rumViewId,
-                    name = rumViewName
+                    id = listOf(rumViewId),
+                    name = listOf(rumViewName)
                 )
             } else {
                 null
@@ -133,11 +136,9 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_ENV = "env"
         private const val TAG_KEY_OPERATION = "operation"
         private const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
-        private const val ANDROID_FAMILY_NAME = "android"
-        private const val ANDROID_RUNTIME_NAME = "android"
         private const val OPERATION_TYPE_LAUNCH = "launch"
 
         // Only `4` is supported by profiling Backend
-        private const val VERSION_NUMBER = "4"
+        private const val VERSION_NUMBER = 4L
     }
 }
