@@ -1343,7 +1343,11 @@ internal open class RumViewScope(
                         sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
                     ),
                     replayStats = replayStats,
-                    configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ViewEvent.Configuration(
+                        sessionSampleRate = sampleRate,
+                        sessionReplaySampleRate = resolveSessionReplaySampleRate(datadogContext),
+                        traceSampleRate = resolveTraceSampleRate(datadogContext)
+                    )
                 ),
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
@@ -1609,6 +1613,16 @@ internal open class RumViewScope(
         }
     }
 
+    private fun resolveSessionReplaySampleRate(datadogContext: DatadogContext): Long? {
+        val srContext = datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME]
+        return srContext?.get(SESSION_REPLAY_SAMPLE_RATE_KEY) as? Long
+    }
+
+    private fun resolveTraceSampleRate(datadogContext: DatadogContext): Float? {
+        val tracingContext = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]
+        return tracingContext?.get(TRACE_SAMPLE_RATE) as? Float
+    }
+
     private fun logSynthetics(key: String, value: String) {
         /**
          * We use [android.util.Log] here instead of [InternalLogger] because we want to log regardless of the
@@ -1621,6 +1635,12 @@ internal open class RumViewScope(
 
     companion object {
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
+
+        // Must match SessionReplayFeature.SESSION_REPLAY_SAMPLE_RATE_KEY in dd-sdk-android-session-replay
+        internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
+
+        // Must match TracingInterceptor.OKHTTP_INTERCEPTOR_SAMPLE_RATE in dd-sdk-android-okhttp
+        internal const val TRACE_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"

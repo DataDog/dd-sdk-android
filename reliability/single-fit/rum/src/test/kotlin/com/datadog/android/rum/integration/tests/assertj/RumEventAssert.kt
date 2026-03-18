@@ -202,6 +202,28 @@ class RumEventAssert(actual: JsonObject) :
     }
     // endregion
 
+    // region configuration
+    fun hasSessionReplaySampleRate(sampleRate: Long): RumEventAssert {
+        hasField("_dd.configuration.session_replay_sample_rate", sampleRate)
+        return this
+    }
+
+    fun hasTraceSampleRate(sampleRate: Float): RumEventAssert {
+        hasField("_dd.configuration.trace_sample_rate", sampleRate)
+        return this
+    }
+
+    fun doesNotHaveSessionReplaySampleRate(): RumEventAssert {
+        doesNotHaveField("_dd.configuration.session_replay_sample_rate")
+        return this
+    }
+
+    fun doesNotHaveTraceSampleRate(): RumEventAssert {
+        doesNotHaveField("_dd.configuration.trace_sample_rate")
+        return this
+    }
+    // endregion
+
     companion object {
         fun assertThat(actual: JsonObject): RumEventAssert {
             return RumEventAssert(actual)

@@ -435,6 +435,13 @@
               "minimum": 0,
               "maximum": 100,
               "readOnly": true
+            },
+            "trace_sample_rate": {
+              "type": "number",
+              "description": "The percentage of sessions with traced resources",
+              "minimum": 0,
+              "maximum": 100,
+              "readOnly": true
             }
           }
         },

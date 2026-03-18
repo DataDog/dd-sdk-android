@@ -11,12 +11,15 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,8 +30,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -155,6 +161,9 @@ internal class RumAppStartupDetectorImplTest {
 
         detector.onActivityDestroyed(activity)
 
+        // Simulate RumFeature reporting TTID and clearing the pending scenario
+        detector.clearPendingScenario()
+
         currentTime += 30.seconds
 
         triggerBeforeCreated(
@@ -272,6 +281,7 @@ internal class RumAppStartupDetectorImplTest {
                 appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
             )
         )
+        verify(listener).onNextActivityCreated(any(), eq(activity2))
         verifyNoMoreInteractions(listener)
     }
 
@@ -294,11 +304,10 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // When
-        detector.onActivityStarted(activity)
-        detector.onActivityResumed(activity)
-        detector.onActivityPaused(activity)
-        detector.onActivityStopped(activity)
-        detector.onActivityDestroyed(activity)
+        destroyActivity(detector, activity)
+
+        // Simulate RumFeature reporting TTID and clearing the pending scenario
+        detector.clearPendingScenario()
 
         currentTime += 30.seconds
 
@@ -372,13 +381,12 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
         )
 
-        detector.onActivityStarted(activity2)
-        detector.onActivityResumed(activity2)
-        detector.onActivityPaused(activity2)
-        detector.onActivityStopped(activity2)
-        detector.onActivityDestroyed(activity2)
+        destroyActivity(detector, activity2)
 
         detector.onActivityDestroyed(activity)
+
+        // Simulate RumFeature reporting TTID and clearing the pending scenario
+        detector.clearPendingScenario()
 
         currentTime += 30.seconds
 
@@ -402,6 +410,8 @@ internal class RumAppStartupDetectorImplTest {
                 )
             )
 
+            verify(listener).onNextActivityCreated(any(), eq(activity2))
+
             listener.verifyScenarioDetected(
                 RumStartupScenario.WarmAfterActivityDestroyed(
                     initialTime = Time(
@@ -417,7 +427,499 @@ internal class RumAppStartupDetectorImplTest {
         verifyNoMoreInteractions(listener)
     }
 
-    private fun createDetector(): RumAppStartupDetectorImpl {
+    @Test
+    fun `M report TTID for second activity W first activity excluded by predicate {interstitial activity}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle1: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean
+    ) {
+        // Given - predicate that excludes the first activity
+        val interstitialActivity = mock<Activity>()
+        val mainActivity = mock<Activity>()
+
+        val predicate = AppStartupActivityPredicate { activity ->
+            activity != interstitialActivity
+        }
+
+        val detector = createDetector(appStartupActivityPredicate = predicate)
+
+        currentTime += 3.seconds
+
+        // When - interstitial activity is created first (excluded)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = interstitialActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle1
+        )
+
+        // Then - no scenario detected yet
+        verifyNoMoreInteractions(listener)
+
+        // When - interstitial activity is destroyed and main activity is created
+        destroyActivity(detector, interstitialActivity)
+
+        currentTime += 1.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = mainActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        // Then - scenario detected for main activity (first non-excluded)
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+                activity = mainActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M not report TTID W all activities excluded by predicate`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given - predicate that excludes all activities
+        val predicate = AppStartupActivityPredicate { false }
+        val detector = createDetector(appStartupActivityPredicate = predicate)
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then - no scenario detected
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M report TTID for first included activity W multiple excluded activities`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle1: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle3: Boolean
+    ) {
+        // Given - predicate that excludes first two activities
+        val excludedActivity1 = mock<Activity>()
+        val excludedActivity2 = mock<Activity>()
+        val includedActivity = mock<Activity>()
+
+        val predicate = AppStartupActivityPredicate { activity ->
+            activity != excludedActivity1 && activity != excludedActivity2
+        }
+
+        val detector = createDetector(appStartupActivityPredicate = predicate)
+
+        currentTime += 3.seconds
+
+        // When - first excluded activity
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = excludedActivity1,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle1
+        )
+
+        // Then - no scenario yet
+        verifyNoMoreInteractions(listener)
+
+        // When - second excluded activity (while first is still alive)
+        currentTime += 1.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = excludedActivity2,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        // Then - still no scenario
+        verifyNoMoreInteractions(listener)
+
+        // When - included activity is created
+        currentTime += 1.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = includedActivity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3
+        )
+
+        // Then - scenario detected for included activity
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
+                activity = includedActivity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 5.seconds.inWholeNanoseconds
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M use default behavior W no predicate specified`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given - default predicate (allows all)
+        val detector = createDetector()
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then - scenario detected (backward compatibility)
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = activity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M maintain counter consistency W mutable predicate changes between create and destroy`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given - a mutable predicate that changes its result
+        val activity1 = mock<Activity>()
+        val activity2 = mock<Activity>()
+        var shouldTrackActivity1 = true
+
+        val mutablePredicate = AppStartupActivityPredicate { activity ->
+            if (activity == activity1) shouldTrackActivity1 else true
+        }
+
+        val detector = createDetector(appStartupActivityPredicate = mutablePredicate)
+
+        currentTime += 3.seconds
+
+        // When - activity created with predicate returning true
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity1,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then - scenario detected
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = activity1.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+
+        // When - predicate changes to return false for activity1
+        shouldTrackActivity1 = false
+
+        // And - activity is destroyed (predicate now returns false, but stored value was true)
+        destroyActivity(detector, activity1)
+
+        // Simulate RumFeature reporting TTID and clearing the pending scenario
+        detector.clearPendingScenario()
+
+        // When - second activity is created
+        currentTime += 1.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity2,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - scenario detected because counter correctly went from 1 -> 0 -> 1
+        // (not stuck at 1 due to predicate mismatch)
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmAfterActivityDestroyed(
+                initialTime = Time(
+                    timestamp = 4.seconds.inWholeMilliseconds,
+                    nanoTime = 4.seconds.inWholeNanoseconds
+                ),
+                hasSavedInstanceStateBundle = false,
+                activity = activity2.wrapWeak()
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    // region pendingScenario management tests
+
+    @Test
+    fun `M set pendingScenario W onAppStartupDetected`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        val pending = detector.getPendingScenario()
+        assertThat(pending).isNotNull
+        assertThat(pending).isInstanceOf(RumStartupScenario.Cold::class.java)
+        assertThat(pending!!.activity.get()).isSameAs(activity)
+    }
+
+    @Test
+    fun `M create fresh startup scenario W stale pendingScenario exists on re-launch`(
+        forge: Forge
+    ) {
+        // Given - first launch creates a pending scenario (e.g. interstitial that never drew)
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+        val staleScenario = detector.getPendingScenario()
+        assertThat(staleScenario).isNotNull
+
+        // Simulate the interstitial activity being fully destroyed (app goes background)
+        destroyActivity(detector, activity)
+
+        // Advance time beyond the TTID timeout (1 minute)
+        currentTime += MAX_TTID_DURATION_NS.nanoseconds + 1.seconds
+
+        // When - user re-launches the app (new activity in the same process)
+        val secondActivity: Activity = mock()
+        whenever(secondActivity.isChangingConfigurations) doReturn false
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - stale scenario was discarded and a fresh one created for the new activity
+        val freshScenario = detector.getPendingScenario()
+        assertThat(freshScenario).isNotNull
+        assertThat(freshScenario).isNotSameAs(staleScenario)
+        assertThat(freshScenario!!.activity.get()).isSameAs(secondActivity)
+    }
+
+    @Test
+    fun `M clear pendingScenario W clearPendingScenario`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+        assertThat(detector.getPendingScenario()).isNotNull
+
+        // When
+        detector.clearPendingScenario()
+
+        // Then
+        assertThat(detector.getPendingScenario()).isNull()
+    }
+
+    @Test
+    fun `M call onNextActivityCreated W second qualifying activity created while pending`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        val secondActivity: Activity = mock()
+
+        // When
+        currentTime += 1.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        val capturedScenario = detector.getPendingScenario()
+        verify(listener).onAppStartupDetected(any())
+        verify(listener).onNextActivityCreated(
+            argThat { this === capturedScenario },
+            eq(secondActivity)
+        )
+    }
+
+    @Test
+    fun `M not call onNextActivityCreated W second activity fails predicate`(
+        forge: Forge
+    ) {
+        // Given
+        val secondActivity: Activity = mock()
+        val predicate = AppStartupActivityPredicate { it !== secondActivity }
+        val detector = createDetector(appStartupActivityPredicate = predicate)
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // When
+        currentTime += 1.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        verify(listener).onAppStartupDetected(any())
+        verify(listener, never()).onNextActivityCreated(any(), any())
+    }
+
+    @Test
+    fun `M not call onNextActivityCreated W same activity as scenario`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - onNextActivityCreated should not have been called for the original activity
+        verify(listener).onAppStartupDetected(any())
+        verify(listener, never()).onNextActivityCreated(any(), any())
+    }
+
+    @Test
+    fun `M not call onNextActivityCreated W pendingScenario cleared`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+        detector.clearPendingScenario()
+
+        val secondActivity: Activity = mock()
+
+        // When
+        currentTime += 1.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        verify(listener).onAppStartupDetected(any())
+        verify(listener, never()).onNextActivityCreated(any(), any())
+    }
+
+    @Test
+    fun `M not emit second startup W first activity destroyed before next created (async interstitial)`(
+        forge: Forge
+    ) {
+        // Given - first activity created, startup detected, then fully destroyed before
+        // the next activity is created (async interstitial pattern: finish() + Handler.postDelayed)
+        val detector = createDetector()
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+        val originalScenario = detector.getPendingScenario()
+        assertThat(originalScenario).isNotNull
+
+        destroyActivity(detector, activity)
+
+        currentTime += 1.seconds
+        val secondActivity: Activity = mock()
+
+        // When - next activity created while pendingScenario still exists
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - onAppStartupDetected must NOT be called a second time
+        verify(listener, times(1)).onAppStartupDetected(any())
+        // pendingScenario must still be the original (not replaced by a new scenario)
+        assertThat(detector.getPendingScenario()).isSameAs(originalScenario)
+        // onNextActivityCreated must be called with the original scenario so RumFeature
+        // can subscribe to the second activity's first frame (the async forwarding path)
+        verify(listener).onNextActivityCreated(
+            argThat { this === originalScenario },
+            eq(secondActivity)
+        )
+    }
+
+    // endregion
+
+    private fun createDetector(
+        appStartupActivityPredicate: AppStartupActivityPredicate = AppStartupActivityPredicate { true }
+    ): RumAppStartupDetectorImpl {
         whenever(buildSdkVersionProvider.isAtLeastQ) doReturn fakeIsAtLeastQ
 
         val detector = RumAppStartupDetectorImpl(
@@ -430,7 +932,8 @@ internal class RumAppStartupDetectorImplTest {
                     nanoTime = currentTime.inWholeNanoseconds
                 )
             },
-            listener
+            listener = listener,
+            appStartupActivityPredicate = appStartupActivityPredicate
         )
 
         return detector
@@ -454,6 +957,14 @@ internal class RumAppStartupDetectorImplTest {
         } else {
             detector.onActivityCreated(activity, bundle)
         }
+    }
+
+    private fun destroyActivity(detector: RumAppStartupDetectorImpl, activity: Activity) {
+        detector.onActivityStarted(activity)
+        detector.onActivityResumed(activity)
+        detector.onActivityPaused(activity)
+        detector.onActivityStopped(activity)
+        detector.onActivityDestroyed(activity)
     }
 
     private fun RumAppStartupDetector.Listener.verifyScenarioDetected(expected: RumStartupScenario) {

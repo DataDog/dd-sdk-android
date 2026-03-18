@@ -10,7 +10,8 @@ import com.datadog.gradle.config.taskConfig
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 class TransitiveDependenciesPlugin : Plugin<Project> {
 
@@ -25,7 +26,7 @@ class TransitiveDependenciesPlugin : Plugin<Project> {
             dependsOn(TASK_GEN_TRANSITIVE_DEPS)
         }
 
-        target.taskConfig<KotlinCompile> {
+        target.taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
             finalizedBy(TASK_GEN_TRANSITIVE_DEPS)
         }
     }

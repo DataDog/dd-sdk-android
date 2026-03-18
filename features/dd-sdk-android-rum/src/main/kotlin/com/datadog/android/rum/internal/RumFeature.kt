@@ -75,6 +75,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
+import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredicate
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.internal.startup.RumStartupScenario
@@ -108,6 +109,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -701,19 +703,41 @@ internal class RumFeature(
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     val activity = scenario.activity.get() ?: return
-                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
 
                     rumMonitor.sendAppStartEvent(scenario)
+                    subscribeToFirstFrameDrawn(scenario, activity, rumMonitor, wasForwarded = false)
+                }
 
+                override fun onNextActivityCreated(
+                    pendingScenario: RumStartupScenario,
+                    activity: Activity
+                ) {
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+                    subscribeToFirstFrameDrawn(pendingScenario, activity, rumMonitor, wasForwarded = true)
+                }
+
+                private fun subscribeToFirstFrameDrawn(
+                    scenario: RumStartupScenario,
+                    activity: Activity,
+                    rumMonitor: AdvancedRumMonitor,
+                    wasForwarded: Boolean
+                ) {
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
+                            // Another activity may have already reported TTID
+                            val pending = rumAppStartupDetector?.getPendingScenario()
+                            if (pending !== scenario) return
+
                             val durationNs = timestampNs - scenario.initialTime.nanoTime
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = durationNs
+                                durationNs = durationNs,
+                                wasForwarded = wasForwarded
                             )
 
                             rumMonitor.sendTTIDEvent(info)
+                            rumAppStartupDetector?.clearPendingScenario()
                         }
                     }
 
@@ -722,7 +746,8 @@ internal class RumFeature(
                         callback = callback
                     )
                 }
-            }
+            },
+            appStartupActivityPredicate = configuration.appStartupActivityPredicate
         )
     }
 
@@ -760,7 +785,8 @@ internal class RumFeature(
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
-        val insightsCollector: InsightsCollector
+        val insightsCollector: InsightsCollector,
+        val appStartupActivityPredicate: AppStartupActivityPredicate
     )
 
     internal companion object {
@@ -813,7 +839,8 @@ internal class RumFeature(
             rumSessionTypeOverride = null,
             collectAccessibility = false,
             disableJankStats = false,
-            insightsCollector = NoOpInsightsCollector()
+            insightsCollector = NoOpInsightsCollector(),
+            appStartupActivityPredicate = DefaultAppStartupActivityPredicate
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

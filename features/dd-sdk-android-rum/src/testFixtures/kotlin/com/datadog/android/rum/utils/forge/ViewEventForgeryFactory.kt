@@ -146,7 +146,14 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             dd = ViewEvent.Dd(
                 session = forge.aNullable { ViewEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
-                documentVersion = forge.aPositiveLong(strict = true)
+                documentVersion = forge.aPositiveLong(strict = true),
+                configuration = forge.aNullable {
+                    ViewEvent.Configuration(
+                        sessionSampleRate = aFloat(min = 0f, max = 100f),
+                        sessionReplaySampleRate = aNullable { aLong(min = 0, max = 100) },
+                        traceSampleRate = aNullable { aFloat(min = 0f, max = 100f) }
+                    )
+                }
             ),
             ddtags = forge.aNullable { ddTagsString() }
         )

@@ -41,6 +41,9 @@ interface BuildSdkVersionProvider {
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
     val isAtLeastTiramisu: Boolean
 
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    val isAtLeastVanillaIceCream: Boolean
+
     companion object {
 
         /**
@@ -71,6 +74,10 @@ interface BuildSdkVersionProvider {
 
             @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
             override val isAtLeastTiramisu: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+            @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+            override val isAtLeastVanillaIceCream: Boolean =
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
         }
     }
 }

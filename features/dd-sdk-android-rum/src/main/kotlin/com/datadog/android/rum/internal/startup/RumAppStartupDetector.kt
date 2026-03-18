@@ -6,31 +6,41 @@
 
 package com.datadog.android.rum.internal.startup
 
+import android.app.Activity
 import android.app.Application
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTimeNs
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 
 internal interface RumAppStartupDetector {
     interface Listener {
+        /**
+         * Called when a startup scenario is detected.
+         */
         fun onAppStartupDetected(scenario: RumStartupScenario)
+        fun onNextActivityCreated(pendingScenario: RumStartupScenario, activity: Activity)
     }
 
     fun destroy()
+    fun getPendingScenario(): RumStartupScenario?
+    fun clearPendingScenario()
 
     companion object {
         fun create(
             application: Application,
             sdkCore: InternalSdkCore,
-            listener: Listener
+            listener: Listener,
+            appStartupActivityPredicate: AppStartupActivityPredicate
         ): RumAppStartupDetector {
             return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs.asTimeNs() },
                 timeProvider = { Time() },
-                listener
+                listener = listener,
+                appStartupActivityPredicate = appStartupActivityPredicate
             )
         }
     }

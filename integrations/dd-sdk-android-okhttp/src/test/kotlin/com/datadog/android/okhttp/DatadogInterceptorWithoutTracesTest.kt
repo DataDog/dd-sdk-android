@@ -19,14 +19,13 @@ import com.datadog.android.okhttp.trace.newSpanBuilderMock
 import com.datadog.android.okhttp.trace.newSpanContextMock
 import com.datadog.android.okhttp.trace.newSpanMock
 import com.datadog.android.okhttp.trace.newTracerMock
-import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -34,6 +33,7 @@ import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

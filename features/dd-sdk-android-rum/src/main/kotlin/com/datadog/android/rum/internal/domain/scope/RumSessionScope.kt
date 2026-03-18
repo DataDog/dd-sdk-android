@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -27,11 +28,9 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
-import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -41,7 +40,7 @@ internal class RumSessionScope(
     override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
-    internal val sampleRate: Float,
+    internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
     trackFrustrations: Boolean,
     viewChangedListener: RumViewChangedListener?,
@@ -72,8 +71,6 @@ internal class RumSessionScope(
 
     private val lastUserInteractionNs = AtomicLong(0L)
 
-    private val random = SecureRandom()
-
     private val noOpWriter = NoOpDataWriter<Any>()
 
     private var rumSessionScopeStartupManager: RumSessionScopeStartupManager? = null
@@ -91,7 +88,7 @@ internal class RumSessionScope(
         memoryVitalMonitor = memoryVitalMonitor,
         frameRateVitalMonitor = frameRateVitalMonitor,
         applicationDisplayed = applicationDisplayed,
-        sampleRate = sampleRate,
+        sampleRate = sessionSampler.getSampleRate() ?: 100f,
         initialResourceIdentifier = networkSettledResourceIdentifier,
         slowFramesListener = slowFramesListener,
         lastInteractionIdentifier = lastInteractionIdentifier,
@@ -282,10 +279,11 @@ internal class RumSessionScope(
     }
 
     private fun renewSession(time: Time, reason: StartReason) {
-        val keepSession = random.nextFloat() < sampleRate.percent()
+        val newSessionId = UUID.randomUUID().toString()
+        val keepSession = sessionSampler.sample(newSessionId)
         startReason = reason
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
-        sessionId = UUID.randomUUID().toString()
+        sessionId = newSessionId
         sessionStartNs.set(time.nanoTime)
         rumSessionScopeStartupManager = rumSessionScopeStartupManagerFactory()
         childScope?.renewViewScopes(time)

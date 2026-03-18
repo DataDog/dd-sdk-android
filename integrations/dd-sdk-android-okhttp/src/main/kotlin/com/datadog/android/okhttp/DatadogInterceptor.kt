@@ -27,7 +27,9 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -84,7 +86,8 @@ open class DatadogInterceptor internal constructor(
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
-    globalTracerProvider: () -> DatadogTracer?
+    globalTracerProvider: () -> DatadogTracer?,
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -191,6 +194,28 @@ open class DatadogInterceptor internal constructor(
 
     // region Internal
 
+    private fun extractHeaderAttributes(
+        sdkCore: FeatureSdkCore,
+        request: Request,
+        response: Response
+    ): Map<String, Any?> {
+        val extractor = resourceHeadersExtractor ?: return emptyMap()
+        val reqHeaders = _RumInternalProxy.extractRequestHeaders(
+            extractor,
+            request.headers.toMultimap(),
+            sdkCore.internalLogger
+        )
+        val resHeaders = _RumInternalProxy.extractResponseHeaders(
+            extractor,
+            response.headers.toMultimap(),
+            sdkCore.internalLogger
+        )
+        return buildMap {
+            if (reqHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, reqHeaders)
+            if (resHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, resHeaders)
+        }
+    }
+
     private fun handleResponse(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -228,13 +253,15 @@ open class DatadogInterceptor internal constructor(
             }
         }
 
+        val headerAttributes = extractHeaderAttributes(sdkCore, request, response)
+
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
             kind,
-            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
+            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null) + headerAttributes
         )
     }
 
@@ -410,6 +437,7 @@ open class DatadogInterceptor internal constructor(
         BaseBuilder<DatadogInterceptor, Builder>(tracedHostsWithHeaderType) {
 
         private var rumResourceAttributesProvider: RumResourceAttributesProvider = NoOpRumResourceAttributesProvider()
+        private var resourceHeadersExtractor: ResourceHeadersExtractor? = null
 
         constructor(tracedHosts: List<String>) : this(
             tracedHosts.associateWith {
@@ -437,7 +465,8 @@ open class DatadogInterceptor internal constructor(
                 traceContextInjection,
                 redacted404ResourceName,
                 localTracerFactory,
-                globalTracerProvider
+                globalTracerProvider,
+                resourceHeadersExtractor
             )
         }
 
@@ -450,6 +479,17 @@ open class DatadogInterceptor internal constructor(
             this.rumResourceAttributesProvider = rumResourceAttributesProvider
             return this
         }
+
+        /**
+         * Enables capturing HTTP request and response headers in RUM Resource events.
+         *
+         * @param extractor the [ResourceHeadersExtractor] specifying which headers to capture.
+         * Defaults to a configuration that captures common safe headers.
+         * @return this builder for chaining.
+         */
+        fun trackResourceHeaders(
+            extractor: ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
+        ): Builder = apply { resourceHeadersExtractor = extractor }
     }
 
     // endregion

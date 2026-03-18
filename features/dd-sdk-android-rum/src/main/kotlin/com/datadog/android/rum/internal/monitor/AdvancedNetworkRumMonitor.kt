@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -30,6 +31,9 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
 
     @InternalApi
     fun notifyInterceptorInstantiated()
+
+    @InternalApi
+    fun reportNetworkingLibraryType(type: LibraryType)
 
     /**
      * Notify that a new Resource is being loaded, linked with the [key] instance.

@@ -46,7 +46,7 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasFamily(expected: String): ProfileEventAssert {
+    fun hasFamily(expected: ProfileEvent.Family): ProfileEventAssert {
         assertThat(actual.family)
             .overridingErrorMessage(
                 "Expected event data to have family $expected " +
@@ -56,7 +56,7 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasRuntime(expected: String): ProfileEventAssert {
+    fun hasRuntime(expected: ProfileEvent.Family): ProfileEventAssert {
         assertThat(actual.runtime)
             .overridingErrorMessage(
                 "Expected event data to have runtime $expected " +
@@ -66,7 +66,7 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasVersion(expected: String): ProfileEventAssert {
+    fun hasVersion(expected: Long): ProfileEventAssert {
         assertThat(actual.version)
             .overridingErrorMessage(
                 "Expected event data to have version $expected " +
@@ -97,26 +97,36 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
     }
 
     fun hasSessionId(expected: String): ProfileEventAssert {
-        assertThat(actual.session.id)
+        assertThat(actual.session?.id)
             .overridingErrorMessage(
                 "Expected event data to have session.id $expected " +
-                    "but was ${actual.session.id}"
+                    "but was ${actual.session?.id}"
             )
             .isEqualTo(expected)
         return this
     }
 
-    fun hasVitalId(expected: String): ProfileEventAssert {
-        assertThat(actual.vital.id)
+    fun hasVitalIds(expected: List<String>): ProfileEventAssert {
+        assertThat(actual.vital?.id)
             .overridingErrorMessage(
                 "Expected event data to have vital.id $expected " +
-                    "but was ${actual.vital.id}"
+                    "but was ${actual.vital?.id}"
             )
             .isEqualTo(expected)
         return this
     }
 
-    fun hasViewId(expected: String?): ProfileEventAssert {
+    fun hasVitalNames(expected: List<String>): ProfileEventAssert {
+        assertThat(actual.vital?.label)
+            .overridingErrorMessage(
+                "Expected event data to have vital.label $expected " +
+                    "but was ${actual.vital?.label}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasViewIds(expected: List<String>?): ProfileEventAssert {
         assertThat(actual.view?.id)
             .overridingErrorMessage(
                 "Expected event data to have view.id $expected " +
@@ -126,7 +136,7 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasViewName(expected: String?): ProfileEventAssert {
+    fun hasViewNames(expected: List<String>?): ProfileEventAssert {
         assertThat(actual.view?.name)
             .overridingErrorMessage(
                 "Expected event data to have view.name $expected " +

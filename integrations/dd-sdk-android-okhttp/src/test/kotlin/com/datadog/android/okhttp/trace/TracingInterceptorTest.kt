@@ -13,14 +13,13 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
-import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -36,6 +35,7 @@ import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.fromHex
 import com.datadog.android.trace.internal.net.TraceContext
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -1571,8 +1571,38 @@ internal open class TracingInterceptorTest {
             contextMock
         ).put(
             OKHTTP_INTERCEPTOR_HEADER_TYPES,
-            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toTelemetryTracingHeaderType() }.toSet())
         )
+        verifyNoMoreInteractions(contextMock)
+    }
+
+    @Test
+    fun `M update tracing feature context W onSdkInstanceReady { sdk initialized after interceptor construction }`(
+        @FloatForgery(min = 0f, max = 100f) sampleRate: Float
+    ) {
+        // Given
+        datadogCore.clearRegistry()
+        whenever(mockTraceSampler.getSampleRate()) doReturn sampleRate
+
+        val contextMock = mock<MutableMap<String, Any?>>()
+        whenever(rumMonitor.mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())) doAnswer {
+            val updater = it.getArgument<(MutableMap<String, Any?>) -> Unit>(it.arguments.lastIndex)
+            updater(contextMock)
+        }
+
+        // When
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // Then
+        verifyNoInteractions(contextMock)
+
+        // When
+        testedInterceptor.onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        verify(contextMock)[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = sampleRate
+        verify(contextMock)[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
+            TracingHeaderTypesSet(fakeLocalHosts.values.flatten().map { it.toTelemetryTracingHeaderType() }.toSet())
         verifyNoMoreInteractions(contextMock)
     }
 

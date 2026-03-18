@@ -6,15 +6,21 @@
 
 package com.datadog.android.cronet
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.cronet.internal.DatadogCronetEngine
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.tests.elmyr.aHostName
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -29,13 +35,15 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.Executor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -51,12 +59,16 @@ internal class CronetIntegrationPluginTest {
     @Mock
     lateinit var mockCronetEngine: CronetEngine
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var fakeTracedHost: List<String>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTracedHost = listOf(forge.aHostName())
         whenever(mockDelegateBuilder.build()) doReturn mockCronetEngine
+        whenever(datadogCore.mockInstance.internalLogger) doReturn mockInternalLogger
     }
 
     @Test
@@ -228,8 +240,8 @@ internal class CronetIntegrationPluginTest {
 
         // Then
         check(engine is DatadogCronetEngine)
-        assertThat(engine.apmNetworkInstrumentation).isNotNull
         assertThat(engine.distributedTracingInstrumentation).isNotNull
+        assertThat(engine.distributedTracingInstrumentation?.traceOrigin).isEqualTo(CronetIntegrationPlugin.ORIGIN_RUM)
     }
 
     @Test
@@ -244,5 +256,100 @@ internal class CronetIntegrationPluginTest {
 
         // Then
         verify(mockDelegateBuilder).build()
+    }
+
+    @Test
+    fun `M not send network instrumentation telemetry W build {no rumInstrumentation}()`() {
+        // When
+        mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = null,
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+            )
+            .build()
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M preserve custom traceOrigin on distributedTracing W build() {APM has custom origin}`(
+        @StringForgery fakeCustomOrigin: String
+    ) {
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+                    .setTraceOrigin(fakeCustomOrigin)
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.distributedTracingInstrumentation?.traceOrigin)
+            .isEqualTo(fakeCustomOrigin)
+    }
+
+    @Test
+    fun `M override traceScope on distributedTracing W build() {APM has ALL scope}`() {
+        // Given
+        val apmConfig = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+            .setTraceScope(ApmNetworkTracingScope.ALL)
+
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = apmConfig
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.distributedTracingInstrumentation?.networkTracingScope)
+            .isEqualTo(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
+    }
+
+    @Test
+    fun `M not modify original APM config scope W build() {RUM + APM}`() {
+        // When
+        val engine = mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(fakeTracedHost)
+                    .setTraceScope(ApmNetworkTracingScope.ALL)
+
+            ).build()
+
+        // Then
+        check(engine is DatadogCronetEngine)
+        assertThat(engine.apmNetworkInstrumentation?.networkTracingScope)
+            .isEqualTo(ApmNetworkTracingScope.ALL)
+    }
+
+    @Test
+    fun `M not send telemetry W build() {sdk core not available}`() {
+        // Given
+        datadogCore.clearRegistry()
+
+        // When
+        mockDelegateBuilder
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = null,
+                apmInstrumentationConfiguration = null
+            )
+            .build()
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    companion object {
+        val datadogCore = DatadogSingletonTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(datadogCore)
+        }
     }
 }

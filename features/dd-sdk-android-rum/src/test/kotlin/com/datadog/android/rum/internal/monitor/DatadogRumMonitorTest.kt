@@ -19,6 +19,8 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -59,9 +61,9 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.verifyApiUsage
-import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.utils.verifyApiUsage
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -191,6 +193,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockEventWriteScope: EventWriteScope
 
+    @Mock
+    lateinit var mockSessionSampler: Sampler<String>
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -249,7 +254,8 @@ internal class DatadogRumMonitorTest {
                 eq(
                     setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        Feature.PROFILING_FEATURE_NAME
+                        Feature.PROFILING_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ),
                 any()
@@ -266,10 +272,12 @@ internal class DatadogRumMonitorTest {
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
+
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -301,7 +309,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -329,7 +337,7 @@ internal class DatadogRumMonitorTest {
         val rootScope = testedMonitor.rootScope
 
         // Then
-        assertThat(rootScope.sampleRate).isEqualTo(fakeSampleRate)
+        assertThat(rootScope.sessionSampler).isSameAs(mockSessionSampler)
         assertThat(rootScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
     }
 
@@ -376,7 +384,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = 100.0f,
+            sessionSampler = DeterministicSampler({ _ -> 0uL }, 100f),
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -419,7 +427,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = 0.0f,
+            sessionSampler = DeterministicSampler({ _ -> 0uL }, 0f),
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2002,7 +2010,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2042,7 +2050,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2083,7 +2091,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,
@@ -2228,6 +2236,49 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle NetworkInstrumentation telemetry W reportNetworkingLibraryType()`(
+        @Forgery fakeLibraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+    ) {
+        // When
+        testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            val event = lastValue.event
+            assertThat(event).isInstanceOf(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation::class.java)
+            assertThat((event as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation).type)
+                .isEqualTo(fakeLibraryType)
+        }
+    }
+
+    @Test
+    fun `M forward each event W reportNetworkingLibraryType() {called multiple times}`(
+        @Forgery fakeLibraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+    ) {
+        // When
+        testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
+        testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler, times(2)).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            allValues.forEach { wrapper ->
+                val event = wrapper.event
+                assertThat(event).isInstanceOf(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation::class.java)
+                assertThat((event as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation).type)
+                    .isEqualTo(fakeLibraryType)
+            }
+        }
+    }
+
+    @Test
     fun `M call enableJankStatsTracking on RUM feature W enableJankStatsTracking`() {
         // Given
         val mockActivity = mock<Activity>()
@@ -2256,7 +2307,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = 100.0f,
+            sessionSampler = DeterministicSampler({ _ -> 0uL }, 100f),
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             writer = mockWriter,

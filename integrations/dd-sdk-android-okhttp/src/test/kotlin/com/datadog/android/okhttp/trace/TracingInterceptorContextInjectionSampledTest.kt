@@ -12,9 +12,8 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
-import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.okhttp.utils.verifyLog
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -30,6 +29,7 @@ import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.fromHex
 import com.datadog.android.trace.internal.net.TraceContext
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

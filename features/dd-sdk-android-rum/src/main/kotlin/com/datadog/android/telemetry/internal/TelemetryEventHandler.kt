@@ -71,7 +71,7 @@ internal class TelemetryEventHandler(
         if (!canWrite(event)) return
 
         eventIDsSeenInCurrentSession.add(event.identity)
-        totalEventsSeenInCurrentSession++
+        if (event !is InternalTelemetryEvent.Configuration) totalEventsSeenInCurrentSession++
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext(
             withFeatureContexts = setOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME,
@@ -161,8 +161,8 @@ internal class TelemetryEventHandler(
     private fun canWrite(event: InternalTelemetryEvent): Boolean {
         if (!eventSampler.sample(event)) return false
 
-        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample(event)) {
-            return false
+        if (event is InternalTelemetryEvent.Configuration) {
+            return configurationExtraSampler.sample(event)
         }
 
         val eventIdentity = event.identity
@@ -403,6 +403,7 @@ internal class TelemetryEventHandler(
         )
     }
 
+    @Suppress("LongMethod")
     private fun createApiUsageEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
@@ -431,6 +432,17 @@ internal class TelemetryEventHandler(
             }
             is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
                 TelemetryUsageEvent.Usage.TrackWebView()
+            }
+            is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
+                TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation(
+                    type = when (event.type) {
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.CRONET ->
+                            TelemetryUsageEvent.Type.CRONET
+
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.OKHTTP ->
+                            TelemetryUsageEvent.Type.OKHTTP
+                    }
+                )
             }
         }
 
@@ -484,7 +496,7 @@ internal class TelemetryEventHandler(
                     InternalLogger.Target.TELEMETRY,
                     {
                         "GlobalDatadogTracer class exists in the runtime classpath, " +
-                            "but there is an error invoking isRegistered method"
+                            "but there is an error invoking getOrNull method"
                     },
                     t
                 )

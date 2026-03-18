@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#include <jni.h>
-
 #ifndef DATADOG_NATIVE_LIB_H
 #define DATADOG_NATIVE_LIB_H
+
+#include <jni.h>
 
 #ifdef __cplusplus
 extern "C" {

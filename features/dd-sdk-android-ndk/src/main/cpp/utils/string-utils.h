@@ -4,14 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-
-#include <jni.h>
-#include <string>
-
-
 #ifndef STRINGUTILS_H
 #define STRINGUTILS_H
 
+#include <jni.h>
+#include <string>
 
 namespace stringutils {
     std::string copy_to_string(JNIEnv *env, jstring from);
