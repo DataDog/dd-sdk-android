@@ -140,7 +140,7 @@ class ProfilingFeatureTest {
         // Then
         verify(mockSharedPreferencesStorage).putFloat(
             "dd_profiling_sample_rate",
-            fakeConfiguration.sampleRate
+            fakeConfiguration.applicationLaunchSampleRate
         )
     }
 
@@ -150,7 +150,7 @@ class ProfilingFeatureTest {
         whenever(
             mockSharedPreferencesStorage
                 .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.sampleRate - 1f
+        ) doReturn fakeConfiguration.applicationLaunchSampleRate - 1f
 
         // When
         testedFeature.onInitialize(mockContext)
@@ -158,7 +158,7 @@ class ProfilingFeatureTest {
         // Then
         verify(mockSharedPreferencesStorage, never()).putFloat(
             "dd_profiling_sample_rate",
-            fakeConfiguration.sampleRate
+            fakeConfiguration.applicationLaunchSampleRate
         )
     }
 
@@ -166,7 +166,7 @@ class ProfilingFeatureTest {
     fun `M set Profiling sample rate W initialize() {bigger sample rate exists}`() {
         whenever(
             mockSharedPreferencesStorage.getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.sampleRate + 1f
+        ) doReturn fakeConfiguration.applicationLaunchSampleRate + 1f
 
         // When
         testedFeature.onInitialize(mockContext)
@@ -175,7 +175,7 @@ class ProfilingFeatureTest {
         // Since the existing value was higher, it should be updated to the configuration value
         verify(mockSharedPreferencesStorage).putFloat(
             "dd_profiling_sample_rate",
-            fakeConfiguration.sampleRate
+            fakeConfiguration.applicationLaunchSampleRate
         )
     }
 

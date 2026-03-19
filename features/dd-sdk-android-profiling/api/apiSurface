@@ -12,6 +12,7 @@ object com.datadog.android.profiling.Profiling
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
     fun setApplicationLaunchSampleRate(Float): Builder
+    fun setContinuousSampleRate(Float): Builder
     fun useCustomEndpoint(String): Builder
     fun build(): ProfilingConfiguration
   companion object 
