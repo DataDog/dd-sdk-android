@@ -7,6 +7,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.sampleAppConfig
 
 plugins {
     id("com.android.application")
@@ -33,6 +34,10 @@ android {
         vectorDrawables.useSupportLibrary = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val us1Config = sampleAppConfig("${rootDir.absolutePath}/config/us1.json")
+        buildConfigField("String", "DD_BUG_REPRO_TOKEN", "\"${us1Config.token}\"")
+        buildConfigField("String", "DD_BUG_REPRO_RUM_APP_ID", "\"${us1Config.rumApplicationId}\"")
     }
 
     namespace = "com.datadog.android.sdk.integration"
