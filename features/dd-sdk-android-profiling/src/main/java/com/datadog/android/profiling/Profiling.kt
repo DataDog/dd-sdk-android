@@ -108,7 +108,7 @@ object Profiling {
         if (!isProfilerInitialized.getAndSet(true)) {
             profiler = PerfettoProfiler(
                 timeProvider = DefaultTimeProvider(),
-                profilingExecutor = Executors.newSingleThreadExecutor()
+                profilingExecutor = Executors.newSingleThreadScheduledExecutor()
             )
         }
     }

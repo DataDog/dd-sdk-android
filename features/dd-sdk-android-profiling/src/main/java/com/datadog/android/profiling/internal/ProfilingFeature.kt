@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.profiling.ExperimentalProfilingApi
@@ -58,6 +59,7 @@ internal class ProfilingFeature(
         this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
+            this.setRateBasedSampler(RateBasedSampler(configuration.continuousSampleRate))
             registerProfilingCallback(sdkCore.name) { result ->
                 perfettoResult = result
                 tryWriteProfilingEvent()
