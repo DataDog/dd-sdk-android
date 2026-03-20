@@ -29,7 +29,7 @@ internal class ProfilingConfigurationTest {
 
         // Then
         assertThat(config.customEndpointUrl).isNull()
-        assertThat(config.sampleRate).isEqualTo(15f)
+        assertThat(config.applicationLaunchSampleRate).isEqualTo(15f)
     }
 
     @Test
@@ -55,7 +55,7 @@ internal class ProfilingConfigurationTest {
             .build()
 
         // Then
-        assertThat(config.sampleRate).isEqualTo(sampleRate)
+        assertThat(config.applicationLaunchSampleRate).isEqualTo(sampleRate)
     }
 
     @Test
@@ -69,13 +69,13 @@ internal class ProfilingConfigurationTest {
         // When
         val modified = original.copy(
             customEndpointUrl = endpoint,
-            sampleRate = sampleRate
+            applicationLaunchSampleRate = sampleRate
         )
 
         // Then
         assertThat(original.customEndpointUrl).isNull()
-        assertThat(original.sampleRate).isEqualTo(15f)
+        assertThat(original.applicationLaunchSampleRate).isEqualTo(15f)
         assertThat(modified.customEndpointUrl).isEqualTo(endpoint)
-        assertThat(modified.sampleRate).isEqualTo(sampleRate)
+        assertThat(modified.applicationLaunchSampleRate).isEqualTo(sampleRate)
     }
 }

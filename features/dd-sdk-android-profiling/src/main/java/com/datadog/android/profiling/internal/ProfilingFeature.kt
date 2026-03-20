@@ -68,7 +68,7 @@ internal class ProfilingFeature(
                 }
             }
         }
-        setMinimumSampleRate(appContext, configuration.sampleRate)
+        setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
@@ -114,7 +114,7 @@ internal class ProfilingFeature(
         // if old value doesn't exist (we use negative default value in case of absence) or
         // the value is bigger than the sample rate, we update the sample rate.
         if (oldValue !in 0f..sampleRate) {
-            ProfilingStorage.setSampleRate(appContext, configuration.sampleRate)
+            ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         }
     }
 
