@@ -4,8 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.model
+package com.datadog.android.rum.internal.domain.event
 
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -25,7 +26,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class ViewEventDiffNewTest {
+internal class RumViewEventDiffTest {
 
     // region Required fields — always present in output regardless of change
 
@@ -214,8 +215,7 @@ internal class ViewEventDiffNewTest {
 
     @Test
     fun `M return only new slow_frames W diffViewEvent { slow frames appended }`(
-        @Forgery fakeEvent: ViewEvent,
-        forge: Forge
+        @Forgery fakeEvent: ViewEvent
     ) {
         // Given
         val existingFrames = listOf(
@@ -450,7 +450,7 @@ internal class ViewEventDiffNewTest {
         val result = diffViewEvent(old, new)
 
         // Then — currently included (must be removed once backend fix is complete)
-        // TODO VIEW_UPDATE: is_active must not be sent in VIEW_UPDATE until backend fix is complete
+        // TODO RUM-14814: is_active must not be sent in VIEW_UPDATE until backend fix is complete
         assertThat(result.view.isActive).isTrue()
     }
 

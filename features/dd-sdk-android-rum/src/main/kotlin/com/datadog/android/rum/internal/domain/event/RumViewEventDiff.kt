@@ -4,12 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.model
+@file:Suppress("TooManyFunctions")
+
+package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.internal.utils.computeDiffIfChanged
 import com.datadog.android.internal.utils.computeDiffRequired
+import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 
-// TODO VIEW_UPDATE go through all fields again and correct merge semantics
+// TODO RUM-14814: go through all fields again and correct merge semantics
 @Suppress("LongMethod")
 internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): ViewUpdateEvent {
     return computeDiffRequired(old = old, new = new) {
@@ -41,6 +45,7 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): ViewUpdateEvent {
             // context = custom attributes (additionalProperties: true) → REPLACE semantics per spec.
             // The generator reuses ViewUpdateEvent.FeatureFlags for this field because both share
             // the same schema shape (additionalProperties: true map). The naming is misleading but correct.
+            // TODO RUM-14814: We should review this
             context = diffEquals(ViewEvent::context)?.let { ViewUpdateEvent.FeatureFlags(it.additionalProperties) },
             container = diffEquals(ViewEvent::container)?.toRum(),
             privacy = diffEquals(
@@ -124,7 +129,7 @@ private fun diffView(
             customTimings = diffEquals(ViewEvent.ViewEventView::customTimings)?.let {
                 ViewUpdateEvent.CustomTimings(it.additionalProperties)
             },
-            // TODO VIEW_UPDATE: is_active must not be sent in VIEW_UPDATE until backend fix is complete
+            // TODO RUM-14814: is_active must not be sent in VIEW_UPDATE until backend fix is complete
             // (backend cannot distinguish absent false from explicit false — risks corrupting view state)
             isActive = diffEquals(ViewEvent.ViewEventView::isActive),
             isSlowRendered = diffEquals(ViewEvent.ViewEventView::isSlowRendered),
@@ -192,7 +197,7 @@ private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): Vi
     return computeDiffIfChanged(old = old, new = new) {
         ViewUpdateEvent.FeatureFlags(
             diffMap(ViewEvent.Context::additionalProperties).toMutableMap()
-        ) // TODO VIEW_UPDATE
+        ) // TODO RUM-14814: review feature flags diff semantics
     }
 }
 
@@ -420,7 +425,8 @@ private fun ViewEvent.SessionPrecondition.toRum() = when (this) {
     ViewEvent.SessionPrecondition.MAX_DURATION -> ViewUpdateEvent.SessionPrecondition.MAX_DURATION
     ViewEvent.SessionPrecondition.BACKGROUND_LAUNCH -> ViewUpdateEvent.SessionPrecondition.BACKGROUND_LAUNCH
     ViewEvent.SessionPrecondition.PREWARM -> ViewUpdateEvent.SessionPrecondition.PREWARM
-    ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION -> ViewUpdateEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION ->
+        ViewUpdateEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     ViewEvent.SessionPrecondition.EXPLICIT_STOP -> ViewUpdateEvent.SessionPrecondition.EXPLICIT_STOP
 }
 

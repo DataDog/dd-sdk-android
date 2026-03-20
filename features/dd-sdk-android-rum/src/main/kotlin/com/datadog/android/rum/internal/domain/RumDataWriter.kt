@@ -14,64 +14,90 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
 import com.datadog.android.rum.model.ViewEvent
 
 internal class RumDataWriter(
-    internal val eventSerializer: Serializer<Any>,
+    internal val eventMapper: RumEventMapper,
+    internal val eventSerializer: RumEventSerializer,
     private val eventMetaSerializer: Serializer<RumEventMeta>,
     private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
 
-    // region DataWriter
-
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
-        val byteArray = eventSerializer.serializeToByteArray(
-            element,
-            sdkCore.internalLogger
-        ) ?: return false
-
-        val batchEvent = if (element is ViewEvent) {
-            val hasAccessibility = element.view.accessibility != null
-
-            val eventMeta = RumEventMeta.View(
-                viewId = element.view.id,
-                documentVersion = element.dd.documentVersion,
-                hasAccessibility = hasAccessibility
-            )
-            val serializedEventMeta =
-                eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
-                    ?: EMPTY_BYTE_ARRAY
-            RawBatchEvent(
-                data = byteArray,
-                metadata = serializedEventMeta
-            )
-        } else {
-            RawBatchEvent(data = byteArray)
-        }
-
-        synchronized(this) {
-            val result = writer.write(batchEvent, null, eventType)
-            if (result) {
-                onDataWritten(element, byteArray)
-            }
-            return result
+        return when (element) {
+            is ViewEvent -> writeViewEvent(writer, element, eventType)
+            is RumViewUpdateData -> writeViewUpdateEvent(writer, element, eventType)
+            else -> writeOtherEvent(writer, element, eventType)
         }
     }
-
-    // endregion
-
-    // region Internal
 
     @WorkerThread
-    internal fun onDataWritten(data: Any, rawData: ByteArray) {
-        when (data) {
-            is ViewEvent -> sdkCore.writeLastViewEvent(rawData)
+    private fun writeViewEvent(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
+        val byteArray = eventSerializer.serializeToByteArray(event, sdkCore.internalLogger)
+            ?: return false
+
+        val eventMeta = RumEventMeta.View(
+            viewId = event.view.id,
+            documentVersion = event.dd.documentVersion
+        )
+        val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
+            ?: EMPTY_BYTE_ARRAY
+
+        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+            sdkCore.writeLastViewEvent(byteArray)
         }
     }
 
-    // endregion
+    @WorkerThread
+    private fun writeViewUpdateEvent(
+        writer: EventBatchWriter,
+        eventData: RumViewUpdateData,
+        eventType: EventType
+    ): Boolean {
+        val event = eventData.viewUpdate
+        val byteArray = eventSerializer.serializeToByteArray(event, sdkCore.internalLogger)
+            ?: return false
+
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = event.view.id,
+            documentVersion = event.dd.documentVersion
+        )
+        val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
+            ?: EMPTY_BYTE_ARRAY
+
+        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+            // serialize the full ViewEvent only on successful write, for crash recovery
+            val byteArrayView = eventSerializer.serializeToByteArray(eventData.viewEvent, sdkCore.internalLogger)
+            if (byteArrayView != null) sdkCore.writeLastViewEvent(byteArrayView)
+        }
+    }
+
+    @WorkerThread
+    private fun writeOtherEvent(writer: EventBatchWriter, event: Any, eventType: EventType): Boolean {
+        val mappedElement = eventMapper.map(event) ?: return false
+        return eventSerializer.serializeToByteArray(mappedElement, sdkCore.internalLogger)
+            ?.let { writeBatchEvent(writer, RawBatchEvent(data = it), eventType) }
+            ?: false
+    }
+
+    @WorkerThread
+    private fun writeBatchEvent(
+        writer: EventBatchWriter,
+        batchEvent: RawBatchEvent,
+        eventType: EventType,
+        onSuccess: () -> Unit = {}
+    ): Boolean {
+        return synchronized(this) {
+            val result = writer.write(batchEvent, null, eventType)
+            if (result) onSuccess()
+            result
+        }
+    }
 
     companion object {
         val EMPTY_BYTE_ARRAY = ByteArray(0)

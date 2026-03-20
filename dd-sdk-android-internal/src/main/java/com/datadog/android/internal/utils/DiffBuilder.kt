@@ -101,7 +101,7 @@ fun <D : Any, R : Any> computeDiffIfChanged(old: D, new: D, block: DiffBuilder<D
  * Computes a diff between [old] and [new] using the [block] DSL and always returns the result.
  *
  * Unlike [computeDiffIfChanged], this always returns the diff object even if nothing changed.
- * Use this for sub-objects that must always be present in the output (e.g. `application`,
+ * Use this for objects that must always be present in the output (e.g. `application`,
  * `session`, `view` in a [ViewUpdateEvent]).
  */
 fun <D : Any, R : Any> computeDiffRequired(old: D, new: D, block: DiffBuilder<D>.() -> R): R {

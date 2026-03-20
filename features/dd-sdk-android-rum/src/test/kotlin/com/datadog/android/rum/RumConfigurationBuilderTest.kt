@@ -27,7 +27,6 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -98,7 +97,7 @@ internal class RumConfigurationBuilderTest {
             assertThat(interactionPredicate).isEqualTo(NoOpInteractionPredicate())
             assertThat(viewTrackingStrategy)
                 .isEqualTo(ActivityViewTrackingStrategy(false))
-            assertThat(viewEventMapper).isEqualTo(NoOpEventMapper<ViewEvent>())
+            assertThat(viewEventMapper).isInstanceOf(ViewEventMapper::class.java)
             assertThat(errorEventMapper).isEqualTo(NoOpEventMapper<ErrorEvent>())
             assertThat(actionEventMapper).isEqualTo(NoOpEventMapper<ActionEvent>())
             assertThat(resourceEventMapper).isEqualTo(NoOpEventMapper<ResourceEvent>())

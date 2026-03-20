@@ -7,6 +7,7 @@
 package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionIdentifier
@@ -74,7 +75,8 @@ internal class ConfigurationRumForgeryFactory :
             collectAccessibility = forge.aBool(),
             disableJankStats = false,
             insightsCollector = mock(),
-            appStartupActivityPredicate = mock()
+            appStartupActivityPredicate = mock(),
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
         )
     }
 }

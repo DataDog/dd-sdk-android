@@ -12,6 +12,7 @@ internal class RumEventMetaSerializer : Serializer<RumEventMeta> {
     override fun serialize(model: RumEventMeta): String {
         return when (model) {
             is RumEventMeta.View -> model.toJson().toString()
+            is RumEventMeta.ViewUpdate -> model.toJson().toString()
         }
     }
 }

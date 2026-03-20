@@ -24,11 +24,12 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -72,6 +73,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -99,7 +101,13 @@ internal class RumViewScopeAttributePropagationTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
+
+    @Mock
+    lateinit var mockViewEventMapper: ViewEventMapper
+
+    @Mock
+    lateinit var mockRumViewEventWriter: RumViewEventWriter
 
     @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
@@ -255,6 +263,14 @@ internal class RumViewScopeAttributePropagationTest {
             callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), any())) doReturn true
+        whenever(mockRumViewEventWriter.writeViewEvent(any(), any(), any(), any(), any())) doAnswer {
+            val viewEvent = it.getArgument<ViewEvent>(0)
+            val writer = it.getArgument<DataWriter<Any>>(3)
+            val eventType = it.getArgument<EventType>(4)
+            writer.write(mockEventBatchWriter, viewEvent, eventType)
+            Unit
+        }
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
         whenever(mockBatteryInfoProvider.getState()) doReturn BatteryInfo(
             batteryLevel = fakeBatteryLevel,
             lowPowerMode = fakeLowPowerMode
@@ -657,7 +673,7 @@ internal class RumViewScopeAttributePropagationTest {
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
         slowFramesListener: SlowFramesListener = mockSlowFramesListener,
         rumSessionType: RumSessionType? = fakeRumSessionType,
-        accessibilitySnapshotManager: AccessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+        accessibilityInfoProvider: InfoProvider<AccessibilityInfo> = mockAccessibilityInfoProvider,
         batteryInfoProvider: InfoProvider<BatteryInfo> = mockBatteryInfoProvider,
         displayInfoProvider: InfoProvider<DisplayInfo> = mockDisplayInfoProvider,
         insightsCollector: InsightsCollector = mockInsightsCollector
@@ -681,11 +697,12 @@ internal class RumViewScopeAttributePropagationTest {
         networkSettledMetricResolver = networkSettledMetricResolver,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         slowFramesListener = slowFramesListener,
-        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        accessibilityInfoProvider = accessibilityInfoProvider,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionTypeOverride = rumSessionType,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        rumViewEventWriter = mockRumViewEventWriter
     )
 
     // endregion

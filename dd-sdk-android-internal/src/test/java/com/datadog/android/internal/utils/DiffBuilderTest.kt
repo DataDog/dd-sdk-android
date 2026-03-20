@@ -309,8 +309,9 @@ class DiffBuilderTest {
 
         // Then
         assertThat(result.nested).isNotNull()
-        assertThat(result.nested!!.id).isEqualTo("id") // id is diffRequired — always present
-        assertThat(result.nested!!.count).isEqualTo(10)
+        val nested = result.nested!!
+        assertThat(nested.id).isEqualTo("id") // id is diffRequired — always present
+        assertThat(nested.count).isEqualTo(10)
     }
 
     @Test
