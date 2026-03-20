@@ -164,7 +164,7 @@ if [[ $ANALYSIS == 1 ]]; then
     detekt --config detekt_custom_general.yml,detekt_custom_safe_calls.yml,detekt_custom_unsafe_calls.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     echo "------ Detekt test pyramid rules"
-    rm apiSurface.log apiUsage.log
+    rm -f apiSurface.log apiUsage.log
     detekt --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     grep -v -f apiUsage.log apiSurface.log > apiCoverageMiss.log

@@ -127,27 +127,12 @@ fun Project.detektCustomConfig() {
         args("-ex", "**/*.kts")
         args("--jvm-target", "11")
 
-        val moduleDependencies = configurations
-            .filter { it.name == "implementation" || it.name == "api" }
-            .flatMap { it.dependencies.filterIsInstance<ProjectDependency>() }
-            .map { it.path }
-            .toSet()
-            .let {
-                // api configurations have canBeResolved=false, so we cannot go inside them to see transitive
-                // module dependencies, so including common modules
-                if (project.path == ":dd-sdk-android-internal") {
-                    it
-                } else if (project.path == ":dd-sdk-android-core") {
-                    it + ":dd-sdk-android-internal"
-                } else {
-                    it + setOf(":dd-sdk-android-core", ":dd-sdk-android-internal")
-                }
-            }
+        val moduleDependencies = collectTransitiveProjectDependencies(project)
 
         val externalDependencies = File("${projectDir.absolutePath}/detekt_classpath").readText()
-        val moduleDependenciesClasses = moduleDependencies.map {
+        val moduleDependenciesClasses = moduleDependencies.joinToString(":") {
             "${rootDir.absolutePath}${it.replace(':', '/')}/build/extracted/classes.jar"
-        }.joinToString(":")
+        }
 
         val dependencies = if (moduleDependenciesClasses.isBlank()) {
             externalDependencies
@@ -157,4 +142,21 @@ fun Project.detektCustomConfig() {
 
         args("-cp", dependencies)
     }
+}
+
+private fun collectTransitiveProjectDependencies(project: Project): Set<String> {
+    val rootProject = project.rootProject
+    val visited = mutableSetOf<String>()
+    val queue = ArrayDeque<Project>()
+    queue.add(project)
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+        val depPaths = current.configurations
+            .filter { it.name == "implementation" || it.name == "api" }
+            .flatMap { it.dependencies.filterIsInstance<ProjectDependency>() }
+            .map { it.path }
+            .filter { visited.add(it) }
+        depPaths.mapNotNull { rootProject.findProject(it) }.forEach { queue.add(it) }
+    }
+    return visited
 }

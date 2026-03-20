@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.scopes.receivers.ClassQualifier
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.PackageQualifier
 import org.jetbrains.kotlin.resolve.scopes.receivers.Receiver
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.lowerIfFlexible
@@ -51,6 +52,10 @@ internal fun Receiver.type(
 
         is ImplicitReceiver -> {
             type.fqNameOrNull()?.toString()
+        }
+
+        is PackageQualifier -> {
+            descriptor.fqName.asString()
         }
 
         else -> {
