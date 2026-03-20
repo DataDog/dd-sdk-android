@@ -14,6 +14,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.Ne
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumConfiguration.Builder
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
@@ -152,5 +153,12 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             headers: Map<String, List<String>>,
             internalLogger: InternalLogger
         ) = extractor.extractResponseHeaders(headers, internalLogger)
+
+        fun setRumViewEventWriteConfig(
+            builder: Builder,
+            config: RumViewEventWriteConfig
+        ): Builder {
+            return builder.setRumViewEventWriteConfig(config = config)
+        }
     }
 }

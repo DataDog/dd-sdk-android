@@ -13,7 +13,6 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -23,7 +22,6 @@ import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import java.util.Locale
 
 internal data class RumEventMapper(
-    val viewEventMapper: EventMapper<ViewEvent> = NoOpEventMapper(),
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
@@ -42,7 +40,6 @@ internal data class RumEventMapper(
 
     private fun mapRumEvent(event: Any): Any? {
         return when (event) {
-            is ViewEvent -> viewEventMapper.map(event)
             is ActionEvent -> actionEventMapper.map(event)
             is ErrorEvent -> {
                 // Don't allow the error event to be dropped if it's a crash
@@ -94,17 +91,7 @@ internal data class RumEventMapper(
 
         // we need to check if the returned bundled mapped object is not null and same instance
         // as the original one. Otherwise we will drop the event.
-        // In case the event is of type ViewEvent this cannot be null according with the interface
-        // but it can happen that if used from Java code to have null values. In this case we will
-        // log a warning and we will use the original event.
-        return if (event is ViewEvent && (mappedEvent == null || mappedEvent !== event)) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event) }
-            )
-            event
-        } else if (mappedEvent == null) {
+        return if (mappedEvent == null) {
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
@@ -126,9 +113,6 @@ internal data class RumEventMapper(
     // endregion
 
     companion object {
-        internal const val VIEW_EVENT_NULL_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped ViewEvent was null. " +
-                "The original event object will be used instead: %s"
         internal const val EVENT_NULL_WARNING_MESSAGE =
             "RumEventMapper: the returned mapped object was null. " +
                 "This event will be dropped: %s"

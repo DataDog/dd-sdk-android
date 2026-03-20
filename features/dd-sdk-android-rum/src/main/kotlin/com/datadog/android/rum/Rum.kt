@@ -161,7 +161,7 @@ object Rum {
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
-            accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
+            accessibilityInfoProvider = rumFeature.accessibilityReader,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
             rumSessionScopeStartupManagerFactory = {
@@ -171,7 +171,9 @@ object Rum {
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )
             },
-            insightsCollector = rumFeature.insightsCollector
+            insightsCollector = rumFeature.insightsCollector,
+            viewEventMapper = rumFeature.configuration.viewEventMapper,
+            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig
         )
     }
 

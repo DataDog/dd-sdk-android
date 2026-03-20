@@ -43,4 +43,19 @@ internal class RumEventMetaSerializerTest {
             .hasField("viewId", eventMeta.viewId)
             .hasField("type", RumEventMeta.VIEW_TYPE_VALUE)
     }
+
+    @Test
+    fun `M serialize RUM ViewUpdate Event meta W serialize()`(
+        @Forgery eventMeta: RumEventMeta.ViewUpdate
+    ) {
+        // When
+        val serialized = testedSerializer.serialize(eventMeta)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertThat(jsonObject)
+            .hasField("documentVersion", eventMeta.documentVersion)
+            .hasField("viewId", eventMeta.viewId)
+            .hasField("type", RumEventMeta.VIEW_UPDATE_TYPE_VALUE)
+    }
 }

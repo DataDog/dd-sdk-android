@@ -10,6 +10,7 @@ import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
@@ -491,6 +492,13 @@ data class RumConfiguration internal constructor(
          */
         internal fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
             rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
+            return this
+        }
+
+        internal fun setRumViewEventWriteConfig(
+            config: RumViewEventWriteConfig
+        ): Builder {
+            rumConfig = rumConfig.copy(rumViewEventWriteConfig = config)
             return this
         }
     }

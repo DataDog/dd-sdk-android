@@ -284,6 +284,7 @@ public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInsightsCollector (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setRumViewEventWriteConfig (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }
 
@@ -291,6 +292,17 @@ public final class com/datadog/android/rum/configuration/RumNetworkInstrumentati
 	public fun <init> ()V
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
+}
+
+public abstract interface class com/datadog/android/rum/configuration/RumViewEventWriteConfig {
+}
+
+public final class com/datadog/android/rum/configuration/RumViewEventWriteConfig$AlwaysFullView : com/datadog/android/rum/configuration/RumViewEventWriteConfig {
+	public static final field INSTANCE Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig$AlwaysFullView;
+}
+
+public final class com/datadog/android/rum/configuration/RumViewEventWriteConfig$FullViewOnlyAtStart : com/datadog/android/rum/configuration/RumViewEventWriteConfig {
+	public static final field INSTANCE Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig$FullViewOnlyAtStart;
 }
 
 public final class com/datadog/android/rum/configuration/SlowFramesConfiguration {
