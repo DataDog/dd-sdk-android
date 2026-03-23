@@ -548,7 +548,7 @@ internal class EvaluationsManagerTest {
 
         // Wait until the executor thread is blocked in hasFlags() before firing the callback.
         // This ensures the test fails deterministically if hasFlags() does not wait for persistence.
-        while (executorThread?.state != Thread.State.TIMED_WAITING) {
+        while (executorThread?.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
             Thread.sleep(1)
         }
         val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")

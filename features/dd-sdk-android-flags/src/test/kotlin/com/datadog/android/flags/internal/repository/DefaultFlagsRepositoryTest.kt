@@ -300,7 +300,7 @@ internal class DefaultFlagsRepositoryTest {
 
         // Wait until hasFlags() is blocked on the persistence latch before firing the callback.
         // This makes the test fail deterministically if hasFlags() does not wait for persistence.
-        while (hasFlagsThread.state != Thread.State.TIMED_WAITING) {
+        while (hasFlagsThread.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
             Thread.sleep(1)
         }
         capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
