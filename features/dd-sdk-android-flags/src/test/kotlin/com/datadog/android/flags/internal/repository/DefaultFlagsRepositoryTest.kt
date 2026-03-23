@@ -270,7 +270,6 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M return true W hasFlags() { persistence callback fires with non-empty flags before call returns }`() {
         // Given
-        val callbackBarrier = CountDownLatch(1)
         var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
         doAnswer {
             capturedCallback = it.getArgument(2)
@@ -292,16 +291,20 @@ internal class DefaultFlagsRepositoryTest {
             evaluationContext = testContext,
             lastUpdateTimestamp = 0L
         )
-        val asyncThread = Thread {
-            callbackBarrier.await()
-            capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
-        }
 
         // When
-        asyncThread.start()
-        callbackBarrier.countDown()
-        val result = asyncRepository.hasFlags()
-        asyncThread.join()
+        // Run hasFlags() on a background thread so we can observe it blocking
+        var result = false
+        val hasFlagsThread = Thread { result = asyncRepository.hasFlags() }
+        hasFlagsThread.start()
+
+        // Wait until hasFlags() is blocked on the persistence latch before firing the callback.
+        // This makes the test fail deterministically if hasFlags() does not wait for persistence.
+        while (hasFlagsThread.state != Thread.State.TIMED_WAITING) {
+            Thread.sleep(1)
+        }
+        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+        hasFlagsThread.join()
 
         // Then
         assertThat(result).isTrue()

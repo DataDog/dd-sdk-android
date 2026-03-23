@@ -526,8 +526,12 @@ internal class EvaluationsManagerTest {
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(null)
 
-        // Use a real single-thread executor so hasFlags() actually blocks
-        val realExecutor = Executors.newSingleThreadExecutor()
+        // Use a real single-thread executor so hasFlags() actually blocks; capture the
+        // executor thread so we can wait until hasFlags() is blocked before firing the callback.
+        var executorThread: Thread? = null
+        val realExecutor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable).also { executorThread = it }
+        }
         val integrationManager = EvaluationsManager(
             sdkCore = mockSdkCore,
             executorService = realExecutor,
@@ -539,11 +543,14 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        // Submit work to real executor (returns immediately)
+        // Submit work to real executor (returns immediately; ThreadFactory creates the thread here)
         integrationManager.updateEvaluationsForContext(context)
 
-        // Fire persistence callback synchronously — races with hasFlags() in executor
-        // (fires before or during the 2000ms wait, ensuring the fix works)
+        // Wait until the executor thread is blocked in hasFlags() before firing the callback.
+        // This ensures the test fails deterministically if hasFlags() does not wait for persistence.
+        while (executorThread?.state != Thread.State.TIMED_WAITING) {
+            Thread.sleep(1)
+        }
         val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
         callback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
 
