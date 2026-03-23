@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -27,6 +28,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -266,32 +268,108 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M not block W hasFlags() { persistence still loading }`() {
+    fun `M return true W hasFlags() { persistence callback fires with non-empty flags before call returns }`() {
         // Given
+        val callbackBarrier = CountDownLatch(1)
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
         doAnswer {
-            // Never call the callback - simulate slow persistence
+            capturedCallback = it.getArgument(2)
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
-            version = any(),
+            version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
-        val slowRepository = DefaultFlagsRepository(
+        val asyncRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
-            instanceName = "slow",
-            persistenceLoadTimeoutMs = 1000L // Long timeout
+            instanceName = "async-non-empty",
+            persistenceLoadTimeoutMs = 5000L
+        )
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L
+        )
+        val asyncThread = Thread {
+            callbackBarrier.await()
+            capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+        }
+
+        // When
+        asyncThread.start()
+        callbackBarrier.countDown()
+        val result = asyncRepository.hasFlags()
+        asyncThread.join()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W hasFlags() { persistence callback fires with no data before call returns }`() {
+        // Given
+        val callbackBarrier = CountDownLatch(1)
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            capturedCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val asyncRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "async-empty",
+            persistenceLoadTimeoutMs = 5000L
+        )
+        val asyncThread = Thread {
+            callbackBarrier.await()
+            capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = null))
+        }
+
+        // When
+        asyncThread.start()
+        callbackBarrier.countDown()
+        val result = asyncRepository.hasFlags()
+        asyncThread.join()
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasFlags() { persistence callback never fires within timeout }`() {
+        // Given
+        doAnswer {
+            // Never call the callback
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val timeoutRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "timeout",
+            persistenceLoadTimeoutMs = 1L
         )
 
         // When
         val startTime = System.currentTimeMillis()
-        val result = slowRepository.hasFlags()
-        val elapsedTime = System.currentTimeMillis() - startTime
+        val result = timeoutRepository.hasFlags()
+        val elapsedMs = System.currentTimeMillis() - startTime
 
         // Then
-        assertThat(result).isFalse
-        assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+        assertThat(result).isFalse()
+        assertThat(elapsedMs).isGreaterThanOrEqualTo(1L)
+        assertThat(elapsedMs).isLessThan(500L)
     }
 
     // endregion

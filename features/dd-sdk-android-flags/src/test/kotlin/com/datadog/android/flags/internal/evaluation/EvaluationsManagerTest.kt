@@ -11,10 +11,15 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
+import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
@@ -51,6 +56,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -466,6 +473,88 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(stateWhenCallbackInvoked).isEqualTo(FlagsClientState.Ready)
+    }
+
+    // region Cold-start integration
+
+    @Test
+    fun `M notify STALE W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+
+        // Configure a real DataStore mock that captures the callback without firing it
+        val mockDataStore = mock<DataStoreHandler>()
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        whenever(
+            mockDataStore.value<FlagsStateEntry>(
+                key = any(),
+                version = anyOrNull(),
+                callback = any(),
+                deserializer = any()
+            )
+        ).doAnswer {
+            capturedCallback = it.getArgument(2)
+            null
+        }
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+
+        // Create a real DefaultFlagsRepository with a generous persistence timeout
+        val realRepository = DefaultFlagsRepository(
+            featureSdkCore = mockSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "integration-test",
+            persistenceLoadTimeoutMs = 2000L
+        )
+
+        // Prepare persisted state whose evaluationContext matches the request context
+        val flag = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = "true",
+            doLog = false,
+            allocationKey = "alloc",
+            variationKey = "var",
+            extraLogging = JSONObject(),
+            reason = "DEFAULT"
+        )
+        val persistedEntry = FlagsStateEntry(
+            evaluationContext = context,
+            flags = mapOf("cached-flag" to flag),
+            lastUpdateTimestamp = 0L
+        )
+
+        // Network call returns null (simulates network failure)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(null)
+
+        // Use a real single-thread executor so hasFlags() actually blocks
+        val realExecutor = Executors.newSingleThreadExecutor()
+        val integrationManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = realExecutor,
+            internalLogger = mockInternalLogger,
+            flagsRepository = realRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        // Submit work to real executor (returns immediately)
+        integrationManager.updateEvaluationsForContext(context)
+
+        // Fire persistence callback synchronously — races with hasFlags() in executor
+        // (fires before or during the 2000ms wait, ensuring the fix works)
+        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+
+        // Wait for executor to complete its work
+        realExecutor.shutdown()
+        realExecutor.awaitTermination(5, TimeUnit.SECONDS)
+
+        // Then
+        inOrder(mockFlagsStateManager) {
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        }
     }
 
     // endregion
