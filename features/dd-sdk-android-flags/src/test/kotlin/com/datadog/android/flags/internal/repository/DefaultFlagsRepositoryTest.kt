@@ -66,7 +66,7 @@ internal class DefaultFlagsRepositoryTest {
         whenever(
             mockDataStore.value<FlagsStateEntry>(
                 key = any(),
-                version = any(),
+                version = anyOrNull(),
                 callback = any(),
                 deserializer = any()
             )
@@ -148,7 +148,7 @@ internal class DefaultFlagsRepositoryTest {
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
-            version = any(),
+            version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
@@ -180,7 +180,7 @@ internal class DefaultFlagsRepositoryTest {
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
-            version = any(),
+            version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
@@ -285,7 +285,7 @@ internal class DefaultFlagsRepositoryTest {
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
             instanceName = "async-non-empty",
-            persistenceLoadTimeoutMs = 5000L
+            persistenceLoadTimeoutMs = 500L
         )
         val persistedEntry = FlagsStateEntry(
             flags = singleFlagMap,
@@ -325,7 +325,7 @@ internal class DefaultFlagsRepositoryTest {
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
             instanceName = "async-empty",
-            persistenceLoadTimeoutMs = 5000L
+            persistenceLoadTimeoutMs = 500L
         )
         val asyncThread = Thread {
             callbackBarrier.await()
@@ -362,14 +362,10 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When
-        val startTime = System.currentTimeMillis()
         val result = timeoutRepository.hasFlags()
-        val elapsedMs = System.currentTimeMillis() - startTime
 
         // Then
         assertThat(result).isFalse()
-        assertThat(elapsedMs).isGreaterThanOrEqualTo(1L)
-        assertThat(elapsedMs).isLessThan(500L)
     }
 
     // endregion

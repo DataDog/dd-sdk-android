@@ -544,11 +544,16 @@ internal class EvaluationsManagerTest {
 
         // Fire persistence callback synchronously — races with hasFlags() in executor
         // (fires before or during the 2000ms wait, ensuring the fix works)
-        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+        val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
+        callback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
 
         // Wait for executor to complete its work
         realExecutor.shutdown()
-        realExecutor.awaitTermination(5, TimeUnit.SECONDS)
+        try {
+            assertThat(realExecutor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        } finally {
+            if (!realExecutor.isTerminated) realExecutor.shutdownNow()
+        }
 
         // Then
         inOrder(mockFlagsStateManager) {
