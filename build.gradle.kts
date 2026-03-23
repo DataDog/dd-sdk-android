@@ -147,7 +147,7 @@ registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
 }
 
 registerSubModuleAggregationTask(
-    "checkDependencyLicencesAll",
+    "checkDependencyLicensesAll",
     "checkDependencyLicenses",
     // check licenses for all modules, not only for published ones
     subModuleNamePrefix = ""
@@ -163,7 +163,7 @@ registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTra
  * Task necessary to be compliant with the shared Android static analysis pipeline
  */
 tasks.register("checkGeneratedFiles") {
-    dependsOn("checkDependencyLicencesAll")
+    dependsOn("checkDependencyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")
     dependsOn("checkCompilerMetadataChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")

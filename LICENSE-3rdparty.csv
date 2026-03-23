@@ -1,13 +1,10 @@
 Component,Origin,License,Copyright
-import,androidx.activity,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.annotation,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.appcompat,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.arch.core,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.asynclayoutinflater,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.car.app,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.cardview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.collection,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.constraintlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.compose,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.animation,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.foundation,Apache-2.0,Copyright 2019 The Android Open Source Project
@@ -15,81 +12,66 @@ import,androidx.compose.material,Apache-2.0,Copyright 2019 The Android Open Sour
 import,androidx.compose.material3,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.runtime,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.ui,Apache-2.0,Copyright 2019 The Android Open Source Project
-import,androidx.coordinatorlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.core,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.cursoradapter,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.customview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.databinding,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.documentfile,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.drawerlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.fragment,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.graphics,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.interpolator,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.emoji2,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.leanback,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.legacy,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.lifecycle,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.loader,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.localbroadcastmanager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.media,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.metrics,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.multidex,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.navigation,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.navigation3,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.navigationevent,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.preference,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.print,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.recyclerview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.resourceinspection,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.room,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.savedstate,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.slidingpanelayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.sqlite,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.startup,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.swiperefreshlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.transition,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.vectordrawable,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.tracing,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.wear,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,com.android.tools,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.android.tools.build,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
+import,com.android.tools.external.com-intellij,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
+import,com.android.tools.external.org-jetbrains,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
+import,com.android.tools.layoutlib,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
+import,com.android.tools.lint,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
 import,com.apollographql.apollo,MIT,"Copyright (c) 2016-2024 Apollo Graph, Inc. (Formerly Meteor Development Group, Inc.)"
 import,com.benasher44,MIT,"Copyright (c) 2019 Ben Asher"
-import,com.github.bumptech.glide,"BSD 3-Clause","Copyright 2014 Google, Inc. All rights reserved, Copyright (c) 2013. Bump Technologies Inc. All Rights Reserved."
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
+import,com.facebook.soloader,Apache-2.0,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.facebook.stetho,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
-import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."
-import,com.github.TeamNewPipe,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"
+import,com.github.TeamNewPipe,__,"Unknown copyright for artifacts nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751"
 import,com.github.TeamNewPipe.NewPipeExtractor,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"
+import,com.github.bumptech.glide,"Simplified BSD License/The Apache Software License, Version 2.0","Unknown copyright for artifacts annotations:4.11.0,glide:4.11.0,gifdecoder:4.11.0,disklrucache:4.11.0,okhttp3-integration:4.11.0"
 import,com.google.accompanist,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.android.exoplayer,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,com.google.android.gms,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.google.android.gms,"Android Software Development Kit License","Unknown copyright for artifacts play-services-cronet:18.1.1,play-services-base:18.5.0,play-services-basement:18.9.0,play-services-tasks:18.2.0"
+import,com.google.auto.value,__,"Unknown copyright for artifacts auto-value-annotations:1.6.3"
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
-import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
+import,com.google.guava,__,"Unknown copyright for artifacts guava:33.3.1-jre,failureaccess:1.0.2,listenablefuture:9999.0-empty-to-avoid-conflict-with-guava,guava:32.0.1-jre,failureaccess:1.0.1,listenablefuture:1.0"
 import,com.hannesdorfmann,Apache-2.0,Copyright (c) 2015 Hannes Dorfmann.
 import,com.jakewharton.timber,Apache-2.0,Copyright 2013 Jake Wharton
 import,com.launchdarkly,Apache-2.0,Copyright 2016 Catamorphic, Co.
 import,com.lyft.kronos,Apache-2.0,Copyright (C) 2018 Lyft Inc.
-import,com.squareup.moshi,Apache-2.0,"Copyright 2013 Square, Inc"
+import,com.parse.bolts,"BSD License","Unknown copyright for artifacts bolts-tasks:1.4.0"
 import,com.squareup.okhttp3,Apache-2.0,"Copyright 2019 Square, Inc"
 import,com.squareup.okio,Apache-2.0,"Copyright 2013 Square, Inc"
 import,com.squareup.picasso,Apache-2.0,"Copyright 2013 Square, Inc."
 import,com.squareup.retrofit2,Apache-2.0,"Copyright 2013 Square, Inc."
 import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
-import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
-import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
+import,commons-cli,__,"Unknown copyright for artifacts commons-cli:1.2"
 import,dev.chrisbanes.snapper,Apache-2.0,"Copyright 2021 Chris Banes"
 import,dev.openfeature,Apache-2.0,Copyright 2022 The OpenFeature Authors
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
 import,io.coil-kt.coil3,Apache-2.0,Copyright 2021 Coil Contributors
+import,io.gitlab.arturbosch.detekt,Apache-2.0,Copyright 2016-2019 the original author or authors
 import,io.ktor,Apache-2.0,"Copyright 2000-2023 JetBrains s.r.o."
 import,io.opentelemetry,Apache-2.0,Copyright 2019 The OpenTelemetry Authors
-import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
-import,io.opentracing.contrib,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,io.reactivex.rxjava3,Apache-2.0,"Copyright (c) 2016-present, RxJava Contributors"
-import,io.reactivex.rxjava3.android,Apache-2.0,Copyright 2015 The RxAndroid authors
-import,org.chromium.net,Apache-2.0,"Copyright 2015 The Chromium Authors"
+import,jakarta.inject,Apache-2.0,"Copyright (c) 2017, 2018 Oracle and/or its affiliates"
+import,org.chromium.net,"Chromium and built-in dependencies","Unknown copyright for artifacts cronet-api:141.7340.3,cronet-shared:141.7340.3"
 import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.androidx.lifecycle,Apache-2.0,"Copyright 2020-2021 JetBrains s.r.o. and and respective authors and developers."
 import,org.jetbrains.compose.animation,Apache-2.0,"Copyright 2020-2021 JetBrains s.r.o. and and respective authors and developers."
@@ -99,144 +81,135 @@ import,org.jetbrains.compose.foundation,Apache-2.0,"Copyright 2020-2021 JetBrain
 import,org.jetbrains.compose.runtime,Apache-2.0,"Copyright 2020-2021 JetBrains s.r.o. and and respective authors and developers."
 import,org.jetbrains.compose.ui,Apache-2.0,"Copyright 2020-2021 JetBrains s.r.o. and and respective authors and developers."
 import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
-import,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
-import,org.chromium.net,Apache-2.0,"Copyright 2015 The Chromium Authors"
 import,org.jetbrains.skiko,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jspecify,Apache-2.0,Copyright 2025 The JSpecify Authors
 import,org.mozilla,MPL-2.0,"Copyright Rhino team"
-import,org.reactivestreams,CC0,Copyright 2014 Reactive Streams
-import(test),androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,org.reactivestreams,"CC0",Copyright 2014 Reactive Streams
+import,org.slf4j,__,"Unknown copyright for artifacts slf4j-api:1.7.36"
+import(test),androidx.activity,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.appcompat,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.cardview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.concurrent,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.constraintlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.coordinatorlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.cursoradapter,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.customview,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.documentfile,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.drawerlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.dynamicanimation,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.emoji2,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.fragment,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.interpolator,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.legacy,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.loader,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.localbroadcastmanager,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.metrics,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.navigation,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.print,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.profileinstaller,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.test,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.recyclerview,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.savedstate,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.slidingpanelayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.espresso,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.test.espresso,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.test.ext,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.ext,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.services,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.test.services,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.tracing,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.tracing,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),androidx.viewpager2,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.transition,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.vectordrawable,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.viewpager2,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.window,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),com.android.support,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),com.facebook.soloader,Apache-2.0,"Copyright (c) Facebook, Inc. and its affiliates"
-import(test),com.github.xgouchet.Elmyr,MIT,Copyright 2017-2019 Xavier F. Gouchet
+import(test),com.android.tools.analytics-library,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
+import(test),com.github.tschuchortdev,MPL-2.0,"Copyright (C) 2023 Thilo Schuchort"
+import(test),com.github.xgouchet.Elmyr,__,"Unknown copyright for artifacts core:1.3.1,inject:1.3.1,junit5:1.3.1,jvm:1.3.1"
 import(test),com.google.android.apps.common.testing.accessibility.framework,Apache-2.0,Copyright 2018 The Android Open Source Project
-import(test),com.google.code.findbugs,Apache-2.0,"Copyright (C) 2006, University of Maryland"
-import(test),com.google.errorprone,Apache-2.0,"Copyright 2018 The Error Prone Authors"
-import(test),com.google.j2objc,Apache-2.0,"Copyright (C) 2011 The Android Open Source Project"
-import(test),com.google.protobuf,BSD-3-Clause,"Copyright 2008 Google Inc"
-import(test),com.google.re2j,"Go License","Copyright (c) 2009 The Go Authors. All rights reserved."
+import(test),com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),com.google.jimfs,__,"Unknown copyright for artifacts jimfs:1.1"
+import(test),com.google.re2j,"Go License","Unknown copyright for artifacts re2j:1.7"
 import(test),com.jakewharton.android.repackaged,Apache-2.0,"Copyright (C) 2007 The Android Open Source Project"
-import(test),com.parse.bolts,"BSD License","Copyright (c) Facebook, Inc. and its affiliates."
-import(test),com.squareup,Apache-2.0,"Copyright 2015 Square, Inc."
-import(test),greatest,ICT,"Copyright (c) 2011-2018 Scott Vokes <vokes.s@gmail.com>"
+import(test),com.sun.activation,__,"Unknown copyright for artifacts javax.activation:1.2.0"
+import(test),com.sun.istack,__,"Unknown copyright for artifacts istack-commons-runtime:3.0.8"
+import(test),com.sun.xml.fastinfoset,__,"Unknown copyright for artifacts FastInfoset:1.2.16"
+import(test),commons-logging,__,"Unknown copyright for artifacts commons-logging:1.2"
+import(test),io.github.classgraph,"The MIT License (MIT)","Unknown copyright for artifacts classgraph:4.8.156"
 import(test),io.github.davidburstrom.contester,Apache-2.0,"Copyright 2022-2024 David Burström"
 import(test),io.github.detekt.sarif4k,Apache-2.0,"Copyright 2021 Artur Bosch & Contributors"
-import(test),javax.inject,Apache-2.0,Copyright (C) 2009 The JSR-330 Expert Group
+import(test),jakarta.activation,__,"Unknown copyright for artifacts jakarta.activation-api:1.2.1"
+import(test),jakarta.xml.bind,__,"Unknown copyright for artifacts jakarta.xml.bind-api:2.3.2"
 import(test),junit,EPL-1.0,Copyright © 2002-2019 JUnit
-import(test),net.bytebuddy,Apache-2.0,Copyright 2014 - 2019 Rafael Winterhalter
-import(test),net.sf.kxml,MIT,"Copyright (c) 2002,2003, Stefan Haustein, Oberhausen, Rhld., Germany"
-import(test),net.wuerl.kotlin,Apache-2.0,Copyright 2016 Andreas Würl
+import(test),net.bytebuddy,__,"Unknown copyright for artifacts byte-buddy:1.14.5,byte-buddy-agent:1.14.5"
+import(test),org.apache.commons,__,"Unknown copyright for artifacts commons-compress:1.20"
+import(test),org.apache.httpcomponents,__,"Unknown copyright for artifacts httpcore:4.4.15,httpmime:4.5.6,httpclient:4.5.6"
 import(test),org.apiguardian,Apache-2.0,Copyright 2002-2017 the original author or authors
-import(test),org.assertj,Apache-2.0,Copyright 2012-2019 the original author or authors
+import(test),org.assertj,__,"Unknown copyright for artifacts assertj-core:3.18.1"
+import(test),org.bouncycastle,BouncyCastle-License,"Copyright (c) 2000-2023 The Legion of the Bouncy Castle Inc"
 import(test),org.ccil.cowan.tagsoup,Apache-2.0,Copyright 2002-2008 by John Cowan
-import(test),org.checkerframework,"MIT","Copyright 2004-present by the Checker Framework developers"
-import(test),org.hamcrest,BSD-3-Clause,Copyright (c) 2000-2015 www.hamcrest.org
-import(test),org.jacoco,EPL-2.0,"Copyright (c) 2009, 2019 Mountainminds GmbH & Co. KG and Contributors"
-import(test),org.jctools,"Apache-2.0","Copyright 2023 Datadog, Inc."
-import(test),org.jsoup,MIT,"Copyright (c) 2009-2024 Jonathan Hedley"
+import(test),org.codehaus.groovy,Apache-2.0,"Copyright 2003-2015 Groovy project authors"
+import(test),org.glassfish.jaxb,__,"Unknown copyright for artifacts jaxb-runtime:2.3.2,txw2:2.3.2"
+import(test),org.hamcrest,__,"Unknown copyright for artifacts hamcrest-core:1.3"
+import(test),org.jctools,Apache-2.0,"Copyright 2023 Datadog, Inc."
 import(test),org.junit,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.jupiter,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.platform,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.vintage,EPL-2.0,Copyright 2015-2019 the original author or authors
+import(test),org.jvnet.staxex,"Eclipse Distribution License - v 1.0","Unknown copyright for artifacts stax-ex:1.8.1"
 import(test),org.mockito,MIT,Copyright (c) 2007 Mockito contributors
 import(test),org.mockito.kotlin,MIT,"Copyright (c) 2016 Niek Haarman, Copyright (c) 2007 Mockito contributors"
-import(test),org.objenesis,Apache-2.0,"Copyright (c) 2003-2013, Objenesis Team and all contributors"
+import(test),org.objenesis,__,"Unknown copyright for artifacts objenesis:3.3"
 import(test),org.opentest4j,Apache-2.0,Copyright 2015-2018 the original author or authors
 import(test),org.robolectric,Apache-2.0,Copyright 2015-2018 the original author or authors
-import(test),org.sonatype.oss,Apache-2.0,"Copyright (c) 2008-present Sonatype, Inc."
 import(test),org.snakeyaml,Apache-2.0,"Copyright (c) 2008, SnakeYAML"
-import(test),uk.org.webcompere,MIT,Copyright (c) 2020 Ashley Frieze (c) 2017 Stefan Birkner
-build,androidx.compose.compiler,Apache-2.0,Copyright 2019 The Android Open Source Project
-build,ch.qos.logback,EPL-1.0,"Copyright (C) 1999-2015, QOS.ch"
-build,com.android.tools.analytics-library,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
-build,com.android.tools.build,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
+import(test),uk.org.webcompere,__,"Unknown copyright for artifacts system-stubs-jupiter:2.1.6,system-stubs-core:2.1.6"
+import(test),xerces,Apache-2.0,"Copyright 1999-2022 The Apache Software Foundation"
+import(test),xml-apis,"The Apache Software License, Version 2.0/The SAX License/The W3C License","Unknown copyright for artifacts xml-apis:1.4.01"
+build,com.android.tools,Apache-2.0,Copyright 2018 The Android Open Source Project
 build,com.android.tools.ddms,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
 build,com.android.tools.emulator,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
-build,com.android.tools.external.com-intellij,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
-build,com.android.tools.external.org-jetbrains,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
-build,com.android.tools.layoutlib,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
-build,com.android.tools.lint,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
 build,com.android.tools.utp,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
-build,com.fasterxml.jackson.core,Apache-2.0,"Copyright (c) 2007- Tatu Saloranta"
-build,com.fasterxml.jackson.dataformat,Apache-2.,"Copyright (c) 2007- Tatu Saloranta"
-build,com.fasterxml.jackson.module,Apache-2.0,"Copyright (c) 2007- Tatu Saloranta"
-build,com.fasterxml.woodstox,Apache-2.0,"Copyright (c) 2007- Tatu Saloranta"
-build,com.github.tschuchortdev,MPL-2.0,"Copyright (C) 2023 Thilo Schuchort"
+build,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
 build,com.google.android,Apache-2.0,Copyright (C) 2013 The Android Open Source Project
 build,com.google.api.grpc,Apache-2.0,Copyright 2020 Google LLC
 build,com.google.auto,Apache-2.0,"Copyright 2014 Google LLC"
-build,com.google.auto.service,Apache-2.0,"Copyright 2013 Google LLC"
-build,com.google.auto.value,Apache-2.0,"Copyright 2013 Google LLC"
+build,com.google.auto.service,__,"Unknown copyright for artifacts auto-service:1.1.1,auto-service-annotations:1.1.1"
+build,com.google.code.findbugs,Apache-2.0,"Copyright (C) 2006, University of Maryland"
 build,com.google.crypto.tink,Apache-2.0,Copyright 2023 Google LLC
 build,com.google.dagger,Apache-2.0,"Copyright (C) 2018 The Dagger Authors"
 build,com.google.devtools.ksp,Apache-2.0,"Copyright 2020 Google LLC, Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors."
-build,com.google.googlejavaformat,Apache-2.0,"Copyright 2015 Google Inc"
-build,com.google.jimfs,Apache-2.0,Copyright 2021 Google Inc.
+build,com.google.errorprone,Apache-2.0,"Copyright 2018 The Error Prone Authors"
+build,com.google.j2objc,Apache-2.0,"Copyright (C) 2011 The Android Open Source Project"
+build,com.google.protobuf,__,"Unknown copyright for artifacts protobuf-java:3.25.5,protobuf-kotlin:3.24.4,protobuf-java-util:3.24.4,protobuf-java:3.24.4,protobuf-java-util:3.22.3"
 build,com.google.testing.platform,Apache-2.0,Copyright (C) 2021 The Android Open Source Project
-build,com.intellij,Apache-2.0,"Copyright 2000-2023 JetBrains s.r.o."
-build,com.pinterest,MIT,"Copyright 2019 Pinterest Inc, Copyright 2016-2019 Stanley Shyiko"
-build,com.soywiz.korlibs.korte,MIT,Copyright (c) 2017-2019 Carlos Ballesteros Velasco and contributors
-build,com.sun.activation,"Eclipse Public License - v 2.0","Copyright (c) 2018, 2023 Oracle and/or its affiliates"
-build,com.sun.istack,"Eclipse Public License - v 2.0","Copyright (c) 2018, 2023 Oracle and/or its affiliates"
-build,com.sun.xml.fastinfoset,"Eclipse Public License - v 2.0","Copyright (c) 2018, 2023 Oracle and/or its affiliates"
-build,com.typesafe,Apache-2.0,"Copyright (C) 2014 Typesafe Inc"
-build,commons-cli,Apache-2.0,Copyright 2002-2024 The Apache Software Foundation
-build,commons-codec,Apache-2.0,Copyright 2002-2024 The Apache Software Foundation
-build,commons-io,Apache-2.0,Copyright 2002-2024 The Apache Software Foundation
-build,commons-logging,Apache-2.0,Copyright 2002-2024 The Apache Software Foundation
-build,io.github.aakira,Apache-2.0,"Copyright (C) 2019 A.Akira"
-build,io.github.classgraph,MIT,"Copyright (c) 2019 Luke Hutchison"
-build,io.github.microutils,Apache-2.0,Copyright (c) 2016-2018 Ohad Shai
-build,io.gitlab.arturbosch.detekt,Apache-2.0,Copyright 2016-2019 the original author or authors
+build,com.squareup,Apache-2.0,"Copyright 2015 Square, Inc."
+build,commons-io,__,"Unknown copyright for artifacts commons-io:2.16.1"
 build,io.grpc,Apache-2.0,Copyright 2014 The gRPC Authors
-build,io.netty,Apache-2.0,Copyright 2014 The Netty Project
+build,io.netty,__,"Unknown copyright for artifacts netty-codec-http2:4.1.110.Final,netty-common:4.1.110.Final,netty-buffer:4.1.110.Final,netty-transport:4.1.110.Final,netty-resolver:4.1.110.Final,netty-codec:4.1.110.Final,netty-handler:4.1.110.Final,netty-transport-native-unix-common:4.1.110.Final,netty-codec-http:4.1.110.Final,netty-handler-proxy:4.1.110.Final,netty-codec-socks:4.1.110.Final,netty-codec-http2:4.1.93.Final,netty-common:4.1.93.Final,netty-buffer:4.1.93.Final,netty-transport:4.1.93.Final,netty-resolver:4.1.93.Final,netty-codec:4.1.93.Final,netty-handler:4.1.93.Final,netty-transport-native-unix-common:4.1.93.Final,netty-codec-http:4.1.93.Final,netty-handler-proxy:4.1.93.Final,netty-codec-socks:4.1.93.Final"
 build,io.opencensus,Apache-2.0,"Copyright 2017, OpenCensus Authors"
 build,io.perfmark,Apache-2.0,Copyright 2019 Google LLC
-build,jakarta.activation,BSD 3-Clause,"Copyright (c) 2017, 2018 Oracle and/or its affiliates"
-build,jakarta.inject,Apache-2.0,"Copyright (c) 2017, 2018 Oracle and/or its affiliates"
-build,jakarta.xml.bind,BSD 3-Clause,"Copyright (c) 2017, 2018 Oracle and/or its affiliates"
-build,javax.annotation,"CDDL + GPLv2 with classpath exception",Copyright (c) 2009-2024 Oracle and/or its affiliates
-build,net.java.dev.jna,"Apache-2.0","Copyright (c) 2007 Timothy Wall, All Rights Reserved"
-build,net.ltgt.gradle.incap,Apache-2.0,"Copyright © 2018 Thomas Broyer"
-build,org.apache.commons,Apache-2.0,"Copyright 2002-2024 The Apache Software Foundation"
-build,org.apache.httpcomponents,Apache-2.0,"Copyright 2002-2024 The Apache Software Foundation"
-build,org.bouncycastle,BouncyCastle-License,"Copyright (c) 2000-2023 The Legion of the Bouncy Castle Inc"
-build,org.codehaus.groovy,Apache-2.0,"Copyright 2003-2015 Groovy project authors"
-build,org.codehaus.mojo,MIT,"Copyright (c) 2009, codehaus.org"
-build,org.codehaus.woodstox,BSD 2-Clause,"Copyright (c) 2008 FasterXML LLC"
-build,org.ec4j.core,Apache-2.0,"Copyright (c) 2017 Angelo Zerr and other contributors"
-build,org.eclipse.jetty,"Eclipse Public License - v 2.0","Copyright Eclipse Jetty authors"
-build,org.eclipse.jetty.alpn,"Eclipse Public License - v 2.0","Copyright Eclipse Jetty authors"
-build,org.eclipse.jetty.http2,"Eclipse Public License - v 2.0","Copyright Eclipse Jetty authors"
-build,org.eclipse.jetty.toolchain,"Eclipse Public License - v 2.0","Copyright Eclipse Jetty authors"
+build,javax.annotation,"CDDL + GPLv2 with classpath exception","Unknown copyright for artifacts javax.annotation-api:1.3.2"
+build,javax.inject,Apache-2.0,Copyright (C) 2009 The JSR-330 Expert Group
+build,net.java.dev.jna,"LGPL, version 2.1/Apache License v2.0","Unknown copyright for artifacts jna-platform:5.6.0,jna:5.6.0"
+build,net.sf.kxml,"BSD style/Public Domain","Unknown copyright for artifacts kxml2:2.3.0"
+build,org.checkerframework,MIT,"Copyright 2004-present by the Checker Framework developers"
+build,org.codehaus.mojo,__,"Unknown copyright for artifacts animal-sniffer-annotations:1.24,animal-sniffer-annotations:1.23"
 build,org.freemarker,Apache-2.0,"Copyright 2015-2018 The Apache Software Foundation"
-build,org.fusesource.jansi,Apache-2.0,"Copyright Jansi authors"
-build,org.glassfish.jaxb,"Eclipse Distribution License - v 1.0","Copyright (c) 2018 Oracle and/or its affiliates"
-build,org.jetbrains.dokka,Apache-2.0,"Copyright 2014-2019 JetBrains s.r.o. and Dokka project contributors."
 build,org.jetbrains.intellij.deps,LGPL-2.1-only,"Copyright (c) 2001-2002, Eric D. Friedman, Jason Baldridge, Copyright (c) 1999 CERN - European Organization for Nuclear Research"
-build,org.jvnet.staxex,"Eclipse Distribution License - v 1.0","Copyright (c) 1997-2015 Oracle and/or its affiliates"
+build,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 build,org.ow2.asm,BSD-3-Clause,"Copyright (c) 2000-2011 INRIA, France Telecom"
-build,org.slf4j,MIT,"Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland)"
-build,org.xerial,Apache-2.0,"Copyright (c) 2006, David Crawshaw."
-build,xerces,Apache-2.0,"Copyright 1999-2022 The Apache Software Foundation"
-build,xml-apis,"The Apache Software License, Version 2.0/The SAX License/The W3C License","Copyright © 2001-2009 The Apache Software Foundation."
-
+__,androidx.graphics,Apache-2.0,Copyright 2018 The Android Open Source Project
+__,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
+__,com.fasterxml.jackson.core,Apache-2.0,"Copyright (c) 2007- Tatu Saloranta"
+__,com.fasterxml.jackson.dataformat,__,"Unknown copyright for artifacts jackson-dataformat-xml:2.15.3"
+__,com.fasterxml.jackson.module,Apache-2.0,"Copyright (c) 2007- Tatu Saloranta"
+__,com.fasterxml.woodstox,Apache-2.0,"Copyright (c) 2007- Tatu Saloranta"
+__,com.google.googlejavaformat,__,"Unknown copyright for artifacts google-java-format:1.5"
+__,com.intellij,Apache-2.0,"Copyright 2000-2023 JetBrains s.r.o."
+__,com.soywiz.korlibs.korte,MIT,Copyright (c) 2017-2019 Carlos Ballesteros Velasco and contributors
+__,com.typesafe,Apache-2.0,"Copyright (C) 2014 Typesafe Inc"
+__,commons-codec,__,"Unknown copyright for artifacts commons-codec:1.15"
+__,io.github.aakira,Apache-2.0,"Copyright (C) 2019 A.Akira"
+__,net.ltgt.gradle.incap,Apache-2.0,"Copyright © 2018 Thomas Broyer"
+__,org.codehaus.woodstox,"The BSD License","Unknown copyright for artifacts stax2-api:4.2.1"
+__,org.eclipse.jetty.alpn,__,"Unknown copyright for artifacts alpn-api:1.1.3.v20160715"
+__,org.fusesource.jansi,Apache-2.0,"Copyright Jansi authors"
+__,org.jetbrains.dokka,Apache-2.0,"Copyright 2014-2019 JetBrains s.r.o. and Dokka project contributors."
+__,org.jsoup,MIT,"Copyright (c) 2009-2024 Jonathan Hedley"
+__,org.xerial,Apache-2.0,"Copyright (c) 2006, David Crawshaw."
