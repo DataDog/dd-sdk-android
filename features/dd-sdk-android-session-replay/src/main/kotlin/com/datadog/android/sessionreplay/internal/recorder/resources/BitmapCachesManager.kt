@@ -16,7 +16,8 @@ import com.datadog.android.api.InternalLogger
 internal class BitmapCachesManager(
     private val resourcesLRUCache: Cache<String, ByteArray>,
     private val bitmapPool: BitmapPool,
-    private val logger: InternalLogger
+    private val logger: InternalLogger,
+    private val keyGenerator: DrawableKeyGenerator
 ) {
     private var isResourcesCacheRegisteredForCallbacks: Boolean = false
     private var isBitmapPoolRegisteredForCallbacks: Boolean = false
@@ -60,9 +61,8 @@ internal class BitmapCachesManager(
         return String(resourceId, Charsets.UTF_8)
     }
 
-    internal fun generateResourceKeyFromDrawable(drawable: Drawable): String? {
-        // TODO RUM-7740 - Handle unsafe cast
-        return (resourcesLRUCache as? ResourcesLRUCache)?.generateKeyFromDrawable(drawable)
+    internal fun generateResourceKeyFromDrawable(drawable: Drawable): String {
+        return keyGenerator.generateKeyFromDrawable(drawable)
     }
 
     internal fun putInBitmapPool(bitmap: Bitmap) {
