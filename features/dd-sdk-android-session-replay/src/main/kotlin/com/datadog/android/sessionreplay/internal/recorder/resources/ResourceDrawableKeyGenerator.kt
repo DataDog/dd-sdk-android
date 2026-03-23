@@ -41,6 +41,6 @@ internal class ResourceDrawableKeyGenerator : DrawableKeyGenerator {
             sb.append(layerHash)
             sb.append("-")
         }
-        return "$sb"
+        return sb.toString()
     }
 }
