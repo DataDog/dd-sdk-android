@@ -20,6 +20,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -303,7 +304,8 @@ internal class DefaultFlagsRepositoryTest {
         while (hasFlagsThread.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
             Thread.sleep(1)
         }
-        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+        val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
+        callback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
         hasFlagsThread.join()
 
         // Then
@@ -313,7 +315,6 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M return false W hasFlags() { persistence callback fires with no data before call returns }`() {
         // Given
-        val callbackBarrier = CountDownLatch(1)
         var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
         doAnswer {
             capturedCallback = it.getArgument(2)
@@ -330,16 +331,18 @@ internal class DefaultFlagsRepositoryTest {
             instanceName = "async-empty",
             persistenceLoadTimeoutMs = 500L
         )
-        val asyncThread = Thread {
-            callbackBarrier.await()
-            capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = null))
-        }
 
         // When
-        asyncThread.start()
-        callbackBarrier.countDown()
-        val result = asyncRepository.hasFlags()
-        asyncThread.join()
+        var result = true
+        val hasFlagsThread = Thread { result = asyncRepository.hasFlags() }
+        hasFlagsThread.start()
+
+        while (hasFlagsThread.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
+            Thread.sleep(1)
+        }
+        val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
+        callback.onSuccess(DataStoreContent(versionCode = 0, data = null))
+        hasFlagsThread.join()
 
         // Then
         assertThat(result).isFalse()
