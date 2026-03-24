@@ -165,14 +165,17 @@ if [[ $ANALYSIS == 1 ]]; then
     rm -f apiSurface.log apiUsage.log
     detekt --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
+    set +e
     grep -v -f apiUsage.log apiSurface.log > apiCoverageMiss.log
     grep -f apiUsage.log apiSurface.log > apiCoverageHit.log
+    set -e
+
     surfaceCount=$(sed -n '$=' apiSurface.log)
     coverageMissCount=$(sed -n '$=' apiCoverageMiss.log)
     coverageHitCount=$(sed -n '$=' apiCoverageHit.log)
-    hitPercent=$(( (coverageHitCount * 100)/surfaceCount ))
-    missPercent=$(( (coverageMissCount * 100)/surfaceCount ))
-    if [ -s "apiCoverageMiss.log" ]; then
+    if [ -s "apiCoverageMiss.log" ] && [ "${surfaceCount:-0}" -gt 0 ]; then
+      hitPercent=$(( (coverageHitCount * 100) / surfaceCount ))
+      missPercent=$(( (coverageMissCount * 100) / surfaceCount ))
       echo "⚠ Test Integration coverage missed ${coverageMissCount} apis ($hitPercent % coverage; $missPercent % miss)"
     else
       echo "✔ Test Integration coverage 100%"
