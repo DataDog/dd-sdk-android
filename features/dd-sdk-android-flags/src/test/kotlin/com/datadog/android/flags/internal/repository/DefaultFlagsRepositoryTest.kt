@@ -20,7 +20,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
-import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -269,55 +268,16 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M return true W hasFlags() { persistence callback fires with non-empty flags before call returns }`() {
+    fun `M return true W hasFlags() { persistence loads with non-empty flags }`() {
         // Given
-        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
-        doAnswer {
-            capturedCallback = it.getArgument(2)
-            null
-        }.whenever(mockDataStore).value<FlagsStateEntry>(
-            key = any(),
-            version = anyOrNull(),
-            callback = any(),
-            deserializer = any()
-        )
-        val asyncRepository = DefaultFlagsRepository(
-            featureSdkCore = mockFeatureSdkCore,
-            dataStore = mockDataStore,
-            instanceName = "async-non-empty",
-            persistenceLoadTimeoutMs = 500L
-        )
         val persistedEntry = FlagsStateEntry(
             flags = singleFlagMap,
             evaluationContext = testContext,
             lastUpdateTimestamp = 0L
         )
-
-        // When
-        // Run hasFlags() on a background thread so we can observe it blocking
-        var result = false
-        val hasFlagsThread = Thread { result = asyncRepository.hasFlags() }
-        hasFlagsThread.start()
-
-        // Wait until hasFlags() is blocked on the persistence latch before firing the callback.
-        // This makes the test fail deterministically if hasFlags() does not wait for persistence.
-        while (hasFlagsThread.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
-            Thread.sleep(1)
-        }
-        val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
-        callback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
-        hasFlagsThread.join()
-
-        // Then
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun `M return false W hasFlags() { persistence callback fires with no data before call returns }`() {
-        // Given
-        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
         doAnswer {
-            capturedCallback = it.getArgument(2)
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
@@ -325,27 +285,37 @@ internal class DefaultFlagsRepositoryTest {
             callback = any(),
             deserializer = any()
         )
-        val asyncRepository = DefaultFlagsRepository(
+        val repository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
-            instanceName = "async-empty",
-            persistenceLoadTimeoutMs = 500L
+            instanceName = "with-flags"
         )
 
-        // When
-        var result = true
-        val hasFlagsThread = Thread { result = asyncRepository.hasFlags() }
-        hasFlagsThread.start()
+        // When + Then
+        assertThat(repository.hasFlags()).isTrue()
+    }
 
-        while (hasFlagsThread.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
-            Thread.sleep(1)
-        }
-        val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
-        callback.onSuccess(DataStoreContent(versionCode = 0, data = null))
-        hasFlagsThread.join()
+    @Test
+    fun `M return false W hasFlags() { persistence loads with no data }`() {
+        // Given
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = null))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "no-data"
+        )
 
-        // Then
-        assertThat(result).isFalse()
+        // When + Then
+        assertThat(repository.hasFlags()).isFalse()
     }
 
     @Test

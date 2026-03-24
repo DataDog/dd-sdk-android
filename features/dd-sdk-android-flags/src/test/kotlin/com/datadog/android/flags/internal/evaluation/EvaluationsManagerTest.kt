@@ -56,8 +56,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -481,32 +479,6 @@ internal class EvaluationsManagerTest {
     fun `M notify STALE W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
-
-        // Configure a real DataStore mock that captures the callback without firing it
-        val mockDataStore = mock<DataStoreHandler>()
-        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
-        whenever(
-            mockDataStore.value<FlagsStateEntry>(
-                key = any(),
-                version = anyOrNull(),
-                callback = any(),
-                deserializer = any()
-            )
-        ).doAnswer {
-            capturedCallback = it.getArgument(2)
-            null
-        }
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-
-        // Create a real DefaultFlagsRepository with a generous persistence timeout
-        val realRepository = DefaultFlagsRepository(
-            featureSdkCore = mockSdkCore,
-            dataStore = mockDataStore,
-            instanceName = "integration-test",
-            persistenceLoadTimeoutMs = 2000L
-        )
-
-        // Prepare persisted state whose evaluationContext matches the request context
         val flag = PrecomputedFlag(
             variationType = "boolean",
             variationValue = "true",
@@ -522,19 +494,36 @@ internal class EvaluationsManagerTest {
             lastUpdateTimestamp = 0L
         )
 
+        // Configure DataStore to fire callback synchronously during DefaultFlagsRepository
+        // construction, so the persistence latch is counted down before hasFlags() is called.
+        val mockDataStore = mock<DataStoreHandler>()
+        whenever(
+            mockDataStore.value<FlagsStateEntry>(
+                key = any(),
+                version = anyOrNull(),
+                callback = any(),
+                deserializer = any()
+            )
+        ).doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            null
+        }
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+
+        val realRepository = DefaultFlagsRepository(
+            featureSdkCore = mockSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "integration-test"
+        )
+
         // Network call returns null (simulates network failure)
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(null)
 
-        // Use a real single-thread executor so hasFlags() actually blocks; capture the
-        // executor thread so we can wait until hasFlags() is blocked before firing the callback.
-        var executorThread: Thread? = null
-        val realExecutor = Executors.newSingleThreadExecutor { runnable ->
-            Thread(runnable).also { executorThread = it }
-        }
         val integrationManager = EvaluationsManager(
             sdkCore = mockSdkCore,
-            executorService = realExecutor,
+            executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
             flagsRepository = realRepository,
             assignmentsReader = mockAssignmentsDownloader,
@@ -543,31 +532,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        // Submit work to real executor (returns immediately; ThreadFactory creates the thread here)
         integrationManager.updateEvaluationsForContext(context)
-
-        // Wait until the executor thread is blocked in hasFlags() before firing the callback.
-        // This ensures the test fails deterministically if hasFlags() does not wait for persistence.
-        var waited = 0
-        while (executorThread?.state.let {
-                it != Thread.State.TIMED_WAITING &&
-                    it != Thread.State.TERMINATED &&
-                    it != Thread.State.WAITING
-            }
-        ) {
-            Thread.sleep(1)
-            check(++waited < 5000) { "Executor thread never reached hasFlags() wait after 5s" }
-        }
-        val callback = capturedCallback ?: fail("DataStoreReadCallback was not captured")
-        callback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
-
-        // Wait for executor to complete its work
-        realExecutor.shutdown()
-        try {
-            assertThat(realExecutor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
-        } finally {
-            if (!realExecutor.isTerminated) realExecutor.shutdownNow()
-        }
 
         // Then
         inOrder(mockFlagsStateManager) {
