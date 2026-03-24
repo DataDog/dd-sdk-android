@@ -549,7 +549,12 @@ internal class EvaluationsManagerTest {
         // Wait until the executor thread is blocked in hasFlags() before firing the callback.
         // This ensures the test fails deterministically if hasFlags() does not wait for persistence.
         var waited = 0
-        while (executorThread?.state.let { it != Thread.State.TIMED_WAITING && it != Thread.State.TERMINATED }) {
+        while (executorThread?.state.let {
+                it != Thread.State.TIMED_WAITING &&
+                    it != Thread.State.TERMINATED &&
+                    it != Thread.State.WAITING
+            }
+        ) {
             Thread.sleep(1)
             check(++waited < 5000) { "Executor thread never reached hasFlags() wait after 5s" }
         }
