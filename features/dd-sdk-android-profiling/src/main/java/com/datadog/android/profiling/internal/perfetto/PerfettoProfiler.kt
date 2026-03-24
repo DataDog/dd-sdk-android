@@ -53,6 +53,9 @@ internal class PerfettoProfiler(
     private var profilingStartTime = 0L
 
     @Volatile
+    private var profilingStopTime = 0L
+
+    @Volatile
     private var profilingStartReason: ProfilingStartReason = ProfilingStartReason.UNKNOWN
 
     @Volatile
@@ -74,15 +77,21 @@ internal class PerfettoProfiler(
 
     init {
         resultCallback = Consumer<ProfilingResult> { result ->
-            val endTime = timeProvider.getDeviceTimestampMillis()
-            val duration = endTime - profilingStartTime
+            val resultCallbackTime = timeProvider.getDeviceTimestampMillis()
+            // profilingStopTime is 0L when profiling ended by timeout (stop() was never called).
+            // In that case, fall back to resultCallbackTime so duration is still meaningful.
+            val effectiveStopTime =
+                if (profilingStopTime > 0L) profilingStopTime else resultCallbackTime
+            val duration = effectiveStopTime - profilingStartTime
+            val resultCallbackDelayMs =
+                if (profilingStopTime > 0L) resultCallbackTime - profilingStopTime else 0L
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed
                 result.resultFilePath?.let {
                     notifyAllCallbacks(
                         PerfettoResult(
                             start = profilingStartTime,
-                            end = endTime,
+                            end = resultCallbackTime,
                             tag = result.tag.orEmpty(),
                             resultFilePath = it
                         )
@@ -93,6 +102,7 @@ internal class PerfettoProfiler(
             sendProfilingEndTelemetry(
                 result = result,
                 duration = duration,
+                resultCallbackDelayMs = resultCallbackDelayMs,
                 startReason = profilingStartReason,
                 appStartInfo = profilingAppStartInfo
             )
@@ -127,6 +137,7 @@ internal class PerfettoProfiler(
         // profiling will be launched when no instance is currently running profiling.
         if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
+            profilingStopTime = 0L
             profilingStartReason = startReason
             profilingAppStartInfo = additionalAttributes[TELEMETRY_KEY_APP_START_INFO]
             requestProfiling(
@@ -144,6 +155,7 @@ internal class PerfettoProfiler(
             // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
             // starting another request.
             stopSignal?.cancel()
+            profilingStopTime = timeProvider.getDeviceTimestampMillis()
         }
     }
 
@@ -165,6 +177,7 @@ internal class PerfettoProfiler(
     private fun sendProfilingEndTelemetry(
         result: ProfilingResult,
         duration: Long,
+        resultCallbackDelayMs: Long,
         startReason: ProfilingStartReason,
         appStartInfo: String?
     ) {
@@ -175,6 +188,7 @@ internal class PerfettoProfiler(
             errorMessage = result.errorMessage,
             filePath = result.resultFilePath,
             duration = duration,
+            resultCallbackDelayMs = resultCallbackDelayMs,
             stopReason = resolveStopReason(result.errorCode)
         )
         internalLogger?.let {
@@ -187,7 +201,7 @@ internal class PerfettoProfiler(
     }
 
     private fun resolveStopReason(errorCode: Int): String {
-        return if (stopSignal?.isCanceled == true) {
+        return if (profilingStopTime > 0L) {
             TELEMETRY_VALUE_STOPPED_REASON_MANUAL
         } else {
             when (errorCode) {
@@ -215,6 +229,7 @@ internal class PerfettoProfiler(
                     TELEMETRY_KEY_ERROR_CODE to telemetryData.errorCode,
                     TELEMETRY_KEY_START_REASON to telemetryData.startReason,
                     TELEMETRY_KEY_DURATION to telemetryData.duration,
+                    TELEMETRY_KEY_CALLBACK_DELAY to telemetryData.resultCallbackDelayMs,
                     TELEMETRY_KEY_ERROR_MESSAGE to telemetryData.errorMessage,
                     TELEMETRY_KEY_FILE_SIZE to getFileSize(telemetryData.filePath),
                     TELEMETRY_KEY_STOPPED_REASON to telemetryData.stopReason,
@@ -245,6 +260,7 @@ internal class PerfettoProfiler(
         val errorMessage: String?,
         val filePath: String?,
         val duration: Long,
+        val resultCallbackDelayMs: Long,
         val stopReason: String
     )
 
@@ -269,6 +285,7 @@ internal class PerfettoProfiler(
         private const val TELEMETRY_KEY_START_REASON = "start_reason"
         private const val TELEMETRY_KEY_ERROR_MESSAGE = "error_message"
         private const val TELEMETRY_KEY_DURATION = "duration"
+        private const val TELEMETRY_KEY_CALLBACK_DELAY = "callback_delay_ms"
         private const val TELEMETRY_KEY_FILE_SIZE = "file_size"
         private const val TELEMETRY_KEY_STOPPED_REASON = "stopped_reason"
         internal const val TELEMETRY_KEY_APP_START_INFO = "app_start_info"
