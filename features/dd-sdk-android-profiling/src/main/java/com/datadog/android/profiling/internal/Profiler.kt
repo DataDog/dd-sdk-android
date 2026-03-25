@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -29,4 +30,6 @@ internal interface Profiler {
     fun registerProfilingCallback(sdkInstanceName: String, callback: ProfilerCallback)
 
     fun unregisterProfilingCallback(sdkInstanceName: String)
+
+    fun setRateBasedSampler(rateBasedSampler: RateBasedSampler<Unit>)
 }

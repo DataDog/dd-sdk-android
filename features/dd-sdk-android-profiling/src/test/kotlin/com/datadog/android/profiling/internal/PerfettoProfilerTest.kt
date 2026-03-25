@@ -13,10 +13,13 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -38,11 +41,13 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 @Extensions(
@@ -62,7 +67,10 @@ class PerfettoProfilerTest {
     private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    private lateinit var mockExecutorService: ExecutorService
+    private lateinit var mockExecutorService: ScheduledExecutorService
+
+    @Mock
+    private lateinit var mockStopSignal: CancellationSignal
 
     @Mock
     private lateinit var mockProfilerCallback: ProfilerCallback
@@ -894,6 +902,90 @@ class PerfettoProfilerTest {
             eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
+    }
+
+    @Test
+    fun `M schedule timer with 10s delay W start{startReason is APPLICATION_LAUNCH}()`() {
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+
+        // Then
+        verify(mockExecutorService).schedule(
+            any<Runnable>(),
+            eq(APP_LAUNCH_PROFILING_MAX_DURATION_MS),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M not schedule timer W start {startReason is not APPLICATION_LAUNCH}()`(forge: Forge) {
+        // Given
+        val startReason = forge.aValueFrom(
+            ProfilingStartReason::class.java,
+            listOf(ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+        testedProfiler.stopSignal = mockStopSignal
+
+        // When
+        testedProfiler.start(
+            mockContext,
+            startReason,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+
+        // Then
+        verifyNoInteractions(mockExecutorService)
+        verifyNoInteractions(mockStopSignal)
+    }
+
+    @Test
+    fun `M cancel stop signal W app launch timer fires {rateBasedSampler returns false}`() {
+        // Given
+        testedProfiler.setRateBasedSampler(RateBasedSampler(0f))
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+        val timerRunnableCaptor = argumentCaptor<Runnable>()
+        verify(mockExecutorService).schedule(timerRunnableCaptor.capture(), any(), any())
+        testedProfiler.stopSignal = mockStopSignal
+        whenever(mockStopSignal.isCanceled).doReturn(false)
+
+        // When
+        timerRunnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockStopSignal).cancel()
+    }
+
+    @Test
+    fun `M not cancel stop signal W app launch timer fires {rateBasedSampler returns true}`() {
+        // Given
+        testedProfiler.setRateBasedSampler(RateBasedSampler(100f))
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+        val timerRunnableCaptor = argumentCaptor<Runnable>()
+        verify(mockExecutorService).schedule(timerRunnableCaptor.capture(), any(), any())
+        testedProfiler.stopSignal = mockStopSignal
+        whenever(mockStopSignal.isCanceled).doReturn(false)
+
+        // When
+        timerRunnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockStopSignal, never()).cancel()
     }
 
     private class StubTimeProvider : TimeProvider {
