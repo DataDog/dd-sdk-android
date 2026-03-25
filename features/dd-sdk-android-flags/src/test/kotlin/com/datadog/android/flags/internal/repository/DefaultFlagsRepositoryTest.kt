@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -27,6 +28,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -64,7 +66,7 @@ internal class DefaultFlagsRepositoryTest {
         whenever(
             mockDataStore.value<FlagsStateEntry>(
                 key = any(),
-                version = any(),
+                version = anyOrNull(),
                 callback = any(),
                 deserializer = any()
             )
@@ -146,7 +148,7 @@ internal class DefaultFlagsRepositoryTest {
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
-            version = any(),
+            version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
@@ -178,7 +180,7 @@ internal class DefaultFlagsRepositoryTest {
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
-            version = any(),
+            version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
@@ -266,32 +268,80 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M not block W hasFlags() { persistence still loading }`() {
+    fun `M return true W hasFlags() { persistence loads with non-empty flags }`() {
         // Given
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L
+        )
         doAnswer {
-            // Never call the callback - simulate slow persistence
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
-            version = any(),
+            version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
-        val slowRepository = DefaultFlagsRepository(
+        val repository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
-            instanceName = "slow",
-            persistenceLoadTimeoutMs = 1000L // Long timeout
+            instanceName = "with-flags"
+        )
+
+        // When + Then
+        assertThat(repository.hasFlags()).isTrue()
+    }
+
+    @Test
+    fun `M return false W hasFlags() { persistence loads with no data }`() {
+        // Given
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = null))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "no-data"
+        )
+
+        // When + Then
+        assertThat(repository.hasFlags()).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasFlags() { persistence callback never fires within timeout }`() {
+        // Given
+        doAnswer {
+            // Never call the callback
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val timeoutRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "timeout",
+            persistenceLoadTimeoutMs = 1L
         )
 
         // When
-        val startTime = System.currentTimeMillis()
-        val result = slowRepository.hasFlags()
-        val elapsedTime = System.currentTimeMillis() - startTime
+        val result = timeoutRepository.hasFlags()
 
         // Then
-        assertThat(result).isFalse
-        assertThat(elapsedTime).isLessThan(100L) // Should not wait for persistence
+        assertThat(result).isFalse()
     }
 
     // endregion
