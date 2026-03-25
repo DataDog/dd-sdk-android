@@ -19,6 +19,7 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
@@ -90,15 +91,18 @@ internal class ProfilingFeature(
     }
 
     override fun onReceive(event: Any) {
-        if (event !is ProfilerStopEvent.TTID) {
-            sdkCore.internalLogger.log(
+        when (event) {
+            is ProfilerStopEvent.TTID -> onTtidEvent(event)
+            is RumSessionRenewedEvent -> onRumSessionRenewed(event)
+            else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
                 { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
             )
-            return
         }
+    }
 
+    private fun onTtidEvent(event: ProfilerStopEvent.TTID) {
         if (ttidRumContext == null) {
             ttidRumContext = event.rumContext
             profiler.stop(sdkCore.name)
@@ -109,6 +113,11 @@ internal class ProfilingFeature(
                 { "Profiling stopped with TTID reason" }
             )
         }
+    }
+
+    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
+    private fun onRumSessionRenewed(event: RumSessionRenewedEvent) {
+        // TODO RUM-15190: forward to ContinuousProfilingScheduler once it is implemented.
     }
 
     private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {

@@ -287,6 +287,19 @@ public final class com/datadog/android/internal/profiling/TTIDRumContext {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/rum/RumSessionRenewedEvent {
+	public fun <init> (Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun copy (Ljava/lang/String;Z)Lcom/datadog/android/internal/rum/RumSessionRenewedEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/rum/RumSessionRenewedEvent;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/internal/rum/RumSessionRenewedEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getSessionSampled ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
