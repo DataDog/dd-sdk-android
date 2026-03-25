@@ -8,12 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.ComponentCallbacks2
 import android.content.res.Configuration
-import android.graphics.drawable.AnimationDrawable
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.DrawableContainer
-import android.graphics.drawable.LayerDrawable
 import androidx.collection.LruCache
-import com.datadog.android.sessionreplay.internal.recorder.safeGetDrawable
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 
@@ -71,36 +66,6 @@ internal class ResourcesLRUCache(
             call = { cache.evictAll() },
             failureMessage = FAILURE_MSG_EVICT_CACHE_CONTENTS
         )
-    }
-
-    internal fun generateKeyFromDrawable(element: Drawable): String =
-        generatePrefix(element) + System.identityHashCode(element)
-
-    private fun generatePrefix(drawable: Drawable): String {
-        return when (drawable) {
-            is DrawableContainer -> getPrefixForDrawableContainer(drawable)
-            is LayerDrawable -> getPrefixForLayerDrawable(drawable)
-            else -> ""
-        }
-    }
-
-    private fun getPrefixForDrawableContainer(drawable: DrawableContainer): String {
-        if (drawable !is AnimationDrawable) {
-            return drawable.state.joinToString(separator = "", postfix = "-")
-        }
-
-        return ""
-    }
-
-    private fun getPrefixForLayerDrawable(drawable: LayerDrawable): String {
-        val sb = StringBuilder()
-        for (index in 0 until drawable.numberOfLayers) {
-            val layer = drawable.safeGetDrawable(index)
-            val layerHash = System.identityHashCode(layer).toString()
-            sb.append(layerHash)
-            sb.append("-")
-        }
-        return "$sb"
     }
 
     internal companion object {
