@@ -8,6 +8,7 @@ package com.datadog.android.tests.elmyr
 
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
@@ -75,7 +76,7 @@ fun Forge.anOkHttpResponse(
 ): Response =
     Response.Builder()
         .request(request)
-        .protocol(okhttp3.Protocol.HTTP_2)
+        .protocol(Protocol.HTTP_2)
         .code(statusCode)
         .message(anAsciiString())
         .apply(configure)
