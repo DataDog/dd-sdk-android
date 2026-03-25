@@ -70,7 +70,28 @@ fun Forge.aHostName(): String {
     return "${anAlphabeticalString(Case.LOWER)}.${anAlphabeticalString(Case.LOWER, regionSize)}"
 }
 
-fun Forge.anUrlString(): String = aStringMatching(URL_FORGERY_PATTERN)
+data class ForgedUrl(
+    val baseUrl: String,
+    val fullUrl: String
+)
+
+fun Forge.aUrl(host: String? = null, path: String? = null): String {
+    val h = host?.lowercase(Locale.US) ?: aHostName()
+    val p = path ?: anAlphaNumericalString()
+    val protocol = anElementFrom("http", "https")
+    return "$protocol://$h/$p"
+}
+
+fun Forge.aQueryParams(maxParams: Int = 5): String =
+    aList(anInt(min = 1, max = maxParams)) {
+        "${anAlphabeticalString()}=${anAlphaNumericalString()}"
+    }.joinToString("&")
+
+fun Forge.aUrlWithQueryParams(host: String? = null, path: String? = null): ForgedUrl {
+    val base = aUrl(host, path)
+    val qp = aQueryParams()
+    return ForgedUrl(base, "$base?$qp")
+}
 
 fun Forge.anHttpRequestInfo(headers: Map<String, String>): HttpRequestInfo {
     return getForgery<MutableHttpRequestInfo>()
@@ -78,6 +99,15 @@ fun Forge.anHttpRequestInfo(headers: Map<String, String>): HttpRequestInfo {
         .apply { headers.forEach { (key, value) -> addHeader(key, value) } }
         .build()
 }
+
+fun Forge.anOkHttpRequest(
+    url: String = aUrl(),
+    configure: Request.Builder.() -> Unit = {}
+): Request =
+    Request.Builder()
+        .url(url)
+        .apply(configure)
+        .build()
 
 fun Forge.anOkHttpResponse(
     request: Request,

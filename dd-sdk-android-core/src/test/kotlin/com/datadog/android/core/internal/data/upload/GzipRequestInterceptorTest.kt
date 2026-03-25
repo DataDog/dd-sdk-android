@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.tests.elmyr.anOkHttpRequest
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -57,12 +58,10 @@ internal class GzipRequestInterceptorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         this.forge = forge
-        val fakeUrl = forge.aStringMatching("http://[a-z0-9_]{8}\\.[a-z]{3}")
         fakeBody = forge.anAlphabeticalString()
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .post(fakeBody.toByteArray().toRequestBody(null))
-            .build()
+        fakeRequest = forge.anOkHttpRequest {
+            post(fakeBody.toByteArray().toRequestBody(null))
+        }
         testedInterceptor = GzipRequestInterceptor(mockInternalLogger)
     }
 
@@ -91,9 +90,9 @@ internal class GzipRequestInterceptorTest {
 
     @Test
     fun `ignores body when encoding is set`() {
-        fakeRequest = fakeRequest.newBuilder()
-            .header("Content-Encoding", "identity")
-            .build()
+        fakeRequest = forge.anOkHttpRequest {
+            header("Content-Encoding", "identity")
+        }
         stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
@@ -126,9 +125,9 @@ internal class GzipRequestInterceptorTest {
             )
             .build()
 
-        fakeRequest = fakeRequest.newBuilder()
-            .post(fakeMultipartBody)
-            .build()
+        fakeRequest = forge.anOkHttpRequest {
+            post(fakeMultipartBody)
+        }
         stubChain()
 
         // When
@@ -152,9 +151,7 @@ internal class GzipRequestInterceptorTest {
 
     @Test
     fun `ignores body when body is null`() {
-        fakeRequest = fakeRequest.newBuilder()
-            .get()
-            .build()
+        fakeRequest = forge.anOkHttpRequest()
         stubChain()
 
         val response = testedInterceptor.intercept(mockChain)

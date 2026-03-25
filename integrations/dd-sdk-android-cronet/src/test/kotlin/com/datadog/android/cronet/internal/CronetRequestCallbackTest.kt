@@ -11,7 +11,7 @@ import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
-import com.datadog.android.tests.elmyr.anUrlString
+import com.datadog.android.tests.elmyr.aUrl
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.RequestTracingState
@@ -146,7 +146,7 @@ internal class CronetRequestCallbackTest {
         ) doReturn mockRedirectRequestInfoBuilder
 
         val requestContext = CronetRequestContext(
-            url = forge.anUrlString(),
+            url = forge.aUrl(),
             engine = mockEngine,
             requestCallback = mockContextCallback,
             executor = mockContextExecutor

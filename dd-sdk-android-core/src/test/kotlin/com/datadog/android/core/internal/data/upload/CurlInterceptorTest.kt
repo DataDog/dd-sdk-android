@@ -6,12 +6,12 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.tests.elmyr.aUrlWithQueryParams
+import com.datadog.android.tests.elmyr.anOkHttpRequest
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -54,25 +54,6 @@ internal class CurlInterceptorTest {
     @Mock
     lateinit var mockOutput: (String) -> Unit
 
-    @StringForgery(regex = "[a-z]+\\.[a-z]{2,3}")
-    lateinit var fakeHost: String
-
-    @StringForgery(regex = "([a-z0-9_-]+/){0,4}")
-    lateinit var fakePath: String
-
-    @MapForgery(
-        key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
-        value = AdvancedForgery(
-            string = [
-                StringForgery(StringForgeryType.ALPHA_NUMERICAL),
-                StringForgery(StringForgeryType.ALPHABETICAL),
-                StringForgery(StringForgeryType.HEXADECIMAL),
-                StringForgery(StringForgeryType.NUMERICAL)
-            ]
-        )
-    )
-    lateinit var fakeQueryParams: Map<String, String>
-
     lateinit var fakeUrl: String
 
     lateinit var fakeRequest: Request
@@ -86,18 +67,14 @@ internal class CurlInterceptorTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         this.forge = forge
-        val qp = fakeQueryParams.map { "${it.key}=${it.value}" }.joinToString("&")
-        fakeUrl = "https://$fakeHost/$fakePath?$qp"
+        fakeUrl = forge.aUrlWithQueryParams().fullUrl
     }
 
     @Test
     fun `M output curl command W intercept() {GET}`(@BoolForgery withBody: Boolean) {
         // Given
         testedInterceptor = CurlInterceptor(withBody, mockOutput)
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .get()
-            .build()
+        fakeRequest = forge.anOkHttpRequest(fakeUrl)
         stubChain()
 
         // When
@@ -113,10 +90,9 @@ internal class CurlInterceptorTest {
     fun `M output curl command W intercept() {POST, no body}`() {
         // Given
         testedInterceptor = CurlInterceptor(false, mockOutput)
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .post(fakeBody.toByteArray().toRequestBody(null))
-            .build()
+        fakeRequest = forge.anOkHttpRequest(fakeUrl) {
+            post(fakeBody.toByteArray().toRequestBody(null))
+        }
         stubChain()
 
         // When
@@ -132,10 +108,9 @@ internal class CurlInterceptorTest {
     fun `M output curl command W intercept() {POST, body}`() {
         // Given
         testedInterceptor = CurlInterceptor(true, mockOutput)
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .post(fakeBody.toByteArray().toRequestBody(null))
-            .build()
+        fakeRequest = forge.anOkHttpRequest(fakeUrl) {
+            post(fakeBody.toByteArray().toRequestBody(null))
+        }
         stubChain()
 
         // When
@@ -155,11 +130,9 @@ internal class CurlInterceptorTest {
     ) {
         // Given
         testedInterceptor = CurlInterceptor(withBody, mockOutput)
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .get()
-            .addHeader(headerName, headerValue)
-            .build()
+        fakeRequest = forge.anOkHttpRequest(fakeUrl) {
+            addHeader(headerName, headerValue)
+        }
         stubChain()
 
         // When
@@ -180,10 +153,9 @@ internal class CurlInterceptorTest {
     ) {
         // Given
         testedInterceptor = CurlInterceptor(true, mockOutput)
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .post(fakeBody.toByteArray().toRequestBody("$type/$subtype".toMediaTypeOrNull()))
-            .build()
+        fakeRequest = forge.anOkHttpRequest(fakeUrl) {
+            post(fakeBody.toByteArray().toRequestBody("$type/$subtype".toMediaTypeOrNull()))
+        }
         stubChain()
 
         // When
@@ -205,9 +177,8 @@ internal class CurlInterceptorTest {
     ) {
         // Given
         testedInterceptor = CurlInterceptor(true, mockOutput)
-        fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .post(
+        fakeRequest = forge.anOkHttpRequest(fakeUrl) {
+            post(
                 MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart(fakeFormKey, fakeFormKeyValue)
@@ -217,7 +188,7 @@ internal class CurlInterceptorTest {
                     )
                     .build()
             )
-            .build()
+        }
         stubChain()
 
         // When

@@ -12,6 +12,7 @@ import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.utils.toBase64
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.net.GraphQLExtractor
+import com.datadog.android.tests.elmyr.anOkHttpRequest
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,19 +31,23 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.io.IOException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class OkHttpGraphQLAdapterTest {
 
     @Mock
@@ -54,6 +59,8 @@ internal class OkHttpGraphQLAdapterTest {
     @Mock
     lateinit var mockChain: Interceptor.Chain
 
+    lateinit var fakeRequest: Request
+
     lateinit var testedHelper: OkHttpGraphQLAdapter
 
     lateinit var forge: Forge
@@ -61,6 +68,8 @@ internal class OkHttpGraphQLAdapterTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         this.forge = forge
+        fakeRequest = forge.anOkHttpRequest()
+        whenever(mockChain.request()) doAnswer { fakeRequest }
         testedHelper = OkHttpGraphQLAdapter(mockGraphQLExtractor)
     }
 
@@ -72,20 +81,20 @@ internal class OkHttpGraphQLAdapterTest {
         @StringForgery fakeUserAgent: String
     ) {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader("User-Agent", fakeUserAgent)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
-            .build()
-        val response = forge.anOkHttpResponse(request, 200) {
+        fakeRequest = forge.anOkHttpRequest {
+            addHeader("User-Agent", fakeUserAgent)
+            addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+        }
+
+        val response = forge.anOkHttpResponse(fakeRequest, 200) {
             body("""{"data":{}}""".toResponseBody(HttpSpec.ContentType.APPLICATION_JSON.toMediaType()))
         }
-        whenever(mockChain.request()) doReturn request
+
         whenever(mockChain.proceed(any())) doReturn response
 
         // When
         val wrappedChain = testedHelper.wrapChainWithoutDDHeaders(mockInternalLogger, mockChain)
-        wrappedChain.proceed(request)
+        wrappedChain.proceed(fakeRequest)
 
         // Then
         val requestCaptor = argumentCaptor<Request>()
@@ -100,12 +109,7 @@ internal class OkHttpGraphQLAdapterTest {
         @StringForgery fakeUserAgent: String
     ) {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader("User-Agent", fakeUserAgent)
-            .build()
-
-        whenever(mockChain.request()) doReturn request
+        fakeRequest = forge.anOkHttpRequest { addHeader("User-Agent", fakeUserAgent) }
 
         // When
         val wrappedChain = testedHelper.wrapChainWithoutDDHeaders(mockInternalLogger, mockChain)
@@ -123,13 +127,12 @@ internal class OkHttpGraphQLAdapterTest {
         @StringForgery fakeValue: String
     ) {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeValue)
-            .build()
+        fakeRequest = forge.anOkHttpRequest {
+            addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeValue)
+        }
 
         // When
-        val result = testedHelper.hasGraphQLHeaders(request.headers)
+        val result = testedHelper.hasGraphQLHeaders(fakeRequest.headers)
 
         // Then
         assertThat(result).isTrue()
@@ -138,13 +141,10 @@ internal class OkHttpGraphQLAdapterTest {
     @Test
     fun `M return false W hasGraphQLHeaders() {without GraphQL headers}`() {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader("User-Agent", "test")
-            .build()
+        fakeRequest = forge.anOkHttpRequest { addHeader("User-Agent", "test") }
 
         // When
-        val result = testedHelper.hasGraphQLHeaders(request.headers)
+        val result = testedHelper.hasGraphQLHeaders(fakeRequest.headers)
 
         // Then
         assertThat(result).isFalse()
@@ -159,15 +159,14 @@ internal class OkHttpGraphQLAdapterTest {
         @StringForgery fakeGraphQLName: String
     ) {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
-            .build()
+        fakeRequest = forge.anOkHttpRequest {
+            addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+        }
         val expectedAttributes = mapOf("key" to "value")
         whenever(mockGraphQLExtractor.extractGraphQLAttributes(any())) doReturn expectedAttributes
 
         // When
-        val result = testedHelper.extractGraphQLAttributes(request)
+        val result = testedHelper.extractGraphQLAttributes(fakeRequest)
 
         // Then
         assertThat(result).isEqualTo(expectedAttributes)
@@ -183,10 +182,7 @@ internal class OkHttpGraphQLAdapterTest {
         @StringForgery fakeErrorsJson: String
     ) {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .build()
-        val response = forge.anOkHttpResponse(request, 200) {
+        val response = forge.anOkHttpResponse(fakeRequest, 200) {
             body(
                 """{"errors":[{"message":"err"}]}""".toResponseBody(
                     HttpSpec.ContentType.APPLICATION_JSON.toMediaType()
@@ -207,10 +203,7 @@ internal class OkHttpGraphQLAdapterTest {
     @Test
     fun `M return empty map W extractGraphQLErrorAttributes() {no graphql errors}`() {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .build()
-        val response = forge.anOkHttpResponse(request, 200) {
+        val response = forge.anOkHttpResponse(fakeRequest, 200) {
             body(
                 """{"data":{"user":"John"}}""".toResponseBody(
                     HttpSpec.ContentType.APPLICATION_JSON.toMediaType()
@@ -231,10 +224,7 @@ internal class OkHttpGraphQLAdapterTest {
     @Test
     fun `M return empty map W extractGraphQLErrorAttributes() {empty graphql attributes}`() {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .build()
-        val response = forge.anOkHttpResponse(request, 200)
+        val response = forge.anOkHttpResponse(fakeRequest, 200)
 
         // When
         val result = testedHelper.extractGraphQLErrorAttributes(response, emptyMap(), mockInternalLogger)
@@ -246,10 +236,7 @@ internal class OkHttpGraphQLAdapterTest {
     @Test
     fun `M return empty map and log W extractGraphQLErrorAttributes() {peekBody throws}`() {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .build()
-        val response = forge.anOkHttpResponse(request, 200) {
+        val response = forge.anOkHttpResponse(fakeRequest, 200) {
             body(object : ResponseBody() {
                 override fun contentType(): MediaType? = null
                 override fun contentLength(): Long = -1L

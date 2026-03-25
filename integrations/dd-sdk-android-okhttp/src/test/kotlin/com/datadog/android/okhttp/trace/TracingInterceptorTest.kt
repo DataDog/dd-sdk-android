@@ -20,6 +20,7 @@ import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTE
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.elmyr.aUrl
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
@@ -1107,10 +1108,10 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M create a span with info W intercept() { resource url with no query paramaters }`(
+    fun `M create a span with info W intercept() { resource url with no query parameters }`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams()
+        val fakeUrlWithoutQueryParams = forge.aUrl(host = forge.aStringMatching(HOSTNAME_PATTERN))
         fakeRequest = forgeRequest(fakeUrlWithoutQueryParams)
         whenever(mockResolver.isFirstPartyUrl(fakeUrlWithoutQueryParams.toHttpUrl()))
             .thenReturn(true)
@@ -1664,15 +1665,8 @@ internal open class TracingInterceptorTest {
         whenever(chain.proceed(any())) doReturn fakeResponse
     }
 
-    private fun forgeUrlWithoutQueryParams(knownHost: String? = null): String {
-        val protocol = forge.anElementFrom("http", "https")
-        val host = knownHost ?: forge.aStringMatching(HOSTNAME_PATTERN)
-        val path = forge.anAlphaNumericalString()
-        return "$protocol://$host/$path"
-    }
-
     private fun forgeUrlWithQueryParams(knownHost: String? = null): String {
-        fakeBaseUrl = forgeUrlWithoutQueryParams(knownHost)
+        fakeBaseUrl = forge.aUrl(host = knownHost ?: forge.aStringMatching(HOSTNAME_PATTERN))
         val fakeQueryParams = forge.aList(forge.anInt(min = 0, max = 5)) {
             "${forge.anAlphabeticalString()}=${forge.anAlphabeticalString()}"
         }.joinToString("&")

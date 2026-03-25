@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.RequestInfoAssert
 import com.datadog.android.internal.network.HttpSpec
-import com.datadog.android.tests.elmyr.anUrlString
+import com.datadog.android.tests.elmyr.aUrl
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -61,7 +61,7 @@ internal class CronetUrlRequestBuilderTest {
 
     @BeforeEach
     fun setup(forge: Forge) {
-        fakeUrl = forge.anUrlString()
+        fakeUrl = forge.aUrl()
         requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,

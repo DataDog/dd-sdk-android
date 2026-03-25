@@ -8,7 +8,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.internal.network.HttpSpec
-import com.datadog.android.tests.elmyr.anUrlString
+import com.datadog.android.tests.elmyr.aUrl
 import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -77,7 +77,7 @@ internal class CronetUrlRequestTest {
         whenever(mockCallback.onRequestStarted(any())) doReturn mockRequestTracingState
 
         val requestContext = CronetRequestContext(
-            url = forge.anUrlString(),
+            url = forge.aUrl(),
             engine = mockEngine,
             requestCallback = mockCallback,
             executor = mockExecutor

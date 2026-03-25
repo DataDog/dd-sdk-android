@@ -14,6 +14,8 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.elmyr.aUrl
+import com.datadog.android.tests.elmyr.aUrlWithQueryParams
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
@@ -179,7 +181,10 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
         fakeMediaType = mediaType.toMediaTypeOrNull()
-        fakeUrl = forgeUrlWithQueryParams()
+        forge.aUrlWithQueryParams().let {
+            fakeBaseUrl = it.baseUrl
+            fakeUrl = it.fullUrl
+        }
         fakeRequest = forgeRequest()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -549,7 +554,10 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String
     ) {
-        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        forge.aUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys)).let {
+            fakeUrl = it.fullUrl
+            fakeBaseUrl = it.baseUrl
+        }
         fakeRequest = forgeRequest().newBuilder().addHeader(key, previousValue).build()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -566,7 +574,10 @@ internal class TracingInterceptorContextInjectionSampledTest {
 
     @Test
     fun `M ignore inject exception W intercept() {IllegalStateException}`(@StringForgery message: String) {
-        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        forge.aUrlWithQueryParams(host = forge.anElementFrom(fakeLocalHosts.keys)).let {
+            fakeUrl = it.fullUrl
+            fakeBaseUrl = it.baseUrl
+        }
         fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -904,7 +915,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
     fun `M create a span with info W intercept() { resource url with no query parameters }`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams()
+        val fakeUrlWithoutQueryParams = forge.aUrl(host = forge.aStringMatching(HOSTNAME_PATTERN))
         fakeRequest = forgeRequest(fakeUrlWithoutQueryParams)
         whenever(mockResolver.isFirstPartyUrl(fakeUrlWithoutQueryParams.toHttpUrl()))
             .thenReturn(true)
@@ -1317,21 +1328,6 @@ internal class TracingInterceptorContextInjectionSampledTest {
 
         whenever(chain.request()) doReturn fakeRequest
         whenever(chain.proceed(any())) doReturn fakeResponse
-    }
-
-    private fun forgeUrlWithoutQueryParams(knownHost: String? = null): String {
-        val protocol = forge.anElementFrom("http", "https")
-        val host = knownHost ?: forge.aStringMatching(HOSTNAME_PATTERN)
-        val path = forge.anAlphaNumericalString()
-        return "$protocol://$host/$path"
-    }
-
-    private fun forgeUrlWithQueryParams(knownHost: String? = null): String {
-        fakeBaseUrl = forgeUrlWithoutQueryParams(knownHost)
-        val fakeQueryParams = forge.aList(forge.anInt(min = 0, max = 5)) {
-            "${forge.anAlphabeticalString()}=${forge.anAlphabeticalString()}"
-        }.joinToString("&")
-        return "$fakeBaseUrl?$fakeQueryParams"
     }
 
     private fun forgeRequest(url: String = fakeUrl, configure: (Request.Builder) -> Unit = {}): Request {

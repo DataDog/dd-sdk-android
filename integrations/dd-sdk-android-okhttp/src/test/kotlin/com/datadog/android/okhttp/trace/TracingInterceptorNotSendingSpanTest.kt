@@ -15,6 +15,7 @@ import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertTh
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.elmyr.aUrl
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -73,7 +74,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -190,7 +190,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 TracingHeaderType.DATADOG
             )
         }
-        fakeUrl = forgeUrl()
+        fakeUrl = forge.aUrl(host = forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN))
         fakeRequest = forgeRequest()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -426,7 +426,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
-        fakeUrl = forgeUrl(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeUrl = forge.aUrl(host = forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -445,7 +445,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     fun `M inject non-tracing header W intercept() {local known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        fakeUrl = forgeUrl(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeUrl = forge.aUrl(host = forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -476,7 +476,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             )
         }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
-        fakeUrl = forgeUrl(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeUrl = forge.aUrl(host = forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -505,7 +505,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             )
         }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
-        fakeUrl = forgeUrl(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeUrl = forge.aUrl(host = forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -532,7 +532,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             )
         }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
-        fakeUrl = forgeUrl(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeUrl = forge.aUrl(host = forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain)
@@ -1297,15 +1297,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         whenever(chain.request()) doReturn fakeRequest
         whenever(chain.proceed(any())) doReturn fakeResponse
-    }
-
-    private fun forgeUrl(knownHost: String? = null): String {
-        val protocol = forge.anElementFrom("http", "https")
-        val host = knownHost ?: forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN)
-        val path = forge.anAlphaNumericalString()
-        // RUMM-2900 host is by definition case-insensitive,
-        // and OkHttp lowercases it when building the request
-        return "$protocol://${host.lowercase(Locale.US)}/$path"
     }
 
     protected fun forgeRequest(configure: (Request.Builder) -> Unit = {}): Request {
