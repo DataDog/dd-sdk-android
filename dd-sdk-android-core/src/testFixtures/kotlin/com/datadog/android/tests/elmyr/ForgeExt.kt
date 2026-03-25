@@ -60,6 +60,7 @@ fun <T : Forge> T.useCoreFactories(): T {
     addFactory(ThreadDumpForgeryFactory())
     addFactory(RequestExecutionContextForgeryFactory())
     addFactory(RequestInfoForgeryFactory())
+    addFactory(MutableRequestInfoForgeryFactory())
 
     return this
 }
@@ -72,7 +73,7 @@ fun Forge.aHostName(): String {
 fun Forge.anUrlString(): String = aStringMatching(URL_FORGERY_PATTERN)
 
 fun Forge.anHttpRequestInfo(headers: Map<String, String>): HttpRequestInfo {
-    return (getForgery<HttpRequestInfo>() as MutableHttpRequestInfo)
+    return getForgery<MutableHttpRequestInfo>()
         .newBuilder()
         .apply { headers.forEach { (key, value) -> addHeader(key, value) } }
         .build()

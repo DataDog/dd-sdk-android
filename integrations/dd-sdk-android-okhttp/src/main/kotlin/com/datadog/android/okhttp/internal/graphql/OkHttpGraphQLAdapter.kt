@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp.internal.graphql
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.OkHttpHttpResponseInfo
@@ -61,6 +62,7 @@ internal class OkHttpGraphQLAdapter(
     fun extractGraphQLAttributes(request: Request): Map<String, Any?> =
         graphQLExtractor.extractGraphQLAttributes(OkHttpRequestInfo(request))
 
+    @WorkerThread
     fun extractGraphQLErrorAttributes(
         response: Response,
         graphqlAttributes: Map<String, Any?>,

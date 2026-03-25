@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -109,6 +110,7 @@ open class DatadogInterceptor internal constructor(
     // region Interceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
@@ -153,6 +155,7 @@ open class DatadogInterceptor internal constructor(
     // region TracingInterceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -213,6 +216,7 @@ open class DatadogInterceptor internal constructor(
         }
     }
 
+    @WorkerThread
     private fun handleResponse(
         sdkCore: FeatureSdkCore,
         request: Request,

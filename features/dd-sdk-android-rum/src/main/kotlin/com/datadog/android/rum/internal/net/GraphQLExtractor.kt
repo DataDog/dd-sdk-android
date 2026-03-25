@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.utils.fromBase64
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumAttributes
@@ -108,7 +109,7 @@ class GraphQLExtractor {
         )
 
         internal val JSON_CONTENT_TYPES = setOf(
-            "application/json",
+            HttpSpec.ContentType.APPLICATION_JSON,
             "application/graphql+json",
             "application/graphql-response+json"
         )

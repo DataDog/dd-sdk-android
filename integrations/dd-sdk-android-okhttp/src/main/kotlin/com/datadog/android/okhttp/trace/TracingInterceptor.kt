@@ -9,6 +9,7 @@
 package com.datadog.android.okhttp.trace
 
 import androidx.annotation.FloatRange
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -113,6 +114,7 @@ internal constructor(
     // region Interceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         return doIntercept(chain, chain.request())
     }
@@ -121,6 +123,7 @@ internal constructor(
      * This method is a part of Datadog SDK internal API. It is not meant for public use.
      */
     @InternalApi
+    @WorkerThread
     protected fun doIntercept(
         chain: Interceptor.Chain,
         request: Request

@@ -8,6 +8,7 @@ package com.datadog.android.okhttp.internal.graphql
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.utils.toBase64
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.net.GraphQLExtractor
@@ -77,7 +78,7 @@ internal class OkHttpGraphQLAdapterTest {
             .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
             .build()
         val response = forge.anOkHttpResponse(request, 200) {
-            body("""{"data":{}}""".toResponseBody("application/json".toMediaType()))
+            body("""{"data":{}}""".toResponseBody(HttpSpec.ContentType.APPLICATION_JSON.toMediaType()))
         }
         whenever(mockChain.request()) doReturn request
         whenever(mockChain.proceed(any())) doReturn response
