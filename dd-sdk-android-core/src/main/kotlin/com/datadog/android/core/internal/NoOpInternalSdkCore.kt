@@ -30,6 +30,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okio.Timeout
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Delayed
@@ -59,8 +60,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override val service: String
         get() = ""
 
-    override val internalLogger: InternalLogger
-        get() = SdkInternalLogger(this)
+    override val internalLogger: InternalLogger = SdkInternalLogger(this)
 
     override val timeProvider: TimeProvider
         get() = DefaultTimeProvider()
@@ -121,9 +121,34 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     // region FeatureSdkCore
 
-    override fun registerFeature(feature: Feature) = Unit
+    override fun registerFeature(feature: Feature) {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            messageBuilder = {
+                REGISTER_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(
+                    Locale.US,
+                    feature.name
+                )
+            },
+            onlyOnce = true
+        )
+    }
 
-    override fun getFeature(featureName: String): FeatureScope? = null
+    override fun getFeature(featureName: String): FeatureScope? {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            messageBuilder = {
+                GET_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(
+                    Locale.US,
+                    featureName
+                )
+            },
+            onlyOnce = true
+        )
+        return null
+    }
 
     override fun updateFeatureContext(
         featureName: String,
@@ -352,3 +377,11 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         }
     }
 }
+
+internal const val REGISTER_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR =
+    "Feature \"%s\" is being registered, but no SDK instance is available. " +
+        "Make sure the SDK is properly initialized."
+
+internal const val GET_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR =
+    "Feature \"%s\" is being retrieved, but no SDK instance is available. " +
+        "Make sure the SDK is properly initialized."
