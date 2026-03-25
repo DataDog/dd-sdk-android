@@ -24,7 +24,7 @@ internal data class RumSearchResponse(
 
     @Serializable
     data class RumEventAttributes(
-        @SerialName("service") val service: String? = null,
+        @SerialName("service") val service: kotlinx.serialization.json.JsonElement? = null,
         @SerialName("attributes") val attributes: RumAttributes,
         @SerialName("timestamp") val timestamp: String,
         @SerialName("tags") val tags: List<String> = emptyList()

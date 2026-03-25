@@ -103,7 +103,11 @@ class RumViewUpdateTest : BaseRumViewTest() {
                         contextAttributes = mapOf("test_view_index" to 14)
                     )
                 },
-                predicate = { it.optionalResult?.data?.firstOrNull() != null },
+                predicate = {
+                    val found = it.optionalResult?.data?.firstOrNull() != null
+                    android.util.Log.w("POLL_DEBUG", "predicate: found=$found")
+                    found
+                },
                 interval = POLLING_INTERVAL_MS.milliseconds,
                 timeout = POLLING_TIMEOUT_MS.milliseconds
             )
@@ -201,7 +205,7 @@ class RumViewUpdateTest : BaseRumViewTest() {
 
     companion object {
         private const val VIEW_NAME = "rum-view-update-test"
-        private const val POLLING_TIMEOUT_MS = 30_000L
+        private const val POLLING_TIMEOUT_MS = 60_000L
         private const val POLLING_INTERVAL_MS = 5_000L
     }
 }

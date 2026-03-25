@@ -102,8 +102,8 @@ internal class RumSearchResponseViewEventAssert(actual: RumSearchResponse.ViewEv
     }
 
     fun hasService(service: String): RumSearchResponseViewEventAssert {
-        assertThat(actual.attributes.service)
-            .overridingErrorMessage("Expected service to be <%s> but was <%s>", service, actual.attributes.service)
+        assertThat(actual.attributes.attributes.service)
+            .overridingErrorMessage("Expected service to be <%s> but was <%s>", service, actual.attributes.attributes.service)
             .isEqualTo(service)
         return this
     }

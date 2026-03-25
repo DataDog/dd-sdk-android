@@ -60,7 +60,7 @@ abstract class BaseRumViewTest {
             variant = "debug",
             service = "test-service"
         )
-            .useSite(DatadogSite.LOCAL)
+            .useSite(DatadogSite.STAGING)
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
             .build()
@@ -100,7 +100,7 @@ abstract class BaseRumViewTest {
             .apply {
                 _RumInternalProxy.setRumViewEventWriteConfig(
                     builder = this@apply,
-                    config = RumViewEventWriteConfig.AlwaysFullView
+                    config = RumViewEventWriteConfig.FullViewOnlyAtStart
                 )
             }
             .build()
