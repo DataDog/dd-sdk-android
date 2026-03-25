@@ -21,6 +21,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -144,6 +145,9 @@ internal class RumSessionScopeTest {
     lateinit var mockSessionReplayFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockProfilingFeatureScope: FeatureScope
+
+    @Mock
     lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
     @Mock
@@ -207,6 +211,8 @@ internal class RumSessionScopeTest {
         whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn
+            mockProfilingFeatureScope
         whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
         whenever(mockSdkCore.internalLogger) doReturn mock()
         whenever(mockSdkCore.timeProvider) doReturn stubTimeProvider
@@ -1705,6 +1711,135 @@ internal class RumSessionScopeTest {
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
+    }
+
+    // endregion
+
+    // region Continuous Profiling Event Bus
+
+    @Test
+    fun `M send RumSessionRenewedEvent W session first created { sampled }`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        initializeTestedScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val sessionId = testedScope.getRumContext().sessionId
+
+        // Then
+        verify(mockProfilingFeatureScope).sendEvent(
+            RumSessionRenewedEvent(sessionId = sessionId, sessionSampled = true)
+        )
+    }
+
+    @Test
+    fun `M send RumSessionRenewedEvent W session first created { not sampled }`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val sessionId = testedScope.getRumContext().sessionId
+
+        // Then
+        verify(mockProfilingFeatureScope).sendEvent(
+            RumSessionRenewedEvent(sessionId = sessionId, sessionSampled = false)
+        )
+    }
+
+    @Test
+    fun `M send RumSessionRenewedEvent W session renewed { timed out }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
+
+        // When
+        advanceTimeByMs(TEST_MAX_DURATION_MS)
+        val newEvent = forge.startViewEvent()
+        testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
+
+        // Then
+        val captor = argumentCaptor<Any>()
+        verify(mockProfilingFeatureScope, times(2)).sendEvent(captor.capture())
+        assertThat(captor.firstValue).isEqualTo(
+            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampled = true)
+        )
+        assertThat(captor.secondValue).isEqualTo(
+            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampled = true)
+        )
+    }
+
+    @Test
+    fun `M send RumSessionRenewedEvent W session renewed { expired }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
+
+        // When
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        val newEvent = forge.startViewEvent()
+        testedScope.handleEvent(newEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
+
+        // Then
+        val captor = argumentCaptor<Any>()
+        verify(mockProfilingFeatureScope, times(2)).sendEvent(captor.capture())
+        assertThat(captor.firstValue).isEqualTo(
+            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampled = true)
+        )
+        assertThat(captor.secondValue).isEqualTo(
+            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampled = true)
+        )
+    }
+
+    @Test
+    fun `M send RumSessionRenewedEvent W session renewed { manual reset }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val firstSessionId = testedScope.getRumContext().sessionId
+
+        // When
+        val resetEvent = RumRawEvent.ResetSession()
+        testedScope.handleEvent(resetEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val secondSessionId = testedScope.getRumContext().sessionId
+
+        // Then
+        val captor = argumentCaptor<Any>()
+        verify(mockProfilingFeatureScope, times(2)).sendEvent(captor.capture())
+        assertThat(captor.firstValue).isEqualTo(
+            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampled = true)
+        )
+        assertThat(captor.secondValue).isEqualTo(
+            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampled = true)
+        )
+    }
+
+    @Test
+    fun `M send RumSessionRenewedEvent only on renewal W repeated events { no renewal }`(
+        forge: Forge
+    ) {
+        // Given — first renewal on first interaction
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When — subsequent events within the same session do NOT trigger renewSession
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(forge.startActionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — only one event sent (for the initial session creation, not for subsequent interactions)
+        verify(mockProfilingFeatureScope, times(1)).sendEvent(any())
     }
 
     // endregion

@@ -146,6 +146,8 @@ sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
     constructor(TTIDRumContext? = null)
 data class com.datadog.android.internal.profiling.TTIDRumContext
   constructor(String, String, String, String?, String?, String?)
+data class com.datadog.android.internal.rum.RumSessionRenewedEvent
+  constructor(String, Boolean)
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
