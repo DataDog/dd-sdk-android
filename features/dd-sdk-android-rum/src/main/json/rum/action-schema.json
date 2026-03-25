@@ -180,6 +180,11 @@
                       "description": "CSS selector path of the target element",
                       "readOnly": true
                     },
+                    "composed_path_selector": {
+                      "type": "string",
+                      "description": "Selector data based on the click event composed path",
+                      "readOnly": true
+                    },
                     "width": {
                       "type": "integer",
                       "description": "Width of the target element (in pixels)",
@@ -188,6 +193,11 @@
                     "height": {
                       "type": "integer",
                       "description": "Height of the target element (in pixels)",
+                      "readOnly": true
+                    },
+                    "permanent_id": {
+                      "type": "string",
+                      "description": "Mobile-only: a globally unique and stable identifier for this UI element, computed as the hash of the element's path (32 lowercase hex characters). Used to correlate actions with mobile session replay wireframes.",
                       "readOnly": true
                     }
                   }

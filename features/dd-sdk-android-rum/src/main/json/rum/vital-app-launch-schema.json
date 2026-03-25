@@ -9,7 +9,6 @@
       "$ref": "_vital-common-schema.json"
     },
     {
-      "required": ["vital"],
       "properties": {
         "vital": {
           "type": "object",
@@ -48,19 +47,6 @@
               "type": "boolean",
               "description": "If the app launch had a saved instance state bundle.",
               "readOnly": true
-            }
-          },
-          "readOnly": true
-        },
-
-        "_dd": {
-          "type": "object",
-          "description": "Internal properties",
-          "properties": {
-            "profiling": {
-              "type": "object",
-              "description": "Profiling context",
-              "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
             }
           },
           "readOnly": true
