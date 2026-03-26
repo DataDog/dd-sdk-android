@@ -429,6 +429,22 @@ internal class ViewEventDiffTest {
         assertThat(result.view.accessibility?.boldTextEnabled).isNull()
     }
 
+    @Test
+    fun `M omit accessibility W diffViewEvent { new snapshot has no accessibility delta }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val oldAccessibility = ViewEvent.Accessibility(screenReaderEnabled = true)
+        val old = fakeEvent.copy(view = fakeEvent.view.copy(accessibility = oldAccessibility))
+        val new = fakeEvent.copy(view = fakeEvent.view.copy(accessibility = null))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.view.accessibility).isNull()
+    }
+
     // endregion
 
     // region MERGE — performance (per-field diff with toRum() conversions)

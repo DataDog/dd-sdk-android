@@ -156,7 +156,13 @@ private fun diffView(
             flutterRasterTime = diffEquals(ViewEvent.ViewEventView::flutterRasterTime)?.toRum(),
             jsRefreshRate = diffEquals(ViewEvent.ViewEventView::jsRefreshRate)?.toRum(),
             performance = diffMerge({ performance ?: ViewEvent.Performance() }, ::diffPerformance),
-            accessibility = diffMerge({ accessibility ?: ViewEvent.Accessibility() }, ::diffAccessibility)
+            accessibility = diffMerge(ViewEvent.ViewEventView::accessibility) { oldAccessibility, newAccessibility ->
+                when {
+                    newAccessibility == null -> null
+                    oldAccessibility == null -> diffAccessibility(ViewEvent.Accessibility(), newAccessibility)
+                    else -> diffAccessibility(oldAccessibility, newAccessibility)
+                }
+            }
         )
     }
 }
