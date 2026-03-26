@@ -196,13 +196,12 @@ open class DatadogInterceptor internal constructor(
 
     private fun extractHeaderAttributes(
         sdkCore: FeatureSdkCore,
-        request: Request,
         response: Response
     ): Map<String, Any?> {
         val extractor = resourceHeadersExtractor ?: return emptyMap()
         val reqHeaders = _RumInternalProxy.extractRequestHeaders(
             extractor,
-            request.headers.toMultimap(),
+            response.request.headers.toMultimap(),
             sdkCore.internalLogger
         )
         val resHeaders = _RumInternalProxy.extractResponseHeaders(
@@ -253,7 +252,7 @@ open class DatadogInterceptor internal constructor(
             }
         }
 
-        val headerAttributes = extractHeaderAttributes(sdkCore, request, response)
+        val headerAttributes = extractHeaderAttributes(sdkCore, response)
 
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
