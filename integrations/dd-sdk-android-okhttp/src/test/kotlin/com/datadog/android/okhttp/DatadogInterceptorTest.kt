@@ -40,7 +40,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
@@ -300,8 +299,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M start and stop RUM Resource W intercept() {successful streaming request}`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         val mimeType = forge.anElementFrom(DatadogInterceptor.STREAM_CONTENT_TYPES)
@@ -388,7 +386,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M remove all GraphQL headers W intercept() {request with GraphQL headers}`(
-        forge: Forge,
         @StringForgery fakeGraphQLName: String,
         @StringForgery fakeGraphQLType: String,
         @StringForgery fakeGraphQLVariables: String,
@@ -396,7 +393,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @StringForgery fakeUserAgent: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) { builder ->
+        fakeRequest = forgeRequest { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
@@ -424,7 +421,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M pass GraphQL attributes to RUM W intercept() {request with GraphQL headers}`(
-        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery fakeGraphQLName: String,
         @StringForgery fakeGraphQLType: String,
@@ -432,7 +428,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @StringForgery fakeGraphQLPayload: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) { builder ->
+        fakeRequest = forgeRequest { builder ->
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType.toBase64())
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables.toBase64())
@@ -487,11 +483,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Test
     fun `M start and stop RUM Resource W intercept() {successful request, unknown method}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @StringForgery fakeMethod: String,
-        forge: Forge
+        @StringForgery fakeMethod: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.method(fakeMethod, null)
         }
         stubChain(mockChain, statusCode)
@@ -584,15 +579,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        stubChain(mockChain) {
-            Response.Builder()
-                .request(fakeRequest)
-                .protocol(Protocol.HTTP_2)
-                .code(statusCode)
-                .message("HTTP $statusCode")
-                .body("".toResponseBody(fakeMediaType))
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-                .build()
+        stubChain(mockChain, statusCode) {
+            body("".toResponseBody(fakeMediaType))
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
@@ -635,14 +624,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        stubChain(mockChain) {
-            Response.Builder()
-                .request(fakeRequest)
-                .protocol(Protocol.HTTP_2)
-                .code(statusCode)
-                .message("HTTP $statusCode")
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-                .build()
+        stubChain(mockChain, statusCode) {
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            body(null)
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
@@ -686,15 +670,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         whenever(mockTraceSampler.sample(any())).thenReturn(false)
-        stubChain(mockChain) {
-            Response.Builder()
-                .request(fakeRequest)
-                .protocol(Protocol.HTTP_2)
-                .code(statusCode)
-                .message("HTTP $statusCode")
-                .body("".toResponseBody(fakeMediaType))
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-                .build()
+        stubChain(mockChain, statusCode) {
+            body("".toResponseBody(fakeMediaType))
         }
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
@@ -735,14 +712,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         whenever(mockTraceSampler.sample(any())).thenReturn(false)
-        stubChain(mockChain) {
-            Response.Builder()
-                .request(fakeRequest)
-                .protocol(Protocol.HTTP_2)
-                .code(statusCode)
-                .message("HTTP $statusCode")
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-                .build()
+        stubChain(mockChain, statusCode) {
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            body(null)
         }
         // no span -> shouldn't have trace/spans IDs
         val expectedStopAttrs = fakeAttributes
@@ -782,26 +754,20 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        stubChain(mockChain) {
-            Response.Builder()
-                .request(fakeRequest)
-                .protocol(Protocol.HTTP_2)
-                .code(statusCode)
-                .message("HTTP $statusCode")
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-                .body(object : ResponseBody() {
-                    override fun contentType(): MediaType? = fakeMediaType
+        stubChain(mockChain, statusCode) {
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            body(object : ResponseBody() {
+                override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = -1L
+                override fun contentLength(): Long = -1L
 
-                    override fun source(): BufferedSource {
-                        val buffer = Buffer()
-                        return spy(buffer).apply {
-                            whenever(request(any())) doThrow IOException()
-                        }
+                override fun source(): BufferedSource {
+                    val buffer = Buffer()
+                    return spy(buffer).apply {
+                        whenever(request(any())) doThrow IOException()
                     }
-                })
-                .build()
+                }
+            })
         }
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
@@ -846,26 +812,20 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         whenever(mockTraceSampler.sample(any())).thenReturn(false)
-        stubChain(mockChain) {
-            Response.Builder()
-                .request(fakeRequest)
-                .protocol(Protocol.HTTP_2)
-                .code(statusCode)
-                .message("HTTP $statusCode")
-                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-                .body(object : ResponseBody() {
-                    override fun contentType(): MediaType? = fakeMediaType
+        stubChain(mockChain, statusCode) {
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            body(object : ResponseBody() {
+                override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = -1
+                override fun contentLength(): Long = -1
 
-                    override fun source(): BufferedSource {
-                        val buffer = Buffer()
-                        return spy(buffer).apply {
-                            whenever(request(any())) doThrow IOException()
-                        }
+                override fun source(): BufferedSource {
+                    val buffer = Buffer()
+                    return spy(buffer).apply {
+                        whenever(request(any())) doThrow IOException()
                     }
-                })
-                .build()
+                }
+            })
         }
         val expectedStartAttrs = emptyMap<String, Any?>()
         // no span -> shouldn't have trace/spans IDs
@@ -1026,12 +986,11 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M pass request unchanged W intercept() {request without GraphQL headers}`(
-        forge: Forge,
         @StringForgery fakeUserAgent: String,
         @StringForgery fakeCustomHeader: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) { builder ->
+        fakeRequest = forgeRequest { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
             builder.addHeader("Custom-Header", fakeCustomHeader)
         }
@@ -1052,12 +1011,11 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M remove partial GraphQL headers W intercept() {request with some GraphQL headers}`(
-        forge: Forge,
         @StringForgery fakeGraphQLName: String,
         @StringForgery fakeUserAgent: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) { builder ->
+        fakeRequest = forgeRequest { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
         }
@@ -1081,11 +1039,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M remove GraphQL headers with empty values W intercept() {request with empty GraphQL headers}`(
-        forge: Forge,
         @StringForgery fakeUserAgent: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) { builder ->
+        fakeRequest = forgeRequest { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "".toBase64())
             builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "".toBase64())
@@ -1114,8 +1071,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M include header attributes in stopResource W intercept() { trackResourceHeaders enabled }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
@@ -1124,7 +1080,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
-        fakeRequest = forgeRequest(forge) { it.addHeader("X-Request-Id", "abc-123") }
+        fakeRequest = forgeRequest { it.addHeader("X-Request-Id", "abc-123") }
         stubChain(mockChain, statusCode)
 
         // When
@@ -1172,8 +1128,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M capture response headers W intercept() { trackResourceHeaders enabled }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
@@ -1182,7 +1137,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
-        fakeRequest = forgeRequest(forge)
+        fakeRequest = forgeRequest()
         fakeResponseBody = forge.anAlphabeticalString()
         fakeMediaType = "text/plain".toMediaType()
         stubChain(mockChain, statusCode) {
@@ -1210,8 +1165,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M header attributes override provider attributes W intercept() { conflicting keys }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         val fakeProviderAttributes = mapOf(
@@ -1237,7 +1191,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
-        fakeRequest = forgeRequest(forge) { builder ->
+        fakeRequest = forgeRequest { builder ->
             fakeActualRequestHeaders.forEach { (key, value) -> builder.addHeader(key, value) }
         }
         stubChain(mockChain, statusCode) {
