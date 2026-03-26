@@ -8,19 +8,20 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.tools.annotation.NoOpImplementation
+import java.util.concurrent.ScheduledExecutorService
 
-@NoOpImplementation
 internal interface Profiler {
 
     var internalLogger: InternalLogger?
+
+    val scheduledExecutorService: ScheduledExecutorService
 
     fun start(
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>
+        sdkInstanceNames: Set<String>,
+        durationMs: Int = 0
     )
 
     fun stop(sdkInstanceName: String)
@@ -31,5 +32,10 @@ internal interface Profiler {
 
     fun unregisterProfilingCallback(sdkInstanceName: String)
 
-    fun setRateBasedSampler(rateBasedSampler: RateBasedSampler<Unit>)
+    /**
+     * Controls whether an app launch profiling session should extend past the 10-second
+     * TTID threshold. Set to `true` when continuous profiling is enabled for the session
+     * so the launch window merges into the first continuous cycle.
+     */
+    fun setExtendLaunchSession(extend: Boolean)
 }

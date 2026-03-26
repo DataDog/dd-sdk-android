@@ -13,7 +13,6 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
@@ -98,7 +97,7 @@ class PerfettoProfilerTest {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
         testedProfiler = PerfettoProfiler(
             timeProvider = stubTimeProvider,
-            profilingExecutor = mockExecutorService
+            scheduledExecutorService = mockExecutorService
         )
         testedProfiler.internalLogger = mockInternalLogger
         testedProfiler.registerProfilingCallback(fakeInstanceName, mockProfilerCallback)
@@ -945,9 +944,9 @@ class PerfettoProfilerTest {
     }
 
     @Test
-    fun `M cancel stop signal W app launch timer fires {rateBasedSampler returns false}`() {
+    fun `M cancel stop signal W app launch timer fires {extendLaunchSession is false}`() {
         // Given
-        testedProfiler.setRateBasedSampler(RateBasedSampler(0f))
+        testedProfiler.setExtendLaunchSession(false)
         testedProfiler.start(
             mockContext,
             ProfilingStartReason.APPLICATION_LAUNCH,
@@ -967,9 +966,9 @@ class PerfettoProfilerTest {
     }
 
     @Test
-    fun `M not cancel stop signal W app launch timer fires {rateBasedSampler returns true}`() {
+    fun `M not cancel stop signal W app launch timer fires {extendLaunchSession is true}`() {
         // Given
-        testedProfiler.setRateBasedSampler(RateBasedSampler(100f))
+        testedProfiler.setExtendLaunchSession(true)
         testedProfiler.start(
             mockContext,
             ProfilingStartReason.APPLICATION_LAUNCH,
