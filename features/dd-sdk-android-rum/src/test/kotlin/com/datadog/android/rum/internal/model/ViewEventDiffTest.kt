@@ -247,6 +247,51 @@ internal class ViewEventDiffTest {
     }
 
     @Test
+    fun `M return new slow_frame W diffViewEvent { queue at capacity, head evicted }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given — simulate EvictingQueue at max capacity: new list same size, head evicted, tail appended
+        val capacity = forge.anInt(min = 2, max = 10)
+        val existingFrames = (0 until capacity).map { i ->
+            ViewEvent.SlowFrame(start = (i * 1000L), duration = 16L)
+        }
+        val newFrame = ViewEvent.SlowFrame(start = (capacity * 1000L), duration = 16L)
+        // old: [f0..fN-1], new: [f1..fN-1, fNew] — head evicted, new frame appended
+        val evictedHead = existingFrames.drop(1) + newFrame
+        val old = fakeEvent.copy(view = fakeEvent.view.copy(slowFrames = existingFrames))
+        val new = fakeEvent.copy(view = fakeEvent.view.copy(slowFrames = evictedHead))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then — only the new frame (start > last known start) must be returned
+        assertThat(result.view.slowFrames).hasSize(1)
+        assertThat(result.view.slowFrames!!.first().start).isEqualTo(newFrame.start)
+        assertThat(result.view.slowFrames!!.first().duration).isEqualTo(newFrame.duration)
+    }
+
+    @Test
+    fun `M return null for slow_frames W diffViewEvent { queue at capacity, no new frames }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given — queue at capacity, same frames in both snapshots (no new slow frame occurred)
+        val capacity = forge.anInt(min = 2, max = 10)
+        val existingFrames = (0 until capacity).map { i ->
+            ViewEvent.SlowFrame(start = (i * 1000L), duration = 16L)
+        }
+        val old = fakeEvent.copy(view = fakeEvent.view.copy(slowFrames = existingFrames))
+        val new = fakeEvent.copy(view = fakeEvent.view.copy(slowFrames = existingFrames))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.view.slowFrames).isNull()
+    }
+
+    @Test
     fun `M return null for in_foreground_periods W diffViewEvent { no new periods }`(
         @Forgery fakeEvent: ViewEvent
     ) {

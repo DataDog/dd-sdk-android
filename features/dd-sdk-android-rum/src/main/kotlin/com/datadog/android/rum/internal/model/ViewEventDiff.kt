@@ -86,7 +86,7 @@ private fun diffView(
     new: ViewEvent.ViewEventView
 ): ViewUpdateEvent.ViewUpdateEventView {
     return computeDiffRequired(old = old, new = new) {
-        val slowFrames = diffList(ViewEvent.ViewEventView::slowFrames)
+        val slowFrames = diffMerge({ slowFrames ?: emptyList() }, ::diffSlowFrames)
         val inForegroundPeriods = diffList(ViewEvent.ViewEventView::inForegroundPeriods)
 
         ViewUpdateEvent.ViewUpdateEventView(
@@ -136,7 +136,7 @@ private fun diffView(
             frozenFrame = diffEquals(
                 ViewEvent.ViewEventView::frozenFrame
             )?.let { ViewUpdateEvent.FrozenFrame(it.count) },
-            slowFrames = slowFrames?.map { ViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) },
+            slowFrames = slowFrames,
             resource = diffEquals(ViewEvent.ViewEventView::resource)?.let { ViewUpdateEvent.Resource(it.count) },
             frustration = diffEquals(
                 ViewEvent.ViewEventView::frustration
@@ -188,6 +188,19 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
 // endregion
 
 // region Diff helpers — nullable merged sub-objects
+
+private fun diffSlowFrames(
+    old: List<ViewEvent.SlowFrame>,
+    new: List<ViewEvent.SlowFrame>
+): List<ViewUpdateEvent.SlowFrame>? {
+    // diffList (drop-by-size) breaks when the backing EvictingQueue evicts the head at capacity:
+    // both lists have the same size but the content has shifted. Using the last known start
+    // timestamp as an anchor ensures only genuinely new frames are returned regardless of eviction.
+    val lastKnownStart = old.lastOrNull()?.start
+    val newFrames = if (lastKnownStart == null) new else new.filter { it.start > lastKnownStart }
+    return newFrames.ifEmpty { null }
+        ?.map { ViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) }
+}
 
 private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): ViewUpdateEvent.FeatureFlags? {
     return computeDiffIfChanged(old = old, new = new) {
