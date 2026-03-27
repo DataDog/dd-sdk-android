@@ -26,27 +26,27 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): ViewUpdateEvent {
             buildVersion = diffEquals(ViewEvent::buildVersion),
             buildId = diffEquals(ViewEvent::buildId),
             ddtags = diffEquals(ViewEvent::ddtags),
-            source = diffEquals(ViewEvent::source)?.toRumSource(),
-            usr = diffEquals(ViewEvent::usr)?.toRum(),
-            account = diffEquals(ViewEvent::account)?.toRum(),
-            connectivity = diffEquals(ViewEvent::connectivity)?.toRum(),
-            display = diffEquals(ViewEvent::display)?.toRum(),
+            source = diffEquals(ViewEvent::source)?.toViewUpdate(),
+            usr = diffEquals(ViewEvent::usr)?.toViewUpdate(),
+            account = diffEquals(ViewEvent::account)?.toViewUpdate(),
+            connectivity = diffEquals(ViewEvent::connectivity)?.toViewUpdate(),
+            display = diffEquals(ViewEvent::display)?.toViewUpdate(),
             synthetics = diffEquals(ViewEvent::synthetics)?.let {
                 ViewUpdateEvent.Synthetics(testId = it.testId, resultId = it.resultId, injected = it.injected)
             },
             ciTest = diffEquals(ViewEvent::ciTest)?.let {
                 ViewUpdateEvent.CiTest(testExecutionId = it.testExecutionId)
             },
-            os = diffEquals(ViewEvent::os)?.toRum(),
-            device = diffEquals(ViewEvent::device)?.toRum(),
+            os = diffEquals(ViewEvent::os)?.toViewUpdate(),
+            device = diffEquals(ViewEvent::device)?.toViewUpdate(),
             // context = custom attributes (additionalProperties: true) → REPLACE semantics per spec.
             // The generator reuses ViewUpdateEvent.FeatureFlags for this field because both share
             // the same schema shape (additionalProperties: true map). The naming is misleading but correct.
             context = diffEquals(ViewEvent::context)?.let { ViewUpdateEvent.FeatureFlags(it.additionalProperties) },
-            container = diffEquals(ViewEvent::container)?.toRum(),
+            container = diffEquals(ViewEvent::container)?.toViewUpdate(),
             privacy = diffEquals(
                 ViewEvent::privacy
-            )?.let { ViewUpdateEvent.Privacy(replayLevel = it.replayLevel.toRum()) }
+            )?.let { ViewUpdateEvent.Privacy(replayLevel = it.replayLevel.toViewUpdate()) }
         )
     }
 }
@@ -72,7 +72,7 @@ private fun diffSession(
     return computeDiffRequired(old = old, new = new) {
         ViewUpdateEvent.ViewUpdateEventSession(
             id = diffRequired(ViewEvent.ViewEventSession::id),
-            type = diffRequired(ViewEvent.ViewEventSession::type).toRum(),
+            type = diffRequired(ViewEvent.ViewEventSession::type).toViewUpdate(),
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
             isActive = diffEquals(ViewEvent.ViewEventSession::isActive),
             sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay)
@@ -97,7 +97,7 @@ private fun diffView(
             loadingTime = diffEquals(ViewEvent.ViewEventView::loadingTime),
             networkSettledTime = diffEquals(ViewEvent.ViewEventView::networkSettledTime),
             interactionToNextViewTime = diffEquals(ViewEvent.ViewEventView::interactionToNextViewTime),
-            loadingType = diffEquals(ViewEvent.ViewEventView::loadingType)?.toRum(),
+            loadingType = diffEquals(ViewEvent.ViewEventView::loadingType)?.toViewUpdate(),
             timeSpent = diffEquals(ViewEvent.ViewEventView::timeSpent),
             firstContentfulPaint = diffEquals(ViewEvent.ViewEventView::firstContentfulPaint),
             largestContentfulPaint = diffEquals(ViewEvent.ViewEventView::largestContentfulPaint),
@@ -152,9 +152,9 @@ private fun diffView(
             refreshRateMin = diffEquals(ViewEvent.ViewEventView::refreshRateMin),
             slowFramesRate = diffEquals(ViewEvent.ViewEventView::slowFramesRate),
             freezeRate = diffEquals(ViewEvent.ViewEventView::freezeRate),
-            flutterBuildTime = diffEquals(ViewEvent.ViewEventView::flutterBuildTime)?.toRum(),
-            flutterRasterTime = diffEquals(ViewEvent.ViewEventView::flutterRasterTime)?.toRum(),
-            jsRefreshRate = diffEquals(ViewEvent.ViewEventView::jsRefreshRate)?.toRum(),
+            flutterBuildTime = diffEquals(ViewEvent.ViewEventView::flutterBuildTime)?.toViewUpdate(),
+            flutterRasterTime = diffEquals(ViewEvent.ViewEventView::flutterRasterTime)?.toViewUpdate(),
+            jsRefreshRate = diffEquals(ViewEvent.ViewEventView::jsRefreshRate)?.toViewUpdate(),
             performance = diffMerge({ performance ?: ViewEvent.Performance() }, ::diffPerformance),
             accessibility = diffMerge(ViewEvent.ViewEventView::accessibility) { oldAccessibility, newAccessibility ->
                 when {
@@ -173,8 +173,8 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
             documentVersion = diffRequired(ViewEvent.Dd::documentVersion),
             session = diffEquals(ViewEvent.Dd::session)?.let {
                 ViewUpdateEvent.DdSession(
-                    plan = it.plan?.toRum(),
-                    sessionPrecondition = it.sessionPrecondition?.toRum()
+                    plan = it.plan?.toViewUpdate(),
+                    sessionPrecondition = it.sessionPrecondition?.toViewUpdate()
                 )
             },
             configuration = diffEquals(ViewEvent.Dd::configuration)?.let {
@@ -219,7 +219,7 @@ private fun diffFeatureFlags(old: ViewEvent.Context, new: ViewEvent.Context): Vi
 private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performance): ViewUpdateEvent.Performance? {
     return computeDiffIfChanged(old = old, new = new) {
         ViewUpdateEvent.Performance(
-            cls = diffEquals(ViewEvent.Performance::cls)?.toRum(),
+            cls = diffEquals(ViewEvent.Performance::cls)?.toViewUpdate(),
             fcp = diffEquals(ViewEvent.Performance::fcp)?.let { ViewUpdateEvent.Fcp(timestamp = it.timestamp) },
             fid = diffEquals(ViewEvent.Performance::fid)?.let {
                 ViewUpdateEvent.Fid(
@@ -228,8 +228,8 @@ private fun diffPerformance(old: ViewEvent.Performance, new: ViewEvent.Performan
                     targetSelector = it.targetSelector
                 )
             },
-            inp = diffEquals(ViewEvent.Performance::inp)?.toRum(),
-            lcp = diffEquals(ViewEvent.Performance::lcp)?.toRum(),
+            inp = diffEquals(ViewEvent.Performance::inp)?.toViewUpdate(),
+            lcp = diffEquals(ViewEvent.Performance::lcp)?.toViewUpdate(),
             fbc = diffEquals(ViewEvent.Performance::fbc)?.let { ViewUpdateEvent.Fbc(timestamp = it.timestamp) }
         )
     }

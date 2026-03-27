@@ -169,7 +169,7 @@ internal class ViewEventConversionsTest {
         // When
         val result = diffViewEvent(old, new)
 
-        // Then — same FlutterBuildTime.toRum() used for flutterRasterTime and jsRefreshRate
+        // Then — same FlutterBuildTime.toViewUpdate() used for flutterRasterTime and jsRefreshRate
         val buildTime = result.view.flutterBuildTime
         assertThat(buildTime).isNotNull()
         assertThat(buildTime!!.min).isEqualTo(fakeMin)

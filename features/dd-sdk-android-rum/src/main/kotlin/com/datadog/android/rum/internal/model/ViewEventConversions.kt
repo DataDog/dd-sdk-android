@@ -13,7 +13,7 @@ import com.datadog.android.rum.model.ViewUpdateEvent
 
 // region Type conversions
 
-internal fun ViewEvent.Usr.toRum() = ViewUpdateEvent.Usr(
+internal fun ViewEvent.Usr.toViewUpdate() = ViewUpdateEvent.Usr(
     id = id,
     name = name,
     email = email,
@@ -21,35 +21,35 @@ internal fun ViewEvent.Usr.toRum() = ViewUpdateEvent.Usr(
     additionalProperties = additionalProperties
 )
 
-internal fun ViewEvent.Account.toRum() = ViewUpdateEvent.Account(
+internal fun ViewEvent.Account.toViewUpdate() = ViewUpdateEvent.Account(
     id = id,
     name = name,
     additionalProperties = additionalProperties
 )
 
-internal fun ViewEvent.Connectivity.toRum() = ViewUpdateEvent.Connectivity(
-    status = status.toRum(),
-    interfaces = interfaces?.map { it.toRum() },
-    effectiveType = effectiveType?.toRum(),
+internal fun ViewEvent.Connectivity.toViewUpdate() = ViewUpdateEvent.Connectivity(
+    status = status.toViewUpdate(),
+    interfaces = interfaces?.map { it.toViewUpdate() },
+    effectiveType = effectiveType?.toViewUpdate(),
     cellular = cellular?.let { ViewUpdateEvent.Cellular(it.technology, it.carrierName) }
 )
 
-internal fun ViewEvent.Display.toRum() = ViewUpdateEvent.Display(
+internal fun ViewEvent.Display.toViewUpdate() = ViewUpdateEvent.Display(
     scroll = scroll?.let {
         ViewUpdateEvent.Scroll(it.maxDepth, it.maxDepthScrollTop, it.maxScrollHeight, it.maxScrollHeightTime)
     },
     viewport = viewport?.let { ViewUpdateEvent.Viewport(it.width, it.height) }
 )
 
-internal fun ViewEvent.Os.toRum() = ViewUpdateEvent.Os(
+internal fun ViewEvent.Os.toViewUpdate() = ViewUpdateEvent.Os(
     name = name,
     version = version,
     build = build,
     versionMajor = versionMajor
 )
 
-internal fun ViewEvent.Device.toRum() = ViewUpdateEvent.Device(
-    type = type?.toRum(),
+internal fun ViewEvent.Device.toViewUpdate() = ViewUpdateEvent.Device(
+    type = type?.toViewUpdate(),
     name = name,
     model = model,
     brand = brand,
@@ -65,19 +65,19 @@ internal fun ViewEvent.Device.toRum() = ViewUpdateEvent.Device(
     isLowRam = isLowRam
 )
 
-internal fun ViewEvent.Container.toRum() = ViewUpdateEvent.Container(
+internal fun ViewEvent.Container.toViewUpdate() = ViewUpdateEvent.Container(
     view = ViewUpdateEvent.ContainerView(view.id),
-    source = source.toRumSource()
+    source = source.toViewUpdate()
 )
 
-internal fun ViewEvent.FlutterBuildTime.toRum() = ViewUpdateEvent.FlutterBuildTime(
+internal fun ViewEvent.FlutterBuildTime.toViewUpdate() = ViewUpdateEvent.FlutterBuildTime(
     min = min,
     max = max,
     average = average,
     metricMax = metricMax
 )
 
-internal fun ViewEvent.PerformanceCls.toRum() = ViewUpdateEvent.Cls(
+internal fun ViewEvent.PerformanceCls.toViewUpdate() = ViewUpdateEvent.Cls(
     score = score,
     timestamp = timestamp,
     targetSelector = targetSelector,
@@ -85,13 +85,13 @@ internal fun ViewEvent.PerformanceCls.toRum() = ViewUpdateEvent.Cls(
     currentRect = currentRect?.let { ViewUpdateEvent.PreviousRect(it.x, it.y, it.width, it.height) }
 )
 
-internal fun ViewEvent.Inp.toRum() = ViewUpdateEvent.Inp(
+internal fun ViewEvent.Inp.toViewUpdate() = ViewUpdateEvent.Inp(
     duration = duration,
     timestamp = timestamp,
     targetSelector = targetSelector
 )
 
-internal fun ViewEvent.Lcp.toRum() = ViewUpdateEvent.Lcp(
+internal fun ViewEvent.Lcp.toViewUpdate() = ViewUpdateEvent.Lcp(
     timestamp = timestamp,
     targetSelector = targetSelector,
     resourceUrl = resourceUrl
@@ -101,7 +101,7 @@ internal fun ViewEvent.Lcp.toRum() = ViewUpdateEvent.Lcp(
 
 // region Enum conversions
 
-internal fun ViewEvent.ViewEventSource.toRumSource() = when (this) {
+internal fun ViewEvent.ViewEventSource.toViewUpdate() = when (this) {
     ViewEvent.ViewEventSource.ANDROID -> ViewUpdateEvent.ViewUpdateEventSource.ANDROID
     ViewEvent.ViewEventSource.IOS -> ViewUpdateEvent.ViewUpdateEventSource.IOS
     ViewEvent.ViewEventSource.BROWSER -> ViewUpdateEvent.ViewUpdateEventSource.BROWSER
@@ -112,13 +112,13 @@ internal fun ViewEvent.ViewEventSource.toRumSource() = when (this) {
     ViewEvent.ViewEventSource.KOTLIN_MULTIPLATFORM -> ViewUpdateEvent.ViewUpdateEventSource.KOTLIN_MULTIPLATFORM
 }
 
-internal fun ViewEvent.ViewEventSessionType.toRum() = when (this) {
+internal fun ViewEvent.ViewEventSessionType.toViewUpdate() = when (this) {
     ViewEvent.ViewEventSessionType.USER -> ViewUpdateEvent.ViewUpdateEventSessionType.USER
     ViewEvent.ViewEventSessionType.SYNTHETICS -> ViewUpdateEvent.ViewUpdateEventSessionType.SYNTHETICS
     ViewEvent.ViewEventSessionType.CI_TEST -> ViewUpdateEvent.ViewUpdateEventSessionType.CI_TEST
 }
 
-internal fun ViewEvent.LoadingType.toRum() = when (this) {
+internal fun ViewEvent.LoadingType.toViewUpdate() = when (this) {
     ViewEvent.LoadingType.INITIAL_LOAD -> ViewUpdateEvent.LoadingType.INITIAL_LOAD
     ViewEvent.LoadingType.ROUTE_CHANGE -> ViewUpdateEvent.LoadingType.ROUTE_CHANGE
     ViewEvent.LoadingType.ACTIVITY_DISPLAY -> ViewUpdateEvent.LoadingType.ACTIVITY_DISPLAY
@@ -129,13 +129,13 @@ internal fun ViewEvent.LoadingType.toRum() = when (this) {
     ViewEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY -> ViewUpdateEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY
 }
 
-internal fun ViewEvent.ConnectivityStatus.toRum() = when (this) {
+internal fun ViewEvent.ConnectivityStatus.toViewUpdate() = when (this) {
     ViewEvent.ConnectivityStatus.CONNECTED -> ViewUpdateEvent.Status.CONNECTED
     ViewEvent.ConnectivityStatus.NOT_CONNECTED -> ViewUpdateEvent.Status.NOT_CONNECTED
     ViewEvent.ConnectivityStatus.MAYBE -> ViewUpdateEvent.Status.MAYBE
 }
 
-internal fun ViewEvent.Interface.toRum() = when (this) {
+internal fun ViewEvent.Interface.toViewUpdate() = when (this) {
     ViewEvent.Interface.BLUETOOTH -> ViewUpdateEvent.Interface.BLUETOOTH
     ViewEvent.Interface.CELLULAR -> ViewUpdateEvent.Interface.CELLULAR
     ViewEvent.Interface.ETHERNET -> ViewUpdateEvent.Interface.ETHERNET
@@ -147,14 +147,14 @@ internal fun ViewEvent.Interface.toRum() = when (this) {
     ViewEvent.Interface.NONE -> ViewUpdateEvent.Interface.NONE
 }
 
-internal fun ViewEvent.EffectiveType.toRum() = when (this) {
+internal fun ViewEvent.EffectiveType.toViewUpdate() = when (this) {
     ViewEvent.EffectiveType.SLOW_2G -> ViewUpdateEvent.EffectiveType.SLOW_2G
     ViewEvent.EffectiveType.`2G` -> ViewUpdateEvent.EffectiveType.`2G`
     ViewEvent.EffectiveType.`3G` -> ViewUpdateEvent.EffectiveType.`3G`
     ViewEvent.EffectiveType.`4G` -> ViewUpdateEvent.EffectiveType.`4G`
 }
 
-internal fun ViewEvent.DeviceType.toRum() = when (this) {
+internal fun ViewEvent.DeviceType.toViewUpdate() = when (this) {
     ViewEvent.DeviceType.MOBILE -> ViewUpdateEvent.DeviceType.MOBILE
     ViewEvent.DeviceType.DESKTOP -> ViewUpdateEvent.DeviceType.DESKTOP
     ViewEvent.DeviceType.TABLET -> ViewUpdateEvent.DeviceType.TABLET
@@ -164,18 +164,18 @@ internal fun ViewEvent.DeviceType.toRum() = when (this) {
     ViewEvent.DeviceType.OTHER -> ViewUpdateEvent.DeviceType.OTHER
 }
 
-internal fun ViewEvent.ReplayLevel.toRum() = when (this) {
+internal fun ViewEvent.ReplayLevel.toViewUpdate() = when (this) {
     ViewEvent.ReplayLevel.ALLOW -> ViewUpdateEvent.ReplayLevel.ALLOW
     ViewEvent.ReplayLevel.MASK -> ViewUpdateEvent.ReplayLevel.MASK
     ViewEvent.ReplayLevel.MASK_USER_INPUT -> ViewUpdateEvent.ReplayLevel.MASK_USER_INPUT
 }
 
-internal fun ViewEvent.Plan.toRum() = when (this) {
+internal fun ViewEvent.Plan.toViewUpdate() = when (this) {
     ViewEvent.Plan.PLAN_1 -> ViewUpdateEvent.Plan.PLAN_1
     ViewEvent.Plan.PLAN_2 -> ViewUpdateEvent.Plan.PLAN_2
 }
 
-internal fun ViewEvent.SessionPrecondition.toRum() = when (this) {
+internal fun ViewEvent.SessionPrecondition.toViewUpdate() = when (this) {
     ViewEvent.SessionPrecondition.USER_APP_LAUNCH -> ViewUpdateEvent.SessionPrecondition.USER_APP_LAUNCH
     ViewEvent.SessionPrecondition.INACTIVITY_TIMEOUT -> ViewUpdateEvent.SessionPrecondition.INACTIVITY_TIMEOUT
     ViewEvent.SessionPrecondition.MAX_DURATION -> ViewUpdateEvent.SessionPrecondition.MAX_DURATION
