@@ -430,6 +430,26 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasProfilingStatus(profilingStatus: LongTaskEvent.ProfilingStatus?): LongTaskEventAssert {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+        return this
+    }
+
+    fun hasNoProfiling(): LongTaskEventAssert {
+        assertThat(actual.dd.profiling)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling" +
+                    " but instead was: ${actual.dd.profiling}"
+            )
+            .isNull()
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: LongTaskEvent): LongTaskEventAssert =

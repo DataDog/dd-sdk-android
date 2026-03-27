@@ -151,7 +151,7 @@ internal class ANRDetectorRunnable(
     }
 
     companion object {
-        private const val ANR_THRESHOLD_MS = 5000L
+        internal const val ANR_THRESHOLD_MS = 5000L
         private const val ANR_TEST_DELAY_MS = 500L
 
         internal const val ANR_MESSAGE = "Application Not Responding"
