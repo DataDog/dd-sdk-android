@@ -86,7 +86,7 @@ private fun diffView(
     new: ViewEvent.ViewEventView
 ): ViewUpdateEvent.ViewUpdateEventView {
     return computeDiffRequired(old = old, new = new) {
-        val slowFrames = diffMerge({ slowFrames ?: emptyList() }, ::diffSlowFrames)
+        val slowFrames = diffSlowFrames(old.slowFrames ?: emptyList(), new.slowFrames ?: emptyList())
         val inForegroundPeriods = diffList(ViewEvent.ViewEventView::inForegroundPeriods)
 
         ViewUpdateEvent.ViewUpdateEventView(
