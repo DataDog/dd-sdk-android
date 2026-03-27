@@ -800,9 +800,9 @@ internal class DatadogRumMonitor(
                     val (datadogContext, eventWriteScope) = writeContext
                     @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                     rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
-                    val currentFeatureContext = currentRumContext()
                     sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-                        it.putAll(currentFeatureContext.toMap())
+                        it.clear()
+                        currentRumContext()?.toMap()?.let(it::putAll)
                     }
                 } else {
                     sdkCore.internalLogger.log(
@@ -831,7 +831,7 @@ internal class DatadogRumMonitor(
                         val future = executorService.submitSafe(
                             "Rum event handling",
                             sdkCore.internalLogger,
-                            NamedCallable<RumContext>("${event::class.simpleName}") {
+                            NamedCallable("${event::class.simpleName}") {
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
@@ -840,11 +840,10 @@ internal class DatadogRumMonitor(
                             }
                         )
                         val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
-                        if (rumContext != null) {
-                            // we are on the context thread already, so useContextThread=false
-                            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                                it.putAll(rumContext.toMap())
-                            }
+                        // we are on the context thread already, so useContextThread=false
+                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+                            it.clear()
+                            rumContext?.toMap()?.let(it::putAll)
                         }
                     }
                 }
@@ -890,12 +889,11 @@ internal class DatadogRumMonitor(
         }
     }
 
-    private fun currentRumContext(): RumContext {
-        val activeSession = rootScope.activeSession
-        val context = activeSession?.activeView?.getRumContext()
-            ?: activeSession?.getRumContext()
-            ?: rootScope.getRumContext()
-        return context
+    private fun currentRumContext(): RumContext? {
+        val activeSession = rootScope.activeSession ?: return null
+        val context = activeSession.activeView?.getRumContext()
+            ?: activeSession.getRumContext()
+        return if (context.sessionId == RumContext.NULL_UUID) null else context
     }
 
     internal fun notifyDebugListenerWithState() {
