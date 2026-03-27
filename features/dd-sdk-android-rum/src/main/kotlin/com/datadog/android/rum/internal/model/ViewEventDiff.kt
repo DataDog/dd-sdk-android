@@ -125,9 +125,7 @@ private fun diffView(
             customTimings = diffEquals(ViewEvent.ViewEventView::customTimings)?.let {
                 ViewUpdateEvent.CustomTimings(it.additionalProperties)
             },
-            // TODO RUM-14814: is_active must not be sent in VIEW_UPDATE until backend fix is complete
-            // (backend cannot distinguish absent false from explicit false — risks corrupting view state)
-            // isActive = diffEquals(ViewEvent.ViewEventView::isActive),
+            isActive = diffEquals(ViewEvent.ViewEventView::isActive),
             isSlowRendered = diffEquals(ViewEvent.ViewEventView::isSlowRendered),
             action = diffEquals(ViewEvent.ViewEventView::action)?.let { ViewUpdateEvent.Action(it.count) },
             error = diffEquals(ViewEvent.ViewEventView::error)?.let { ViewUpdateEvent.Error(it.count) },

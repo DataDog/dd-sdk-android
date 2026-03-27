@@ -651,22 +651,32 @@ internal class ViewEventDiffTest {
         assertThat(result.view.performance?.fbc?.timestamp).isEqualTo(fakeTimestamp)
     }
 
-    // region TODOs — documenting current (pending review) behaviour
+    // region is_active (view)
 
     @Test
-    fun `M never include is_active W diffViewEvent { TODO VIEW_UPDATE restore once backend fix is complete }`(
+    fun `M return null for is_active W diffViewEvent { is_active unchanged }`(
         @Forgery fakeEvent: ViewEvent
     ) {
-        // Given — is_active changes
-        val old = fakeEvent.copy(view = fakeEvent.view.copy(isActive = false))
-        val new = fakeEvent.copy(view = fakeEvent.view.copy(isActive = true))
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.view.isActive).isNull()
+    }
+
+    @Test
+    fun `M return new value for is_active W diffViewEvent { is_active changed }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val newIsActive = fakeEvent.view.isActive?.not() ?: true
+        val newEvent = fakeEvent.copy(view = fakeEvent.view.copy(isActive = newIsActive))
 
         // When
-        val result = diffViewEvent(old, new)
+        val result = diffViewEvent(fakeEvent, newEvent)
 
-        // Then — must NOT be sent until backend can distinguish absent false from explicit false
-        // TODO VIEW_UPDATE: re-enable once backend fix is complete
-        assertThat(result.view.isActive).isNull()
+        // Then
+        assertThat(result.view.isActive).isEqualTo(newIsActive)
     }
 
     // endregion
