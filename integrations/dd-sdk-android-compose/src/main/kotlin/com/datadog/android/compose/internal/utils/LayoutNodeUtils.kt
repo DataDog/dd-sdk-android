@@ -100,7 +100,22 @@ internal class LayoutNodeUtils {
     fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? {
         return runSafe("getLayoutNodeBoundsInWindow") {
             node.layoutDelegate.outerCoordinator.coordinates.boundsInWindow()
+        } ?: runSafe("getLayoutNodeBoundsInWindow[reflection]") {
+            // TODO RUM-13454 Update compose bom and remove this block
+            val coordinates = node.getMethod("getLayoutDelegate")
+                ?.getMethod("getOuterCoordinator")
+                ?.getMethod("getCoordinates")
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // it's okay if exception will be thrown here
+            Class.forName("androidx.compose.ui.layout.LayoutCoordinatesKt")
+                .getMethod("boundsInWindow", Class.forName("androidx.compose.ui.layout.LayoutCoordinates"))
+                .invoke(null, coordinates) as? Rect
         }
+    }
+
+    private fun Any.getMethod(prefix: String): Any? {
+        return this.javaClass.methods.firstOrNull { it.name == prefix || it.name.startsWith("$prefix$") }
+            ?.invoke(this)
     }
 
     private fun <T> runSafe(callSite: String, action: () -> T): T? {
