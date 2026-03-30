@@ -92,8 +92,10 @@ internal open class RumViewScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector,
-    private val rumViewEventWriter: RumViewEventWriter
+    private val rumViewEventWriterFactory: () -> RumViewEventWriter
 ) : RumScope {
+
+    private val rumViewEventWriter: RumViewEventWriter = rumViewEventWriterFactory()
 
     internal val url = key.url.replace('.', '/')
 
@@ -476,7 +478,7 @@ internal open class RumViewScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             insightsCollector = insightsCollector,
-            rumViewEventWriter = rumViewEventWriter
+            rumViewEventWriterFactory = rumViewEventWriterFactory
         )
     }
 
@@ -1727,11 +1729,13 @@ internal open class RumViewScope(
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
                 insightsCollector = insightsCollector,
-                rumViewEventWriter = RumViewEventWriter.create(
-                    config = rumViewEventWriteConfig,
-                    viewEventMapper = viewEventMapper,
-                    sdkCore = sdkCore
-                )
+                rumViewEventWriterFactory = {
+                    RumViewEventWriter.create(
+                        config = rumViewEventWriteConfig,
+                        viewEventMapper = viewEventMapper,
+                        sdkCore = sdkCore
+                    )
+                }
             )
         }
 

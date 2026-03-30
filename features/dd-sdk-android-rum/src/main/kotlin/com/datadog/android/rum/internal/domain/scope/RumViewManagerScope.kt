@@ -385,11 +385,13 @@ internal class RumViewManagerScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             insightsCollector = insightsCollector,
-            rumViewEventWriter = RumViewEventWriter.create(
-                config = rumViewEventWriteConfig,
-                viewEventMapper = viewEventMapper,
-                sdkCore = sdkCore
-            )
+            rumViewEventWriterFactory = {
+                RumViewEventWriter.create(
+                    config = rumViewEventWriteConfig,
+                    viewEventMapper = viewEventMapper,
+                    sdkCore = sdkCore
+                )
+            }
         )
     }
 
@@ -433,11 +435,13 @@ internal class RumViewManagerScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             insightsCollector = insightsCollector,
-            rumViewEventWriter = RumViewEventWriter.create(
-                config = rumViewEventWriteConfig,
-                viewEventMapper = viewEventMapper,
-                sdkCore = sdkCore
-            )
+            rumViewEventWriterFactory = {
+                RumViewEventWriter.create(
+                    config = rumViewEventWriteConfig,
+                    viewEventMapper = viewEventMapper,
+                    sdkCore = sdkCore
+                )
+            }
         )
     }
 

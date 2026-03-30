@@ -8758,6 +8758,25 @@ internal class RumViewScopeTest {
         assertThat(newScope.stopped).isEqualTo(false)
     }
 
+    @Test
+    fun `M create fresh RumViewEventWriter W renew the current scope`() {
+        // Given
+        var createdWritersCount = 0
+        testedScope = newRumViewScope(
+            rumViewEventWriterFactory = {
+                createdWritersCount++
+                mock<RumViewEventWriter>()
+            }
+        )
+
+        // When
+        val newScope = testedScope.renew(fakeEventTime)
+
+        // Then
+        assertThat(extractWriter(newScope)).isNotSameAs(extractWriter(testedScope))
+        assertThat(createdWritersCount).isEqualTo(2)
+    }
+
     // endregion
 
     // region Feature Operations
@@ -9389,6 +9408,13 @@ internal class RumViewScopeTest {
         return event
     }
 
+    private fun extractWriter(scope: RumViewScope): RumViewEventWriter {
+        val field = RumViewScope::class.java.getDeclaredField("rumViewEventWriter")
+        field.isAccessible = true
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return field.get(scope) as RumViewEventWriter
+    }
+
     private fun forgeGlobalAttributes(
         forge: Forge,
         existingAttributes: Map<String, Any?>
@@ -9440,7 +9466,8 @@ internal class RumViewScopeTest {
             mockInteractionToNextViewMetricResolver,
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
-        slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener
+        slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener,
+        rumViewEventWriterFactory: () -> RumViewEventWriter = { mockRumViewEventWriter }
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -9466,7 +9493,7 @@ internal class RumViewScopeTest {
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
         insightsCollector = mockInsightsCollector,
-        rumViewEventWriter = mockRumViewEventWriter
+        rumViewEventWriterFactory = rumViewEventWriterFactory
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
