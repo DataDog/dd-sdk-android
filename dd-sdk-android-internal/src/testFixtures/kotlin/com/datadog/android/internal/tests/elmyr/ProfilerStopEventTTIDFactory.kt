@@ -13,7 +13,9 @@ import fr.xgouchet.elmyr.ForgeryFactory
 class ProfilerStopEventTTIDFactory : ForgeryFactory<ProfilerStopEvent.TTID> {
     override fun getForgery(forge: Forge): ProfilerStopEvent.TTID {
         return ProfilerStopEvent.TTID(
-            rumContext = forge.getForgery()
+            rumContext = forge.getForgery(),
+            vitalId = forge.anAlphabeticalString(),
+            vitalName = forge.aNullable { anAlphabeticalString() }
         )
     }
 }

@@ -19,7 +19,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.internal.profiling.ContinuousProfilingRumContext
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.profiling.RumAnrEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
@@ -3929,7 +3929,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue.startMs).isEqualTo(expectedStartMs)
             assertThat(firstValue.durationNs).isEqualTo(expectedDurationNs)
             assertThat(firstValue.rumContext).isEqualTo(
-                ContinuousProfilingRumContext(
+                ProfilingRumContext(
                     applicationId = fakeParentContext.applicationId,
                     sessionId = fakeParentContext.sessionId,
                     viewId = testedScope.viewId,

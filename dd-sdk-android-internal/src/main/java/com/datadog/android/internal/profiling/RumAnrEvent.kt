@@ -16,5 +16,5 @@ package com.datadog.android.internal.profiling
 data class RumAnrEvent(
     val startMs: Long,
     val durationNs: Long,
-    val rumContext: ContinuousProfilingRumContext
+    val rumContext: ProfilingRumContext
 )

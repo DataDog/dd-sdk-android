@@ -13,28 +13,19 @@ sealed class ProfilerStopEvent {
     /**
      * Internal event to stop profiler at Time To Initial Display (TTID) point.
      *
-     * @param rumContext RUM context at TTID point. Will be null if RUM session is not sampled.
+     * @param rumContext RUM context at TTID point.
+     * @param vitalId The ID of the TTID vital event.
+     * @param vitalName The name of the TTID vital event.
      */
     data class TTID(
-        val rumContext: TTIDRumContext? = null
+        val rumContext: ProfilingRumContext,
+        val vitalId: String,
+        val vitalName: String?
     ) : ProfilerStopEvent()
-}
 
-/**
- * RUM context at TTID mark.
- *
- * @param applicationId The Id of the application of RUM.
- * @param sessionId The ID of the RUM session where TTID is captured
- * @param vitalId The ID of the TTID vital event
- * @param vitalName The name of the TTID vital event
- * @param viewId The ID of the view where TTID is captured
- * @param viewName The name of the view where TTID is captured
- */
-data class TTIDRumContext(
-    val applicationId: String,
-    val sessionId: String,
-    val vitalId: String,
-    val vitalName: String?,
-    val viewId: String?,
-    val viewName: String?
-)
+    /**
+     * Internal event signalling that TTID has been reached but the RUM session is not tracked
+     * (unsampled session).
+     */
+    object TTIDNotTracked : ProfilerStopEvent()
+}

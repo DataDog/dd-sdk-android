@@ -141,17 +141,16 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
-data class com.datadog.android.internal.profiling.ContinuousProfilingRumContext
-  constructor(String, String, String?, String?)
 sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
   data class TTID : ProfilerStopEvent
-    constructor(TTIDRumContext? = null)
-data class com.datadog.android.internal.profiling.TTIDRumContext
-  constructor(String, String, String, String?, String?, String?)
+    constructor(ProfilingRumContext, String, String?)
+  object TTIDNotTracked : ProfilerStopEvent
+data class com.datadog.android.internal.profiling.ProfilingRumContext
+  constructor(String, String, String?, String?)
 data class com.datadog.android.internal.profiling.RumAnrEvent
-  constructor(Long, Long, ContinuousProfilingRumContext)
+  constructor(Long, Long, ProfilingRumContext)
 data class com.datadog.android.internal.profiling.RumLongTaskEvent
-  constructor(Long, Long, ContinuousProfilingRumContext)
+  constructor(Long, Long, ProfilingRumContext)
 data class com.datadog.android.internal.rum.RumSessionRenewedEvent
   constructor(String, Boolean)
 interface com.datadog.android.internal.system.BuildSdkVersionProvider

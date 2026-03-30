@@ -264,7 +264,7 @@ class ProfilingFeatureTest {
             )
         )
 
-        testedFeature.onReceive(ProfilerStopEvent.TTID(rumContext = null))
+        testedFeature.onReceive(ProfilerStopEvent.TTIDNotTracked)
 
         // When
         callbackCaptor.firstValue.onSuccess(
