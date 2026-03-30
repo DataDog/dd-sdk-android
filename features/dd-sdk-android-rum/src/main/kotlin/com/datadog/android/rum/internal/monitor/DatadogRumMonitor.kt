@@ -800,9 +800,10 @@ internal class DatadogRumMonitor(
                     val (datadogContext, eventWriteScope) = writeContext
                     @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                     rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
+                    val rumContext = currentRumContext()
                     sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
                         it.clear()
-                        currentRumContext()?.toMap()?.let(it::putAll)
+                        rumContext?.toMap()?.let(it::putAll)
                     }
                 } else {
                     sdkCore.internalLogger.log(
