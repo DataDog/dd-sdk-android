@@ -6,6 +6,8 @@
 
 package com.datadog.android.tests.elmyr
 
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import okhttp3.Protocol
@@ -58,6 +60,7 @@ fun <T : Forge> T.useCoreFactories(): T {
     addFactory(ThreadDumpForgeryFactory())
     addFactory(RequestExecutionContextForgeryFactory())
     addFactory(RequestInfoForgeryFactory())
+    addFactory(MutableRequestInfoForgeryFactory())
 
     return this
 }
@@ -68,6 +71,13 @@ fun Forge.aHostName(): String {
 }
 
 fun Forge.anUrlString(): String = aStringMatching(URL_FORGERY_PATTERN)
+
+fun Forge.anHttpRequestInfo(headers: Map<String, String>): HttpRequestInfo {
+    return getForgery<MutableHttpRequestInfo>()
+        .newBuilder()
+        .apply { headers.forEach { (key, value) -> addHeader(key, value) } }
+        .build()
+}
 
 fun Forge.anOkHttpResponse(
     request: Request,

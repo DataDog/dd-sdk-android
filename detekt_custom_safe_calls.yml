@@ -1029,6 +1029,7 @@ datadog:
       - "kotlin.collections.Set.isNotEmpty()"
       - "kotlin.collections.Set.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.Set.map(kotlin.Function1)"
+      - "kotlin.collections.Set.none(kotlin.Function1)"
       - "kotlin.collections.Set.orEmpty()"
       - "kotlin.collections.Set.plus(kotlin.collections.Iterable)"
       - "kotlin.collections.Set.toHashSet()"
@@ -1362,14 +1363,18 @@ datadog:
       - "okio.Buffer.constructor()"
       # endregion
       # region org.json
+      - "org.json.JSONArray.constructor()"
       - "org.json.JSONArray.length()"
+      - "org.json.JSONArray.put(kotlin.Any?)"
       - "org.json.JSONArray.toJsonArray()"
       - "org.json.JSONObject.constructor()"
+      - "org.json.JSONObject.has(kotlin.String?)"
       - "org.json.JSONObject.keys()"
-      - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
-      - "org.json.JSONObject.toJsonObject()"
       - "org.json.JSONObject.length()"
       - "org.json.JSONObject.opt(kotlin.String?)"
+      - "org.json.JSONObject.optJSONObject(kotlin.String?)"
+      - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
+      - "org.json.JSONObject.toJsonObject()"
       # endregion
       # region OpenFeature
       - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
