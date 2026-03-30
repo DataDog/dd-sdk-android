@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
@@ -39,12 +38,20 @@ internal class ProfilingFeature(
     @Volatile
     private var ttidRumContext: TTIDRumContext? = null
 
+    // True once ProfilerStopEvent.TTID has been received, regardless of whether the RUM session
+    // was sampled (i.e. ttidRumContext may still be null when this is true).
+    @Volatile
+    private var ttidEventReceived = false
+
     @Volatile
     private var perfettoResult: PerfettoResult? = null
 
     private val isTtidProfileSent: AtomicBoolean = AtomicBoolean(false)
 
     private lateinit var appContext: Context
+
+    @Volatile
+    private var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
 
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         configuration.customEndpointUrl
@@ -60,7 +67,6 @@ internal class ProfilingFeature(
         this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
-            this.setRateBasedSampler(RateBasedSampler(configuration.continuousSampleRate))
             registerProfilingCallback(sdkCore.name) { result ->
                 perfettoResult = result
                 tryWriteProfilingEvent()
@@ -80,12 +86,23 @@ internal class ProfilingFeature(
             context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
         dataWriter = createDataWriter(sdkCore)
+
+        val scheduler = ContinuousProfilingScheduler(
+            appContext = appContext,
+            profiler = profiler,
+            sdkCore = sdkCore,
+            sampleRate = configuration.continuousSampleRate
+        )
+        continuousProfilingScheduler = scheduler
+        scheduler.start(launchProfilingActive = profiler.isRunning(sdkCore.name))
     }
 
     override fun onStop() {
+        continuousProfilingScheduler?.stop()
         profiler.apply {
             stop(sdkCore.name)
             unregisterProfilingCallback(sdkCore.name)
+            scheduledExecutorService.shutdown()
         }
         sdkCore.removeEventReceiver(name)
     }
@@ -103,8 +120,13 @@ internal class ProfilingFeature(
     }
 
     private fun onTtidEvent(event: ProfilerStopEvent.TTID) {
-        if (ttidRumContext == null) {
-            ttidRumContext = event.rumContext
+        if (ttidEventReceived) return // already handled
+
+        ttidEventReceived = true
+        ttidRumContext = event.rumContext
+
+        if (continuousProfilingScheduler?.isScheduling != true) {
+            // Non-continuous: stop profiler immediately at TTID.
             profiler.stop(sdkCore.name)
             tryWriteProfilingEvent()
             sdkCore.internalLogger.log(
@@ -115,9 +137,8 @@ internal class ProfilingFeature(
         }
     }
 
-    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
     private fun onRumSessionRenewed(event: RumSessionRenewedEvent) {
-        // TODO RUM-15190: forward to ContinuousProfilingScheduler once it is implemented.
+        continuousProfilingScheduler?.onRumSessionRenewed(event.sessionSampled)
     }
 
     private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
@@ -131,14 +152,26 @@ internal class ProfilingFeature(
 
     @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
-        val perfettoResult = perfettoResult ?: return
-        val ttidRumContext = ttidRumContext ?: return
-        if (perfettoResult.tag != ProfilingStartReason.APPLICATION_LAUNCH.value) return
-        if (!isTtidProfileSent.getAndSet(true)) {
-            dataWriter.write(
-                profilingResult = perfettoResult,
-                ttidRumContext = ttidRumContext
-            )
+        val result = perfettoResult ?: return
+        when (result.tag) {
+            ProfilingStartReason.APPLICATION_LAUNCH.value -> {
+                // Wait until the TTID event has been received before proceeding — both the
+                // profiler result and the TTID event are needed. Note: ttidRumContext may be
+                // null even after the event arrives (unsampled RUM session), which is why we
+                // track receipt separately via ttidEventReceived.
+                if (!ttidEventReceived) return
+                if (!isTtidProfileSent.getAndSet(true)) {
+                    val ttidRumContext = ttidRumContext
+                    if (ttidRumContext != null) {
+                        dataWriter.write(profilingResult = result, ttidRumContext = ttidRumContext)
+                    }
+                    continuousProfilingScheduler?.onAppLaunchProfilingComplete()
+                }
+            }
+
+            ProfilingStartReason.CONTINUOUS.value -> {
+                // TODO RUM-15193: write continuous profiling event
+            }
         }
     }
 

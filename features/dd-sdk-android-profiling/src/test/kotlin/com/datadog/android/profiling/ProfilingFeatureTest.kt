@@ -13,11 +13,15 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
+import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
+import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -41,6 +45,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 @OptIn(ExperimentalProfilingApi::class)
 @Extensions(
@@ -63,6 +68,9 @@ class ProfilingFeatureTest {
     private lateinit var mockProfilingExecutor: ExecutorService
 
     @Mock
+    private lateinit var mockSchedulerExecutor: ScheduledExecutorService
+
+    @Mock
     private lateinit var mockContext: Context
 
     @Mock
@@ -83,6 +91,9 @@ class ProfilingFeatureTest {
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
 
+    @Forgery
+    private lateinit var fakeTTID: ProfilerStopEvent.TTID
+
     @StringForgery
     private lateinit var fakeInstanceName: String
 
@@ -91,6 +102,7 @@ class ProfilingFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
+        whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
         whenever(mockSharedPreferences.edit()) doReturn mockEditor
@@ -180,14 +192,95 @@ class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M stop Profiling W receive TTID event`(
-        @Forgery fakeTTIDEvent: ProfilerStopEvent.TTID
-    ) {
+    fun `M stop Profiling W receive TTID event {continuous disabled}`() {
+        // Given — continuous disabled, profiler not running (no active launch session)
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 0f
+            ),
+            mockProfiler
+        )
+        testedFeature.onInitialize(mockContext)
+
         // When
-        testedFeature.onReceive(fakeTTIDEvent)
+        testedFeature.onReceive(fakeTTID)
 
         // Then
         verify(mockProfiler).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M not stop Profiling W receive TTID event {continuous enabled, profiler running}`() {
+        // Given — continuous sample rate = 100% so it is always sampled in
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 100f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeTTID)
+
+        // Then — scheduler takes over, profiler is NOT stopped here
+        verify(mockProfiler, never()).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M start continuous cycle W profiler result received {TTID session unsampled}`() {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 100f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+
+        testedFeature.onReceive(
+            RumSessionRenewedEvent(
+                sessionId = "session-id",
+                sessionSampled = true
+            )
+        )
+
+        testedFeature.onReceive(ProfilerStopEvent.TTID(rumContext = null))
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            PerfettoResult(
+                start = 0L,
+                end = 1000L,
+                tag = ProfilingStartReason.APPLICATION_LAUNCH.value,
+                resultFilePath = "/fake/path"
+            )
+        )
+
+        // Then
+        verify(mockProfiler).start(
+            appContext = eq(mockContext),
+            startReason = eq(ProfilingStartReason.CONTINUOUS),
+            additionalAttributes = any(),
+            sdkInstanceNames = any(),
+            durationMs = any()
+        )
     }
 
     @Test

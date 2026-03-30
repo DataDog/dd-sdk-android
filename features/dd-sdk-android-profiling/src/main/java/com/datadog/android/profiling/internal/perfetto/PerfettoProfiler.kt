@@ -18,7 +18,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
@@ -38,12 +37,12 @@ import kotlin.random.Random
  * Supports multiple start reasons including application launch, RUM operations, and continuous profiling.
  *
  * @param timeProvider The time provider to use to get the current time.
- * @param profilingExecutor the executor service to run the profiling task on.
+ * @param scheduledExecutorService the executor service to run the profiling task on.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
     private val timeProvider: TimeProvider,
-    private val profilingExecutor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    override val scheduledExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 ) : Profiler {
 
     internal var stopSignal: CancellationSignal? = null
@@ -76,7 +75,7 @@ internal class PerfettoProfiler(
         }
 
     @Volatile
-    private var continuousSampler: RateBasedSampler<Unit> = RateBasedSampler(0f)
+    private var extendLaunchSession = false
 
     // Map of <InstanceName, ProfilerCallback>
     private val callbackMap: MutableMap<String, ProfilerCallback> = ConcurrentHashMap()
@@ -116,9 +115,9 @@ internal class PerfettoProfiler(
     }
 
     private fun buildStackSamplingRequest(
-        startReason: ProfilingStartReason
+        startReason: ProfilingStartReason,
+        durationMs: Int
     ): ProfilingRequest {
-        val durationMs = getExtendedAppLaunchDurationMs(startReason)
         return CancellationSignal().let {
             this.stopSignal = it
             StackSamplingRequestBuilder()
@@ -141,8 +140,11 @@ internal class PerfettoProfiler(
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>
+        sdkInstanceNames: Set<String>,
+        durationMs: Int
     ) {
+        val effectiveDurationMs =
+            if (durationMs > 0) durationMs else getDefaultDurationMs(startReason)
         // profiling will be launched when no instance is currently running profiling.
         if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
@@ -151,12 +153,12 @@ internal class PerfettoProfiler(
             profilingAppStartInfo = additionalAttributes[TELEMETRY_KEY_APP_START_INFO]
             requestProfiling(
                 appContext,
-                buildStackSamplingRequest(startReason),
-                profilingExecutor,
+                buildStackSamplingRequest(startReason, effectiveDurationMs),
+                scheduledExecutorService,
                 resultCallback
             )
             if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
-                profilingExecutor.scheduleSafe(
+                scheduledExecutorService.scheduleSafe(
                     operationName = OPERATION_NAME_APP_LAUNCH_PROFILING_SCHEDULE,
                     delay = APP_LAUNCH_PROFILING_MAX_DURATION_MS,
                     unit = TimeUnit.MILLISECONDS,
@@ -164,7 +166,7 @@ internal class PerfettoProfiler(
                     runnable = {
                         stopSignal?.let { signal ->
                             if (profilingStartReason == ProfilingStartReason.APPLICATION_LAUNCH &&
-                                !signal.isCanceled && continuousSampler.sample(Unit).not()
+                                !signal.isCanceled && !extendLaunchSession
                             ) {
                                 signal.cancel()
                             }
@@ -200,8 +202,8 @@ internal class PerfettoProfiler(
         callbackMap.remove(sdkInstanceName)
     }
 
-    override fun setRateBasedSampler(rateBasedSampler: RateBasedSampler<Unit>) {
-        this.continuousSampler = rateBasedSampler
+    override fun setExtendLaunchSession(extend: Boolean) {
+        this.extendLaunchSession = extend
     }
 
     private fun sendProfilingEndTelemetry(
@@ -283,7 +285,7 @@ internal class PerfettoProfiler(
         } ?: 0
     }
 
-    private fun getExtendedAppLaunchDurationMs(startReason: ProfilingStartReason): Int {
+    private fun getDefaultDurationMs(startReason: ProfilingStartReason): Int {
         // Application launch profiling should always be considered as the first window of
         // continuous profiling by default since the duration is not mutable after requesting,
         // but the effective max duration will be controlled by an external timer if continuous
@@ -293,7 +295,10 @@ internal class PerfettoProfiler(
             // avoiding systematic cooldown gaps at predictable time points.
             @Suppress("UnsafeThirdPartyFunctionCall")
             // Until is always bigger than from.
-            Random.nextInt(1, PROFILING_MAX_DURATION_MS_CONTINUOUS + 1)
+            Random.nextInt(
+                APP_LAUNCH_PROFILING_MAX_DURATION_MS.toInt(),
+                PROFILING_MAX_DURATION_MS_CONTINUOUS + 1
+            )
         } else {
             PROFILING_MAX_DURATION_MS_CONTINUOUS
         }
