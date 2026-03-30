@@ -18,6 +18,9 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.profiling.ContinuousProfilingRumContext
+import com.datadog.android.internal.profiling.RumAnrEvent
+import com.datadog.android.internal.profiling.RumLongTaskEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -25,6 +28,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -701,6 +705,31 @@ internal open class RumViewScope(
             rumContext.viewId.orEmpty()
         )
 
+        // region profiling
+        var profilingStatus: ErrorEvent.Profiling? = null
+        // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
+        // TODO RUM-15344: address non-fatal ANR over Android API 30
+        if (event.throwable is ANRException && !isFatal) {
+            val anrDurationMs = ANRDetectorRunnable.ANR_THRESHOLD_MS
+            val anrStartMs = event.eventTime.timestamp + serverTimeOffsetInMs - anrDurationMs
+            val anrDurationNs = TimeUnit.MILLISECONDS.toNanos(anrDurationMs)
+
+            profilingStatus = resolveErrorProfilingStatus(datadogContext)
+            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                RumAnrEvent(
+                    startMs = anrStartMs,
+                    durationNs = anrDurationNs,
+                    rumContext = ContinuousProfilingRumContext(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId,
+                        viewId = rumContext.viewId,
+                        viewName = rumContext.viewName
+                    )
+                )
+            )
+        }
+        // end region
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
@@ -809,7 +838,8 @@ internal open class RumViewScope(
                     session = ErrorEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
                     ),
-                    configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate),
+                    profiling = profilingStatus
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
@@ -1440,6 +1470,20 @@ internal open class RumViewScope(
             datadogContext,
             rumContext.viewId.orEmpty()
         )
+
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            RumLongTaskEvent(
+                startMs = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
+                durationNs = event.durationNs,
+                rumContext = ContinuousProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                )
+            )
+        )
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
@@ -1523,7 +1567,8 @@ internal open class RumViewScope(
                     session = LongTaskEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
                     ),
-                    configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate),
+                    profiling = resolveLongTaskProfilingStatus(datadogContext)
                 ),
                 service = datadogContext.service,
                 version = datadogContext.version,
@@ -1623,6 +1668,31 @@ internal open class RumViewScope(
         return tracingContext?.get(TRACE_SAMPLE_RATE) as? Float
     }
 
+    private fun resolveErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
+        return if (resolveProfilingRunning(datadogContext)) {
+            ErrorEvent.Profiling(status = ErrorEvent.ProfilingStatus.RUNNING)
+        } else {
+            null
+        }
+    }
+
+    private fun resolveLongTaskProfilingStatus(datadogContext: DatadogContext): LongTaskEvent.Profiling? {
+        return if (resolveProfilingRunning(datadogContext)) {
+            LongTaskEvent.Profiling(status = LongTaskEvent.ProfilingStatus.RUNNING)
+        } else {
+            null
+        }
+    }
+
+    private fun resolveProfilingRunning(datadogContext: DatadogContext): Boolean {
+        val profilingFeature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        return profilingFeature?.let {
+            datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME]?.get(
+                PROFILER_IS_RUNNING
+            ) == true
+        } ?: false
+    }
+
     private fun logSynthetics(key: String, value: String) {
         /**
          * We use [android.util.Log] here instead of [InternalLogger] because we want to log regardless of the
@@ -1634,6 +1704,9 @@ internal open class RumViewScope(
     // endregion
 
     companion object {
+
+        private const val PROFILER_IS_RUNNING = "profiler_is_running"
+
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         // Must match SessionReplayFeature.SESSION_REPLAY_SAMPLE_RATE_KEY in dd-sdk-android-session-replay

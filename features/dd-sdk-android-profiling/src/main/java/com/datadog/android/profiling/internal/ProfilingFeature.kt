@@ -17,6 +17,8 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.RumAnrEvent
+import com.datadog.android.internal.profiling.RumLongTaskEvent
 import com.datadog.android.internal.profiling.TTIDRumContext
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.ExperimentalProfilingApi
@@ -111,6 +113,13 @@ internal class ProfilingFeature(
         when (event) {
             is ProfilerStopEvent.TTID -> onTtidEvent(event)
             is RumSessionRenewedEvent -> onRumSessionRenewed(event)
+            is RumLongTaskEvent -> {
+                // TODO RUM-15321: forward to ContinuousProfilingScheduler
+            }
+
+            is RumAnrEvent -> {
+                // TODO RUM-15321: forward to ContinuousProfilingScheduler
+            }
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
