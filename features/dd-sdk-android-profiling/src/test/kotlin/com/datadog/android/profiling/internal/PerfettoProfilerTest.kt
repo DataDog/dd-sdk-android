@@ -43,6 +43,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ScheduledExecutorService
@@ -425,6 +426,69 @@ class PerfettoProfilerTest {
 
         // Then
         assertThat(status).isFalse
+    }
+
+    @Test
+    fun `M call onFailure W callback is called {error code}`(
+        @IntForgery(min = 1) fakeErrorCode: Int
+    ) {
+        // Given
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
+        verify(mockService).requestProfiling(any(), any(), any(), any(), any(), callbackCaptor.capture())
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn fakeErrorCode
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        verify(mockProfilerCallback).onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+        verifyNoMoreInteractions(mockProfilerCallback)
+    }
+
+    @Test
+    fun `M call onFailure W callback is called {null file path}`() {
+        // Given
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
+        verify(mockService).requestProfiling(any(), any(), any(), any(), any(), callbackCaptor.capture())
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn null
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        verify(mockProfilerCallback).onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+        verifyNoMoreInteractions(mockProfilerCallback)
+    }
+
+    @Test
+    fun `M not call onFailure W callback is called {success}`(
+        @StringForgery fakePath: String
+    ) {
+        // Given
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
+        verify(mockService).requestProfiling(any(), any(), any(), any(), any(), callbackCaptor.capture())
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        verify(mockProfilerCallback).onSuccess(any())
+        verifyNoMoreInteractions(mockProfilerCallback)
     }
 
     @Test
