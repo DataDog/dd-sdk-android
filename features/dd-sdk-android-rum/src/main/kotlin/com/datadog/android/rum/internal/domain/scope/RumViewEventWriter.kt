@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
@@ -62,32 +63,49 @@ internal class RumViewEventWriterImpl(
         writer: DataWriter<Any>,
         eventType: EventType
     ) {
-        val mappedViewEvent = viewEventMapper.map(viewEvent)
-
-        val prev = prevViewEvent
-
-        prevViewEvent = mappedViewEvent
-
-        val newEvent: Any = when (config) {
-            RumViewEventWriteConfig.AlwaysFullView -> mappedViewEvent
-            RumViewEventWriteConfig.FullViewOnlyAtStart -> {
-                if (prev == null) {
-                    mappedViewEvent
-                } else {
-                    RumViewUpdateData(
-                        viewUpdate = diffViewEvent(prev, mappedViewEvent),
-                        viewEvent = mappedViewEvent
-                    )
-                }
-            }
-        }
+        var mappedViewEvent: ViewEvent? = null
 
         sdkCore.newRumEventWriteOperation(
             datadogContext = datadogContext,
             writeScope = writeScope,
             rumDataWriter = writer,
             eventType = eventType,
-            eventSource = { newEvent }
-        ).submit()
+            eventSource = {
+                val mapped = try {
+                    viewEventMapper.map(viewEvent)
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    sdkCore.internalLogger.log(
+                        level = InternalLogger.Level.WARN,
+                        target = InternalLogger.Target.USER,
+                        messageBuilder = { VIEW_EVENT_MAPPER_FALLBACK_WARNING_MESSAGE },
+                        throwable = e
+                    )
+                    viewEvent
+                }
+                mappedViewEvent = mapped
+                val prev = prevViewEvent
+
+                when (config) {
+                    RumViewEventWriteConfig.AlwaysFullView -> mapped
+                    RumViewEventWriteConfig.FullViewOnlyAtStart -> {
+                        if (prev == null) {
+                            mapped
+                        } else {
+                            RumViewUpdateData(
+                                viewUpdate = diffViewEvent(prev, mapped),
+                                viewEvent = mapped
+                            )
+                        }
+                    }
+                }
+            }
+        ).onSuccess {
+            mappedViewEvent?.let { prevViewEvent = it }
+        }.submit()
+    }
+
+    companion object {
+        internal const val VIEW_EVENT_MAPPER_FALLBACK_WARNING_MESSAGE =
+            "ViewEventMapper failed, using original ViewEvent."
     }
 }
