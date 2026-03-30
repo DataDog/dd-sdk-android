@@ -196,7 +196,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeViewEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedViewEvent)
 
@@ -222,7 +223,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeViewEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedViewEvent)
 
@@ -244,7 +246,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeViewEventAsJson,
                 null,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedViewEvent)
 
@@ -273,7 +276,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeActionEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedActionEvent)
 
@@ -298,7 +302,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeActionEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedActionEvent)
 
@@ -320,7 +325,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeActionEventAsJson,
                 null,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedActionEvent)
 
@@ -349,7 +355,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeResourceEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedResourceEvent)
 
@@ -374,7 +381,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeResourceEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedResourceEvent)
 
@@ -396,7 +404,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeResourceEventAsJson,
                 null,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedResourceEvent)
 
@@ -425,7 +434,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeErrorEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedErrorEvent)
 
@@ -450,7 +460,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeErrorEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedErrorEvent)
 
@@ -472,7 +483,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeErrorEventAsJson,
                 null,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedErrorEvent)
 
@@ -501,7 +513,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeLongTaskEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedLongTaskEvent)
 
@@ -526,7 +539,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeLongTaskEventAsJson,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         )
             .thenReturn(fakeMappedLongTaskEvent)
@@ -549,7 +563,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeLongTaskEventAsJson,
                 null,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedLongTaskEvent)
 
@@ -577,7 +592,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeRumEvent,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenThrow(fakeException)
 
@@ -598,7 +614,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeRumEvent,
                 fakeRumContext,
                 fakeServerTimeOffsetInMillis,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenThrow(fakeException)
 
@@ -625,7 +642,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeRumEvent,
                 fakeRumContext,
                 0,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedRumEvent)
 
@@ -648,7 +666,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeRumEvent,
                 fakeRumContext,
                 0,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedRumEvent)
 
@@ -671,7 +690,8 @@ internal class WebViewRumEventConsumerTest {
                 fakeRumEvent,
                 fakeRumContext,
                 0,
-                fakeSessionReplayEnabled
+                fakeSessionReplayEnabled,
+                fakeDatadogContext.userInfo
             )
         ).thenReturn(fakeMappedRumEvent)
 

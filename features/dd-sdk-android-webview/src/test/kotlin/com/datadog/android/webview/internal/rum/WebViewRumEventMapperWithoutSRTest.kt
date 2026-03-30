@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -55,6 +56,9 @@ internal class WebViewRumEventMapperWithoutSRTest {
     @StringForgery
     lateinit var fakeResolvedNativeViewId: String
 
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -82,7 +86,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -106,7 +111,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -130,7 +136,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -154,7 +161,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -178,7 +186,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -205,7 +214,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -239,7 +249,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then
@@ -283,7 +294,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeUserInfo
         )
 
         // Then

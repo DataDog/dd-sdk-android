@@ -140,6 +140,7 @@ internal class WebViewLogEventConsumerTest {
             verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue.ddTags).containsExactlyInAnyOrderElementsOf(expectedTags)
+            assertUserInfo(firstValue)
         }
     }
 
@@ -237,6 +238,7 @@ internal class WebViewLogEventConsumerTest {
                 LogAttributes.RUM_SESSION_ID,
                 fakeRumContext.sessionId
             )
+            assertUserInfo(firstValue)
         }
     }
 
@@ -352,6 +354,12 @@ internal class WebViewLogEventConsumerTest {
 
     private val JsonObject.ddTags: List<String>
         get() = get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.split(",").orEmpty()
+
+    private fun assertUserInfo(event: JsonObject) {
+        val usr = event.getAsJsonObject(WebViewLogEventConsumer.USR_KEY_NAME)
+        val expectedUsr = fakeDatadogContext.userInfo.toJson().asJsonObject
+        assertThat(usr).usingRecursiveComparison().isEqualTo(expectedUsr)
+    }
 
     // endregion
 

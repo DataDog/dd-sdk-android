@@ -36,8 +36,12 @@ data class UserInfo(
     val additionalProperties: Map<String, Any?> = emptyMap()
 ) {
 
+    /**
+     * Serializes this [UserInfo] to a [JsonElement].
+     * @return a [JsonElement] containing the user info fields.
+     */
     @Suppress("StringLiteralDuplication")
-    internal fun toJson(): JsonElement {
+    fun toJson(): JsonElement {
         val json = JsonObject()
         anonymousId?.let { idNonNull ->
             json.addProperty("anonymous_id", idNonNull)

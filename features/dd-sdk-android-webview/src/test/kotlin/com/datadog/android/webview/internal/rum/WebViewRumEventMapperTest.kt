@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -55,6 +56,9 @@ internal class WebViewRumEventMapperTest {
     @StringForgery
     lateinit var fakeResolvedNativeViewId: String
 
+    @Forgery
+    lateinit var fakeUserInfo: UserInfo
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -82,7 +86,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -106,7 +111,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -130,7 +136,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -154,7 +161,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -178,7 +186,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -205,7 +214,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -239,7 +249,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -250,7 +261,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
                 WebViewRumEventMapper.DD_KEY_NAME,
-                WebViewRumEventMapper.CONTAINER_KEY_NAME
+                WebViewRumEventMapper.CONTAINER_KEY_NAME,
+                WebViewRumEventMapper.USR_KEY_NAME
             )
             .isEqualTo(fakeRumJsonObject)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
@@ -268,6 +280,7 @@ internal class WebViewRumEventMapperTest {
         )
         assertThat(container.getAsJsonObject(WebViewRumEventMapper.VIEW_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeResolvedNativeViewId)
+        assertUserInfo(mappedEvent)
     }
 
     @Test
@@ -283,7 +296,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeUserInfo
         )
 
         // Then
@@ -294,7 +308,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
                 WebViewRumEventMapper.DD_KEY_NAME,
-                WebViewRumEventMapper.CONTAINER_KEY_NAME
+                WebViewRumEventMapper.CONTAINER_KEY_NAME,
+                WebViewRumEventMapper.USR_KEY_NAME
             )
             .isEqualTo(fakeRumJsonObject)
         val container = mappedEvent
@@ -304,6 +319,7 @@ internal class WebViewRumEventMapperTest {
             WebViewRumEventMapper.SOURCE_VALUE
         )
         assertThat(container).doesNotHaveField(WebViewRumEventMapper.VIEW_KEY_NAME)
+        assertUserInfo(mappedEvent)
     }
 
     private fun assertMappedEvent(
@@ -317,7 +333,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.APPLICATION_KEY_NAME,
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
-                WebViewRumEventMapper.DD_KEY_NAME
+                WebViewRumEventMapper.DD_KEY_NAME,
+                WebViewRumEventMapper.USR_KEY_NAME
             )
             .isEqualTo(expectedEvent)
 
@@ -336,5 +353,12 @@ internal class WebViewRumEventMapperTest {
         )
         assertThat(container.getAsJsonObject(WebViewRumEventMapper.VIEW_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeResolvedNativeViewId)
+        assertUserInfo(mappedEvent)
+    }
+
+    private fun assertUserInfo(mappedEvent: JsonObject) {
+        val usr = mappedEvent.getAsJsonObject(WebViewRumEventMapper.USR_KEY_NAME)
+        val expectedUsr = fakeUserInfo.toJson().asJsonObject
+        assertThat(usr).usingRecursiveComparison().isEqualTo(expectedUsr)
     }
 }

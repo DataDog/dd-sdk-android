@@ -53,11 +53,16 @@ internal class WebViewLogEventConsumer(
     ): JsonObject {
         addDdTags(event, datadogContext)
         correctDate(event, datadogContext)
+        addUserInfo(event, datadogContext)
         if (rumContext != null) {
             event.addProperty(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
             event.addProperty(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
         }
         return event
+    }
+
+    private fun addUserInfo(event: JsonObject, datadogContext: DatadogContext) {
+        event.add(USR_KEY_NAME, datadogContext.userInfo.toJson())
     }
 
     private fun correctDate(event: JsonObject, datadogContext: DatadogContext) {
@@ -160,6 +165,7 @@ internal class WebViewLogEventConsumer(
         const val DATE_KEY_NAME = "date"
         const val USER_LOG_EVENT_TYPE = "log"
         const val INTERNAL_LOG_EVENT_TYPE = "internal_log"
+        const val USR_KEY_NAME = "usr"
         const val JSON_PARSING_ERROR_MESSAGE = "The bundled web log event could not be deserialized"
         val LOG_EVENT_TYPES = setOf(USER_LOG_EVENT_TYPE)
         internal const val DEFAULT_SAMPLE_RATE = 100f

@@ -106,6 +106,7 @@ data class com.datadog.android.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.api.context.UserInfo
   constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+  fun toJson(): com.google.gson.JsonElement
 interface com.datadog.android.api.feature.Feature
   val name: String
   fun onInitialize(android.content.Context)

@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
@@ -23,7 +24,8 @@ internal class WebViewRumEventMapper(
         event: JsonObject,
         rumContext: RumContext?,
         timeOffset: Long,
-        sessionReplayEnabled: Boolean
+        sessionReplayEnabled: Boolean,
+        userInfo: UserInfo
     ): JsonObject {
         val containerObject = JsonObject().apply {
             addProperty(SOURCE_KEY_NAME, SOURCE_VALUE)
@@ -64,6 +66,8 @@ internal class WebViewRumEventMapper(
             event.add(SESSION_KEY_NAME, session)
         }
 
+        event.add(USR_KEY_NAME, userInfo.toJson())
+
         return event
     }
 
@@ -80,5 +84,6 @@ internal class WebViewRumEventMapper(
         internal const val CONTAINER_KEY_NAME = "container"
         internal const val SOURCE_KEY_NAME = "source"
         internal const val SOURCE_VALUE = "android"
+        internal const val USR_KEY_NAME = "usr"
     }
 }
