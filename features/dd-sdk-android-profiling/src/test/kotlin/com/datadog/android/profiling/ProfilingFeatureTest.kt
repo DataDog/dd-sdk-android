@@ -91,6 +91,9 @@ class ProfilingFeatureTest {
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
 
+    @StringForgery
+    private lateinit var fakeSessionId: String
+
     @Forgery
     private lateinit var fakeTTID: ProfilerStopEvent.TTID
 
@@ -277,6 +280,76 @@ class ProfilingFeatureTest {
         verify(mockProfiler).start(
             appContext = eq(mockContext),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
+            additionalAttributes = any(),
+            sdkInstanceNames = any(),
+            durationMs = any()
+        )
+    }
+
+    @Test
+    fun `M start continuous cycle W profiler failure received {APPLICATION_LAUNCH tag}`() {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 100f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(
+            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampled = true)
+        )
+        testedFeature.onReceive(ProfilerStopEvent.TTID(rumContext = null))
+
+        // When
+        callbackCaptor.firstValue.onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+
+        // Then
+        verify(mockProfiler).start(
+            appContext = eq(mockContext),
+            startReason = eq(ProfilingStartReason.CONTINUOUS),
+            additionalAttributes = any(),
+            sdkInstanceNames = any(),
+            durationMs = any()
+        )
+    }
+
+    @Test
+    fun `M not start continuous cycle W profiler failure received {CONTINUOUS tag}`() {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 100f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+
+        // When
+        callbackCaptor.firstValue.onFailure(ProfilingStartReason.CONTINUOUS.value)
+
+        // Then
+        verify(mockProfiler, never()).start(
+            appContext = any(),
+            startReason = any(),
             additionalAttributes = any(),
             sdkInstanceNames = any(),
             durationMs = any()

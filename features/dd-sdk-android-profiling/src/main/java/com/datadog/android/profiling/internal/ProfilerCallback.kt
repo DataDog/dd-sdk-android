@@ -8,6 +8,8 @@ package com.datadog.android.profiling.internal
 
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
-internal fun interface ProfilerCallback {
+internal interface ProfilerCallback {
     fun onSuccess(result: PerfettoResult)
+
+    fun onFailure(tag: String)
 }

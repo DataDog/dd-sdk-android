@@ -33,7 +33,7 @@ internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
-) : StorageBackedFeature, FeatureEventReceiver {
+) : StorageBackedFeature, FeatureEventReceiver, ProfilerCallback {
 
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
@@ -69,15 +69,7 @@ internal class ProfilingFeature(
         this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
-            registerProfilingCallback(sdkCore.name) { result ->
-                perfettoResult = result
-                tryWriteProfilingEvent()
-                // if profiler stopped before TTID event, still update the status: in such case TTID profiling
-                // is incomplete
-                sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-                    context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
-                }
-            }
+            registerProfilingCallback(sdkCore.name, this@ProfilingFeature)
         }
         setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -125,6 +117,25 @@ internal class ProfilingFeature(
                 InternalLogger.Target.MAINTAINER,
                 { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
             )
+        }
+    }
+
+    override fun onSuccess(result: PerfettoResult) {
+        perfettoResult = result
+        tryWriteProfilingEvent()
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+        }
+    }
+
+    override fun onFailure(tag: String) {
+        if (tag == ProfilingStartReason.APPLICATION_LAUNCH.value) {
+            // Launch profiling ended with error such as rate limiting error.
+            // Unblock the continuous scheduler so it doesn't wait forever.
+            continuousProfilingScheduler?.onAppLaunchProfilingComplete()
+        }
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
     }
 

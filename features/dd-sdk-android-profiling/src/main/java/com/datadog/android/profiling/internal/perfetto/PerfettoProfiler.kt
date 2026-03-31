@@ -90,18 +90,23 @@ internal class PerfettoProfiler(
             val duration = effectiveStopTime - profilingStartTime
             val resultCallbackDelayMs =
                 if (profilingStopTime > 0L) resultCallbackTime - profilingStopTime else 0L
+            val tag = result.tag.orEmpty()
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed
                 result.resultFilePath?.let {
-                    notifyAllCallbacks(
-                        PerfettoResult(
-                            start = profilingStartTime,
-                            end = resultCallbackTime,
-                            tag = result.tag.orEmpty(),
-                            resultFilePath = it
+                    notifyCallbacks {
+                        onSuccess(
+                            PerfettoResult(
+                                start = profilingStartTime,
+                                end = resultCallbackTime,
+                                tag = tag,
+                                resultFilePath = it
+                            )
                         )
-                    )
-                }
+                    }
+                } ?: notifyCallbacks { onFailure(tag) }
+            } else {
+                notifyCallbacks { onFailure(tag) }
             }
             runningInstances.set(emptySet())
             sendProfilingEndTelemetry(
@@ -130,9 +135,10 @@ internal class PerfettoProfiler(
         }
     }
 
-    private fun notifyAllCallbacks(result: PerfettoResult) {
-        callbackMap.filter { runningInstances.get().contains(it.key) }.forEach { callback ->
-            callback.value.onSuccess(result)
+    private fun notifyCallbacks(dispatch: ProfilerCallback.() -> Unit) {
+        val running = runningInstances.get()
+        callbackMap.forEach { (key, callback) ->
+            if (running.contains(key)) callback.dispatch()
         }
     }
 
