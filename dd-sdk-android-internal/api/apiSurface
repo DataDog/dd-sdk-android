@@ -146,9 +146,9 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
     constructor(ProfilingRumContext, String, String?)
   object TTIDNotTracked : ProfilerEvent
   data class RumAnrEvent : ProfilerEvent
-    constructor(Long, Long, ProfilingRumContext)
+    constructor(String, Long, Long, ProfilingRumContext)
   data class RumLongTaskEvent : ProfilerEvent
-    constructor(Long, Long, ProfilingRumContext)
+    constructor(String, Long, Long, ProfilingRumContext)
 data class com.datadog.android.internal.profiling.ProfilingRumContext
   constructor(String, String, String?, String?)
 data class com.datadog.android.internal.rum.RumSessionRenewedEvent

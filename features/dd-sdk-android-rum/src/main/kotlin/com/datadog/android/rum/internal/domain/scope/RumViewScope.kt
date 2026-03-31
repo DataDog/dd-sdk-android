@@ -704,6 +704,7 @@ internal open class RumViewScope(
             rumContext.viewId.orEmpty()
         )
 
+        val errorId = UUID.randomUUID().toString()
         // region profiling
         var profilingStatus: ErrorEvent.Profiling? = null
         // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
@@ -716,6 +717,7 @@ internal open class RumViewScope(
             profilingStatus = resolveErrorProfilingStatus(datadogContext)
             sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
                 ProfilerEvent.RumAnrEvent(
+                    id = errorId,
                     startMs = anrStartMs,
                     durationNs = anrDurationNs,
                     rumContext = ProfilingRumContext(
@@ -754,7 +756,7 @@ internal open class RumViewScope(
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
                 featureFlags = ErrorEvent.Context(eventFeatureFlags),
                 error = ErrorEvent.Error(
-                    id = UUID.randomUUID().toString(),
+                    id = errorId,
                     message = message,
                     source = event.source.toSchemaSource(),
                     stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
@@ -1470,8 +1472,10 @@ internal open class RumViewScope(
             rumContext.viewId.orEmpty()
         )
 
+        val longTaskId = UUID.randomUUID().toString()
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
             ProfilerEvent.RumLongTaskEvent(
+                id = longTaskId,
                 startMs = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                 durationNs = event.durationNs,
                 rumContext = ProfilingRumContext(
@@ -1506,7 +1510,7 @@ internal open class RumViewScope(
             LongTaskEvent(
                 date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                 longTask = LongTaskEvent.LongTask(
-                    id = UUID.randomUUID().toString(),
+                    id = longTaskId,
                     duration = event.durationNs,
                     isFrozenFrame = isFrozenFrame
                 ),

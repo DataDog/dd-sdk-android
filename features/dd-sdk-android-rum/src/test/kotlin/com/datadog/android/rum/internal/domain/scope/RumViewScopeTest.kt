@@ -3926,6 +3926,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ProfilerEvent.RumAnrEvent> {
             verify(mockProfilingFeatureScope).sendEvent(capture())
+            assertThat(firstValue.id).isNotEmpty()
             assertThat(firstValue.startMs).isEqualTo(expectedStartMs)
             assertThat(firstValue.durationNs).isEqualTo(expectedDurationNs)
             assertThat(firstValue.rumContext).isEqualTo(
@@ -5614,6 +5615,37 @@ internal class RumViewScopeTest {
         argumentCaptor<LongTaskEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M send RumLongTaskEvent to profiling W handleEvent(AddLongTask) {profiling feature registered}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val expectedStartMs = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) -
+            TimeUnit.NANOSECONDS.toMillis(durationNs)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ProfilerEvent.RumLongTaskEvent> {
+            verify(mockProfilingFeatureScope).sendEvent(capture())
+            assertThat(firstValue.id).isNotEmpty()
+            assertThat(firstValue.startMs).isEqualTo(expectedStartMs)
+            assertThat(firstValue.durationNs).isEqualTo(durationNs)
+            assertThat(firstValue.rumContext).isEqualTo(
+                ProfilingRumContext(
+                    applicationId = fakeParentContext.applicationId,
+                    sessionId = fakeParentContext.sessionId,
+                    viewId = testedScope.viewId,
+                    viewName = fakeKey.name
+                )
+            )
         }
     }
 
