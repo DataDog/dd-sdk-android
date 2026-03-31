@@ -340,7 +340,6 @@ test-pyramid:legacy-integration-instrumented-min-api:
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
-    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-latest-api:
@@ -356,7 +355,6 @@ test-pyramid:legacy-integration-instrumented-latest-api:
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
-    - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-median-api:
