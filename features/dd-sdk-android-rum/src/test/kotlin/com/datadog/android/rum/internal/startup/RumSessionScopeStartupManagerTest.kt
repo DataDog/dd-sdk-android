@@ -17,7 +17,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
@@ -288,7 +288,7 @@ internal class RumSessionScopeStartupManagerTest {
         argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             verify(mockProfilingFeatureScope).sendEvent(
-                ProfilerStopEvent.TTID(
+                ProfilerEvent.TTID(
                     rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,

@@ -16,9 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.RumAnrEvent
-import com.datadog.android.internal.profiling.RumLongTaskEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
@@ -37,7 +35,7 @@ internal class ProfilingFeature(
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     @Volatile
-    private var ttidEvent: ProfilerStopEvent? = null
+    private var ttidEvent: ProfilerEvent? = null
 
     @Volatile
     private var perfettoResult: PerfettoResult? = null
@@ -97,15 +95,14 @@ internal class ProfilingFeature(
 
     override fun onReceive(event: Any) {
         when (event) {
-            is ProfilerStopEvent -> onTtidEvent(event)
+            is ProfilerEvent.TTID, is ProfilerEvent.TTIDNotTracked -> onTtidEvent(event as ProfilerEvent)
+            is ProfilerEvent.RumLongTaskEvent -> {
+                // TODO RUM-15321: forward to ContinuousProfilingScheduler
+            }
+            is ProfilerEvent.RumAnrEvent -> {
+                // TODO RUM-15321: forward to ContinuousProfilingScheduler
+            }
             is RumSessionRenewedEvent -> onRumSessionRenewed(event)
-            is RumLongTaskEvent -> {
-                // TODO RUM-15321: forward to ContinuousProfilingScheduler
-            }
-
-            is RumAnrEvent -> {
-                // TODO RUM-15321: forward to ContinuousProfilingScheduler
-            }
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -133,7 +130,7 @@ internal class ProfilingFeature(
         }
     }
 
-    private fun onTtidEvent(event: ProfilerStopEvent.TTID) {
+    private fun onTtidEvent(event: ProfilerEvent) {
         if (ttidEvent != null) return // already handled
 
         ttidEvent = event
@@ -172,7 +169,7 @@ internal class ProfilingFeature(
                 // profiler result and the TTID event are needed.
                 val event = ttidEvent ?: return
                 if (!isTtidProfileSent.getAndSet(true)) {
-                    if (event is ProfilerStopEvent.TTID) {
+                    if (event is ProfilerEvent.TTID) {
                         dataWriter.write(
                             profilingResult = result,
                             rumContext = event.rumContext,

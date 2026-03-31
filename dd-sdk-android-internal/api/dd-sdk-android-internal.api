@@ -250,16 +250,46 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
 }
 
-public abstract class com/datadog/android/internal/profiling/ProfilerStopEvent {
+public abstract class com/datadog/android/internal/profiling/ProfilerEvent {
 }
 
-public final class com/datadog/android/internal/profiling/ProfilerStopEvent$TTID : com/datadog/android/internal/profiling/ProfilerStopEvent {
+public final class com/datadog/android/internal/profiling/ProfilerEvent$RumAnrEvent : com/datadog/android/internal/profiling/ProfilerEvent {
+	public fun <init> (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
+	public final fun copy (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumAnrEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$RumAnrEvent;JJLcom/datadog/android/internal/profiling/ProfilingRumContext;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumAnrEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDurationNs ()J
+	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
+	public final fun getStartMs ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/profiling/ProfilerEvent$RumLongTaskEvent : com/datadog/android/internal/profiling/ProfilerEvent {
+	public fun <init> (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
+	public final fun copy (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumLongTaskEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$RumLongTaskEvent;JJLcom/datadog/android/internal/profiling/ProfilingRumContext;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumLongTaskEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDurationNs ()J
+	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
+	public final fun getStartMs ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/profiling/ProfilerEvent$TTID : com/datadog/android/internal/profiling/ProfilerEvent {
 	public fun <init> (Lcom/datadog/android/internal/profiling/ProfilingRumContext;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Lcom/datadog/android/internal/profiling/ProfilingRumContext;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;Lcom/datadog/android/internal/profiling/ProfilingRumContext;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTID;
+	public final fun copy (Lcom/datadog/android/internal/profiling/ProfilingRumContext;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerEvent$TTID;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$TTID;Lcom/datadog/android/internal/profiling/ProfilingRumContext;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$TTID;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
 	public final fun getVitalId ()Ljava/lang/String;
@@ -268,8 +298,8 @@ public final class com/datadog/android/internal/profiling/ProfilerStopEvent$TTID
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/profiling/ProfilerStopEvent$TTIDNotTracked : com/datadog/android/internal/profiling/ProfilerStopEvent {
-	public static final field INSTANCE Lcom/datadog/android/internal/profiling/ProfilerStopEvent$TTIDNotTracked;
+public final class com/datadog/android/internal/profiling/ProfilerEvent$TTIDNotTracked : com/datadog/android/internal/profiling/ProfilerEvent {
+	public static final field INSTANCE Lcom/datadog/android/internal/profiling/ProfilerEvent$TTIDNotTracked;
 }
 
 public final class com/datadog/android/internal/profiling/ProfilingRumContext {
@@ -285,36 +315,6 @@ public final class com/datadog/android/internal/profiling/ProfilingRumContext {
 	public final fun getSessionId ()Ljava/lang/String;
 	public final fun getViewId ()Ljava/lang/String;
 	public final fun getViewName ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/internal/profiling/RumAnrEvent {
-	public fun <init> (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)V
-	public final fun component1 ()J
-	public final fun component2 ()J
-	public final fun component3 ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
-	public final fun copy (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)Lcom/datadog/android/internal/profiling/RumAnrEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/RumAnrEvent;JJLcom/datadog/android/internal/profiling/ProfilingRumContext;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/RumAnrEvent;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDurationNs ()J
-	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
-	public final fun getStartMs ()J
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/internal/profiling/RumLongTaskEvent {
-	public fun <init> (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)V
-	public final fun component1 ()J
-	public final fun component2 ()J
-	public final fun component3 ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
-	public final fun copy (JJLcom/datadog/android/internal/profiling/ProfilingRumContext;)Lcom/datadog/android/internal/profiling/RumLongTaskEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/RumLongTaskEvent;JJLcom/datadog/android/internal/profiling/ProfilingRumContext;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/RumLongTaskEvent;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDurationNs ()J
-	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
-	public final fun getStartMs ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

@@ -12,7 +12,7 @@ import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.data.SharedPreferencesStorage
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
@@ -95,7 +95,7 @@ class ProfilingFeatureTest {
     private lateinit var fakeSessionId: String
 
     @Forgery
-    private lateinit var fakeTTID: ProfilerStopEvent.TTID
+    private lateinit var fakeTTID: ProfilerEvent.TTID
 
     @StringForgery
     private lateinit var fakeInstanceName: String
@@ -264,7 +264,7 @@ class ProfilingFeatureTest {
             )
         )
 
-        testedFeature.onReceive(ProfilerStopEvent.TTIDNotTracked)
+        testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
         // When
         callbackCaptor.firstValue.onSuccess(
@@ -308,7 +308,7 @@ class ProfilingFeatureTest {
         testedFeature.onReceive(
             RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampled = true)
         )
-        testedFeature.onReceive(ProfilerStopEvent.TTID(rumContext = null))
+        testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
         // When
         callbackCaptor.firstValue.onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
