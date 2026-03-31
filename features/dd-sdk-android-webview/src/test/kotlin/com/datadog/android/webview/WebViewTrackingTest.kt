@@ -626,14 +626,15 @@ internal class WebViewTrackingTest {
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
         val fakeApplicationId = forge.getForgery<UUID>().toString()
         val fakeSessionId = forge.getForgery<UUID>().toString()
-        val fakeUserInfo = forge.getForgery<UserInfo>()
+        val fakeAnonymousId = forge.anAlphabeticalString()
+        val fakeUserInfo = UserInfo(anonymousId = fakeAnonymousId)
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
             add("container", JsonObject().apply { addProperty("source", "android") })
             add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
             add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
-            add("usr", fakeUserInfo.toJson())
+            add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
         }
 
         whenever(

@@ -70,7 +70,7 @@ internal class WebViewRumEventConsumer(
                 rumContext,
                 timeOffset,
                 sessionReplayEnabled,
-                datadogContext.userInfo
+                datadogContext.userInfo.anonymousId
             )
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
