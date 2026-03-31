@@ -72,11 +72,15 @@ internal class RumEventMapperTest {
     lateinit var mockTelemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>
 
     @Mock
+    lateinit var mockViewEventMapper: EventMapper<ViewEvent>
+
+    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
         testedRumEventMapper = RumEventMapper(
+            viewEventMapper = mockViewEventMapper,
             actionEventMapper = mockActionEventMapper,
             resourceEventMapper = mockResourceEventMapper,
             errorEventMapper = mockErrorEventMapper,
@@ -92,6 +96,7 @@ internal class RumEventMapperTest {
     fun `M map the bundled event W map { ViewEvent }`(forge: Forge) {
         // GIVEN
         val fakeRumEvent = forge.getForgery<ViewEvent>()
+        whenever(mockViewEventMapper.map(fakeRumEvent)).thenReturn(fakeRumEvent)
 
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
@@ -99,6 +104,45 @@ internal class RumEventMapperTest {
         // THEN
         assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
+        verify(mockViewEventMapper).map(fakeRumEvent)
+    }
+
+    @Test
+    fun `M return the original event W map returns null object { ViewEvent }`(forge: Forge) {
+        // GIVEN
+        val fakeRumEvent = forge.getForgery<ViewEvent>()
+        whenever(mockViewEventMapper.map(fakeRumEvent)).thenReturn(null)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isSameAs(fakeRumEvent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+        )
+    }
+
+    @Test
+    fun `M return the original event W map returns different object { ViewEvent }`(
+        @Forgery fakeRumEvent: ViewEvent,
+        @Forgery fakeMappedRumEvent: ViewEvent
+    ) {
+        // GIVEN
+        whenever(mockViewEventMapper.map(fakeRumEvent)).thenReturn(fakeMappedRumEvent)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isSameAs(fakeRumEvent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+        )
     }
 
     @Test

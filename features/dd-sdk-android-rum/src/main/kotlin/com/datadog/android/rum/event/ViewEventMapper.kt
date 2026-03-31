@@ -18,10 +18,9 @@ fun interface ViewEventMapper : EventMapper<ViewEvent> {
      * attributes inside any event [ViewEvent] before it gets serialised.
      *
      * @param event the event to be serialised
-     * @return the modified event [ViewEvent]. You may return the same instance with mutated
-     * fields, or a copy (e.g. via [ViewEvent.copy]) with the desired changes applied.
-     * Returning a completely different or unrelated [ViewEvent] instance is not supported
-     * and may produce unexpected results. The event cannot be dropped by returning null.
+     * @return the modified event [ViewEvent]. The same object (by reference) should be returned.
+     * If the object returned has a different reference than the object which was passed to the
+     * function, it will be ignored and the original object will be used.
      */
     override fun map(event: ViewEvent): ViewEvent
 }

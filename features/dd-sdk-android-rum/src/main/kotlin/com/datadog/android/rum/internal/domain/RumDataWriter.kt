@@ -30,6 +30,11 @@ internal class RumDataWriter(
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
+        // We support two full-view payload forms:
+        // - MappedViewEvent: produced by RumViewEventWriter in the regular runtime pipeline,
+        //   already passed through ViewEventMapper and should not be mapped again.
+        // - ViewEvent: raw full views (for example late-crash reporting path) that still need
+        //   ViewEventMapper processing before serialization.
         return when (element) {
             is MappedViewEvent -> writeMappedViewEvent(writer, element.viewEvent, eventType)
             is ViewEvent -> writeRawViewEvent(writer, element, eventType)
