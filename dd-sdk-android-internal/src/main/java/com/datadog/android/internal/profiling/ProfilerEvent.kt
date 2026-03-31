@@ -32,11 +32,13 @@ sealed class ProfilerEvent {
     /**
      * Sent by the RUM feature to the profiling feature whenever an ANR is detected.
      *
+     * @param id The ID of the corresponding RUM error event.
      * @param startMs Start timestamp in milliseconds since epoch (server time-adjusted).
      * @param durationNs Duration of the ANR in nanoseconds.
      * @param rumContext RUM context at the time of the ANR.
      */
     data class RumAnrEvent(
+        val id: String,
         val startMs: Long,
         val durationNs: Long,
         val rumContext: ProfilingRumContext
@@ -45,11 +47,13 @@ sealed class ProfilerEvent {
     /**
      * Sent by the RUM feature to the profiling feature whenever a long task is detected.
      *
+     * @param id The ID of the corresponding RUM long task event.
      * @param startMs Start timestamp in milliseconds since epoch (server time-adjusted).
      * @param durationNs Duration of the long task in nanoseconds.
      * @param rumContext RUM context at the time of the long task.
      */
     data class RumLongTaskEvent(
+        val id: String,
         val startMs: Long,
         val durationNs: Long,
         val rumContext: ProfilingRumContext
