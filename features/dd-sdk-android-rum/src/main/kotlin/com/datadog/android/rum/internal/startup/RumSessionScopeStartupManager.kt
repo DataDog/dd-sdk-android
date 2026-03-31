@@ -12,8 +12,8 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
@@ -27,6 +27,7 @@ internal interface RumSessionScopeStartupManager {
 
     fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
+        isSessionTracked: Boolean,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
@@ -85,12 +86,19 @@ internal class RumSessionScopeStartupManagerImpl(
 
     override fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
+        isSessionTracked: Boolean,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
+        if (!isSessionTracked) {
+            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                ProfilerEvent.TTIDNotTracked
+            )
+            return
+        }
         ttidReportedForScenario = true
 
         rumAppStartupTelemetryReporter.reportTTID(
@@ -118,15 +126,15 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            ProfilerStopEvent.TTID(
-                rumContext = TTIDRumContext(
+            ProfilerEvent.TTID(
+                rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
                     sessionId = rumContext.sessionId,
                     viewId = rumContext.viewId,
-                    viewName = rumContext.viewName,
-                    vitalId = ttidEvent.vital.id,
-                    vitalName = ttidEvent.vital.name
-                )
+                    viewName = rumContext.viewName
+                ),
+                vitalId = ttidEvent.vital.id,
+                vitalName = ttidEvent.vital.name
             )
         )
 

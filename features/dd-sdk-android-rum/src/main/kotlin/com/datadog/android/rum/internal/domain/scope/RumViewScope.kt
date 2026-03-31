@@ -18,9 +18,8 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
-import com.datadog.android.internal.profiling.ContinuousProfilingRumContext
-import com.datadog.android.internal.profiling.RumAnrEvent
-import com.datadog.android.internal.profiling.RumLongTaskEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -716,10 +715,10 @@ internal open class RumViewScope(
 
             profilingStatus = resolveErrorProfilingStatus(datadogContext)
             sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                RumAnrEvent(
+                ProfilerEvent.RumAnrEvent(
                     startMs = anrStartMs,
                     durationNs = anrDurationNs,
-                    rumContext = ContinuousProfilingRumContext(
+                    rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,
                         viewId = rumContext.viewId,
@@ -1472,10 +1471,10 @@ internal open class RumViewScope(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            RumLongTaskEvent(
+            ProfilerEvent.RumLongTaskEvent(
                 startMs = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                 durationNs = event.durationNs,
-                rumContext = ContinuousProfilingRumContext(
+                rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
                     sessionId = rumContext.sessionId,
                     viewId = rumContext.viewId,

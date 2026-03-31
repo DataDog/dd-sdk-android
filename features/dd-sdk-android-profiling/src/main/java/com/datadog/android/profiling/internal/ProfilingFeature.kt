@@ -16,10 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.RumAnrEvent
-import com.datadog.android.internal.profiling.RumLongTaskEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
@@ -38,12 +35,7 @@ internal class ProfilingFeature(
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     @Volatile
-    private var ttidRumContext: TTIDRumContext? = null
-
-    // True once ProfilerStopEvent.TTID has been received, regardless of whether the RUM session
-    // was sampled (i.e. ttidRumContext may still be null when this is true).
-    @Volatile
-    private var ttidEventReceived = false
+    private var ttidEvent: ProfilerEvent? = null
 
     @Volatile
     private var perfettoResult: PerfettoResult? = null
@@ -103,15 +95,14 @@ internal class ProfilingFeature(
 
     override fun onReceive(event: Any) {
         when (event) {
-            is ProfilerStopEvent.TTID -> onTtidEvent(event)
+            is ProfilerEvent.TTID, is ProfilerEvent.TTIDNotTracked -> onTtidEvent(event as ProfilerEvent)
+            is ProfilerEvent.RumLongTaskEvent -> {
+                // TODO RUM-15321: forward to ContinuousProfilingScheduler
+            }
+            is ProfilerEvent.RumAnrEvent -> {
+                // TODO RUM-15321: forward to ContinuousProfilingScheduler
+            }
             is RumSessionRenewedEvent -> onRumSessionRenewed(event)
-            is RumLongTaskEvent -> {
-                // TODO RUM-15321: forward to ContinuousProfilingScheduler
-            }
-
-            is RumAnrEvent -> {
-                // TODO RUM-15321: forward to ContinuousProfilingScheduler
-            }
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -139,11 +130,10 @@ internal class ProfilingFeature(
         }
     }
 
-    private fun onTtidEvent(event: ProfilerStopEvent.TTID) {
-        if (ttidEventReceived) return // already handled
+    private fun onTtidEvent(event: ProfilerEvent) {
+        if (ttidEvent != null) return // already handled
 
-        ttidEventReceived = true
-        ttidRumContext = event.rumContext
+        ttidEvent = event
 
         if (continuousProfilingScheduler?.isScheduling != true) {
             // Non-continuous: stop profiler immediately at TTID.
@@ -176,14 +166,16 @@ internal class ProfilingFeature(
         when (result.tag) {
             ProfilingStartReason.APPLICATION_LAUNCH.value -> {
                 // Wait until the TTID event has been received before proceeding — both the
-                // profiler result and the TTID event are needed. Note: ttidRumContext may be
-                // null even after the event arrives (unsampled RUM session), which is why we
-                // track receipt separately via ttidEventReceived.
-                if (!ttidEventReceived) return
+                // profiler result and the TTID event are needed.
+                val event = ttidEvent ?: return
                 if (!isTtidProfileSent.getAndSet(true)) {
-                    val ttidRumContext = ttidRumContext
-                    if (ttidRumContext != null) {
-                        dataWriter.write(profilingResult = result, ttidRumContext = ttidRumContext)
+                    if (event is ProfilerEvent.TTID) {
+                        dataWriter.write(
+                            profilingResult = result,
+                            rumContext = event.rumContext,
+                            vitalId = event.vitalId,
+                            vitalName = event.vitalName
+                        )
                     }
                     continuousProfilingScheduler?.onAppLaunchProfilingComplete()
                 }

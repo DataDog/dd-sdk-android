@@ -15,7 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
@@ -23,6 +23,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -101,16 +102,21 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M write the result in a batch W write`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTIDRumContext: TTIDRumContext
+        @Forgery fakeProfilingRumContext: ProfilingRumContext,
+        @StringForgery fakeVitalId: String,
+        forge: Forge
     ) {
         // Given
+        val fakeVitalName = forge.aNullable { aString() }
         val file = tmp.resolve(fakeResult.resultFilePath)
         file.writeBytes(fakeByteArray)
 
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidRumContext = fakeTTIDRumContext
+            rumContext = fakeProfilingRumContext,
+            vitalId = fakeVitalId,
+            vitalName = fakeVitalName
         )
 
         // Then
@@ -142,14 +148,14 @@ internal class ProfilingDataWriterTest {
             .hasRuntime(ProfileEvent.Family.ANDROID)
             .hasVersion(4)
             .hasTags(expectedTagList)
-            .hasApplicationId(fakeTTIDRumContext.applicationId)
-            .hasSessionId(fakeTTIDRumContext.sessionId)
-            .hasVitalIds(listOf(fakeTTIDRumContext.vitalId))
-            .hasVitalNames(listOf(fakeTTIDRumContext.vitalName.orEmpty()))
+            .hasApplicationId(fakeProfilingRumContext.applicationId)
+            .hasSessionId(fakeProfilingRumContext.sessionId)
+            .hasVitalIds(listOf(fakeVitalId))
+            .hasVitalNames(listOf(fakeVitalName.orEmpty()))
             .apply {
-                if (fakeTTIDRumContext.viewId != null && fakeTTIDRumContext.viewName != null) {
-                    hasViewIds(listOf(fakeTTIDRumContext.viewId.orEmpty()))
-                    hasViewNames(listOf(fakeTTIDRumContext.viewName.orEmpty()))
+                if (fakeProfilingRumContext.viewId != null && fakeProfilingRumContext.viewName != null) {
+                    hasViewIds(listOf(fakeProfilingRumContext.viewId.orEmpty()))
+                    hasViewNames(listOf(fakeProfilingRumContext.viewName.orEmpty()))
                 } else {
                     hasViewIds(null)
                     hasViewNames(null)
@@ -164,7 +170,9 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W write {can't read perfetto File}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTIDRumContext: TTIDRumContext
+        @Forgery fakeProfilingRumContext: ProfilingRumContext,
+        @StringForgery fakeVitalId: String,
+        forge: Forge
     ) {
         // Given
         // Don't create the tmp file so it can't be found
@@ -172,7 +180,9 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult,
-            ttidRumContext = fakeTTIDRumContext
+            rumContext = fakeProfilingRumContext,
+            vitalId = fakeVitalId,
+            vitalName = forge.aNullable { aString() }
         )
 
         // Then
@@ -182,7 +192,9 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W file is empty`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTIDRumContext: TTIDRumContext
+        @Forgery fakeProfilingRumContext: ProfilingRumContext,
+        @StringForgery fakeVitalId: String,
+        forge: Forge
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
@@ -191,7 +203,9 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidRumContext = fakeTTIDRumContext
+            rumContext = fakeProfilingRumContext,
+            vitalId = fakeVitalId,
+            vitalName = forge.aNullable { aString() }
         )
 
         // Then

@@ -7,15 +7,14 @@
 package com.datadog.android.internal.profiling
 
 /**
- * RUM context attached to continuous profiling events.
+ * RUM context attached to profiling events.
  *
  * @param applicationId The RUM application ID.
  * @param sessionId The ID of the active RUM session.
  * @param viewId The ID of the active RUM view, or null if unavailable.
  * @param viewName The name of the active RUM view, or null if unavailable.
  */
-// TODO RUM-15334: Commonize ContinuousProfilingRumContext & TTIDRumContext
-data class ContinuousProfilingRumContext(
+data class ProfilingRumContext(
     val applicationId: String,
     val sessionId: String,
     val viewId: String?,

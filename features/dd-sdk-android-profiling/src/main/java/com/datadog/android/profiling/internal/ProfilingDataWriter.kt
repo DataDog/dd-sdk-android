@@ -12,7 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.readBytesSafe
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
@@ -23,7 +23,9 @@ internal class ProfilingDataWriter(
 ) : ProfilingWriter {
     override fun write(
         profilingResult: PerfettoResult,
-        ttidRumContext: TTIDRumContext
+        rumContext: ProfilingRumContext,
+        vitalId: String,
+        vitalName: String?
     ) {
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
             ?.withWriteContext { context, writeScope ->
@@ -31,7 +33,9 @@ internal class ProfilingDataWriter(
                     val rawBatchEvent = buildRawBatchEvent(
                         context = context,
                         profilingResult = profilingResult,
-                        ttidRumContext = ttidRumContext
+                        rumContext = rumContext,
+                        vitalId = vitalId,
+                        vitalName = vitalName
                     )
                     if (rawBatchEvent != null) {
                         synchronized(this) {
@@ -49,7 +53,9 @@ internal class ProfilingDataWriter(
     private fun buildRawBatchEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        ttidRumContext: TTIDRumContext
+        rumContext: ProfilingRumContext,
+        vitalId: String,
+        vitalName: String?
     ): RawBatchEvent? {
         val byteData = readProfilingData(profilingResult.resultFilePath)
         if (byteData == null || byteData.isEmpty()) {
@@ -58,7 +64,9 @@ internal class ProfilingDataWriter(
         val profileEvent = createProfileEvent(
             context,
             profilingResult,
-            ttidRumContext
+            rumContext,
+            vitalId,
+            vitalName
         )
         val serializedEvent =
             profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
@@ -68,11 +76,13 @@ internal class ProfilingDataWriter(
     private fun createProfileEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        ttidRumContext: TTIDRumContext
+        rumContext: ProfilingRumContext,
+        vitalId: String,
+        vitalName: String?
     ): ProfileEvent {
         // needed to benefit from smart-cast below, reading property only once
-        val rumViewId = ttidRumContext.viewId
-        val rumViewName = ttidRumContext.viewName
+        val rumViewId = rumContext.viewId
+        val rumViewName = rumContext.viewName
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
@@ -81,11 +91,11 @@ internal class ProfilingDataWriter(
             runtime = ProfileEvent.Family.ANDROID,
             version = VERSION_NUMBER,
             tagsProfiler = buildTags(context),
-            application = ProfileEvent.Application(id = ttidRumContext.applicationId),
-            session = ProfileEvent.Session(id = ttidRumContext.sessionId),
+            application = ProfileEvent.Application(id = rumContext.applicationId),
+            session = ProfileEvent.Session(id = rumContext.sessionId),
             vital = ProfileEvent.Vital(
-                id = listOf(ttidRumContext.vitalId),
-                label = listOf(ttidRumContext.vitalName.orEmpty())
+                id = listOf(vitalId),
+                label = listOf(vitalName.orEmpty())
             ),
             view = if (rumViewId != null && rumViewName != null) {
                 ProfileEvent.View(

@@ -17,8 +17,8 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
@@ -232,6 +232,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -275,6 +276,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -286,15 +288,15 @@ internal class RumSessionScopeStartupManagerTest {
         argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             verify(mockProfilingFeatureScope).sendEvent(
-                ProfilerStopEvent.TTID(
-                    TTIDRumContext(
+                ProfilerEvent.TTID(
+                    rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,
-                        vitalId = lastValue.vital.id,
-                        vitalName = lastValue.vital.name,
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
-                    )
+                    ),
+                    vitalId = lastValue.vital.id,
+                    vitalName = lastValue.vital.name
                 )
             )
         }
@@ -331,6 +333,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event1,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -342,6 +345,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event2,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -382,6 +386,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -445,6 +450,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent1,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -465,6 +471,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent2,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -587,6 +594,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -634,6 +642,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -678,6 +687,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
