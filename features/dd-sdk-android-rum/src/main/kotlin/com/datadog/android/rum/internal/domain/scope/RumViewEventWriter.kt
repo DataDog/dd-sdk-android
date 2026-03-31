@@ -24,6 +24,10 @@ internal data class RumViewUpdateData(
     val viewEvent: ViewEvent
 )
 
+internal data class MappedViewEvent(
+    val viewEvent: ViewEvent
+)
+
 internal interface RumViewEventWriter {
     // Should be called from RUM processing thread only
     fun writeViewEvent(
@@ -86,10 +90,10 @@ internal class RumViewEventWriterImpl(
                 val prev = prevViewEvent
 
                 when (config) {
-                    RumViewEventWriteConfig.AlwaysFullView -> mapped
+                    RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(mapped)
                     RumViewEventWriteConfig.FullViewOnlyAtStart -> {
                         if (prev == null) {
-                            mapped
+                            MappedViewEvent(mapped)
                         } else {
                             RumViewUpdateData(
                                 viewUpdate = diffViewEvent(prev, mapped),

@@ -17,6 +17,7 @@ import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.scope.MappedViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
 import com.datadog.android.rum.model.ViewEvent
 
@@ -30,14 +31,21 @@ internal class RumDataWriter(
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
         return when (element) {
-            is ViewEvent -> writeViewEvent(writer, element, eventType)
+            is MappedViewEvent -> writeMappedViewEvent(writer, element.viewEvent, eventType)
+            is ViewEvent -> writeRawViewEvent(writer, element, eventType)
             is RumViewUpdateData -> writeViewUpdateEvent(writer, element, eventType)
             else -> writeOtherEvent(writer, element, eventType)
         }
     }
 
     @WorkerThread
-    private fun writeViewEvent(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
+    private fun writeRawViewEvent(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
+        val mappedEvent = eventMapper.map(event) as? ViewEvent ?: return false
+        return writeMappedViewEvent(writer, mappedEvent, eventType)
+    }
+
+    @WorkerThread
+    private fun writeMappedViewEvent(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
         val byteArray = eventSerializer.serializeToByteArray(event, sdkCore.internalLogger)
             ?: return false
 

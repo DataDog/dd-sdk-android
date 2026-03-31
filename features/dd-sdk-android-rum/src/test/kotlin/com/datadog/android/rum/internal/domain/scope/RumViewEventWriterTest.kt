@@ -126,8 +126,8 @@ internal class RumViewEventWriterTest {
         )
 
         // Then
-        assertThat(writtenEvents[0]).isInstanceOf(ViewEvent::class.java)
-        assertThat(writtenEvents[1]).isInstanceOf(ViewEvent::class.java)
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
+        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java)
     }
 
     @Test
@@ -166,7 +166,7 @@ internal class RumViewEventWriterTest {
         )
 
         // Then
-        assertThat(writtenEvents[0]).isInstanceOf(ViewEvent::class.java)
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
         assertThat(writtenEvents[1]).isInstanceOf(RumViewUpdateData::class.java)
     }
 
@@ -219,8 +219,8 @@ internal class RumViewEventWriterTest {
         )
 
         // Then
-        assertThat(writtenEvents[0]).isInstanceOf(ViewEvent::class.java)
-        assertThat(writtenEvents[1]).isInstanceOf(ViewEvent::class.java)
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
+        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java)
         assertThat(writtenEvents[2]).isInstanceOf(RumViewUpdateData::class.java)
     }
 
@@ -265,7 +265,7 @@ internal class RumViewEventWriterTest {
         pendingWrites.forEach { it(mockEventBatchWriter) }
 
         // Then
-        assertThat(writtenEvents[0]).isInstanceOf(ViewEvent::class.java)
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
         assertThat(writtenEvents[1]).isInstanceOf(RumViewUpdateData::class.java)
     }
 
@@ -292,7 +292,7 @@ internal class RumViewEventWriterTest {
 
         // Then
         assertThat(writtenEvents).hasSize(1)
-        assertThat(writtenEvents[0]).isSameAs(fakeViewEvent)
+        assertThat(writtenEvents[0]).isEqualTo(MappedViewEvent(fakeViewEvent))
     }
 
     companion object {

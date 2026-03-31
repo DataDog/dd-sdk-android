@@ -14,6 +14,7 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.scope.MappedViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -42,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.never
@@ -96,6 +98,7 @@ internal class RumDataWriterTest {
             )
         ) doReturn true
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockEventMapper.map(any<ViewEvent>())) doAnswer { it.getArgument<ViewEvent>(0) }
 
         testedWriter = RumDataWriter(
             mockEventMapper,
@@ -162,6 +165,81 @@ internal class RumDataWriterTest {
             null,
             fakeEventType
         )
+    }
+
+    @Test
+    fun `M map raw view event W write() { ViewEvent }`(
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeMappedSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val mappedViewEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = fakeViewEvent.dd.documentVersion + 1)
+        )
+        val fakeMappedSerializedData = fakeMappedSerializedEvent.toByteArray(Charsets.UTF_8)
+        whenever(mockEventMapper.map(fakeViewEvent)) doReturn mappedViewEvent
+        whenever(mockEventSerializer.serialize(mappedViewEvent)) doReturn fakeMappedSerializedEvent
+        val eventMeta = RumEventMeta.View(
+            viewId = mappedViewEvent.view.id,
+            documentVersion = mappedViewEvent.dd.documentVersion,
+            hasAccessibility = mappedViewEvent.view.accessibility != null
+        )
+        val fakeSerializedViewEventMeta = forge.aString()
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(
+                    data = fakeMappedSerializedData,
+                    metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
+                ),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isTrue
+        verify(mockEventMapper).map(fakeViewEvent)
+    }
+
+    @Test
+    fun `M bypass mapper W write() { MappedViewEvent }`(
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeMappedSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeMappedSerializedData = fakeMappedSerializedEvent.toByteArray(Charsets.UTF_8)
+        val mappedViewEvent = MappedViewEvent(fakeViewEvent)
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeMappedSerializedEvent
+        val eventMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        val fakeSerializedViewEventMeta = forge.aString()
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(
+                    data = fakeMappedSerializedData,
+                    metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
+                ),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, mappedViewEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isTrue
+        verifyNoInteractions(mockEventMapper)
     }
 
     @Test
