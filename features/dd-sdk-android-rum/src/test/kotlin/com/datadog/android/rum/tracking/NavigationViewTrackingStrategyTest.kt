@@ -49,6 +49,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -469,6 +470,56 @@ internal class NavigationViewTrackingStrategyTest {
         // Then
         verifyNoInteractions(rumMonitor.mockInstance)
     }
+
+    // region RUMS-5363 reproduction tests
+
+    @Test
+    fun `RUMS5363 M register listener only once W startTracking() called twice`() {
+        // Given - activity already started (startedActivity is set)
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+        testedStrategy.onActivityStarted(mockActivity)
+
+        // When - startTracking() is called a second time (simulating dynamic nav setup or re-entry)
+        testedStrategy.startTracking()
+
+        // Then - addOnDestinationChangedListener should have been called only ONCE total,
+        // not twice. This test FAILS on the current code because there is no idempotency guard
+        // and the listener is registered twice (once from onActivityStarted and once from
+        // the explicit startTracking() call).
+        verify(mockNavController, times(1)).addOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
+    fun `RUMS5363 M call startView only once W startTracking() called twice then navigation occurs`() {
+        // Given - activity started, which calls startTracking() once
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+        testedStrategy.onActivityStarted(mockActivity)
+
+        // When - startTracking() is called a second time, registering the listener twice on
+        // the NavController. NavController does not deduplicate listeners, so it will invoke
+        // onDestinationChanged twice per navigation event (once per registration).
+        testedStrategy.startTracking()
+
+        // Capture the number of times addOnDestinationChangedListener was called to understand
+        // how many times the listener is registered (this is the root cause check).
+        // With the bug present, the listener is registered twice, so NavController would call
+        // onDestinationChanged twice for a single navigation event. We simulate that here by
+        // calling onDestinationChanged the same number of times as listener registrations.
+        // The test asserts that startView should only be called ONCE regardless.
+        // This test FAILS on the current code: with two registrations, two onDestinationChanged
+        // calls result in startView being called twice.
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+
+        verify(rumMonitor.mockInstance, times(1)).startView(
+            mockNavDestination,
+            fakeDestinationName,
+            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+        )
+    }
+
+    // endregion
 
     // region Internal
 
