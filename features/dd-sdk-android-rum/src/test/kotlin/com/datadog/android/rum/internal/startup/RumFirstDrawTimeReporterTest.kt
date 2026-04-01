@@ -326,4 +326,77 @@ class RumFirstDrawTimeReporterTest {
             verifyNoMoreInteractions()
         }
     }
+
+    // region RUMS-5469: TTID not emitted when Activity finishes before first draw
+
+    /**
+     * Reproduces RUMS-5469: When [decorView.isAttachedToWindow] is false and the Activity calls
+     * finish() before its decorView ever attaches to the window, [onViewDetachedFromWindow] fires.
+     * The current implementation has an empty body for [onViewDetachedFromWindow], so the TTID
+     * callback is silently dropped and [RumFirstDrawTimeReporter.Callback.onFirstFrameDrawn] is
+     * never invoked.
+     *
+     * This test asserts the EXPECTED correct behaviour: when an Activity is destroyed before its
+     * first frame is drawn, [onFirstFrameDrawn] should still be invoked (e.g. with a sentinel
+     * value or the last recorded timestamp) so that upstream can close the TTID tracking
+     * gracefully. The test currently FAILS because [onViewDetachedFromWindow] is a no-op.
+     */
+    @Test
+    fun `M call onFirstFrameDrawn W activity finishes before decorView attaches to window`() {
+        // Given — decorView is not yet attached (Activity redirects before first vsync)
+        whenever(window.peekDecorView()) doReturn decorView
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        // Simulate Activity.finish() being called before the decorView ever attaches:
+        // capture the OnAttachStateChangeListener and fire onViewDetachedFromWindow.
+        argumentCaptor<View.OnAttachStateChangeListener> {
+            verify(decorView).addOnAttachStateChangeListener(capture())
+            // onViewDetachedFromWindow models the Activity being destroyed before attachment
+            firstValue.onViewDetachedFromWindow(decorView)
+        }
+
+        // Then — the callback MUST have been invoked so that TTID tracking is not silently lost.
+        // This assertion FAILS with the current empty-body onViewDetachedFromWindow.
+        verify(callback).onFirstFrameDrawn(any())
+    }
+
+    /**
+     * Reproduces RUMS-5469 (complementary path): verifies that when [onViewDetachedFromWindow]
+     * fires (Activity finishing before first draw), no [ViewTreeObserver.OnDrawListener] is
+     * registered on the [ViewTreeObserver]. The current empty body leaves a dangling
+     * [View.OnAttachStateChangeListener] and never cleans up state, meaning the reporter
+     * silently abandons TTID tracking without notifying the upstream callback.
+     *
+     * This test asserts CORRECT behaviour: after [onViewDetachedFromWindow] fires the reporter
+     * should have notified the callback (so [viewTreeObserver.addOnDrawListener] is irrelevant),
+     * and must NOT leave the [View.OnAttachStateChangeListener] lingering on the decorView.
+     * The test currently FAILS because [onViewDetachedFromWindow] is a no-op and never removes
+     * the listener from the decorView.
+     */
+    @Test
+    fun `M remove OnAttachStateChangeListener W activity finishes before decorView attaches`() {
+        // Given — decorView is not yet attached
+        whenever(window.peekDecorView()) doReturn decorView
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        argumentCaptor<View.OnAttachStateChangeListener> {
+            verify(decorView).addOnAttachStateChangeListener(capture())
+            // Simulate Activity.finish() firing before the decorView ever attaches
+            firstValue.onViewDetachedFromWindow(decorView)
+
+            // Then — the listener should have been removed from the decorView so it doesn't leak.
+            // This assertion FAILS with the current empty-body onViewDetachedFromWindow.
+            verify(decorView).removeOnAttachStateChangeListener(firstValue)
+        }
+    }
+
+    // endregion
 }
