@@ -9036,6 +9036,89 @@ internal class RumViewScopeTest {
     }
     // endregion
 
+    // region RUMS-5535: Global attributes missing when view stopped by StartView
+
+    @Test
+    fun `M lose global attributes W getCustomAttributes() after view stopped by StartView`(
+        @Forgery newKey: RumScopeKey
+    ) {
+        // Given: parent scope returns a known global attribute
+        val globalAttributeKey = "platform"
+        val globalAttributeValue = "bonehorse"
+        whenever(mockParentScope.getCustomAttributes())
+            .doReturn(mapOf(globalAttributeKey to globalAttributeValue))
+        testedScope = newRumViewScope(initialAttributes = emptyMap())
+        mockSessionReplayContext(testedScope)
+
+        // When: view is stopped implicitly by a StartView event (onStartView -> stopScope without sideEffect)
+        testedScope.handleEvent(
+            RumRawEvent.StartView(newKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then: global attribute is MISSING from the stopped scope's custom attributes
+        // This assertion FAILS before the fix (proving the bug) and PASSES after the fix.
+        val customAttributes = testedScope.getCustomAttributes()
+        assertThat(customAttributes).containsEntry(globalAttributeKey, globalAttributeValue)
+    }
+
+    @Test
+    fun `M retain global attributes W getCustomAttributes() after view stopped by StopView`() {
+        // Given: parent scope returns a known global attribute
+        val globalAttributeKey = "platform"
+        val globalAttributeValue = "bonehorse"
+        whenever(mockParentScope.getCustomAttributes())
+            .doReturn(mapOf(globalAttributeKey to globalAttributeValue))
+        testedScope = newRumViewScope(initialAttributes = emptyMap())
+        mockSessionReplayContext(testedScope)
+
+        // When: view is stopped explicitly via StopView (onStopView -> stopScope WITH sideEffect that sets memoizedParentAttributes)
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then: global attribute IS present in the stopped scope's custom attributes
+        // This assertion PASSES both before and after the fix (baseline/regression guard).
+        val customAttributes = testedScope.getCustomAttributes()
+        assertThat(customAttributes).containsEntry(globalAttributeKey, globalAttributeValue)
+    }
+
+    @Test
+    fun `M write ViewEvent without global attributes W handleEvent(StartView) stops active view`(
+        @Forgery newKey: RumScopeKey
+    ) {
+        // Given: parent scope returns a known global attribute
+        val globalAttributeKey = "platform"
+        val globalAttributeValue = "bonehorse"
+        whenever(mockParentScope.getCustomAttributes())
+            .doReturn(mapOf(globalAttributeKey to globalAttributeValue))
+        testedScope = newRumViewScope(initialAttributes = emptyMap())
+        mockSessionReplayContext(testedScope)
+
+        // When: view is stopped implicitly by a StartView navigation event
+        testedScope.handleEvent(
+            RumRawEvent.StartView(newKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then: the written ViewEvent is missing the global attribute in context.additionalProperties
+        // This assertion FAILS before the fix (proving the bug) and PASSES after the fix.
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.context?.additionalProperties)
+                .containsEntry(globalAttributeKey, globalAttributeValue)
+        }
+    }
+
+    // endregion
+
     // region Internal
     private fun withAttributesCheckingMergeWithViewAttributes(
         forge: Forge
