@@ -176,4 +176,20 @@ class ResourceIdTest {
         assertThat(areEqual).isFalse()
         assertThat(areHashCodeEqual).isFalse()
     }
+
+    @Test
+    fun `M return false W equals { null uuid does not match non-null uuid for same key - RUMS-5093 }`(
+        @StringForgery key: String,
+        @Forgery uuid: UUID
+    ) {
+        // Given - RUMS-5093: stop-event ResourceId has null UUID, start-event has UUID
+        val startEventId = ResourceId(key, uuid.toString())
+        val stopEventId = ResourceId(key, null)
+
+        // When
+        val areEqual = startEventId == stopEventId
+
+        // Then - null UUID must NOT be treated as wildcard: wrong scope would be closed
+        assertThat(areEqual).isFalse()
+    }
 }

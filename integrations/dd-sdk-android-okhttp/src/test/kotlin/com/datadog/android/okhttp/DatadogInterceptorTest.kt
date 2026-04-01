@@ -34,6 +34,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -61,6 +62,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -1062,6 +1064,64 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
         assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M use distinct ResourceIds W intercept() { two sequential GET requests to same URL - RUMS-5093 }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given - RUMS-5093: two GET requests to the same URL → same key for buildResourceId.
+        // The stop-event ResourceId uses generateUuid=false (null uuid).
+        // On unfixed code: stopR1.equals(startR2) uses key-only fallback → returns true → wrong scope closed.
+        fakeMethod = RumResourceMethod.GET
+        val sharedRequest = Request.Builder().url(fakeUrl).get().build()
+        val fakeResponse1 = Response.Builder()
+            .request(sharedRequest)
+            .protocol(Protocol.HTTP_2)
+            .code(statusCode)
+            .message("HTTP $statusCode")
+            .body(fakeResponseBody.toResponseBody(fakeMediaType))
+            .build()
+        val fakeResponse2 = Response.Builder()
+            .request(sharedRequest)
+            .protocol(Protocol.HTTP_2)
+            .code(statusCode)
+            .message("HTTP $statusCode")
+            .body(fakeResponseBody.toResponseBody(fakeMediaType))
+            .build()
+        val mockChain2 = mock<Interceptor.Chain>()
+        whenever(mockChain.request()) doReturn sharedRequest
+        whenever(mockChain.proceed(any())) doReturn fakeResponse1
+        whenever(mockChain2.request()) doReturn sharedRequest
+        whenever(mockChain2.proceed(any())) doReturn fakeResponse2
+
+        // When
+        testedInterceptor.intercept(mockChain)
+        testedInterceptor.intercept(mockChain2)
+
+        // Then - capture all startResource and stopResource calls
+        val startCaptor = argumentCaptor<ResourceId>()
+        val stopCaptor = argumentCaptor<ResourceId>()
+        verify(rumMonitor.mockInstance, times(2)).startResource(
+            startCaptor.capture(),
+            any(),
+            any(),
+            any()
+        )
+        verify(rumMonitor.mockInstance, times(2)).stopResource(
+            stopCaptor.capture(),
+            any(),
+            anyOrNull(),
+            any(),
+            any()
+        )
+
+        // The stop ResourceId for R1 must NOT equal the start ResourceId for R2.
+        // On unfixed code: stopR1.uuid=null, startR2.uuid=non-null → key-only fallback returns true
+        // → wrong RUM scope is closed, causing incorrect timing and broken APM context.
+        val stopR1 = stopCaptor.firstValue
+        val startR2 = startCaptor.secondValue
+        assertThat(stopR1).isNotEqualTo(startR2)
     }
 
     // endregion
