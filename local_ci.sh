@@ -89,6 +89,7 @@ if [[ $CLEANUP == 1 ]]; then
 
   echo "---- Clean repository"
   ./gradlew clean
+  ./gradlew --stop
 fi
 
 if [[ $ANALYSIS == 1 ]]; then
