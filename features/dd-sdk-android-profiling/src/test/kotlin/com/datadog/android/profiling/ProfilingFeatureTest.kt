@@ -10,6 +10,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
@@ -21,6 +23,7 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
+import com.datadog.android.profiling.internal.ProfilingWriter
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -42,6 +45,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -54,7 +58,7 @@ import java.util.concurrent.ScheduledExecutorService
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class ProfilingFeatureTest {
+internal class ProfilingFeatureTest {
 
     private lateinit var testedFeature: ProfilingFeature
 
@@ -80,6 +84,12 @@ class ProfilingFeatureTest {
     private lateinit var mockProfiler: Profiler
 
     @Mock
+    private lateinit var mockProfilingFeatureScope: FeatureScope
+
+    @Mock
+    private lateinit var mockDataWriter: ProfilingWriter
+
+    @Mock
     private lateinit var mockSharedPreferences: SharedPreferences
 
     @Mock
@@ -97,8 +107,20 @@ class ProfilingFeatureTest {
     @Forgery
     private lateinit var fakeTTID: ProfilerEvent.TTID
 
+    @Forgery
+    private lateinit var fakeRumLongTaskEvent: ProfilerEvent.RumLongTaskEvent
+
+    @Forgery
+    private lateinit var fakeRumAnrEvent: ProfilerEvent.RumAnrEvent
+
     @StringForgery
     private lateinit var fakeInstanceName: String
+
+    private val fakeAllSampledConfiguration = ProfilingConfiguration(
+        customEndpointUrl = null,
+        applicationLaunchSampleRate = 100f,
+        continuousSampleRate = 100f
+    )
 
     @BeforeEach
     fun `set up`() {
@@ -218,15 +240,7 @@ class ProfilingFeatureTest {
     @Test
     fun `M not stop Profiling W receive TTID event {continuous enabled, profiler running}`() {
         // Given — continuous sample rate = 100% so it is always sampled in
-        testedFeature = ProfilingFeature(
-            mockSdkCore,
-            ProfilingConfiguration(
-                customEndpointUrl = null,
-                applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 100f
-            ),
-            mockProfiler
-        )
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
         testedFeature.onInitialize(mockContext)
 
@@ -240,15 +254,7 @@ class ProfilingFeatureTest {
     @Test
     fun `M start continuous cycle W profiler result received {TTID session unsampled}`() {
         // Given
-        testedFeature = ProfilingFeature(
-            mockSdkCore,
-            ProfilingConfiguration(
-                customEndpointUrl = null,
-                applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 100f
-            ),
-            mockProfiler
-        )
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
@@ -294,15 +300,7 @@ class ProfilingFeatureTest {
     @Test
     fun `M start continuous cycle W profiler failure received {APPLICATION_LAUNCH tag}`() {
         // Given
-        testedFeature = ProfilingFeature(
-            mockSdkCore,
-            ProfilingConfiguration(
-                customEndpointUrl = null,
-                applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 100f
-            ),
-            mockProfiler
-        )
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
@@ -336,15 +334,7 @@ class ProfilingFeatureTest {
     @Test
     fun `M not start continuous cycle W profiler failure received {CONTINUOUS tag}`() {
         // Given
-        testedFeature = ProfilingFeature(
-            mockSdkCore,
-            ProfilingConfiguration(
-                customEndpointUrl = null,
-                applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 100f
-            ),
-            mockProfiler
-        )
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
@@ -363,6 +353,110 @@ class ProfilingFeatureTest {
             additionalAttributes = any(),
             sdkInstanceNames = any(),
             durationMs = any()
+        )
+    }
+
+    @Test
+    fun `M skip writing W continuous profiling result received {no RUM events}`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+        )
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @Test
+    fun `M write event W continuous profiling result received {RUM long task events present}`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        // Open the continuous accumulation window
+        testedFeature.onReceive(RumSessionRenewedEvent(fakeSessionId, sessionSampled = true))
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+        // Run the cooldown runnable to open the active window (sets isActive = true)
+        val cooldownRunnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(cooldownRunnableCaptor.capture(), any(), any())
+        cooldownRunnableCaptor.firstValue.run()
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+        )
+
+        // Then
+        verify(mockDataWriter).write(
+            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)),
+            longTasks = eq(listOf(fakeRumLongTaskEvent)),
+            anrEvents = eq(emptyList())
+        )
+    }
+
+    @Test
+    fun `M write event W continuous profiling result received {RUM ANR events present}`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        // Open the continuous accumulation window
+        testedFeature.onReceive(RumSessionRenewedEvent(fakeSessionId, sessionSampled = true))
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+        // Run the cooldown runnable to open the active window (sets isActive = true)
+        val cooldownRunnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(cooldownRunnableCaptor.capture(), any(), any())
+        cooldownRunnableCaptor.firstValue.run()
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+        )
+
+        // Then
+        verify(mockDataWriter).write(
+            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)),
+            longTasks = eq(emptyList()),
+            anrEvents = eq(listOf(fakeRumAnrEvent))
         )
     }
 
