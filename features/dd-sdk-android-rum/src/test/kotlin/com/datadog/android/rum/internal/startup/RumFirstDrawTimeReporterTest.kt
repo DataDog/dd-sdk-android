@@ -30,12 +30,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -258,7 +258,7 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M NOT call onFirstFrameDrawn W subscribeToFirstFrameDrawn { decorView detaches before any draw — no fallback exists }`() {
+    fun `M NOT call onFirstFrameDrawn W subscribeToFirstFrameDrawn { decorView detaches before any draw }`() {
         // Given - reproduces RUMS-5469: Activity registered for TTID finish()es before any Choreographer
         // frame fires (common on API 34 emulators). The OnAttachStateChangeListener.onViewDetachedFromWindow
         // is a no-op, so the callback is silently dropped and TTID is never emitted.

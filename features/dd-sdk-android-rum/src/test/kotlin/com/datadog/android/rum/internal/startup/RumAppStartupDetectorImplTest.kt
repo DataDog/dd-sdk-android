@@ -337,7 +337,7 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     @Test
-    fun `M NOT detect startup for activityB W RumAppStartupDetector {interstitial activityA still alive when activityB is created}`(
+    fun `M NOT detect startup for activityB W RumAppStartupDetector {interstitial A alive at B creation}`(
         forge: Forge,
         @BoolForgery hasSavedInstanceStateBundle: Boolean,
         @BoolForgery hasSavedInstanceStateBundle2: Boolean
