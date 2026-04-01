@@ -24,7 +24,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Span
@@ -57,13 +56,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigInteger
 
-/**
- * Reproduces RUMS-3855: TracingInterceptor.handleW3CNotSampledHeaders() uses
- * span.context().toSpanId() which returns a decimal BigInteger string via DDSpanContext.
- * The W3C traceparent spec requires the parent-id to be exactly 16 lowercase hex characters.
- * When the decimal span ID is 17-19 chars, padStart(16, '0') is a no-op, producing a malformed
- * traceparent header that backends reject.
- */
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -128,14 +120,14 @@ internal class TracingInterceptorTraceparentTest {
 
         // Simulate the real DDSpanContext.toSpanId() behavior:
         // Long.MAX_VALUE = 9223372036854775807 in decimal (19 chars) vs 7fffffffffffffff in hex (16 chars).
-        // The real DDSpanContext.toSpanId() returns spanId.toString() — a decimal BigInteger string.
+        // The real DDSpanContext.toSpanId() returns spanId.toString() - a decimal BigInteger string.
         // This is the root of the bug: decimal strings >16 chars are not truncated by padStart(16).
-        val largeDecimalSpanId = Long.MAX_VALUE.toString() // "9223372036854775807" — 19 decimal chars
+        val largeDecimalSpanId = Long.MAX_VALUE.toString() // "9223372036854775807" - 19 decimal chars
         whenever(mockSpanContext.toSpanId()) doReturn largeDecimalSpanId
         whenever(mockSpanContext.traceId).thenReturn(fakeTraceId)
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId.toString()
 
-        // Non-sampled: the sampler returns false → calls handleW3CNotSampledHeaders
+        // Non-sampled: the sampler returns false, calls handleW3CNotSampledHeaders
         whenever(mockTraceSampler.sample(mockSpan)) doReturn false
 
         val host = forge.aStringMatching(HOSTNAME_PATTERN)
@@ -179,7 +171,7 @@ internal class TracingInterceptorTraceparentTest {
      * TracingInterceptor.handleW3CNotSampledHeaders() uses span.context().toSpanId() to populate
      * the parent-id field of the W3C traceparent header.
      *
-     * DDSpanContext.toSpanId() returns spanId.toString() — a decimal BigInteger string.
+     * DDSpanContext.toSpanId() returns spanId.toString() - a decimal BigInteger string.
      * For a 63-bit span ID like Long.MAX_VALUE:
      *   - Decimal: "9223372036854775807" (19 characters)
      *   - Hex:     "7fffffffffffffff"    (16 characters, as required by W3C spec)
@@ -229,7 +221,7 @@ internal class TracingInterceptorTraceparentTest {
                         "as required by the W3C traceparent spec, but was: '$parentId' " +
                         "(length=${parentId.length}). " +
                         "This indicates DDSpanContext.toSpanId() returned a decimal string instead " +
-                        "of hex — RUMS-3855."
+                        "of hex - RUMS-3855."
                 )
                 .matches("[a-f0-9]{16}")
 
