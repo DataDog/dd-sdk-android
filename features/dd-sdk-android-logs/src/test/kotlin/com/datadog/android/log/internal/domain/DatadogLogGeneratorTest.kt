@@ -1195,10 +1195,7 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
-    fun `RUMS-4600 M inject trace ids W span started without activateSpan and bundleWithTraces true`(
-        @StringForgery(StringForgeryType.HEXADECIMAL) fakeStartedSpanId: String,
-        @StringForgery(StringForgeryType.HEXADECIMAL) fakeStartedTraceId: String
-    ) {
+    fun `RUMS-4600 M inject trace ids W span started without activateSpan and bundleWithTraces true`() {
         // GIVEN - customer calls tracer.buildSpan("op").start() without tracer.activateSpan(span).
         // Without activateSpan(), afterScopeActivated() is never called, so addActiveTraceToContext()
         // is never called. The tracing feature context has NO "context@thread" key for ANY thread.
