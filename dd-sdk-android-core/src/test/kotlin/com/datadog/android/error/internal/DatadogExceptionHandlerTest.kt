@@ -385,7 +385,7 @@ internal class DatadogExceptionHandlerTest {
     }
 
     @Test
-    fun `M produce tab-prefixed frame lines for non-crashed threads W caught exception { matches standard Java printStackTrace format }`() {
+    fun `M produce tab-prefixed frame lines for non-crashed threads W caught exception`() {
         // Given
         val currentThread = Thread.currentThread()
 
