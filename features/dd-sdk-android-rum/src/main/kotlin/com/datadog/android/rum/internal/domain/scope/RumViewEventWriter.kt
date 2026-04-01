@@ -29,7 +29,6 @@ internal data class MappedViewEvent(
 )
 
 internal interface RumViewEventWriter {
-    // Should be called from RUM processing thread only
     fun writeViewEvent(
         viewEvent: ViewEvent,
         datadogContext: DatadogContext,
