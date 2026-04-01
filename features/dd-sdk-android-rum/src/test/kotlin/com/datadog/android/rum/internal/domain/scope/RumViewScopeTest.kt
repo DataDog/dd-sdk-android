@@ -8424,6 +8424,117 @@ internal class RumViewScopeTest {
         assertThat(newScope.stopped).isEqualTo(false)
     }
 
+    // region RUMS-5535 Reproduction: global attributes lost after session renewal
+
+    @Test
+    fun `M include global attributes in renewed scope W renew() + old scope stopped via StartView()`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        // Simulate global attributes set via GlobalRumMonitor.addAttribute()
+        val globalAttributes = mapOf(
+            "platform" to "bonehorse",
+            "department" to "test-team"
+        )
+        whenever(mockParentScope.getCustomAttributes()) doReturn globalAttributes
+
+        // Renew the view scope (as RumViewManagerScope.renewViewScopes() would do during session renewal)
+        val renewedScope = testedScope.renew(fakeEventTime)
+
+        // Stop the old scope via StartView — simulating next navigation.
+        // This path does NOT set memoizedParentAttributes (only onStopView does).
+        testedScope.handleEvent(
+            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        val customAttributes = renewedScope.getCustomAttributes()
+
+        // Then
+        // The renewed scope should contain global attributes from its parent chain.
+        // This assertion FAILS because memoizedParentAttributes is emptyMap() after the
+        // onStartView stop path — global attributes are silently dropped.
+        assertThat(customAttributes).containsEntry("platform", "bonehorse")
+        assertThat(customAttributes).containsEntry("department", "test-team")
+    }
+
+    @Test
+    fun `M include global attributes in renewed scope W renew() + old scope stopped via StopSession()`() {
+        // Given
+        // Simulate global attributes set via GlobalRumMonitor.addAttribute()
+        val globalAttributes = mapOf(
+            "platform" to "bonehorse",
+            "department" to "test-team"
+        )
+        whenever(mockParentScope.getCustomAttributes()) doReturn globalAttributes
+
+        // Renew the view scope (as RumViewManagerScope.renewViewScopes() would do during session renewal)
+        val renewedScope = testedScope.renew(fakeEventTime)
+
+        // Stop the old scope via StopSession — simulating session end.
+        // This path does NOT set memoizedParentAttributes (only onStopView does).
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        val customAttributes = renewedScope.getCustomAttributes()
+
+        // Then
+        // The renewed scope should contain global attributes from its parent chain.
+        // This assertion FAILS because memoizedParentAttributes is emptyMap() after the
+        // onStopSession stop path — global attributes are silently dropped.
+        assertThat(customAttributes).containsEntry("platform", "bonehorse")
+        assertThat(customAttributes).containsEntry("department", "test-team")
+    }
+
+    @Test
+    fun `M write global attributes in ViewEvent W renew() + old scope stopped via StartView()`(
+        @Forgery fakeOtherKey: RumScopeKey
+    ) {
+        // Given
+        // Simulate global attributes set via GlobalRumMonitor.addAttribute()
+        val globalAttributes = mapOf(
+            "platform" to "bonehorse",
+            "department" to "test-team"
+        )
+        whenever(mockParentScope.getCustomAttributes()) doReturn globalAttributes
+
+        // Renew the view scope (as RumViewManagerScope.renewViewScopes() would do during session renewal)
+        val renewedScope = testedScope.renew(fakeEventTime)
+        mockSessionReplayContext(renewedScope)
+
+        // Stop the old scope via StartView — simulating next navigation.
+        testedScope.handleEvent(
+            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When — trigger a view update on the renewed scope
+        renewedScope.sendViewUpdate(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        // Capture the ViewEvent written and verify it contains global attributes.
+        // This assertion FAILS because memoizedParentAttributes is emptyMap() after the
+        // onStartView stop path — the ViewEvent's additionalProperties will be missing global attrs.
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, org.mockito.kotlin.atLeastOnce())
+            .write(eq(mockEventBatchWriter), captor.capture(), eq(EventType.DEFAULT))
+        val writtenEvent = captor.allValues.filterIsInstance<ViewEvent>().last()
+        assertThat(writtenEvent.context?.additionalProperties).containsEntry("platform", "bonehorse")
+        assertThat(writtenEvent.context?.additionalProperties).containsEntry("department", "test-team")
+    }
+
+    // endregion (RUMS-5535)
+
     // endregion
 
     // region Feature Operations
