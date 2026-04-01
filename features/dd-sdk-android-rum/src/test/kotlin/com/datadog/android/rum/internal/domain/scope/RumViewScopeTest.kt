@@ -8424,6 +8424,103 @@ internal class RumViewScopeTest {
         assertThat(newScope.stopped).isEqualTo(false)
     }
 
+    // region Regression - RUMS-5535: global attributes lost after session renewal via StartView/StopSession
+
+    @Test
+    fun `M preserve global attributes in renewed scope W old scope stopped via StartView {RUMS-5535}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributeKey = forge.anAlphabeticalString()
+        val fakeGlobalAttributeValue = forge.anAlphabeticalString()
+        val globalAttributes = mapOf<String, Any?>(fakeGlobalAttributeKey to fakeGlobalAttributeValue)
+        whenever(mockParentScope.getCustomAttributes()) doReturn globalAttributes
+
+        // Simulate session renewal: renewedScope has testedScope (old) as parent
+        val renewedScope = testedScope.renew(Time())
+
+        // Stop old scope via StartView (the buggy path — does NOT set memoizedParentAttributes pre-fix)
+        val startViewEvent = RumRawEvent.StartView(
+            key = forge.getForgery(),
+            attributes = emptyMap()
+        )
+        testedScope.handleEvent(startViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When: renewed scope queries custom attributes — old scope is stopped, returns memoizedParentAttributes
+        val customAttributes = renewedScope.getCustomAttributes()
+
+        // Then: global attributes must still be present
+        // Pre-fix: memoizedParentAttributes = emptyMap() → global attributes are lost
+        // Post-fix: memoizedParentAttributes is correctly set at stop time → global attributes preserved
+        assertThat(customAttributes).containsEntry(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+    }
+
+    @Test
+    fun `M preserve global attributes in renewed scope W old scope stopped via StopSession {RUMS-5535}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributeKey = forge.anAlphabeticalString()
+        val fakeGlobalAttributeValue = forge.anAlphabeticalString()
+        val globalAttributes = mapOf<String, Any?>(fakeGlobalAttributeKey to fakeGlobalAttributeValue)
+        whenever(mockParentScope.getCustomAttributes()) doReturn globalAttributes
+
+        // Simulate session renewal: renewedScope has testedScope (old) as parent
+        val renewedScope = testedScope.renew(Time())
+
+        // Stop old scope via StopSession (the buggy path — does NOT set memoizedParentAttributes pre-fix)
+        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When: renewed scope queries custom attributes — old scope is stopped, returns memoizedParentAttributes
+        val customAttributes = renewedScope.getCustomAttributes()
+
+        // Then: global attributes must still be present
+        // Pre-fix: memoizedParentAttributes = emptyMap() → global attributes are lost
+        // Post-fix: memoizedParentAttributes is correctly set at stop time → global attributes preserved
+        assertThat(customAttributes).containsEntry(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+    }
+
+    @Test
+    fun `M include global attributes in ViewEvent written by renewed scope after StartView stop {RUMS-5535}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributeKey = forge.anAlphabeticalString()
+        val fakeGlobalAttributeValue = forge.anAlphabeticalString()
+        val globalAttributes = mapOf<String, Any?>(fakeGlobalAttributeKey to fakeGlobalAttributeValue)
+        whenever(mockParentScope.getCustomAttributes()) doReturn globalAttributes
+
+        // Simulate session renewal: renewedScope has testedScope (old) as parent
+        val renewedScope = testedScope.renew(Time())
+        mockSessionReplayContext(renewedScope)
+
+        // Stop old scope via StartView (the buggy path)
+        val startViewEvent = RumRawEvent.StartView(
+            key = forge.getForgery(),
+            attributes = emptyMap()
+        )
+        testedScope.handleEvent(startViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Trigger a view update on the renewed scope via StopView, which writes a ViewEvent
+        val stopViewEvent = RumRawEvent.StopView(
+            key = renewedScope.key,
+            attributes = emptyMap()
+        )
+        renewedScope.handleEvent(stopViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then: the ViewEvent written by the renewed scope must contain the global attributes
+        // Pre-fix: context.additionalProperties is missing the global attributes
+        // Post-fix: context.additionalProperties contains all global attributes
+        val viewEventCaptor = argumentCaptor<ViewEvent>()
+        verify(mockWriter, org.mockito.kotlin.atLeastOnce())
+            .write(eq(mockEventBatchWriter), viewEventCaptor.capture(), eq(EventType.DEFAULT))
+        val renewedViewEvent = viewEventCaptor.allValues.last()
+        assertThat(renewedViewEvent.context?.additionalProperties)
+            .containsEntry(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+    }
+
+    // endregion
+
     // endregion
 
     // region Feature Operations
