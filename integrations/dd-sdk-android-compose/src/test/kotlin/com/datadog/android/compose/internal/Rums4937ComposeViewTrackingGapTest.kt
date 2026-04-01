@@ -6,8 +6,11 @@
 
 package com.datadog.android.compose.internal
 
+import android.app.Activity
+import android.content.Context
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -23,7 +26,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -79,7 +82,8 @@ internal class Rums4937ComposeViewTrackingGapTest {
         // was never called, so no ComposeNavigationObserver is registered as a listener.
         // We simulate the customer expecting views to be tracked by just holding a NavController.
         val destination = forge.aNavDestination()
-        val expectedRoute = destination.route!! // capture before verify to avoid Mockito interception
+        // capture before verify to avoid Mockito interception of mock property access
+        val expectedRoute = destination.route!!
         whenever(mockDestinationPredicate.accept(any())) doReturn true
 
         // No observer is created or registered — this is the customer's missing wiring.
@@ -114,7 +118,8 @@ internal class Rums4937ComposeViewTrackingGapTest {
     ) {
         // Given — observer is created directly (as NavigationViewTrackingEffect would do)
         val destination = forge.aNavDestination()
-        val expectedRoute = destination.route!! // capture before verify to avoid Mockito interception
+        // capture before verify to avoid Mockito interception of mock property access
+        val expectedRoute = destination.route!!
         whenever(mockDestinationPredicate.accept(any())) doReturn true
 
         val observer = ComposeNavigationObserver(
@@ -190,8 +195,8 @@ internal class Rums4937ComposeViewTrackingGapTest {
     ) {
         // Given
         val strategy = ComposeActionTrackingStrategy()
-        val mockContext = org.mockito.kotlin.mock<android.content.Context>()
-        val mockSdkCore = org.mockito.kotlin.mock<com.datadog.android.api.SdkCore>()
+        val mockContext = mock<Context>()
+        val mockSdkCore = mock<SdkCore>()
 
         // When — customer calls enableComposeActionTracking() which calls strategy.register()
         strategy.register(mockSdkCore, mockContext)
@@ -222,8 +227,8 @@ internal class Rums4937ComposeViewTrackingGapTest {
         forge: Forge
     ) {
         // Given — customer's ActivityViewTrackingStrategy rejects MainActivity
-        val rejectsMainActivity = org.mockito.kotlin.mock<ComponentPredicate<android.app.Activity>>()
-        whenever(rejectsMainActivity.accept(any())) doReturn false  // MainActivity always rejected
+        val rejectsMainActivity = mock<ComponentPredicate<Activity>>()
+        whenever(rejectsMainActivity.accept(any())) doReturn false // MainActivity always rejected
 
         // No NavigationViewTrackingEffect is called — no ComposeNavigationObserver is created
         // No listener is attached to the NavController
@@ -250,7 +255,7 @@ internal class Rums4937ComposeViewTrackingGapTest {
         routeValue: String? = anAlphabeticalString()
     ): NavDestination {
         return anElementFrom(
-            org.mockito.kotlin.mock<NavDestination>().apply {
+            mock<NavDestination>().apply {
                 whenever(route) doReturn routeValue
             }
         )
