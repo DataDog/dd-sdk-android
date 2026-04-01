@@ -49,6 +49,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -437,6 +438,40 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onActivityPaused(mockActivity)
 
         verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `testStartTrackingTwiceRegistersListenerOnlyOnce`() {
+        // Given: onActivityStarted calls startTracking() once automatically
+        testedStrategy.onActivityStarted(mockActivity)
+
+        // When: developer calls startTracking() manually a second time (dynamic nav setup)
+        testedStrategy.startTracking()
+
+        // Then: the listener should only be registered once — fails on current code because
+        // there is no idempotency guard and addOnDestinationChangedListener is called twice
+        verify(mockNavController, times(1)).addOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
+    fun `testOnDestinationChangedCalledOnceEvenIfStartedTwice`() {
+        // Given: startTracking() called twice (simulating double registration)
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
+        testedStrategy.onActivityStarted(mockActivity)
+        testedStrategy.startTracking()
+
+        // When: NavController fires onDestinationChanged twice because the listener
+        // was registered twice (one call per registration)
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+
+        // Then: startView should only be called once for a single navigation event —
+        // fails on current code because the double registration causes two calls
+        verify(rumMonitor.mockInstance, times(1)).startView(
+            eq(mockNavDestination),
+            any(),
+            any()
+        )
     }
 
     // endregion
