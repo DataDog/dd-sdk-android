@@ -1102,6 +1102,142 @@ internal class DatadogLogGeneratorTest {
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
+    // region RUMS-4600 reproduction: Traces and Logs are not connected on Android App
+
+    @Test
+    fun `RUMS-4600 M inject trace ids W bundleWithTraces true and span active on different thread`(
+        @StringForgery fakeActivationThreadName: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeActiveSpanId: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeActiveTraceId: String
+    ) {
+        // GIVEN - span is active on a different thread (e.g. Dispatchers.IO coroutine thread)
+        // but the customer logs from the current thread (e.g. main thread).
+        // The customer configured bundleWithTraces=true and expects trace IDs to appear in logs.
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.TRACING_FEATURE_NAME,
+                    mapOf(
+                        // Trace context stored under the ACTIVATION thread name, not the logging thread name
+                        "context@$fakeActivationThreadName" to mapOf(
+                            "span_id" to fakeActiveSpanId,
+                            "trace_id" to fakeActiveTraceId
+                        )
+                    )
+                )
+            }
+        )
+
+        // WHEN - log is called from fakeThreadName (different from fakeActivationThreadName)
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName, // logging thread differs from activation thread
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
+            bundleWithTraces = true
+        )
+
+        // THEN - customer expects trace IDs to be injected since a span IS active in the SDK.
+        // This test FAILS because resolveAttributes() only checks "context@$fakeThreadName"
+        // (the logging thread) and misses "context@$fakeActivationThreadName" (the span thread).
+        Assertions.assertThat(log!!.additionalProperties).containsAllEntriesOf(
+            mapOf(
+                LogAttributes.DD_TRACE_ID to fakeActiveTraceId,
+                LogAttributes.DD_SPAN_ID to fakeActiveSpanId
+            )
+        )
+    }
+
+    @Test
+    fun `RUMS-4600 M inject trace ids W bundleWithTraces true and scope closed before log call`() {
+        // GIVEN - scope was closed before the log was written.
+        // After scope.close(), removeActiveTraceFromContext() removes the "context@thread" key.
+        // The tracing feature context is now empty (no active span key present).
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.TRACING_FEATURE_NAME,
+                    emptyMap<String, Any?>() // simulates post-scope-close state
+                )
+            }
+        )
+
+        // WHEN - customer calls logger.i() after scope.close(), with bundleWithTraces=true
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
+            bundleWithTraces = true
+        )
+
+        // THEN - customer expects trace IDs to be present because they believe the span is still
+        // "active" when they call the logger immediately after scope close. In practice the SDK
+        // silently drops trace context without any warning or error.
+        // This test FAILS because the implementation finds no "context@$fakeThreadName" key
+        // and produces a log with NO dd.trace_id or dd.span_id, violating the customer's expectation.
+        Assertions.assertThat(log!!.additionalProperties)
+            .containsKey(LogAttributes.DD_TRACE_ID)
+        Assertions.assertThat(log.additionalProperties)
+            .containsKey(LogAttributes.DD_SPAN_ID)
+    }
+
+    @Test
+    fun `RUMS-4600 M inject trace ids W span started without activateSpan and bundleWithTraces true`(
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeStartedSpanId: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeStartedTraceId: String
+    ) {
+        // GIVEN - customer calls tracer.buildSpan("op").start() without tracer.activateSpan(span).
+        // Without activateSpan(), afterScopeActivated() is never called, so addActiveTraceToContext()
+        // is never called. The tracing feature context has NO "context@thread" key for ANY thread.
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.TRACING_FEATURE_NAME,
+                    emptyMap<String, Any?>() // no scope was activated via activateSpan()
+                )
+            }
+        )
+
+        // WHEN - customer logs with bundleWithTraces=true, expecting that a started span provides context
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
+            bundleWithTraces = true
+        )
+
+        // THEN - customer expects trace IDs to be present since they started a span.
+        // This test FAILS because the SDK only injects trace context when a scope is explicitly
+        // activated via tracer.activateSpan(span). Without activation, the thread-local context
+        // key is never written and dd.trace_id is silently missing from logs.
+        Assertions.assertThat(log!!.additionalProperties)
+            .containsKey(LogAttributes.DD_TRACE_ID)
+        Assertions.assertThat(log.additionalProperties)
+            .containsKey(LogAttributes.DD_SPAN_ID)
+    }
+
+    // endregion
+
     @Test
     fun `M use status CRITICAL W creating the Log { level ASSERT }`() {
         // WHEN
