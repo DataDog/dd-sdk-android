@@ -81,6 +81,33 @@ internal class DatadogEventListenerFactoryTest {
         assertThat(result).isSameAs(DatadogEventListener.Factory.NO_OP_EVENT_LISTENER)
     }
 
+    // region RUMS-5184 regression tests
+
+    @Test
+    fun `RUMS-5184 M produce different ResourceIds W buildResourceId called twice without UUID tag`() {
+        // Given
+        // A Request with no UUID tag — simulating what DatadogInterceptor and
+        // DatadogEventListener.Factory each see independently.
+        val request = Request.Builder()
+            .get().url("https://$fakeDomain/api/resource")
+            .build()
+
+        // When
+        // Interceptor calls buildResourceId(generateUuid=true) → ResourceId(key, uuid_A)
+        val interceptorResourceId = request.buildResourceId(generateUuid = true)
+        // Factory.create() calls buildResourceId(generateUuid=true) → ResourceId(key, uuid_B)
+        val factoryResourceId = request.buildResourceId(generateUuid = true)
+
+        // Then
+        // The two IDs share the same key but have different UUIDs because buildResourceId()
+        // never stores the generated UUID back on the request tag. Correct behaviour would be
+        // that the two IDs are equal so that timing events are matched to the right scope.
+        // This assertion documents the CORRECT expected behaviour; it FAILS on the buggy code.
+        assertThat(interceptorResourceId).isEqualTo(factoryResourceId)
+    }
+
+    // endregion
+
     companion object {
         val datadogCore = DatadogSingletonTestConfiguration()
 

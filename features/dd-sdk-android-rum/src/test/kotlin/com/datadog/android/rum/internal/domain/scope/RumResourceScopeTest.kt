@@ -2623,6 +2623,84 @@ internal class RumResourceScopeTest {
         assertThat(resultTiming).isEqualTo(null)
     }
 
+    // region RUMS-5184 regression tests
+
+    @Test
+    fun `RUMS-5184 M include timing in Resource W handleEvent(WaitForResourceTiming+AddResourceTiming+StopResource) { same key string but different UUID }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
+        forge: Forge
+    ) {
+        // Given
+        // The interceptor generates uuid_A for the ResourceId it stores in the scope.
+        // The event listener independently generates uuid_B for the same key string.
+        // This mirrors the bug: buildResourceId(generateUuid=true) is called independently
+        // by both components on the same Request, producing two distinct UUIDs.
+        val keyString = forge.aStringMatching("https://[a-z]+\\.[a-z]{3}/[a-z0-9]+")
+        val uuidA = java.util.UUID.randomUUID().toString()
+        val uuidB = java.util.UUID.randomUUID().toString()
+
+        val interceptorResourceId = ResourceId(keyString, uuidA)
+        val listenerResourceId = ResourceId(keyString, uuidB)
+
+        // Build a scope with interceptorResourceId (uuid_A) — this is what the interceptor does.
+        val scopeUnderTest = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = interceptorResourceId,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+
+        // When
+        // The event listener sends WaitForResourceTiming with listenerResourceId (uuid_B).
+        // RumResourceScope checks `key == event.key`:
+        //   ResourceId(keyString, uuid_A) == ResourceId(keyString, uuid_B)
+        // Because both UUIDs are non-null and different, equals() returns false →
+        // waitForTiming stays false.
+        mockEvent = RumRawEvent.WaitForResourceTiming(listenerResourceId)
+        val resultWait = scopeUnderTest.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // The event listener sends AddResourceTiming with listenerResourceId (uuid_B).
+        // The same guard `key != event.key` causes the timing to be silently discarded.
+        mockEvent = RumRawEvent.AddResourceTiming(listenerResourceId, timing)
+        val resultTiming = scopeUnderTest.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        Thread.sleep(50L)
+
+        // The interceptor sends StopResource with interceptorResourceId (uuid_A) — this matches.
+        // But waitForTiming=false and timing=null, so the resource is sent without any timing data.
+        mockEvent = RumRawEvent.StopResource(interceptorResourceId, statusCode, size, kind, attributes)
+        val resultStop = scopeUnderTest.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        // The CORRECT behaviour is that the ResourceEvent contains the timing breakdown that
+        // the event listener reported. This assertion will FAIL on the buggy code because the
+        // scope silently discarded the timing due to the UUID mismatch.
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasTiming(timing)
+        }
+        assertThat(resultWait).isSameAs(scopeUnderTest)
+        assertThat(resultTiming).isSameAs(scopeUnderTest)
+        assertThat(resultStop).isNull()
+    }
+
+    // endregion
+
     @Test
     fun `M use explicit timings W handleEvent { AddResourceTiming + StopResource }`(
         @Forgery kind: RumResourceKind,
