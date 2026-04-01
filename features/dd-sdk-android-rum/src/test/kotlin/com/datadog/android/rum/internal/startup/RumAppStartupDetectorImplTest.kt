@@ -337,6 +337,51 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     @Test
+    fun `M NOT detect startup for activityB W RumAppStartupDetector {interstitial activityA still alive when activityB is created}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean
+    ) {
+        // Given - reproduces RUMS-5469: interstitial/splash Activity A starts Activity B while A is still alive.
+        // numberOfActivities == 2 when B is created, so the guard `numberOfActivities == 1` prevents
+        // startup detection for B. TTID is never registered on B. This test PASSES (confirms the bug)
+        // and must FAIL once a proper fix re-triggers startup detection after A finishes.
+        val detector = createDetector()
+        currentTime += 3.seconds
+        val activityB = mock<Activity>()
+
+        // When - Activity A is created (numberOfActivities=1 → startup detected for A)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Activity B is created while A is still alive (numberOfActivities=2 → guard FAILS for B)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activityB,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        // Activity A finishes (splash/interstitial) — numberOfActivities drops back to 1 but no re-trigger
+        detector.onActivityDestroyed(activity)
+
+        // Then - listener is called ONLY ONCE (for A), never for B — this confirms the bug
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                initialTime = Time(0, 0),
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activity = activity.wrapWeak(),
+                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+            )
+        )
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
     fun `M detect WarmAfterActivityDestroyed W RumAppStartupDetector {2 activities created, destroyed and 3rd created}`(
         forge: Forge,
         @BoolForgery hasSavedInstanceStateBundle: Boolean,

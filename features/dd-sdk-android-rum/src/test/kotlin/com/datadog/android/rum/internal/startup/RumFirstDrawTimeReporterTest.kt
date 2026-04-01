@@ -30,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -254,6 +255,28 @@ class RumFirstDrawTimeReporterTest {
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
         }
+    }
+
+    @Test
+    fun `M NOT call onFirstFrameDrawn W subscribeToFirstFrameDrawn { decorView detaches before any draw — no fallback exists }`() {
+        // Given - reproduces RUMS-5469: Activity registered for TTID finish()es before any Choreographer
+        // frame fires (common on API 34 emulators). The OnAttachStateChangeListener.onViewDetachedFromWindow
+        // is a no-op, so the callback is silently dropped and TTID is never emitted.
+        // This test PASSES (confirms the bug) and must FAIL once a fallback is added.
+        whenever(window.peekDecorView()) doReturn decorView
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        // When - subscribe so that the OnAttachStateChangeListener is registered
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        // Capture the attach-state listener and fire only the detach branch (no draw ever happens)
+        argumentCaptor<View.OnAttachStateChangeListener> {
+            verify(decorView).addOnAttachStateChangeListener(capture())
+            firstValue.onViewDetachedFromWindow(decorView)
+        }
+
+        // Then - callback is never invoked because onViewDetachedFromWindow is a no-op
+        verifyNoInteractions(callback)
     }
 
     @Test
