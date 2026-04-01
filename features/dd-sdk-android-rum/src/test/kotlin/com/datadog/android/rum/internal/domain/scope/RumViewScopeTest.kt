@@ -8424,6 +8424,98 @@ internal class RumViewScopeTest {
         assertThat(newScope.stopped).isEqualTo(false)
     }
 
+    // region RUMS-5535 regression tests
+
+    @Test
+    fun `RUMS5535 M include global attributes in view update W view stopped via StartView then ErrorSent`(
+        @Forgery otherKey: RumScopeKey
+    ) {
+        // Given
+        val fakeGlobalAttributes = mapOf<String, Any?>("platform" to "bonehorse", "department" to "eng")
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeGlobalAttributes
+
+        testedScope = newRumViewScope()
+
+        // Stop the view implicitly via a StartView event (onStartView path — no sideEffect lambda,
+        // so memoizedParentAttributes stays emptyMap())
+        testedScope.handleEvent(
+            RumRawEvent.StartView(otherKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Simulate a pending error confirmation arriving after the view was stopped
+        testedScope.pendingErrorCount = 1
+        testedScope.handleEvent(
+            RumRawEvent.ErrorSent(testedScope.viewId),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then — the post-stop view update must contain the global attributes
+        argumentCaptor<ViewEvent> {
+            // Two writes: one from StartView stop, one from ErrorSent
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val errorSentViewUpdate = lastValue
+            assertThat(errorSentViewUpdate.context?.additionalProperties)
+                .overridingErrorMessage(
+                    "Expected post-stop view update to contain global attributes " +
+                        "$fakeGlobalAttributes but was ${errorSentViewUpdate.context?.additionalProperties}"
+                )
+                .containsAllEntriesOf(fakeGlobalAttributes)
+        }
+    }
+
+    @Test
+    fun `RUMS5535 M include global attributes in view update W renewed scope after session renewal`(
+        @Forgery otherKey: RumScopeKey
+    ) {
+        // Given
+        val fakeGlobalAttributes = mapOf<String, Any?>("platform" to "bonehorse", "department" to "eng")
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeGlobalAttributes
+
+        testedScope = newRumViewScope()
+
+        // Stop the original view implicitly via StartView (no sideEffect lambda → memoizedParentAttributes stays empty)
+        testedScope.handleEvent(
+            RumRawEvent.StartView(otherKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Renew the view scope as RumViewManagerScope does on session renewal.
+        // parentScope = testedScope (now stopped, memoizedParentAttributes = emptyMap)
+        val renewedScope = testedScope.renew(fakeEventTime)
+        mockSessionReplayContext(renewedScope)
+
+        // Simulate a pending error confirmation on the renewed scope
+        renewedScope.pendingErrorCount = 1
+        renewedScope.handleEvent(
+            RumRawEvent.ErrorSent(renewedScope.viewId),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then — the renewed scope's view update must contain the global attributes.
+        // Currently FAILS because renewedScope.getCustomAttributes() delegates to
+        // testedScope.getCustomAttributes() which is stopped with memoizedParentAttributes = emptyMap.
+        argumentCaptor<ViewEvent> {
+            // Two writes: one from StartView implicit stop, one from ErrorSent on renewed scope
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val renewedViewUpdate = lastValue
+            assertThat(renewedViewUpdate.context?.additionalProperties)
+                .overridingErrorMessage(
+                    "Expected renewed-scope view update to contain global attributes " +
+                        "$fakeGlobalAttributes but was ${renewedViewUpdate.context?.additionalProperties}"
+                )
+                .containsAllEntriesOf(fakeGlobalAttributes)
+        }
+    }
+
     // endregion
 
     // region Feature Operations
