@@ -70,6 +70,28 @@ internal class DatadogEventListenerFactoryTest {
     }
 
     @Test
+    fun `M produce matching ResourceId keys W create() { factory and interceptor use same request }`() {
+        // Reproduces RUMS-5184: DatadogEventListener.Factory.create() calls buildResourceId(generateUuid=true)
+        // and DatadogInterceptor.intercept() independently calls buildResourceId(generateUuid=true) on the
+        // same Request. Because no UUID tag is set on the request, each invocation generates a fresh
+        // UUID.randomUUID(), so the two ResourceId objects will never be equal, causing timing to be
+        // silently discarded in RumResourceScope.
+        //
+        // This test SHOULD pass when the bug is fixed (both keys share the same UUID).
+        // This test WILL FAIL against the buggy code because each call produces a different UUID.
+
+        // When
+        val listenerResult = testedFactory.create(mockCall)
+
+        // Simulate what DatadogInterceptor does: call buildResourceId(generateUuid=true) on the same request
+        val interceptorKey = fakeRequest.buildResourceId(generateUuid = true)
+
+        // Then: the listener's resource key must equal the interceptor's resource key
+        check(listenerResult is DatadogEventListener)
+        assertThat(listenerResult.key).isEqualTo(interceptorKey)
+    }
+
+    @Test
     fun `M create no-op event listener W create() { SDK instance is not ready }`(
         @StringForgery fakeSdkInstanceName: String
     ) {

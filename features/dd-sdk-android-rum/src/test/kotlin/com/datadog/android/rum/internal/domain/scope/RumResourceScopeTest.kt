@@ -1124,6 +1124,70 @@ internal class RumResourceScopeTest {
     }
 
     @Test
+    fun `M send Resource with timing W handleEvent(WaitForResourceTiming+AddResourceTiming+StopResource) { ResourceId same key different UUID }`(
+        // Reproduces RUMS-5184: DatadogEventListener.Factory.create() produces ResourceId(key, uuid_A)
+        // while DatadogInterceptor produces ResourceId(key, uuid_B). Because ResourceId.equals() requires
+        // uuid fields to match when both are non-null, the timing events are silently discarded by
+        // RumResourceScope even though the key strings are identical.
+        //
+        // This test SHOULD pass when the bug is fixed (scope accepts timing with same key-string, different UUID).
+        // This test WILL FAIL against the buggy code because ResourceId.equals() returns false when UUIDs differ,
+        // so waitForTiming stays false and timing is not applied, resulting in null dns/connect/ssl/firstByte/download.
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery timing: ResourceTiming,
+        forge: Forge
+    ) {
+        // Given
+        // The scope is created with uuid_A (simulating DatadogInterceptor's key)
+        val scopeKeyString = fakeKey.key
+        val uuidA = java.util.UUID.randomUUID().toString()
+        val uuidB = java.util.UUID.randomUUID().toString()
+        val scopeKey = ResourceId(scopeKeyString, uuidA)
+
+        // The event listener produces uuid_B for the same key string (simulating DatadogEventListener.Factory)
+        val listenerKey = ResourceId(scopeKeyString, uuidB)
+
+        val scopeWithMismatchedKey = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = scopeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+
+        // When – timing events arrive with listenerKey (uuid_B) while scope holds scopeKey (uuid_A)
+        mockEvent = RumRawEvent.WaitForResourceTiming(listenerKey)
+        scopeWithMismatchedKey.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        mockEvent = RumRawEvent.AddResourceTiming(listenerKey, timing)
+        scopeWithMismatchedKey.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(scopeKey, statusCode, size, kind, attributes)
+        scopeWithMismatchedKey.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then – the timing SHOULD have been applied (this assertion will FAIL on buggy code because
+        // ResourceId.equals() rejects listenerKey != scopeKey, leaving timing null)
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasTiming(timing)
+        }
+    }
+
+    @Test
     fun `M send Resource W handleEvent(AddResourceTiming+StopResource) {unrelated timing}`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
