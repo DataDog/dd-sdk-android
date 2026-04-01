@@ -384,6 +384,42 @@ internal class DatadogExceptionHandlerTest {
         verify(mockPreviousHandler).uncaughtException(crashedThread, fakeThrowable)
     }
 
+    @Test
+    fun `M produce tab-prefixed frame lines for non-crashed threads W caught exception { matches standard Java printStackTrace format }`() {
+        // Given
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        // Non-crashed thread stacks are built via Array<StackTraceElement>.loggableStackTrace() in ThreadExt.kt.
+        // The Datadog deobfuscation-api retrace tool requires the "\tat " prefix (standard Java format).
+        // This test will FAIL because the current implementation produces "at $it" (no leading tab),
+        // causing the backend to skip those frames and leave them obfuscated.
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
+
+            val logEvent = lastValue as JvmCrash.Logs
+            val nonCrashedThreads = logEvent.threads.filter { !it.crashed }
+            assertThat(nonCrashedThreads).isNotEmpty
+
+            nonCrashedThreads.forEach { threadDump ->
+                threadDump.stack.lines().forEach { line ->
+                    assertThat(line)
+                        .withFailMessage(
+                            "Non-crashed thread '${threadDump.name}' stack frame should start " +
+                                "with '\\tat ' to match standard Java printStackTrace format " +
+                                "required by the deobfuscation-api, but was: '$line'"
+                        )
+                        .startsWith("\tat ")
+                }
+            }
+        }
+    }
+
     // endregion
 
     @Test

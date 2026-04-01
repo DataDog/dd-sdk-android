@@ -46,4 +46,28 @@ internal class ThreadExtTest {
             assertThat(lines[i]).contains(frame.toString())
         }
     }
+
+    @Test
+    fun `M produce tab-prefixed frame lines W loggableStackTrace() { matches standard Java printStackTrace format }`() {
+        // Given
+        val stack = Thread.currentThread().stackTrace
+
+        // When
+        val result = stack.loggableStackTrace()
+
+        // Then
+        // The standard Java Throwable.printStackTrace() format requires "\tat ClassName.method(File:line)".
+        // The Datadog deobfuscation-api retrace tool parses only lines with the "\tat " prefix.
+        // This test will FAIL because the current implementation produces "at $it" (no leading tab).
+        val lines = result.lines()
+        lines.forEach { line ->
+            assertThat(line)
+                .withFailMessage(
+                    "Expected frame line to start with '\\tat ' (tab + 'at ') to match " +
+                        "standard Java printStackTrace format required by the deobfuscation-api, " +
+                        "but was: '$line'"
+                )
+                .startsWith("\tat ")
+        }
+    }
 }
