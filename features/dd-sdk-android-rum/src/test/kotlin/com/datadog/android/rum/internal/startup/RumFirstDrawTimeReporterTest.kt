@@ -35,6 +35,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -326,4 +327,80 @@ class RumFirstDrawTimeReporterTest {
             verifyNoMoreInteractions()
         }
     }
+
+    // region RUMS-5469: TTID not emitted when first Activity finishes before first draw
+
+    /**
+     * Regression test for RUMS-5469.
+     *
+     * When the first Activity calls finish() before its DecorView is ever drawn (e.g. an auth
+     * screen that immediately redirects an already-authenticated user), the
+     * [View.OnAttachStateChangeListener.onViewDetachedFromWindow] callback fires before
+     * [android.view.ViewTreeObserver.OnDrawListener.onDraw] ever fires.
+     *
+     * Expected correct behaviour: the reporter should use the detach timestamp as a fallback and
+     * invoke [RumFirstDrawTimeReporter.Callback.onFirstFrameDrawn] so that the TTID event is
+     * still emitted.
+     *
+     * This test FAILS on current code because [RumFirstDrawTimeReporterImpl.onViewDetachedFromWindow]
+     * has an empty body and never invokes the callback.
+     */
+    @Test
+    fun `M call onFirstFrameDrawn W decorView detaches before first draw { RUMS-5469 }`() {
+        // Given
+        whenever(window.peekDecorView()) doReturn decorView
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        // Simulate the Activity calling finish() — the DecorView detaches from the window
+        // before the first draw pass ever fires.
+        argumentCaptor<View.OnAttachStateChangeListener> {
+            verify(decorView).addOnAttachStateChangeListener(capture())
+            firstValue.onViewDetachedFromWindow(decorView)
+        }
+
+        // Then: the callback MUST be invoked with the current timestamp as the fallback TTID value.
+        // This assertion FAILS on current code because onViewDetachedFromWindow has an empty body.
+        verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+    }
+
+    /**
+     * Regression test for RUMS-5469 — variant where the DecorView does not yet exist when
+     * [RumFirstDrawTimeReporter.subscribeToFirstFrameDrawn] is called (peekDecorView returns null),
+     * and the Activity calls finish() before the DecorView is ever attached.
+     *
+     * Expected correct behaviour: [RumFirstDrawTimeReporter.Callback.onFirstFrameDrawn] is still
+     * invoked via the detach-fallback path so that the TTID event is emitted.
+     *
+     * This test FAILS on current code for the same reason as the sibling test above.
+     */
+    @Test
+    fun `M call onFirstFrameDrawn W decorView not ready then detaches before first draw { RUMS-5469 }`() {
+        // Given - peekDecorView returns null so we go through the windowCallbacksRegistry path.
+        // The registry listener immediately calls onContentChanged, which triggers onDecorViewReady.
+        // At that point decorView is not yet attached to the window.
+        whenever(window.peekDecorView()) doReturn null
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        // Simulate the Activity calling finish() — DecorView detaches without ever drawing.
+        argumentCaptor<View.OnAttachStateChangeListener> {
+            verify(decorView).addOnAttachStateChangeListener(capture())
+            firstValue.onViewDetachedFromWindow(decorView)
+        }
+
+        // Then: the callback MUST be invoked with the current timestamp as the fallback TTID value.
+        // This assertion FAILS on current code because onViewDetachedFromWindow has an empty body.
+        verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+    }
+
+    // endregion
 }
