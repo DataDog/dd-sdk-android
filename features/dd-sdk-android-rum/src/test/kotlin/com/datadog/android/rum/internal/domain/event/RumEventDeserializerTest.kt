@@ -11,6 +11,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.utils.assertj.DeserializedActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.utils.assertj.DeserializedErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.utils.assertj.DeserializedLongTaskEventAssert.Companion.assertThat
@@ -90,6 +91,30 @@ internal class RumEventDeserializerTest {
 
         // THEN
         assertThat(deserializedEvent).isEqualTo(fakeViewEvent)
+    }
+
+    @Test
+    fun `M deserialize a serialized RUM ViewUpdateEvent W deserialize()`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeViewUpdateEvent = forge.getForgery<ViewUpdateEvent>()
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeViewUpdateEvent))
+            .asJsonObject
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ViewUpdateEvent
+
+        // THEN
+        assertThat(deserializedEvent)
+            .usingRecursiveComparison()
+            .ignoringFields(
+                "usr.additionalProperties",
+                "account.additionalProperties",
+                "context.additionalProperties",
+                "device"
+            )
+            .isEqualTo(fakeViewUpdateEvent)
     }
 
     @Test

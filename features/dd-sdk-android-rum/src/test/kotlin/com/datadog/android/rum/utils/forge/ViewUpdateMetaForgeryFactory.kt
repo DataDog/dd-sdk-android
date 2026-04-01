@@ -9,12 +9,13 @@ package com.datadog.android.rum.utils.forge
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.util.UUID
 
-internal class RumEventMetaForgeryFactory : ForgeryFactory<RumEventMeta> {
-    override fun getForgery(forge: Forge): RumEventMeta {
-        return forge.anElementFrom(
-            forge.getForgery<RumEventMeta.View>(),
-            forge.getForgery<RumEventMeta.ViewUpdate>()
+internal class ViewUpdateMetaForgeryFactory : ForgeryFactory<RumEventMeta.ViewUpdate> {
+    override fun getForgery(forge: Forge): RumEventMeta.ViewUpdate {
+        return RumEventMeta.ViewUpdate(
+            viewId = forge.getForgery<UUID>().toString(),
+            documentVersion = forge.aPositiveLong(strict = true)
         )
     }
 }

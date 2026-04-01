@@ -186,9 +186,13 @@ class com.datadog.android.rum._RumInternalProxy
     fun createRumNetworkInstrumentation(String, com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration)
     fun extractRequestHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
     fun extractResponseHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
+    fun setRumViewEventWriteConfig(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.configuration.RumViewEventWriteConfig): com.datadog.android.rum.RumConfiguration.Builder
 class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
+sealed interface com.datadog.android.rum.configuration.RumViewEventWriteConfig
+  object AlwaysFullView : RumViewEventWriteConfig
+  object FullViewOnlyAtStart : RumViewEventWriteConfig
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 

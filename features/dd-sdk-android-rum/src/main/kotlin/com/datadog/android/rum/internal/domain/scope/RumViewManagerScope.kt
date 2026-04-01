@@ -18,11 +18,13 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -57,10 +59,12 @@ internal class RumViewManagerScope(
     private val slowFramesListener: SlowFramesListener?,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    internal val viewEventMapper: ViewEventMapper,
+    private val rumViewEventWriteConfig: RumViewEventWriteConfig
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -292,10 +296,12 @@ internal class RumViewManagerScope(
             networkSettledResourceIdentifier = initialResourceIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            accessibilityInfoProvider = accessibilityInfoProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper,
+            rumViewEventWriteConfig = rumViewEventWriteConfig
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -375,10 +381,17 @@ internal class RumViewManagerScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            accessibilityInfoProvider = accessibilityInfoProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            rumViewEventWriterFactory = {
+                RumViewEventWriter.create(
+                    config = rumViewEventWriteConfig,
+                    viewEventMapper = viewEventMapper,
+                    sdkCore = sdkCore
+                )
+            }
         )
     }
 
@@ -418,10 +431,17 @@ internal class RumViewManagerScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            accessibilityInfoProvider = accessibilityInfoProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            rumViewEventWriterFactory = {
+                RumViewEventWriter.create(
+                    config = rumViewEventWriteConfig,
+                    viewEventMapper = viewEventMapper,
+                    sdkCore = sdkCore
+                )
+            }
         )
     }
 

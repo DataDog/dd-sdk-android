@@ -126,12 +126,12 @@ internal data class RumEventMapper(
     // endregion
 
     companion object {
-        internal const val VIEW_EVENT_NULL_WARNING_MESSAGE =
-            "RumEventMapper: the returned mapped ViewEvent was null. " +
-                "The original event object will be used instead: %s"
         internal const val EVENT_NULL_WARNING_MESSAGE =
             "RumEventMapper: the returned mapped object was null. " +
                 "This event will be dropped: %s"
+        internal const val VIEW_EVENT_NULL_WARNING_MESSAGE =
+            "RumEventMapper: the returned mapped ViewEvent was null or was not the same instance. " +
+                "The original event object will be used: %s"
         internal const val NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE =
             "RumEventMapper: the returned mapped object was not the " +
                 "same instance as the original object. This event will be dropped: %s"

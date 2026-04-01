@@ -13,6 +13,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.google.gson.JsonObject
@@ -58,6 +59,7 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
     private fun parseEvent(eventType: String?, model: JsonObject): Any {
         return when (eventType) {
             EVENT_TYPE_VIEW -> ViewEvent.fromJsonObject(model)
+            EVENT_TYPE_VIEW_UPDATE -> ViewUpdateEvent.fromJsonObject(model)
             EVENT_TYPE_RESOURCE -> ResourceEvent.fromJsonObject(model)
             EVENT_TYPE_ACTION -> ActionEvent.fromJsonObject(model)
             EVENT_TYPE_ERROR -> ErrorEvent.fromJsonObject(model)
@@ -90,6 +92,7 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
         const val EVENT_TELEMETRY_STATUS_KEY_NAME = "status"
 
         const val EVENT_TYPE_VIEW = "view"
+        const val EVENT_TYPE_VIEW_UPDATE = "view_update"
         const val EVENT_TYPE_RESOURCE = "resource"
         const val EVENT_TYPE_ACTION = "action"
         const val EVENT_TYPE_ERROR = "error"
