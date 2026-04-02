@@ -22,7 +22,14 @@ internal class NoOpProfiler : Profiler {
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
+        sdkInstanceNames: Set<String>
+    ) {
+    }
+
+    override fun start(
+        appContext: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>,
         durationMs: Int
     ) {
     }

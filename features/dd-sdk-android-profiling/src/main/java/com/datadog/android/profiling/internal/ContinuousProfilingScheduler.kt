@@ -81,7 +81,6 @@ internal class ContinuousProfilingScheduler(
                 appContext = appContext,
                 startReason = ProfilingStartReason.CONTINUOUS,
                 additionalAttributes = emptyMap(),
-                sdkInstanceNames = setOf(sdkCore.name),
                 durationMs = activeMs.toInt()
             )
         } else {

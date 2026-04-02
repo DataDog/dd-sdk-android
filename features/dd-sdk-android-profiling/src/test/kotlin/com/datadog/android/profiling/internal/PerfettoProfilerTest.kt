@@ -41,6 +41,7 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -923,11 +924,11 @@ class PerfettoProfilerTest {
             mockContext,
             ProfilingStartReason.CONTINUOUS,
             emptyMap(),
-            setOf(fakeInstanceName)
+            fakeDuration2.toInt()
         )
 
         val callbackCaptor2 = argumentCaptor<Consumer<ProfilingResult>>()
-        verify(mockService, org.mockito.kotlin.times(2))
+        verify(mockService, times(2))
             .requestProfiling(
                 eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
                 any<Bundle>(),
@@ -1050,6 +1051,325 @@ class PerfettoProfilerTest {
         // Then
         verify(mockStopSignal, never()).cancel()
     }
+
+    @Test
+    fun `M request profiling W start(durationMs)`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+
+        // Then
+        verify(mockService).requestProfiling(
+            eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+            any<Bundle>(),
+            any<String>(),
+            any<CancellationSignal>(),
+            any(),
+            any()
+        )
+    }
+
+    @Test
+    fun `M not request profiling W start(durationMs) {app launch session running}`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+
+        // Then
+        verify(mockService, times(1)).requestProfiling(any(), any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M not request profiling W start(durationMs) {continuous session already running}`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+
+        // Then
+        verify(mockService, times(1)).requestProfiling(any(), any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M isRunning returns true for any instance W start(durationMs)`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+
+        // Then
+        assertThat(testedProfiler.isRunning(fakeInstanceName)).isTrue
+        assertThat(testedProfiler.isRunning(otherInstanceName)).isTrue
+    }
+
+    @Test
+    fun `M isRunning returns false W continuous profiling result received`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+        verify(mockService).requestProfiling(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(successResult)
+
+        // Then
+        assertThat(testedProfiler.isRunning(fakeInstanceName)).isFalse
+        assertThat(testedProfiler.isRunning(otherInstanceName)).isFalse
+    }
+
+    @Test
+    fun `M notify all registered callbacks W continuous profiling result received`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+        verify(mockService).requestProfiling(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(successResult)
+
+        // Then
+        verify(mockProfilerCallback).onSuccess(any())
+        verify(mockOtherProfilerCallback).onSuccess(any())
+    }
+
+    @Test
+    fun `M not notify unregistered callback W continuous profiling result received`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.unregisterProfilingCallback(otherInstanceName)
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+        verify(mockService).requestProfiling(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(successResult)
+
+        // Then
+        verify(mockProfilerCallback).onSuccess(any())
+        verifyNoInteractions(mockOtherProfilerCallback)
+    }
+
+    @Test
+    fun `M allow start(durationMs) from within onSuccess callback W app launch result received`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        // ProfilingFeature path where onAppLaunchProfilingComplete() → profiler.start(durationMs).
+        whenever(mockProfilerCallback.onSuccess(any())).thenAnswer {
+            testedProfiler.start(
+                mockContext,
+                ProfilingStartReason.CONTINUOUS,
+                emptyMap(),
+                fakeDurationMs
+            )
+        }
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+        verify(mockService).requestProfiling(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(successResult)
+
+        // Then
+        verify(mockService, times(2)).requestProfiling(any(), any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M cancel stop signal W stop() called {during continuous profiling}`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+        testedProfiler.stopSignal = mockStopSignal
+
+        // When
+        testedProfiler.stop(fakeInstanceName)
+
+        // Then
+        verify(mockStopSignal).cancel()
+    }
+
+    @Test
+    fun `M call onFailure for all callbacks W continuous profiling ends {with error}`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int
+    ) {
+        // Given
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+        verify(mockService).requestProfiling(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val errorResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS
+            on { tag } doReturn ProfilingStartReason.CONTINUOUS.value
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(errorResult)
+
+        // Then
+        verify(mockProfilerCallback).onFailure(ProfilingStartReason.CONTINUOUS.value)
+        verify(mockOtherProfilerCallback).onFailure(ProfilingStartReason.CONTINUOUS.value)
+    }
+
+    @Test
+    fun `M allow start(durationMs) from within onFailure callback W continuous result received {with error}`(
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs: Int,
+        @IntForgery(min = 1000, max = 60_000) fakeDurationMs2: Int
+    ) {
+        // Given
+        whenever(mockProfilerCallback.onFailure(any())).thenAnswer {
+            testedProfiler.start(
+                mockContext,
+                ProfilingStartReason.CONTINUOUS,
+                emptyMap(),
+                fakeDurationMs2
+            )
+        }
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            fakeDurationMs
+        )
+        verify(mockService).requestProfiling(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val errorResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS
+            on { tag } doReturn ProfilingStartReason.CONTINUOUS.value
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(errorResult)
+
+        // Then
+        verify(mockService, times(2)).requestProfiling(any(), any(), any(), any(), any(), any())
+    }
+
+    // endregion
 
     private class StubTimeProvider : TimeProvider {
         var startTime: Long = 0L

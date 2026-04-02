@@ -281,7 +281,6 @@ class ProfilingFeatureTest {
             appContext = eq(mockContext),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = any(),
-            sdkInstanceNames = any(),
             durationMs = any()
         )
     }
@@ -318,7 +317,6 @@ class ProfilingFeatureTest {
             appContext = eq(mockContext),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = any(),
-            sdkInstanceNames = any(),
             durationMs = any()
         )
     }
@@ -351,7 +349,6 @@ class ProfilingFeatureTest {
             appContext = any(),
             startReason = any(),
             additionalAttributes = any(),
-            sdkInstanceNames = any(),
             durationMs = any()
         )
     }

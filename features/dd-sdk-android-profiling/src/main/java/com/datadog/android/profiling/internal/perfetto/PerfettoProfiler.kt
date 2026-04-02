@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 import kotlin.random.Random
@@ -48,8 +49,11 @@ internal class PerfettoProfiler(
     internal var stopSignal: CancellationSignal? = null
     private val resultCallback: Consumer<ProfilingResult>
 
-    // This flag represents which instance of this class is working for.
+    // Tracks which SDK instances started app-launch profiling.
     private val runningInstances: AtomicReference<Set<String>> = AtomicReference(emptySet())
+
+    // Tracks whether continuous profiling is currently running.
+    private val continuousProfilingRunning: AtomicBoolean = AtomicBoolean(false)
 
     @Volatile
     private var profilingStartTime = 0L
@@ -108,7 +112,6 @@ internal class PerfettoProfiler(
             } else {
                 notifyCallbacks { onFailure(tag) }
             }
-            runningInstances.set(emptySet())
             sendProfilingEndTelemetry(
                 result = result,
                 duration = duration,
@@ -136,9 +139,18 @@ internal class PerfettoProfiler(
     }
 
     private fun notifyCallbacks(dispatch: ProfilerCallback.() -> Unit) {
-        val running = runningInstances.get()
-        callbackMap.forEach { (key, callback) ->
-            if (running.contains(key)) callback.dispatch()
+        val running = runningInstances.getAndSet(emptySet())
+        if (running.isEmpty()) {
+            // Continuous profiling: start(durationMs) never sets runningInstances, so notify
+            // all registered callbacks.
+            continuousProfilingRunning.set(false)
+            callbackMap.values.forEach { it.dispatch() }
+        } else {
+            // App-launch profiling: start(sdkInstanceNames) set runningInstances to the
+            // initiating instances — only notify those.
+            callbackMap.forEach { (key, callback) ->
+                if (running.contains(key)) callback.dispatch()
+            }
         }
     }
 
@@ -146,12 +158,11 @@ internal class PerfettoProfiler(
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
-        durationMs: Int
+        sdkInstanceNames: Set<String>
     ) {
-        val effectiveDurationMs =
-            if (durationMs > 0) durationMs else getDefaultDurationMs(startReason)
+        val effectiveDurationMs = getDefaultDurationMs(startReason)
         // profiling will be launched when no instance is currently running profiling.
+        if (continuousProfilingRunning.get()) return
         if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
             profilingStopTime = 0L
@@ -183,8 +194,31 @@ internal class PerfettoProfiler(
         }
     }
 
+    override fun start(
+        appContext: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>,
+        durationMs: Int
+    ) {
+        if (!continuousProfilingRunning.compareAndSet(false, true)) return
+        if (runningInstances.get().isNotEmpty()) {
+            continuousProfilingRunning.set(false)
+            return
+        }
+        profilingStartTime = timeProvider.getDeviceTimestampMillis()
+        profilingStopTime = 0L
+        profilingStartReason = startReason
+        profilingAppStartInfo = null
+        requestProfiling(
+            appContext,
+            buildStackSamplingRequest(startReason, durationMs),
+            scheduledExecutorService,
+            resultCallback
+        )
+    }
+
     override fun stop(sdkInstanceName: String) {
-        if (runningInstances.get().contains(sdkInstanceName)) {
+        if (runningInstances.get().contains(sdkInstanceName) || continuousProfilingRunning.get()) {
             // note: if we call this while another request is being built, stopSignal will be
             // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
             // starting another request.
@@ -194,7 +228,7 @@ internal class PerfettoProfiler(
     }
 
     override fun isRunning(sdkInstanceName: String): Boolean {
-        return runningInstances.get().contains(sdkInstanceName)
+        return runningInstances.get().contains(sdkInstanceName) || continuousProfilingRunning.get()
     }
 
     override fun registerProfilingCallback(

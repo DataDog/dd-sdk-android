@@ -601,6 +601,7 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.String?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.collections.Set?)"
       - "java.util.concurrent.atomic.AtomicReference.get()"
+      - "java.util.concurrent.atomic.AtomicReference.getAndSet(kotlin.collections.Set?)"
       - "java.util.concurrent.atomic.AtomicReference.set(android.app.Application.ActivityLifecycleCallbacks?)"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.api.FeatureEventReceiver?)"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.api.SdkCore?)"

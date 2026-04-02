@@ -20,7 +20,13 @@ internal interface Profiler {
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
+        sdkInstanceNames: Set<String>
+    )
+
+    fun start(
+        appContext: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>,
         durationMs: Int = 0
     )
 

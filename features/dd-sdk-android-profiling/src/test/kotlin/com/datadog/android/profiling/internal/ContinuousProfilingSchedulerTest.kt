@@ -7,6 +7,7 @@
 package com.datadog.android.profiling.internal
 
 import android.app.Application
+import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.profiling.forge.Configurator
@@ -120,7 +121,6 @@ internal class ContinuousProfilingSchedulerTest {
             appContext = eq(mockApplication),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = eq(emptyMap()),
-            sdkInstanceNames = eq(setOf(fakeInstanceName)),
             durationMs = durationCaptor.capture()
         )
         val captured = durationCaptor.firstValue.toLong()
@@ -134,7 +134,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.start(launchProfilingActive = true)
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any<Context>(), any(), any(), any<Int>())
         verifyNoInteractions(mockSchedulerExecutor)
     }
 
@@ -162,7 +162,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.start(launchProfilingActive = false)
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any<Context>(), any(), any(), any<Int>())
     }
 
     @Test
@@ -201,7 +201,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onAppLaunchProfilingComplete()
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any<Context>(), any(), any(), any<Int>())
     }
 
     @Test
@@ -218,7 +218,6 @@ internal class ContinuousProfilingSchedulerTest {
             appContext = eq(mockApplication),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = eq(emptyMap()),
-            sdkInstanceNames = eq(setOf(fakeInstanceName)),
             durationMs = any()
         )
     }
@@ -285,7 +284,7 @@ internal class ContinuousProfilingSchedulerTest {
         runnableCaptor.firstValue.run()
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any<Context>(), any(), any(), any<Int>())
     }
 
     @Test
@@ -321,8 +320,7 @@ internal class ContinuousProfilingSchedulerTest {
 
         // Then
         verify(mockProfiler, atLeastOnce()).start(
-            any(),
-            any(),
+            any<Context>(),
             any(),
             any(),
             durationCaptor.capture()
