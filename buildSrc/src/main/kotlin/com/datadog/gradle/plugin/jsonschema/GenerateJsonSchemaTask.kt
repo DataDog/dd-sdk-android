@@ -9,6 +9,7 @@ package com.datadog.gradle.plugin.jsonschema
 import com.datadog.gradle.plugin.jsonschema.generator.FileGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -17,6 +18,7 @@ import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
@@ -48,16 +50,9 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
      * deeper files, so they may receive no changes making Gradle build cache to have
      * a wrong caching decision when deeper files actually change).
      */
-    @PathSensitive(PathSensitivity.RELATIVE)
-    @InputFiles
-    fun getInputFiles(): List<File> {
-        return getInputDir()
-            .walkBottomUp()
-            .filter {
-                it.isFile && it.extension == "json"
-            }
-            .toList()
-    }
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputFiles
+    abstract val inputFiles: ConfigurableFileCollection
 
     // this is kind of hack: sometimes json can reference other json outside of the module,
     // so we need just to watch such external dir for changes, otherwise task is cached when external changes not seen
@@ -69,7 +64,14 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     /**
      * The directory from which to read the files json schema files.
      */
-    @get:Input
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputDirectory
+    abstract val inputDir: DirectoryProperty
+
+    /**
+     * The directory path from which to read the files json schema files.
+     */
+    @get:Internal
     abstract val inputDirPath: Property<String>
 
     /**
@@ -113,12 +115,13 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
      */
     @TaskAction
     fun performTask() {
-        val inputDir = getInputDir()
+        val inputDir = inputDir.get().asFile
         val outputDir = File(destinationGenDirectoryPath.get())
-        val files = getInputFiles()
+        val files = inputFiles
             .filter {
                 it.name !in ignoredFiles.get() && it.parentFile == inputDir
             }
+            .files
 
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
@@ -128,10 +131,6 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
             val type = reader.readSchema(it)
             generator.generate(type)
         }
-    }
-
-    private fun getInputDir(): File {
-        return File("${project.projectDir.path}${File.separator}${inputDirPath.get()}")
     }
 
     // endregion
