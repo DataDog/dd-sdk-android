@@ -205,13 +205,29 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     @Test
-    fun `M start profiling cycle immediately W onAppLaunchProfilingComplete()`() {
+    fun `M NOT start profiling immediately W onAppLaunchProfilingComplete()`() {
         // Given
         testedScheduler.onRumSessionRenewed(sessionSampled = true)
         testedScheduler.start(launchProfilingActive = true)
 
         // When
         testedScheduler.onAppLaunchProfilingComplete()
+
+        // Then — profiling must not start until the cooldown fires
+        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M start profiling cycle after cooldown fires W onAppLaunchProfilingComplete()`() {
+        // Given
+        testedScheduler.onRumSessionRenewed(sessionSampled = true)
+        testedScheduler.start(launchProfilingActive = true)
+        val runnableCaptor = argumentCaptor<Runnable>()
+        testedScheduler.onAppLaunchProfilingComplete()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+
+        // When — fire the cooldown runnable
+        runnableCaptor.firstValue.run()
 
         // Then
         verify(mockProfiler).start(
@@ -224,7 +240,7 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     @Test
-    fun `M schedule jittered active window end timer W onAppLaunchProfilingComplete()`() {
+    fun `M schedule jittered cooldown timer W onAppLaunchProfilingComplete()`() {
         // Given
         testedScheduler.start(launchProfilingActive = true)
         val delayCaptor = argumentCaptor<Long>()
@@ -236,9 +252,9 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onAppLaunchProfilingComplete()
 
         // Then
-        val windowBase = ContinuousProfilingScheduler.CONTINUOUS_WINDOW_DURATION_MS
+        val cooldownBase = ContinuousProfilingScheduler.CONTINUOUS_COOLDOWN_DURATION_MS
         assertThat(delayCaptor.firstValue)
-            .isBetween((windowBase * 0.8).toLong(), (windowBase * 1.2).toLong())
+            .isBetween((cooldownBase * 0.8).toLong(), (cooldownBase * 1.2).toLong())
     }
 
     // endregion
@@ -259,13 +275,15 @@ internal class ContinuousProfilingSchedulerTest {
             )
         ) doReturn mockFuture
         testedScheduler.onAppLaunchProfilingComplete()
-
-        // When
+        // Fire the post-launch cooldown runnable to reach scheduleNextCycle
         runnableCaptor.firstValue.run()
+
+        // When — fire the active window end runnable
+        runnableCaptor.secondValue.run()
 
         // Then
         val cooldownBase = ContinuousProfilingScheduler.CONTINUOUS_COOLDOWN_DURATION_MS
-        assertThat(delayCaptor.secondValue)
+        assertThat(delayCaptor.thirdValue)
             .isBetween((cooldownBase * 0.8).toLong(), (cooldownBase * 1.2).toLong())
     }
 
