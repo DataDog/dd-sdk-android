@@ -59,6 +59,7 @@ internal class ContinuousProfilingScheduler(
     }
 
     fun stop() {
+        isScheduling = false
         logToUser { LOG_STOPPED }
         pendingFuture?.cancel(false)
     }
@@ -66,7 +67,7 @@ internal class ContinuousProfilingScheduler(
     fun onAppLaunchProfilingComplete() {
         if (!isScheduling) return
         logToUser { LOG_LAUNCH_COMPLETE }
-        scheduleNextCycle()
+        scheduleCooldown(jitter(CONTINUOUS_COOLDOWN_DURATION_MS))
     }
 
     fun onRumSessionRenewed(sessionSampled: Boolean) {

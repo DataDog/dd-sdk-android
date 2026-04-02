@@ -266,6 +266,8 @@ class ProfilingFeatureTest {
 
         testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
+        val runnableCaptor = argumentCaptor<Runnable>()
+
         // When
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
@@ -275,6 +277,9 @@ class ProfilingFeatureTest {
                 resultFilePath = "/fake/path"
             )
         )
+
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+        runnableCaptor.firstValue.run()
 
         // Then
         verify(mockProfiler).start(
@@ -310,8 +315,13 @@ class ProfilingFeatureTest {
         )
         testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
+        val runnableCaptor = argumentCaptor<Runnable>()
+
         // When
         callbackCaptor.firstValue.onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+        runnableCaptor.firstValue.run()
 
         // Then
         verify(mockProfiler).start(
