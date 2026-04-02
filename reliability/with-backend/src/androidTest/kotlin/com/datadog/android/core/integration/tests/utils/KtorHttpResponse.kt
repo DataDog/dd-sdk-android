@@ -39,13 +39,25 @@ internal suspend inline fun <reified T : Any> HttpClient.safePost(url: Url, body
         }
         val statusCode = response.status
         when (statusCode.value) {
-            in 500..599 -> KtorHttpResponse.ServerError(statusCode)
-            in 400..499 -> KtorHttpResponse.ClientError(statusCode)
-            else -> KtorHttpResponse.Success(response.body())
+            in 500..599 -> {
+                android.util.Log.w("POLL_DEBUG", "safePost ServerError: $statusCode")
+                KtorHttpResponse.ServerError(statusCode)
+            }
+            in 400..499 -> {
+                val bodyText = response.bodyAsText()
+                android.util.Log.w("POLL_DEBUG", "safePost ClientError: $statusCode body=$bodyText")
+                KtorHttpResponse.ClientError(statusCode)
+            }
+            else -> {
+                android.util.Log.w("POLL_DEBUG", "safePost Success: $statusCode")
+                KtorHttpResponse.Success(response.body())
+            }
         }
     } catch (e: IOException) {
+        android.util.Log.w("POLL_DEBUG", "safePost IOException: ${e.message}")
         KtorHttpResponse.IOError(e)
     } catch (e: Exception) {
+        android.util.Log.w("POLL_DEBUG", "safePost Exception: ${e.javaClass.simpleName}: ${e.message}")
         KtorHttpResponse.UnknownException(e)
     }
 }
