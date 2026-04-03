@@ -6,7 +6,6 @@
 
 package com.datadog.android.apollo
 
-import android.util.Base64
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.ApolloResponse
 import com.apollographql.apollo.api.CustomScalarAdapters
@@ -18,6 +17,7 @@ import com.apollographql.apollo.interceptor.ApolloInterceptorChain
 import com.datadog.android.apollo.internal.DefaultVariablesExtractor
 import com.datadog.android.apollo.internal.VariablesExtractor
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.utils.toBase64
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -88,10 +88,4 @@ class DatadogApolloInterceptor(
         buildJsonString {
             operation.composeJsonRequest(this, adapters)
         }
-
-    private fun String.toBase64(): String {
-        val bytes = this.toByteArray(Charsets.UTF_8)
-        @Suppress("UnsafeThirdPartyFunctionCall") // cannot throw UnsupportedEncodingException
-        return Base64.encodeToString(bytes, Base64.NO_WRAP)
-    }
 }

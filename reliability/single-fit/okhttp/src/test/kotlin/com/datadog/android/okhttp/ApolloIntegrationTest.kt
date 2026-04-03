@@ -13,8 +13,10 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.apollo.DatadogApolloInterceptor
+import com.datadog.android.core.stub.StubEvent
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.MainLooperTestConfiguration
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -33,6 +35,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -251,19 +254,7 @@ class ApolloIntegrationTest {
         ).execute()
 
         // Then
-        val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        assertThat(events).isNotEmpty()
-
-        val resourceEvents = events.filter { event ->
-            val json = JsonParser.parseString(event.eventData).asJsonObject
-            json.get("type")?.asString == "resource"
-        }
-        assertThat(resourceEvents).isNotEmpty()
-
-        val resourceEvent = resourceEvents.first()
-        val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
-        assertThat(resourceJson.get("resource")?.asJsonObject?.get("url")?.asString)
-            .contains(mockServer.hostName)
+        val resourceEvents = getResourceEvents()
 
         resourceEvents.forEach { event ->
             val eventResourceJson = JsonParser.parseString(event.eventData).asJsonObject
@@ -286,14 +277,7 @@ class ApolloIntegrationTest {
         ).execute()
 
         // Then
-        val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-        assertThat(events).isNotEmpty()
-
-        val resourceEvents = events.filter { event ->
-            val json = JsonParser.parseString(event.eventData).asJsonObject
-            json.get("type")?.asString == "resource"
-        }
-        assertThat(resourceEvents).isNotEmpty()
+        val resourceEvents = getResourceEvents()
 
         resourceEvents.forEach { resourceEvent ->
             val eventJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
@@ -320,12 +304,7 @@ class ApolloIntegrationTest {
             ).execute()
 
             // Then
-            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-            val resourceEvents = events.filter { event ->
-                val json = JsonParser.parseString(event.eventData).asJsonObject
-                json.get("type")?.asString == "resource"
-            }
-            assertThat(resourceEvents).isNotEmpty()
+            val resourceEvents = getResourceEvents()
 
             val resourceEvent = resourceEvents.first()
             val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
@@ -352,12 +331,7 @@ class ApolloIntegrationTest {
             ).execute()
 
             // Then
-            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-            val resourceEvents = events.filter { event ->
-                val json = JsonParser.parseString(event.eventData).asJsonObject
-                json.get("type")?.asString == "resource"
-            }
-            assertThat(resourceEvents).isNotEmpty()
+            val resourceEvents = getResourceEvents()
 
             val resourceEvent = resourceEvents.first()
             val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
@@ -365,6 +339,108 @@ class ApolloIntegrationTest {
 
             assertThat(resourceData?.has("duration")).isTrue()
             assertThat(resourceData?.get("duration")?.asLong).isGreaterThan(0)
+        }
+    }
+
+    // endregion
+
+    // region GraphQL errors
+
+    @Test
+    fun `M extract GraphQL errors W DatadogInterceptor { response body contains errors }`() {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
+            // Drain the default response enqueued in setUp, then enqueue our GraphQL error response
+            apolloClient.query(FakeQuery(userId = fakeUserId, filters = Optional.present(emptyList()))).execute()
+            mockServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", HttpSpec.ContentType.APPLICATION_JSON)
+                    .setBody(GRAPHQL_ERROR_RESPONSE_BODY)
+            )
+
+            // When
+            apolloClient.query(
+                FakeQuery(
+                    userId = fakeUserId,
+                    filters = Optional.present(listOf(fakeFilter1))
+                )
+            ).execute()
+
+            // Then
+            val graphQL = getGraphQLData()
+            assertThat(graphQL.get("operationType")?.asString).isEqualTo("query")
+            assertThat(graphQL.get("operationName")?.asString).isEqualTo("FakeQuery")
+
+            val errors = graphQL.getAsJsonArray("errors")
+            assertThat(errors).hasSize(1)
+            val error = errors.get(0).asJsonObject
+            assertThat(error.get("message")?.asString).isEqualTo("User not found")
+            assertThat(error.get("code")?.asString).isEqualTo("NOT_FOUND")
+        }
+    }
+
+    @Test
+    fun `M extract multiple GraphQL errors W DatadogInterceptor { response body contains multiple errors }`() {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
+            apolloClient.query(FakeQuery(userId = fakeUserId, filters = Optional.present(emptyList()))).execute()
+            mockServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/graphql-response+json")
+                    .setBody(GRAPHQL_MULTIPLE_ERRORS_RESPONSE_BODY)
+            )
+
+            // When
+            apolloClient.query(
+                FakeQuery(
+                    userId = fakeUserId,
+                    filters = Optional.present(listOf(fakeFilter1))
+                )
+            ).execute()
+
+            // Then
+            val graphQLData = getGraphQLData()
+
+            val errors = graphQLData.getAsJsonArray("errors")
+            assertThat(errors).hasSize(2)
+            val firstError = errors.get(0).asJsonObject
+            val secondError = errors.get(1).asJsonObject
+
+            assertThat(firstError.get("message")?.asString).isEqualTo("Unauthorized")
+            assertThat(firstError.get("code")?.asString).isEqualTo("AUTH_ERROR")
+            assertThat(secondError.get("message")?.asString).isEqualTo("Rate limited")
+        }
+    }
+
+    @Test
+    fun `M not extract GraphQL errors W DatadogInterceptor { response body has no errors }`() {
+        runBlocking {
+            // Given
+            rumMonitor.startView(fakeViewKey, fakeViewName)
+            apolloClient.query(FakeQuery(userId = fakeUserId, filters = Optional.present(emptyList()))).execute()
+            mockServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", HttpSpec.ContentType.APPLICATION_JSON)
+                    .setBody(GRAPHQL_SUCCESS_RESPONSE_BODY)
+            )
+
+            // When
+            apolloClient.query(
+                FakeQuery(
+                    userId = fakeUserId,
+                    filters = Optional.present(listOf(fakeFilter1))
+                )
+            ).execute()
+
+            // Then
+            val graphQLData = getGraphQLData()
+            assertThat(graphQLData.get("operationType")?.asString).isEqualTo("query")
+            assertThat(graphQLData.getAsJsonArray("errors")).isNull()
         }
     }
 
@@ -388,24 +464,11 @@ class ApolloIntegrationTest {
             ).execute()
 
             // Then
-            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-            val resourceEvents = events.filter { event ->
-                val json = JsonParser.parseString(event.eventData).asJsonObject
-                json.get("type")?.asString == "resource"
-            }
-            assertThat(resourceEvents).isNotEmpty()
+            val graphQLData = getGraphQLData(last = false)
+            assertThat(graphQLData.get("operationType")?.asString).isEqualTo("mutation")
+            assertThat(graphQLData.get("operationName")?.asString).isEqualTo("FakeMutation")
 
-            val resourceEvent = resourceEvents.first()
-            val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
-            val resourceData = resourceJson.get("resource")?.asJsonObject
-            val graphqlData = resourceData?.get("graphql")?.asJsonObject
-
-            assertThat(graphqlData).isNotNull
-            assertThat(graphqlData?.get("operationType")?.asString).isEqualTo("mutation")
-            assertThat(graphqlData?.get("operationName")?.asString).isEqualTo("FakeMutation")
-
-            val variables = graphqlData?.get("variables")?.asString
-            assertThat(variables).isNotNull
+            val variables = graphQLData.get("variables")?.asString
             assertThat(variables).contains(nonAsciiName)
             assertThat(variables).contains(nonAsciiEmail)
         }
@@ -429,24 +492,11 @@ class ApolloIntegrationTest {
             ).execute()
 
             // Then
-            val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
-            val resourceEvents = events.filter { event ->
-                val json = JsonParser.parseString(event.eventData).asJsonObject
-                json.get("type")?.asString == "resource"
-            }
-            assertThat(resourceEvents).isNotEmpty()
+            val graphQLData = getGraphQLData(last = false)
+            assertThat(graphQLData.get("operationType")?.asString).isEqualTo("query")
+            assertThat(graphQLData.get("operationName")?.asString).isEqualTo("FakeQuery")
 
-            val resourceEvent = resourceEvents.first()
-            val resourceJson = JsonParser.parseString(resourceEvent.eventData).asJsonObject
-            val resourceData = resourceJson.get("resource")?.asJsonObject
-            val graphqlData = resourceData?.get("graphql")?.asJsonObject
-
-            assertThat(graphqlData).isNotNull
-            assertThat(graphqlData?.get("operationType")?.asString).isEqualTo("query")
-            assertThat(graphqlData?.get("operationName")?.asString).isEqualTo("FakeQuery")
-
-            val payload = graphqlData?.get("payload")?.asString
-            assertThat(payload).isNotNull
+            val payload = graphQLData.get("payload")?.asString
             assertThat(payload).contains(nonAsciiFilter)
         }
     }
@@ -477,6 +527,31 @@ class ApolloIntegrationTest {
 
     // endregion
 
+    private fun getResourceEvents(): List<StubEvent> {
+        val events = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(events).isNotEmpty()
+        return events.filter { event ->
+            val json = JsonParser.parseString(event.eventData).asJsonObject
+            json.get("type")?.asString == "resource"
+        }.also { assertThat(it).isNotEmpty() }
+    }
+
+    private fun getGraphQLData(last: Boolean = true): JsonObject {
+        val resourceEvents = getResourceEvents()
+        val event = if (last) {
+            assertThat(resourceEvents.size).isGreaterThanOrEqualTo(2)
+            resourceEvents.last()
+        } else {
+            resourceEvents.first()
+        }
+        val resourceJson = JsonParser.parseString(event.eventData).asJsonObject
+        val graphQLData = resourceJson
+            .getAsJsonObject("resource")
+            ?.getAsJsonObject("graphql")
+        assertThat(graphQLData).isNotNull
+        return graphQLData!!
+    }
+
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
 
@@ -486,5 +561,38 @@ class ApolloIntegrationTest {
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(mainLooper)
         }
+
+        private const val GRAPHQL_ERROR_RESPONSE_BODY = """
+            {
+                "data": null,
+                "errors": [
+                    {
+                        "message": "User not found",
+                        "extensions": { "code": "NOT_FOUND" }
+                    }
+                ]
+            }
+        """
+
+        private const val GRAPHQL_MULTIPLE_ERRORS_RESPONSE_BODY = """
+            {
+                "data": null,
+                "errors": [
+                    {
+                        "message": "Unauthorized",
+                        "extensions": { "code": "AUTH_ERROR" }
+                    },
+                    {
+                        "message": "Rate limited"
+                    }
+                ]
+            }
+        """
+
+        private const val GRAPHQL_SUCCESS_RESPONSE_BODY = """
+            {
+                "data": { "user": { "id": "123", "name": "Test" } }
+            }
+        """
     }
 }

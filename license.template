@@ -3,10 +3,3 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-
-package com.datadog.android.trace.internal.compat.function
-
-internal interface BiConsumer<T, U> {
-
-    fun accept(t: T, u: U)
-}
