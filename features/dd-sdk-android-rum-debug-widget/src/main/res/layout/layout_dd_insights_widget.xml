@@ -36,14 +36,36 @@
         android:textSize="14sp" />
 
     <!--
-        layout_marginTop = (40 + 8) = 48:
-         icon
-         offset
+        layout_marginTop = (40 + 8) = 48: icon + offset
+        Profiler running indicator, placed just below the title row.
+    -->
+    <TextView
+        android:id="@+id/profiler_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:layout_marginTop="48dp"
+        android:gravity="start|center_vertical"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <!--
+        layout_marginTop = (40 + 8 + 24 + 4) = 76: icon + offset + indicator + gap
+        Divider separating the profiler indicator from the vitals section.
+    -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="76dp"
+        android:background="@color/vital_bg" />
+
+    <!--
+        layout_marginTop = (40 + 8 + 24 + 4 + 1 + 3) = 80:
+         icon + offset + indicator + gap + divider + gap
     -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="44dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="80dp"
         android:baselineAligned="false"
         android:orientation="horizontal">
 
@@ -76,16 +98,13 @@
     </LinearLayout>
 
     <!--
-    layout_marginTop = (40 + 8 + 44 + 8) = 100:
-     icon
-     offset
-     row
-     offset
--->
+        layout_marginTop = (80 + 44 + 8) = 132:
+         row + offset
+    -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="44dp"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="132dp"
         android:baselineAligned="false"
         android:orientation="horizontal">
 
@@ -118,42 +137,26 @@
     </LinearLayout>
 
     <!--
-        layout_marginTop = (40 + 8 + 44 + 8 + 44 + 8) = 152
-        icon
-        offset
-        row
-        offset
-        row
-        offset
+        layout_marginTop = (132 + 44 + 8) = 184
     -->
     <com.datadog.android.insights.internal.widgets.TimelineView
         android:id="@+id/timeline"
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:background="@color/vital_bg"
-        android:layout_marginTop="152dp" />
+        android:layout_marginTop="184dp" />
 
     <!--
-    layout_marginTop = (40 + 8 + 44 + 8 + 44 + 8 + 40 + 8) = 200
-    icon
-    offset
-    row
-    offset
-    row
-    offset
-    timeline
-    offset
-    legend
--->
+        layout_marginTop = (184 + 40 + 8) = 232
+    -->
     <TextView
         android:id="@+id/timeline_legend"
-        android:layout_marginTop="200dp"
+        android:layout_marginTop="232dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
         android:textColor="@color/widget_text"
         android:gravity="center_horizontal"
-        android:textSize="11sp"
-
-        />
+        android:textSize="11sp" />
 
 </FrameLayout>

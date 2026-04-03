@@ -10,10 +10,12 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.profiling.internal.ProfilingFeature.Companion.PROFILER_IS_RUNNING
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ScheduledExecutorService
@@ -124,6 +126,9 @@ internal class ContinuousProfilingScheduler(
                 sdkInstanceNames = setOf(sdkCore.name),
                 durationMs = activeMs.toInt()
             )
+            sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+                context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            }
         } else {
             logToUser { LOG_ACTIVE_WINDOW_SKIPPED }
         }
