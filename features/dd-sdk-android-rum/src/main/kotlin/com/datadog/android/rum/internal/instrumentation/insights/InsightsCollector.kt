@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.instrumentation.insights
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.lint.InternalApi
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -14,6 +15,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  */
 @InternalApi
 @NoOpImplementation
+@Suppress("TooManyFunctions")
 interface InsightsCollector {
 
     /**
@@ -94,6 +96,22 @@ interface InsightsCollector {
      * @param rate the slow frame rate value.
      */
     fun onSlowFrameRate(rate: Double?)
+
+    /**
+     * Binds this collector to the given [sdkCore] so it can subscribe to feature context updates.
+     * Called once by the RUM feature during initialization.
+     *
+     * @param sdkCore the specific SDK core instance this widget is bound to.
+     */
+    fun bindSdkCore(sdkCore: FeatureSdkCore)
+
+    /**
+     * Unbinds this collector from the given [sdkCore], unsubscribing from feature context updates.
+     * Called by the RUM feature when it stops.
+     *
+     * @param sdkCore the specific SDK core instance this widget is bound to.
+     */
+    fun unbindSdkCore(sdkCore: FeatureSdkCore)
 }
 
 /**

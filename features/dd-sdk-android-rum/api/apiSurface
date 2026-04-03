@@ -220,6 +220,8 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   fun onCpuVital(Double?)
   fun onMemoryVital(Double?)
   fun onSlowFrameRate(Double?)
+  fun bindSdkCore(com.datadog.android.api.feature.FeatureSdkCore)
+  fun unbindSdkCore(com.datadog.android.api.feature.FeatureSdkCore)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun onDataUpdated()
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor

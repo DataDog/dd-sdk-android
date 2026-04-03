@@ -8,6 +8,9 @@ package com.datadog.android.insights.internal
 
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
@@ -31,7 +34,7 @@ internal class DefaultInsightsCollector internal constructor(
     updateIntervalMs: Long,
     private val handler: Handler,
     private val platform: Platform
-) : InsightsCollector {
+) : InsightsCollector, FeatureContextUpdateReceiver {
 
     constructor(
         maxSize: Int = 50,
@@ -66,6 +69,8 @@ internal class DefaultInsightsCollector internal constructor(
     internal var slowFramesRate: Double = Double.NaN
         private set
     internal var cpuTicksPerSecond: Double = Double.NaN
+        private set
+    internal var isProfilingRunning: Boolean = false
         private set
 
     override var maxSize: Int = maxSize
@@ -128,6 +133,24 @@ internal class DefaultInsightsCollector internal constructor(
         slowFramesRate = rate.round(PRECISION)
     }
 
+    override fun bindSdkCore(sdkCore: FeatureSdkCore) {
+        sdkCore.setContextUpdateReceiver(this)
+    }
+
+    override fun unbindSdkCore(sdkCore: FeatureSdkCore) {
+        sdkCore.removeContextUpdateReceiver(this)
+    }
+
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName == Feature.PROFILING_FEATURE_NAME) {
+            val running = context[PROFILER_IS_RUNNING] as? Boolean ?: false
+            handler.post {
+                isProfilingRunning = running
+                updatesListeners.forEach(InsightsUpdatesListener::onDataUpdated)
+            }
+        }
+    }
+
     private fun clear() = withListenersUpdate {
         events.clear()
     }
@@ -173,5 +196,8 @@ internal class DefaultInsightsCollector internal constructor(
         internal const val PRECISION = 2
         internal const val GC_COUNT = "art.gc.gc-count"
         internal const val ONE_SECOND_NS = 1_000_000_000L
+
+        // Contract key; must match ProfilingFeature.PROFILER_IS_RUNNING in dd-sdk-android-profiling.
+        private const val PROFILER_IS_RUNNING = "profiler_is_running"
     }
 }

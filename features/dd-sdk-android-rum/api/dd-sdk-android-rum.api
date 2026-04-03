@@ -369,6 +369,7 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 
 public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
 	public abstract fun addUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+	public abstract fun bindSdkCore (Lcom/datadog/android/api/feature/FeatureSdkCore;)V
 	public abstract fun getMaxSize ()I
 	public abstract fun getUpdateIntervalMs ()J
 	public abstract fun onAction ()V
@@ -382,6 +383,7 @@ public abstract interface class com/datadog/android/rum/internal/instrumentation
 	public abstract fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
 	public abstract fun setMaxSize (I)V
 	public abstract fun setUpdateIntervalMs (J)V
+	public abstract fun unbindSdkCore (Lcom/datadog/android/api/feature/FeatureSdkCore;)V
 }
 
 public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {

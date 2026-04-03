@@ -201,6 +201,7 @@ internal class RumFeature(
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
         insightsCollector = configuration.insightsCollector
+        insightsCollector.bindSdkCore(sdkCore)
 
         dataWriter = createDataWriter(
             configuration,
@@ -335,6 +336,7 @@ internal class RumFeature(
             sdkCore.removeContextUpdateReceiver(it)
         }
         rumContextUpdateReceivers.clear()
+        insightsCollector.unbindSdkCore(sdkCore)
 
         unregisterTrackingStrategies(appContext)
 
