@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.readBytesSafe
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
@@ -48,6 +49,14 @@ internal class ProfilingDataWriter(
                     }
                 }
             }
+    }
+
+    override fun write(
+        profilingResult: PerfettoResult,
+        longTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>
+    ) {
+        // TODO RUM-15193: write continuous profiling event
     }
 
     private fun buildRawBatchEvent(

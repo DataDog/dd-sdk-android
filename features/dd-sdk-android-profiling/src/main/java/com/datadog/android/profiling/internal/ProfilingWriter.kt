@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.tools.annotation.NoOpImplementation
@@ -18,5 +19,11 @@ internal interface ProfilingWriter {
         rumContext: ProfilingRumContext,
         vitalId: String,
         vitalName: String?
+    )
+
+    fun write(
+        profilingResult: PerfettoResult,
+        longTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>
     )
 }

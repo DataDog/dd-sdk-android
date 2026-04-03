@@ -10,9 +10,9 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class ProfilerEventRumAnrEventFactory : ForgeryFactory<ProfilerEvent.RumAnrEvent> {
-    override fun getForgery(forge: Forge): ProfilerEvent.RumAnrEvent {
-        return ProfilerEvent.RumAnrEvent(
+class ProfilerEventRumLongTaskEventForgeryFactory : ForgeryFactory<ProfilerEvent.RumLongTaskEvent> {
+    override fun getForgery(forge: Forge): ProfilerEvent.RumLongTaskEvent {
+        return ProfilerEvent.RumLongTaskEvent(
             id = forge.anHexadecimalString(),
             startMs = forge.aLong(min = 0L),
             durationNs = forge.aLong(min = 1L),

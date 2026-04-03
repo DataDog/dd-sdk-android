@@ -32,7 +32,7 @@ internal class ProfilingFeature(
     private val profiler: Profiler
 ) : StorageBackedFeature, FeatureEventReceiver, ProfilerCallback {
 
-    private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
+    internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     @Volatile
     private var ttidEvent: ProfilerEvent? = null
@@ -73,14 +73,14 @@ internal class ProfilingFeature(
         }
         dataWriter = createDataWriter(sdkCore)
 
-        val scheduler = ContinuousProfilingScheduler(
+        continuousProfilingScheduler = ContinuousProfilingScheduler(
             appContext = appContext,
             profiler = profiler,
             sdkCore = sdkCore,
             sampleRate = configuration.continuousSampleRate
-        )
-        continuousProfilingScheduler = scheduler
-        scheduler.start(launchProfilingActive = profiler.isRunning(sdkCore.name))
+        ).apply {
+            start(launchProfilingActive = profiler.isRunning(sdkCore.name))
+        }
     }
 
     override fun onStop() {
@@ -95,18 +95,23 @@ internal class ProfilingFeature(
 
     override fun onReceive(event: Any) {
         when (event) {
-            is ProfilerEvent.TTID, is ProfilerEvent.TTIDNotTracked -> onTtidEvent(event as ProfilerEvent)
-            is ProfilerEvent.RumLongTaskEvent -> {
-                // TODO RUM-15321: forward to ContinuousProfilingScheduler
-            }
-            is ProfilerEvent.RumAnrEvent -> {
-                // TODO RUM-15321: forward to ContinuousProfilingScheduler
-            }
+            is ProfilerEvent.TTID,
+            is ProfilerEvent.TTIDNotTracked -> onTtidEvent(event as ProfilerEvent)
+
+            is ProfilerEvent.RumLongTaskEvent ->
+                continuousProfilingScheduler?.onRumLongTaskEvent(event)
+
+            is ProfilerEvent.RumAnrEvent -> continuousProfilingScheduler?.onRumAnrEvent(event)
             is RumSessionRenewedEvent -> onRumSessionRenewed(event)
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+                {
+                    UNSUPPORTED_EVENT_TYPE.format(
+                        Locale.US,
+                        event::class.java.canonicalName
+                    )
+                }
             )
         }
     }
@@ -124,6 +129,8 @@ internal class ProfilingFeature(
             // Launch profiling ended with error such as rate limiting error.
             // Unblock the continuous scheduler so it doesn't wait forever.
             continuousProfilingScheduler?.onAppLaunchProfilingComplete()
+        } else if (tag == ProfilingStartReason.CONTINUOUS.value) {
+            continuousProfilingScheduler?.onActiveWindowEnded()
         }
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
@@ -182,7 +189,17 @@ internal class ProfilingFeature(
             }
 
             ProfilingStartReason.CONTINUOUS.value -> {
-                // TODO RUM-15193: write continuous profiling event
+                val scheduler = continuousProfilingScheduler ?: return
+                scheduler.onActiveWindowEnded()
+                val longTasks = scheduler.pendingLongTasks.toList()
+                val anrEvents = scheduler.pendingAnrEvents.toList()
+                if (longTasks.isEmpty() && anrEvents.isEmpty()) return
+                dataWriter.write(
+                    profilingResult = result,
+                    longTasks = longTasks,
+                    anrEvents = anrEvents
+                )
+                scheduler.onContinuousProfileWritten(longTasks, anrEvents)
             }
         }
     }
