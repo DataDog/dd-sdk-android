@@ -250,8 +250,10 @@ datadog:
       # endregion
       # region org.json
       - "org.json.JSONArray.get(kotlin.Int):org.json.JSONException"
+      - "org.json.JSONArray.getJSONObject(kotlin.Int):org.json.JSONException"
       - "org.json.JSONObject.constructor(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.get(kotlin.String):org.json.JSONException"
+      - "org.json.JSONObject.getJSONArray(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.getString(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Long):org.json.JSONException"

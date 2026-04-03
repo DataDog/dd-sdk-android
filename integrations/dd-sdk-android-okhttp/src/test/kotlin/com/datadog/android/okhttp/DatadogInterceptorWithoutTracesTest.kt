@@ -26,6 +26,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -52,7 +53,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -148,10 +148,14 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @BoolForgery
     var fakeRedacted404Resources: Boolean = true
+
+    lateinit var forge: Forge
+
     // endregion
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        this.forge = forge
         fakeTraceId = forge.aDatadogTraceId(fakeTraceIdString)
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         fakeSpan = forge.newSpanMock(mockSpanContext)
@@ -166,7 +170,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeMediaType = mediaType.toMediaTypeOrNull()
-        fakeRequest = forgeRequest(forge)
+        fakeRequest = forgeRequest()
         testedInterceptor = DatadogInterceptor(
             sdkInstanceName = null,
             tracedHosts = emptyMap(),
@@ -235,11 +239,10 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Test
     fun `M start and stop RUM Resource W intercept() for successful request { unknown method }`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @StringForgery fakeMethod: String,
-        forge: Forge
+        @StringForgery fakeMethod: String
     ) {
         // Given
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.method(fakeMethod, null)
         }
         stubChain(mockChain, statusCode)
@@ -389,18 +392,18 @@ internal class DatadogInterceptorWithoutTracesTest {
     // region Internal
 
     private fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
-        fakeResponse = forgeResponse(statusCode)
+        fakeResponse = forge.anOkHttpResponse(fakeRequest, statusCode) {
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            body(fakeResponseBody.toResponseBody(fakeMediaType))
+        }
 
         whenever(chain.request()) doReturn fakeRequest
         whenever(chain.proceed(any())) doReturn fakeResponse
     }
 
-    private fun forgeRequest(
-        forge: Forge,
-        configure: (Request.Builder) -> Unit = {}
-    ): Request {
+    private fun forgeRequest(configure: (Request.Builder) -> Unit = {}): Request {
         val protocol = forge.anElementFrom("http", "https")
-        // RUMM-2900 host is by definition case insensitive,
+        // RUMM-2900 host is by definition case-insensitive,
         // and OkHttp lowercases it when building the request
         val host = forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN).lowercase(Locale.US)
         val path = forge.anAlphaNumericalString()
@@ -429,17 +432,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
         configure(builder)
 
-        return builder.build()
-    }
-
-    private fun forgeResponse(statusCode: Int): Response {
-        val builder = Response.Builder()
-            .request(fakeRequest)
-            .protocol(Protocol.HTTP_2)
-            .code(statusCode)
-            .message("HTTP $statusCode")
-            .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-            .body(fakeResponseBody.toResponseBody(fakeMediaType))
         return builder.build()
     }
 

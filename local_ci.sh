@@ -89,46 +89,26 @@ if [[ $CLEANUP == 1 ]]; then
 
   echo "---- Clean repository"
   ./gradlew clean
-  rm -rf dd-sdk-android-internal/build/
-  rm -rf dd-sdk-android-core/build/
-  rm -rf features/dd-sdk-android-flags/build/
-  rm -rf features/dd-sdk-android-flags-openfeature/build/
-  rm -rf features/dd-sdk-android-logs/build/
-  rm -rf features/dd-sdk-android-ndk/build/
-  rm -rf features/dd-sdk-android-rum/build/
-  rm -rf features/dd-sdk-android-rum-debug-widget/build/
-  rm -rf features/dd-sdk-android-session-replay/build/
-  rm -rf features/dd-sdk-android-session-replay-compose/build/
-  rm -rf features/dd-sdk-android-session-replay-material/build/
-  rm -rf features/dd-sdk-android-trace/build/
-  rm -rf features/dd-sdk-android-trace-api/build/
-  rm -rf features/dd-sdk-android-trace-internal/build/
-  rm -rf features/dd-sdk-android-trace-otel/build/
-  rm -rf features/dd-sdk-android-webview/build/
-  rm -rf features/dd-sdk-android-profiling/build/
-  rm -rf integrations/dd-sdk-android-coil/build/
-  rm -rf integrations/dd-sdk-android-coil3/build/
-  rm -rf integrations/dd-sdk-android-compose/build/
-  rm -rf integrations/dd-sdk-android-cronet/build/
-  rm -rf integrations/dd-sdk-android-fresco/build/
-  rm -rf integrations/dd-sdk-android-glide/build/
-  rm -rf integrations/dd-sdk-android-rum-coroutines/build/
-  rm -rf integrations/dd-sdk-android-trace-coroutines/build/
-  rm -rf integrations/dd-sdk-android-okhttp/build/
-  rm -rf integrations/dd-sdk-android-okhttp-otel/build/
-  rm -rf integrations/dd-sdk-android-rx/build/
-  rm -rf integrations/dd-sdk-android-sqldelight/build/
-  rm -rf integrations/dd-sdk-android-timber/build/
-  rm -rf integrations/dd-sdk-android-tv/build/
-
   ./gradlew --stop
 fi
 
 if [[ $ANALYSIS == 1 ]]; then
   echo "-- STATIC ANALYSIS"
 
-  echo "---- KtLint"
-  ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
+  echo "---- KtLint (changed files only)"
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  if [ "$CURRENT_BRANCH" = "develop" ]; then
+    # On develop: check uncommitted + staged changes
+    CHANGED_KT_FILES=$(git diff --name-only --diff-filter=d HEAD -- '*.kt' '*.kts' | grep -v 'build/generated/' | grep -v 'build/kspCaches/' || true)
+  else
+    # On feature branch: check all changes vs develop (committed + uncommitted)
+    CHANGED_KT_FILES=$( (git diff --name-only --diff-filter=d develop... -- '*.kt' '*.kts'; git diff --name-only --diff-filter=d HEAD -- '*.kt' '*.kts') | sort -u | grep -v 'build/generated/' | grep -v 'build/kspCaches/' || true)
+  fi
+  if [ -n "$CHANGED_KT_FILES" ]; then
+    echo "$CHANGED_KT_FILES" | xargs ktlint -F
+  else
+    echo "  No changed .kt/.kts files, skipping"
+  fi
 
   echo "---- Detekt"
   if [ -z "$DD_SOURCE" ]; then
@@ -142,28 +122,24 @@ if [[ $ANALYSIS == 1 ]]; then
   fi
 
   echo "------ Detekt common rules"
-  detekt --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-common.yml"
+  detekt --parallel --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-common.yml"
 
   echo "------ Detekt public API rules"
-  detekt --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml"
+  detekt --parallel --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml"
 
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
-    echo "------ Assemble Libraries"
-    ./gradlew assembleLibrariesDebug
-    ./gradlew printSdkDebugRuntimeClasspath
+    echo "------ Assemble Libraries & Build Detekt custom rules"
+    ./gradlew assembleLibrariesDebug printSdkDebugRuntimeClasspath :tools:detekt:jar
     classpath=$(cat sdk_classpath)
-
-    echo "------ Build Detekt custom rules"
-    ./gradlew :tools:detekt:jar
 
     # TODO RUM-628 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
-    detekt --config detekt_custom_general.yml,detekt_custom_safe_calls.yml,detekt_custom_unsafe_calls.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+    detekt --parallel --config detekt_custom_general.yml,detekt_custom_safe_calls.yml,detekt_custom_unsafe_calls.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     echo "------ Detekt test pyramid rules"
     rm -f apiSurface.log apiUsage.log
-    detekt --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+    detekt --parallel --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     set +e
     grep -v -f apiUsage.log apiSurface.log > apiCoverageMiss.log
@@ -189,28 +165,29 @@ if [[ $ANALYSIS == 1 ]]; then
   ./gradlew :lintCheckAll
 
   echo "---- 3rd Party License"
-  ./gradlew checkDependencyLicenses
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  if [ "$CURRENT_BRANCH" = "develop" ]; then
+    DEPS_CHANGED=$(git diff --name-only HEAD -- 'gradle/libs.versions.toml' '**/build.gradle.kts' || true)
+  else
+    DEPS_CHANGED=$(git diff --name-only develop... -- 'gradle/libs.versions.toml' '**/build.gradle.kts' || true)
+  fi
+  if [ -n "$DEPS_CHANGED" ]; then
+    ./gradlew checkDependencyLicenses
+  else
+    echo "  No dependency changes"
+  fi
 fi
 
 if [[ $COMPILE == 1 ]]; then
   echo "-- COMPILATION"
 
-  echo "---- Assemble Libraries"
-  ./gradlew assembleLibrariesDebug
-
-  echo "---- Assemble Unit Tests"
-  ./gradlew assembleDebugUnitTest
-
-  echo "---- Assemble Android Instrumentation APKs"
-  ./gradlew :instrumented:integration:assembleDebugAndroidTest
+  echo "---- Assemble Libraries, Unit Tests & Instrumentation APKs"
+  ./gradlew assembleLibrariesDebug assembleDebugUnitTest :instrumented:integration:assembleDebugAndroidTest
 fi
 
 if [[ $TEST == 1 ]]; then
-  echo "---- Unit tests (Debug)"
-  ./gradlew uTD
-
-  echo "---- Unit tests (Release)"
-  ./gradlew uTR
+  echo "---- Unit tests (Debug & Release)"
+  ./gradlew uTD uTR
 fi
 
 unset CI

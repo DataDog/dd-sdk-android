@@ -246,6 +246,8 @@ fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
+fun String.toBase64(): String
+fun String.fromBase64(): String?
 fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String

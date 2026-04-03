@@ -6,6 +6,27 @@
   "allOf": [
     {
       "$ref": "../_common-schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "description": "Error properties.",
+          "required": ["id"],
+          "properties": {
+            "id": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Array of error IDs.",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        }
+      }
     }
   ]
 }

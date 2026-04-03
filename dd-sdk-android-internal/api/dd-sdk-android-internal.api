@@ -602,6 +602,11 @@ public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;Ljava/lang/String;)Ljava/lang/StringBuilder;
 }
 
+public final class com/datadog/android/internal/utils/StringExtKt {
+	public static final fun fromBase64 (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun toBase64 (Ljava/lang/String;)Ljava/lang/String;
+}
+
 public final class com/datadog/android/internal/utils/ThreadExtKt {
 	public static final fun asString (Ljava/lang/Thread$State;)Ljava/lang/String;
 	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;

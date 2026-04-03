@@ -20,6 +20,7 @@ import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTE
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -54,7 +55,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -147,6 +147,7 @@ internal open class TracingInterceptorTest {
 
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
+    lateinit var forge: Forge
 
     @LongForgery
     var fakeSpanId: Long = 0L
@@ -167,6 +168,7 @@ internal open class TracingInterceptorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        this.forge = forge
         fakeTraceId = forge.aDatadogTraceId(fakeTraceIdAsString)
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
@@ -182,8 +184,8 @@ internal open class TracingInterceptorTest {
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
         fakeMediaType = mediaType.toMediaTypeOrNull()
-        fakeUrl = forgeUrlWithQueryParams(forge)
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams()
+        fakeRequest = forgeRequest()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
@@ -296,11 +298,9 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M inject tracing header W intercept() {global known host}`(
         @StringForgery key: String,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
@@ -327,9 +327,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject non-tracing b3multi header W intercept() {global known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
-    ) {
+    fun `M inject non-tracing b3multi header W intercept() {global known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -338,7 +336,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.B3MULTI
             )
         )
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -355,9 +353,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject non-tracing b3 header W intercept() {global known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
-    ) {
+    fun `M inject non-tracing b3 header W intercept() {global known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -366,7 +362,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.B3
             )
         )
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -381,9 +377,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject non-tracing tracecontext header W intercept() {global known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
-    ) {
+    fun `M inject non-tracing tracecontext header W intercept() {global known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -392,7 +386,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.TRACECONTEXT
             )
         )
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -416,10 +410,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject datadog headers W intercept() {global known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M inject datadog headers W intercept() {global known host + not sampled}`() {
         // Given
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
@@ -444,7 +435,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.TRACECONTEXT
             )
         )
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -479,14 +470,12 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M inject tracing header W intercept() {local known host}`(
         @StringForgery key: String,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -499,10 +488,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject datadog headers W intercept() {local known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M inject datadog headers W intercept() {local known host + not sampled}`() {
         // Given
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
@@ -520,10 +506,10 @@ internal open class TracingInterceptorTest {
         )
 
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -542,19 +528,16 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject non-tracing b3multi header W intercept() {local known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M inject non-tracing b3multi header W intercept() {local known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3MULTI) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -571,20 +554,17 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject non-tracing b3 header W intercept() {local known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M inject non-tracing b3 header W intercept() {local known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
 
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -599,21 +579,18 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject non-tracing tracecontext header W intercept() {local known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M inject non-tracing tracecontext header W intercept() {local known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts =
             forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.TRACECONTEXT) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
 
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -637,10 +614,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject all non-tracing headers W intercept() {local known host + not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M inject all non-tracing headers W intercept() {local known host + not sampled}`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         fakeLocalHosts = forge.aMap {
@@ -653,11 +627,11 @@ internal open class TracingInterceptorTest {
         }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
 
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -696,14 +670,13 @@ internal open class TracingInterceptorTest {
     fun `M inject tracing header W intercept() for request with parent span`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val parentSpanContext: DatadogSpanContext = forge.newSpanContextMock<DatadogSpanContext>(samplingPriority = 1)
         val parentSpan: DatadogSpan = forge.newSpanMock(parentSpanContext)
 
         whenever(mockSpanBuilder.withParentContext(parentSpanContext)) doReturn mockSpanBuilder
-        fakeRequest = forgeRequest(forge) { it.tag(DatadogSpan::class.java, parentSpan) }
+        fakeRequest = forgeRequest { it.tag(DatadogSpan::class.java, parentSpan) }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
@@ -724,8 +697,7 @@ internal open class TracingInterceptorTest {
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @Forgery fakeTraceContext: TraceContext,
-        forge: Forge
+        @Forgery fakeTraceContext: TraceContext
     ) {
         // Given
 
@@ -737,7 +709,7 @@ internal open class TracingInterceptorTest {
         )
         whenever(mockPropagationHelper.createExtractedContext(any(), any(), any())) doReturn fakeExtractedContext
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
-        fakeRequest = forgeRequest(forge) { it.tag(TraceContext::class.java, fakeTraceContext) }
+        fakeRequest = forgeRequest { it.tag(TraceContext::class.java, fakeTraceContext) }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
@@ -770,11 +742,10 @@ internal open class TracingInterceptorTest {
     fun `M replace existing tracing header W intercept() {global known host}`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) value: String,
-        @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String,
-        @IntForgery(min = 200, max = 600) statusCode: Int
+        @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String
     ) {
         fakeRequest = fakeRequest.newBuilder().addHeader(key, previousValue).build()
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
@@ -791,14 +762,12 @@ internal open class TracingInterceptorTest {
     fun `M replace existing tracing header W intercept() {local known host}`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String,
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHABETICAL) previousValue: String
     ) {
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge).newBuilder().addHeader(key, previousValue).build()
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest().newBuilder().addHeader(key, previousValue).build()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -811,15 +780,11 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M ignore inject exception W intercept() {IllegalStateException}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        @StringForgery message: String,
-        forge: Forge
-    ) {
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
-        fakeRequest = forgeRequest(forge)
+    fun `M ignore inject exception W intercept() {IllegalStateException}`(@StringForgery message: String) {
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         doThrow(IllegalStateException(message))
             .whenever(mockPropagation)
@@ -867,13 +832,11 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M respect sampling decision W intercept() {sampled in upstream interceptor}`(
         @StringForgery key: String,
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
@@ -882,7 +845,7 @@ internal open class TracingInterceptorTest {
                 )
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
@@ -899,20 +862,18 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M respect b3multi sampling decision W intercept() {sampled in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
                 PrioritySampling.SAMPLER_KEEP.toString()
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
@@ -929,21 +890,19 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M respect b3 sampling decision W intercept() {sampled in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
 
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
                 forge.aStringMatching("[a-f0-9]{32}\\-[a-f0-9]{16}\\-1")
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
@@ -960,21 +919,19 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M respect tracecontext sampling decision W intercept() {sampled in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery key: String,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
 
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.W3C_TRACEPARENT_KEY,
                 forge.aStringMatching("00-[a-f0-9]{32}\\-[a-f0-9]{16}\\-01")
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
@@ -990,10 +947,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M respect sampling decision W intercept() {sampled out in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M respect sampling decision W intercept() {sampled out in upstream interceptor}`() {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
@@ -1001,7 +955,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.DATADOG
             )
         )
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
@@ -1010,7 +964,7 @@ internal open class TracingInterceptorTest {
                 )
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
@@ -1030,10 +984,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M respect b3multi sampling decision W intercept() {sampled out in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M respect b3multi sampling decision W intercept() {sampled out in upstream interceptor}`() {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
@@ -1041,13 +992,13 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.B3MULTI
             )
         )
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
                 PrioritySampling.SAMPLER_DROP.toString()
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
@@ -1065,10 +1016,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M respect b3 sampling decision W intercept() {sampled out in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M respect b3 sampling decision W intercept() {sampled out in upstream interceptor}`() {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
@@ -1076,7 +1024,7 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.B3
             )
         )
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
                 forge.anElementFrom(
@@ -1085,7 +1033,7 @@ internal open class TracingInterceptorTest {
                 )
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
@@ -1101,10 +1049,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M respect tracecontext sampling decision W intercept() {sampled out in upstream interceptor}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M respect tracecontext sampling decision W intercept() {sampled out in upstream interceptor}`() {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
@@ -1112,13 +1057,13 @@ internal open class TracingInterceptorTest {
                 TracingHeaderType.TRACECONTEXT
             )
         )
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(
                 TracingInterceptor.W3C_TRACEPARENT_KEY,
                 forge.aStringMatching("00-[a-f0-9]{32}\\-[a-f0-9]{16}\\-00")
             )
         }
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
 
         // When
@@ -1163,11 +1108,10 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M create a span with info W intercept() { resource url with no query paramaters }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams(forge)
-        fakeRequest = forgeRequest(forge, fakeUrlWithoutQueryParams)
+        val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams()
+        fakeRequest = forgeRequest(fakeUrlWithoutQueryParams)
         whenever(mockResolver.isFirstPartyUrl(fakeUrlWithoutQueryParams.toHttpUrl()))
             .thenReturn(true)
         stubChain(mockChain, statusCode)
@@ -1293,7 +1237,6 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M create a span with automatic tracer W intercept() if no tracer registered`(
-        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val localSpanContext = forge.newSpanContextMock<DatadogSpanContext>(fakeTraceId, fakeSpanId)
@@ -1329,7 +1272,6 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M drop automatic tracer W intercept() and global tracer registered`(
-        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val localSpan: DatadogSpan = forge.newSpanMock()
@@ -1405,13 +1347,11 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M not call the listener W intercept() for completed request { not sampled }`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
-    ) {
+    fun `M not call the listener W intercept() for completed request { not sampled }`() {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -1608,11 +1548,9 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,
-        @StringForgery uniqueString: String,
-        forge: Forge
+        @StringForgery uniqueString: String
     ) {
         // Given
         // Ensure that the new values differ from the existing ones.
@@ -1622,10 +1560,10 @@ internal open class TracingInterceptorTest {
         val existingBaggage = "$existingBaggageKey=$existingBaggageValue"
         val newBaggage = "$newBaggageKey=$newBaggageValue"
 
-        fakeRequest = forgeRequest(forge) { it.addHeader(BAGGAGE_HEADER, existingBaggage) }
+        fakeRequest = forgeRequest { it.addHeader(BAGGAGE_HEADER, existingBaggage) }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, newBaggage)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         testedInterceptor.intercept(mockChain)
@@ -1642,11 +1580,9 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `M replace existing BAGGAGE W intercept { new values intersects existing values }`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,
-        @StringForgery uniqueString: String,
-        forge: Forge
+        @StringForgery uniqueString: String
     ) {
         // Given
         // Ensure that the new values differ from the existing ones.
@@ -1655,12 +1591,12 @@ internal open class TracingInterceptorTest {
         val existingBaggage = "$existingBaggageKey=$existingBaggageValue"
         val newBaggage = "$existingBaggageKey=$newBaggageValue"
 
-        fakeRequest = forgeRequest(forge) {
+        fakeRequest = forgeRequest {
             it.addHeader(BAGGAGE_HEADER, existingBaggage)
         }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, newBaggage)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         testedInterceptor.intercept(mockChain)
@@ -1673,16 +1609,13 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M blocks on DatadogContext future W intercept { new values intersects existing values }`(
-        @IntForgery(min = 200, max = 600) statusCode: Int,
-        forge: Forge
-    ) {
+    fun `M blocks on DatadogContext future W intercept { new values intersects existing values }`() {
         // Given
         val mockFuture = mock<Future<DatadogContext>>()
-        fakeRequest = forgeRequest(forge)
+        fakeRequest = forgeRequest()
         whenever(mockSpan.getTag(DATADOG_INITIAL_CONTEXT)).thenReturn(mockFuture)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         // When
         testedInterceptor.intercept(mockChain)
@@ -1692,12 +1625,10 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M log error and rethrow W listener causes StackOverflowError`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
-    ) {
+    fun `M log error and rethrow W listener causes StackOverflowError`() {
         // Given
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        stubChain(mockChain, statusCode)
+        stubChain(mockChain)
 
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
@@ -1723,22 +1654,25 @@ internal open class TracingInterceptorTest {
 
     // region Internal
 
-    internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
-        fakeResponse = forgeResponse(statusCode)
+    internal fun stubChain(chain: Interceptor.Chain, statusCode: Int = forge.anInt(min = 200, max = 600)) {
+        fakeResponse = forge.anOkHttpResponse(fakeRequest, statusCode) {
+            header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            body(fakeResponseBody.toResponseBody(fakeMediaType))
+        }
 
         whenever(chain.request()) doReturn fakeRequest
         whenever(chain.proceed(any())) doReturn fakeResponse
     }
 
-    private fun forgeUrlWithoutQueryParams(forge: Forge, knownHost: String? = null): String {
+    private fun forgeUrlWithoutQueryParams(knownHost: String? = null): String {
         val protocol = forge.anElementFrom("http", "https")
         val host = knownHost ?: forge.aStringMatching(HOSTNAME_PATTERN)
         val path = forge.anAlphaNumericalString()
         return "$protocol://$host/$path"
     }
 
-    private fun forgeUrlWithQueryParams(forge: Forge, knownHost: String? = null): String {
-        fakeBaseUrl = forgeUrlWithoutQueryParams(forge, knownHost)
+    private fun forgeUrlWithQueryParams(knownHost: String? = null): String {
+        fakeBaseUrl = forgeUrlWithoutQueryParams(knownHost)
         val fakeQueryParams = forge.aList(forge.anInt(min = 0, max = 5)) {
             "${forge.anAlphabeticalString()}=${forge.anAlphabeticalString()}"
         }.joinToString("&")
@@ -1746,7 +1680,6 @@ internal open class TracingInterceptorTest {
     }
 
     private fun forgeRequest(
-        forge: Forge,
         url: String = fakeUrl,
         configure: (Request.Builder) -> Unit = {}
     ): Request {
@@ -1773,17 +1706,6 @@ internal open class TracingInterceptorTest {
 
         configure(builder)
 
-        return builder.build()
-    }
-
-    private fun forgeResponse(statusCode: Int): Response {
-        val builder = Response.Builder()
-            .request(fakeRequest)
-            .protocol(Protocol.HTTP_2)
-            .code(statusCode)
-            .message("HTTP $statusCode")
-            .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
-            .body(fakeResponseBody.toResponseBody(fakeMediaType))
         return builder.build()
     }
 
