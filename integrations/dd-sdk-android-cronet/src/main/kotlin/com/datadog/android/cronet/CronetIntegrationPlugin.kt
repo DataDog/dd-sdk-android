@@ -149,7 +149,7 @@ class CronetIntegrationPlugin internal constructor(
             null
         }
 
-        // Exception thrown only for wrong arguments, but those ones are correct
+        // Exception thrown only for wrong arguments, but those one are correct
         @Suppress("UnsafeThirdPartyFunctionCall")
         private fun newListenerExecutor(): ThreadPoolExecutor = ThreadPoolExecutor(
             0,

@@ -9,8 +9,8 @@ package com.datadog.android.okhttp.internal.graphql
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.okhttp.internal.OkHttpHttpResponseInfo
 import com.datadog.android.okhttp.internal.OkHttpRequestInfo
+import com.datadog.android.okhttp.internal.OkHttpResponseInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.net.GraphQLExtractor
 import okhttp3.Headers
@@ -70,7 +70,7 @@ internal class OkHttpGraphQLAdapter(
     ): Map<String, Any> {
         if (graphqlAttributes.isEmpty()) return emptyMap()
         return try {
-            val responseInfo = OkHttpHttpResponseInfo(response, internalLogger)
+            val responseInfo = OkHttpResponseInfo(response, internalLogger)
 
             @Suppress("UnsafeThirdPartyFunctionCall") // exceptions are caught
             val body = response

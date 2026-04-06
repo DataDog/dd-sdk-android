@@ -32,6 +32,9 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -337,5 +340,85 @@ internal class RequestTracingStateRegistryTest {
             assertThat(sampleRate).isEqualTo(fakeSampleRate)
             assertThat(createRequestInfo().tag(UUID::class.java)).isEqualTo(originalUuid)
         }
+    }
+
+    @Test
+    fun `M no errors W concurrent register + setTracingState + get + restoreUUIDTag + remove { 100 threads }`() {
+        // Given
+        val threadCount = 100
+        val calls = (0 until threadCount).map { i ->
+            val request = Request.Builder().url("https://host$i.com/path").build()
+            mock<Call> { on { request() } doReturn request }
+        }
+        val startLatch = CountDownLatch(1)
+        val doneLatch = CountDownLatch(threadCount)
+        val errors = CopyOnWriteArrayList<Throwable>()
+
+        // When
+        calls.forEach { call ->
+            Thread {
+                try {
+                    startLatch.await()
+                    testedRegistry.register(call)
+                    testedRegistry.setTracingState(
+                        call,
+                        RequestTracingState(
+                            requestInfoBuilder = OkHttpRequestInfoBuilder(
+                                Request.Builder().url(call.request().url.toString())
+                            ),
+                            isSampled = true
+                        )
+                    )
+                    testedRegistry.get(call)
+                    testedRegistry.restoreUUIDTag(call, call.request())
+                    testedRegistry.remove(call)
+                } catch (e: Throwable) {
+                    errors.add(e)
+                } finally {
+                    doneLatch.countDown()
+                }
+            }.start()
+        }
+        startLatch.countDown()
+        assertThat(doneLatch.await(10, TimeUnit.SECONDS)).isTrue()
+
+        // Then
+        assertThat(errors).isEmpty()
+        calls.forEach { call -> assertThat(testedRegistry.get(call)).isNull() }
+    }
+
+    @Test
+    fun `M not deadlock W external thread holds lock on call { registry operations run concurrently }`() {
+        // Regression test: old impl used synchronized(call) — if external code also synchronized
+        // on the same Call object, registry operations would deadlock.
+        // With striped locks the registry never acquires a lock on the Call object itself.
+
+        // Given
+        testedRegistry.register(mockCall)
+        val registryUnblocked = CountDownLatch(1)
+        val externalLockHeld = CountDownLatch(1)
+
+        // External thread holds the lock on mockCall
+        Thread {
+            synchronized(mockCall) {
+                externalLockHeld.countDown() // signal: lock acquired
+                registryUnblocked.await(5, TimeUnit.SECONDS) // hold it
+            }
+        }.start()
+
+        externalLockHeld.await(5, TimeUnit.SECONDS)
+
+        // When — registry operations must NOT block on mockCall's monitor
+        val result = CountDownLatch(1)
+        Thread {
+            testedRegistry.get(mockCall) // would deadlock if synchronized(call)
+            result.countDown()
+        }.start()
+
+        // Then — registry completes within timeout (no deadlock)
+        val completed = result.await(2, TimeUnit.SECONDS)
+        registryUnblocked.countDown()
+
+        assertThat(completed).isTrue()
     }
 }

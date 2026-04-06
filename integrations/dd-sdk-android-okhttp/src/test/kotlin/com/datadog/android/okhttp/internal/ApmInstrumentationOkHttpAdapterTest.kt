@@ -124,7 +124,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         }
         verify(mockApmNetworkInstrumentation).onResponseSucceeded(
             eq(fakeTracingState),
-            any<OkHttpHttpResponseInfo>()
+            any<OkHttpResponseInfo>()
         )
         assertThat(response).isSameAs(fakeResponse)
     }

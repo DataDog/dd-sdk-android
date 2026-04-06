@@ -164,8 +164,8 @@ class OkHttpIntegrationPlugin internal constructor(
             )
 
         private fun ApmNetworkInstrumentationConfiguration.createApmInstrumentation(
-            runInstrumentationExist: Boolean
-        ) = if (!isHeaderPropagationOnly() || !runInstrumentationExist) {
+            rumInstrumentationExist: Boolean
+        ) = if (!isHeaderPropagationOnly() || !rumInstrumentationExist) {
             DatadogTracingToolkit.createApmNetworkInstrumentation(
                 OKHTTP_NETWORK_INSTRUMENTATION_NAME,
                 this
@@ -175,8 +175,8 @@ class OkHttpIntegrationPlugin internal constructor(
         }
 
         private fun ApmNetworkInstrumentationConfiguration.createDistributedTracingInstrumentation(
-            runInstrumentationExist: Boolean
-        ) = if (runInstrumentationExist) {
+            rumInstrumentationExists: Boolean
+        ) = if (rumInstrumentationExists) {
             DatadogTracingToolkit.createApmNetworkInstrumentation(
                 OKHTTP_NETWORK_INSTRUMENTATION_NAME,
                 configuration = copy()

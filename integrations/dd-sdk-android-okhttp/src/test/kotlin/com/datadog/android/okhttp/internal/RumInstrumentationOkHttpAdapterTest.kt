@@ -123,7 +123,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         verify(mockRumNetworkInstrumentation).startResource(any<OkHttpRequestInfo>())
         verify(mockRumNetworkInstrumentation).stopResource(
             any<OkHttpRequestInfo>(),
-            any<OkHttpHttpResponseInfo>(),
+            any<OkHttpResponseInfo>(),
             any()
         )
         assertThat(response).isSameAs(fakeResponse)
@@ -240,7 +240,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         argumentCaptor<Map<String, Any?>> {
             verify(mockRumNetworkInstrumentation).stopResource(
                 any<OkHttpRequestInfo>(),
-                any<OkHttpHttpResponseInfo>(),
+                any<OkHttpResponseInfo>(),
                 capture()
             )
             // state has no span, so toAttributesMap returns empty map
@@ -271,7 +271,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         argumentCaptor<Map<String, Any?>> {
             verify(mockRumNetworkInstrumentation).stopResource(
                 any<OkHttpRequestInfo>(),
-                any<OkHttpHttpResponseInfo>(),
+                any<OkHttpResponseInfo>(),
                 capture()
             )
             assertThat(firstValue).isEmpty()
@@ -473,7 +473,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         // Then
         verify(mockDistributedTracingInstrumentation).onResponseSucceeded(
             eq(fakeDistributedTracingState),
-            isA<OkHttpHttpResponseInfo>()
+            isA<OkHttpResponseInfo>()
         )
     }
 
@@ -578,6 +578,6 @@ internal class RumInstrumentationOkHttpAdapterTest {
     }
 
     companion object {
-        private const val OKHTTP_REQUEST_INFO_IS_MISSED_MESSAGE = "OkHttp request is missed"
+        private const val OKHTTP_REQUEST_INFO_IS_MISSED_MESSAGE = "OkHttp request wasn't instrumented"
     }
 }

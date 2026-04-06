@@ -1,7 +1,6 @@
 public final class com/datadog/android/trace/ApmNetworkInstrumentationConfiguration {
 	public fun <init> (Ljava/util/List;)V
 	public fun <init> (Ljava/util/Map;)V
-	public fun <init> ([Ljava/lang/String;)V
 	public final fun copy ()Lcom/datadog/android/trace/ApmNetworkInstrumentationConfiguration;
 	public final fun getTraceOrigin ()Ljava/lang/String;
 	public final fun isHeaderPropagationOnly ()Z
@@ -101,6 +100,7 @@ public final class com/datadog/android/trace/internal/ApmNetworkInstrumentation 
 	public final fun getSampleRate ()Ljava/lang/Float;
 	public final fun getSdkCore ()Lcom/datadog/android/api/SdkCore;
 	public final fun getSdkCoreReference ()Lcom/datadog/android/core/SdkReference;
+	public final fun getSdkInstanceName ()Ljava/lang/String;
 	public final fun getTraceOrigin ()Ljava/lang/String;
 	public final fun onRequest (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Lcom/datadog/android/trace/internal/net/RequestTracingState;
 	public final fun onResponseFailed (Lcom/datadog/android/trace/internal/net/RequestTracingState;Ljava/lang/Throwable;)V

@@ -8,6 +8,8 @@ package com.datadog.android.okhttp.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.SdkReference
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
@@ -21,24 +23,21 @@ internal class ApmInstrumentationOkHttpAdapter(
     private val apmNetworkInstrumentation: ApmNetworkInstrumentation,
     private val registry: RequestTracingStateRegistry
 ) : Interceptor {
-
-    private val sdkCore: FeatureSdkCore?
-        get() = apmNetworkInstrumentation.sdkCore as? FeatureSdkCore
-
-    private val internalLogger: InternalLogger?
-        get() = sdkCore?.internalLogger
-
-    init {
+    private val sdkCoreReference: SdkReference = SdkReference(apmNetworkInstrumentation.sdkInstanceName) {
+        val sdkCore = it as InternalSdkCore
         // update meta for the configuration telemetry reporting, can be done directly from this thread
-        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
-            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = apmNetworkInstrumentation.sampleRate
-            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
+        sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) { context ->
+            context[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = apmNetworkInstrumentation.sampleRate
+            context[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
                 types = apmNetworkInstrumentation.localHeaderTypes
                     .map(TracingHeaderType::toTelemetryTracingHeaderType)
                     .toSet()
             )
         }
     }
+
+    private val internalLogger: InternalLogger?
+        get() = (sdkCoreReference.get() as? FeatureSdkCore)?.internalLogger
 
     @Suppress("ReturnCount")
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -47,7 +46,7 @@ internal class ApmInstrumentationOkHttpAdapter(
         // Request might be changed by customer's upstream interceptor(s)
         val taggedOkHttpRequest = registry.restoreUUIDTag(call, request)
         if (taggedOkHttpRequest == null) {
-            apmNetworkInstrumentation.reportInstrumentationError { "OkHttp request is missed" }
+            apmNetworkInstrumentation.reportInstrumentationError { "OkHttp request wasn't instrumented" }
             @Suppress("UnsafeThirdPartyFunctionCall") // intercept() allows throwing IOException
             return chain.proceed(request)
         }

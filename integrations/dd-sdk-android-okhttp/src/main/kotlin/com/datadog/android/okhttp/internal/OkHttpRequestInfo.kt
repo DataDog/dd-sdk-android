@@ -102,28 +102,22 @@ internal class OkHttpRequestInfo(internal val originalRequest: Request) :
 @Suppress("UnsafeThirdPartyFunctionCall") // OkHttp builder methods are safe
 class OkHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : HttpRequestInfoBuilder {
 
-    /** @inheritdoc */
     override fun setUrl(url: String) = apply { requestBuilder.url(url) }
 
-    /** @inheritdoc */
     override fun addHeader(key: String, vararg values: String) = apply {
         values.forEach { value ->
             requestBuilder.addHeader(key, value)
         }
     }
 
-    /** @inheritdoc */
     override fun setMethod(
         method: String,
         body: HttpRequestBody?
     ) = apply { requestBuilder.method(method, (body as? OkHttpRequestBody)?.body) }
 
-    /** @inheritdoc */
     override fun removeHeader(key: String) = apply { requestBuilder.removeHeader(key) }
 
-    /** @inheritdoc */
     override fun <T> addTag(type: Class<in T>, tag: T?) = apply { requestBuilder.tag(type, tag) }
 
-    /** @inheritdoc */
     override fun build(): HttpRequestInfo = requestBuilder.build().toHttpRequestInfo()
 }

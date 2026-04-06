@@ -61,7 +61,7 @@ import java.util.Locale
 @InternalApi
 class ApmNetworkInstrumentation internal constructor(
     internal val canSendSpan: Boolean,
-    internal val sdkInstanceName: String?,
+    val sdkInstanceName: String?,
     val traceOrigin: String?,
     internal val tracerProvider: TracerProvider,
     internal val redacted404ResourceName: Boolean,

@@ -13,5 +13,5 @@ import okhttp3.Response
 
 internal fun Request.toHttpRequestInfo() = OkHttpRequestInfo(this)
 internal fun HttpRequestInfo.toOkHttpRequest(): Request? = (this as? OkHttpRequestInfo)?.originalRequest
-internal fun HttpResponseInfo.toOkHttpResponse(): Response? = (this as? OkHttpHttpResponseInfo)?.originalResponse
-internal fun Response.toHttpResponseInfo(internalLogger: InternalLogger) = OkHttpHttpResponseInfo(this, internalLogger)
+internal fun HttpResponseInfo.toOkHttpResponse(): Response? = (this as? OkHttpResponseInfo)?.originalResponse
+internal fun Response.toHttpResponseInfo(internalLogger: InternalLogger) = OkHttpResponseInfo(this, internalLogger)

@@ -67,14 +67,6 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
     )
 
     /**
-     * Creates a configuration with a list of traced hosts using default header types
-     * ([TracingHeaderType.DATADOG] and [TracingHeaderType.TRACECONTEXT]).
-     *
-     * @param tracedHosts a vararg list of hosts to trace.
-     */
-    constructor(vararg tracedHosts: String) : this(tracedHosts.toList())
-
-    /**
      * Creates a configuration with a map of hosts to their associated tracing header types.
      *
      * @param tracedHostsWithHeaderType a map of host names to sets of [TracingHeaderType]

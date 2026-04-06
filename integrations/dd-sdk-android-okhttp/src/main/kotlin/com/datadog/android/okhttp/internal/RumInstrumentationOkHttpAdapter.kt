@@ -5,6 +5,7 @@
  */
 package com.datadog.android.okhttp.internal
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.RumAttributes
@@ -23,13 +24,14 @@ internal class RumInstrumentationOkHttpAdapter(
         get() = (rumNetworkInstrumentation.sdkCore as? FeatureSdkCore)?.internalLogger
             ?: InternalLogger.UNBOUND
 
+    @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         val call = chain.call()
         val request = chain.request()
         // Request might be changed by customer's upstream interceptor(s)
         val okHttpRequest = registry.restoreUUIDTag(call, request)
         if (okHttpRequest == null) {
-            rumNetworkInstrumentation.reportInstrumentationError { "OkHttp request is missed" }
+            rumNetworkInstrumentation.reportInstrumentationError { "OkHttp request wasn't instrumented" }
             @Suppress("UnsafeThirdPartyFunctionCall") // intercept() allows throwing IOException
             return chain.proceed(request)
         }

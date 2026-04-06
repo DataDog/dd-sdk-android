@@ -121,7 +121,7 @@ internal class OkHttpIntegrationPluginTest {
     @Test
     fun `M add APM application interceptor W build() { apmInstrumentationConfiguration, default scope }`() {
         // Given
-        val apmConfig = ApmNetworkInstrumentationConfiguration("example.com")
+        val apmConfig = ApmNetworkInstrumentationConfiguration(listOf("example.com"))
         val testedPlugin = OkHttpIntegrationPlugin(
             mockBuilderDelegate,
             rumConfiguration = null,
@@ -141,7 +141,7 @@ internal class OkHttpIntegrationPluginTest {
     @Test
     fun `M add APM application interceptor W build() { headerPropagationOnly + no rum }`() {
         // Given
-        val apmConfig = ApmNetworkInstrumentationConfiguration("example.com")
+        val apmConfig = ApmNetworkInstrumentationConfiguration(listOf("example.com"))
             .setHeaderPropagationOnly()
         val testedPlugin = OkHttpIntegrationPlugin(
             mockBuilderDelegate,
@@ -163,7 +163,7 @@ internal class OkHttpIntegrationPluginTest {
     @Test
     fun `M add APM network interceptor W build() { apmInstrumentationConfiguration, ALL scope }`() {
         // Given
-        val apmConfig = ApmNetworkInstrumentationConfiguration("example.com")
+        val apmConfig = ApmNetworkInstrumentationConfiguration(listOf("example.com"))
             .setTraceScope(ApmNetworkTracingScope.ALL)
 
         val testedPlugin = OkHttpIntegrationPlugin(
@@ -185,7 +185,7 @@ internal class OkHttpIntegrationPluginTest {
     @Test
     fun `M add both interceptors W build() { rum + apm configurations }`() {
         // Given
-        val apmConfig = ApmNetworkInstrumentationConfiguration("example.com")
+        val apmConfig = ApmNetworkInstrumentationConfiguration(listOf("example.com"))
         val testedPlugin = OkHttpIntegrationPlugin(
             mockBuilderDelegate,
             rumConfiguration = RumNetworkInstrumentationConfiguration(),
@@ -276,7 +276,7 @@ internal class OkHttpIntegrationPluginTest {
     @Test
     fun `M set composite event listener factory W build() { no rum + no userEventListenerFactory }`() {
         // Given
-        val apmConfig = ApmNetworkInstrumentationConfiguration("example.com")
+        val apmConfig = ApmNetworkInstrumentationConfiguration(listOf("example.com"))
         val testedPlugin = OkHttpIntegrationPlugin(
             mockBuilderDelegate,
             rumConfiguration = null,

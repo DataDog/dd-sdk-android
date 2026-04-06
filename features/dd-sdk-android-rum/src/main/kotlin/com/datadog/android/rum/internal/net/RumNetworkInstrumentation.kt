@@ -5,6 +5,7 @@
  */
 package com.datadog.android.rum.internal.net
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -98,6 +99,7 @@ class RumNetworkInstrumentation internal constructor(
      * @param responseInfo the response information
      * @param attributes additional attributes to attach to the resource event
      */
+    @WorkerThread
     fun stopResource(
         requestInfo: HttpRequestInfo,
         responseInfo: HttpResponseInfo,
@@ -232,6 +234,7 @@ class RumNetworkInstrumentation internal constructor(
                 else -> RumResourceKind.fromMimeType(mimeType)
             }
 
+        @WorkerThread
         private fun HttpResponseInfo.getBodyLength(): Long? {
             val isStream = HttpSpec.ContentType.isStream(contentType)
             val isWebSocket = !headers[HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()

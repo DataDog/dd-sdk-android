@@ -5,13 +5,14 @@
  */
 package com.datadog.android.okhttp.internal
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
 
-internal class OkHttpHttpResponseInfo(
+internal class OkHttpResponseInfo(
     internal val originalResponse: Response,
     internal val internalLogger: InternalLogger
 ) : HttpResponseInfo {
@@ -28,6 +29,7 @@ internal class OkHttpHttpResponseInfo(
 
     override val headers: Map<String, List<String>> get() = originalResponse.headers.toMultimap()
 
+    @get:WorkerThread
     override val contentLength: Long?
         get() = try {
             // if there is a Content-Length available, we can read it directly

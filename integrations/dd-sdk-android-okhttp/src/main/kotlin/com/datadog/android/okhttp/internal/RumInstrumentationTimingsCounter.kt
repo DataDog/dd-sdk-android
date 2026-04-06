@@ -45,34 +45,29 @@ internal class RumInstrumentationTimingsCounter(
 
     // region EventListener
 
-    /** @inheritdoc */
     override fun callStart(call: Call) {
         super.callStart(call)
         requestTracingStateRegistry.get(call)?.let(::sendWaitForResourceTimingEvent)
         callStart = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun dnsStart(call: Call, domainName: String) {
         super.dnsStart(call, domainName)
         requestTracingStateRegistry.get(call)?.let(::sendWaitForResourceTimingEvent)
         dnsStart = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
         super.dnsEnd(call, domainName, inetAddressList)
         dnsEnd = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
         super.connectStart(call, inetSocketAddress, proxy)
         requestTracingStateRegistry.get(call)?.let(::sendWaitForResourceTimingEvent)
         connStart = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun connectEnd(
         call: Call,
         inetSocketAddress: InetSocketAddress,
@@ -83,27 +78,23 @@ internal class RumInstrumentationTimingsCounter(
         connEnd = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun secureConnectStart(call: Call) {
         super.secureConnectStart(call)
         requestTracingStateRegistry.get(call)?.let(::sendWaitForResourceTimingEvent)
         sslStart = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun secureConnectEnd(call: Call, handshake: Handshake?) {
         super.secureConnectEnd(call, handshake)
         sslEnd = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun responseHeadersStart(call: Call) {
         super.responseHeadersStart(call)
         requestTracingStateRegistry.get(call)?.let(::sendWaitForResourceTimingEvent)
         headersStart = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
         headersEnd = sdkCore.time.deviceTimeNs
@@ -112,26 +103,22 @@ internal class RumInstrumentationTimingsCounter(
         }
     }
 
-    /** @inheritdoc */
     override fun responseBodyStart(call: Call) {
         super.responseBodyStart(call)
         requestTracingStateRegistry.get(call)?.let(::sendWaitForResourceTimingEvent)
         bodyStart = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun responseBodyEnd(call: Call, byteCount: Long) {
         super.responseBodyEnd(call, byteCount)
         bodyEnd = sdkCore.time.deviceTimeNs
     }
 
-    /** @inheritdoc */
     override fun callEnd(call: Call) {
         super.callEnd(call)
         requestTracingStateRegistry.get(call)?.let(::sendTiming)
     }
 
-    /** @inheritdoc */
     override fun callFailed(call: Call, ioe: IOException) {
         super.callFailed(call, ioe)
         requestTracingStateRegistry.get(call)?.let(::sendTiming)

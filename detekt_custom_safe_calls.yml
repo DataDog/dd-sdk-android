@@ -1302,6 +1302,7 @@ datadog:
       # endregion
       # region OkHttp
       - "okhttp3.Call.Factory.newCall(okhttp3.Request)"
+      - "okhttp3.Call.hashCode()"
       - "okhttp3.Call.request()"
       - "okhttp3.ConnectionSpec.Builder.build()"
       - "okhttp3.ConnectionSpec.Builder.cipherSuites(kotlin.Array)"
