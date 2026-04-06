@@ -21,6 +21,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
@@ -28,6 +29,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -508,6 +510,106 @@ internal class RumNetworkInstrumentationTest {
             InternalLogger.Target.MAINTAINER,
             "Unable to instrument RUM resource: $fakeErrorMessage"
         )
+    }
+
+    @Test
+    fun `M include header attributes W stopResource() { trackResourceHeaders enabled }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        @LongForgery(min = 0) fakeContentLength: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeHeaderName = "x-request-id"
+        val fakeHeaderValue = forge.anAsciiString()
+        val fakeResHeaderName = "x-cache"
+        val fakeResHeaderValue = forge.anAsciiString()
+
+        val extractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(fakeHeaderName, fakeResHeaderName)
+            .build()
+
+        testedInstrumentation = RumNetworkInstrumentation(
+            sdkInstanceName = null,
+            networkInstrumentationName = fakeNetworkInstrumentationName,
+            rumResourceAttributesProvider = mockRumResourceAttributesProvider,
+            libraryType = fakeLibraryType,
+            resourceHeadersExtractor = extractor
+        )
+
+        fakeRequestInfo = fakeRequestInfo.copy(
+            headers = mapOf(fakeHeaderName to listOf(fakeHeaderValue))
+        )
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.contentLength) doReturn fakeContentLength
+        whenever(mockResponseInfo.contentType) doReturn null
+        whenever(mockResponseInfo.headers) doReturn mapOf(
+            fakeResHeaderName to listOf(fakeResHeaderValue)
+        )
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn emptyMap()
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+            @Suppress("UNCHECKED_CAST")
+            val reqHeaders = firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+            assertThat(reqHeaders).isNotNull
+            assertThat(reqHeaders).containsEntry(fakeHeaderName, fakeHeaderValue)
+
+            @Suppress("UNCHECKED_CAST")
+            val resHeaders = firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
+            assertThat(resHeaders).isNotNull
+            assertThat(resHeaders).containsEntry(fakeResHeaderName, fakeResHeaderValue)
+        }
+    }
+
+    @Test
+    fun `M not include header attributes W stopResource() { no trackResourceHeaders }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        @LongForgery(min = 0) fakeContentLength: Long
+    ) {
+        // Given
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.contentLength) doReturn fakeContentLength
+        whenever(mockResponseInfo.contentType) doReturn null
+        whenever(mockResponseInfo.headers) doReturn emptyMap()
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn emptyMap()
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+            assertThat(firstValue).doesNotContainKey(RumAttributes.REQUEST_HEADERS)
+            assertThat(firstValue).doesNotContainKey(RumAttributes.RESPONSE_HEADERS)
+        }
     }
 
     @Test

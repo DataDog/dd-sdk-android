@@ -141,16 +141,11 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             configuration: RumNetworkInstrumentationConfiguration
         ) = configuration.createInstrumentation(name, libraryType)
 
-        fun extractRequestHeaders(
+        fun toResourceAttributes(
             extractor: ResourceHeadersExtractor,
-            headers: Map<String, List<String>>,
+            requestHeaders: Map<String, List<String>>,
+            responseHeaders: Map<String, List<String>>,
             internalLogger: InternalLogger
-        ) = extractor.extractRequestHeaders(headers, internalLogger)
-
-        fun extractResponseHeaders(
-            extractor: ResourceHeadersExtractor,
-            headers: Map<String, List<String>>,
-            internalLogger: InternalLogger
-        ) = extractor.extractResponseHeaders(headers, internalLogger)
+        ) = extractor.toResourceAttributes(requestHeaders, responseHeaders, internalLogger)
     }
 }

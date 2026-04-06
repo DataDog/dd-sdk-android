@@ -7,6 +7,7 @@
 package com.datadog.android.rum.resource
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
 import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.SECURITY_PATTERN
 import java.util.Locale
@@ -93,29 +94,24 @@ class ResourceHeadersExtractor private constructor(
     }
 
     /**
-     * Extracts the allowed request headers from the given [headers] map.
-     * @param headers the raw request headers (key to list of values).
+     * Extracts allowed request and response headers and returns them as RUM resource attributes.
+     * @param requestHeaders the raw request headers (key to list of values).
+     * @param responseHeaders the raw response headers (key to list of values).
      * @param internalLogger logger for debug messages.
-     * @return a map of allowed header names to their joined values.
+     * @return a map containing [RumAttributes.REQUEST_HEADERS] and [RumAttributes.RESPONSE_HEADERS]
+     *   entries, or empty if no headers matched.
      */
-    internal fun extractRequestHeaders(
-        headers: Map<String, List<String>>,
+    internal fun toResourceAttributes(
+        requestHeaders: Map<String, List<String>>,
+        responseHeaders: Map<String, List<String>>,
         internalLogger: InternalLogger
-    ): Map<String, String> {
-        return extractHeaders(headers, requestHeaders, internalLogger)
-    }
-
-    /**
-     * Extracts the allowed response headers from the given [headers] map.
-     * @param headers the raw response headers (key to list of values).
-     * @param internalLogger logger for debug messages.
-     * @return a map of allowed header names to their joined values.
-     */
-    internal fun extractResponseHeaders(
-        headers: Map<String, List<String>>,
-        internalLogger: InternalLogger
-    ): Map<String, String> {
-        return extractHeaders(headers, responseHeaders, internalLogger)
+    ): Map<String, Any> {
+        val reqHeaders = extractHeaders(requestHeaders, this.requestHeaders, internalLogger)
+        val resHeaders = extractHeaders(responseHeaders, this.responseHeaders, internalLogger)
+        return buildMap {
+            if (reqHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, reqHeaders)
+            if (resHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, resHeaders)
+        }
     }
 
     private fun extractHeaders(
@@ -123,6 +119,7 @@ class ResourceHeadersExtractor private constructor(
         allowedHeaders: List<String>,
         internalLogger: InternalLogger
     ): Map<String, String> {
+        if (headers.isEmpty()) return emptyMap()
         val normalizedHeaders = headers.mapKeys { it.key.lowercase(Locale.US) }
         val result = mutableMapOf<String, String>()
         var currentSize = 0

@@ -200,28 +200,6 @@ open class DatadogInterceptor internal constructor(
 
     // region Internal
 
-    private fun extractHeaderAttributes(
-        sdkCore: FeatureSdkCore,
-        response: Response
-    ): Map<String, Any?> {
-        val extractor = resourceHeadersExtractor ?: return emptyMap()
-        val reqHeaders = _RumInternalProxy.extractRequestHeaders(
-            extractor,
-            response.request.headers.toMultimap(),
-            sdkCore.internalLogger
-        )
-        val resHeaders = _RumInternalProxy.extractResponseHeaders(
-            extractor,
-            response.headers.toMultimap(),
-            sdkCore.internalLogger
-        )
-        return buildMap {
-            if (reqHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, reqHeaders)
-            if (resHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, resHeaders)
-        }
-    }
-
-    @WorkerThread
     private fun handleResponse(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -254,7 +232,14 @@ open class DatadogInterceptor internal constructor(
             }
         }
 
-        val headerAttributes = extractHeaderAttributes(sdkCore, response)
+        val resourceHeaderAttributes = resourceHeadersExtractor?.let {
+            _RumInternalProxy.toResourceAttributes(
+                extractor = it,
+                requestHeaders = request.headers.toMultimap(),
+                responseHeaders = response.headers.toMultimap(),
+                internalLogger = sdkCore.internalLogger
+            )
+        } ?: emptyMap()
 
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
@@ -262,7 +247,9 @@ open class DatadogInterceptor internal constructor(
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
             kind,
-            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null) + headerAttributes
+            attributes +
+                rumResourceAttributesProvider.onProvideAttributes(request, response, null) +
+                resourceHeaderAttributes
         )
     }
 
