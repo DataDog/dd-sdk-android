@@ -12,6 +12,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
 @ExtendWith(ForgeExtension::class)
@@ -27,5 +28,19 @@ internal class RumContextTest {
 
         // Then
         assertThat(anotherRumContext).isEqualTo(fakeRumContext)
+    }
+
+    @Test
+    fun `M parse session sample rate W fromFeatureContext() {value is Double}`() {
+        // Given
+        val featureContext = mapOf<String, Any?>(
+            RumContext.SESSION_SAMPLE_RATE to 42.5
+        )
+
+        // When
+        val rumContext = RumContext.fromFeatureContext(featureContext)
+
+        // Then
+        assertThat(rumContext.sessionSampleRate).isEqualTo(42.5f)
     }
 }

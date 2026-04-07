@@ -267,6 +267,16 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M use full session sample rate W init() { getSampleRate returns null }`() {
+        // Given
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(null)
+        initializeTestedScope(withMockChildScope = false)
+
+        // Then
+        assertThat(testedScope.sessionSampleRate).isEqualTo(RumContext.FULL_SESSION_SAMPLE_RATE)
+    }
+
+    @Test
     fun `M delegate events to child scope W handleViewEvent() {TRACKED}`(
         forge: Forge
     ) {
@@ -476,6 +486,43 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `M keep session sample rate stable W getRumContext() {sampler rate changes mid-session}`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(100f, 20f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        initializeTestedScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val firstContext = testedScope.getRumContext()
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(100f)
+        val secondContext = testedScope.getRumContext()
+
+        // Then
+        assertThat(firstContext.sessionSampleRate).isEqualTo(20f)
+        assertThat(secondContext.sessionSampleRate).isEqualTo(20f)
+    }
+
+    @Test
+    fun `M use full session sample rate W getRumContext() {getSampleRate returns null on renewSession}`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(null)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        initializeTestedScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.sessionSampleRate).isEqualTo(RumContext.FULL_SESSION_SAMPLE_RATE)
     }
 
     @Test

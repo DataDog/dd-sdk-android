@@ -25,7 +25,8 @@ internal data class RumContext(
     val syntheticsResultId: String? = null,
     val viewTimestamp: Long = 0L,
     val viewTimestampOffset: Long = 0L,
-    val hasReplay: Boolean = false
+    val hasReplay: Boolean = false,
+    val sessionSampleRate: Float = FULL_SESSION_SAMPLE_RATE
 ) {
 
     fun toMap(): Map<String, Any?> {
@@ -44,7 +45,8 @@ internal data class RumContext(
             SYNTHETICS_RESULT_ID to syntheticsResultId,
             VIEW_TIMESTAMP to viewTimestamp,
             HAS_REPLAY to hasReplay,
-            VIEW_TIMESTAMP_OFFSET to viewTimestampOffset
+            VIEW_TIMESTAMP_OFFSET to viewTimestampOffset,
+            SESSION_SAMPLE_RATE to sessionSampleRate
         )
     }
 
@@ -68,6 +70,8 @@ internal data class RumContext(
         const val HAS_REPLAY = "view_has_replay"
         const val VIEW_TIMESTAMP = "view_timestamp"
         const val VIEW_TIMESTAMP_OFFSET = "view_timestamp_offset"
+        const val SESSION_SAMPLE_RATE = "session_sample_rate"
+        const val FULL_SESSION_SAMPLE_RATE: Float = 100f
 
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
@@ -89,6 +93,8 @@ internal data class RumContext(
             val hasReplay = featureContext[HAS_REPLAY] as? Boolean ?: false
             val viewTimestamp = featureContext[VIEW_TIMESTAMP] as? Long ?: 0L
             val viewTimestampOffset = featureContext[VIEW_TIMESTAMP_OFFSET] as? Long ?: 0L
+            val sessionSampleRate = (featureContext[SESSION_SAMPLE_RATE] as? Number)
+                ?.toFloat() ?: FULL_SESSION_SAMPLE_RATE
 
             return RumContext(
                 applicationId = applicationId ?: NULL_UUID,
@@ -105,7 +111,8 @@ internal data class RumContext(
                 syntheticsResultId = syntheticsResultId,
                 viewTimestamp = viewTimestamp,
                 viewTimestampOffset = viewTimestampOffset,
-                hasReplay = hasReplay
+                hasReplay = hasReplay,
+                sessionSampleRate = sessionSampleRate
             )
         }
     }

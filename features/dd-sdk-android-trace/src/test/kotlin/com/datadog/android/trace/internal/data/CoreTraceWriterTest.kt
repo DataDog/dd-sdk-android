@@ -24,6 +24,7 @@ import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_ACTION_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_APPLICATION_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_ID
+import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_SAMPLE_RATE
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_VIEW_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
 import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
@@ -183,13 +184,14 @@ internal class CoreTraceWriterTest {
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
             allValues.forEach { span ->
+                verify(span).setTag(LogAttributes.RUM_APPLICATION_ID, fakeRumContext[RUM_CONTEXT_APPLICATION_ID])
+                verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
+                verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
+                verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
                 verify(span).setTag(
-                    LogAttributes.RUM_APPLICATION_ID,
-                    fakeRumContext[RUM_CONTEXT_APPLICATION_ID] as? Any?
+                    RumContextPropagator.SESSION_SAMPLE_RATE_KEY,
+                    fakeRumContext[RUM_CONTEXT_SESSION_SAMPLE_RATE]
                 )
-                verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID] as? Any?)
-                verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID] as? Any?)
-                verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID] as? Any?)
                 verify(span).setTag(RumContextPropagator.DATADOG_INITIAL_CONTEXT, null as Any?)
             }
         }
