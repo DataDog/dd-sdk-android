@@ -51,7 +51,7 @@ class RumNetworkInstrumentation internal constructor(
     internal val networkInstrumentationName: String,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType,
-    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor?
 ) {
     private val sdkCoreReference = SdkReference(sdkInstanceName) {
         it.networkMonitor?.apply {
@@ -109,8 +109,8 @@ class RumNetworkInstrumentation internal constructor(
         attributes: Map<String, Any?> = emptyMap()
     ) = ifRumEnabled { sdkCore ->
         val resourceHeaderAttributes = resourceHeadersExtractor?.toResourceAttributes(
-            requestHeaders = requestInfo.headers,
-            responseHeaders = responseInfo.headers,
+            rawRequestHeaders = responseInfo.request?.headers ?: requestInfo.headers,
+            rawResponseHeaders = responseInfo.headers,
             internalLogger = sdkCore.internalLogger
         ) ?: emptyMap()
         sdkCore.networkMonitor?.stopResource(

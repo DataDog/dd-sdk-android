@@ -200,6 +200,7 @@ open class DatadogInterceptor internal constructor(
 
     // region Internal
 
+    @WorkerThread
     private fun handleResponse(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -235,8 +236,8 @@ open class DatadogInterceptor internal constructor(
         val resourceHeaderAttributes = resourceHeadersExtractor?.let {
             _RumInternalProxy.toResourceAttributes(
                 extractor = it,
-                requestHeaders = request.headers.toMultimap(),
-                responseHeaders = response.headers.toMultimap(),
+                rawRequestHeaders = response.request.headers.toMultimap(),
+                rawResponseHeaders = response.headers.toMultimap(),
                 internalLogger = sdkCore.internalLogger
             )
         } ?: emptyMap()
@@ -417,6 +418,8 @@ open class DatadogInterceptor internal constructor(
 
         /**
          * Enables capturing HTTP request and response headers in RUM Resource events.
+         *
+         * Sensitive headers matching the [ResourceHeadersExtractor.SECURITY_PATTERN] are automatically filtered out, even if specified in the [extractor].
          *
          * @param extractor the [ResourceHeadersExtractor] specifying which headers to capture.
          * Defaults to a configuration that captures common safe headers.

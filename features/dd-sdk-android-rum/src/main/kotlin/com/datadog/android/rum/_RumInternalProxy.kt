@@ -143,9 +143,9 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
 
         fun toResourceAttributes(
             extractor: ResourceHeadersExtractor,
-            requestHeaders: Map<String, List<String>>,
-            responseHeaders: Map<String, List<String>>,
+            rawRequestHeaders: Map<String, List<String>>,
+            rawResponseHeaders: Map<String, List<String>>,
             internalLogger: InternalLogger
-        ) = extractor.toResourceAttributes(requestHeaders, responseHeaders, internalLogger)
+        ) = extractor.toResourceAttributes(rawRequestHeaders, rawResponseHeaders, internalLogger)
     }
 }

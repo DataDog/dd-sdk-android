@@ -21,8 +21,8 @@ import java.util.Locale
  *  @see Builder
  */
 class ResourceHeadersExtractor private constructor(
-    internal val requestHeaders: List<String>,
-    internal val responseHeaders: List<String>
+    internal val allowedRequestHeaders: List<String>,
+    internal val allowedResponseHeaders: List<String>
 ) {
 
     /**
@@ -54,7 +54,7 @@ class ResourceHeadersExtractor private constructor(
          * @return a new [ResourceHeadersExtractor] instance.
          */
         fun build(): ResourceHeadersExtractor {
-            val (sensitiveRequested, filteredCustom) = customHeaders.partition(SECURITY_PATTERN::containsMatchIn)
+            val (sensitiveRequested, safeCustomHeaders) = customHeaders.partition(SECURITY_PATTERN::containsMatchIn)
 
             if (sensitiveRequested.isNotEmpty()) {
                 logger.log(
@@ -66,19 +66,19 @@ class ResourceHeadersExtractor private constructor(
                 )
             }
 
-            val requestHeaders = if (includeDefaults) {
-                (DEFAULT_REQUEST_HEADERS + filteredCustom).distinct()
+            val allowedRequestHeaders = if (includeDefaults) {
+                (DEFAULT_REQUEST_HEADERS + safeCustomHeaders).distinct()
             } else {
-                filteredCustom.distinct()
+                safeCustomHeaders.distinct()
             }
 
-            val responseHeaders = if (includeDefaults) {
-                (DEFAULT_RESPONSE_HEADERS + filteredCustom).distinct()
+            val allowedResponseHeaders = if (includeDefaults) {
+                (DEFAULT_RESPONSE_HEADERS + safeCustomHeaders).distinct()
             } else {
-                filteredCustom.distinct()
+                safeCustomHeaders.distinct()
             }
 
-            if (requestHeaders.isEmpty() && responseHeaders.isEmpty()) {
+            if (allowedRequestHeaders.isEmpty() && allowedResponseHeaders.isEmpty()) {
                 logger.log(
                     level = InternalLogger.Level.WARN,
                     target = InternalLogger.Target.USER,
@@ -87,40 +87,40 @@ class ResourceHeadersExtractor private constructor(
             }
 
             return ResourceHeadersExtractor(
-                requestHeaders = requestHeaders,
-                responseHeaders = responseHeaders
+                allowedRequestHeaders = allowedRequestHeaders,
+                allowedResponseHeaders = allowedResponseHeaders
             )
         }
     }
 
     /**
      * Extracts allowed request and response headers and returns them as RUM resource attributes.
-     * @param requestHeaders the raw request headers (key to list of values).
-     * @param responseHeaders the raw response headers (key to list of values).
+     * @param rawRequestHeaders the raw request headers (key to list of values).
+     * @param rawResponseHeaders the raw response headers (key to list of values).
      * @param internalLogger logger for debug messages.
      * @return a map containing [RumAttributes.REQUEST_HEADERS] and [RumAttributes.RESPONSE_HEADERS]
      *   entries, or empty if no headers matched.
      */
     internal fun toResourceAttributes(
-        requestHeaders: Map<String, List<String>>,
-        responseHeaders: Map<String, List<String>>,
+        rawRequestHeaders: Map<String, List<String>>,
+        rawResponseHeaders: Map<String, List<String>>,
         internalLogger: InternalLogger
     ): Map<String, Any> {
-        val reqHeaders = extractHeaders(requestHeaders, this.requestHeaders, internalLogger)
-        val resHeaders = extractHeaders(responseHeaders, this.responseHeaders, internalLogger)
+        val extractedRequestHeaders = extractHeaders(rawRequestHeaders, allowedRequestHeaders, internalLogger)
+        val extractedResponseHeaders = extractHeaders(rawResponseHeaders, allowedResponseHeaders, internalLogger)
         return buildMap {
-            if (reqHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, reqHeaders)
-            if (resHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, resHeaders)
+            if (extractedRequestHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, extractedRequestHeaders)
+            if (extractedResponseHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, extractedResponseHeaders)
         }
     }
 
     private fun extractHeaders(
-        headers: Map<String, List<String>>,
+        rawHeaders: Map<String, List<String>>,
         allowedHeaders: List<String>,
         internalLogger: InternalLogger
     ): Map<String, String> {
-        if (headers.isEmpty()) return emptyMap()
-        val normalizedHeaders = headers.mapKeys { it.key.lowercase(Locale.US) }
+        if (rawHeaders.isEmpty() || allowedHeaders.isEmpty()) return emptyMap()
+        val normalizedHeaders = rawHeaders.mapKeys { it.key.lowercase(Locale.US) }
         val result = mutableMapOf<String, String>()
         var currentSize = 0
 

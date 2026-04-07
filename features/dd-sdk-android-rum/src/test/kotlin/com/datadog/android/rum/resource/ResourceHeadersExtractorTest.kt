@@ -47,13 +47,13 @@ internal class ResourceHeadersExtractorTest {
         // Given
         val expectedMap = DEFAULT_REQUEST_HEADERS
             .associateWith { forge.anAsciiString() }
-        val requestHeaders = expectedMap.mapValues { listOf(it.value) }
+        val rawRequestHeaders = expectedMap.mapValues { listOf(it.value) }
 
         // When
-        val result = testedExtractor.toResourceAttributes(requestHeaders, emptyMap(), mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(rawRequestHeaders, emptyMap(), mockInternalLogger)
 
         // Then
-        assertThat(result.requestHeaders()).containsExactlyEntriesOf(expectedMap)
+        assertThat(result.extractedRequestHeaders()).containsExactlyEntriesOf(expectedMap)
     }
 
     @Test
@@ -61,13 +61,13 @@ internal class ResourceHeadersExtractorTest {
         // Given
         val expectedMap = DEFAULT_RESPONSE_HEADERS
             .associateWith { forge.anAsciiString() }
-        val responseHeaders = expectedMap.mapValues { listOf(it.value) }
+        val rawResponseHeaders = expectedMap.mapValues { listOf(it.value) }
 
         // When
-        val result = testedExtractor.toResourceAttributes(emptyMap(), responseHeaders, mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(emptyMap(), rawResponseHeaders, mockInternalLogger)
 
         // Then
-        assertThat(result.responseHeaders()).containsExactlyEntriesOf(expectedMap)
+        assertThat(result.extractedResponseHeaders()).containsExactlyEntriesOf(expectedMap)
     }
 
     @Test
@@ -75,13 +75,13 @@ internal class ResourceHeadersExtractorTest {
         // Given
         val headerName = forge.anElementFrom(DEFAULT_REQUEST_HEADERS)
         val fakeValue = forge.anAsciiString()
-        val requestHeaders = mapOf(headerName.uppercase(Locale.US) to listOf(fakeValue))
+        val rawRequestHeaders = mapOf(headerName.uppercase(Locale.US) to listOf(fakeValue))
 
         // When
-        val result = testedExtractor.toResourceAttributes(requestHeaders, emptyMap(), mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(rawRequestHeaders, emptyMap(), mockInternalLogger)
 
         // Then
-        assertThat(result.requestHeaders()).containsExactlyEntriesOf(
+        assertThat(result.extractedRequestHeaders()).containsExactlyEntriesOf(
             mapOf(headerName to fakeValue)
         )
     }
@@ -91,13 +91,13 @@ internal class ResourceHeadersExtractorTest {
         // Given
         val headerName = forge.anElementFrom(DEFAULT_RESPONSE_HEADERS)
         val fakeValues = forge.aList(forge.anInt(2, 5)) { anAsciiString() }
-        val responseHeaders = mapOf(headerName to fakeValues)
+        val rawResponseHeaders = mapOf(headerName to fakeValues)
 
         // When
-        val result = testedExtractor.toResourceAttributes(emptyMap(), responseHeaders, mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(emptyMap(), rawResponseHeaders, mockInternalLogger)
 
         // Then
-        assertThat(result.responseHeaders()).containsExactlyEntriesOf(
+        assertThat(result.extractedResponseHeaders()).containsExactlyEntriesOf(
             mapOf(headerName to fakeValues.joinToString(", "))
         )
     }
@@ -108,13 +108,13 @@ internal class ResourceHeadersExtractorTest {
         val configuredHeader = forge.anElementFrom(DEFAULT_REQUEST_HEADERS)
         val fakeValue = forge.anAsciiString()
         val nonConfiguredHeaders = forge.anHttpHeaderMap().mapValues { listOf(it.value) }
-        val requestHeaders = nonConfiguredHeaders + mapOf(configuredHeader to listOf(fakeValue))
+        val rawRequestHeaders = nonConfiguredHeaders + mapOf(configuredHeader to listOf(fakeValue))
 
         // When
-        val result = testedExtractor.toResourceAttributes(requestHeaders, emptyMap(), mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(rawRequestHeaders, emptyMap(), mockInternalLogger)
 
         // Then
-        assertThat(result.requestHeaders()).containsExactlyEntriesOf(
+        assertThat(result.extractedRequestHeaders()).containsExactlyEntriesOf(
             mapOf(configuredHeader to fakeValue)
         )
     }
@@ -131,15 +131,15 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M return empty map W toResourceAttributes() { no matching headers }`(forge: Forge) {
         // Given
-        val requestHeaders = mapOf(
+        val rawRequestHeaders = mapOf(
             "x-custom-${forge.anAlphabeticalString()}" to listOf(forge.anAsciiString())
         )
-        val responseHeaders = mapOf(
+        val rawResponseHeaders = mapOf(
             "x-custom-${forge.anAlphabeticalString()}" to listOf(forge.anAsciiString())
         )
 
         // When
-        val result = testedExtractor.toResourceAttributes(requestHeaders, responseHeaders, mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(rawRequestHeaders, rawResponseHeaders, mockInternalLogger)
 
         // Then
         assertThat(result).isEmpty()
@@ -154,13 +154,13 @@ internal class ResourceHeadersExtractorTest {
         // Given
         val headerName = forge.anElementFrom(DEFAULT_REQUEST_HEADERS)
         val longValue = forge.aStringMatching("[A-Za-z0-9]{200,300}")
-        val requestHeaders = mapOf(headerName to listOf(longValue))
+        val rawRequestHeaders = mapOf(headerName to listOf(longValue))
 
         // When
-        val result = testedExtractor.toResourceAttributes(requestHeaders, emptyMap(), mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(rawRequestHeaders, emptyMap(), mockInternalLogger)
 
         // Then
-        val value = checkNotNull(result.requestHeaders()[headerName])
+        val value = checkNotNull(result.extractedRequestHeaders()[headerName])
         assertThat(value.toByteArray(Charsets.UTF_8).size).isLessThanOrEqualTo(128)
     }
 
@@ -215,14 +215,13 @@ internal class ResourceHeadersExtractorTest {
             .build()
 
         // Build headers where each has a ~100 byte value (enough to exceed 2KB with ~20 headers)
-        val responseHeaders = (1..50).associate { "x-header-$it" to listOf("v".repeat(100)) }
+        val rawResponseHeaders = (1..50).associate { "x-header-$it" to listOf("v".repeat(100)) }
 
         // When
-        val result = testedExtractor.toResourceAttributes(emptyMap(), responseHeaders, mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(emptyMap(), rawResponseHeaders, mockInternalLogger)
 
         // Then
-        val resHeaders = result.responseHeaders()
-        val totalSize = resHeaders.entries.sumOf {
+        val totalSize = result.extractedResponseHeaders().entries.sumOf {
             it.key.length + 1 + it.value.toByteArray(Charsets.UTF_8).size
         }
         assertThat(totalSize).isLessThanOrEqualTo(HEADER_SIZE_LIMIT_BYTES)
@@ -237,13 +236,13 @@ internal class ResourceHeadersExtractorTest {
             .build()
 
         // Each header has a tiny value to avoid hitting 2KB limit first
-        val requestHeaders = headerNames.associateWith { listOf("v") }
+        val rawRequestHeaders = headerNames.associateWith { listOf("v") }
 
         // When
-        val result = testedExtractor.toResourceAttributes(requestHeaders, emptyMap(), mockInternalLogger)
+        val result = testedExtractor.toResourceAttributes(rawRequestHeaders, emptyMap(), mockInternalLogger)
 
         // Then
-        assertThat(result.requestHeaders().size).isLessThanOrEqualTo(100)
+        assertThat(result.extractedRequestHeaders().size).isLessThanOrEqualTo(100)
     }
 
     // endregion
@@ -255,31 +254,31 @@ internal class ResourceHeadersExtractorTest {
         // Given
         val fakeReqValue = forge.anAsciiString()
         val fakeResValue = forge.anAsciiString()
-        val requestHeaders = mapOf("content-type" to listOf(fakeReqValue))
-        val responseHeaders = mapOf("content-type" to listOf(fakeResValue))
+        val rawRequestHeaders = mapOf("content-type" to listOf(fakeReqValue))
+        val rawResponseHeaders = mapOf("content-type" to listOf(fakeResValue))
 
         // When
         val result = testedExtractor.toResourceAttributes(
-            requestHeaders,
-            responseHeaders,
+            rawRequestHeaders,
+            rawResponseHeaders,
             mockInternalLogger
         )
 
         // Then
-        assertThat(result.requestHeaders()).containsEntry("content-type", fakeReqValue)
-        assertThat(result.responseHeaders()).containsEntry("content-type", fakeResValue)
+        assertThat(result.extractedRequestHeaders()).containsEntry("content-type", fakeReqValue)
+        assertThat(result.extractedResponseHeaders()).containsEntry("content-type", fakeResValue)
     }
 
     @Test
     fun `M omit request headers key W toResourceAttributes() { no matching request headers }`(forge: Forge) {
         // Given
-        val requestHeaders = mapOf("x-unknown-header" to listOf(forge.anAsciiString()))
-        val responseHeaders = mapOf("content-type" to listOf(forge.anAsciiString()))
+        val rawRequestHeaders = mapOf("x-unknown-header" to listOf(forge.anAsciiString()))
+        val rawResponseHeaders = mapOf("content-type" to listOf(forge.anAsciiString()))
 
         // When
         val result = testedExtractor.toResourceAttributes(
-            requestHeaders,
-            responseHeaders,
+            rawRequestHeaders,
+            rawResponseHeaders,
             mockInternalLogger
         )
 
@@ -291,13 +290,13 @@ internal class ResourceHeadersExtractorTest {
     @Test
     fun `M omit response headers key W toResourceAttributes() { no matching response headers }`(forge: Forge) {
         // Given
-        val requestHeaders = mapOf("content-type" to listOf(forge.anAsciiString()))
-        val responseHeaders = mapOf("x-unknown-header" to listOf(forge.anAsciiString()))
+        val rawRequestHeaders = mapOf("content-type" to listOf(forge.anAsciiString()))
+        val rawResponseHeaders = mapOf("x-unknown-header" to listOf(forge.anAsciiString()))
 
         // When
         val result = testedExtractor.toResourceAttributes(
-            requestHeaders,
-            responseHeaders,
+            rawRequestHeaders,
+            rawResponseHeaders,
             mockInternalLogger
         )
 
@@ -310,12 +309,12 @@ internal class ResourceHeadersExtractorTest {
 
     // region Helpers
 
-    private fun Map<String, Any?>.requestHeaders(): Map<String, String> {
+    private fun Map<String, Any?>.extractedRequestHeaders(): Map<String, String> {
         @Suppress("UNCHECKED_CAST")
         return checkNotNull(this[RumAttributes.REQUEST_HEADERS] as? Map<String, String>)
     }
 
-    private fun Map<String, Any?>.responseHeaders(): Map<String, String> {
+    private fun Map<String, Any?>.extractedResponseHeaders(): Map<String, String> {
         @Suppress("UNCHECKED_CAST")
         return checkNotNull(this[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>)
     }

@@ -43,6 +43,8 @@ class RumNetworkInstrumentationConfiguration {
     /**
      * Enables capturing HTTP request and response headers in RUM Resource events.
      *
+     * Sensitive headers matching the [ResourceHeadersExtractor.SECURITY_PATTERN] are automatically filtered out, even if specified in the [extractor].
+     *
      * @param extractor the [ResourceHeadersExtractor] specifying which headers to capture.
      * Defaults to a configuration that captures common safe headers.
      * @return this configuration for chaining.

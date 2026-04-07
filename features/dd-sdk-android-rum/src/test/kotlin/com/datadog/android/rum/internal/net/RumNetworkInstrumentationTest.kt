@@ -126,7 +126,8 @@ internal class RumNetworkInstrumentationTest {
             sdkInstanceName = null,
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
-            libraryType = fakeLibraryType
+            libraryType = fakeLibraryType,
+            resourceHeadersExtractor = null
         )
     }
 
@@ -566,14 +567,75 @@ internal class RumNetworkInstrumentationTest {
                 capture()
             )
             @Suppress("UNCHECKED_CAST")
-            val reqHeaders = firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
-            assertThat(reqHeaders).isNotNull
-            assertThat(reqHeaders).containsEntry(fakeHeaderName, fakeHeaderValue)
+            val extractedRequestHeaders = firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+            assertThat(extractedRequestHeaders).isNotNull
+            assertThat(extractedRequestHeaders).containsEntry(fakeHeaderName, fakeHeaderValue)
 
             @Suppress("UNCHECKED_CAST")
-            val resHeaders = firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
-            assertThat(resHeaders).isNotNull
-            assertThat(resHeaders).containsEntry(fakeResHeaderName, fakeResHeaderValue)
+            val extractedResponseHeaders = firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
+            assertThat(extractedResponseHeaders).isNotNull
+            assertThat(extractedResponseHeaders).containsEntry(fakeResHeaderName, fakeResHeaderValue)
+        }
+    }
+
+    @Test
+    fun `M prefer on-wire request headers W stopResource() { responseInfo has request }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        @LongForgery(min = 0) fakeContentLength: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeHeaderName = "x-request-id"
+        val fakeOriginalHeaderValue = forge.anAsciiString()
+        val fakeOnWireHeaderValue = forge.anAsciiString()
+
+        val extractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(fakeHeaderName)
+            .build()
+
+        testedInstrumentation = RumNetworkInstrumentation(
+            sdkInstanceName = null,
+            networkInstrumentationName = fakeNetworkInstrumentationName,
+            rumResourceAttributesProvider = mockRumResourceAttributesProvider,
+            libraryType = fakeLibraryType,
+            resourceHeadersExtractor = extractor
+        )
+
+        fakeRequestInfo = fakeRequestInfo.copy(
+            headers = mapOf(fakeHeaderName to listOf(fakeOriginalHeaderValue))
+        )
+        val onWireRequestInfo = fakeRequestInfo.copy(
+            headers = mapOf(fakeHeaderName to listOf(fakeOnWireHeaderValue))
+        )
+        whenever(mockResponseInfo.request) doReturn onWireRequestInfo
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.contentLength) doReturn fakeContentLength
+        whenever(mockResponseInfo.contentType) doReturn null
+        whenever(mockResponseInfo.headers) doReturn emptyMap()
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn emptyMap()
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+            @Suppress("UNCHECKED_CAST")
+            val extractedRequestHeaders = firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+            assertThat(extractedRequestHeaders).isNotNull
+            assertThat(extractedRequestHeaders).containsEntry(fakeHeaderName, fakeOnWireHeaderValue)
         }
     }
 
@@ -693,7 +755,8 @@ internal class RumNetworkInstrumentationTest {
             sdkInstanceName = null,
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
-            libraryType = fakeLibraryType
+            libraryType = fakeLibraryType,
+            resourceHeadersExtractor = null
         )
 
         // When
