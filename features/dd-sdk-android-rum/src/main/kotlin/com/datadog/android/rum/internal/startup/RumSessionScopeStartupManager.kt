@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.internal.domain.RumContext
@@ -288,13 +289,11 @@ internal class RumSessionScopeStartupManagerImpl(
 
     private fun DatadogContext.getProfilingStatus(): VitalAppLaunchEvent.ProfilingStatus? {
         val isProfilerRunning = featuresContext[Feature.PROFILING_FEATURE_NAME]
-            ?.get(PROFILER_IS_RUNNING)
+            ?.get(FeatureContextKeys.PROFILER_IS_RUNNING)
         return if (isProfilerRunning == true) VitalAppLaunchEvent.ProfilingStatus.RUNNING else null
     }
 
     companion object {
-        private const val PROFILER_IS_RUNNING = "profiler_is_running"
-
         internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
             "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
 

@@ -15,6 +15,7 @@ import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.insights.internal.platform.Platform
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
@@ -143,7 +144,7 @@ internal class DefaultInsightsCollector internal constructor(
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.PROFILING_FEATURE_NAME) {
-            val running = context[PROFILER_IS_RUNNING] as? Boolean ?: false
+            val running = context[FeatureContextKeys.PROFILER_IS_RUNNING] as? Boolean ?: false
             handler.post {
                 isProfilingRunning = running
                 updatesListeners.forEach(InsightsUpdatesListener::onDataUpdated)
@@ -196,8 +197,5 @@ internal class DefaultInsightsCollector internal constructor(
         internal const val PRECISION = 2
         internal const val GC_COUNT = "art.gc.gc-count"
         internal const val ONE_SECOND_NS = 1_000_000_000L
-
-        // Contract key; must match ProfilingFeature.PROFILER_IS_RUNNING in dd-sdk-android-profiling.
-        private const val PROFILER_IS_RUNNING = "profiler_is_running"
     }
 }

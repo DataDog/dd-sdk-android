@@ -19,6 +19,8 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.FeatureContextKeys.PROFILER_IS_RUNNING
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -5580,7 +5582,7 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
             }
         )
 
@@ -5604,7 +5606,7 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -5671,7 +5673,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
             }
         )
 
@@ -5707,7 +5709,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -5743,7 +5745,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
             }
         )
 

@@ -1,3 +1,8 @@
+public final class com/datadog/android/internal/FeatureContextKeys {
+	public static final field INSTANCE Lcom/datadog/android/internal/FeatureContextKeys;
+	public static final field PROFILER_IS_RUNNING Ljava/lang/String;
+}
+
 public abstract interface class com/datadog/android/internal/attributes/LocalAttribute {
 }
 

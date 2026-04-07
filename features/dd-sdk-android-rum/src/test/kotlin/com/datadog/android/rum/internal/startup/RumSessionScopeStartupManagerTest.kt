@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.RumSessionType
@@ -174,7 +175,7 @@ internal class RumSessionScopeStartupManagerTest {
             featuresContext = fakeDatadogContext.featuresContext.let {
                 if (forge.aBool()) {
                     it.toMutableMap().apply {
-                        put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                        put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
                     }
                 } else {
                     it
