@@ -9,11 +9,11 @@ package com.datadog.android.core.internal.metrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File

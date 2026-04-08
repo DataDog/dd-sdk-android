@@ -29,7 +29,6 @@ import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrat
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher.Companion.TRACK_KEY
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
@@ -42,6 +41,7 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiler.BenchmarkMeter
 import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.privacy.TrackingConsent
