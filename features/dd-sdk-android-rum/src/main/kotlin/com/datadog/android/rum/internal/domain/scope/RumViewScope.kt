@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.profiling.ProfilerEvent
@@ -1691,7 +1692,7 @@ internal open class RumViewScope(
         val profilingFeature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         return profilingFeature?.let {
             datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME]?.get(
-                PROFILER_IS_RUNNING
+                FeatureContextKeys.PROFILER_IS_RUNNING
             ) == true
         } ?: false
     }
@@ -1707,8 +1708,6 @@ internal open class RumViewScope(
     // endregion
 
     companion object {
-
-        private const val PROFILER_IS_RUNNING = "profiler_is_running"
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 

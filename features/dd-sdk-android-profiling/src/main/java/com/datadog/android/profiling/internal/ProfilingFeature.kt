@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.profiling.ExperimentalProfilingApi
@@ -68,7 +69,7 @@ internal class ProfilingFeature(
         ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
         dataWriter = createDataWriter(sdkCore)
 
@@ -119,7 +120,7 @@ internal class ProfilingFeature(
         perfettoResult = result
         tryWriteProfilingEvent()
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
     }
 
@@ -132,7 +133,7 @@ internal class ProfilingFeature(
             continuousProfilingScheduler?.onActiveWindowEnded()
         }
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
     }
 
@@ -210,6 +211,5 @@ internal class ProfilingFeature(
     companion object {
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature received an event of unsupported type=%s."
-        internal const val PROFILER_IS_RUNNING = "profiler_is_running"
     }
 }

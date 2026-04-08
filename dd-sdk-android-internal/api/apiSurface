@@ -1,3 +1,5 @@
+object com.datadog.android.internal.FeatureContextKeys
+  const val PROFILER_IS_RUNNING: String
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
     constructor(String)
