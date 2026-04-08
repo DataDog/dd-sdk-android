@@ -62,6 +62,25 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
+class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.app.Application.ActivityLifecycleCallbacks
+  constructor(ProcessLifecycleMonitor.Callback)
+  val callback: ProcessLifecycleMonitor.Callback
+  val activitiesResumedCounter: java.util.concurrent.atomic.AtomicInteger
+  val activitiesStartedCounter: java.util.concurrent.atomic.AtomicInteger
+  val wasPaused: java.util.concurrent.atomic.AtomicBoolean
+  val wasStopped: java.util.concurrent.atomic.AtomicBoolean
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityStopped(android.app.Activity)
+  interface Callback
+    fun onStarted()
+    fun onResumed()
+    fun onStopped()
+    fun onPaused()
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

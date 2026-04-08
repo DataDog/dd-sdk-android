@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.lifecycle
 
 import android.app.Activity
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

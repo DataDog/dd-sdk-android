@@ -28,7 +28,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider

@@ -20,7 +20,7 @@ import com.datadog.android.core.internal.NoOpContextProvider
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider

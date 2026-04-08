@@ -30,7 +30,7 @@ import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrat
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher

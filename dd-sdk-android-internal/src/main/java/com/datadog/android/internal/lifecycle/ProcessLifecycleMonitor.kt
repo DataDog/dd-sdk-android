@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.lifecycle
+package com.datadog.android.internal.lifecycle
 
 import android.app.Activity
 import android.app.Application
@@ -13,8 +13,15 @@ import androidx.annotation.MainThread
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class ProcessLifecycleMonitor(val callback: Callback) :
+class ProcessLifecycleMonitor(val callback: Callback) :
     Application.ActivityLifecycleCallbacks {
+
+    interface Callback {
+        fun onStarted()
+        fun onResumed()
+        fun onStopped()
+        fun onPaused()
+    }
 
     val activitiesResumedCounter = AtomicInteger(0)
     val activitiesStartedCounter = AtomicInteger(0)
@@ -72,15 +79,5 @@ internal class ProcessLifecycleMonitor(val callback: Callback) :
         ) {
             callback.onResumed()
         }
-    }
-
-    internal interface Callback {
-        fun onStarted()
-
-        fun onResumed()
-
-        fun onStopped()
-
-        fun onPaused()
     }
 }
