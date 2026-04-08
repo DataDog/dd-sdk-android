@@ -19,7 +19,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -29,13 +28,14 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -65,6 +65,9 @@ internal class RumAppStartupDetectorImplTest {
     private lateinit var buildSdkVersionProvider: BuildSdkVersionProvider
 
     @Mock
+    private lateinit var rumFirstDrawTimeReporter: RumFirstDrawTimeReporter
+
+    @Mock
     private lateinit var activity: Activity
 
     private var currentTime: Duration = 0.nanoseconds
@@ -72,6 +75,10 @@ internal class RumAppStartupDetectorImplTest {
     @BeforeEach
     fun `set up`() {
         whenever(activity.isChangingConfigurations) doReturn false
+        whenever(rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(any(), any())).doAnswer {
+            val handle = mock<RumFirstDrawTimeReporter.Handle>()
+            handle
+        }
     }
 
     @Test
@@ -88,6 +95,7 @@ internal class RumAppStartupDetectorImplTest {
     ) {
         // Given
         val detector = createDetector()
+        autoDrawFirstFrame(activity)
 
         currentTime += 3.seconds
 
@@ -100,14 +108,17 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+        inOrder(listener) {
+            listener.verifyScenarioDetected(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+                )
             )
-        )
+            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
+        }
         verifyNoMoreInteractions(listener)
     }
 
@@ -117,6 +128,7 @@ internal class RumAppStartupDetectorImplTest {
         @BoolForgery hasSavedInstanceStateBundle: Boolean
     ) {
         val detector = createDetector()
+        autoDrawFirstFrame(activity)
 
         currentTime += 11.seconds
         triggerBeforeCreated(
@@ -126,17 +138,20 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
-        listener.verifyScenarioDetected(
-            RumStartupScenario.WarmFirstActivity(
-                initialTime = Time(
-                    nanoTime = currentTime.inWholeNanoseconds,
-                    timestamp = currentTime.inWholeMilliseconds
-                ),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 11.seconds.inWholeNanoseconds
+        inOrder(listener) {
+            listener.verifyScenarioDetected(
+                RumStartupScenario.WarmFirstActivity(
+                    initialTime = Time(
+                        nanoTime = currentTime.inWholeNanoseconds,
+                        timestamp = currentTime.inWholeMilliseconds
+                    ),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 11.seconds.inWholeNanoseconds
+                )
             )
-        )
+            verify(listener).onTTIDComputed(any(), eq(0.seconds.inWholeNanoseconds), eq(false))
+        }
         verifyNoMoreInteractions(listener)
     }
 
@@ -148,6 +163,7 @@ internal class RumAppStartupDetectorImplTest {
     ) {
         // Given
         val detector = createDetector()
+        autoDrawFirstFrame(activity)
 
         currentTime += 3.seconds
 
@@ -160,9 +176,6 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         detector.onActivityDestroyed(activity)
-
-        // Simulate RumFeature reporting TTID and clearing the pending scenario
-        detector.clearPendingScenario()
 
         currentTime += 30.seconds
 
@@ -183,6 +196,7 @@ internal class RumAppStartupDetectorImplTest {
                     appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds
                 )
             )
+            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
 
             listener.verifyScenarioDetected(
                 RumStartupScenario.WarmAfterActivityDestroyed(
@@ -194,6 +208,7 @@ internal class RumAppStartupDetectorImplTest {
                     activity = activity.wrapWeak()
                 )
             )
+            verify(listener).onTTIDComputed(any(), eq(0L), eq(false))
         }
         verifyNoMoreInteractions(listener)
     }
@@ -281,7 +296,6 @@ internal class RumAppStartupDetectorImplTest {
                 appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
             )
         )
-        verify(listener).onNextActivityCreated(any(), eq(activity2))
         verifyNoMoreInteractions(listener)
     }
 
@@ -293,6 +307,7 @@ internal class RumAppStartupDetectorImplTest {
     ) {
         // Given
         val detector = createDetector()
+        autoDrawFirstFrame(activity)
 
         currentTime += 3.seconds
 
@@ -306,12 +321,10 @@ internal class RumAppStartupDetectorImplTest {
         // When
         destroyActivity(detector, activity)
 
-        // Simulate RumFeature reporting TTID and clearing the pending scenario
-        detector.clearPendingScenario()
-
         currentTime += 30.seconds
 
         val activity2 = mock<Activity>()
+        autoDrawFirstFrame(activity2)
 
         triggerBeforeCreated(
             forge = forge,
@@ -330,6 +343,8 @@ internal class RumAppStartupDetectorImplTest {
                     appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds
                 )
             )
+            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
+
             listener.verifyScenarioDetected(
                 RumStartupScenario.WarmAfterActivityDestroyed(
                     initialTime = Time(
@@ -340,8 +355,8 @@ internal class RumAppStartupDetectorImplTest {
                     activity = activity2.wrapWeak()
                 )
             )
+            verify(listener).onTTIDComputed(any(), eq(0L), eq(false))
         }
-
         verifyNoMoreInteractions(listener)
     }
 
@@ -354,6 +369,8 @@ internal class RumAppStartupDetectorImplTest {
     ) {
         // Given
         val detector = createDetector()
+
+        autoDrawFirstFrame(activity)
 
         currentTime += 3.seconds
 
@@ -385,12 +402,10 @@ internal class RumAppStartupDetectorImplTest {
 
         detector.onActivityDestroyed(activity)
 
-        // Simulate RumFeature reporting TTID and clearing the pending scenario
-        detector.clearPendingScenario()
-
         currentTime += 30.seconds
 
         val activity3 = mock<Activity>()
+        autoDrawFirstFrame(activity3)
 
         triggerBeforeCreated(
             forge = forge,
@@ -409,8 +424,7 @@ internal class RumAppStartupDetectorImplTest {
                     initialTime = Time(0, 0)
                 )
             )
-
-            verify(listener).onNextActivityCreated(any(), eq(activity2))
+            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
 
             listener.verifyScenarioDetected(
                 RumStartupScenario.WarmAfterActivityDestroyed(
@@ -422,8 +436,8 @@ internal class RumAppStartupDetectorImplTest {
                     activity = activity3.wrapWeak()
                 )
             )
+            verify(listener).onTTIDComputed(any(), eq(0L), eq(false))
         }
-
         verifyNoMoreInteractions(listener)
     }
 
@@ -436,6 +450,8 @@ internal class RumAppStartupDetectorImplTest {
         // Given - predicate that excludes the first activity
         val interstitialActivity = mock<Activity>()
         val mainActivity = mock<Activity>()
+
+        autoDrawFirstFrame(mainActivity)
 
         val predicate = AppStartupActivityPredicate { activity ->
             activity != interstitialActivity
@@ -469,14 +485,17 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected for main activity (first non-excluded)
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
-                activity = mainActivity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
+        inOrder(listener) {
+            listener.verifyScenarioDetected(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+                    activity = mainActivity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
+                )
             )
-        )
+            verify(listener).onTTIDComputed(any(), eq(4.seconds.inWholeNanoseconds), eq(false))
+        }
 
         verifyNoMoreInteractions(listener)
     }
@@ -501,7 +520,7 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - no scenario detected
-        verifyNoMoreInteractions(listener)
+        verifyNoInteractions(listener)
     }
 
     @Test
@@ -515,6 +534,8 @@ internal class RumAppStartupDetectorImplTest {
         val excludedActivity1 = mock<Activity>()
         val excludedActivity2 = mock<Activity>()
         val includedActivity = mock<Activity>()
+
+        autoDrawFirstFrame(includedActivity)
 
         val predicate = AppStartupActivityPredicate { activity ->
             activity != excludedActivity1 && activity != excludedActivity2
@@ -559,14 +580,17 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected for included activity
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
-                activity = includedActivity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 5.seconds.inWholeNanoseconds
+        inOrder(listener) {
+            listener.verifyScenarioDetected(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
+                    activity = includedActivity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 5.seconds.inWholeNanoseconds
+                )
             )
-        )
+            verify(listener).onTTIDComputed(any(), eq(5.seconds.inWholeNanoseconds), eq(false))
+        }
 
         verifyNoMoreInteractions(listener)
     }
@@ -612,6 +636,9 @@ internal class RumAppStartupDetectorImplTest {
         val activity2 = mock<Activity>()
         var shouldTrackActivity1 = true
 
+        autoDrawFirstFrame(activity1)
+        autoDrawFirstFrame(activity2)
+
         val mutablePredicate = AppStartupActivityPredicate { activity ->
             if (activity == activity1) shouldTrackActivity1 else true
         }
@@ -637,15 +664,13 @@ internal class RumAppStartupDetectorImplTest {
                 appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
             )
         )
+        verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
 
         // When - predicate changes to return false for activity1
         shouldTrackActivity1 = false
 
         // And - activity is destroyed (predicate now returns false, but stored value was true)
         destroyActivity(detector, activity1)
-
-        // Simulate RumFeature reporting TTID and clearing the pending scenario
-        detector.clearPendingScenario()
 
         // When - second activity is created
         currentTime += 1.seconds
@@ -669,34 +694,12 @@ internal class RumAppStartupDetectorImplTest {
                 activity = activity2.wrapWeak()
             )
         )
+        verify(listener).onTTIDComputed(any(), eq(0.seconds.inWholeNanoseconds), eq(false))
 
         verifyNoMoreInteractions(listener)
     }
 
     // region pendingScenario management tests
-
-    @Test
-    fun `M set pendingScenario W onAppStartupDetected`(
-        forge: Forge
-    ) {
-        // Given
-        val detector = createDetector()
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = activity,
-            hasSavedInstanceStateBundle = false
-        )
-
-        // Then
-        val pending = detector.getPendingScenario()
-        assertThat(pending).isNotNull
-        assertThat(pending).isInstanceOf(RumStartupScenario.Cold::class.java)
-        assertThat(pending!!.activity.get()).isSameAs(activity)
-    }
 
     @Test
     fun `M create fresh startup scenario W stale pendingScenario exists on re-launch`(
@@ -711,8 +714,6 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity,
             hasSavedInstanceStateBundle = false
         )
-        val staleScenario = detector.getPendingScenario()
-        assertThat(staleScenario).isNotNull
 
         // Simulate the interstitial activity being fully destroyed (app goes background)
         destroyActivity(detector, activity)
@@ -730,71 +731,13 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = false
         )
 
-        // Then - stale scenario was discarded and a fresh one created for the new activity
-        val freshScenario = detector.getPendingScenario()
-        assertThat(freshScenario).isNotNull
-        assertThat(freshScenario).isNotSameAs(staleScenario)
-        assertThat(freshScenario!!.activity.get()).isSameAs(secondActivity)
+        // Then - a fresh scenario was detected for the new activity
+        verify(listener, times(2)).onAppStartupDetected(any())
+        verifyNoMoreInteractions(listener)
     }
 
     @Test
-    fun `M clear pendingScenario W clearPendingScenario`(
-        forge: Forge
-    ) {
-        // Given
-        val detector = createDetector()
-        currentTime += 3.seconds
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = activity,
-            hasSavedInstanceStateBundle = false
-        )
-        assertThat(detector.getPendingScenario()).isNotNull
-
-        // When
-        detector.clearPendingScenario()
-
-        // Then
-        assertThat(detector.getPendingScenario()).isNull()
-    }
-
-    @Test
-    fun `M call onNextActivityCreated W second qualifying activity created while pending`(
-        forge: Forge
-    ) {
-        // Given
-        val detector = createDetector()
-        currentTime += 3.seconds
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = activity,
-            hasSavedInstanceStateBundle = false
-        )
-
-        val secondActivity: Activity = mock()
-
-        // When
-        currentTime += 1.seconds
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = secondActivity,
-            hasSavedInstanceStateBundle = false
-        )
-
-        // Then
-        val capturedScenario = detector.getPendingScenario()
-        verify(listener).onAppStartupDetected(any())
-        verify(listener).onNextActivityCreated(
-            argThat { this === capturedScenario },
-            eq(secondActivity)
-        )
-    }
-
-    @Test
-    fun `M not call onNextActivityCreated W second activity fails predicate`(
+    fun `M not subscribe second activity W second activity fails predicate`(
         forge: Forge
     ) {
         // Given
@@ -819,16 +762,20 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        verify(listener).onAppStartupDetected(any())
-        verify(listener, never()).onNextActivityCreated(any(), any())
+        inOrder(listener, rumFirstDrawTimeReporter) {
+            verify(listener).onAppStartupDetected(any())
+            verify(rumFirstDrawTimeReporter).subscribeToFirstFrameDrawn(eq(activity), any())
+        }
+        verifyNoMoreInteractions(listener, rumFirstDrawTimeReporter)
     }
 
     @Test
-    fun `M not call onNextActivityCreated W same activity as scenario`(
+    fun `M not subscribe second activity W pendingScenario cleared by first frame draw`(
         forge: Forge
     ) {
         // Given
         val detector = createDetector()
+        autoDrawFirstFrame(activity)
         currentTime += 3.seconds
         triggerBeforeCreated(
             forge = forge,
@@ -836,26 +783,6 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity,
             hasSavedInstanceStateBundle = false
         )
-
-        // Then - onNextActivityCreated should not have been called for the original activity
-        verify(listener).onAppStartupDetected(any())
-        verify(listener, never()).onNextActivityCreated(any(), any())
-    }
-
-    @Test
-    fun `M not call onNextActivityCreated W pendingScenario cleared`(
-        forge: Forge
-    ) {
-        // Given
-        val detector = createDetector()
-        currentTime += 3.seconds
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = activity,
-            hasSavedInstanceStateBundle = false
-        )
-        detector.clearPendingScenario()
 
         val secondActivity: Activity = mock()
 
@@ -869,8 +796,12 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        verify(listener).onAppStartupDetected(any())
-        verify(listener, never()).onNextActivityCreated(any(), any())
+        inOrder(listener, rumFirstDrawTimeReporter) {
+            verify(listener).onAppStartupDetected(any())
+            verify(rumFirstDrawTimeReporter).subscribeToFirstFrameDrawn(eq(activity), any())
+            verify(listener).onTTIDComputed(any(), any(), any())
+        }
+        verifyNoMoreInteractions(listener, rumFirstDrawTimeReporter)
     }
 
     @Test
@@ -887,8 +818,6 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity,
             hasSavedInstanceStateBundle = false
         )
-        val originalScenario = detector.getPendingScenario()
-        assertThat(originalScenario).isNotNull
 
         destroyActivity(detector, activity)
 
@@ -904,18 +833,109 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - onAppStartupDetected must NOT be called a second time
-        verify(listener, times(1)).onAppStartupDetected(any())
-        // pendingScenario must still be the original (not replaced by a new scenario)
-        assertThat(detector.getPendingScenario()).isSameAs(originalScenario)
-        // onNextActivityCreated must be called with the original scenario so RumFeature
-        // can subscribe to the second activity's first frame (the async forwarding path)
-        verify(listener).onNextActivityCreated(
-            argThat { this === originalScenario },
-            eq(secondActivity)
-        )
+        inOrder(listener, rumFirstDrawTimeReporter) {
+            verify(listener, times(1)).onAppStartupDetected(any())
+            verify(rumFirstDrawTimeReporter).subscribeToFirstFrameDrawn(eq(activity), any())
+            verify(rumFirstDrawTimeReporter).subscribeToFirstFrameDrawn(eq(secondActivity), any())
+        }
+        verifyNoMoreInteractions(listener, rumFirstDrawTimeReporter)
     }
 
     // endregion
+
+    // region unsubscribe and TTID callback tests
+
+    @Test
+    fun `M call onTTIDComputed with wasForwarded=true W forwarded activity first frame drawn`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        val secondActivity: Activity = mock()
+        autoDrawFirstFrame(secondActivity, delay = 1.seconds)
+
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // When
+        currentTime += 1.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        inOrder(listener) {
+            verify(listener).onAppStartupDetected(any())
+            verify(listener).onTTIDComputed(any(), eq(5.seconds.inWholeNanoseconds), eq(true))
+        }
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M only call onTTIDComputed once W both first and forwarded activity draw`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        val secondActivity: Activity = mock()
+        autoDrawFirstFrame(activity, delay = 1.seconds)
+        autoDrawFirstFrame(secondActivity, delay = 2.seconds)
+
+        // When
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        currentTime += 1.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then - onTTIDComputed should only be called once (first activity drew, clearing scenario)
+        inOrder(listener) {
+            listener.verifyScenarioDetected(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = false,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+                )
+            )
+            verify(listener).onTTIDComputed(
+                any(),
+                eq(4.seconds.inWholeNanoseconds),
+                eq(false)
+            )
+        }
+        verifyNoMoreInteractions(listener)
+    }
+
+    // endregion
+
+    private fun autoDrawFirstFrame(activity: Activity, delay: Duration = 0.seconds) {
+        whenever(rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(eq(activity), any())).doAnswer {
+            val callback = it.getArgument<RumFirstDrawTimeReporter.Callback>(1)
+            val handle = mock<RumFirstDrawTimeReporter.Handle>()
+            currentTime += delay
+            callback.onFirstFrameDrawn(currentTime.inWholeNanoseconds)
+            handle
+        }
+    }
 
     private fun createDetector(
         appStartupActivityPredicate: AppStartupActivityPredicate = AppStartupActivityPredicate { true }
@@ -933,7 +953,8 @@ internal class RumAppStartupDetectorImplTest {
                 )
             },
             listener = listener,
-            appStartupActivityPredicate = appStartupActivityPredicate
+            appStartupActivityPredicate = appStartupActivityPredicate,
+            rumFirstDrawTimeReporter = rumFirstDrawTimeReporter
         )
 
         return detector

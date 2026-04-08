@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 import com.datadog.android.rum.utils.forge.Configurator
@@ -35,10 +34,13 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -49,7 +51,7 @@ import kotlin.time.Duration.Companion.seconds
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class RumFirstDrawTimeReporterTest {
+class RumFirstDrawTimeReporterHandleImplTest {
 
     private var currentTime: Duration = 0.seconds
 
@@ -77,30 +79,8 @@ class RumFirstDrawTimeReporterTest {
     @Mock
     private lateinit var internalLogger: InternalLogger
 
-    private lateinit var reporter: RumFirstDrawTimeReporterImpl
-
-    private lateinit var weakActivity: WeakReference<Activity>
-
-    private lateinit var scenario: RumStartupScenario
-
     @BeforeEach
     fun `set up`() {
-        weakActivity = WeakReference(activity)
-
-        scenario = RumStartupScenario.Cold(
-            initialTime = Time(0, 0),
-            hasSavedInstanceStateBundle = true,
-            activity = weakActivity,
-            appStartActivityOnCreateGapNs = 0.seconds.inWholeNanoseconds
-        )
-
-        reporter = RumFirstDrawTimeReporterImpl(
-            internalLogger = internalLogger,
-            timeProviderNs = { currentTime.inWholeNanoseconds },
-            windowCallbacksRegistry = windowCallbackRegistry,
-            handler = handler
-        )
-
         whenever(activity.window) doReturn window
         whenever(window.peekDecorView()) doReturn null
         whenever(window.decorView) doReturn decorView
@@ -127,13 +107,15 @@ class RumFirstDrawTimeReporterTest {
         whenever(decorView.isAttachedToWindow) doReturn true
     }
 
+    // region first frame detection
+
     @Test
-    fun `M call onTTIDCalculated W RumTTIDReporter { decorView doesn't exist yet }`() {
+    fun `M call onFirstFrameDrawn W decorView doesn't exist yet`() {
         // Given
         currentTime += 1.seconds
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
@@ -146,9 +128,7 @@ class RumFirstDrawTimeReporterTest {
                 firstValue.onDraw()
             }
 
-            verify(
-                callback
-            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+            verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -156,14 +136,13 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M call onTTIDCalculated W RumTTIDReporter { decorView exists }`() {
+    fun `M call onFirstFrameDrawn W decorView exists`() {
         // Given
         whenever(window.peekDecorView()) doReturn decorView
-
         currentTime += 1.seconds
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
@@ -174,9 +153,7 @@ class RumFirstDrawTimeReporterTest {
                 firstValue.onDraw()
             }
 
-            verify(
-                callback
-            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+            verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -184,15 +161,14 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M call onTTIDCalculated W RumTTIDReporter { decorView exists but not attached to window }`() {
+    fun `M call onFirstFrameDrawn W decorView exists but not attached to window`() {
         // Given
         whenever(window.peekDecorView()) doReturn decorView
         whenever(decorView.isAttachedToWindow) doReturn false
-
         currentTime += 1.seconds
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         inOrder(windowCallbackRegistry, callback, viewTreeObserver, decorView) {
@@ -208,9 +184,7 @@ class RumFirstDrawTimeReporterTest {
                 firstValue.onDraw()
             }
 
-            verify(
-                callback
-            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+            verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -218,24 +192,24 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M not call onTTIDCalculated W RumTTIDReporter { viewTreeObserver is not alive }`() {
+    fun `M not call onFirstFrameDrawn W viewTreeObserver is not alive`() {
         // Given
         whenever(viewTreeObserver.isAlive) doReturn false
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         verifyNoInteractions(callback)
     }
 
     @Test
-    fun `M call onTTIDCalculated only once W RumTTIDReporter { onDraw is called twice }`() {
+    fun `M call onFirstFrameDrawn only once W onDraw is called twice`() {
         // Given
         currentTime += 1.seconds
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         inOrder(callback, viewTreeObserver) {
@@ -247,9 +221,7 @@ class RumFirstDrawTimeReporterTest {
                 firstValue.onDraw()
             }
 
-            verify(
-                callback
-            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+            verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -257,13 +229,29 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M call internalLogger W addOnDrawListener { if it throws IllegalStateException }`() {
+    fun `M not add listener to registry W decorView exists`() {
+        // Given
+        whenever(window.peekDecorView()) doReturn decorView
+
+        // When
+        createHandle()
+
+        // Then
+        verify(windowCallbackRegistry, never()).addListener(any(), any())
+    }
+
+    // endregion
+
+    // region error handling
+
+    @Test
+    fun `M call internalLogger W addOnDrawListener throws IllegalStateException`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.addOnDrawListener(any())) doThrow illegalStateException
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         verifyNoInteractions(callback)
@@ -286,15 +274,14 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M call internalLogger W removeOnDrawListener { if it throws IllegalStateException }`() {
+    fun `M call internalLogger W removeOnDrawListener throws IllegalStateException`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.removeOnDrawListener(any())) doThrow illegalStateException
-
         currentTime += 1.seconds
 
         // When
-        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        createHandle()
 
         // Then
         verifyNoInteractions(callback)
@@ -307,9 +294,7 @@ class RumFirstDrawTimeReporterTest {
                 firstValue.onDraw()
             }
 
-            verify(
-                callback
-            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+            verify(callback).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
 
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
@@ -325,5 +310,99 @@ class RumFirstDrawTimeReporterTest {
 
             verifyNoMoreInteractions()
         }
+    }
+
+    // endregion
+
+    // region unsubscribe
+
+    @Test
+    fun `M remove listener from registry W unsubscribe called`() {
+        // Given - subscribe without auto-triggering onContentChanged
+        whenever(windowCallbackRegistry.addListener(any(), any())).then { }
+
+        val handle = createHandle()
+
+        // When
+        handle.unsubscribe()
+
+        // Then
+        verify(windowCallbackRegistry).removeListener(eq(activity), any())
+    }
+
+    @Test
+    fun `M call removeListener once W unsubscribe called twice`() {
+        // Given - subscribe without auto-triggering onContentChanged
+        whenever(windowCallbackRegistry.addListener(any(), any())).then { }
+
+        val handle = createHandle()
+
+        // When
+        handle.unsubscribe()
+        handle.unsubscribe()
+
+        // Then
+        inOrder(windowCallbackRegistry) {
+            verify(windowCallbackRegistry).addListener(eq(activity), any())
+            verify(windowCallbackRegistry).removeListener(eq(activity), any())
+        }
+        verifyNoMoreInteractions(windowCallbackRegistry)
+    }
+
+    @Test
+    fun `M not register drawListener W unsubscribe called before onContentChanged`() {
+        // Given
+        whenever(windowCallbackRegistry.addListener(any(), any())).doAnswer {
+            val argHandle = it.getArgument<RumFirstDrawTimeReporterHandleImpl>(1)
+            argHandle.unsubscribe()
+            argHandle.onContentChanged()
+        }
+
+        // When
+        createHandle()
+
+        // Then
+        inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
+            verify(windowCallbackRegistry).addListener(eq(activity), any())
+            verify(windowCallbackRegistry, times(2)).removeListener(eq(activity), any())
+
+            verifyNoMoreInteractions()
+        }
+    }
+
+    @Test
+    fun `M not call callback W unsubscribe called after drawListener registered`() {
+        // Given
+        val handle = createHandle()
+
+        // Then
+        inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
+            verify(windowCallbackRegistry).addListener(eq(activity), any())
+            verify(windowCallbackRegistry).removeListener(eq(activity), any())
+            verify(viewTreeObserver).isAlive
+
+            argumentCaptor<ViewTreeObserver.OnDrawListener> {
+                verify(viewTreeObserver).addOnDrawListener(capture())
+                handle.unsubscribe()
+                firstValue.onDraw()
+            }
+
+            verify(viewTreeObserver).isAlive
+            verify(viewTreeObserver).removeOnDrawListener(any())
+            verifyNoMoreInteractions()
+        }
+    }
+
+    // endregion
+
+    private fun createHandle(): RumFirstDrawTimeReporterHandleImpl {
+        return RumFirstDrawTimeReporterHandleImpl(
+            callback = callback,
+            activity = activity,
+            internalLogger = internalLogger,
+            timeProviderNs = { currentTime.inWholeNanoseconds },
+            windowCallbacksRegistry = windowCallbackRegistry,
+            handler = handler
+        )
     }
 }

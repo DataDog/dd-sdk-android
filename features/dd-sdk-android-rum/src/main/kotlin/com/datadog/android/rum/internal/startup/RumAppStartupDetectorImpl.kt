@@ -24,7 +24,8 @@ internal class RumAppStartupDetectorImpl(
     private val appStartupTimeProvider: () -> Time,
     private val timeProvider: () -> Time,
     private val listener: RumAppStartupDetector.Listener,
-    private val appStartupActivityPredicate: AppStartupActivityPredicate
+    private val appStartupActivityPredicate: AppStartupActivityPredicate,
+    private val rumFirstDrawTimeReporter: RumFirstDrawTimeReporter
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
     private var numberOfActivities: Int = 0
@@ -34,6 +35,7 @@ internal class RumAppStartupDetectorImpl(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
+    private val firstFrameHandles = WeakHashMap<Activity, RumFirstDrawTimeReporter.Handle>()
 
     init {
         application.registerActivityLifecycleCallbacks(this)
@@ -55,6 +57,8 @@ internal class RumAppStartupDetectorImpl(
         numberOfActivities--
         trackedActivities.remove(activity)
 
+        firstFrameHandles.remove(activity)?.unsubscribe()
+
         if (numberOfActivities == 0) {
             isChangingConfigurations = activity.isChangingConfigurations
         }
@@ -75,6 +79,7 @@ internal class RumAppStartupDetectorImpl(
     override fun onActivityStopped(activity: Activity) {
     }
 
+    @Suppress("LongMethod")
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         numberOfActivities++
         val now = timeProvider()
@@ -132,7 +137,15 @@ internal class RumAppStartupDetectorImpl(
             }
 
             pendingScenario = scenario
+
             listener.onAppStartupDetected(scenario)
+
+            subscribeToFirstFrameDrawn(
+                scenario = scenario,
+                activity = activity,
+                wasForwarded = false
+            )
+
             isFirstActivityForProcess = false
         }
 
@@ -142,14 +155,42 @@ internal class RumAppStartupDetectorImpl(
         if (currentPendingScenario != null && shouldTrackStartup &&
             currentPendingScenario.activity.get() !== activity
         ) {
-            listener.onNextActivityCreated(currentPendingScenario, activity)
+            subscribeToFirstFrameDrawn(
+                scenario = currentPendingScenario,
+                activity = activity,
+                wasForwarded = true
+            )
         }
     }
 
-    override fun getPendingScenario(): RumStartupScenario? = pendingScenario
+    private fun subscribeToFirstFrameDrawn(
+        scenario: RumStartupScenario,
+        activity: Activity,
+        wasForwarded: Boolean
+    ) {
+        val callback = object : RumFirstDrawTimeReporter.Callback {
+            override fun onFirstFrameDrawn(timestampNs: Long) {
+                firstFrameHandles.remove(activity)
 
-    override fun clearPendingScenario() {
-        pendingScenario = null
+                // Another activity may have already reported TTID
+                if (pendingScenario !== scenario) return
+
+                val durationNs = timestampNs - scenario.initialTime.nanoTime
+
+                listener.onTTIDComputed(
+                    scenario = scenario,
+                    durationNs = durationNs,
+                    wasForwarded = wasForwarded
+                )
+
+                pendingScenario = null
+            }
+        }
+
+        firstFrameHandles[activity] = rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
+            activity = activity,
+            callback = callback
+        )
     }
 
     override fun destroy() {
