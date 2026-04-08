@@ -16,7 +16,7 @@ TEST test_generate_backtrace(void) {
             backtrace);
     unsigned int lines_count = backtrace_lines.size();
             ASSERT(was_successful);
-    const char *regex = "(\\d+)(.*(?<!libdatadog-native-lib\\.so ))0[xX][0-9a-fA-F]+(.*)";
+    const char *regex = "(\\d+)(.*(?<!libdatadog-ndk\\.so ))0[xX][0-9a-fA-F]+(.*)";
             ASSERT(lines_count > 0 && lines_count <= max_stack_frames);
     for (auto it = backtrace_lines.begin(); it != backtrace_lines.end(); ++it) {
                 ASSERT(std::regex_match(it->c_str(), std::regex(regex)));

@@ -31,8 +31,8 @@ class NdkTests {
 
     companion object {
         init {
-            System.loadLibrary("datadog-native-lib")
-            System.loadLibrary("datadog-native-lib-test")
+            System.loadLibrary("datadog-ndk")
+            System.loadLibrary("datadog-ndk-test")
         }
     }
 
