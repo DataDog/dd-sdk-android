@@ -67,3 +67,21 @@ data class com.datadog.android.profiling.model.ProfileEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Family
+data class com.datadog.android.profiling.model.RumMobileEvents
+  constructor(kotlin.collections.List<Error>? = null, kotlin.collections.List<LongTask>? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): RumMobileEvents
+    fun fromJsonObject(com.google.gson.JsonObject): RumMobileEvents
+  data class Error
+    constructor(kotlin.String, kotlin.Long, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
+      fun fromJsonObject(com.google.gson.JsonObject): Error
+  data class LongTask
+    constructor(kotlin.String, kotlin.Long, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LongTask
+      fun fromJsonObject(com.google.gson.JsonObject): LongTask

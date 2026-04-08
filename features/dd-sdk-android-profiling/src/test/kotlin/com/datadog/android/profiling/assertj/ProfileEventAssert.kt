@@ -136,6 +136,26 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
+    fun hasLongTaskIds(expected: List<String>): ProfileEventAssert {
+        assertThat(actual.longTask?.id)
+            .overridingErrorMessage(
+                "Expected event data to have longTask.id $expected " +
+                    "but was ${actual.longTask?.id}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasErrorIds(expected: List<String>): ProfileEventAssert {
+        assertThat(actual.error?.id)
+            .overridingErrorMessage(
+                "Expected event data to have error.id $expected " +
+                    "but was ${actual.error?.id}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasViewNames(expected: List<String>?): ProfileEventAssert {
         assertThat(actual.view?.name)
             .overridingErrorMessage(

@@ -15,12 +15,16 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
+import com.datadog.android.profiling.assertj.RumMobileEventsAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
+import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
+import com.datadog.android.profiling.model.RumMobileEvents
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -46,6 +50,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -206,6 +211,214 @@ internal class ProfilingDataWriterTest {
             rumContext = fakeProfilingRumContext,
             vitalId = fakeVitalId,
             vitalName = forge.aNullable { aString() }
+        )
+
+        // Then
+        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M write continuous profile with rum events W writeContinuous`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent,
+        @Forgery fakeAnrEvent: ProfilerEvent.RumAnrEvent
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(fakeByteArray)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            longTasks = listOf(fakeLongTask),
+            anrEvents = listOf(fakeAnrEvent)
+        )
+
+        // Then
+        val captor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = captor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val rawEvent = captor.firstValue
+        val profileEvent = ProfileEvent.fromJson(String(rawEvent.data))
+        val expectedTagList = arrayListOf(
+            "service:${fakeDatadogContext.service}",
+            "env:${fakeDatadogContext.env}",
+            "version:${fakeDatadogContext.version}",
+            "sdk_version:${fakeDatadogContext.sdkVersion}",
+            "profiler_version:${fakeDatadogContext.sdkVersion}",
+            "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
+            "operation:continuous"
+        )
+        fakeDatadogContext.appBuildId?.let {
+            expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
+        }
+
+        assertThat(profileEvent)
+            .hasStart(formatIsoUtc(fakeResult.start))
+            .hasEnd(formatIsoUtc(fakeResult.end))
+            .hasAttachments(
+                listOf(ProfilingDataWriter.PERFETTO_ATTACHMENT_NAME)
+            )
+            .hasFamily(ProfileEvent.Family.ANDROID)
+            .hasRuntime(ProfileEvent.Family.ANDROID)
+            .hasVersion(4)
+            .hasTags(expectedTagList)
+            .hasApplicationId(fakeLongTask.rumContext.applicationId)
+            .hasSessionId(fakeLongTask.rumContext.sessionId)
+            .hasLongTaskIds(listOf(fakeLongTask.id))
+            .hasErrorIds(listOf(fakeAnrEvent.id))
+
+        // Then
+        val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
+        assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
+        val rumMobileEvents = RumMobileEvents.fromJson(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+        assertThat(rumMobileEvents)
+            .hasErrors(
+                listOf(
+                    RumMobileEvents.Error(
+                        id = fakeAnrEvent.id,
+                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs),
+                        durationNs = fakeAnrEvent.durationNs
+                    )
+                )
+            )
+            .hasLongTasks(
+                listOf(
+                    RumMobileEvents.LongTask(
+                        id = fakeLongTask.id,
+                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs),
+                        durationNs = fakeLongTask.durationNs
+                    )
+                )
+            )
+    }
+
+    @Test
+    fun `M skip writing W writeContinuous {no rum events}`(
+        @Forgery fakeResult: PerfettoResult
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(fakeByteArray)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            longTasks = emptyList(),
+            anrEvents = emptyList()
+        )
+
+        // Then
+        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M write W writeContinuous {only anrEvents non-empty}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeAnrEvent: ProfilerEvent.RumAnrEvent
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(fakeByteArray)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            longTasks = emptyList(),
+            anrEvents = listOf(fakeAnrEvent)
+        )
+
+        // Then
+        val captor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = captor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val rawEvent = captor.firstValue
+        val profileEvent = ProfileEvent.fromJson(String(rawEvent.data))
+        assertThat(profileEvent)
+            .hasAttachments(
+                listOf(ProfilingDataWriter.PERFETTO_ATTACHMENT_NAME)
+            )
+            .hasLongTaskIds(emptyList())
+            .hasErrorIds(listOf(fakeAnrEvent.id))
+        val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
+        assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
+        val rumMobileEvents = RumMobileEvents.fromJson(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+        assertThat(rumMobileEvents)
+            .hasErrors(
+                listOf(
+                    RumMobileEvents.Error(
+                        id = fakeAnrEvent.id,
+                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs),
+                        durationNs = fakeAnrEvent.durationNs
+                    )
+                )
+            )
+            .hasLongTasks(null)
+    }
+
+    @Test
+    fun `M write W writeContinuous {only longTasks non-empty}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(fakeByteArray)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            longTasks = listOf(fakeLongTask),
+            anrEvents = emptyList()
+        )
+
+        // Then
+        val captor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = captor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val rawEvent = captor.firstValue
+        val profileEvent = ProfileEvent.fromJson(String(rawEvent.data))
+        assertThat(profileEvent)
+            .hasAttachments(
+                listOf(ProfilingDataWriter.PERFETTO_ATTACHMENT_NAME)
+            )
+            .hasLongTaskIds(listOf(fakeLongTask.id))
+            .hasErrorIds(emptyList())
+        val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
+        assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
+        val rumMobileEvents = RumMobileEvents.fromJson(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+        assertThat(rumMobileEvents)
+            .hasLongTasks(
+                listOf(
+                    RumMobileEvents.LongTask(
+                        id = fakeLongTask.id,
+                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs),
+                        durationNs = fakeLongTask.durationNs
+                    )
+                )
+            )
+            .hasErrors(null)
+    }
+
+    @Test
+    fun `M skip writing W writeContinuous {can't read perfetto file}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
+    ) {
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult,
+            longTasks = listOf(fakeLongTask),
+            anrEvents = emptyList()
         )
 
         // Then
