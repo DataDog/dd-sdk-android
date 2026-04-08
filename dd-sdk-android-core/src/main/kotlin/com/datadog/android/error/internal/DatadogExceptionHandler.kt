@@ -141,7 +141,7 @@ internal class DatadogExceptionHandler(
 
     companion object {
         // If you change these you will have to propagate the changes
-        // also into the datadog-native-lib.cpp file inside the dd-sdk-android-ndk module.
+        // also into the datadog-ndk.cpp file inside the dd-sdk-android-ndk module.
         internal const val LOGGER_NAME = CrashReportsFeature.CRASH_FEATURE_NAME
         internal const val MESSAGE = "Application crash detected"
         internal const val MAX_WAIT_FOR_IDLE_TIME_IN_MS = 100L

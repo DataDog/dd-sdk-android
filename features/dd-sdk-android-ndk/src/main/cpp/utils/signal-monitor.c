@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 #include "backtrace-handler.h"
-#include "datadog-native-lib.h"
+#include "datadog-ndk.h"
 
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static stack_t signal_stack;
