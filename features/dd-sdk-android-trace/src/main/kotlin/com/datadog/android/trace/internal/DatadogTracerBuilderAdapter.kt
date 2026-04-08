@@ -99,8 +99,8 @@ internal class DatadogTracerBuilderAdapter(
         val properties = Properties()
 
         val propagationStyles = tracingHeadersTypes.joinToString(",")
-        properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-        properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+        properties.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_EXTRACT, propagationStyles)
+        properties.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_INJECT, propagationStyles)
         properties.setProperty(TracerConfig.SERVICE_NAME, serviceName)
         properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
         properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushMinSpans.toString())

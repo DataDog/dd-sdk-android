@@ -69,8 +69,8 @@ class DatadogTracerBuilderAdapterTest {
     fun `M return default properties W properties() {no method called}`() {
         // Given
         val expected = Properties()
-        expected.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, EXPECTED_DEFAULT_PROPAGATION)
-        expected.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, EXPECTED_DEFAULT_PROPAGATION)
+        expected.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_EXTRACT, EXPECTED_DEFAULT_PROPAGATION)
+        expected.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_INJECT, EXPECTED_DEFAULT_PROPAGATION)
         expected.setProperty(TracerConfig.SERVICE_NAME, fakeServiceName)
         expected.setProperty(TracerConfig.TRACE_RATE_LIMIT, Int.MAX_VALUE.toString())
         expected.setProperty(
@@ -106,8 +106,8 @@ class DatadogTracerBuilderAdapterTest {
         )
 
         val expected = Properties().apply {
-            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, fakeHeaderType.toString())
-            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, fakeHeaderType.toString())
+            setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_EXTRACT, fakeHeaderType.toString())
+            setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_INJECT, fakeHeaderType.toString())
             setProperty(TracerConfig.SERVICE_NAME, fakeServiceName)
             setProperty(TracerConfig.TRACE_RATE_LIMIT, fakeTraceLimit.toString())
             setProperty(TracerConfig.TRACE_SAMPLE_RATE, (fakeSampleRate / 100.0).toString())
