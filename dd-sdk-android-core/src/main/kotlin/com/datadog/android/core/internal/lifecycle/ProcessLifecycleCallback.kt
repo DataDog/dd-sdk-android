@@ -11,6 +11,7 @@ import androidx.work.WorkManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.cancelUploadWorker
 import com.datadog.android.core.internal.utils.triggerUploadWorker
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 
@@ -18,8 +19,7 @@ internal class ProcessLifecycleCallback(
     appContext: Context,
     internal val instanceName: String,
     private val internalLogger: InternalLogger
-) :
-    ProcessLifecycleMonitor.Callback {
+) : ProcessLifecycleMonitor.Callback {
 
     internal val contextWeakRef: Reference<Context> = WeakReference(appContext)
 

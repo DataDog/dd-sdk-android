@@ -102,8 +102,15 @@ internal open class RumViewScope(
     private val internalAttributes: MutableMap<String, Any?> = mutableMapOf()
     private var memoizedParentAttributes: Map<String, Any?> = emptyMap()
 
-    private val sessionId: String = parentScope.getRumContext().sessionId
     internal val viewId: String = UUID.randomUUID().toString()
+    private val sessionId: String = parentScope.getRumContext().let {
+        if (it.syntheticsTestId != null) {
+            logSynthetics("_dd.application.id", it.applicationId)
+            logSynthetics("_dd.session.id", it.sessionId)
+            logSynthetics("_dd.view.id", viewId)
+        }
+        it.sessionId
+    }
 
     private val startedNanos: Long = eventTime.nanoTime
     internal var stoppedNanos: Long = eventTime.nanoTime
@@ -179,13 +186,6 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
-
-        val rumContext = parentScope.getRumContext()
-        if (rumContext.syntheticsTestId != null) {
-            logSynthetics("_dd.application.id", rumContext.applicationId)
-            logSynthetics("_dd.session.id", rumContext.sessionId)
-            logSynthetics("_dd.view.id", viewId)
-        }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
         slowFramesListener?.onViewCreated(viewId, startedNanos)
@@ -1215,7 +1215,7 @@ internal open class RumViewScope(
         val slowFramesRate = if (viewComplete) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
         insightsCollector.onSlowFrameRate(uiSlownessReport?.slowFramesRate(stoppedNanos))
 
-        if (viewComplete && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
+        if (viewComplete && rumContext.sessionState != RumSessionScope.State.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(
                 interactionToNextViewMetricResolver.getState(viewId),
                 networkSettledMetricResolver.getState()
