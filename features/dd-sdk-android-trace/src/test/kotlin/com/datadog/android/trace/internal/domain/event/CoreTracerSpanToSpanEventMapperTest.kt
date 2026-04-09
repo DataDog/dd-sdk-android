@@ -21,7 +21,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat as assertThatJ
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import org.assertj.core.api.Assertions.assertThat as assertThatJ
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -55,9 +55,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
     }
 
     @Test
-    fun `M map a DdSpan to a SpanEvent W map()`(
-        @Forgery fakeSpan: DDSpan
-    ) {
+    fun `M map a DdSpan to a SpanEvent W map()`(@Forgery fakeSpan: DDSpan) {
         // Given
         val expectedMeta = fakeSpan.baggage + fakeSpan.tags.map {
             it.key to it.value.toString()
@@ -162,9 +160,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
     }
 
     @Test
-    fun `M mark the SpanEvent as top span W map() { parentId is 0 }`(
-        @Forgery fakeSpan: DDSpan
-    ) {
+    fun `M mark the SpanEvent as top span W map() { parentId is 0 }`(@Forgery fakeSpan: DDSpan) {
         // Given
         whenever(fakeSpan.parentId).thenReturn(0L)
 
@@ -286,10 +282,10 @@ internal class CoreTracerSpanToSpanEventMapperTest {
 
     // region Internal
 
-    private fun DDSpan.expectedMetrics(): Map<String, Number> {
-        return tags.filterValues { it is Number }.mapValues { it.value as Number }.toMutableMap().apply {
-            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = spanSamplingPriority
-        }
+    private fun DDSpan.expectedMetrics(): Map<String, Number> = tags.filterValues {
+        it is Number
+    }.mapValues { it.value as Number }.toMutableMap().apply {
+        this[DDSpanContext.PRIORITY_SAMPLING_KEY] = spanSamplingPriority
     }
 
     // endregion

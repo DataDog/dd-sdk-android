@@ -111,9 +111,7 @@ internal class DatadogHttpCodecTest {
     // region Reproduction tests for RUMS-5093: Incorrect Timing and Ordering of Traces
 
     @Test
-    fun `REPRO RUMS-5093 - M inject span own spanId as x-datadog-parent-id W inject() { context propagation is correct }`(
-        forge: Forge
-    ) {
+    fun `REPRO RUMS-5093 - M inject spanId as x-datadog-parent-id W inject() { propagation correct }`(forge: Forge) {
         // Given
         // Verify that the x-datadog-parent-id header is set to the android.request span's OWN spanId.
         // This confirms the trace tree IDs (parent-child relationships) are structurally correct.
