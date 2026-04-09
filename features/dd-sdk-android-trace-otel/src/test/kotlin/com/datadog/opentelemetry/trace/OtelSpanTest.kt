@@ -6,6 +6,7 @@
 
 package com.datadog.opentelemetry.trace
 
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING
 import com.datadog.android.trace.api.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -122,6 +123,94 @@ internal class OtelSpanTest {
         expectedTags.forEach {
             verify(mockAgentSpan).setTag(it.first, it.second)
         }
+    }
+
+    // endregion
+
+    // region addEvent
+
+    @Test
+    fun `M send span log W addEvent { no attributes }`(
+        @StringForgery fakeEventName: String
+    ) {
+        // When
+        testedSpan.addEvent(fakeEventName, Attributes.empty())
+
+        // Then
+        verify(mockAgentSpan).logAttributes(
+            mapOf(DatadogTracingConstants.LogAttributes.MESSAGE to fakeEventName)
+        )
+    }
+
+    @Test
+    fun `M send span log with attributes W addEvent { with attributes }`(
+        @StringForgery fakeEventName: String,
+        @StringForgery fakeStringValue: String
+    ) {
+        // Given
+        val attributes = Attributes.of(
+            AttributeKey.stringKey("key.string"),
+            fakeStringValue,
+            AttributeKey.longKey("key.long"),
+            42L,
+            AttributeKey.booleanKey("key.bool"),
+            true
+        )
+
+        // When
+        testedSpan.addEvent(fakeEventName, attributes)
+
+        // Then
+        verify(mockAgentSpan).logAttributes(
+            mapOf(
+                DatadogTracingConstants.LogAttributes.MESSAGE to fakeEventName,
+                "key.string" to fakeStringValue,
+                "key.long" to 42L,
+                "key.bool" to true
+            )
+        )
+    }
+
+    @Test
+    fun `M do nothing W addEvent { isRecording is false }`(
+        @StringForgery fakeEventName: String
+    ) {
+        // Given
+        testedSpan.end()
+
+        // When
+        testedSpan.addEvent(fakeEventName, Attributes.empty())
+
+        // Then
+        verify(mockAgentSpan, never()).logAttributes(any())
+    }
+
+    @Test
+    fun `M send span log with timestamp W addEvent { with timestamp }`(
+        @StringForgery fakeEventName: String
+    ) {
+        // When
+        testedSpan.addEvent(fakeEventName, Attributes.empty(), 2_000L, java.util.concurrent.TimeUnit.SECONDS)
+
+        // Then
+        verify(mockAgentSpan).logAttributes(
+            mapOf(DatadogTracingConstants.LogAttributes.MESSAGE to fakeEventName),
+            2_000_000L
+        )
+    }
+
+    @Test
+    fun `M do nothing W addEvent with timestamp { isRecording is false }`(
+        @StringForgery fakeEventName: String
+    ) {
+        // Given
+        testedSpan.end()
+
+        // When
+        testedSpan.addEvent(fakeEventName, Attributes.empty(), 1000L, java.util.concurrent.TimeUnit.MILLISECONDS)
+
+        // Then
+        verify(mockAgentSpan, never()).logAttributes(any(), any())
     }
 
     // endregion

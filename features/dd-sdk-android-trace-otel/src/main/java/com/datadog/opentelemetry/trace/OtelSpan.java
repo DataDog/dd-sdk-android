@@ -23,7 +23,9 @@ import com.datadog.android.trace.api.span.DatadogSpanContext;
 import com.datadog.android.trace.api.tracer.DatadogTracer;
 import com.datadog.android.trace.internal.DatadogTracingToolkit;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -82,15 +84,30 @@ public class OtelSpan implements Span {
 
   @Override
   public Span addEvent(String name, Attributes attributes) {
-    // Not supported
+      if (this.recording) {
+          this.delegate.logAttributes(toNonNullMap(name, attributes));
+      }
     return this;
   }
 
   @Override
   public Span addEvent(String name, Attributes attributes, long timestamp, TimeUnit unit) {
-    // Not supported
+      if (this.recording) {
+          this.delegate.logAttributes(toNonNullMap(name, attributes), unit.toMillis(timestamp));
+      }
     return this;
   }
+
+
+    public Map<String, Object> toNonNullMap(String name, Attributes attributes) {
+        Map<String, Object> fields = new HashMap<>();
+        for (Map.Entry<AttributeKey<?>, Object> item : attributes.asMap().entrySet()) {
+            Object value = item.getValue();
+            if (value != null) fields.put(item.getKey().getKey(), value);
+        }
+        fields.put(DatadogTracingConstants.LogAttributes.MESSAGE, name);
+        return fields;
+    }
 
   @Override
   public Span setStatus(StatusCode statusCode, String description) {

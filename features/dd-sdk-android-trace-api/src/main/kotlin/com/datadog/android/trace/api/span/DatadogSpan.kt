@@ -192,4 +192,14 @@ interface DatadogSpan {
      *                   These attributes provide additional context or metadata for the span.
      */
     fun logAttributes(attributes: Map<String, Any>)
+
+    /**
+     * Logs a set of attributes with a custom timestamp and associates them with the current [DatadogSpan].
+     *
+     * @param attributes A map containing key-value pairs of attributes to be logged.
+     * @param timestampMs The timestamp in milliseconds since epoch at which the event occurred.
+     */
+    fun logAttributes(attributes: Map<String, Any>, timestampMs: Long) {
+        logAttributes(attributes)
+    }
 }

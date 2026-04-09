@@ -110,6 +110,10 @@ internal class DatadogSpanAdapter(
         spanLogger.log(attributes, this)
     }
 
+    override fun logAttributes(attributes: Map<String, Any>, timestampMs: Long) {
+        spanLogger.log(attributes, this, timestampMs)
+    }
+
     internal fun addThrowable(throwable: Throwable, errorPriority: Byte) {
         delegate.addThrowable(throwable, errorPriority)
     }

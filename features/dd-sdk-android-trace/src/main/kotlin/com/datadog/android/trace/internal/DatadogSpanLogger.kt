@@ -39,9 +39,9 @@ internal class DatadogSpanLogger(
         sendLogEvent(fields, span)
     }
 
-    fun log(attributes: Map<String, Any>, span: DatadogSpan) {
+    fun log(attributes: Map<String, Any>, span: DatadogSpan, timestampMs: Long? = null) {
         extractError(attributes.toMutableMap(), span)
-        sendLogEvent(attributes.toMutableMap(), span)
+        sendLogEvent(attributes.toMutableMap(), span, timestampMs)
     }
 
     private fun extractError(
@@ -67,7 +67,8 @@ internal class DatadogSpanLogger(
 
     private fun sendLogEvent(
         fields: MutableMap<String, Any>,
-        span: DatadogSpan
+        span: DatadogSpan,
+        timestampMs: Long? = null
     ) {
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
 
@@ -77,7 +78,7 @@ internal class DatadogSpanLogger(
             val logStatus = fields.remove(DatadogTracingConstants.LogAttributes.STATUS) ?: Log.VERBOSE
             fields[LogAttributes.DD_TRACE_ID] = span.context().traceId.toHexString()
             fields[LogAttributes.DD_SPAN_ID] = span.context().spanId.toString()
-            val timestamp = sdkCore.timeProvider.getDeviceTimestampMillis()
+            val timestamp = timestampMs ?: sdkCore.timeProvider.getDeviceTimestampMillis()
             logsFeature.sendEvent(
                 buildMap {
                     put("type", "span_log")
