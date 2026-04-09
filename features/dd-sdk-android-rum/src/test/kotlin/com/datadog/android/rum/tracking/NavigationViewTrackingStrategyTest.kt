@@ -49,6 +49,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -437,6 +438,48 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy.onActivityPaused(mockActivity)
 
         verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    // region Reproduce RUMS-5363 - duplicate listener registration causes duplicate startView calls
+
+    @Test
+    fun `M register listener only once W startTracking called twice {RUMS-5363}`() {
+        // Given - activity has started so startTracking can proceed
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+        testedStrategy.onActivityStarted(mockActivity)
+
+        // When - startTracking is called a second time (e.g. dynamic nav setup)
+        testedStrategy.startTracking()
+
+        // Then - addOnDestinationChangedListener must be called exactly once.
+        // On pre-fix code this fails: the listener is added twice because startTracking()
+        // has no idempotency guard, so this assertion counts times(2) but we assert times(1).
+        verify(mockNavController, times(1)).addOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
+    fun `M call startView once W onDestinationChanged after double startTracking {RUMS-5363}`() {
+        // Given - register the listener twice by calling startTracking twice
+        testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
+        testedStrategy.onActivityStarted(mockActivity)
+        // second call re-registers the same listener instance on the NavController
+        testedStrategy.startTracking()
+        whenever(mockPredicate.accept(mockNavDestination)) doReturn true
+
+        // When - NavController fires the destination-changed event; because the listener was
+        // registered twice, NavController iterates its list and calls onDestinationChanged twice.
+        // We simulate that double-dispatch here to prove the downstream effect.
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+        testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
+
+        // Then - startView must be called exactly once for the destination.
+        // On pre-fix code this fails: the double dispatch (caused by double registration) produces
+        // two startView calls for the same destination, resulting in duplicate resource events.
+        verify(rumMonitor.mockInstance, times(1)).startView(
+            mockNavDestination,
+            fakeDestinationName,
+            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.toString() to ViewScopeInstrumentationType.FRAGMENT)
+        )
     }
 
     // endregion
