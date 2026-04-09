@@ -45,7 +45,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class DatadogSpanLoggerTest {
+internal class DatadogSpanLoggerTest {
 
     private lateinit var mockSdkCore: FeatureSdkCore
 

@@ -200,7 +200,7 @@ internal class OtelSpanTest {
     }
 
     @Test
-    fun `M do nothing W addEvent with timestamp { isRecording is false }`(
+    fun `M do nothing W addEvent(String, Attributes, Long, TimeUnit) { isRecording is false }`(
         @StringForgery fakeEventName: String
     ) {
         // Given

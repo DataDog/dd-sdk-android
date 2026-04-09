@@ -99,15 +99,15 @@ public class OtelSpan implements Span {
   }
 
 
-    public Map<String, Object> toNonNullMap(String name, Attributes attributes) {
-        Map<String, Object> fields = new HashMap<>();
-        for (Map.Entry<AttributeKey<?>, Object> item : attributes.asMap().entrySet()) {
-            Object value = item.getValue();
-            if (value != null) fields.put(item.getKey().getKey(), value);
-        }
-        fields.put(DatadogTracingConstants.LogAttributes.MESSAGE, name);
-        return fields;
+  private Map<String, Object> toNonNullMap(String name, Attributes attributes) {
+    Map<String, Object> fields = new HashMap<>();
+    for (Map.Entry<AttributeKey<?>, Object> item : attributes.asMap().entrySet()) {
+      Object value = item.getValue();
+      if (value != null) fields.put(item.getKey().getKey(), value);
     }
+    fields.put(DatadogTracingConstants.LogAttributes.MESSAGE, name);
+    return fields;
+  }
 
   @Override
   public Span setStatus(StatusCode statusCode, String description) {
