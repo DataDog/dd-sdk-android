@@ -106,7 +106,7 @@ dependencies {
     implementation(libs.coilCompose)
     implementation(libs.daggerLib)
     ksp(libs.daggerCompiler)
-    ksp(libs.glideCompiler)
+    ksp(libs.glideKsp)
     implementation(libs.coroutinesCore)
     implementation(libs.bundles.ktorClient)
     implementation(libs.kotlinxSerializationJson)

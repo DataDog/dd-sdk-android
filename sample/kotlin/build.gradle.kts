@@ -213,7 +213,7 @@ dependencies {
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)
-    ksp(libs.glideCompiler)
+    ksp(libs.glideKsp)
 
     // Local Storage
     implementation(libs.sqlDelight)
