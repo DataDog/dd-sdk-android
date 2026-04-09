@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.bundles.glide)
+    compileOnly(project(":features:dd-sdk-android-trace-api"))
 
     testImplementation(project(":tools:unit")) {
         attributes {

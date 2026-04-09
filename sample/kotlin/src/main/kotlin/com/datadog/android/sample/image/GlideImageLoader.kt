@@ -7,6 +7,7 @@
 package com.datadog.android.sample.image
 
 import android.widget.ImageView
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
 import com.datadog.android.sample.R
@@ -18,7 +19,7 @@ internal class GlideImageLoader : ImageLoader {
     override val type: ImageLoaderType = ImageLoaderType.GLIDE
 
     override fun load(url: String, imageView: ImageView) {
-        GlideApp.with(imageView)
+        Glide.with(imageView)
             .load(url)
             .placeholder(R.drawable.ph_default)
             .transition(DrawableTransitionOptions.withCrossFade(factory))
