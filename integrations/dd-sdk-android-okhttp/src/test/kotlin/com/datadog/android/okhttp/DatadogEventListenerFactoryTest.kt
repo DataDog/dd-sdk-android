@@ -81,6 +81,32 @@ internal class DatadogEventListenerFactoryTest {
         assertThat(result).isSameAs(DatadogEventListener.Factory.NO_OP_EVENT_LISTENER)
     }
 
+    // region Reproduce RUMS-5184: Factory.create() must NOT generate a new UUID
+
+    @Test
+    fun `M create event listener with null uuid W create() { RUMS-5184 UUID mismatch }`() {
+        // The fix requires Factory.create() to use generateUuid=false so that the ResourceId
+        // has uuid==null. A null uuid allows key-only matching with the interceptor's ResourceId.
+        // In the buggy state (generateUuid=true), uuid is non-null and randomly generated,
+        // which will never equal the interceptor's independently generated UUID_A.
+
+        // When
+        val result = testedFactory.create(mockCall)
+
+        // Then
+        check(result is DatadogEventListener)
+        assertThat(result.key.uuid)
+            .describedAs(
+                "Factory.create() must produce a ResourceId with uuid=null so it can match " +
+                    "the interceptor's ResourceId via key-only fallback. " +
+                    "Non-null uuid causes UUID mismatch → timing fields are never set → " +
+                    "request duration breakdown is missing (RUMS-5184)."
+            )
+            .isNull()
+    }
+
+    // endregion
+
     companion object {
         val datadogCore = DatadogSingletonTestConfiguration()
 
