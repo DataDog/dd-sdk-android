@@ -26,10 +26,7 @@ import java.util.UUID
 class ResourceIdTest {
 
     @Test
-    fun `M return true W equals (same key, same uuid)`(
-        @StringForgery key: String,
-        @Forgery uuid: UUID
-    ) {
+    fun `M return true W equals (same key, same uuid)`(@StringForgery key: String, @Forgery uuid: UUID) {
         // Given
         val requestId = ResourceId(key, uuid.toString())
         val otherRequestId = ResourceId(key, uuid.toString())
@@ -180,9 +177,7 @@ class ResourceIdTest {
     // region Reproduce RUMS-5184: UUID mismatch equality contract
 
     @Test
-    fun `M return false W equals { RUMS-5184 same key but independently generated UUIDs }`(
-        @StringForgery key: String
-    ) {
+    fun `M return false W equals { RUMS-5184 same key but independently generated UUIDs }`(@StringForgery key: String) {
         // Documents the equality contract that makes the RUMS-5184 bug fatal:
         // DatadogInterceptor.intercept() creates ResourceId(key, UUID_A) via generateUuid=true.
         // DatadogEventListener.Factory.create() creates ResourceId(key, UUID_B) via generateUuid=true.
@@ -206,7 +201,7 @@ class ResourceIdTest {
             .isNotNull()
         assertThat(eventListenerResourceId.uuid)
             .describedAs("eventListener's ResourceId must have a non-null uuid (generateUuid=true) — BUG")
-            .isNull()  // This assertion documents the REQUIRED fix: uuid must be null
+            .isNull() // This assertion documents the REQUIRED fix: uuid must be null
     }
 
     // endregion

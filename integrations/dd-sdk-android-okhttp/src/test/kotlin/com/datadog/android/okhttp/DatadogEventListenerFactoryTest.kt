@@ -112,8 +112,6 @@ internal class DatadogEventListenerFactoryTest {
 
         @TestConfigurationsProvider
         @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(datadogCore)
-        }
+        fun getTestConfigurations(): List<TestConfiguration> = listOf(datadogCore)
     }
 }
