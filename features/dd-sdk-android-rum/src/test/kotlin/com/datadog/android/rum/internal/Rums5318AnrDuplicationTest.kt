@@ -6,18 +6,6 @@
 
 package com.datadog.android.rum.internal
 
-// Reproduces RUMS-5318: ANR duplication on API 30+ when trackNonFatalAnrs=true
-// Both ANRDetectorRunnable (session N) and DatadogLateCrashReporter (session N+1)
-// report the same physical ANR event. The lastFatalAnrSent guard only prevents
-// duplication from session N+1 onward — not between N and N+1.
-//
-// Root cause: On API 30+, SDK v3 introduced ApplicationExitInfo-based fatal ANR
-// reporting. When customers explicitly call `.trackNonFatalAnrs(true)`, the watchdog
-// thread (ANRDetectorRunnable) fires during session N, and then on the NEXT launch
-// (session N+1), consumeLastFatalAnr() fires DatadogLateCrashReporter.handleAnrCrash()
-// for the SAME physical ANR. The lastFatalAnrSent dedup guard uses null-vs-timestamp
-// comparison and only prevents re-reporting from session N+2 onward.
-
 import android.app.ApplicationExitInfo
 import android.os.Build
 import com.datadog.android.api.InternalLogger
@@ -33,7 +21,6 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.anr.AndroidTraceParser
-import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.google.gson.JsonObject
@@ -52,7 +39,6 @@ import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -66,25 +52,30 @@ import org.mockito.quality.Strictness
  * Regression tests for RUMS-5318: ANR events are reported twice on API 30+ when
  * `trackNonFatalAnrs=true`.
  *
+ * Reproduces RUMS-5318: ANR duplication on API 30+ when trackNonFatalAnrs=true.
+ * Both ANRDetectorRunnable (session N) and DatadogLateCrashReporter (session N+1)
+ * report the same physical ANR event. The lastFatalAnrSent guard only prevents
+ * duplication from session N+1 onward — not between N and N+1.
+ *
  * On API 30+, SDK v3 has TWO mechanisms that can both fire for the same physical ANR:
  *
- *   Session N (while ANR is happening):
- *     ANRDetectorRunnable.run()
- *       → GlobalRumMonitor.addError("Application Not Responding", ...) = ANR event #1
- *     [App terminates due to ANR — lastFatalAnrSent is NEVER written by the watchdog path]
+ * Session N (while ANR is happening):
+ * - ANRDetectorRunnable.run() fires
+ * - GlobalRumMonitor.addError("Application Not Responding") = ANR event #1
+ * - App terminates due to ANR; lastFatalAnrSent is NEVER written by the watchdog path
  *
- *   Session N+1 (next app launch):
- *     Rum.enable() → rumFeature.consumeLastFatalAnr()
- *       → DatadogLateCrashReporter.handleAnrCrash(anrExitInfo, ...)
- *       → sdkCore.lastFatalAnrSent returns null (watchdog never set it)
- *       → dedup guard: null == anrExitInfo.timestamp → false → REPORTS ANR = ANR event #2
+ * Session N+1 (next app launch):
+ * - Rum.enable() triggers rumFeature.consumeLastFatalAnr()
+ * - DatadogLateCrashReporter.handleAnrCrash(anrExitInfo) is called
+ * - sdkCore.lastFatalAnrSent returns null (watchdog never set it)
+ * - Dedup guard: null != anrExitInfo.timestamp → false → REPORTS ANR = ANR event #2 (DUPLICATE)
  *
- *   Session N+2 (second launch after ANR):
- *     handleAnrCrash() → sdkCore.lastFatalAnrSent returns T (set in session N+1)
- *     → dedup guard: T == T → true → SKIPS (correctly)
+ * Session N+2 (second launch after ANR):
+ * - handleAnrCrash() checks sdkCore.lastFatalAnrSent → returns T (set in session N+1)
+ * - Dedup guard: T == T → true → SKIPS (correctly prevents re-reporting)
  *
- * The fix would require the watchdog path to also write lastFatalAnrSent (or equivalent),
- * so that session N+1's handleAnrCrash() can detect the duplicate and skip it.
+ * The fix requires the watchdog path to also persist the ANR timestamp (via writeLastFatalAnrSent
+ * or equivalent), so that session N+1's handleAnrCrash() can detect the duplicate and skip it.
  */
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -144,26 +135,24 @@ internal class Rums5318AnrDuplicationTest {
         )
     }
 
-    // region RUMS-5318 — ANR duplication: session N+1 dedup guard does NOT protect against
-    //                    the first cross-session duplication
+    // region RUMS-5318 — ANR duplication: dedup guard cannot prevent N->N+1 cross-session duplication
 
     /**
-     * Proves RUMS-5318:
-     * The lastFatalAnrSent dedup guard is insufficient to prevent ANR duplication on API 30+
-     * when trackNonFatalAnrs=true.
+     * Proves RUMS-5318: The lastFatalAnrSent dedup guard is insufficient to prevent ANR duplication
+     * on API 30+ when trackNonFatalAnrs=true.
      *
      * On session N+1 (first launch after the ANR), lastFatalAnrSent=null because the
      * ANRDetectorRunnable watchdog path NEVER writes to lastFatalAnrSent. The dedup guard
      * checks `anrExitInfo.timestamp == lastFatalAnrSent` → `T == null` → false, so
-     * handleAnrCrash() proceeds to write a second ANR error event.
+     * handleAnrCrash() proceeds to write a second ANR error event (the DUPLICATE).
      *
      * A correct implementation would require the watchdog to also persist the ANR timestamp
      * (e.g., via writeLastFatalAnrSent or a dedicated writeLastNonFatalAnrSent), so that
      * on the next launch handleAnrCrash() detects the duplicate and skips it.
      *
      * EXPECTED (fixed): handleAnrCrash() should NOT write any events when the watchdog already
-     *   reported the same ANR in the previous session. This test FAILS on buggy code because
-     *   there is no mechanism to propagate the watchdog's report across the session boundary.
+     * reported the same ANR in the previous session. This test FAILS on the buggy code because
+     * there is no mechanism to propagate the watchdog's report across the session boundary.
      */
     @Test
     fun `M NOT report duplicate ANR W handleAnrCrash() { watchdog already reported in previous session }`(
@@ -171,9 +160,9 @@ internal class Rums5318AnrDuplicationTest {
         @Forgery viewEvent: ViewEvent,
         forge: Forge
     ) {
-        // Given - session N+1: app restarts after ANR, lastFatalAnrSent=null because the
-        // ANRDetectorRunnable watchdog in session N did NOT call writeLastFatalAnrSent
-        // (the watchdog path has no mechanism to set this flag).
+        // Given — session N+1: app restarts after ANR, lastFatalAnrSent=null because the
+        // ANRDetectorRunnable watchdog in session N did NOT call writeLastFatalAnrSent.
+        // The watchdog path only calls GlobalRumMonitor.addError(), never writeLastFatalAnrSent.
         val fakeViewEvent = viewEvent.copy(
             date = System.currentTimeMillis() - forge.aLong(
                 min = 0L,
@@ -184,7 +173,6 @@ internal class Rums5318AnrDuplicationTest {
         whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
 
         // lastFatalAnrSent=null: watchdog in session N never wrote this flag
-        // (ANRDetectorRunnable only calls GlobalRumMonitor.addError(), not writeLastFatalAnrSent)
         whenever(mockSdkCore.lastFatalAnrSent) doReturn null
 
         val fakeThreadsDump = anrCrashThreadDump(forge)
@@ -195,25 +183,21 @@ internal class Rums5318AnrDuplicationTest {
             whenever(timestamp) doReturn fakeTimestamp
         }
 
-        // When - DatadogLateCrashReporter fires in session N+1 via consumeLastFatalAnr()
-        // At this point, the watchdog already reported the same physical ANR in session N.
+        // When — DatadogLateCrashReporter fires in session N+1 via consumeLastFatalAnr().
+        // At this point the watchdog already reported the same physical ANR in session N.
         testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
 
-        // Then - EXPECTED (fixed behavior): NO events should be written because the watchdog
+        // Then — EXPECTED (fixed behavior): NO events should be written because the watchdog
         // already reported this ANR in session N. However, the current code has NO way to
         // detect this cross-session duplication, so it WILL write the ANR again.
-        //
         // This test FAILS on the buggy code, proving the duplication bug in RUMS-5318.
         verifyNoInteractions(mockRumWriter)
     }
 
     /**
-     * Proves the EXACT dedup guard boundary from RUMS-5318:
-     *
-     * - Session N+1: lastFatalAnrSent=null → handleAnrCrash REPORTS the ANR (1 ErrorEvent written)
-     *   → This is the DUPLICATE when trackNonFatalAnrs=true (watchdog reported in session N)
-     * - Session N+2: lastFatalAnrSent=T   → handleAnrCrash SKIPS (0 additional events written)
-     *   → This is the ONLY duplication the current guard prevents
+     * Proves the exact dedup guard boundary for RUMS-5318:
+     * - Session N+1: lastFatalAnrSent=null  → handleAnrCrash REPORTS the ANR (duplicate of watchdog)
+     * - Session N+2: lastFatalAnrSent=T     → handleAnrCrash SKIPS (guard prevents re-reporting)
      *
      * The guard was designed to prevent N+2, N+3, etc. re-reporting, not the N→N+1 duplication.
      */
@@ -241,18 +225,18 @@ internal class Rums5318AnrDuplicationTest {
             whenever(timestamp) doReturn fakeTimestamp
         }
 
-        // --- Session N+1: lastFatalAnrSent=null (watchdog did NOT set it) ---
+        // Session N+1: lastFatalAnrSent=null (watchdog did NOT set it)
         whenever(mockSdkCore.lastFatalAnrSent) doReturn null
 
-        // When (session N+1 call - this is where duplication occurs)
+        // When (session N+1 call — this is where cross-session duplication occurs)
         testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
 
         // Then: session N+1 DOES report — this is ANR event #2 (duplicate of watchdog event #1)
-        // proving the lastFatalAnrSent dedup guard does NOT prevent N→N+1 duplication
+        // The dedup guard does NOT prevent N->N+1 duplication
         verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), any(), eq(EventType.CRASH))
         verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
 
-        // --- Session N+2: lastFatalAnrSent=fakeTimestamp (written in session N+1) ---
+        // Session N+2: lastFatalAnrSent=fakeTimestamp (written in session N+1)
         whenever(mockSdkCore.lastFatalAnrSent) doReturn fakeTimestamp
 
         val sessionN2Handler = DatadogLateCrashReporter(
@@ -262,20 +246,19 @@ internal class Rums5318AnrDuplicationTest {
         )
         sessionN2Handler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
 
-        // Then: session N+2 is correctly blocked by the dedup guard (no new writes)
-        // total writes still == 2 (guard prevents N+2 duplication but NOT N→N+1)
+        // Then: session N+2 is correctly blocked by the dedup guard (no additional writes)
+        // Total write count remains 2 — the guard only prevents N+2 duplication, not N+1
         verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), any(), eq(EventType.CRASH))
     }
 
     // endregion
 
-    // region RUMS-5318 — isTrackNonFatalAnrsEnabledByDefault confirms opt-in condition for API 30+
+    // region RUMS-5318 — isTrackNonFatalAnrsEnabledByDefault API 30 boundary
 
     /**
-     * Proves RUMS-5318 prerequisite:
-     * On API 30+ (Build.VERSION_CODES.R and above), watchdog (non-fatal) ANR tracking is DISABLED
-     * by default. Duplication only occurs when customers EXPLICITLY call `.trackNonFatalAnrs(true)`.
-     * This test documents the API 30 boundary.
+     * Proves RUMS-5318 prerequisite: On API 30+ (Build.VERSION_CODES.R), watchdog ANR tracking
+     * is DISABLED by default. Duplication only occurs when customers explicitly call
+     * `.trackNonFatalAnrs(true)`, re-enabling the watchdog on top of ApplicationExitInfo reporting.
      */
     @Test
     fun `M return false W isTrackNonFatalAnrsEnabledByDefault() { API 30+ disables watchdog by default }`() {
@@ -286,15 +269,15 @@ internal class Rums5318AnrDuplicationTest {
         // When
         val isEnabled = RumFeature.isTrackNonFatalAnrsEnabledByDefault(mockBuildSdkVersionProvider)
 
-        // Then - watchdog is disabled by default on API 30+
-        // Customers who call .trackNonFatalAnrs(true) re-enable it and trigger RUMS-5318
+        // Then — false: watchdog is disabled by default on API 30+
+        // Customers who call .trackNonFatalAnrs(true) re-enable it, triggering RUMS-5318
         assertThat(isEnabled).isFalse()
     }
 
     /**
-     * Proves RUMS-5318 prerequisite (API < 30 is safe):
-     * On API < 30, ApplicationExitInfo is not available (no fatal ANR reporting), so watchdog is
-     * enabled by default. No duplication can occur on API < 30.
+     * Proves RUMS-5318 prerequisite (API < 30 safe): On API < 30, ApplicationExitInfo is not
+     * available, so watchdog is the only ANR detection mechanism and is enabled by default.
+     * No duplication can occur on API < 30.
      */
     @Test
     fun `M return true W isTrackNonFatalAnrsEnabledByDefault() { API below 30 uses watchdog only }`() {
@@ -305,7 +288,7 @@ internal class Rums5318AnrDuplicationTest {
         // When
         val isEnabled = RumFeature.isTrackNonFatalAnrsEnabledByDefault(mockBuildSdkVersionProvider)
 
-        // Then - watchdog enabled by default on API < 30 (safe, no ApplicationExitInfo path)
+        // Then — true: watchdog enabled by default on API < 30 (safe, no ApplicationExitInfo path)
         assertThat(isEnabled).isTrue()
     }
 
