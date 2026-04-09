@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core.propagation
 
+import com.datadog.trace.api.DDSpanId
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.core.DDSpanContext
@@ -106,6 +107,48 @@ internal class DatadogHttpCodecTest {
             )
         }
     }
+
+    // region Reproduction tests for RUMS-5093: Incorrect Timing and Ordering of Traces
+
+    @Test
+    fun `REPRO RUMS-5093 - M inject span own spanId as x-datadog-parent-id W inject() { context propagation is correct }`(
+        forge: Forge
+    ) {
+        // Given
+        // Verify that the x-datadog-parent-id header is set to the android.request span's OWN spanId.
+        // This confirms the trace tree IDs (parent-child relationships) are structurally correct.
+        // The visual waterfall misrendering in the Datadog UI (RUMS-5093) is caused by incorrect
+        // absolute start timestamps from NTP clock drift, NOT by wrong parent_id propagation.
+        val fakeSpanId = forge.aLong(min = 1L)
+        whenever(mockContext.spanId).thenReturn(fakeSpanId)
+        whenever(mockContext.tags).thenReturn(emptyMap())
+
+        // When
+        testedInjector.inject(mockContext, mockCarrier, mockSetter)
+
+        // Then: x-datadog-parent-id must equal the android.request span's own spanId.
+        // This test PASSES confirming that the context propagation header is correct.
+        // The RUMS-5093 bug (broken trace ordering in the UI) is NOT caused by wrong parent_id.
+        // Root cause is the incorrect absolute start timestamp applied in CoreTracerSpanToSpanEventMapper.
+        argumentCaptor<String> {
+            verify(mockSetter).set(
+                eq(mockCarrier),
+                eq(DatadogHttpCodec.SPAN_ID_KEY),
+                capture()
+            )
+            val expectedParentId = DDSpanId.toString(fakeSpanId)
+            assertThat(firstValue)
+                .describedAs(
+                    "RUMS-5093 context propagation: x-datadog-parent-id must equal the span's own spanId. " +
+                        "Expected: $expectedParentId but was: $firstValue. " +
+                        "If this fails, the broken trace ordering has TWO root causes; " +
+                        "if it passes, the ordering bug is solely due to incorrect NTP-adjusted timestamps."
+                )
+                .isEqualTo(expectedParentId)
+        }
+    }
+
+    // endregion
 
     companion object {
         @Suppress("unused")

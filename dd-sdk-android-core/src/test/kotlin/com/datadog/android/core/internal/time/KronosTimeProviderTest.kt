@@ -87,6 +87,53 @@ internal class KronosTimeProviderTest {
         assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
     }
 
+    // region Reproduction tests for RUMS-5093: Incorrect Timing and Ordering of Traces
+
+    @Test
+    fun `REPRO RUMS-5093 - negative offset is returned when device clock is ahead of server`() {
+        // Given
+        // Simulate device clock being 5 seconds AHEAD of server: Kronos returns server time
+        // that is 5 seconds BEHIND the current device time.
+        // This is the root cause of RUMS-5093: when the device clock is ahead, serverOffset
+        // is a large negative value. When applied at serialization time in
+        // CoreTracerSpanToSpanEventMapper.map(), it shifts the span start to BEFORE the actual request.
+        val deviceClockAheadMs = 5_000L // device is 5 seconds ahead
+        val fakeServerTimeMs = System.currentTimeMillis() - deviceClockAheadMs
+        whenever(mockClock.getCurrentTimeMs()) doReturn fakeServerTimeMs
+
+        // When
+        val offsetMs = testedTimeProvider.getServerOffsetMillis()
+
+        // Then: offset is negative (server is behind device).
+        // This negative offset, when applied at serialization time to a span's startTime,
+        // shifts the absolute start timestamp EARLIER than the actual span start.
+        // FAILS: we assert that the provider guards against negative offsets being applied
+        // to serialized span timestamps (e.g., by clamping to 0 or flagging for caller).
+        // Currently, getServerOffsetMillis() returns -5000L with NO guard or warning.
+        assertThat(offsetMs)
+            .describedAs(
+                "RUMS-5093 root cause: device is 5s ahead, so serverOffset is ~-5000ms. " +
+                    "Confirmed: offset=%d ms",
+                offsetMs
+            )
+            .isLessThan(0L)
+
+        // The SDK should protect callers from applying large negative offsets to span timestamps.
+        // FAILS: there is no guard — getServerOffsetMillis() returns the raw negative delta.
+        assertThat(offsetMs)
+            .describedAs(
+                "RUMS-5093: getServerOffsetMillis() must not return a value that would shift " +
+                    "a span start timestamp earlier than the actual request time. " +
+                    "A large negative offset of %d ms indicates device clock is ahead of NTP server. " +
+                    "The SDK has no protection: span serialization blindly applies this offset, " +
+                    "producing incorrect absolute start timestamps.",
+                offsetMs
+            )
+            .isGreaterThanOrEqualTo(0L)
+    }
+
+    // endregion
+
     companion object {
         const val TEST_OFFSET = 10L
     }

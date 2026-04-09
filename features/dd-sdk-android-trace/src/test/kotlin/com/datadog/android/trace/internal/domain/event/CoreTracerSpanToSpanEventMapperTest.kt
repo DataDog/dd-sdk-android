@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.assertj.SpanEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
@@ -20,6 +21,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat as assertThatJ
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -186,6 +188,98 @@ internal class CoreTracerSpanToSpanEventMapperTest {
 
         // Then
         assertThat(event).isNotTopSpan()
+    }
+
+    // region Reproduction tests for RUMS-5093: Incorrect Timing and Ordering of Traces
+
+    @Test
+    fun `REPRO RUMS-5093 - M not shift span start earlier W map() { device clock ahead of server by 5 seconds }`(
+        @Forgery fakeSpan: DDSpan
+    ) {
+        // Given
+        // Simulate device clock being 5 seconds AHEAD of server: serverOffset is negative.
+        // When serialization applies this negative offset, the span start is shifted to BEFORE
+        // the actual request started, making the android.request span appear shorter than backend
+        // child spans whose clocks are server-authoritative.
+        val deviceClockAheadOffsetNs = -5_000_000_000L // device is 5s ahead of server
+        val fakeSpanStartTime = 1_700_000_000_000_000_000L // arbitrary span start in nanos
+        val fakeSpanDuration = 2_000_000_000L // 2 second span duration
+        whenever(fakeSpan.startTime).thenReturn(fakeSpanStartTime)
+        whenever(fakeSpan.durationNano).thenReturn(fakeSpanDuration)
+
+        val timeInfo = TimeInfo(
+            deviceTimeNs = fakeSpanStartTime,
+            serverTimeNs = fakeSpanStartTime + deviceClockAheadOffsetNs,
+            serverTimeOffsetNs = deviceClockAheadOffsetNs,
+            serverTimeOffsetMs = -5_000L
+        )
+        val contextWithNegativeOffset = fakeDatadogContext.copy(time = timeInfo)
+
+        // When
+        val event = testedMapper.map(contextWithNegativeOffset, fakeSpan)
+
+        // Then: the serialized span start should NOT be before the actual span start on device.
+        // A negative serverOffset shifts start earlier, causing the span to appear to start
+        // before the actual HTTP request was initiated. The fix should capture the NTP offset
+        // at span creation time (not serialization time) or clamp negative offsets.
+        // FAILS because: event.start = fakeSpanStartTime + (-5s) = fakeSpanStartTime - 5s
+        // which is EARLIER than fakeSpanStartTime, making the android.request span
+        // appear to have negligible duration relative to server-authoritative backend spans.
+        assertThatJ(event.start)
+            .describedAs(
+                "RUMS-5093: Span start must not be shifted earlier than the actual span start " +
+                    "when device clock is ahead of server. " +
+                    "Current bug: start=${event.start} is before spanStartTime=$fakeSpanStartTime " +
+                    "because serverOffset=$deviceClockAheadOffsetNs is applied at serialization time."
+            )
+            .isGreaterThanOrEqualTo(fakeSpanStartTime)
+    }
+
+    @Test
+    fun `REPRO RUMS-5093 - M preserve span duration W map() { device clock ahead of server by 5 seconds }`(
+        @Forgery fakeSpan: DDSpan
+    ) {
+        // Given
+        // Even with negative server offset, the duration field (derived from monotonic nanoTime)
+        // should remain correct. This test documents that the duration is correct (computed from
+        // monotonic clock) while the start timestamp is wrong (shifted by serialization-time NTP offset).
+        val deviceClockAheadOffsetNs = -5_000_000_000L
+        val fakeSpanStartTime = 1_700_000_000_000_000_000L
+        val fakeSpanDuration = 2_000_000_000L // 2 seconds duration (monotonic, correct)
+        whenever(fakeSpan.startTime).thenReturn(fakeSpanStartTime)
+        whenever(fakeSpan.durationNano).thenReturn(fakeSpanDuration)
+
+        val timeInfo = TimeInfo(
+            deviceTimeNs = fakeSpanStartTime,
+            serverTimeNs = fakeSpanStartTime + deviceClockAheadOffsetNs,
+            serverTimeOffsetNs = deviceClockAheadOffsetNs,
+            serverTimeOffsetMs = -5_000L
+        )
+        val contextWithNegativeOffset = fakeDatadogContext.copy(time = timeInfo)
+
+        // When
+        val event = testedMapper.map(contextWithNegativeOffset, fakeSpan)
+
+        // Then: duration is correct (monotonic), but start is wrong.
+        // The backend child span starting at server-time T0+1s will have start > event.start,
+        // making the android.request span appear to have negligible duration vs. its children.
+        // This assertion documents the duration is preserved even though start is incorrectly shifted.
+        assertThatJ(event.duration)
+            .describedAs("Duration must equal the original span duration (monotonic, unaffected by NTP offset)")
+            .isEqualTo(fakeSpanDuration)
+
+        // This assertion shows the bug: start is offset to before actual span start.
+        // Together with correct duration, the span appears correct internally but wrong in the timeline.
+        val incorrectStart = fakeSpanStartTime + deviceClockAheadOffsetNs
+        assertThatJ(event.start)
+            .describedAs(
+                "RUMS-5093: BUG DOCUMENTED - start=${ event.start } is incorrectly shifted " +
+                    "to $incorrectStart (5s before actual span start). " +
+                    "A backend child span starting at server-time T0+1s has start > event.start, " +
+                    "making the android.request span appear to have negligible duration."
+            )
+            // FAILS: we assert start should equal span start time (no NTP shift), but it's shifted
+            .isEqualTo(fakeSpanStartTime)
     }
 
     // endregion
