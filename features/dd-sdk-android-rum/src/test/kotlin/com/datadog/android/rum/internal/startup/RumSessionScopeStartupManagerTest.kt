@@ -554,6 +554,66 @@ internal class RumSessionScopeStartupManagerTest {
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
+    // region RUMS-5469 reproduction: TTFD dropped when TTID never arrives
+
+    /**
+     * Reproduces RUMS-5469: When the launch Activity (e.g. AuthenticationActivity) finishes
+     * before its first draw on emulators (API 34), the first-draw callback is never invoked and
+     * [RumSessionScopeStartupManager.onTTIDEvent] is never called. If the app calls
+     * [com.datadog.android.rum.RumMonitor.reportAppFullyDisplayed] in a subsequent Activity
+     * (MainActivity), [RumSessionScopeStartupManager.onTTFDEvent] fires with
+     * [ttidReportedForScenario] == false. The current code logs a warning and returns early
+     * WITHOUT writing the TTFD event; because TTID also never arrives, the TTFD is permanently
+     * lost.
+     *
+     * Expected (correct) behaviour: when [reportAppFullyDisplayed] is called and TTID has not yet
+     * been reported, the SDK should still emit a TTFD event using the TTFD timestamp directly
+     * (treating TTFD time as the app-fully-displayed duration) rather than silently dropping it.
+     *
+     * This test asserts the CORRECT behaviour (a TTFD event IS written) and therefore FAILS
+     * against the buggy code — proving that TTFD is silently lost in the emulator scenario.
+     */
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M write TTFD event W onTTFDEvent { TTID never arrives due to interstitial Activity - RUMS-5469 }`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — simulate the RUMS-5469 scenario: startup was detected and TTFD was requested,
+        // but TTID never arrived because the first Activity's view detached before drawing.
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When — app calls reportAppFullyDisplayed (e.g. in MainActivity) while TTID has not
+        // been received yet (because the interstitial Activity's view detached before drawing)
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Simulate that TTID NEVER arrives (the bug: onViewDetachedFromWindow is a no-op).
+        // No call to manager.onTTIDEvent(...) here.
+
+        // Then — the SDK should still write a TTFD event so that the user's
+        // reportAppFullyDisplayed() call is not silently ignored.
+        // In the buggy code this assertion FAILS because onTTFDEvent returns early after logging
+        // the REPORT_APP_FULLY_DISPLAYED_CALLED_BEFORE_TTID_MESSAGE warning without writing
+        // anything.
+        argumentCaptor<VitalAppLaunchEvent> {
+            org.mockito.kotlin.verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.vital).apply {
+                hasAppLaunchMetric(VitalAppLaunchEvent.AppLaunchMetric.TTFD)
+            }
+        }
+    }
+
+    // endregion
+
     @ParameterizedTest
     @MethodSource("testScenarios")
     fun `M report TTID as TTFD W onTTIDEvent { onTTFDEvent called before onTTIDEvent }`(

@@ -230,6 +230,88 @@ internal class RumAppStartupDetectorImplTest {
         verifyNoMoreInteractions(listener)
     }
 
+    // region RUMS-5469 reproduction: second Activity invisible to startup detector
+
+    /**
+     * Reproduces RUMS-5469: In the interstitial-Activity pattern used by apps with a splash or
+     * authentication screen, AuthenticationActivity is created first (numberOfActivities == 1, so
+     * [RumAppStartupDetector.Listener.onAppStartupDetected] fires), but it calls finish() before
+     * its decor view draws. MainActivity is then created while AuthenticationActivity is still
+     * alive (numberOfActivities == 2), so [RumAppStartupDetectorImpl.onBeforeActivityCreated]
+     * does NOT call [RumAppStartupDetector.Listener.onAppStartupDetected] for MainActivity.
+     *
+     * Expected (correct) behaviour: when the first Activity finishes before producing a TTID, the
+     * detector should recognise the second Activity as the real launch target and notify the
+     * listener so that a TTID subscription can be set up for it.
+     *
+     * This test asserts the CORRECT behaviour (two calls to [onAppStartupDetected]) and therefore
+     * FAILS against the buggy code — proving that MainActivity is invisible to the startup
+     * detector.
+     */
+    @Test
+    fun `M detect second Activity as startup target W RumAppStartupDetector { interstitial Activity finishes before draw - RUMS-5469 }`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean
+    ) {
+        // Given
+        val detector = createDetector()
+
+        currentTime += 3.seconds
+
+        // When — first Activity (AuthenticationActivity) is created: detection fires for it
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // AuthenticationActivity finishes before its view draws, but it is NOT yet destroyed
+        // when MainActivity is created — this is the race condition on fast emulators (API 34).
+        // Note: onActivityDestroyed is deliberately NOT called here.
+
+        val activity2 = mock<Activity>()
+        whenever(activity2.isChangingConfigurations) doReturn false
+
+        currentTime += 1.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity2,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        // Then — the SDK should have called onAppStartupDetected for BOTH Activities so that
+        // TTID can be re-subscribed to the Activity that actually draws its first frame.
+        // In the buggy code, only ActivityA (AuthenticationActivity) triggers onAppStartupDetected
+        // because numberOfActivities == 2 when ActivityB (MainActivity) is pre-created.
+        // This assertion FAILS in the buggy code, proving MainActivity is invisible to the
+        // startup detector.
+        inOrder(listener) {
+            listener.verifyScenarioDetected(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+                )
+            )
+            // The second Activity should also be detected so that TTID can be tracked for it.
+            listener.verifyScenarioDetected(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+                    activity = activity2.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
+                )
+            )
+        }
+    }
+
+    // endregion
+
     @Test
     fun `M detect Cold only W RumAppStartupDetector {1st Cold, 1st activity stopped and another activity created}`(
         forge: Forge,

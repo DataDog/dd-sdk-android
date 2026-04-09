@@ -256,6 +256,52 @@ class RumFirstDrawTimeReporterTest {
         }
     }
 
+    // region RUMS-5469 reproduction: TTID not emitted when launch Activity finishes before first draw
+
+    /**
+     * Reproduces RUMS-5469: When the launch Activity (e.g. AuthenticationActivity) calls finish()
+     * before its decor view completes a single draw pass, the [View.OnAttachStateChangeListener]
+     * registered in [RumFirstDrawTimeReporterImpl.onDecorViewReady] receives
+     * [View.OnAttachStateChangeListener.onViewDetachedFromWindow] instead of
+     * [View.OnAttachStateChangeListener.onViewAttachedToWindow]. The current implementation has an
+     * empty body for [View.OnAttachStateChangeListener.onViewDetachedFromWindow] — there is no
+     * fallback and [RumFirstDrawTimeReporter.Callback.onFirstFrameDrawn] is never called, so the
+     * TTID event is silently dropped.
+     *
+     * Expected (correct) behaviour: the SDK should handle the detach-before-draw case gracefully,
+     * e.g. by invoking the callback with a best-effort timestamp so that TTID is still emitted.
+     *
+     * This test asserts the CORRECT behaviour and therefore FAILS against the buggy code, proving
+     * the bug exists.
+     */
+    @Test
+    fun `M call onFirstFrameDrawn W subscribeToFirstFrameDrawn { decorView detaches before first draw - RUMS-5469 }`() {
+        // Given — decor view is not yet attached (fast-finishing interstitial Activity)
+        whenever(window.peekDecorView()) doReturn decorView
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        // Capture the OnAttachStateChangeListener that was registered on the decor view
+        val attachListenerCaptor = argumentCaptor<View.OnAttachStateChangeListener>()
+        org.mockito.kotlin.verify(decorView).addOnAttachStateChangeListener(attachListenerCaptor.capture())
+        val attachListener = attachListenerCaptor.firstValue
+
+        // Simulate the Activity finishing before the first draw — onViewDetachedFromWindow fires
+        // without onViewAttachedToWindow ever being called (the no-op bug path)
+        attachListener.onViewDetachedFromWindow(decorView)
+
+        // Then — the SDK should have invoked the callback with a fallback timestamp so that
+        // a TTID event is still emitted. In the buggy code onViewDetachedFromWindow is an empty
+        // body, so this assertion FAILS — proving the missing fallback.
+        org.mockito.kotlin.verify(callback).onFirstFrameDrawn(org.mockito.kotlin.any())
+    }
+
+    // endregion
+
     @Test
     fun `M call internalLogger W addOnDrawListener { if it throws IllegalStateException }`() {
         // Given
