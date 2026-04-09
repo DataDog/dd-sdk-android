@@ -8,35 +8,47 @@ package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
 import com.datadog.android.core.sampling.DeterministicSampler
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.internal.RumContextPropagator
+import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.trace.internal.net.SpanSamplingIdProvider
 
 /**
  * A [com.datadog.android.core.sampling.DeterministicSampler] using the TraceID of a Span to compute the sampling decision.
  *
- * When a span is linked to an active RUM session (i.e. the span carries a `rum.session.id` tag),
- * the sampling threshold is automatically rebased against the RUM session sample rate so that
- * the combined effective sampling probability reflects the configured trace sample rate applied
- * only to the sessions already tracked by RUM:
+ * The sampling threshold is automatically rebased against the RUM session sample rate when it is
+ * available so that the combined effective sampling probability reflects:
  *
  * ```
  * rebasedTraceSampleRate = sessionSampleRate * traceSampleRate / 100
  * ```
  *
- * @param sampleRateProvider Provider for the sample rate value which will be called each time
- * the sampling decision needs to be made. All the values should be in the range [0;100].
+ * Note: overriding [getSampleRate] is not a supported extension point for per-span sampling
+ * behavior.
+ *
+ * @param sampleRateProvider Provider for the trace sample rate. Called each time the sampling
+ * decision needs to be made. Values must be in the range [0;100].
+ * @param sessionSampleRateProvider Provider for the RUM session sample rate used to rebase the
+ * trace sample rate. Defaults to 100 (no rebasing).
  */
-open class DeterministicTraceSampler(
-    sampleRateProvider: () -> Float
+open class DeterministicTraceSampler private constructor(
+    private val sampleRateProvider: () -> Float,
+    private val sessionSampleRateProvider: () -> Float
 ) : DeterministicSampler<DatadogSpan>(
     SpanSamplingIdProvider::provideId,
     sampleRateProvider
 ) {
 
     /**
-     * Creates a new instance of [DeterministicSampler] with the given sample rate.
+     * Creates a new instance of [DeterministicTraceSampler] with the given sample rate provider.
+     *
+     * @param sampleRateProvider Provider for the sample rate value.
+     */
+    constructor(
+        sampleRateProvider: () -> Float
+    ) : this(sampleRateProvider, { DeterministicSampler.SAMPLE_ALL_RATE })
+
+    /**
+     * Creates a new instance of [DeterministicTraceSampler] with the given sample rate.
      *
      * @param sampleRate Sample rate to use.
      */
@@ -45,7 +57,7 @@ open class DeterministicTraceSampler(
     ) : this({ sampleRate })
 
     /**
-     * Creates a new instance of [DeterministicSampler] with the given sample rate.
+     * Creates a new instance of [DeterministicTraceSampler] with the given sample rate.
      *
      * @param sampleRate Sample rate to use.
      */
@@ -53,9 +65,40 @@ open class DeterministicTraceSampler(
         @FloatRange(from = 0.0, to = 100.0) sampleRate: Double
     ) : this(sampleRate.toFloat())
 
+    /**
+     * Internal constructor used by [com.datadog.android.trace.ApmNetworkInstrumentationConfiguration]
+     * to wire the RUM session sample rate provider at instrumentation setup time.
+     */
+    internal constructor(
+        @FloatRange(from = 0.0, to = 100.0) sampleRate: Float,
+        sessionSampleRateProvider: () -> Float
+    ) : this({ sampleRate }, sessionSampleRateProvider)
+
+    /**
+     * Returns the effective sample rate, rebased against the RUM session sample rate when it is
+     * available:
+     *
+     * ```
+     * effectiveRate = traceSampleRate * sessionSampleRate / 100
+     * ```
+     *
+     * Falls back to the raw trace sample rate when no session sample rate is available
+     * (i.e. [sessionSampleRateProvider] returns 100).
+     */
+    override fun getSampleRate(): Float {
+        val traceSampleRate = super.getSampleRate()
+        val sessionSampleRate = sessionSampleRateProvider()
+        return if (sessionSampleRate >= 0f && sessionSampleRate < DeterministicSampler.SAMPLE_ALL_RATE) {
+            val rebased = traceSampleRate * sessionSampleRate / DeterministicSampler.SAMPLE_ALL_RATE
+            rebased.coerceAtMost(DeterministicSampler.SAMPLE_ALL_RATE)
+        } else {
+            traceSampleRate
+        }
+    }
+
     /** @inheritDoc */
     override fun sample(item: DatadogSpan): Boolean {
-        val sampleRate = rebasedSampleRate(item)
+        val sampleRate = getSampleRate(item)
         return when {
             sampleRate >= DeterministicSampler.SAMPLE_ALL_RATE -> true
             sampleRate <= 0f -> false
@@ -69,16 +112,25 @@ open class DeterministicTraceSampler(
         }
     }
 
-    private fun rebasedSampleRate(item: DatadogSpan): Float {
-        val traceSampleRate = getSampleRate()
-        val sessionId = item.context().tags[LogAttributes.RUM_SESSION_ID] as? String
-        val sessionSampleRate = item.context().tags[RumContextPropagator.SESSION_SAMPLE_RATE_KEY] as? Number
+    internal fun getSampleRate(item: DatadogSpan): Float {
+        // Compatibility path for integrations creating this sampler via public constructors
+        // (no sessionSampleRateProvider). In that case the session sample rate is propagated on
+        // the span context as `session_sample_rate` and must be used for rebasing.
+        val providerRate = sessionSampleRateProvider()
+        val providerRateIsValid = providerRate >= 0f && providerRate < DeterministicSampler.SAMPLE_ALL_RATE
+        val sessionSampleRate = when {
+            providerRateIsValid -> providerRate
+            else -> (item.context().tags[RumContextKeys.SESSION_SAMPLE_RATE] as? Number)?.toFloat()
+        }
 
-        return if (sessionId != null && sessionSampleRate != null) {
-            (traceSampleRate * sessionSampleRate.toFloat() / DeterministicSampler.SAMPLE_ALL_RATE)
-                .coerceAtMost(DeterministicSampler.SAMPLE_ALL_RATE)
+        return if (sessionSampleRate != null &&
+            sessionSampleRate >= 0f &&
+            sessionSampleRate < DeterministicSampler.SAMPLE_ALL_RATE
+        ) {
+            val rebased = super.getSampleRate() * sessionSampleRate / DeterministicSampler.SAMPLE_ALL_RATE
+            if (rebased > DeterministicSampler.SAMPLE_ALL_RATE) DeterministicSampler.SAMPLE_ALL_RATE else rebased
         } else {
-            traceSampleRate
+            super.getSampleRate()
         }
     }
 }

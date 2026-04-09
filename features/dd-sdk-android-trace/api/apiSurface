@@ -22,6 +22,7 @@ open class com.datadog.android.trace.DeterministicTraceSampler : com.datadog.and
   constructor(() -> Float)
   constructor(Float)
   constructor(Double)
+  override fun getSampleRate(): Float
   override fun sample(com.datadog.android.trace.api.span.DatadogSpan): Boolean
 annotation com.datadog.android.trace.ExperimentalTraceApi
 object com.datadog.android.trace.GlobalDatadogTracer

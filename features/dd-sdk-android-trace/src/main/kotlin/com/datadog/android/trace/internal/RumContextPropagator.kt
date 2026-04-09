@@ -62,7 +62,10 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
                 instance.setTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"])
                 instance.setTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"])
                 instance.setTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"])
-                instance.setTag(SESSION_SAMPLE_RATE_KEY, rumContext[SESSION_SAMPLE_RATE_KEY])
+                instance.setTag(
+                    RumContextKeys.SESSION_SAMPLE_RATE,
+                    rumContext[RumContextKeys.SESSION_SAMPLE_RATE]
+                )
                 instance.setTag(HttpCodec.RUM_KEY_USER_ID, datadogContext.userInfo.id)
                 instance.setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, datadogContext.accountInfo?.id)
             }
@@ -110,7 +113,6 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
 
     companion object {
         internal const val DATADOG_INITIAL_CONTEXT: String = "_dd.datadog_initial_context"
-        internal const val SESSION_SAMPLE_RATE_KEY: String = "session_sample_rate"
 
         internal const val INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR = "Initial span creation Datadog context" +
             " is not available at the write time."

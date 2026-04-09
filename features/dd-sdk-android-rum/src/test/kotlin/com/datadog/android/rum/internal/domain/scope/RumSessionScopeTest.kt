@@ -493,19 +493,23 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSessionSampler.getSampleRate()).thenReturn(100f, 20f)
+        // The scope field initializer consumes the first getSampleRate() call (irrelevant to the
+        // snapshot). The second call, inside renewSession(), is the one that gets snapshotted.
+        val fakeSessionRate = forge.aFloat(min = 0f, max = 100f)
+        val fakeLaterRate = forge.aFloat(min = 0f, max = 100f)
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(RumContext.FULL_SESSION_SAMPLE_RATE, fakeSessionRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
         initializeTestedScope()
 
         // When
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val firstContext = testedScope.getRumContext()
-        whenever(mockSessionSampler.getSampleRate()).thenReturn(100f)
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeLaterRate)
         val secondContext = testedScope.getRumContext()
 
-        // Then
-        assertThat(firstContext.sessionSampleRate).isEqualTo(20f)
-        assertThat(secondContext.sessionSampleRate).isEqualTo(20f)
+        // Then — both contexts must report the rate snapshotted at session creation, not the changed rate
+        assertThat(firstContext.sessionSampleRate).isEqualTo(fakeSessionRate)
+        assertThat(secondContext.sessionSampleRate).isEqualTo(fakeSessionRate)
     }
 
     @Test

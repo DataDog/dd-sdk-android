@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.NetworkTracedRequestListener
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -27,6 +28,7 @@ import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
@@ -215,6 +217,65 @@ internal class ApmNetworkInstrumentationTest {
             assertThat(result.span).isEqualTo(mockSpan)
             assertThat(result.isSampled).isTrue()
             assertThat(result.sampleRate).isEqualTo(fakeSampleRate)
+        }
+    }
+
+    @Test
+    fun `M use rebased trace sample rate in tracing state W onRequest() {deterministic sampler without RUM session id}`(
+        @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float,
+        @FloatForgery(min = 0f, max = 99f) fakeSessionSampleRate: Float
+    ) {
+        // Given
+        val traceId = mock<DatadogTraceId> {
+            on { toLong() } doReturn 1L
+        }
+        whenever(mockSpanContext.traceId).thenReturn(traceId)
+        whenever(mockSpanContext.tags).thenReturn(emptyMap())
+        whenever(mockSpanContext.setSamplingPriority(any())).thenReturn(true)
+
+        testedInstrumentation = createInstrumentation(
+            traceSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
+
+            // Then
+            val expectedRebasedSampleRate = fakeTraceSampleRate * fakeSessionSampleRate /
+                ApmNetworkInstrumentation.ALL_IN_SAMPLE_RATE.toFloat()
+            assertThat(result.sampleRate).isEqualTo(expectedRebasedSampleRate)
+        }
+    }
+
+    @Test
+    fun `M set rebased trace sample rate metric W onRequest() {deterministic sampler without RUM session id}`(
+        @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float,
+        @FloatForgery(min = 0f, max = 99f) fakeSessionSampleRate: Float
+    ) {
+        // Given
+        val traceId = mock<DatadogTraceId> {
+            on { toLong() } doReturn 1L
+        }
+        whenever(mockSpanContext.traceId).thenReturn(traceId)
+        whenever(mockSpanContext.tags).thenReturn(emptyMap())
+        whenever(mockSpanContext.setSamplingPriority(any())).thenReturn(true)
+
+        testedInstrumentation = createInstrumentation(
+            traceSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
+        )
+
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            val expectedRebasedSampleRate = fakeTraceSampleRate * fakeSessionSampleRate /
+                ApmNetworkInstrumentation.ALL_IN_SAMPLE_RATE.toFloat()
+            verify(mockSpanContext).setMetric(
+                eq(ApmNetworkInstrumentation.AGENT_PSR_ATTRIBUTE),
+                eq(expectedRebasedSampleRate.toDouble() / 100.0)
+            )
         }
     }
 
@@ -935,14 +996,15 @@ internal class ApmNetworkInstrumentationTest {
     private fun createInstrumentation(
         canSendSpan: Boolean = true,
         networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS,
-        redacted404ResourceName: Boolean = true
+        redacted404ResourceName: Boolean = true,
+        traceSampler: Sampler<DatadogSpan> = mockTraceSampler
     ) = ApmNetworkInstrumentation(
         canSendSpan = canSendSpan,
         sdkInstanceName = null,
         traceOrigin = null,
         tracerProvider = mockTracerProvider,
         redacted404ResourceName = redacted404ResourceName,
-        traceSampler = mockTraceSampler,
+        traceSampler = traceSampler,
         injectionType = TraceContextInjection.ALL,
         tracedRequestListener = mockNetworkTracedRequestListener,
         localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,

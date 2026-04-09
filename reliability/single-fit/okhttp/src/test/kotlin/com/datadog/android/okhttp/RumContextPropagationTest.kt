@@ -82,7 +82,10 @@ class RumContextPropagationTest {
     @Test
     fun `M send rum sessionId in baggage header W call is made`(forge: Forge) {
         // Given
-        val rumContext = forge.aRumContext(SAMPLED_IDS.random(), sessionSampleRate = 100f)
+        val rumContext = forge.aRumContext(
+            sessionId = SAMPLED_IDS.random(),
+            sessionSampleRate = 100f
+        )
         val accountInfo = forge.getForgery<AccountInfo>()
         val userInfo = forge.getForgery<UserInfo>()
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext, accountInfo, userInfo)
@@ -113,7 +116,10 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = SAMPLED_IDS.random(), sessionSampleRate = 100f)
+        val rumContext = forge.aRumContext(
+            sessionId = SAMPLED_IDS.random(),
+            sessionSampleRate = 100f
+        )
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
