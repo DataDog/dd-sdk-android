@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sample.image
 
 import android.graphics.Bitmap
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool

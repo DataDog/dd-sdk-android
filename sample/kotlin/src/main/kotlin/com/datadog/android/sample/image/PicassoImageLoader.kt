@@ -4,13 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sample.image
 
 import android.content.Context
 import android.widget.ImageView
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
-import com.squareup.picasso.LruCache
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
 import okhttp3.OkHttpClient
@@ -32,7 +31,6 @@ internal class PicassoImageLoader : ImageLoader {
             val picasso = Picasso.Builder(context)
                 .downloader(OkHttp3Downloader(okHttpClient))
                 .indicatorsEnabled(BuildConfig.DEBUG)
-                .memoryCache(LruCache(1))
                 .loggingEnabled(true)
                 .build()
             Picasso.setSingletonInstance(picasso)
