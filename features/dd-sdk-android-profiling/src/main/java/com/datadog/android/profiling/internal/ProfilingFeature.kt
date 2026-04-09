@@ -49,11 +49,14 @@ internal class ProfilingFeature(
     private var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
 
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
-        configuration.customEndpointUrl
+        customEndpointUrl = configuration.customEndpointUrl,
+        internalLogger = sdkCore.internalLogger
     )
 
     override val storageConfiguration: FeatureStorageConfiguration
-        get() = FeatureStorageConfiguration.DEFAULT
+        get() = FeatureStorageConfiguration.DEFAULT.copy(
+            maxItemsPerBatch = 1
+        )
 
     override val name: String
         get() = Feature.PROFILING_FEATURE_NAME
@@ -149,7 +152,7 @@ internal class ProfilingFeature(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                { "Profiling stopped with TTID reason" }
+                { LOG_LAUNCH_PROFILING_STOPPED_AT_TTID }
             )
         }
     }
@@ -193,15 +196,35 @@ internal class ProfilingFeature(
                 scheduler.onActiveWindowEnded()
                 val longTasks = scheduler.pendingLongTasks.toList()
                 val anrEvents = scheduler.pendingAnrEvents.toList()
-                if (longTasks.isEmpty() && anrEvents.isEmpty()) return
+                if (longTasks.isEmpty() && anrEvents.isEmpty()) {
+                    logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
+                    return
+                }
                 dataWriter.write(
                     profilingResult = result,
                     longTasks = longTasks,
                     anrEvents = anrEvents
                 )
+                logToUser(
+                    LOG_CONTINUOUS_PROFILING_WRITTEN.format(
+                        Locale.US,
+                        longTasks.size,
+                        anrEvents.size
+                    )
+                )
                 scheduler.onContinuousProfileWritten(longTasks, anrEvents)
             }
         }
+    }
+
+    private fun logToUser(message: String) {
+        sdkCore.internalLogger.log(
+            level = InternalLogger.Level.DEBUG,
+            target = InternalLogger.Target.USER,
+            messageBuilder = {
+                message
+            }
+        )
     }
 
     private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
@@ -211,5 +234,11 @@ internal class ProfilingFeature(
     companion object {
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature received an event of unsupported type=%s."
+        private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =
+            "Launch profiling stopped at TTID."
+        private const val LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS =
+            "Continuous profiling result dropped: no pending RUM events."
+        private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
+            "Continuous profiling result written: %d long task(s), %d ANR event(s)."
     }
 }

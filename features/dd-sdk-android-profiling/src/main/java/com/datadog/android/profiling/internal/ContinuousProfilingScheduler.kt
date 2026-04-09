@@ -75,7 +75,6 @@ internal class ContinuousProfilingScheduler(
         logToUser { LOG_STOPPED }
         pendingFuture?.cancel(false)
         isActive = false
-        isScheduling = false
         pendingLongTasks.clear()
         pendingAnrEvents.clear()
     }

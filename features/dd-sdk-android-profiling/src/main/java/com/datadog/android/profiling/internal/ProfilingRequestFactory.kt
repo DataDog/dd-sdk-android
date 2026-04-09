@@ -6,21 +6,25 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import java.io.IOException
+import java.util.Locale
 import java.util.UUID
 
 internal class ProfilingRequestFactory(
-    internal val customEndpointUrl: String?
+    internal val customEndpointUrl: String?,
+    private val internalLogger: InternalLogger
 ) : RequestFactory {
 
     @Throws(IOException::class)
@@ -60,19 +64,43 @@ internal class ProfilingRequestFactory(
         return customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/profile")
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Caught in the caller
+    @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException") // Caught in the caller
     private fun buildRequestBody(batchData: List<RawBatchEvent>): RequestBody {
-        val multipartBodyBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
-        batchData.forEach { rawEvent ->
-            multipartBodyBuilder.addFormDataPart(
-                PERFETTO_FILE_NAME,
-                PERFETTO_FILE_NAME,
-                rawEvent.metadata.toRequestBody(CONTENT_TYPE_BINARY_TYPE)
+        if (batchData.isEmpty()) {
+            throw IllegalStateException(EMPTY_BATCH_DATA_ERROR_MESSAGE)
+        }
+        if (batchData.size > 1) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { MULTIPLE_BATCH_EVENTS_WARNING_MESSAGE.format(Locale.US, batchData.size) }
             )
+        }
+        val multipartBodyBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
+        val rawBatchEvent = batchData.first()
+        multipartBodyBuilder.addFormDataPart(
+            EVENT_NAME_FORM_KEY,
+            EVENT_FILE_NAME,
+            rawBatchEvent.data.toRequestBody(CONTENT_TYPE_JSON_TYPE)
+        )
+        val eventMetadata = ProfilingBatchMetadata.fromBytesOrNull(rawBatchEvent.metadata, internalLogger)
+        if (eventMetadata != null) {
             multipartBodyBuilder.addFormDataPart(
-                EVENT_NAME_FORM_KEY,
-                EVENT_FILE_NAME,
-                rawEvent.data.toRequestBody(CONTENT_TYPE_JSON_TYPE)
+                PERFETTO_FILE_NAME,
+                PERFETTO_FILE_NAME,
+                eventMetadata.perfettoBytes.toRequestBody(CONTENT_TYPE_BINARY_TYPE)
+            )
+            // TODO RUM-15408: Wait for profiling-backend to support RUM events labelling
+            /*multipartBodyBuilder.addFormDataPart(
+                RUM_MOBILE_EVENTS_FILE_NAME,
+                RUM_MOBILE_EVENTS_FILE_NAME,
+                batchMetadata.rumMobileEventsBytes.toRequestBody(CONTENT_TYPE_JSON_TYPE)
+            )*/
+        } else {
+            multipartBodyBuilder.addFormDataPart(
+                PERFETTO_FILE_NAME,
+                PERFETTO_FILE_NAME,
+                rawBatchEvent.metadata.toRequestBody(CONTENT_TYPE_BINARY_TYPE)
             )
         }
         return multipartBodyBuilder.build()
@@ -92,5 +120,9 @@ internal class ProfilingRequestFactory(
         private const val EVENT_FILE_NAME = "event.json"
         private val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
         private val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
+        internal const val EMPTY_BATCH_DATA_ERROR_MESSAGE =
+            "Cannot build profiling request: batchData is empty."
+        internal const val MULTIPLE_BATCH_EVENTS_WARNING_MESSAGE =
+            "Expected a single profiling event per batch, but got %d. Using the first event."
     }
 }

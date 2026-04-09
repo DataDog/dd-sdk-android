@@ -155,6 +155,15 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M limit batch to single event W init()`() {
+        // When
+        val config = testedFeature.storageConfiguration
+
+        // Then
+        assertThat(config.maxItemsPerBatch).isEqualTo(1)
+    }
+
+    @Test
     fun `M initialize ProfilingRequestFactory W initialize()`() {
         // When
         testedFeature.onInitialize(mockContext)

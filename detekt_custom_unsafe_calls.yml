@@ -96,6 +96,8 @@ datadog:
       - "java.io.InputStreamReader.readText():java.io.IOException"
       - "java.nio.ByteBuffer.allocate(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.nio.ByteBuffer.array():java.nio.ReadOnlyBufferException,java.lang.UnsupportedOperationException"
+      - "java.nio.ByteBuffer.get(kotlin.ByteArray?):java.nio.BufferUnderflowException"
+      - "java.nio.ByteBuffer.position(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.nio.ByteBuffer.put(kotlin.ByteArray):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
       - "java.nio.ByteBuffer.putInt(kotlin.Int):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
       - "java.nio.ByteBuffer.putShort(kotlin.Short):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"

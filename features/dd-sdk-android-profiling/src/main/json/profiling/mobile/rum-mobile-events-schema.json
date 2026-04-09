@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "profiling/mobile/rum-mobile-events-schema.json",
+  "title": "RumMobileEvents",
+  "description": "Schema for the rum-mobile-events.json attachment bundled with a continuous mobile profile.",
+  "type": "object",
+  "properties": {
+    "errors": {
+      "type": "array",
+      "description": "List of ANR events captured during the profiling window.",
+      "items": {
+        "type": "object",
+        "description": "A single ANR (Application Not Responding) event.",
+        "required": ["id", "start_ns", "duration_ns"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "RUM error event ID.",
+            "readOnly": true
+          },
+          "start_ns": {
+            "type": "integer",
+            "description": "Event start time in nanoseconds since epoch.",
+            "readOnly": true
+          },
+          "duration_ns": {
+            "type": "integer",
+            "description": "Event duration in nanoseconds.",
+            "readOnly": true
+          }
+        },
+        "readOnly": true
+      },
+      "readOnly": true
+    },
+    "long_tasks": {
+      "type": "array",
+      "description": "List of long task events captured during the profiling window.",
+      "items": {
+        "type": "object",
+        "description": "A single long task event.",
+        "required": ["id", "start_ns", "duration_ns"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "RUM long task event ID.",
+            "readOnly": true
+          },
+          "start_ns": {
+            "type": "integer",
+            "description": "Event start time in nanoseconds since epoch.",
+            "readOnly": true
+          },
+          "duration_ns": {
+            "type": "integer",
+            "description": "Event duration in nanoseconds.",
+            "readOnly": true
+          }
+        },
+        "readOnly": true
+      },
+      "readOnly": true
+    }
+  }
+}
