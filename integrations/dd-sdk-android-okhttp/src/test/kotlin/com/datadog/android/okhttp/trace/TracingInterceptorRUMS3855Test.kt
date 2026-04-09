@@ -7,7 +7,6 @@
 package com.datadog.android.okhttp.trace
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
@@ -39,7 +38,6 @@ import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
@@ -66,16 +64,16 @@ import java.math.BigInteger
  * When the decimal representation is >16 chars, the resulting traceparent header
  * exceeds 55 chars, violating the W3C Trace Context specification.
  *
- * The W3C spec (https://www.w3.org/TR/trace-context/#traceparent-header) requires:
- * - version:  2 hex chars ("00")
- * - traceId:  32 hex chars
+ * The W3C spec requires:
+ * - version: 2 hex chars ("00")
+ * - traceId: 32 hex chars
  * - parentId: exactly 16 hex chars
- * - flags:    2 hex chars ("00" or "01")
+ * - flags: 2 hex chars ("00" or "01")
  * - separators: 3 dashes
  * Total: exactly 55 chars for version 0.
  *
  * Long.MAX_VALUE = 9223372036854775807 (19 decimal digits).
- * Using this as a decimal spanId makes the traceparent 58 chars — invalid.
+ * Using this as a decimal spanId makes the traceparent 58 chars, which is invalid.
  */
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -118,15 +116,12 @@ internal class TracingInterceptorRUMS3855Test {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    lateinit var fakeMethod: String
-    var fakeBody: String? = null
     var fakeMediaType: MediaType? = null
 
     @StringForgery(type = StringForgeryType.ASCII)
     lateinit var fakeResponseBody: String
 
     lateinit var fakeUrl: String
-    lateinit var fakeBaseUrl: String
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -138,13 +133,11 @@ internal class TracingInterceptorRUMS3855Test {
 
     lateinit var fakeLocalHosts: Map<String, Set<TracingHeaderType>>
 
-    /**
-     * The decimal representation of Long.MAX_VALUE is "9223372036854775807" — 19 digits.
-     * padStart(16, '0') does NOT truncate strings longer than 16, so the parentId field
-     * in the resulting traceparent will be 19 chars, producing a 58-char header instead
-     * of the required 55.
-     */
-    private val fakeDecimalSpanIdExceeding16Chars = Long.MAX_VALUE.toString() // 19 decimal digits
+    // The decimal representation of Long.MAX_VALUE is 19 digits.
+    // padStart(16, '0') does NOT truncate strings already longer than 16 chars,
+    // so the parentId field will be 19 chars, producing a 58-char traceparent
+    // instead of the required 55.
+    private val fakeDecimalSpanIdExceeding16Chars = Long.MAX_VALUE.toString()
 
     @BeforeEach
     fun setUp(forge: Forge) {
@@ -160,18 +153,16 @@ internal class TracingInterceptorRUMS3855Test {
         whenever(mockSpanContext.toSpanId()) doReturn fakeDecimalSpanIdExceeding16Chars
         whenever(mockSpanContext.traceId).thenReturn(fakeTraceId)
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId.toString()
-        // Span is NOT sampled — this triggers handleW3CNotSampledHeaders
+        // Span is NOT sampled, which triggers handleW3CNotSampledHeaders
         whenever(mockTraceSampler.sample(mockSpan)) doReturn false
 
-        val mediaType = "application/json"
-        fakeMediaType = mediaType.toMediaTypeOrNull()
+        fakeMediaType = "application/json".toMediaTypeOrNull()
 
         val hostname = forge.aStringMatching(HOSTNAME_PATTERN)
         fakeLocalHosts = mapOf(hostname to setOf(TracingHeaderType.TRACECONTEXT))
 
         val protocol = forge.anElementFrom("http", "https")
-        fakeBaseUrl = "$protocol://$hostname/path"
-        fakeUrl = "$fakeBaseUrl?q=test"
+        fakeUrl = "$protocol://$hostname/path?q=test"
         fakeRequest = Request.Builder()
             .url(fakeUrl)
             .get()
@@ -181,7 +172,8 @@ internal class TracingInterceptorRUMS3855Test {
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
-        whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl()))
+            .thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
 
         testedInterceptor = TracingInterceptor(
             sdkInstanceName = null,
@@ -213,13 +205,13 @@ internal class TracingInterceptorRUMS3855Test {
     }
 
     /**
-     * RUMS-3855 Bug 1: handleW3CNotSampledHeaders produces a traceparent with a decimal spanId.
+     * RUMS-3855 Bug: handleW3CNotSampledHeaders produces a traceparent with a decimal spanId.
      *
-     * When span.context().toSpanId() returns a decimal string (e.g. Long.MAX_VALUE = 19 digits),
-     * the resulting 'traceparent' header exceeds 55 chars — violating W3C Trace Context spec.
+     * When span.context().toSpanId() returns a decimal string (Long.MAX_VALUE = 19 digits),
+     * the resulting traceparent header exceeds 55 chars, violating W3C Trace Context spec.
      *
-     * This test asserts the CORRECT behavior (parentId segment must be exactly 16 hex chars),
-     * and FAILS on the pre-fix code because the parentId is a 19-digit decimal string.
+     * This test asserts the CORRECT behavior (traceparent must be exactly 55 chars) and
+     * FAILS on the pre-fix code because the parentId is a 19-digit decimal string.
      */
     @Test
     fun `M produce valid 55-char traceparent W intercept() {not sampled, decimal spanId exceeds 16 chars}`(
@@ -248,7 +240,9 @@ internal class TracingInterceptorRUMS3855Test {
             verify(mockChain).proceed(capture())
             val traceparent = lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY)
             assertThat(traceparent)
-                .describedAs("traceparent header must be present when traceContextInjection=All and not sampled")
+                .describedAs(
+                    "traceparent header must be present when traceContextInjection=All and not sampled"
+                )
                 .isNotNull()
 
             // W3C spec: version-0 traceparent must be exactly 55 chars
@@ -264,13 +258,11 @@ internal class TracingInterceptorRUMS3855Test {
     }
 
     /**
-     * RUMS-3855 Bug 1 (alternative assertion): the parentId segment of the traceparent header
-     * (chars 36–51, 0-based) must consist only of lowercase hex characters [0-9a-f].
+     * RUMS-3855 Bug (alternative assertion): the parentId segment of the traceparent header
+     * must consist only of exactly 16 lowercase hex characters [0-9a-f].
      *
      * The pre-fix code passes the decimal string from toSpanId() directly into the parentId field.
-     * A decimal string like "9223372036854775807" contains only digit chars 0-9, but its length
-     * (19) violates the 16-char requirement. This test also catches the length violation via the
-     * regex, since a 19-digit decimal string cannot match [0-9a-f]{16}.
+     * A decimal string like "9223372036854775807" is 19 chars, which does not match [0-9a-f]{16}.
      */
     @Test
     fun `M produce hex-encoded parentId W intercept() {not sampled, toSpanId returns decimal}`(
@@ -323,8 +315,6 @@ internal class TracingInterceptorRUMS3855Test {
 
         @TestConfigurationsProvider
         @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(datadogCore, rumMonitor)
-        }
+        fun getTestConfigurations(): List<TestConfiguration> = listOf(datadogCore, rumMonitor)
     }
 }
