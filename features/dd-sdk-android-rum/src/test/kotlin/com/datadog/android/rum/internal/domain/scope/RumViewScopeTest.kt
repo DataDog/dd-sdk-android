@@ -4801,6 +4801,83 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M not duplicate ANR thread stack in error threads W handleEvent(AddError) {throwable is ANR}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        forge: Forge
+    ) {
+        // Reproduces RUMS-4466: when ANRDetectorRunnable.reportAnr() fires, it calls addError() with
+        // both anrException as throwable AND allThreads[0] containing anrException.loggableStackTrace()
+        // as stack. RumViewScope emits an ErrorEvent where error.stack == error.threads[0].stack.
+        // The server deobfuscates error.stack but not error.threads, causing inconsistent prettification
+        // (fj class names remain in error.threads UI while error.stack shows the real class names).
+        // The fix should exclude the ANR thread from error.threads so it is only represented via
+        // error.stack (derived from the throwable), ensuring consistent server-side deobfuscation.
+
+        // Given
+        val anrThread = Thread.currentThread()
+        val anrException = ANRException(anrThread)
+        val anrStackTrace = anrException.loggableStackTrace()
+
+        // Simulate allThreads built by ANRDetectorRunnable: ANR thread's stack in threads[0]
+        val anrThreadDump = ThreadDump(
+            name = anrThread.name,
+            state = anrThread.state.name.lowercase(),
+            stack = anrStackTrace,
+            crashed = false
+        )
+        val otherThreadDump = ThreadDump(
+            name = "background-thread",
+            state = "waiting",
+            stack = "at com.example.BackgroundWorker.doWork(BackgroundWorker.java:42)",
+            crashed = false
+        )
+        val allThreads = listOf(anrThreadDump, otherThreadDump)
+
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable = anrException,
+            stacktrace = null,
+            isFatal = false,
+            threads = allThreads,
+            attributes = attributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            val errorEvent = firstValue
+            val errorStack = errorEvent.error.stack
+            val errorThreadStacks = errorEvent.error.threads?.map { it.stack } ?: emptyList()
+
+            // error.stack should be populated from the throwable
+            assertThat(errorStack).isNotNull
+            assertThat(errorStack).isEqualTo(anrStackTrace)
+
+            // The ANR thread's stack must NOT appear in error.threads.
+            // If it does, the server will see the same obfuscated frames in error.threads[0].stack
+            // that it deobfuscates in error.stack, producing an inconsistent UI (RUMS-4466).
+            assertThat(errorThreadStacks)
+                .overridingErrorMessage(
+                    "Expected error.threads to NOT contain the ANR thread's stack " +
+                        "(it is already represented in error.stack via the throwable). " +
+                        "Duplicate content in error.threads causes inconsistent server-side " +
+                        "deobfuscation: error.stack is prettified but error.threads is not (RUMS-4466). " +
+                        "Actual error.threads stacks: $errorThreadStacks"
+                )
+                .doesNotContain(anrStackTrace)
+        }
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `M send event W handleEvent(AddError) on active view {throwable_message == blank}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,

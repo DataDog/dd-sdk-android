@@ -165,6 +165,55 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
+    fun `M not include ANR thread stack in error threads W run() {ANR detected}`() {
+        // Reproduces RUMS-4466: ANRDetectorRunnable.reportAnr() stores anrException.loggableStackTrace()
+        // in allThreads[0].stack AND passes the same anrException as the throwable to addError().
+        // RumViewScope will later derive error.stack from throwable.loggableStackTrace(), making
+        // error.stack == error.threads[0].stack — causing inconsistent server-side deobfuscation.
+        // The fix should remove the ANR thread from error.threads so it is only represented via
+        // error.stack (through the throwable), ensuring the server deobfuscates it consistently.
+
+        // When
+        Thread(testedRunnable).start()
+        Thread.sleep(TEST_ANR_TEST_DELAY_MS)
+
+        // Then
+        Thread.sleep(TEST_ANR_THRESHOLD_MS)
+        argumentCaptor<Map<String, Any?>> {
+            val anrExceptionCaptor = argumentCaptor<Throwable>()
+            verify(rumMonitor.mockInstance).addError(
+                message = eq("Application Not Responding"),
+                source = eq(RumErrorSource.SOURCE),
+                throwable = anrExceptionCaptor.capture(),
+                attributes = capture()
+            )
+
+            @Suppress("UNCHECKED_CAST")
+            val allThreads = lastValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+            val anrStackTrace = anrExceptionCaptor.lastValue.loggableStackTrace()
+
+            // The ANR thread's stack should NOT appear in error.threads because it is already
+            // represented via the throwable parameter (which becomes error.stack after deobfuscation).
+            // Including it in both causes inconsistent deobfuscation: error.stack gets deobfuscated
+            // by the server but error.threads[0].stack does not.
+            assertThat(allThreads.none { it.stack == anrStackTrace })
+                .overridingErrorMessage(
+                    "Expected ANR thread stack to NOT appear in error.threads " +
+                        "(it is already in error.stack via the throwable), " +
+                        "but allThreads contained a thread with the same stack as anrException.loggableStackTrace(). " +
+                        "This duplication causes inconsistent server-side deobfuscation (RUMS-4466)."
+                )
+                .isTrue()
+        }
+
+        argumentCaptor<Runnable> {
+            verify(mockHandler).post(capture())
+            testedRunnable.stop()
+            lastValue.run()
+        }
+    }
+
+    @Test
     fun `M not do anything W run() {handler returns false}`() {
         // Given
         whenever(mockHandler.post(any())) doReturn false
