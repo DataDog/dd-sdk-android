@@ -123,7 +123,6 @@ class PerfettoProfilerTest {
 
         val result = captor.firstValue
         assertThat(result.start).isEqualTo(stubTimeProvider.startTime)
-        assertThat(result.start).isEqualTo(stubTimeProvider.endTime)
         assertThat(result.resultFilePath).isEqualTo(fakePath)
     }
 
@@ -171,7 +170,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
@@ -203,6 +202,7 @@ class PerfettoProfilerTest {
                 "error_message" to fakeErrorMessage,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
+                "callback_delay_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null
@@ -232,7 +232,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
@@ -262,6 +262,7 @@ class PerfettoProfilerTest {
                 "error_code" to fakeErrorCode,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
+                "callback_delay_ms" to 0L,
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
@@ -291,7 +292,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
         testedProfiler.internalLogger = null
 
         // When
@@ -323,6 +324,7 @@ class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
+                "callback_delay_ms" to 0L,
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
@@ -351,7 +353,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
@@ -384,7 +386,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
@@ -547,7 +549,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
@@ -629,7 +631,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(
@@ -662,6 +664,7 @@ class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
+                "callback_delay_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
@@ -691,7 +694,7 @@ class PerfettoProfilerTest {
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
-        stubTimeProvider.endTime = fakeStartTime + fakeDuration
+        stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
         testedProfiler.start(mockContext, startReason, emptyMap(), setOf(fakeInstanceName))
@@ -719,6 +722,7 @@ class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "start_reason" to startReason.value,
                 "duration" to fakeDuration,
+                "callback_delay_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
@@ -739,16 +743,178 @@ class PerfettoProfilerTest {
         assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling Session")
     }
 
+    @Test
+    fun `M send telemetry with correct callback_delay_ms W profiling finishes {after manual stop}`(
+        @StringForgery fakeErrorMessage: String,
+        @LongForgery(min = 1L, max = 100_000L) fakeStartTime: Long,
+        @LongForgery(min = 1L, max = 100_000L) fakeStopDelta: Long,
+        @LongForgery(min = 1L, max = 100_000L) fakeCallbackDelta: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime
+        stubTimeProvider.stopTime = fakeStartTime + fakeStopDelta
+        stubTimeProvider.resultCallbackTime = fakeStartTime + fakeStopDelta + fakeCallbackDelta
+
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+        testedProfiler.stop(fakeInstanceName)
+
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val mockResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { errorMessage } doReturn fakeErrorMessage
+        }
+        callbackCaptor.firstValue.accept(mockResult)
+
+        // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val expectedProps = mapOf(
+            "metric_type" to "profiling session",
+            "profiling_session" to mapOf(
+                "error_code" to ProfilingResult.ERROR_NONE,
+                "error_message" to fakeErrorMessage,
+                "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
+                "duration" to fakeStopDelta,
+                "callback_delay_ms" to fakeCallbackDelta,
+                "file_size" to 0L,
+                "stopped_reason" to "manual",
+                "app_start_info" to null
+            ),
+            "profiling_config" to mapOf(
+                "buffer_size" to 5120,
+                "sampling_frequency" to PROFILING_SAMPLING_RATE
+            )
+        )
+        verify(mockInternalLogger)
+            .logMetric(
+                messageCaptor.capture(),
+                eq(expectedProps),
+                eq(MethodCallSamplingRate.ALL.rate),
+                isNull()
+            )
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling Session")
+    }
+
+    @Test
+    fun `M report correct duration & 0 delay W 2nd session timeout {after 1st  manually stopped}`(
+        @LongForgery(min = 1L, max = 100_000L) fakeStartTime1: Long,
+        @LongForgery(min = 1L, max = 100_000L) fakeStartTime2: Long,
+        @LongForgery(min = 1L, max = 100_000L) fakeDuration2: Long
+    ) {
+        // Given
+        stubTimeProvider.startTime = fakeStartTime1
+        stubTimeProvider.stopTime = fakeStartTime1 + 5000L
+        stubTimeProvider.resultCallbackTime = fakeStartTime1 + 6000L
+
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+        testedProfiler.stop(fakeInstanceName)
+
+        verify(mockService)
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor.capture()
+            )
+
+        val firstResult =
+            mock<ProfilingResult> { on { errorCode } doReturn ProfilingResult.ERROR_NONE }
+        callbackCaptor.firstValue.accept(firstResult)
+
+        // Given
+        stubTimeProvider.reset()
+        stubTimeProvider.startTime = fakeStartTime2
+        stubTimeProvider.stopTime = fakeStartTime2 + fakeDuration2
+
+        // When
+        testedProfiler.start(
+            mockContext,
+            ProfilingStartReason.CONTINUOUS,
+            emptyMap(),
+            setOf(fakeInstanceName)
+        )
+
+        val callbackCaptor2 = argumentCaptor<Consumer<ProfilingResult>>()
+        verify(mockService, org.mockito.kotlin.times(2))
+            .requestProfiling(
+                eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+                any<Bundle>(),
+                any<String>(),
+                any<CancellationSignal>(),
+                any(),
+                callbackCaptor2.capture()
+            )
+
+        val secondResult =
+            mock<ProfilingResult> { on { errorCode } doReturn ProfilingResult.ERROR_NONE }
+        callbackCaptor2.lastValue.accept(secondResult)
+
+        // Then
+        val expectedProps = mapOf(
+            "metric_type" to "profiling session",
+            "profiling_session" to mapOf(
+                "error_code" to ProfilingResult.ERROR_NONE,
+                "error_message" to null,
+                "start_reason" to ProfilingStartReason.CONTINUOUS.value,
+                "duration" to fakeDuration2,
+                "callback_delay_ms" to 0L,
+                "file_size" to 0L,
+                "stopped_reason" to "timeout",
+                "app_start_info" to null
+            ),
+            "profiling_config" to mapOf(
+                "buffer_size" to 5120,
+                "sampling_frequency" to PROFILING_SAMPLING_RATE
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+    }
+
     private class StubTimeProvider : TimeProvider {
         var startTime: Long = 0L
-        var endTime: Long = 0L
+
+        var stopTime: Long = 0L
+
+        var resultCallbackTime: Long = 0L
         private var queryIncrement: Int = 0
 
+        fun reset() {
+            queryIncrement = 0
+        }
+
         override fun getDeviceTimestampMillis(): Long {
-            return if (queryIncrement++ == 0) {
-                startTime
-            } else {
-                endTime
+            val current = queryIncrement
+            queryIncrement++
+            return when (current) {
+                0 -> startTime
+                1 -> stopTime
+                else -> resultCallbackTime
             }
         }
 

@@ -60,6 +60,24 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
+class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.app.Application.ActivityLifecycleCallbacks
+  constructor(Callback)
+  val activitiesResumedCounter: java.util.concurrent.atomic.AtomicInteger
+  val activitiesStartedCounter: java.util.concurrent.atomic.AtomicInteger
+  val wasPaused: java.util.concurrent.atomic.AtomicBoolean
+  val wasStopped: java.util.concurrent.atomic.AtomicBoolean
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityResumed(android.app.Activity)
+  interface Callback
+    fun onStarted()
+    fun onResumed()
+    fun onStopped()
+    fun onPaused()
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER
@@ -248,6 +266,8 @@ fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
+fun String.toBase64(): String
+fun String.fromBase64(): String?
 fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String

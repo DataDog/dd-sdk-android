@@ -74,7 +74,7 @@ kotlinPoet = "1.14.2"
 kotlinGrammarParser = "41b00c0"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.17.0"
-dependencyLicense = "0.5.0"
+dependencyLicense = "0.7.0"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations

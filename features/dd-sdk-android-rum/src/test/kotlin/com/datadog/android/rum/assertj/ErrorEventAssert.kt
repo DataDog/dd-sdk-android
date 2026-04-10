@@ -195,9 +195,9 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
 
     fun hasConnectivityInfo(expected: NetworkInfo?): ErrorEventAssert {
         val expectedStatus = if (expected?.isConnected() == true) {
-            ErrorEvent.Status.CONNECTED
+            ErrorEvent.ConnectivityStatus.CONNECTED
         } else {
-            ErrorEvent.Status.NOT_CONNECTED
+            ErrorEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ErrorEvent.Interface.ETHERNET)
@@ -403,7 +403,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasConnectivityStatus(expected: ErrorEvent.Status?): ErrorEventAssert {
+    fun hasConnectivityStatus(expected: ErrorEvent.ConnectivityStatus?): ErrorEventAssert {
         assertThat(actual.connectivity?.status)
             .overridingErrorMessage(
                 "Expected event data to have connectivity status: $expected" +

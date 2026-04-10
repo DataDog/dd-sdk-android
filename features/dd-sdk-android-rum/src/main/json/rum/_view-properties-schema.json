@@ -209,7 +209,7 @@
         "crash": {
           "type": "object",
           "description": "Properties of the crashes of the view",
-          "required": [ "count" ],
+          "required": ["count"],
           "properties": {
             "count": {
               "type": "integer",
