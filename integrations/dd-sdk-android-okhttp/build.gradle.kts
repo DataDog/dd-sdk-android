@@ -51,6 +51,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
+    api(project(":features:dd-sdk-android-trace-api"))
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
