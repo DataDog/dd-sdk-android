@@ -196,6 +196,9 @@ internal class RumAppStartupDetectorImpl(
     override fun destroy() {
         pendingScenario = null
         application.unregisterActivityLifecycleCallbacks(this)
+
+        firstFrameHandles.forEach { (_, handle) -> handle.unsubscribe() }
+        firstFrameHandles.clear()
     }
 
     companion object {

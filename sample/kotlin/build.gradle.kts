@@ -239,7 +239,7 @@ dependencies {
     api("com.facebook.stetho:stetho:1.6.0")
 
     // Leak detection
-    implementation(libs.leakCanaryAndroid)
+    debugImplementation(libs.leakCanaryAndroid)
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)

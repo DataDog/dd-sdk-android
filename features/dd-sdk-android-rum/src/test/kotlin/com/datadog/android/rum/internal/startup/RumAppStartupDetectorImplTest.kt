@@ -108,16 +108,19 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
+        val expectedScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+            activity = activity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    initialTime = Time(0, 0),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedScenario),
+                eq(3.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
         }
         verifyNoMoreInteractions(listener)
     }
@@ -138,19 +141,22 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
+        val expectedScenario = RumStartupScenario.WarmFirstActivity(
+            initialTime = Time(
+                nanoTime = currentTime.inWholeNanoseconds,
+                timestamp = currentTime.inWholeMilliseconds
+            ),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+            activity = activity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 11.seconds.inWholeNanoseconds
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.WarmFirstActivity(
-                    initialTime = Time(
-                        nanoTime = currentTime.inWholeNanoseconds,
-                        timestamp = currentTime.inWholeMilliseconds
-                    ),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 11.seconds.inWholeNanoseconds
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedScenario),
+                eq(0.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(0.seconds.inWholeNanoseconds), eq(false))
         }
         verifyNoMoreInteractions(listener)
     }
@@ -187,28 +193,34 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
+        val expectedColdScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+            activity = activity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds
+        )
+        val expectedWarmScenario = RumStartupScenario.WarmAfterActivityDestroyed(
+            initialTime = Time(
+                nanoTime = currentTime.inWholeNanoseconds,
+                timestamp = currentTime.inWholeMilliseconds
+            ),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+            activity = activity.wrapWeak()
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    initialTime = Time(0, 0),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedColdScenario),
+                eq(3.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
 
-            listener.verifyScenarioDetected(
-                RumStartupScenario.WarmAfterActivityDestroyed(
-                    initialTime = Time(
-                        nanoTime = currentTime.inWholeNanoseconds,
-                        timestamp = currentTime.inWholeMilliseconds
-                    ),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
-                    activity = activity.wrapWeak()
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedWarmScenario),
+                eq(0L),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(0L), eq(false))
         }
         verifyNoMoreInteractions(listener)
     }
@@ -243,12 +255,14 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+        verify(listener).onAppStartupDetected(
+            matchingScenario(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+                )
             )
         )
         verifyNoMoreInteractions(listener)
@@ -288,12 +302,14 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+        verify(listener).onAppStartupDetected(
+            matchingScenario(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+                )
             )
         )
         verifyNoMoreInteractions(listener)
@@ -334,28 +350,34 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
+        val expectedColdScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+            activity = activity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds
+        )
+        val expectedWarmScenario = RumStartupScenario.WarmAfterActivityDestroyed(
+            initialTime = Time(
+                nanoTime = currentTime.inWholeNanoseconds,
+                timestamp = currentTime.inWholeMilliseconds
+            ),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+            activity = activity2.wrapWeak()
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    initialTime = Time(0, 0),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedColdScenario),
+                eq(3.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
 
-            listener.verifyScenarioDetected(
-                RumStartupScenario.WarmAfterActivityDestroyed(
-                    initialTime = Time(
-                        nanoTime = currentTime.inWholeNanoseconds,
-                        timestamp = currentTime.inWholeMilliseconds
-                    ),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
-                    activity = activity2.wrapWeak()
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedWarmScenario),
+                eq(0L),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(0L), eq(false))
         }
         verifyNoMoreInteractions(listener)
     }
@@ -415,28 +437,34 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
+        val expectedColdScenario = RumStartupScenario.Cold(
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+            activity = activity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds,
+            initialTime = Time(0, 0)
+        )
+        val expectedWarmScenario = RumStartupScenario.WarmAfterActivityDestroyed(
+            initialTime = Time(
+                nanoTime = currentTime.inWholeNanoseconds,
+                timestamp = currentTime.inWholeMilliseconds
+            ),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
+            activity = activity3.wrapWeak()
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 30.seconds.inWholeNanoseconds,
-                    initialTime = Time(0, 0)
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedColdScenario),
+                eq(3.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
 
-            listener.verifyScenarioDetected(
-                RumStartupScenario.WarmAfterActivityDestroyed(
-                    initialTime = Time(
-                        nanoTime = currentTime.inWholeNanoseconds,
-                        timestamp = currentTime.inWholeMilliseconds
-                    ),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
-                    activity = activity3.wrapWeak()
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedWarmScenario),
+                eq(0L),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(0L), eq(false))
         }
         verifyNoMoreInteractions(listener)
     }
@@ -485,16 +513,19 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected for main activity (first non-excluded)
+        val expectedScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+            activity = mainActivity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    initialTime = Time(0, 0),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
-                    activity = mainActivity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedScenario),
+                eq(4.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(4.seconds.inWholeNanoseconds), eq(false))
         }
 
         verifyNoMoreInteractions(listener)
@@ -580,16 +611,19 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected for included activity
+        val expectedScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
+            activity = includedActivity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 5.seconds.inWholeNanoseconds
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    initialTime = Time(0, 0),
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
-                    activity = includedActivity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 5.seconds.inWholeNanoseconds
-                )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onTTIDComputed(
+                matchingScenario(expectedScenario),
+                eq(5.seconds.inWholeNanoseconds),
+                eq(false)
             )
-            verify(listener).onTTIDComputed(any(), eq(5.seconds.inWholeNanoseconds), eq(false))
         }
 
         verifyNoMoreInteractions(listener)
@@ -614,12 +648,14 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected (backward compatibility)
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak(),
-                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+        verify(listener).onAppStartupDetected(
+            matchingScenario(
+                RumStartupScenario.Cold(
+                    initialTime = Time(0, 0),
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = activity.wrapWeak(),
+                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+                )
             )
         )
 
@@ -656,15 +692,18 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                initialTime = Time(0, 0),
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity1.wrapWeak(),
-                appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
-            )
+        val expectedColdScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+            activity = activity1.wrapWeak(),
+            appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
         )
-        verify(listener).onTTIDComputed(any(), eq(3.seconds.inWholeNanoseconds), eq(false))
+        verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+        verify(listener).onTTIDComputed(
+            matchingScenario(expectedColdScenario),
+            eq(3.seconds.inWholeNanoseconds),
+            eq(false)
+        )
 
         // When - predicate changes to return false for activity1
         shouldTrackActivity1 = false
@@ -684,17 +723,20 @@ internal class RumAppStartupDetectorImplTest {
 
         // Then - scenario detected because counter correctly went from 1 -> 0 -> 1
         // (not stuck at 1 due to predicate mismatch)
-        listener.verifyScenarioDetected(
-            RumStartupScenario.WarmAfterActivityDestroyed(
-                initialTime = Time(
-                    timestamp = 4.seconds.inWholeMilliseconds,
-                    nanoTime = 4.seconds.inWholeNanoseconds
-                ),
-                hasSavedInstanceStateBundle = false,
-                activity = activity2.wrapWeak()
-            )
+        val expectedWarmScenario = RumStartupScenario.WarmAfterActivityDestroyed(
+            initialTime = Time(
+                timestamp = 4.seconds.inWholeMilliseconds,
+                nanoTime = 4.seconds.inWholeNanoseconds
+            ),
+            hasSavedInstanceStateBundle = false,
+            activity = activity2.wrapWeak()
         )
-        verify(listener).onTTIDComputed(any(), eq(0.seconds.inWholeNanoseconds), eq(false))
+        verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+        verify(listener).onTTIDComputed(
+            matchingScenario(expectedWarmScenario),
+            eq(0.seconds.inWholeNanoseconds),
+            eq(false)
+        )
 
         verifyNoMoreInteractions(listener)
     }
@@ -907,17 +949,16 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - onTTIDComputed should only be called once (first activity drew, clearing scenario)
+        val expectedScenario = RumStartupScenario.Cold(
+            initialTime = Time(0, 0),
+            hasSavedInstanceStateBundle = false,
+            activity = activity.wrapWeak(),
+            appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
+        )
         inOrder(listener) {
-            listener.verifyScenarioDetected(
-                RumStartupScenario.Cold(
-                    initialTime = Time(0, 0),
-                    hasSavedInstanceStateBundle = false,
-                    activity = activity.wrapWeak(),
-                    appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
-                )
-            )
+            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
             verify(listener).onTTIDComputed(
-                any(),
+                matchingScenario(expectedScenario),
                 eq(4.seconds.inWholeNanoseconds),
                 eq(false)
             )
@@ -988,15 +1029,13 @@ internal class RumAppStartupDetectorImplTest {
         detector.onActivityDestroyed(activity)
     }
 
-    private fun RumAppStartupDetector.Listener.verifyScenarioDetected(expected: RumStartupScenario) {
-        verify(this).onAppStartupDetected(
-            argThat { actual ->
-                (actual.activity.get() == expected.activity.get()) &&
-                    (actual.hasSavedInstanceStateBundle == expected.hasSavedInstanceStateBundle) &&
-                    (actual.initialTime == expected.initialTime) &&
-                    (actual.javaClass == expected.javaClass)
-            }
-        )
+    private fun matchingScenario(expected: RumStartupScenario): RumStartupScenario {
+        return argThat { actual ->
+            (actual.activity.get() == expected.activity.get()) &&
+                (actual.hasSavedInstanceStateBundle == expected.hasSavedInstanceStateBundle) &&
+                (actual.initialTime == expected.initialTime) &&
+                (actual.javaClass == expected.javaClass)
+        }
     }
 }
 

@@ -712,6 +712,7 @@ datadog:
       - "java.util.WeakHashMap.clear()"
       - "java.util.WeakHashMap.constructor()"
       - "java.util.WeakHashMap.containsKey(android.view.Window?)"
+      - "java.util.WeakHashMap.forEach(kotlin.Function1)"
       - "java.util.WeakHashMap.getOrPut(android.app.Activity?, kotlin.Function0)"
       - "java.util.WeakHashMap.put(android.app.Activity?, android.view.ViewTreeObserver.OnDrawListener?)"
       - "java.util.WeakHashMap.put(android.app.Activity?, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener?)"

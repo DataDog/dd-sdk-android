@@ -34,7 +34,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -237,7 +236,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
         createHandle()
 
         // Then
-        verify(windowCallbackRegistry, never()).addListener(any(), any())
+        verifyNoInteractions(windowCallbackRegistry)
     }
 
     // endregion
@@ -317,9 +316,9 @@ class RumFirstDrawTimeReporterHandleImplTest {
     // region unsubscribe
 
     @Test
-    fun `M remove listener from registry W unsubscribe called`() {
-        // Given - subscribe without auto-triggering onContentChanged
-        whenever(windowCallbackRegistry.addListener(any(), any())).then { }
+    fun `M remove all listeners W unsubscribe called`() {
+        // Given
+        whenever(window.peekDecorView()) doReturn decorView
 
         val handle = createHandle()
 
@@ -327,13 +326,18 @@ class RumFirstDrawTimeReporterHandleImplTest {
         handle.unsubscribe()
 
         // Then
-        verify(windowCallbackRegistry).removeListener(eq(activity), any())
+        inOrder(windowCallbackRegistry, viewTreeObserver, decorView) {
+            verify(windowCallbackRegistry).removeListener(eq(activity), any())
+            verify(decorView).removeOnAttachStateChangeListener(eq(handle))
+            verify(viewTreeObserver).removeOnDrawListener(eq(handle))
+            verifyNoMoreInteractions()
+        }
     }
 
     @Test
-    fun `M call removeListener once W unsubscribe called twice`() {
-        // Given - subscribe without auto-triggering onContentChanged
-        whenever(windowCallbackRegistry.addListener(any(), any())).then { }
+    fun `M remove all listeners once W unsubscribe called twice`() {
+        // Given
+        whenever(window.peekDecorView()) doReturn decorView
 
         val handle = createHandle()
 
@@ -342,11 +346,12 @@ class RumFirstDrawTimeReporterHandleImplTest {
         handle.unsubscribe()
 
         // Then
-        inOrder(windowCallbackRegistry) {
-            verify(windowCallbackRegistry).addListener(eq(activity), any())
+        inOrder(windowCallbackRegistry, viewTreeObserver, decorView) {
             verify(windowCallbackRegistry).removeListener(eq(activity), any())
+            verify(decorView).removeOnAttachStateChangeListener(eq(handle))
+            verify(viewTreeObserver).removeOnDrawListener(eq(handle))
+            verifyNoMoreInteractions()
         }
-        verifyNoMoreInteractions(windowCallbackRegistry)
     }
 
     @Test
