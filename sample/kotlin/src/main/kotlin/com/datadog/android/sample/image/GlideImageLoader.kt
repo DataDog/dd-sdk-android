@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sample.image
 
 import android.widget.ImageView
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
 import com.datadog.android.sample.R
@@ -25,7 +24,6 @@ internal class GlideImageLoader : ImageLoader {
             .transition(DrawableTransitionOptions.withCrossFade(factory))
             .transform(FailingTransformation())
             .error(R.drawable.ph_error)
-            .diskCacheStrategy(DiskCacheStrategy.NONE)
             .into(imageView)
     }
 }
