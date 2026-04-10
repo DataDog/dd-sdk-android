@@ -27,13 +27,13 @@ import java.io.InputStream
  * to Datadog.
  *
  * This sets up an OkHttp based downloader that will send Traces and RUM Resource events.
- * Also any Glide related error (Disk cache, source transformation, …) will be sent as RUM Errors.
+ * Also, any Glide related error (Disk cache, source transformation, …) will be sent as RUM Errors.
  *
  * @param sdkInstanceName the SDK instance name to bind to, or null to check the default instance.
  * Instrumentation won't be working until SDK instance is ready.
  * @param firstPartyHosts the list of first party hosts.
  * Requests made to a URL with any one of these hosts (or any subdomain) will:
- * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
+ * - be considered a first party RUM Resource and categorized as such in your RUM dashboard;
  * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
  * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
  * information to the backend, but RUM Resource events will still be sent for each request.

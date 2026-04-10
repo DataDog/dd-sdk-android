@@ -83,7 +83,7 @@ coil = "1.0.0"
 coilCompose = "2.1.0"
 coil3 = "3.0.4"
 fresco = "2.3.0"
-glide = "4.11.0"
+glide = "5.0.5"
 picasso = "2.8"
 room = "2.5.1"
 rxJava3 = "3.0.0"
@@ -118,7 +118,7 @@ dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", versio
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
 
 # Annotation processors
-glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
+glideKsp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
 roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
 # Common

@@ -19,7 +19,6 @@ plugins {
     id("com.android.application")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
-    kotlin("kapt")
     id("com.github.ben-manes.versions")
     id("org.jetbrains.dokka-javadoc")
     id("com.squareup.sqldelight")
@@ -214,7 +213,7 @@ dependencies {
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)
-    kapt(libs.glideCompiler)
+    ksp(libs.glideKsp)
 
     // Local Storage
     implementation(libs.sqlDelight)
