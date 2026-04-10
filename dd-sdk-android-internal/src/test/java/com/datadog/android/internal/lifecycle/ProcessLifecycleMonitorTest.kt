@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.lifecycle
+package com.datadog.android.internal.lifecycle
 
 import android.app.Activity
 import org.junit.jupiter.api.BeforeEach

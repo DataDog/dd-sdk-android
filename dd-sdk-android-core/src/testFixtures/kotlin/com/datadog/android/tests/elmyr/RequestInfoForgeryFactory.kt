@@ -32,8 +32,8 @@ class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
         override val headers: Map<String, List<String>>,
         override val contentType: String?,
         override val method: String,
-        internal val contentLength: Long?,
-        internal val tags: Map<Any, Any?>
+        val contentLength: Long?,
+        val tags: Map<Any, Any?>
     ) : HttpRequestInfo, ExtendedRequestInfo, MutableHttpRequestInfo {
 
         @Suppress("UNCHECKED_CAST")
@@ -64,5 +64,11 @@ class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
         ) = apply { request = request.copy(method = method) }
 
         override fun build(): HttpRequestInfo = request.copy()
+    }
+}
+
+class MutableRequestInfoForgeryFactory : ForgeryFactory<MutableHttpRequestInfo> {
+    override fun getForgery(forge: Forge): MutableHttpRequestInfo {
+        return RequestInfoForgeryFactory().getForgery(forge) as MutableHttpRequestInfo
     }
 }

@@ -509,7 +509,7 @@ class SampleApplication : Application() {
         private const val SESSION_REPLAY_PRIVACY_SAMPLING = 75
 
         init {
-            System.loadLibrary("datadog-native-sample-lib")
+            System.loadLibrary("datadog-ndk-sample")
         }
 
         internal const val ATTR_IS_MAPPED = "is_mapped"

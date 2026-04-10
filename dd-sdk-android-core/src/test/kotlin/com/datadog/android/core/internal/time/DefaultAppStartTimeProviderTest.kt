@@ -86,6 +86,29 @@ class DefaultAppStartTimeProviderTest {
     }
 
     @Test
+    fun `M fall back to DdRumContentProvider W appStartTime { N+ result is greater than createTimeNs }`(
+        @LongForgery(min = 2L) fakeComputedAppStartTimeNs: Long
+    ) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
+        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
+        val fakeCurrentTimeNs = fakeComputedAppStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeCurrentTimeNs
+
+        val computedAppStartTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
+        // Set createTimeNs strictly before computedAppStartTimeNs, simulating a buggy
+        // getStartElapsedRealtime()
+        // that makes the computed app start time appear to be after the content provider was created.
+        DdRumContentProvider.createTimeNs = computedAppStartTimeNs - 1L
+
+        // WHEN
+        val providedStartTime = testedProvider.appStartTimeNs
+
+        // THEN
+        assertThat(providedStartTime).isEqualTo(DdRumContentProvider.createTimeNs)
+    }
+
+    @Test
     fun `M return content provider load time W appStartTime { Legacy }`() {
         // GIVEN
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn false
@@ -101,13 +124,18 @@ class DefaultAppStartTimeProviderTest {
     @Test
     fun `M return app uptime W appUptimeNs`(
         @LongForgery(min = 1000000L) fakeStartTimeNs: Long,
-        @LongForgery(min = 1000L, max = 100000L) fakeUptimeNs: Long
+        @LongForgery(min = 1000L, max = 100000L) fakeUptimeNs: Long,
+        forge: Forge
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
 
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
-        val fakeCurrentTimeNs = fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
+        val fakeCurrentTimeNs = computeCurrentTimeNsForStartTime(fakeStartTimeNs)
+        // Set createTimeNs strictly above result so the guard does not fire, but the two values
+        // are distinguishable — if the guard did fire, appStartTimeNs would differ from result
+        // and the uptime assertion would fail.
+        DdRumContentProvider.createTimeNs = fakeCurrentTimeNs +
+            forge.aLong(min = 1L, max = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
 
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .doReturn(fakeCurrentTimeNs)
@@ -132,8 +160,8 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
-        val fakeCurrentTimeNs = fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
+        val fakeCurrentTimeNs = computeCurrentTimeNsForStartTime(fakeStartTimeNs)
+        DdRumContentProvider.createTimeNs = fakeCurrentTimeNs
 
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .doReturn(fakeCurrentTimeNs)
@@ -186,8 +214,8 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
-        val fakeCurrentTimeNs = fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
+        val fakeCurrentTimeNs = computeCurrentTimeNsForStartTime(fakeStartTimeNs)
+        DdRumContentProvider.createTimeNs = fakeCurrentTimeNs
 
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .doReturn(fakeCurrentTimeNs)
@@ -212,5 +240,10 @@ class DefaultAppStartTimeProviderTest {
         val elapsedRealtimeMs = SystemClock.elapsedRealtime()
         whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn elapsedRealtimeMs
         return elapsedRealtimeMs
+    }
+
+    private fun computeCurrentTimeNsForStartTime(fakeStartTimeNs: Long): Long {
+        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
+        return fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
     }
 }

@@ -24,7 +24,14 @@
           "readOnly": true
         },
         "view": {
-          "required": ["time_spent", "action", "error", "resource"]
+          "type": "object",
+          "required": ["time_spent", "action", "error", "resource"],
+          "properties": {
+            "time_spent": { "type": "integer" },
+            "action": { "type": "object" },
+            "error": { "type": "object" },
+            "resource": { "type": "object" }
+          }
         },
         "_dd": {
           "type": "object",

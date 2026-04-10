@@ -7,13 +7,13 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Interceptor
 import okhttp3.MultipartBody
-import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -52,9 +52,11 @@ internal class GzipRequestInterceptorTest {
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
     lateinit var fakeBody: String
+    lateinit var forge: Forge
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        this.forge = forge
         val fakeUrl = forge.aStringMatching("http://[a-z0-9_]{8}\\.[a-z]{3}")
         fakeBody = forge.anAlphabeticalString()
         fakeRequest = Request.Builder()
@@ -66,7 +68,6 @@ internal class GzipRequestInterceptorTest {
 
     @Test
     fun `compress body when no encoding is used`() {
-        fakeResponse = forgeResponse()
         stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
@@ -93,7 +94,6 @@ internal class GzipRequestInterceptorTest {
         fakeRequest = fakeRequest.newBuilder()
             .header("Content-Encoding", "identity")
             .build()
-        fakeResponse = forgeResponse()
         stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
@@ -115,7 +115,7 @@ internal class GzipRequestInterceptorTest {
     }
 
     @Test
-    fun `M keep original body W intercept { MultipartBody }`(forge: Forge) {
+    fun `M keep original body W intercept { MultipartBody }`() {
         // Given
         val fakeMultipartBody = MultipartBody
             .Builder()
@@ -129,7 +129,6 @@ internal class GzipRequestInterceptorTest {
         fakeRequest = fakeRequest.newBuilder()
             .post(fakeMultipartBody)
             .build()
-        fakeResponse = forgeResponse()
         stubChain()
 
         // When
@@ -156,7 +155,6 @@ internal class GzipRequestInterceptorTest {
         fakeRequest = fakeRequest.newBuilder()
             .get()
             .build()
-        fakeResponse = forgeResponse()
         stubChain()
 
         val response = testedInterceptor.intercept(mockChain)
@@ -174,16 +172,9 @@ internal class GzipRequestInterceptorTest {
 
     // region Internal
 
-    private fun forgeResponse(): Response {
-        val builder = Response.Builder()
-            .request(fakeRequest)
-            .protocol(Protocol.HTTP_2)
-            .code(200)
-            .message("{}")
-        return builder.build()
-    }
-
     private fun stubChain() {
+        fakeResponse = forge.anOkHttpResponse(fakeRequest, 200)
+
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doReturn fakeResponse
     }
