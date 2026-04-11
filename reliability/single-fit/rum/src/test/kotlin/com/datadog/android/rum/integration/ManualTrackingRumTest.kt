@@ -267,6 +267,84 @@ class ManualTrackingRumTest {
             }
     }
 
+    @Test
+    fun `M send view events with actions W startView() + multiple addAction()`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        @StringForgery actionName1: String,
+        @StringForgery actionName2: String
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        rumMonitor.startView(viewKey, viewName)
+
+        rumMonitor.addAction(RumActionType.CUSTOM, actionName1)
+        stubSdkCore.advanceTimeBy(1000)
+
+        rumMonitor.addAction(RumActionType.CUSTOM, actionName2)
+        stubSdkCore.advanceTimeBy(1000)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(5)
+            .hasRumEvent(index = 0) {
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionCount(0)
+                hasDocumentVersion(1)
+            }
+            .hasRumEvent(index = 1) {
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionName(actionName1)
+            }
+            .hasRumEvent(index = 2) {
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionCount(1)
+                hasDocumentVersion(2)
+            }
+            .hasRumEvent(index = 3) {
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionName(actionName2)
+            }
+            .hasRumEvent(index = 4) {
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionCount(2)
+                hasDocumentVersion(3)
+            }
+    }
+
     @RepeatedTest(16)
     fun `M send view event with error W startView() + addError()`(
         @StringForgery viewKey: String,
