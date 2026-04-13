@@ -60,8 +60,7 @@ internal class RumFirstDrawTimeReporterHandleImpl(
     override fun onContentChanged() {
         windowCallbacksRegistry.removeListener(activity, this)
 
-        val decorView = getDecorView()
-        onDecorViewReady(decorView)
+        onDecorViewReady(getDecorView())
     }
 
     private fun reportFirstFrame() {
@@ -119,7 +118,7 @@ internal class RumFirstDrawTimeReporterHandleImpl(
     override fun onViewAttachedToWindow(v: View) {
         val decorView = getDecorView()
 
-        registerOnDrawListener(activity.window.decorView)
+        registerOnDrawListener(decorView)
         decorView.removeOnAttachStateChangeListener(this)
     }
 
