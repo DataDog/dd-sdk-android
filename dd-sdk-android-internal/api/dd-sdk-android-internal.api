@@ -310,6 +310,10 @@ public final class com/datadog/android/internal/profiling/TTIDRumContext {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/sampling/DeterministicSamplingKt {
+	public static final fun computeSamplingDecision-2TYgG_w (FJ)Z
+}
+
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I

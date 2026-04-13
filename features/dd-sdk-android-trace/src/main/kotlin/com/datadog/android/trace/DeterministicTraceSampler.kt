@@ -8,6 +8,7 @@ package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
 import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.internal.sampling.computeSamplingDecision
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.trace.internal.net.SpanSamplingIdProvider
@@ -97,20 +98,8 @@ open class DeterministicTraceSampler private constructor(
     }
 
     /** @inheritDoc */
-    override fun sample(item: DatadogSpan): Boolean {
-        val sampleRate = getSampleRate(item)
-        return when {
-            sampleRate >= DeterministicSampler.SAMPLE_ALL_RATE -> true
-            sampleRate <= 0f -> false
-            else -> {
-                val hash = SpanSamplingIdProvider.provideId(item) * DeterministicSampler.SAMPLER_HASHER
-                val threshold = (
-                    DeterministicSampler.MAX_ID.toDouble() * sampleRate / DeterministicSampler.SAMPLE_ALL_RATE
-                    ).toULong()
-                hash < threshold
-            }
-        }
-    }
+    override fun sample(item: DatadogSpan): Boolean =
+        computeSamplingDecision(getSampleRate(item), SpanSamplingIdProvider.provideId(item))
 
     internal fun getSampleRate(item: DatadogSpan): Float {
         // Compatibility path for integrations creating this sampler via public constructors
