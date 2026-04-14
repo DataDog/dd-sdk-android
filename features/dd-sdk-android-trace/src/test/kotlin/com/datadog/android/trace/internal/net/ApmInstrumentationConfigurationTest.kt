@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.net
 
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration.Companion.createInstrumentation
@@ -17,6 +18,7 @@ import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -25,6 +27,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -253,5 +256,86 @@ internal class ApmInstrumentationConfigurationTest {
 
         // Then
         assertThat(result.networkTracingScope).isEqualTo(fakeScope)
+    }
+
+    @Test
+    fun `M not create receiver W createInstrumentation() {custom sampler provided}`() {
+        // When
+        val result = testedBuilder
+            .setTraceSampler(mockTraceSampler)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then
+        assertThat(result.sessionSampleRateReceiver).isNull()
+        assertThat(result.traceSampler).isSameAs(mockTraceSampler)
+    }
+
+    @Test
+    fun `M create receiver W createInstrumentation() {no custom sampler}`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // When
+        val result = testedBuilder
+            .setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then
+        assertThat(result.sessionSampleRateReceiver).isNotNull()
+    }
+
+    @Test
+    fun `M use raw trace rate W createInstrumentation() {no RUM context update yet}`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // When
+        val result = testedBuilder
+            .setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then - default session rate is 100f (no rebasing)
+        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M rebase trace rate W onContextUpdate() {RUM_FEATURE_NAME with session rate}`(
+        @FloatForgery(min = 1f, max = 100f) fakeSampleRate: Float,
+        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float
+    ) {
+        // Given
+        val result = testedBuilder
+            .setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // When
+        result.sessionSampleRateReceiver!!.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RumContextKeys.SESSION_SAMPLE_RATE to fakeSessionRate)
+        )
+
+        // Then
+        val expectedRate = fakeSampleRate * fakeSessionRate / 100f
+        assertThat(result.traceSampler.getSampleRate())
+            .isCloseTo(expectedRate, Offset.offset(0.001f))
+    }
+
+    @Test
+    fun `M not rebase trace rate W onContextUpdate() {non-RUM feature}`(
+        @FloatForgery(min = 1f, max = 100f) fakeSampleRate: Float,
+        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float,
+        @StringForgery fakeOtherFeature: String
+    ) {
+        // Given
+        val result = testedBuilder
+            .setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // When
+        result.sessionSampleRateReceiver!!.onContextUpdate(
+            fakeOtherFeature,
+            mapOf(RumContextKeys.SESSION_SAMPLE_RATE to fakeSessionRate)
+        )
+
+        // Then - no rebasing, rate unchanged
+        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
     }
 }

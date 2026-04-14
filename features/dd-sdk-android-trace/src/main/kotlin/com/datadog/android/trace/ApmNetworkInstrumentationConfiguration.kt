@@ -8,8 +8,7 @@ package com.datadog.android.trace
 import androidx.annotation.FloatRange
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.SdkReference
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
@@ -18,6 +17,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.trace.internal.net.TracerProvider
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Configuration for APM distributed tracing of network requests.
@@ -252,16 +252,25 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
-            val sdkRef = SdkReference(sdkInstanceName)
-            val sessionSampleRateProvider: () -> Float = {
-                resolveSessionSampleRate(
-                    (sdkRef.get() as? InternalSdkCore)
-                        ?.getFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false)
-                        ?.get(RumContextKeys.SESSION_SAMPLE_RATE)
-                )
-            }
+            @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference initialized with non-null Float constant
+            val cachedSessionSampleRate = AtomicReference(DEFAULT_TRACE_SAMPLE_RATE)
+            val sessionSampleRateReceiver: FeatureContextUpdateReceiver? =
+                if (customTraceSampler == null) {
+                    FeatureContextUpdateReceiver { featureName, context ->
+                        if (featureName == Feature.RUM_FEATURE_NAME) {
+                            @Suppress(
+                                "UnsafeThirdPartyFunctionCall"
+                            ) // resolveSessionSampleRate always returns non-null Float
+                            cachedSessionSampleRate.set(
+                                resolveSessionSampleRate(context[RumContextKeys.SESSION_SAMPLE_RATE])
+                            )
+                        }
+                    }
+                } else {
+                    null
+                }
             val effectiveSampler = customTraceSampler
-                ?: DeterministicTraceSampler(traceSampleRate, sessionSampleRateProvider)
+                ?: DeterministicTraceSampler(traceSampleRate) { cachedSessionSampleRate.get() }
 
             return ApmNetworkInstrumentation(
                 canSendSpan = !headerPropagationOnly,
@@ -274,7 +283,8 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
                 networkingLibraryName = instrumentationName,
                 tracedRequestListener = tracedRequestListener,
                 redacted404ResourceName = redacted404ResourceName,
-                localFirstPartyHostHeaderTypeResolver = localFirstPartyHostHeaderTypeResolver
+                localFirstPartyHostHeaderTypeResolver = localFirstPartyHostHeaderTypeResolver,
+                sessionSampleRateReceiver = sessionSampleRateReceiver
             )
         }
 

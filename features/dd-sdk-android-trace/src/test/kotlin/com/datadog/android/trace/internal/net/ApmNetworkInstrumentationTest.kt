@@ -10,6 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
@@ -984,6 +985,39 @@ internal class ApmNetworkInstrumentationTest {
         }
     }
 
+    @Test
+    fun `M remove context update receiver W close() {receiver was registered}`() {
+        // Given
+        val mockSessionSampleRateReceiver = mock<FeatureContextUpdateReceiver>()
+        testedInstrumentation = createInstrumentation(
+            sessionSampleRateReceiver = mockSessionSampleRateReceiver
+        )
+        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
+
+        // When
+        testedInstrumentation.close()
+
+        // Then
+        verify(mockSdkCore).setContextUpdateReceiver(mockSessionSampleRateReceiver)
+        verify(mockSdkCore).removeContextUpdateReceiver(mockSessionSampleRateReceiver)
+    }
+
+    @Test
+    fun `M not touch context receivers W close() {receiver never registered}`() {
+        // Given
+        val mockSessionSampleRateReceiver = mock<FeatureContextUpdateReceiver>()
+        testedInstrumentation = createInstrumentation(
+            sessionSampleRateReceiver = mockSessionSampleRateReceiver
+        )
+
+        // When
+        testedInstrumentation.close()
+
+        // Then
+        verify(mockSdkCore, never()).setContextUpdateReceiver(any())
+        verify(mockSdkCore, never()).removeContextUpdateReceiver(any())
+    }
+
     // endregion
 
     private fun createTraceState(isSampled: Boolean = true) = RequestTracingState(
@@ -997,7 +1031,8 @@ internal class ApmNetworkInstrumentationTest {
         canSendSpan: Boolean = true,
         networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS,
         redacted404ResourceName: Boolean = true,
-        traceSampler: Sampler<DatadogSpan> = mockTraceSampler
+        traceSampler: Sampler<DatadogSpan> = mockTraceSampler,
+        sessionSampleRateReceiver: FeatureContextUpdateReceiver? = null
     ) = ApmNetworkInstrumentation(
         canSendSpan = canSendSpan,
         sdkInstanceName = null,
@@ -1009,7 +1044,8 @@ internal class ApmNetworkInstrumentationTest {
         tracedRequestListener = mockNetworkTracedRequestListener,
         localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
         networkingLibraryName = fakeNetworkInstrumentationName,
-        networkTracingScope = networkTracingScope
+        networkTracingScope = networkTracingScope,
+        sessionSampleRateReceiver = sessionSampleRateReceiver
     )
 
     companion object {

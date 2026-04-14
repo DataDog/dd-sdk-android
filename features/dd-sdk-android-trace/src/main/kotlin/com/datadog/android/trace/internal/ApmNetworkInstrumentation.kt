@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
@@ -37,6 +38,7 @@ import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * For internal usage only.
@@ -57,6 +59,7 @@ import java.util.Locale
  * @param localFirstPartyHostHeaderTypeResolver resolver for determining header types for first-party hosts.
  * @param networkingLibraryName the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
  * @param networkTracingScope Tracing scope for the instrumentation. See [ApmNetworkTracingScope] enum for more details.
+ * @param sessionSampleRateReceiver optional receiver that caches the RUM session sample rate for sampling decisions. When provided, it is registered with the SDK on first resolution and updated whenever the RUM context changes.
  */
 @Suppress("LongParameterList")
 @InternalApi
@@ -71,9 +74,14 @@ class ApmNetworkInstrumentation internal constructor(
     internal val tracedRequestListener: NetworkTracedRequestListener,
     internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
-    val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
+    val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL,
+    internal val sessionSampleRateReceiver: FeatureContextUpdateReceiver? = null
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
+    private val receiverLifecycleLock = Any()
+    private val isClosed = AtomicBoolean(false)
+    private val isRegistered = AtomicBoolean(false)
+
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
 
@@ -87,6 +95,14 @@ class ApmNetworkInstrumentation internal constructor(
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && sdkCore.firstPartyHostResolver.isEmpty()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN, onlyOnce = true) {
                 WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)
+            }
+        }
+        sessionSampleRateReceiver?.let { receiver ->
+            synchronized(receiverLifecycleLock) {
+                if (!isClosed.get() && !isRegistered.get()) {
+                    sdkCore.setContextUpdateReceiver(receiver)
+                    isRegistered.set(true)
+                }
             }
         }
     }
@@ -129,7 +145,7 @@ class ApmNetworkInstrumentation internal constructor(
         }
 
         val span = tracer.buildSpan(request, networkingLibraryName, traceOrigin)
-        val isSampled = span.isSampled(request)
+        val isSampled = span.extractRumContext(rumContextPropagator, block = true).sample(request, traceSampler)
         if (span.isRootSpan) {
             span.applyPriority(isSampled, traceSampler)
         }
@@ -219,9 +235,18 @@ class ApmNetworkInstrumentation internal constructor(
         )
     }
 
-    private fun DatadogSpan.isSampled(request: HttpRequestInfo): Boolean =
-        extractRumContext(rumContextPropagator, block = true)
-            .sample(request, traceSampler)
+    /**
+     * Releases this instrumentation and unregisters context receivers from SDK core.
+     */
+    fun close() {
+        val receiver = sessionSampleRateReceiver ?: return
+        synchronized(receiverLifecycleLock) {
+            isClosed.set(true)
+            if (isRegistered.compareAndSet(true, false)) {
+                internalSdkCore?.removeContextUpdateReceiver(receiver)
+            }
+        }
+    }
 
     private fun RequestTracingState.onRequestIntercepted(
         response: HttpResponseInfo?,

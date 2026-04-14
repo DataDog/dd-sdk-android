@@ -354,4 +354,23 @@ internal class DatadogCronetEngineTest {
         assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
         assertThat(testedEngine.apmNetworkInstrumentation).isNull()
     }
+
+    @Test
+    fun `M close tracing instrumentation W shutdown() {tracing enabled}`() {
+        // Given
+        testedEngine = DatadogCronetEngine(
+            mockDelegate,
+            rumNetworkInstrumentation = mockRumNetworkInstrumentation,
+            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
+            distributedTracingInstrumentation = mockDistributedTracingInstrumentation
+        )
+
+        // When
+        testedEngine.shutdown()
+
+        // Then
+        verify(mockApmNetworkInstrumentation).close()
+        verify(mockDistributedTracingInstrumentation).close()
+        verify(mockDelegate).shutdown()
+    }
 }

@@ -98,6 +98,7 @@ public abstract interface class com/datadog/android/trace/event/SpanEventMapper 
 }
 
 public final class com/datadog/android/trace/internal/ApmNetworkInstrumentation {
+	public final fun close ()V
 	public final fun getLocalHeaderTypes ()Ljava/util/Set;
 	public final fun getNetworkTracingScope ()Lcom/datadog/android/trace/ApmNetworkTracingScope;
 	public final fun getSampleRate ()Ljava/lang/Float;
