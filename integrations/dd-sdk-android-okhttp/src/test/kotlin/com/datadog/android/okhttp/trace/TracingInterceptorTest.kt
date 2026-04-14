@@ -1653,6 +1653,80 @@ internal open class TracingInterceptorTest {
         )
     }
 
+    // region agent_psr rebasing
+
+    @Test
+    fun `M set rebased agent_psr W intercept() {DeterministicTraceSampler, span has session_sample_rate tag}`(
+        @FloatForgery(min = 1f, max = 100f) fakeTraceSampleRate: Float,
+        @FloatForgery(min = 1f, max = 99f) fakeSessionSampleRate: Float
+    ) {
+        // Given
+        val deterministicSampler = DeterministicTraceSampler(fakeTraceSampleRate)
+        whenever(mockSpanContext.tags) doReturn mapOf("session_sample_rate" to fakeSessionSampleRate)
+        whenever(mockSpan.isRootSpan) doReturn true
+        whenever(mockSpanContext.setSamplingPriority(any())) doReturn true
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        testedInterceptor = TracingInterceptor(
+            sdkInstanceName = null,
+            tracedHosts = fakeLocalHosts,
+            tracedRequestListener = mockRequestListener,
+            traceOrigin = fakeOrigin,
+            traceSampler = deterministicSampler,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            redacted404ResourceName = fakeRedacted404Resources,
+            traceContextInjection = TraceContextInjection.ALL,
+            globalTracerProvider = { mockTracer }
+        )
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val expectedRebasedRate = fakeTraceSampleRate * fakeSessionSampleRate / 100f
+        verify(mockSpanContext).setMetric(
+            eq("_dd.agent_psr"),
+            eq(expectedRebasedRate.toDouble() / 100.0)
+        )
+    }
+
+    @Test
+    fun `M set raw agent_psr W intercept() {DeterministicTraceSampler, span has no session_sample_rate tag}`(
+        @FloatForgery(min = 1f, max = 100f) fakeTraceSampleRate: Float
+    ) {
+        // Given
+        val deterministicSampler = DeterministicTraceSampler(fakeTraceSampleRate)
+        whenever(mockSpanContext.tags) doReturn emptyMap()
+        whenever(mockSpan.isRootSpan) doReturn true
+        whenever(mockSpanContext.setSamplingPriority(any())) doReturn true
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        testedInterceptor = TracingInterceptor(
+            sdkInstanceName = null,
+            tracedHosts = fakeLocalHosts,
+            tracedRequestListener = mockRequestListener,
+            traceOrigin = fakeOrigin,
+            traceSampler = deterministicSampler,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            redacted404ResourceName = fakeRedacted404Resources,
+            traceContextInjection = TraceContextInjection.ALL,
+            globalTracerProvider = { mockTracer }
+        )
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanContext).setMetric(
+            eq("_dd.agent_psr"),
+            eq(fakeTraceSampleRate.toDouble() / 100.0)
+        )
+    }
+
+    // endregion
+
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int = forge.anInt(min = 200, max = 600)) {

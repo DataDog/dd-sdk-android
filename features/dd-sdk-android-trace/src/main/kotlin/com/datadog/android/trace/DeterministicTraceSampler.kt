@@ -31,6 +31,7 @@ import com.datadog.android.trace.internal.net.SpanSamplingIdProvider
  * @param sessionSampleRateProvider Provider for the RUM session sample rate used to rebase the
  * trace sample rate. Defaults to 100 (no rebasing).
  */
+// TODO RUM-13454 -> Make this class internal in V4 (RUM-15590)
 open class DeterministicTraceSampler private constructor(
     private val sampleRateProvider: () -> Float,
     private val sessionSampleRateProvider: () -> Float
@@ -98,10 +99,27 @@ open class DeterministicTraceSampler private constructor(
     }
 
     /** @inheritDoc */
+    // TODO RUM-13454 -> Remove the @Suppress when getSampleRate(DatadogSpan) is removed in V4 (RUM-15590)
+    @Suppress("DEPRECATION")
     override fun sample(item: DatadogSpan): Boolean =
         computeSamplingDecision(getSampleRate(item), SpanSamplingIdProvider.provideId(item))
 
-    internal fun getSampleRate(item: DatadogSpan): Float {
+    /**
+     * Returns the effective sample rate for [item], applying cross-product rebasing when a RUM
+     * session rate is available.
+     *
+     * When this sampler was created via [ApmNetworkInstrumentationConfiguration] the session rate
+     * is read from the injected [sessionSampleRateProvider]. For samplers created via the public
+     * constructors (no provider) the rate is read from the `session_sample_rate` span tag written
+     * by [com.datadog.android.trace.internal.RumContextPropagator], providing compatibility with
+     * [com.datadog.android.okhttp.trace.TracingInterceptor] and related legacy integrations.
+     */
+    // TODO RUM-13454 -> Remove this in V4 when deprecating legacy paths (RUM-15590)
+    @Deprecated(
+        "Use ApmNetworkInstrumentationConfiguration for session-aware sampling. Will be removed in v4.",
+        level = DeprecationLevel.WARNING
+    )
+    fun getSampleRate(item: DatadogSpan): Float {
         // Compatibility path for integrations creating this sampler via public constructors
         // (no sessionSampleRateProvider). In that case the session sample rate is propagated on
         // the span context as `session_sample_rate` and must be used for rebasing.

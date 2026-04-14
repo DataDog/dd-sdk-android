@@ -322,6 +322,8 @@ internal class DeterministicTraceSamplerTest {
     }
 
     @Test
+    // TODO RUM-13454 -> Remove this test when getSampleRate(DatadogSpan) is removed in V4 (RUM-15590)
+    @Suppress("DEPRECATION")
     fun `M use context session sample rate W getSampleRate(item) {no sessionSampleRateProvider configured}`(
         @FloatForgery(min = 0f, max = 100f) traceSampleRate: Float,
         @FloatForgery(min = 0f, max = 99f) sessionSampleRate: Float,
@@ -352,6 +354,8 @@ internal class DeterministicTraceSamplerTest {
     }
 
     @Test
+    // TODO RUM-13454 -> Remove this test when getSampleRate(DatadogSpan) is removed in V4 (RUM-15590)
+    @Suppress("DEPRECATION")
     fun `M use raw trace rate W getSampleRate(item) {session sample rate unavailable}`(
         @FloatForgery(min = 0f, max = 100f) traceSampleRate: Float,
         @LongForgery fakeTraceIdLong: Long

@@ -35,6 +35,7 @@ public class com/datadog/android/trace/DeterministicTraceSampler : com/datadog/a
 	public fun <init> (F)V
 	public fun <init> (Lkotlin/jvm/functions/Function0;)V
 	public fun getSampleRate ()Ljava/lang/Float;
+	public final fun getSampleRate (Lcom/datadog/android/trace/api/span/DatadogSpan;)F
 	public fun sample (Lcom/datadog/android/trace/api/span/DatadogSpan;)Z
 	public synthetic fun sample (Ljava/lang/Object;)Z
 }

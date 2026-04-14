@@ -41,6 +41,8 @@ internal fun DatadogSpan.applyPriority(isSampled: Boolean, traceSampler: Sampler
     }
 }
 
+// TODO RUM-13454 -> Remove the cast to DeterministicTraceSampler - V4 (RUM-15590)
+@Suppress("DEPRECATION")
 internal fun Sampler<DatadogSpan>.effectiveSampleRate(span: DatadogSpan): Float? {
     return when (this) {
         is DeterministicTraceSampler -> getSampleRate(span)
