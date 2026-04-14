@@ -98,6 +98,7 @@ internal class RumInstrumentationTimingsCounter(
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
         headersEnd = sdkCore.time.deviceTimeNs
+        // TODO RUM-15605 - Check if we need this reporting logic
         if (response.code >= HttpURLConnection.HTTP_BAD_REQUEST) {
             requestTracingStateRegistry.get(call)?.let(::sendTiming)
         }

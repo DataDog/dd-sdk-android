@@ -63,6 +63,7 @@ class OkHttpIntegrationPlugin internal constructor(
      * @return an instrumented [OkHttpClient] instance.
      */
     @Suppress("ReturnCount")
+    @Synchronized
     fun build(): OkHttpClient {
         builtClient?.let { return it }
         val rumInstrumentation = rumConfiguration?.createRumInstrumentation()
