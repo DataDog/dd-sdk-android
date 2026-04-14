@@ -54,6 +54,7 @@ espresso = "3.5.1"
 # Tests Tools
 assertJ = "3.18.1"
 elmyr = "1.3.1"
+leakCanary = "2.14"
 mockitoKotlin = "5.1.0"
 mockitoAndroid = "5.12.0"
 kover = "0.7.6"
@@ -201,6 +202,8 @@ elmyrInject = { module = "com.github.xgouchet.Elmyr:inject", version.ref = "elmy
 elmyrJUnit4 = { module = "com.github.xgouchet.Elmyr:junit4", version.ref = "elmyr" }
 elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmyr" }
 elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
+leakCanaryAndroid = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakCanary" }
+leakCanaryInstrumentation = { module = "com.squareup.leakcanary:leakcanary-android-instrumentation", version.ref = "leakCanary" }
 mockitoAndroid = { module = "org.mockito:mockito-android", version.ref = "mockitoAndroid" }
 mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }

@@ -236,6 +236,9 @@ dependencies {
     // Misc
     implementation(libs.timber)
     api("com.facebook.stetho:stetho:1.6.0")
+
+    // Leak detection
+    debugImplementation(libs.leakCanaryAndroid)
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)
