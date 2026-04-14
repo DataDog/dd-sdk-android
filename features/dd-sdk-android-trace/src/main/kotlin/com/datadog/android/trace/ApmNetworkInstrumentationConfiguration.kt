@@ -12,10 +12,10 @@ import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
-import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.trace.internal.net.TracerProvider
 import java.util.concurrent.atomic.AtomicReference
 
@@ -262,7 +262,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
                                 "UnsafeThirdPartyFunctionCall"
                             ) // resolveSessionSampleRate always returns non-null Float
                             cachedSessionSampleRate.set(
-                                resolveSessionSampleRate(context[RumContextKeys.SESSION_SAMPLE_RATE])
+                                resolveSessionSampleRate(context[LogAttributes.RUM_SESSION_SAMPLE_RATE])
                             )
                         }
                     }

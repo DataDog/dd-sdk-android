@@ -280,6 +280,13 @@ object LogAttributes {
     const val RUM_ACTION_ID: String = "user_action.id"
 
     /**
+     * Key for the RUM session sample rate used for cross-product trace sampling rebasing.
+     * This key is written to spans by [com.datadog.android.trace.internal.RumContextPropagator]
+     * and read by [com.datadog.android.trace.DeterministicTraceSampler].
+     */
+    const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
+
+    /**
      * The name of the application or service generating the log events. (String)
      * This value is filled automatically by the [Logger].
      * @see [Configuration.Builder.service]

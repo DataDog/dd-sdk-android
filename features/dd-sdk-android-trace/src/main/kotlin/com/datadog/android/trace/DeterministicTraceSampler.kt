@@ -9,8 +9,8 @@ package com.datadog.android.trace
 import androidx.annotation.FloatRange
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.computeSamplingDecision
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.trace.internal.net.SpanSamplingIdProvider
 
 /**
@@ -127,7 +127,7 @@ open class DeterministicTraceSampler private constructor(
         val providerRateIsValid = providerRate >= 0f && providerRate < DeterministicSampler.SAMPLE_ALL_RATE
         val sessionSampleRate = when {
             providerRateIsValid -> providerRate
-            else -> (item.context().tags[RumContextKeys.SESSION_SAMPLE_RATE] as? Number)?.toFloat()
+            else -> (item.context().tags[LogAttributes.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
         }
 
         return if (sessionSampleRate != null &&

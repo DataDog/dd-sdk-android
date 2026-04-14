@@ -9,6 +9,7 @@ package com.datadog.android.trace.internal.net
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration.Companion.createInstrumentation
 import com.datadog.android.trace.ApmNetworkTracingScope
@@ -18,7 +19,6 @@ import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.RumContextKeys
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -309,7 +309,7 @@ internal class ApmInstrumentationConfigurationTest {
         // When
         result.sessionSampleRateReceiver!!.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RumContextKeys.SESSION_SAMPLE_RATE to fakeSessionRate)
+            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
         )
 
         // Then
@@ -332,7 +332,7 @@ internal class ApmInstrumentationConfigurationTest {
         // When
         result.sessionSampleRateReceiver!!.onContextUpdate(
             fakeOtherFeature,
-            mapOf(RumContextKeys.SESSION_SAMPLE_RATE to fakeSessionRate)
+            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
         )
 
         // Then - no rebasing, rate unchanged
