@@ -6,6 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import android.os.FileObserver
+import android.os.FileObserver.CREATE
+import android.os.FileObserver.DELETE
+import android.os.FileObserver.MOVED_FROM
+import android.os.FileObserver.MOVED_TO
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
@@ -21,13 +26,13 @@ import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.internal.time.TimeProvider
 import java.io.File
-import java.io.FileFilter
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToLong
 
-// TODO RUM-438 Improve this class: need to make it thread-safe and optimize work with file
-//  system in order to reduce the number of syscalls (which are expensive) for files already seen
 @Suppress("TooManyFunctions")
 internal class BatchFileOrchestrator(
     private val rootDir: File,
@@ -38,8 +43,6 @@ internal class BatchFileOrchestrator(
     private val pendingFiles: AtomicInteger = AtomicInteger(0)
 ) : FileOrchestrator {
 
-    private val fileFilter = BatchFileFilter()
-
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
     @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
@@ -48,11 +51,32 @@ internal class BatchFileOrchestrator(
     @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
     private val recentWriteDelayMs = (config.recentDelayMs * DECREASE_PERCENT).roundToLong()
 
-    // keep track of how many items were written in the last known file
-    private var previousFile: File? = null
-    private var previousFileItemCount: Long = 0
-    private var lastFileAccessTimestamp: Long = 0L
-    private var lastCleanupTimestamp: Long = 0L
+    private val currentBatchState = AtomicReference(CurrentBatchState(null, 0L, 0L))
+    private val lastCleanupTimestamp = AtomicLong(0L)
+    private val isFileObserverStarted = AtomicBoolean(false)
+
+    private val knownFiles: MutableSet<File> = mutableSetOf()
+
+    @Suppress("DEPRECATION") // Recommended constructor only available in API 29 Q
+    internal val fileObserver = object : FileObserver(rootDir.path, FILE_OBSERVER_MASK) {
+        override fun onEvent(event: Int, name: String?) {
+            if (!name.isNullOrEmpty() && name.isBatchFileName) {
+                val file = File(rootDir, name)
+                val isAdded = event and (MOVED_TO or CREATE) != 0
+                val isRemoved = event and (MOVED_FROM or DELETE) != 0
+                if (isAdded) {
+                    synchronized(knownFiles) {
+                        knownFiles.add(file)
+                    }
+                }
+                if (isRemoved) {
+                    synchronized(knownFiles) {
+                        knownFiles.remove(file)
+                    }
+                }
+            }
+        }
+    }
 
     // region FileOrchestrator
 
@@ -66,7 +90,7 @@ internal class BatchFileOrchestrator(
             var files = listBatchFiles()
             files = deleteObsoleteFiles(files)
             freeSpaceIfNeeded(files)
-            lastCleanupTimestamp = timeProvider.getDeviceTimestampMillis()
+            lastCleanupTimestamp.set(timeProvider.getDeviceTimestampMillis())
         }
 
         return getReusableWritableFile() ?: createNewFile()
@@ -78,14 +102,12 @@ internal class BatchFileOrchestrator(
             return null
         }
 
-        val files = listSortedBatchFiles().let {
-            deleteObsoleteFiles(it)
-        }
-        lastCleanupTimestamp = timeProvider.getDeviceTimestampMillis()
+        val files = deleteObsoleteFiles(listSortedBatchFiles())
+        lastCleanupTimestamp.set(timeProvider.getDeviceTimestampMillis())
         pendingFiles.set(files.count())
 
         return files.firstOrNull {
-            (it !in excludeFiles) && !isFileRecent(it, recentReadDelayMs)
+            (it !in excludeFiles) && !isFileRecent(it, recentReadDelayMs) && it.existsSafe(internalLogger)
         }
     }
 
@@ -146,78 +168,80 @@ internal class BatchFileOrchestrator(
         return pendingFiles.decrementAndGet()
     }
 
-    @Suppress("LiftReturnOrAssignment", "ReturnCount")
+    @Suppress("ReturnCount")
     private fun isRootDirValid(): Boolean {
-        if (rootDir.existsSafe(internalLogger)) {
-            if (rootDir.isDirectory) {
-                if (rootDir.canWriteSafe(internalLogger)) {
-                    return true
-                } else {
+        val isValid = if (rootDir.existsSafe(internalLogger)) {
+            when {
+                !rootDir.isDirectory -> {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path) }
+                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                        { ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path) }
                     )
-                    return false
-                }
-            } else {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path) }
-                )
-                return false
-            }
-        } else {
-            synchronized(rootDir) {
-                // double check if directory was already created by some other thread
-                // entered this branch
-                if (rootDir.existsSafe(internalLogger)) {
-                    return true
+                    false
                 }
 
-                if (rootDir.mkdirsSafe(internalLogger)) {
-                    return true
-                } else {
+                !rootDir.canWriteSafe(internalLogger) -> {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path) }
+                        listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                        { ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path) }
                     )
-                    return false
+                    false
                 }
+
+                else -> true
+            }
+        } else {
+            createRootDirectory()
+        }
+
+        if (isValid) startFileObserverIfNotStarted()
+        return isValid
+    }
+
+    private fun createRootDirectory(): Boolean = synchronized(rootDir) {
+        val created = rootDir.existsSafe(internalLogger) || rootDir.mkdirsSafe(internalLogger)
+        if (!created) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path) }
+            )
+        }
+        created
+    }
+
+    private fun startFileObserverIfNotStarted() {
+        if (isFileObserverStarted.compareAndSet(false, true)) {
+            fileObserver.startWatching()
+            synchronized(knownFiles) {
+                rootDir.listFilesSafe(internalLogger)
+                    ?.filter { it.name.isBatchFileName }
+                    ?.let { knownFiles.addAll(it) }
             }
         }
     }
 
-    private fun createNewFile(): File {
-        val newFileName = timeProvider.getDeviceTimestampMillis().toString()
-        val newFile = File(rootDir, newFileName)
-        val closedFile = previousFile
-        val closedFileLastAccessTimestamp = lastFileAccessTimestamp
-        if (closedFile != null) {
+    private fun createNewFile(): File = synchronized(currentBatchState) {
+        val now = timeProvider.getDeviceTimestampMillis()
+        val newFile = File(rootDir, now.toString())
+        val previousState = currentBatchState.get()
+        if (previousState.file != null) {
             metricsDispatcher.sendBatchClosedMetric(
-                closedFile,
+                previousState.file,
                 BatchClosedMetadata(
-                    lastTimeWasUsedInMs = closedFileLastAccessTimestamp,
-                    eventsCount = previousFileItemCount
+                    lastTimeWasUsedInMs = previousState.lastAccessTimestamp,
+                    eventsCount = previousState.itemCount
                 )
             )
         }
-        previousFile = newFile
-        previousFileItemCount = 1
-        lastFileAccessTimestamp = timeProvider.getDeviceTimestampMillis()
+        currentBatchState.set(CurrentBatchState(newFile, 1L, now))
         pendingFiles.incrementAndGet()
-        return newFile
+        synchronized(knownFiles) {
+            knownFiles.add(newFile)
+        }
+        newFile
     }
 
     @Suppress("ReturnCount")
@@ -225,27 +249,36 @@ internal class BatchFileOrchestrator(
         val files = listBatchFiles()
         val lastFile = files.latestBatchFile ?: return null
 
-        val lastKnownFile = previousFile
-        val lastKnownFileItemCount = previousFileItemCount
-        if (lastKnownFile != lastFile) {
-            // this situation can happen because:
-            // 1. `lastFile` is a file written during a previous session
-            // 2. `lastFile` was created by another system/process
-            // 3. `lastKnownFile` was deleted
-            // In any case, we don't know the item count, so to be safe, we create a new file
+        if (!lastFile.existsSafe(internalLogger)) {
             return null
         }
 
-        val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
-        val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize
-        val hasSlotForMore = (lastKnownFileItemCount < config.maxItemsPerBatch)
+        synchronized(currentBatchState) {
+            val state = currentBatchState.get()
+            if (state.file != lastFile) {
+                // this situation can happen because:
+                // 1. `lastFile` is a file written during a previous session
+                // 2. `lastFile` was created by another system/process
+                // 3. `state.file` was deleted
+                // In any case, we don't know the item count, so to be safe, we create a new file
+                return null
+            }
 
-        return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
-            previousFileItemCount = lastKnownFileItemCount + 1
-            lastFileAccessTimestamp = timeProvider.getDeviceTimestampMillis()
-            lastFile
-        } else {
-            null
+            val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
+            val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize
+            val hasSlotForMore = (state.itemCount < config.maxItemsPerBatch)
+
+            if (!isRecentEnough || !hasRoomForMore || !hasSlotForMore) {
+                return null
+            }
+
+            currentBatchState.set(
+                state.copy(
+                    itemCount = state.itemCount + 1,
+                    lastAccessTimestamp = timeProvider.getDeviceTimestampMillis()
+                )
+            )
+            return lastFile
         }
     }
 
@@ -316,7 +349,9 @@ internal class BatchFileOrchestrator(
     }
 
     private fun listBatchFiles(): List<File> {
-        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().toList()
+        return synchronized(knownFiles) {
+            knownFiles.toList()
+        }
     }
 
     private fun listSortedBatchFiles(): List<File> {
@@ -326,34 +361,32 @@ internal class BatchFileOrchestrator(
     }
 
     private fun canDoCleanup(): Boolean {
-        return timeProvider.getDeviceTimestampMillis() - lastCleanupTimestamp > config.cleanupFrequencyThreshold
+        return timeProvider.getDeviceTimestampMillis() - lastCleanupTimestamp.get() > config.cleanupFrequencyThreshold
     }
 
     private val File.metadata: File
         get() = File("${this.path}_metadata")
 
     private val File.isBatchFile: Boolean
-        get() = name.toLongOrNull() != null
+        get() = name.isBatchFileName
+
+    private val String.isBatchFileName: Boolean
+        get() = toLongOrNull() != null
 
     private val List<File>.latestBatchFile: File?
         get() = maxOrNull()
 
     // endregion
 
-    // region FileFilter
-
-    internal inner class BatchFileFilter : FileFilter {
-        @Suppress("ReturnCount")
-        override fun accept(file: File?): Boolean {
-            if (file == null) return false
-
-            return file.isBatchFile
-        }
-    }
-
-    // endregion
+    private data class CurrentBatchState(
+        val file: File?,
+        val itemCount: Long,
+        val lastAccessTimestamp: Long
+    )
 
     companion object {
+
+        private const val FILE_OBSERVER_MASK = CREATE or DELETE or MOVED_TO or MOVED_FROM
 
         const val DECREASE_PERCENT = 0.95
         const val INCREASE_PERCENT = 1.05
