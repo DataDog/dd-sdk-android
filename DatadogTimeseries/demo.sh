@@ -54,27 +54,20 @@ narrate "  AI-first POD | Sprint 1 | RUM-13949"
 narrate "  Barbora Plasovska | April 18, 2026"
 separator
 
-heading "What is this?"
+heading "This Week's Focus"
 echo ""
-echo "  A new RUM event type: timeseries"
-echo "  Captures dense performance metrics (memory, CPU) at 1-second intervals"
-echo "  throughout a mobile app session."
+echo "  Built a standalone, platform-agnostic pipeline that implements"
+echo "  the core business logic of the timeseries feature."
 echo ""
-echo "  Enables correlation with RUM events (views, actions, errors)"
-echo "  that is impossible with today's single avg/max per view."
-pause
-
-# ============================================================================
-separator
-heading "Plan 1: Standalone Verification Pipeline"
+echo "  What the pipeline does:"
+echo "    Takes timestamped performance samples (memory, CPU — sampled every 1s)"
+echo "    and transforms them into complete RUM timeseries JSON events."
 echo ""
-echo "  Before wiring into the real SDK, we built a standalone package"
-echo "  that implements the pure business logic:"
+echo "    Samples  -->  Batcher  -->  Event Builder  -->  JSON Encoder  -->  RUM JSON"
 echo ""
-echo "    CSV input  -->  Batcher  -->  Event Builder  -->  JSON Encoder  -->  RUM JSON"
-echo ""
-echo "  Zero SDK dependencies. Runs with swift test / gradlew test."
-echo "  Same CSV fixtures, same expected JSON — verified on both platforms."
+echo "  Zero SDK dependencies — pure logic, tested on both iOS (Swift)"
+echo "  and Android (Kotlin) against the same expected fixtures."
+echo "  This is the foundation everything else builds on."
 pause
 
 # ============================================================================
@@ -192,21 +185,17 @@ pause
 
 # ============================================================================
 separator
-heading "Next Steps (Week 2)"
+heading "Next Steps"
 echo ""
-echo "    Plan 2: Wire into real SDK"
-echo "      - Replace CSV provider with real VitalMemoryReader / VitalCPUReader"
-echo "      - 1-second timer on background thread"
-echo "      - Session lifecycle (start/stop/flush)"
-echo "      - Events flow through RUM upload pipeline to staging"
+echo "    Complete the end-to-end pipeline:"
+echo "      - Wire SDK business logic into the real iOS and Android SDKs"
+echo "      - Connect to backend so we can test the full pipeline"
+echo "        (SDK --> backend --> query)"
 echo ""
-echo "    Blocked on:"
-echo "      - Polymorphic schema decision (A/B/C) from William"
-echo "      - Backend staging endpoint readiness"
-echo ""
-echo "    Also planned:"
-echo "      - Delta compression (Timur researching)"
-echo "      - Configuration flag (opt-in)"
+echo "    Once the full pipeline works end-to-end:"
+echo "      - Iterate on sampling rates, batching strategies, thresholds"
+echo "      - Measure real session size impact"
+echo "      - Tune based on backend query performance feedback"
 separator
 echo ""
 narrate "  End of demo."
