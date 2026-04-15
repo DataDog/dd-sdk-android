@@ -17,12 +17,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.rum.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.telemetry.internal.TelemetryEventHandler

@@ -16,8 +16,9 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.internal.sampling.DeterministicSampling
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
@@ -51,7 +52,7 @@ internal class SessionReplayFeature(
     internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val touchPrivacy: TouchPrivacy,
     internal val imagePrivacy: ImagePrivacy,
-    private val rateBasedSampler: Sampler<Unit>,
+    private val configuredSampleRate: Float,
     private val startRecordingImmediately: Boolean,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
@@ -81,7 +82,7 @@ internal class SessionReplayFeature(
         textAndInputPrivacy,
         touchPrivacy,
         imagePrivacy,
-        RateBasedSampler(sampleRate),
+        configuredSampleRate = sampleRate,
         startRecordingImmediately,
         DefaultRecorderProvider(
             sdkCore,
@@ -156,7 +157,7 @@ internal class SessionReplayFeature(
         // useContextThread = false, because the read will be on the same caller thread (in a WebViewTracking) during
         // the SDK initialization, so we don't want to block there.
         sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
-            it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
+            it[SESSION_REPLAY_SAMPLE_RATE_KEY] = configuredSampleRate.toLong()
             it[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] = startRecordingImmediately
             it[SESSION_REPLAY_TOUCH_PRIVACY_KEY] = touchPrivacy.toString().lowercase(Locale.US)
             it[SESSION_REPLAY_IMAGE_PRIVACY_KEY] = imagePrivacy.toString().lowercase(Locale.US)
@@ -232,8 +233,8 @@ internal class SessionReplayFeature(
                 ?.let { sessionData ->
                     val alreadySeenSession = currentRumSessionId.get() == sessionData.sessionId
                     if (shouldHandleSession(alreadySeenSession)) {
-                        applySampling(alreadySeenSession)
-                        modifyShouldRecordState(sessionData)
+                        applySampling(alreadySeenSession, sessionData)
+                        modifyShouldRecordState(alreadySeenSession)
                         handleRecording(sessionData)
                     }
                 }
@@ -252,41 +253,46 @@ internal class SessionReplayFeature(
     }
 
     private data class SessionData(
-        val keepSession: Boolean,
-        val sessionId: String
+        val sessionId: String,
+        val sessionSampleRate: Float
     )
 
     private fun parseSessionMetadata(sessionMetadata: Map<*, *>): SessionData? {
-        val keepSession = sessionMetadata[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
         val sessionId = sessionMetadata[RUM_SESSION_ID_BUS_MESSAGE_KEY] as? String
+        val sessionSampleRate = sessionMetadata[RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY] as? Float
 
-        if (keepSession == null || sessionId == null) {
+        if (sessionId == null || sessionSampleRate == null) {
             logEventMissingMandatoryFieldsError()
             return null
         }
 
-        return SessionData(keepSession, sessionId)
+        return SessionData(sessionId, sessionSampleRate)
     }
 
     private fun shouldHandleSession(alreadySeenSession: Boolean): Boolean {
         return !alreadySeenSession || userIntentToRecordChanged.get()
     }
 
-    private fun applySampling(alreadySeenSession: Boolean) {
+    private fun applySampling(alreadySeenSession: Boolean, sessionData: SessionData) {
         if (!alreadySeenSession) {
-            isSessionSampledIn.set(rateBasedSampler.sample(Unit))
+            isSessionSampledIn.set(
+                DeterministicSampler(
+                    idConverter = SessionSamplingIdProvider::provideId,
+                    sampleRate = DeterministicSampling.combinedSampleRate(
+                        sessionSampleRate = sessionData.sessionSampleRate,
+                        featureSampleRate = configuredSampleRate
+                    )
+                ).sample(sessionData.sessionId)
+            )
         }
     }
 
-    private fun modifyShouldRecordState(sessionData: SessionData) {
-        val isSessionEligible = sessionData.keepSession && isSessionSampledIn.get()
-        if (isSessionEligible) {
+    private fun modifyShouldRecordState(alreadySeenSession: Boolean) {
+        if (isSessionSampledIn.get()) {
             shouldRecord.set(userIntentToRecord.get())
         } else {
             shouldRecord.set(false)
-            if (!sessionData.keepSession) {
-                logNotKeptMessage()
-            } else {
+            if (!alreadySeenSession) {
                 logSampledOutMessage()
             }
         }
@@ -305,14 +311,6 @@ internal class SessionReplayFeature(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             { EVENT_MISSING_MANDATORY_FIELDS }
-        )
-    }
-
-    private fun logNotKeptMessage() {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
-            { SESSION_NOT_KEPT_MESSAGE }
         )
     }
 
@@ -417,21 +415,19 @@ internal class SessionReplayFeature(
             "be initialized without the Application context."
         internal const val SESSION_SAMPLED_OUT_MESSAGE = "This session was sampled out from" +
             " recording. No replay will be provided for it."
-        internal const val SESSION_NOT_KEPT_MESSAGE =
-            "This session was not kept. No replay will be provided for it."
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Session Replay feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Session Replay feature received an event with unknown value of \"type\" property=%s."
         internal const val EVENT_MISSING_MANDATORY_FIELDS = "Session Replay feature received an " +
-            "event where one or more mandatory (keepSession) fields" +
+            "event where one or more mandatory (sessionId, sessionSampleRate) fields" +
             " are either missing or have wrong type."
         internal const val CANNOT_START_RECORDING_NOT_INITIALIZED =
             "Cannot start session recording, because Session Replay feature is not initialized."
         const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
-        const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
+        internal const val RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY = "sessionSampleRate"
         internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
         internal const val SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY = "session_replay_text_and_input_privacy"
         internal const val SESSION_REPLAY_IMAGE_PRIVACY_KEY = "session_replay_image_privacy"

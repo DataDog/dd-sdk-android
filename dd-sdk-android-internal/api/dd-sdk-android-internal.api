@@ -310,6 +310,16 @@ public final class com/datadog/android/internal/profiling/TTIDRumContext {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/sampling/DeterministicSampling {
+	public static final field INSTANCE Lcom/datadog/android/internal/sampling/DeterministicSampling;
+	public final fun combinedSampleRate (FF)F
+}
+
+public final class com/datadog/android/internal/sampling/SessionSamplingIdProvider {
+	public static final field INSTANCE Lcom/datadog/android/internal/sampling/SessionSamplingIdProvider;
+	public final fun provideId-I7RO_PI (Ljava/lang/String;)J
+}
+
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
