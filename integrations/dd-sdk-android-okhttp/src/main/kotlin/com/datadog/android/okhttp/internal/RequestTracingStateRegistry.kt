@@ -89,7 +89,7 @@ internal class RequestTracingStateRegistry(
         newState: RequestTracingState
     ) = update(call) { current ->
         newState.copy(
-            requestInfoBuilder = current.requestInfoBuilder.restoreUUIDTag(current.createRequestInfo())
+            requestInfoBuilder = newState.requestInfoBuilder.restoreUUIDTag(current.createRequestInfo())
         )
     }
 

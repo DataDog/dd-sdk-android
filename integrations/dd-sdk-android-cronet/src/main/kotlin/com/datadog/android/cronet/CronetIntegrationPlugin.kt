@@ -127,11 +127,13 @@ class CronetIntegrationPlugin internal constructor(
             )
 
         private fun ApmNetworkInstrumentationConfiguration.createDistributedTracingInstrumentation(
-            rumInstrumentationExist: Boolean
-        ): ApmNetworkInstrumentation? = if (rumInstrumentationExist) {
+            rumInstrumentationExists: Boolean
+        ): ApmNetworkInstrumentation? = if (rumInstrumentationExists) {
             DatadogTracingToolkit.createApmNetworkInstrumentation(
                 CRONET_NETWORK_INSTRUMENTATION_NAME,
-                copy().setHeaderPropagationOnly().setTraceOrigin(ORIGIN_RUM, replace = false)
+                copy()
+                    .setHeaderPropagationOnly()
+                    .setTraceOrigin(ORIGIN_RUM, replace = true)
                     .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
             )
         } else {
@@ -139,8 +141,8 @@ class CronetIntegrationPlugin internal constructor(
         }
 
         private fun ApmNetworkInstrumentationConfiguration.createApmInstrumentation(
-            rumInstrumentationExist: Boolean
-        ): ApmNetworkInstrumentation? = if (!isHeaderPropagationOnly() || !rumInstrumentationExist) {
+            rumInstrumentationExists: Boolean
+        ): ApmNetworkInstrumentation? = if (!isHeaderPropagationOnly() || !rumInstrumentationExists) {
             DatadogTracingToolkit.createApmNetworkInstrumentation(
                 CRONET_NETWORK_INSTRUMENTATION_NAME,
                 this

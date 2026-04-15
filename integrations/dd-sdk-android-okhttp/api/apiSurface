@@ -26,7 +26,6 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
     override fun build(): DatadogInterceptor
     fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
     fun trackResourceHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()): Builder
-fun okhttp3.OkHttpClient.Builder.configureDatadogInstrumentation(com.datadog.android.trace.ApmNetworkInstrumentationConfiguration?, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration?)
 class com.datadog.android.okhttp.OkHttpIntegrationPlugin
   fun build(): okhttp3.OkHttpClient
 DEPRECATED data class com.datadog.android.okhttp.TraceContext

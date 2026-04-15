@@ -18,7 +18,7 @@ import okhttp3.Response
 internal class RumInstrumentationOkHttpAdapter(
     private val registry: RequestTracingStateRegistry,
     private val rumNetworkInstrumentation: RumNetworkInstrumentation,
-    private val distributedTracingInstrumentation: ApmNetworkInstrumentation?
+    internal val distributedTracingInstrumentation: ApmNetworkInstrumentation?
 ) : Interceptor {
     private val internalLogger: InternalLogger
         get() = (rumNetworkInstrumentation.sdkCore as? FeatureSdkCore)?.internalLogger

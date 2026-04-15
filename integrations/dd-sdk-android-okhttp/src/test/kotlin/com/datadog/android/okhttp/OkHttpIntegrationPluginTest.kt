@@ -20,6 +20,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
@@ -325,6 +326,30 @@ internal class OkHttpIntegrationPluginTest {
         // Then
         assertThat(secondResult).isSameAs(firstResult)
         verify(mockBuilderDelegate).build()
+    }
+
+    @Test
+    fun `M change to ORIGIN_RUM on distributedTracing W build() {APM has custom origin}`(
+        @StringForgery fakeCustomOrigin: String
+    ) {
+        // Given
+        val testedPlugin = OkHttpIntegrationPlugin(
+            mockBuilderDelegate,
+            rumConfiguration = RumNetworkInstrumentationConfiguration(),
+            apmConfiguration = ApmNetworkInstrumentationConfiguration(listOf("example.com"))
+                .setTraceOrigin(fakeCustomOrigin)
+        )
+
+        // When
+        testedPlugin.build()
+
+        // Then
+        argumentCaptor<Interceptor> {
+            verify(mockBuilderDelegate, times(2)).addInterceptor(capture())
+            val rumAdapter = firstValue as RumInstrumentationOkHttpAdapter
+            assertThat(rumAdapter.distributedTracingInstrumentation?.traceOrigin)
+                .isEqualTo(OkHttpIntegrationPlugin.ORIGIN_RUM)
+        }
     }
 
     companion object {

@@ -37,9 +37,10 @@ import okhttp3.OkHttpClient
  * @param rumInstrumentationConfiguration optional RUM configuration. When provided, HTTP requests
  * will be automatically tracked as RUM resources with timing information.
  */
-@ExperimentalTraceApi
 @ExperimentalRumApi
-fun OkHttpClient.Builder.configureDatadogInstrumentation(
+@ExperimentalTraceApi
+@Suppress("PackageNameVisibility")
+internal fun OkHttpClient.Builder.configureDatadogInstrumentation(
     apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?,
     rumInstrumentationConfiguration: RumNetworkInstrumentationConfiguration?
 ) = OkHttpIntegrationPlugin(this, rumInstrumentationConfiguration, apmInstrumentationConfiguration)
@@ -165,8 +166,8 @@ class OkHttpIntegrationPlugin internal constructor(
             )
 
         private fun ApmNetworkInstrumentationConfiguration.createApmInstrumentation(
-            rumInstrumentationExist: Boolean
-        ) = if (!isHeaderPropagationOnly() || !rumInstrumentationExist) {
+            rumInstrumentationExists: Boolean
+        ) = if (!isHeaderPropagationOnly() || !rumInstrumentationExists) {
             DatadogTracingToolkit.createApmNetworkInstrumentation(
                 OKHTTP_NETWORK_INSTRUMENTATION_NAME,
                 this
@@ -182,7 +183,7 @@ class OkHttpIntegrationPlugin internal constructor(
                 OKHTTP_NETWORK_INSTRUMENTATION_NAME,
                 configuration = copy()
                     .setHeaderPropagationOnly()
-                    .setTraceOrigin(ORIGIN_RUM, replace = false)
+                    .setTraceOrigin(ORIGIN_RUM, replace = true)
                     .setTraceScope(ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS)
             )
         } else {
