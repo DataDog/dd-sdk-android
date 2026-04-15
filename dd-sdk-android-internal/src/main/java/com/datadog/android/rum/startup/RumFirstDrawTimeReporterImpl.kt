@@ -4,22 +4,23 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.startup
+package com.datadog.android.rum.startup
 
 import android.app.Activity
 import android.os.Handler
 import android.os.Message
+import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
-import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 
-internal class RumFirstDrawTimeReporterImpl(
-    private val internalLogger: InternalLogger,
+class RumFirstDrawTimeReporterImpl(
     private val timeProviderNs: () -> Long,
-    private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
-    private val handler: Handler
+    private val windowCallbacksRegistry: WindowCallbacksRegistry,
+    private val handler: Handler,
+    private val logTag: String = "DD/AppLaunch",
+    private val warnLogger: (message: String, throwable: Throwable) -> Unit = { message, throwable ->
+        Log.w(logTag, message, throwable)
+    }
 ) : RumFirstDrawTimeReporter {
 
     override fun subscribeToFirstFrameDrawn(
@@ -30,7 +31,7 @@ internal class RumFirstDrawTimeReporterImpl(
         val decorView = window.peekDecorView()
 
         if (decorView == null) {
-            val listener = object : RumWindowCallbackListener {
+            val listener = object : WindowCallbackListener {
                 override fun onContentChanged() {
                     windowCallbacksRegistry.removeListener(activity, this)
                     onDecorViewReady(activity, callback)
@@ -90,12 +91,7 @@ internal class RumFirstDrawTimeReporterImpl(
                         try {
                             decorView.viewTreeObserver.removeOnDrawListener(this)
                         } catch (e: IllegalStateException) {
-                            internalLogger.log(
-                                InternalLogger.Level.WARN,
-                                InternalLogger.Target.TELEMETRY,
-                                { "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver" },
-                                e
-                            )
+                            warnLogger("RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver", e)
                         }
                     }
                 }
@@ -106,12 +102,7 @@ internal class RumFirstDrawTimeReporterImpl(
             try {
                 decorView.viewTreeObserver.addOnDrawListener(listener)
             } catch (e: IllegalStateException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.TELEMETRY,
-                    { "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver" },
-                    e
-                )
+                warnLogger("RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver", e)
             }
         }
     }

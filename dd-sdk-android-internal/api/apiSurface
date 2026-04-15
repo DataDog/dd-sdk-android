@@ -246,6 +246,23 @@ fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
 fun formatIsoUtc(Long): String
+object com.datadog.android.rum.AppLaunchPreInitCollector
+  enum State
+    - NOT_INSTALLED
+    - IDLE
+    - CAPTURING
+    - COMPLETE
+    - CLAIMED
+  val state: State
+  var processStartNs: Long
+  var activityOnCreateNs: Long
+  var firstFrameNs: Long
+  var hasSavedInstanceState: Boolean
+  var isFirstActivityForProcess: Boolean
+  var activity: java.lang.ref.WeakReference<android.app.Activity>?
+  fun install(android.app.Application)
+  fun claim(): Boolean
+  fun addFirstFrameCallback((Long) -> Unit)
 class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
   override fun onCreate(): Boolean
   override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
@@ -256,5 +273,22 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   companion object 
     var processImportance: Int
     var createTimeNs: Long
+interface com.datadog.android.rum.startup.RumFirstDrawTimeReporter
+  interface Callback
+    fun onFirstFrameDrawn(Long)
+  fun subscribeToFirstFrameDrawn(android.app.Activity, Callback)
+class com.datadog.android.rum.startup.RumFirstDrawTimeReporterImpl : RumFirstDrawTimeReporter
+  constructor(() -> Long, WindowCallbacksRegistry, android.os.Handler, String = "DD/AppLaunch", (String) -> Unit = { message, throwable ->
+        Log.w(logTag, message, throwable)
+    })
+  override fun subscribeToFirstFrameDrawn(android.app.Activity, RumFirstDrawTimeReporter.Callback)
+interface com.datadog.android.rum.startup.WindowCallbackListener
+  fun onContentChanged()
+interface com.datadog.android.rum.startup.WindowCallbacksRegistry
+  fun addListener(android.app.Activity, WindowCallbackListener)
+  fun removeListener(android.app.Activity, WindowCallbackListener)
+class com.datadog.android.rum.startup.WindowCallbacksRegistryImpl : WindowCallbacksRegistry
+  override fun addListener(android.app.Activity, WindowCallbackListener)
+  override fun removeListener(android.app.Activity, WindowCallbackListener)
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

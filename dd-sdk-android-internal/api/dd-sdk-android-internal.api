@@ -572,6 +572,36 @@ public final class com/datadog/android/internal/utils/TimeExtKt {
 	public static final fun formatIsoUtc (J)Ljava/lang/String;
 }
 
+public final class com/datadog/android/rum/AppLaunchPreInitCollector {
+	public static final field INSTANCE Lcom/datadog/android/rum/AppLaunchPreInitCollector;
+	public final fun addFirstFrameCallback (Lkotlin/jvm/functions/Function1;)V
+	public final fun claim ()Z
+	public final fun getActivity ()Ljava/lang/ref/WeakReference;
+	public final fun getActivityOnCreateNs ()J
+	public final fun getFirstFrameNs ()J
+	public final fun getHasSavedInstanceState ()Z
+	public final fun getProcessStartNs ()J
+	public final fun getState ()Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public final fun install (Landroid/app/Application;)V
+	public final fun isFirstActivityForProcess ()Z
+	public final fun setActivity (Ljava/lang/ref/WeakReference;)V
+	public final fun setActivityOnCreateNs (J)V
+	public final fun setFirstActivityForProcess (Z)V
+	public final fun setFirstFrameNs (J)V
+	public final fun setHasSavedInstanceState (Z)V
+	public final fun setProcessStartNs (J)V
+}
+
+public final class com/datadog/android/rum/AppLaunchPreInitCollector$State : java/lang/Enum {
+	public static final field CAPTURING Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public static final field CLAIMED Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public static final field COMPLETE Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public static final field IDLE Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public static final field NOT_INSTALLED Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+	public static fun values ()[Lcom/datadog/android/rum/AppLaunchPreInitCollector$State;
+}
+
 public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
 	public static final field Companion Lcom/datadog/android/rum/DdRumContentProvider$Companion;
 	public fun <init> ()V
@@ -588,6 +618,35 @@ public final class com/datadog/android/rum/DdRumContentProvider$Companion {
 	public final fun getProcessImportance ()I
 	public final fun setCreateTimeNs (J)V
 	public final fun setProcessImportance (I)V
+}
+
+public abstract interface class com/datadog/android/rum/startup/RumFirstDrawTimeReporter {
+	public abstract fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback;)V
+}
+
+public abstract interface class com/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback {
+	public abstract fun onFirstFrameDrawn (J)V
+}
+
+public final class com/datadog/android/rum/startup/RumFirstDrawTimeReporterImpl : com/datadog/android/rum/startup/RumFirstDrawTimeReporter {
+	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/startup/WindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/startup/WindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback;)V
+}
+
+public abstract interface class com/datadog/android/rum/startup/WindowCallbackListener {
+	public abstract fun onContentChanged ()V
+}
+
+public abstract interface class com/datadog/android/rum/startup/WindowCallbacksRegistry {
+	public abstract fun addListener (Landroid/app/Activity;Lcom/datadog/android/rum/startup/WindowCallbackListener;)V
+	public abstract fun removeListener (Landroid/app/Activity;Lcom/datadog/android/rum/startup/WindowCallbackListener;)V
+}
+
+public final class com/datadog/android/rum/startup/WindowCallbacksRegistryImpl : com/datadog/android/rum/startup/WindowCallbacksRegistry {
+	public fun <init> ()V
+	public fun addListener (Landroid/app/Activity;Lcom/datadog/android/rum/startup/WindowCallbackListener;)V
+	public fun removeListener (Landroid/app/Activity;Lcom/datadog/android/rum/startup/WindowCallbackListener;)V
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {

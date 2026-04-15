@@ -16,7 +16,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
-import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
+import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration

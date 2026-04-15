@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.startup
+package com.datadog.android.rum.startup
 
 import android.app.Activity
 import android.os.Handler
@@ -12,49 +12,32 @@ import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
-import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
-import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
-import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
-)
+@ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
-class RumFirstDrawTimeReporterTest {
+class RumFirstDrawTimeReporterImplTest {
 
     private var currentTime: Duration = 0.seconds
 
     @Mock
-    private lateinit var windowCallbackRegistry: RumWindowCallbacksRegistry
+    private lateinit var windowCallbackRegistry: WindowCallbacksRegistry
 
     @Mock
     private lateinit var handler: Handler
@@ -74,28 +57,11 @@ class RumFirstDrawTimeReporterTest {
     @Mock
     private lateinit var viewTreeObserver: ViewTreeObserver
 
-    @Mock
-    private lateinit var internalLogger: InternalLogger
-
     private lateinit var reporter: RumFirstDrawTimeReporterImpl
-
-    private lateinit var weakActivity: WeakReference<Activity>
-
-    private lateinit var scenario: RumStartupScenario
 
     @BeforeEach
     fun `set up`() {
-        weakActivity = WeakReference(activity)
-
-        scenario = RumStartupScenario.Cold(
-            initialTime = Time(0, 0),
-            hasSavedInstanceStateBundle = true,
-            activity = weakActivity,
-            appStartActivityOnCreateGapNs = 0.seconds.inWholeNanoseconds
-        )
-
         reporter = RumFirstDrawTimeReporterImpl(
-            internalLogger = internalLogger,
             timeProviderNs = { currentTime.inWholeNanoseconds },
             windowCallbacksRegistry = windowCallbackRegistry,
             handler = handler
@@ -108,7 +74,7 @@ class RumFirstDrawTimeReporterTest {
         whenever(decorView.viewTreeObserver) doReturn viewTreeObserver
 
         whenever(windowCallbackRegistry.addListener(any(), any())).doAnswer {
-            val argListener = it.getArgument<RumWindowCallbackListener>(1)
+            val argListener = it.getArgument<WindowCallbackListener>(1)
             argListener.onContentChanged()
         }
 
@@ -137,8 +103,8 @@ class RumFirstDrawTimeReporterTest {
 
         // Then
         inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
-            verify(windowCallbackRegistry).addListener(eq(activity), any())
-            verify(windowCallbackRegistry).removeListener(eq(activity), any())
+            verify(windowCallbackRegistry).addListener(any(), any())
+            verify(windowCallbackRegistry).removeListener(any(), any())
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -257,7 +223,7 @@ class RumFirstDrawTimeReporterTest {
     }
 
     @Test
-    fun `M call internalLogger W addOnDrawListener { if it throws IllegalStateException }`() {
+    fun `M not call callback W addOnDrawListener { if it throws IllegalStateException }`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.addOnDrawListener(any())) doThrow illegalStateException
@@ -268,25 +234,15 @@ class RumFirstDrawTimeReporterTest {
         // Then
         verifyNoInteractions(callback)
 
-        inOrder(viewTreeObserver, internalLogger) {
+        inOrder(viewTreeObserver) {
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).addOnDrawListener(any())
-
-            verify(internalLogger).log(
-                level = eq(InternalLogger.Level.WARN),
-                target = eq(InternalLogger.Target.TELEMETRY),
-                messageBuilder = any(),
-                throwable = eq(illegalStateException),
-                onlyOnce = eq(false),
-                additionalProperties = anyOrNull()
-            )
-
             verifyNoMoreInteractions()
         }
     }
 
     @Test
-    fun `M call internalLogger W removeOnDrawListener { if it throws IllegalStateException }`() {
+    fun `M call callback W removeOnDrawListener { if it throws IllegalStateException }`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.removeOnDrawListener(any())) doThrow illegalStateException
@@ -297,9 +253,7 @@ class RumFirstDrawTimeReporterTest {
         reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        verifyNoInteractions(callback)
-
-        inOrder(callback, viewTreeObserver, internalLogger) {
+        inOrder(callback, viewTreeObserver) {
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -313,16 +267,6 @@ class RumFirstDrawTimeReporterTest {
 
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
-
-            verify(internalLogger).log(
-                level = eq(InternalLogger.Level.WARN),
-                target = eq(InternalLogger.Target.TELEMETRY),
-                messageBuilder = any(),
-                throwable = eq(illegalStateException),
-                onlyOnce = eq(false),
-                additionalProperties = anyOrNull()
-            )
-
             verifyNoMoreInteractions()
         }
     }
