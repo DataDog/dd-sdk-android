@@ -4,13 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.utils
+package com.datadog.android.rum.startup
 
 import android.app.Activity
 import android.view.Window
 import com.datadog.android.internal.utils.FixedWindowCallback
-import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
-import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,7 +30,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class RumWindowCallbacksRegistryTest {
+class WindowCallbacksRegistryTest {
 
     @Mock
     private lateinit var activity: Activity
@@ -44,11 +42,11 @@ class RumWindowCallbacksRegistryTest {
     private lateinit var existingCallback: Window.Callback
 
     @Mock
-    private lateinit var listener: RumWindowCallbackListener
+    private lateinit var listener: WindowCallbackListener
 
     private lateinit var callback: Window.Callback
 
-    private val registry = RumWindowCallbacksRegistryImpl()
+    private val registry = WindowCallbacksRegistryImpl()
 
     @BeforeEach
     fun setUp() {
@@ -100,7 +98,7 @@ class RumWindowCallbacksRegistryTest {
         registry.addListener(activity, listener)
         val callbackAfterListener1 = window.callback
 
-        val listener2 = mock<RumWindowCallbackListener>()
+        val listener2 = mock<WindowCallbackListener>()
         registry.addListener(activity, listener2)
 
         // When
@@ -132,10 +130,10 @@ class RumWindowCallbacksRegistryTest {
     }
 
     @Test
-    fun `M not restore the callback W removeListener { if there is another RumWindowCallbacksRegistry }`() {
+    fun `M not restore the callback W removeListener { if there is another WindowCallbacksRegistry }`() {
         // Given
-        val anotherRegistry = RumWindowCallbacksRegistryImpl()
-        val anotherListener = mock<RumWindowCallbackListener>()
+        val anotherRegistry = WindowCallbacksRegistryImpl()
+        val anotherListener = mock<WindowCallbackListener>()
 
         registry.addListener(activity, listener)
         val callback1 = window.callback
@@ -152,10 +150,10 @@ class RumWindowCallbacksRegistryTest {
     }
 
     @Test
-    fun `M call listeners from both RumWindowCallbacksRegistries W addListener { onContentChanged called }`() {
+    fun `M call listeners from both WindowCallbacksRegistries W addListener { onContentChanged called }`() {
         // Given
-        val anotherRegistry = RumWindowCallbacksRegistryImpl()
-        val anotherListener = mock<RumWindowCallbackListener>()
+        val anotherRegistry = WindowCallbacksRegistryImpl()
+        val anotherListener = mock<WindowCallbackListener>()
 
         registry.addListener(activity, listener)
         val callback1 = window.callback
