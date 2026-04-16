@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-@file:Suppress("INVISIBLE_REFERENCE")
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
 package com.datadog.android.sample
 
