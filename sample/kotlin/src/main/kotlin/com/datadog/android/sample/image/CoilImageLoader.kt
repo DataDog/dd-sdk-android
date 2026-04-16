@@ -4,24 +4,24 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sample.image
 
 import android.content.Context
 import android.widget.ImageView
 import coil.Coil
 import coil.load
-import com.datadog.android.Datadog
-import com.datadog.android.coil.DatadogCoilRequestListener
+import com.datadog.android.sample.R
 import okhttp3.OkHttpClient
 
 internal class CoilImageLoader : ImageLoader {
 
-    private val listener = DatadogCoilRequestListener(Datadog.getInstance())
-
     override val type: ImageLoaderType = ImageLoaderType.COIL
 
     override fun load(url: String, imageView: ImageView) {
-        imageView.load(url) { listener(listener) }
+        imageView.load(url) {
+            placeholder(R.drawable.ph_default)
+            error(R.drawable.ph_error)
+        }
     }
 
     companion object {

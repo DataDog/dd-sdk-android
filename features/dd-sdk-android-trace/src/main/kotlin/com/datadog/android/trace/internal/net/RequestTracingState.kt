@@ -19,14 +19,14 @@ import com.datadog.android.trace.api.span.DatadogSpan
  *
  * This class allows binding RUM to APM.
  *
- * @property tracedRequestInfoBuilder the modifier for the HTTP request info, containing any added headers.
+ * @property requestInfoBuilder the modifier for the HTTP request info, containing any added headers.
  * @property isSampled whether the request trace was sampled.
  * @property span the trace span created for this request, or null if not sampled or tracing is disabled.
  * @property sampleRate the sample rate used for the sampling decision.
  */
 @InternalApi
 data class RequestTracingState(
-    val tracedRequestInfoBuilder: HttpRequestInfoBuilder,
+    val requestInfoBuilder: HttpRequestInfoBuilder,
     val isSampled: Boolean = false,
     val span: DatadogSpan? = null,
     val sampleRate: Float? = null
@@ -36,7 +36,7 @@ data class RequestTracingState(
      * Returns the [HttpRequestInfo] with any modifications applied during tracing setup.
      * This includes tracing headers that were added to the original request.
      */
-    fun createModifiedRequestInfo(): HttpRequestInfo = tracedRequestInfoBuilder.build()
+    fun createRequestInfo(): HttpRequestInfo = requestInfoBuilder.build()
 }
 
 /**

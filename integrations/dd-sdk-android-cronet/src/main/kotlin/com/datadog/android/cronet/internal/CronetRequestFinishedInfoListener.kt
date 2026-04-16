@@ -5,6 +5,7 @@
  */
 package com.datadog.android.cronet.internal
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -22,6 +23,7 @@ internal class CronetRequestFinishedInfoListener(
     internal val rumNetworkInstrumentation: RumNetworkInstrumentation
 ) : RequestFinishedInfo.Listener(executor) {
 
+    @WorkerThread
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
         val requestInfo = finishedInfo.annotations?.filterIsInstance<HttpRequestInfo>()?.firstOrNull()
         val distributingTracingState = finishedInfo.annotations?.filterIsInstance<RequestTracingState>()?.firstOrNull()

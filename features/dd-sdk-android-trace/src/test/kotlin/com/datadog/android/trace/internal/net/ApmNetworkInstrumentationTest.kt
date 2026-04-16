@@ -926,7 +926,7 @@ internal class ApmNetworkInstrumentationTest {
     // endregion
 
     private fun createTraceState(isSampled: Boolean = true) = RequestTracingState(
-        tracedRequestInfoBuilder = mockRequestBuilder,
+        requestInfoBuilder = mockRequestBuilder,
         isSampled = isSampled,
         span = mockSpan,
         sampleRate = fakeSampleRate

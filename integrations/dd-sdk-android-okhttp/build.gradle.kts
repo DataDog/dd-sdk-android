@@ -50,7 +50,9 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":features:dd-sdk-android-trace"))
+    // TODO RUM-15626: Move TraceContextInjection to dd-sdk-android-trace-api module,
+    //  then replace api(dd-sdk-android-trace) with api(dd-sdk-android-trace-api).
+    api(project(":features:dd-sdk-android-trace"))
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
@@ -64,6 +66,7 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

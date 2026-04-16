@@ -1,3 +1,36 @@
+# 3.9.0 / 2026-04-16
+
+* [FEATURE] Track GraphQL errors. See [#3275](https://github.com/DataDog/dd-sdk-android/pull/3275)
+* [BUGFIX] Feature Flags: Fix cold-start stale cache: `hasFlags()` now waits for persistence load. See [#3282](https://github.com/DataDog/dd-sdk-android/pull/3282)
+* [BUGFIX] Fix `compose-ui` compatibility issue. See [#3303](https://github.com/DataDog/dd-sdk-android/pull/3303)
+* [BUGFIX] Fix `DefaultAppStartTimeProvider` guard to handle `result` > `createTimeNs`. See [#3339](https://github.com/DataDog/dd-sdk-android/pull/3339)
+* [BUGFIX] Fix `B3`/`B3multi` propagation headers being silently dropped. See [#3347](https://github.com/DataDog/dd-sdk-android/pull/3347)
+* [BUGFIX] Fix memory leak in app launch. See [#3349](https://github.com/DataDog/dd-sdk-android/pull/3349)
+* [IMPROVEMENT] Close flags precomputed assignments body for unsuccessful response. See [#3280](https://github.com/DataDog/dd-sdk-android/pull/3280)
+* [IMPROVEMENT] Update profiling telemetry duration, add callback delay data. See [#3284](https://github.com/DataDog/dd-sdk-android/pull/3284)
+* [IMPROVEMENT] Make flush accessible from `InternalProxy`. See [#3292](https://github.com/DataDog/dd-sdk-android/pull/3292)
+* [IMPROVEMENT] Print error when no-op core is invoked. See [#3290](https://github.com/DataDog/dd-sdk-android/pull/3290)
+* [IMPROVEMENT] Use modified request in resource headers feature. See [#3302](https://github.com/DataDog/dd-sdk-android/pull/3302)
+* [IMPROVEMENT] Don't send RUM context when `sessionId` is `NULL_UUID`. See [#3304](https://github.com/DataDog/dd-sdk-android/pull/3304)
+* [MAINTENANCE] Exclude test variant, test fixtures and sample apps folders from code coverage setup. See [#3281](https://github.com/DataDog/dd-sdk-android/pull/3281)
+* [MAINTENANCE] Fix detekt `InvalidStringFormat` false alarms. See [#3278](https://github.com/DataDog/dd-sdk-android/pull/3278)
+* [MAINTENANCE] Extract drawable key generation from `ResourcesLRUCache`. See [#3279](https://github.com/DataDog/dd-sdk-android/pull/3279)
+* [MAINTENANCE] Improve `local_ci.sh`. See [#3285](https://github.com/DataDog/dd-sdk-android/pull/3285)
+* [MAINTENANCE] Update RUM schema to include profiling status for RUM errors and operation step vitals. See [#3286](https://github.com/DataDog/dd-sdk-android/pull/3286)
+* [MAINTENANCE] Add Detekt rule to enforce copyright headers on Kotlin source files. See [#3291](https://github.com/DataDog/dd-sdk-android/pull/3291)
+* [MAINTENANCE] Refactor test `Forge` helpers. See [#3288](https://github.com/DataDog/dd-sdk-android/pull/3288)
+* [MAINTENANCE] Add Datadog Test Observability for tests run on macOS runners. See [#3295](https://github.com/DataDog/dd-sdk-android/pull/3295)
+* [MAINTENANCE] Local CI improvements. See [#3313](https://github.com/DataDog/dd-sdk-android/pull/3313)
+* [MAINTENANCE] Make build tasks compatible with configuration cache. See [#3332](https://github.com/DataDog/dd-sdk-android/pull/3332)
+* [MAINTENANCE] Update `profile-event-schema.json`. See [#3336](https://github.com/DataDog/dd-sdk-android/pull/3336)
+* [MAINTENANCE] Update `gradle-dependency-license-plugin` to version 0.6.0. See [#3340](https://github.com/DataDog/dd-sdk-android/pull/3340)
+* [MAINTENANCE] Minor improvements. See [#3346](https://github.com/DataDog/dd-sdk-android/pull/3346)
+* [MAINTENANCE] Migrate `ProcessLifecycleMonitor` from `core` to `internal`. See [#3345](https://github.com/DataDog/dd-sdk-android/pull/3345)
+* [MAINTENANCE] Add shadow reviewer workflow. See [#3344](https://github.com/DataDog/dd-sdk-android/pull/3344)
+* [MAINTENANCE] Improve sample app's image libraries. See [#3353](https://github.com/DataDog/dd-sdk-android/pull/3353)
+* [MAINTENANCE] Remove `kapt` by bumping Glide version. See [#3351](https://github.com/DataDog/dd-sdk-android/pull/3351)
+* [MAINTENANCE] Change location of Play SDK console verification token in the published lib. See [#3368](https://github.com/DataDog/dd-sdk-android/pull/3368)
+
 # 3.8.0 / 2026-03-18
 
 * [FEATURE] Support interstitial Activities case for TTID reporting:

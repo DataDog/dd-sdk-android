@@ -27,8 +27,10 @@ object com.datadog.android.trace.api.DatadogTracingConstants
     const val TRACE_RATE_LIMIT: String
     const val PARTIAL_FLUSH_MIN_SPANS: String
     const val TRACE_SAMPLE_RATE: String
-    const val PROPAGATION_STYLE_EXTRACT: String
-    const val PROPAGATION_STYLE_INJECT: String
+    DEPRECATED const val PROPAGATION_STYLE_EXTRACT: String
+    DEPRECATED const val PROPAGATION_STYLE_INJECT: String
+    const val TRACE_PROPAGATION_STYLE_EXTRACT: String
+    const val TRACE_PROPAGATION_STYLE_INJECT: String
     const val SERVICE_NAME: String
     const val SDK_V2_COMPATIBILITY_FLAG: String
     const val URL_AS_RESOURCE_NAME: String

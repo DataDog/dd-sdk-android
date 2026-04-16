@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
 package com.datadog.android.okhttp
 
@@ -15,8 +16,11 @@ import com.datadog.android.okhttp.otel.addParentSpan
 import com.datadog.android.okhttp.tests.assertj.SpansPayloadAssert
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.tests.ktx.getString
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
@@ -78,11 +82,6 @@ class HeadBasedSamplingTest {
         unregisterGlobalTracer()
         Datadog.stopInstance(stubSdkCore.name)
         mockServer.shutdown()
-    }
-
-    private fun Request.Builder.parentSpan(span: DatadogSpan): Request.Builder {
-        tag(DatadogSpan::class.java, span)
-        return this
     }
 
     @Test
@@ -655,6 +654,478 @@ class HeadBasedSamplingTest {
         GlobalDatadogTracer.clear()
     }
 
+    // region new instrumentation API tests
+
+    @Test
+    fun `M use network sampling rate W call is made { no parent context, new instrumentation }`(forge: Forge) {
+        // Given
+        if (forge.aBool()) {
+            registerGlobalTracer(0.0)
+        }
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 100f)
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .build()
+        ).execute()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
+        val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
+        checkNotNull(leastSignificantTraceId)
+        val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
+        checkNotNull(spanId)
+        val datadogTags = requestSent.getHeader(DATADOG_TAGS_HEADER)
+            ?.toTags()
+        checkNotNull(datadogTags)
+        assertThat(datadogTags).isNotEmpty
+        assertThat(datadogTags).containsKey(MOST_SIGNIFICANT_TRACE_ID_KEY)
+        val mostSignificantTraceId = datadogTags.getValue(MOST_SIGNIFICANT_TRACE_ID_KEY)
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+
+        val spanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(spanPayload)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName("okhttp.request")
+                hasResource("http://${mockServer.hostName}:${mockServer.port}/")
+                hasAgentPsr(1.0)
+
+                hasSamplingPriority(1)
+                hasGenericMetricValue("_top_level", 1)
+                hasSpanKind("client")
+                hasHttpMethod("GET")
+                hasHttpUrl("http://${mockServer.hostName}:${mockServer.port}/")
+                hasHttpStatusCode(200)
+            }
+    }
+
+    @Test
+    fun `M calculate PSR rate W call is made { no parent context, new instrumentation }`(forge: Forge) {
+        // Given
+        if (forge.aBool()) {
+            registerGlobalTracer(0.0)
+        }
+
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 50f)
+
+        // When
+        repeat(10) {
+            mockServer.enqueue(MockResponse())
+            okHttpClient.newCall(
+                Request.Builder()
+                    .url(mockServer.url("/"))
+                    .build()
+            ).execute()
+        }
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        eventsWritten.forEach {
+            val spanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+            SpansPayloadAssert.assertThat(spanPayload)
+                .hasEnv(stubSdkCore.getDatadogContext().env)
+                .hasSpanAtIndexWith(0) {
+                    hasAgentPsr(0.5)
+                }
+        }
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `M respect parent sampling decision W call is made {parent=DatadogTracing, not sampled, new}`(
+        @StringForgery fakeSpanName: String
+    ) {
+        // Given
+        registerGlobalTracer(0.0)
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 100f)
+
+        val parentSpan = GlobalDatadogTracer.get()
+            .buildSpan(fakeSpanName)
+            .start()
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .parentSpan(parentSpan)
+                .build()
+        ).execute()
+        parentSpan.finish()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("0")
+        assertThat(requestSent.getHeader(DATADOG_TRACE_ID_HEADER)).isNotEmpty()
+        assertThat(requestSent.getHeader(DATADOG_SPAN_ID_HEADER)).isNotEmpty()
+        assertThat(requestSent.getHeader(DATADOG_TAGS_HEADER)).isNotEmpty()
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).isEmpty()
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `M respect parent sampling decision W call is made {parent=OTel, not sampled, new}`(
+        @StringForgery fakeInstrumentationName: String,
+        @StringForgery fakeSpanName: String
+    ) {
+        // Given
+        val otelTracer = OtelTracerProvider.Builder(stubSdkCore)
+            .setTracingHeaderTypes(setOf(TracingHeaderType.DATADOG))
+            .setSampleRate(0.0)
+            .build()
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 100f)
+
+        val parentSpan = otelTracer.get(fakeInstrumentationName)
+            .spanBuilder(fakeSpanName)
+            .startSpan()
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .addParentSpan(parentSpan)
+                .build()
+        ).execute()
+        parentSpan.end()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("0")
+        assertThat(requestSent.getHeader(DATADOG_TRACE_ID_HEADER)).isNotEmpty()
+        assertThat(requestSent.getHeader(DATADOG_SPAN_ID_HEADER)).isNotEmpty()
+        assertThat(requestSent.getHeader(DATADOG_TAGS_HEADER)).isNotEmpty()
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).isEmpty()
+    }
+
+    @Test
+    fun `M respect parent sampling decision W call is made {parent=DatadogTracing Span, sampled, new instrumentation}`(
+        @StringForgery fakeSpanName: String
+    ) {
+        // Given
+        registerGlobalTracer(100.0)
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 0f)
+
+        val parentSpan = GlobalDatadogTracer.get()
+            .buildSpan(fakeSpanName)
+            .start()
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .parentSpan(parentSpan)
+                .build()
+        ).execute()
+        parentSpan.finish()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
+        val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
+        checkNotNull(leastSignificantTraceId)
+        val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
+        checkNotNull(spanId)
+        val datadogTags = requestSent.getHeader(DATADOG_TAGS_HEADER)
+            ?.toTags()
+        checkNotNull(datadogTags)
+        assertThat(datadogTags).isNotEmpty
+        assertThat(datadogTags).containsKey(MOST_SIGNIFICANT_TRACE_ID_KEY)
+        val mostSignificantTraceId = datadogTags.getValue(MOST_SIGNIFICANT_TRACE_ID_KEY)
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(2)
+
+        val localSpanPayload = JsonParser.parseString(eventsWritten[0].eventData).asJsonObject
+        SpansPayloadAssert.assertThat(localSpanPayload)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasParentId("0000000000000000")
+                hasAgentPsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
+                hasGenericMetricValue("_top_level", 1)
+            }
+
+        val localSpanId = getLocalSpanId(localSpanPayload)
+
+        val okHttpSpanPayload = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(okHttpSpanPayload)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasParentId(localSpanId.toHexPaddedFromHexString())
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName("okhttp.request")
+                hasResource("http://${mockServer.hostName}:${mockServer.port}/")
+                hasNoAgentPsr()
+                hasNoSamplingPriority()
+                hasNoGenericMetric("_top_level")
+                hasSpanKind("client")
+                hasHttpMethod("GET")
+                hasHttpUrl("http://${mockServer.hostName}:${mockServer.port}/")
+                hasHttpStatusCode(200)
+            }
+    }
+
+    @Test
+    fun `M respect parent sampling decision W call is made {parent=OpenTelemetry Span, sampled, new instrumentation}`(
+        @StringForgery fakeInstrumentationName: String,
+        @StringForgery fakeSpanName: String
+    ) {
+        // Given
+        val otelTracerProvider = OtelTracerProvider.Builder(stubSdkCore)
+            .setTracingHeaderTypes(setOf(TracingHeaderType.DATADOG))
+            .setSampleRate(100.0)
+            .build()
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 0f)
+
+        val parentSpan = otelTracerProvider.get(fakeInstrumentationName)
+            .spanBuilder(fakeSpanName)
+            .startSpan()
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .addParentSpan(parentSpan)
+                .build()
+        ).execute()
+        parentSpan.end()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("2")
+        val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
+        checkNotNull(leastSignificantTraceId)
+        val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
+        checkNotNull(spanId)
+        val datadogTags = requestSent.getHeader(DATADOG_TAGS_HEADER)
+            ?.toTags()
+        checkNotNull(datadogTags)
+        assertThat(datadogTags).isNotEmpty
+        assertThat(datadogTags).containsKey(MOST_SIGNIFICANT_TRACE_ID_KEY)
+        val mostSignificantTraceId = datadogTags.getValue(MOST_SIGNIFICANT_TRACE_ID_KEY)
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(2)
+
+        val localSpanPayload = JsonParser.parseString(eventsWritten[1].eventData).asJsonObject
+        SpansPayloadAssert.assertThat(localSpanPayload)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasParentId("0000000000000000")
+                // OpenTelemetry span will have _dd.rule_psr instead of _dd.agent_psr
+                hasRulePsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
+                hasGenericMetricValue("_top_level", 1)
+            }
+
+        val localSpanId = getLocalSpanId(localSpanPayload)
+
+        val okHttpSpanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(okHttpSpanPayload)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasParentId(localSpanId.toHexPaddedFromHexString())
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName("okhttp.request")
+                hasResource("http://${mockServer.hostName}:${mockServer.port}/")
+                hasNoAgentPsr()
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
+                hasNoGenericMetric("_top_level")
+                hasSpanKind("client")
+                hasHttpMethod("GET")
+                hasHttpUrl("http://${mockServer.hostName}:${mockServer.port}/")
+                hasHttpStatusCode(200)
+            }
+    }
+
+    @Test
+    fun `M respect parent sampling decision W call is made {parent=headers, not sampled, new instrumentation}`(
+        @StringForgery fakeSpanName: String
+    ) {
+        // Given
+        registerGlobalTracer(0.0)
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 100f)
+
+        val parentSpan = GlobalDatadogTracer.get()
+            .buildSpan(fakeSpanName)
+            .start()
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .apply {
+                    GlobalDatadogTracer.get().propagate().inject(
+                        context = parentSpan.context(),
+                        carrier = this
+                    ) { carrier, key, value -> carrier.addHeader(key, value) }
+                }
+                .build()
+        ).execute()
+        parentSpan.finish()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("0")
+        assertThat(requestSent.getHeader(DATADOG_TRACE_ID_HEADER)).isNotEmpty()
+        assertThat(requestSent.getHeader(DATADOG_SPAN_ID_HEADER)).isNotEmpty()
+        assertThat(requestSent.getHeader(DATADOG_TAGS_HEADER)).isNotEmpty()
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).isEmpty()
+    }
+
+    @Test
+    fun `M respect parent sampling decision W call is made {parent=headers, sampled, new instrumentation}`(
+        @StringForgery fakeSpanName: String
+    ) {
+        // Given
+        registerGlobalTracer(100.0)
+
+        mockServer.enqueue(MockResponse())
+        mockServer.start()
+        val okHttpClient = buildInstrumentedClient(sampleRate = 100f)
+
+        val parentSpan = GlobalDatadogTracer.get()
+            .buildSpan(fakeSpanName)
+            .start()
+
+        // When
+        okHttpClient.newCall(
+            Request.Builder()
+                .url(mockServer.url("/"))
+                .apply {
+                    GlobalDatadogTracer.get()
+                        .propagate()
+                        .inject(parentSpan.context(), this) { _, key, value ->
+                            addHeader(key, value)
+                        }
+                }
+                .build()
+        ).execute()
+        parentSpan.finish()
+
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
+        val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
+        checkNotNull(leastSignificantTraceId)
+        val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
+        checkNotNull(spanId)
+        val datadogTags = requestSent.getHeader(DATADOG_TAGS_HEADER)
+            ?.toTags()
+        checkNotNull(datadogTags)
+        assertThat(datadogTags).isNotEmpty
+        assertThat(datadogTags).containsKey(MOST_SIGNIFICANT_TRACE_ID_KEY)
+        val mostSignificantTraceId = datadogTags.getValue(MOST_SIGNIFICANT_TRACE_ID_KEY)
+
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(2)
+
+        val localSpanPayload = JsonParser.parseString(eventsWritten[1].eventData).asJsonObject
+        SpansPayloadAssert.assertThat(localSpanPayload)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasParentId("0000000000000000")
+                hasAgentPsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
+                hasGenericMetricValue("_top_level", 1)
+            }
+
+        val localSpanId = getLocalSpanId(localSpanPayload)
+
+        val okHttpSpanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(okHttpSpanPayload)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(
+                    leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
+                )
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasParentId(localSpanId.toHexPaddedFromHexString())
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName("okhttp.request")
+                hasResource("http://${mockServer.hostName}:${mockServer.port}/")
+                hasNoAgentPsr()
+                // this one will have sampling priority unlike in case of propagation with tagged Span directly,
+                // because there sampling priority is not yet set at the parent during child creation
+                hasSamplingPriority(1)
+                hasNoGenericMetric("_top_level")
+                hasSpanKind("client")
+                hasHttpMethod("GET")
+                hasHttpUrl("http://${mockServer.hostName}:${mockServer.port}/")
+                hasHttpStatusCode(200)
+            }
+    }
+
+    // endregion
+
     private fun String.toTags(): Map<String, String> = split(",")
         .associate { it.split("=").let { it[0] to it[1] } }
 
@@ -664,6 +1135,26 @@ class HeadBasedSamplingTest {
 
     private fun String.toHexPaddedFromDecimalString(): String = with(DatadogTracingToolkit.spanIdConverter) {
         toHexStringPadded(this@toHexPaddedFromDecimalString.toLong())
+    }
+
+    private fun Request.Builder.parentSpan(span: DatadogSpan): Request.Builder {
+        tag(DatadogSpan::class.java, span)
+        return this
+    }
+
+    @OptIn(ExperimentalTraceApi::class, ExperimentalRumApi::class)
+    private fun buildInstrumentedClient(sampleRate: Float = 100f): OkHttpClient {
+        return OkHttpClient.Builder()
+            .configureDatadogInstrumentation(
+                rumInstrumentationConfiguration = null,
+                apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(
+                    mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
+                )
+                    .setTraceContextInjection(TraceContextInjection.ALL)
+                    .setSdkInstanceName(stubSdkCore.name)
+                    .setTraceSampleRate(sampleRate)
+            )
+            .build()
     }
 
     companion object {

@@ -68,23 +68,26 @@ internal fun identifyRequest(request: Request): String {
     }
 }
 
-internal class OkHttpRequestInfo(internal val request: Request) :
+/**
+ * [HttpRequestInfo] implementation backed by an OkHttp [Request].
+ */
+internal class OkHttpRequestInfo(internal val originalRequest: Request) :
     HttpRequestInfo,
     ExtendedRequestInfo,
     MutableHttpRequestInfo {
 
-    override val method: String get() = request.method
-    override val url: String get() = request.url.toString()
-    override val headers: Map<String, List<String>> get() = request.headers.toMultimap()
-    override val contentType: String? get() = request.body?.contentType()?.toString()
-    override fun <T> tag(type: Class<out T>): T? = request.tag(type)
+    override val method: String get() = originalRequest.method
+    override val url: String get() = originalRequest.url.toString()
+    override val headers: Map<String, List<String>> get() = originalRequest.headers.toMultimap()
+    override val contentType: String? get() = originalRequest.body?.contentType()?.toString()
+    override fun <T> tag(type: Class<out T>): T? = originalRequest.tag(type)
     override fun contentLength(): Long? = try {
-        request.body?.contentLength()
+        originalRequest.body?.contentLength()
     } catch (@Suppress("SwallowedException") _: IOException) {
         null
     }
 
-    override fun newBuilder() = OkHttpRequestInfoBuilder(request.newBuilder())
+    override fun newBuilder() = OkHttpRequestInfoBuilder(originalRequest.newBuilder())
 }
 
 /**
@@ -116,5 +119,5 @@ class OkHttpRequestInfoBuilder(private val requestBuilder: Request.Builder) : Ht
 
     override fun <T> addTag(type: Class<in T>, tag: T?) = apply { requestBuilder.tag(type, tag) }
 
-    override fun build(): HttpRequestInfo = OkHttpRequestInfo(requestBuilder.build())
+    override fun build(): HttpRequestInfo = requestBuilder.build().toHttpRequestInfo()
 }
