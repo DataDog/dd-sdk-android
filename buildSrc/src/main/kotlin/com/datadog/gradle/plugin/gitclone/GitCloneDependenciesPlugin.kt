@@ -19,6 +19,7 @@ class GitCloneDependenciesPlugin : Plugin<Project> {
 
         target.tasks
             .register<GitCloneDependenciesTask>(TASK_NAME) {
+                this.projectDirPath.set(project.layout.projectDirectory.asFile.path)
                 this.extension = extension
             }
     }

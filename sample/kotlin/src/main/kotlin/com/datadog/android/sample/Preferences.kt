@@ -10,7 +10,7 @@ import android.content.Context
 import androidx.preference.PreferenceManager
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.datalist.DataSourceType
-import com.datadog.android.sample.picture.ImageLoaderType
+import com.datadog.android.sample.image.ImageLoaderType
 import timber.log.Timber
 
 internal object Preferences {

@@ -17,7 +17,7 @@ data class com.datadog.android.profiling.ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration
 data class com.datadog.android.profiling.model.ProfileEvent
-  constructor(Application, Session? = null, View? = null, LongTask? = null, Vital? = null, kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, Family, Family, kotlin.Long, kotlin.String)
+  constructor(Application, Session? = null, View? = null, LongTask? = null, Vital? = null, kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, Family, Family, kotlin.Long, kotlin.String, Error? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): ProfileEvent
@@ -52,6 +52,12 @@ data class com.datadog.android.profiling.model.ProfileEvent
     companion object 
       fun fromJson(kotlin.String): Vital
       fun fromJsonObject(com.google.gson.JsonObject): Vital
+  data class Error
+    constructor(kotlin.collections.List<kotlin.String>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
+      fun fromJsonObject(com.google.gson.JsonObject): Error
   enum Family
     constructor(kotlin.String)
     - ANDROID

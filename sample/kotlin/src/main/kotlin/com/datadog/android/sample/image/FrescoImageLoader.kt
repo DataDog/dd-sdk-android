@@ -4,17 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sample.image
 
 import android.content.Context
-import android.net.Uri
 import android.widget.ImageView
+import androidx.core.net.toUri
 import com.datadog.android.Datadog
 import com.datadog.android.fresco.DatadogFrescoCacheListener
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.sample.BuildConfig
 import com.facebook.cache.disk.DiskCacheConfig
 import com.facebook.common.util.ByteConstants
+import com.facebook.drawee.backends.pipeline.DraweeConfig
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
@@ -27,7 +29,7 @@ internal class FrescoImageLoader : ImageLoader {
 
     override fun load(url: String, imageView: ImageView) {
         if (imageView is SimpleDraweeView) {
-            imageView.setImageURI(Uri.parse(url))
+            imageView.setImageURI(url.toUri())
         } else {
             GlobalRumMonitor.get(Datadog.getInstance()).addError(
                 "Unable to load Fresco image in non Drawee View",
@@ -60,7 +62,10 @@ internal class FrescoImageLoader : ImageLoader {
                 }
                 .setMainDiskCacheConfig(diskConfigBuilder.build())
                 .build()
-            Fresco.initialize(context, config)
+            val draweeConfig = DraweeConfig.newBuilder()
+                .setDrawDebugOverlay(BuildConfig.DEBUG)
+                .build()
+            Fresco.initialize(context, config, draweeConfig)
         }
     }
 }

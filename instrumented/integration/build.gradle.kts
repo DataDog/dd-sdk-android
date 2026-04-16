@@ -104,8 +104,10 @@ dependencies {
     implementation(libs.bundles.androidXSupportBase)
     implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
+    implementation(libs.leakCanaryAndroid)
 
     androidTestImplementation(project(":dd-sdk-android-internal"))
+    androidTestImplementation(libs.leakCanaryInstrumentation)
     androidTestImplementation(project(":tools:unit")) {
         attributes {
             attribute(

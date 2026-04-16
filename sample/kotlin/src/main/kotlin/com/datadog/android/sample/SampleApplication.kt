@@ -43,10 +43,10 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
-import com.datadog.android.sample.picture.Coil3ImageLoader
-import com.datadog.android.sample.picture.CoilImageLoader
-import com.datadog.android.sample.picture.FrescoImageLoader
-import com.datadog.android.sample.picture.PicassoImageLoader
+import com.datadog.android.sample.image.Coil3ImageLoader
+import com.datadog.android.sample.image.CoilImageLoader
+import com.datadog.android.sample.image.FrescoImageLoader
+import com.datadog.android.sample.image.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -509,7 +509,7 @@ class SampleApplication : Application() {
         private const val SESSION_REPLAY_PRIVACY_SAMPLING = 75
 
         init {
-            System.loadLibrary("datadog-native-sample-lib")
+            System.loadLibrary("datadog-ndk-sample")
         }
 
         internal const val ATTR_IS_MAPPED = "is_mapped"

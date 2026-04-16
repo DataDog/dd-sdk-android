@@ -56,4 +56,5 @@ tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
             )
         )
     }
+    projectDirPath.set(project.layout.projectDirectory.asFile.path)
 }

@@ -21,7 +21,7 @@
     <string name="title_image_scaling">Image Scaling</string>
     <string name="title_snackbar">Snackbar</string>
     <string name="title_foreground_service">Foreground service</string>
-    <string name="title_picture">Picture loading</string>
+    <string name="title_image">Image loading</string>
     <string name="title_user_info">User Info</string>
     <string name="title_account_info">Account Info</string>
     <string name="title_vitals">Mobile Vitals</string>
@@ -124,7 +124,7 @@
     <string name="hint_account_role">Role</string>
     <string name="hint_account_age">Age</string>
 
-    <string name="load_picture">Load picture</string>
+    <string name="load_image">Load image</string>
     <string name="cronet_load_button">Load</string>
     <string name="cronet_image_description">Image loaded with Cronet</string>
     <string name="widget_description">Datadog Sample Widget</string>

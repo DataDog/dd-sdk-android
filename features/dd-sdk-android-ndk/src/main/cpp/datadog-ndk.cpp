@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-#include "datadog-native-lib.h"
+#include "datadog-ndk.h"
 
 #include <fstream>
 #include <jni.h>

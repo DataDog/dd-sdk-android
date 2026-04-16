@@ -399,9 +399,8 @@ object Datadog {
     // You should not use this method in production code. By calling this method you will basically
     // stop the SDKs persistence - upload streams and will leave it in an inconsistent state. This
     // method is mainly for test purposes.
-    @Suppress("unused")
     @WorkerThread
-    private fun flushAndShutdownExecutors() {
+    internal fun flushAndShutdownExecutors() {
         // Note for the future: if we decide to make this a public feature,
         // we need to drain, execute and flush from a background thread or ensure we're
         // not in the main thread!

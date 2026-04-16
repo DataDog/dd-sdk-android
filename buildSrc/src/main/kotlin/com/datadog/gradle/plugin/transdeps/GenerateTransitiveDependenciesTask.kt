@@ -7,17 +7,19 @@
 package com.datadog.gradle.plugin.transdeps
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
+@CacheableTask
 abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @get:Input
@@ -26,11 +28,11 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
     @get:Input
     var sortByName: Boolean = true
 
-    @get:InputFile
+    @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val libsVersionCatalog: RegularFileProperty
+    abstract val resolvedArtifacts: ConfigurableFileCollection
 
-    @get: OutputFile
+    @get:OutputFile
     abstract val dependenciesFile: RegularFileProperty
 
     init {
@@ -44,26 +46,18 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
     fun applyTask() {
         val outputFile = dependenciesFile.get().asFile
         outputFile.writeText("Dependencies List\n\n")
-        val implementation = project.configurations.getByName("releaseCompileClasspath")
-        listConfigurationDependencies(outputFile, implementation)
+        listConfigurationDependencies(outputFile, resolvedArtifacts)
     }
 
     // endregion
 
     // region Internal
 
-    private fun listConfigurationDependencies(outputFile: File, configuration: Configuration) {
-        check(configuration.isCanBeResolved) { "$configuration cannot be resolved" }
-
+    private fun listConfigurationDependencies(outputFile: File, artifacts: FileCollection) {
         val sortedArtifacts = if (sortByName) {
-            configuration.incoming
-                .artifactView {
-                    componentFilter { it !is ProjectComponentIdentifier }
-                }
-                .files
-                .sortedBy { it.absolutePath }
+            artifacts.sortedBy { it.absolutePath }
         } else {
-            configuration.sortedBy { -it.length() }
+            artifacts.sortedBy { -it.length() }
         }
 
         var sum = 0L
