@@ -78,7 +78,8 @@ sealed class InternalTelemetryEvent {
         ) : ApiUsage(additionalProperties) {
             enum class LibraryType {
                 CRONET,
-                OKHTTP
+                OKHTTP,
+                LEGACY_OKHTTP
             }
         }
     }
