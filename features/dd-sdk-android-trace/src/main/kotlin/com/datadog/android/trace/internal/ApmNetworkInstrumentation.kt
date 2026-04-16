@@ -26,8 +26,8 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.DatadogTracingToolkit.propagationHelper
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
+import com.datadog.android.trace.internal._TraceInternalProxy.propagationHelper
 import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.trace.internal.net.TracerProvider
 import com.datadog.android.trace.internal.net.applyPriority

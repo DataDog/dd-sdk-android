@@ -18,7 +18,7 @@ import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.AL
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.SPAN_NAME
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.URL_QUERY_PARAMS_BLOCK_SEPARATOR
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.ZERO_SAMPLE_RATE
-import com.datadog.android.trace.internal.DatadogTracingToolkit.propagationHelper
+import com.datadog.android.trace.internal._TraceInternalProxy.propagationHelper
 import java.util.Locale
 
 internal val FeatureSdkCore?.isRumEnabled: Boolean

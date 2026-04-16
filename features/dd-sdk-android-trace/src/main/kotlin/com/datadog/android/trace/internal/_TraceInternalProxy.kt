@@ -20,7 +20,8 @@ import com.datadog.trace.core.propagation.Baggage
  * Provides implementation for specific interfaces to dependent modules
  */
 @InternalApi
-object DatadogTracingToolkit {
+@Suppress("ClassName")
+object _TraceInternalProxy {
     /**
      * Provides a mechanism for converting Datadog span IDs between decimal and hexadecimal representations.
      *
