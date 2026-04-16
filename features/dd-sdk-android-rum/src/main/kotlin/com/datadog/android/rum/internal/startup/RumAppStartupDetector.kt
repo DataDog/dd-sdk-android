@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.startup
 
-import android.app.Activity
 import android.app.Application
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -20,12 +19,10 @@ internal interface RumAppStartupDetector {
          * Called when a startup scenario is detected.
          */
         fun onAppStartupDetected(scenario: RumStartupScenario)
-        fun onNextActivityCreated(pendingScenario: RumStartupScenario, activity: Activity)
+        fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean)
     }
 
     fun destroy()
-    fun getPendingScenario(): RumStartupScenario?
-    fun clearPendingScenario()
 
     companion object {
         fun create(
@@ -34,13 +31,16 @@ internal interface RumAppStartupDetector {
             listener: Listener,
             appStartupActivityPredicate: AppStartupActivityPredicate
         ): RumAppStartupDetector {
+            val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(sdkCore = sdkCore)
+
             return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs.asTimeNs() },
                 timeProvider = { Time() },
                 listener = listener,
-                appStartupActivityPredicate = appStartupActivityPredicate
+                appStartupActivityPredicate = appStartupActivityPredicate,
+                rumFirstDrawTimeReporter = rumFirstDrawTimeReporter
             )
         }
     }

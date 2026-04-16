@@ -10,6 +10,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
@@ -1342,21 +1343,21 @@ internal open class TracingInterceptorNonDdTracerTest {
     private fun forgeRequest(url: String = fakeUrl, configure: (Request.Builder) -> Unit = {}): Request {
         val builder = Request.Builder().url(url)
         if (forge.aBool()) {
-            fakeMethod = forge.anElementFrom("POST", "PUT", "PATCH")
+            fakeMethod = forge.anElementFrom(HttpSpec.Method.POST, HttpSpec.Method.PUT, HttpSpec.Method.PATCH)
             fakeBody = forge.anAlphabeticalString()
             with(builder) {
                 val body = fakeBody!!.toByteArray().toRequestBody(null)
                 when (fakeMethod) {
-                    "POST" -> post(body)
-                    "PUT" -> put(body)
-                    "PATCH" -> patch(body)
+                    HttpSpec.Method.POST -> post(body)
+                    HttpSpec.Method.PUT -> put(body)
+                    HttpSpec.Method.PATCH -> patch(body)
                     else -> {
                         throw IllegalArgumentException("Unknown method value: $fakeMethod")
                     }
                 }
             }
         } else {
-            fakeMethod = forge.anElementFrom("GET", "HEAD", "DELETE", "CONNECT", "TRACE", "OPTIONS")
+            fakeMethod = forge.anElementFrom(HttpSpec.Method.values().filterNot(HttpSpec.Method::isMethodWithBody))
             fakeBody = null
             builder.method(fakeMethod, null)
         }

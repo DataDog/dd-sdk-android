@@ -6,32 +6,51 @@
 
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
                                                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:fresco="http://schemas.android.com/apk/res-auto"
                                                    xmlns:tools="http://schemas.android.com/tools"
                                                    android:layout_width="match_parent"
                                                    android:layout_height="match_parent"
                                                    android:padding="10dp"
                                                    tools:context=".NavActivity">
 
-    <com.datadog.android.sample.picture.AspectRatioImageView
-        android:id="@+id/picture"
+    <com.datadog.android.sample.image.AspectRatioImageView
+        android:id="@+id/image"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:scaleType="centerCrop"
-        app:srcCompat="@drawable/ic_dd_icon_white"
-        tools:src="@tools:sample/backgrounds/scenic"/>
+        app:srcCompat="@drawable/ph_default"/>
 
+    <com.facebook.drawee.view.SimpleDraweeView
+        android:id="@+id/image_fresco"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintDimensionRatio="16:9"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:actualImageScaleType="centerCrop"
+        fresco:placeholderImage="@drawable/ph_default"
+        fresco:failureImage="@drawable/ph_error"/>
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/image_barrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="image,image_fresco"/>
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/load_picture"
+        android:id="@+id/load_image"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/load_picture"
+        android:text="@string/load_image"
         android:layout_margin="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/picture"/>
+        app:layout_constraintTop_toBottomOf="@id/image_barrier"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

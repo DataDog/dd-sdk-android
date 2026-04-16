@@ -4,13 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sample.image
 
-import android.widget.ImageView
-
-internal interface ImageLoader {
-
-    val type: ImageLoaderType
-
-    fun load(url: String, imageView: ImageView)
+internal enum class ImageLoaderType {
+    COIL,
+    COIL3,
+    FRESCO,
+    GLIDE,
+    PICASSO
 }

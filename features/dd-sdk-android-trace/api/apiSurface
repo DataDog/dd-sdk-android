@@ -1,7 +1,7 @@
 class com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
   constructor(List<String>)
   constructor(Map<String, Set<TracingHeaderType>>)
-  fun setTraceOrigin(String)
+  fun setTraceOrigin(String, Boolean = true)
   fun getTraceOrigin(): String?
   fun setSdkInstanceName(String)
   fun setTracedRequestListener(NetworkTracedRequestListener)
@@ -47,6 +47,7 @@ enum com.datadog.android.trace.TraceContextInjection
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
 class com.datadog.android.trace.internal.ApmNetworkInstrumentation
+  val sdkCore: com.datadog.android.api.SdkCore?
   val sdkCoreReference: com.datadog.android.core.SdkReference
   val sampleRate: Float?
   val localHeaderTypes: Set<com.datadog.android.trace.TracingHeaderType>
@@ -85,7 +86,7 @@ class com.datadog.android.trace.internal.RumContextPropagator
     fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
 data class com.datadog.android.trace.internal.net.RequestTracingState
   constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null)
-  fun createModifiedRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
+  fun createRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
 fun RequestTracingState?.toAttributesMap(String, String, String): Map<String, Any?>
 data class com.datadog.android.trace.internal.net.TraceContext
   constructor(String, String, Int)

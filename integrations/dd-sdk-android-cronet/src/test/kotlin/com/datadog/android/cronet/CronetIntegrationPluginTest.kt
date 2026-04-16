@@ -273,7 +273,7 @@ internal class CronetIntegrationPluginTest {
     }
 
     @Test
-    fun `M preserve custom traceOrigin on distributedTracing W build() {APM has custom origin}`(
+    fun `M change to ORIGIN_RUM on distributedTracing W build() {APM has custom origin}`(
         @StringForgery fakeCustomOrigin: String
     ) {
         // When
@@ -287,7 +287,7 @@ internal class CronetIntegrationPluginTest {
         // Then
         check(engine is DatadogCronetEngine)
         assertThat(engine.distributedTracingInstrumentation?.traceOrigin)
-            .isEqualTo(fakeCustomOrigin)
+            .isEqualTo(CronetIntegrationPlugin.ORIGIN_RUM)
     }
 
     @Test
