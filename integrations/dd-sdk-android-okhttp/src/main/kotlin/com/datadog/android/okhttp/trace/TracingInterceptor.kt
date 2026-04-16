@@ -9,6 +9,7 @@
 package com.datadog.android.okhttp.trace
 
 import androidx.annotation.FloatRange
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -113,6 +114,7 @@ internal constructor(
     // region Interceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         return doIntercept(chain, chain.request())
     }
@@ -121,6 +123,7 @@ internal constructor(
      * This method is a part of Datadog SDK internal API. It is not meant for public use.
      */
     @InternalApi
+    @WorkerThread
     protected fun doIntercept(
         chain: Interceptor.Chain,
         request: Request
@@ -528,16 +531,14 @@ internal constructor(
             val spanId = span.context().spanId.toString()
             requestBuilder.addHeader(
                 W3C_TRACEPARENT_KEY,
-                // TODO RUM-11445 InvalidStringFormat false alarm
-                @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
+                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                 W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
             )
             // TODO RUM-2121 3rd party vendor information will be erased
-            // TODO RUM-11445 InvalidStringFormat false alarm
-            @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
+            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
             var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
                 .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {

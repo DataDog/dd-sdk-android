@@ -52,9 +52,9 @@
         android:label="@string/title_data_list"/>
 
     <fragment
-        android:id="@+id/fragment_picture"
-        android:name="com.datadog.android.sample.picture.PictureFragment"
-        android:label="@string/title_picture"/>
+        android:id="@+id/fragment_image"
+        android:name="com.datadog.android.sample.image.ImageFragment"
+        android:label="@string/title_image"/>
 
     <fragment
         android:id="@+id/fragment_cronet_image"

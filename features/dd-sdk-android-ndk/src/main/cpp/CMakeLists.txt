@@ -4,12 +4,12 @@ include_directories(
         model
 )
 add_library( # Sets the name of the library.
-        datadog-native-lib
+        datadog-ndk
         # Sets the library as a shared library.
         SHARED
         # Provides a relative path to your source file(s).
-        datadog-native-lib.cpp
-        datadog-native-lib.h
+        datadog-ndk.cpp
+        datadog-ndk.h
         utils/signal-monitor.c
         utils/signal-monitor.h
         utils/file-utils.cpp
@@ -27,18 +27,18 @@ find_library( # Sets the name of the path variable.
         # you want CMake to locate.
         log)
 target_link_libraries( # Specifies the target library.
-        datadog-native-lib
+        datadog-ndk
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib})
-set_target_properties(datadog-native-lib
+set_target_properties(datadog-ndk
         PROPERTIES
         COMPILE_OPTIONS
         -Werror -Wall -pedantic)
 
 # Size optimizations for non-Debug builds
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(datadog-native-lib PRIVATE
+    target_compile_options(datadog-ndk PRIVATE
             -Oz
             -fno-exceptions
             -fno-rtti
@@ -46,7 +46,7 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
             -fdata-sections
             -flto=thin
             )
-    target_link_options(datadog-native-lib PRIVATE
+    target_link_options(datadog-ndk PRIVATE
             -Oz
             -flto=thin
             -Wl,--gc-sections

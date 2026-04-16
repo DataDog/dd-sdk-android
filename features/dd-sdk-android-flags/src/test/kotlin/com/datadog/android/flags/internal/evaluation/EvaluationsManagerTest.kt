@@ -11,10 +11,15 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
+import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
@@ -466,6 +471,74 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(stateWhenCallbackInvoked).isEqualTo(FlagsClientState.Ready)
+    }
+
+    // region Cold-start integration
+
+    @Test
+    fun `M notify STALE W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val flag = PrecomputedFlag(
+            variationType = "boolean",
+            variationValue = "true",
+            doLog = false,
+            allocationKey = "alloc",
+            variationKey = "var",
+            extraLogging = JSONObject(),
+            reason = "DEFAULT"
+        )
+        val persistedEntry = FlagsStateEntry(
+            evaluationContext = context,
+            flags = mapOf("cached-flag" to flag),
+            lastUpdateTimestamp = 0L
+        )
+
+        // Configure DataStore to fire callback synchronously during DefaultFlagsRepository
+        // construction, so the persistence latch is counted down before hasFlags() is called.
+        val mockDataStore = mock<DataStoreHandler>()
+        whenever(
+            mockDataStore.value<FlagsStateEntry>(
+                key = any(),
+                version = anyOrNull(),
+                callback = any(),
+                deserializer = any()
+            )
+        ).doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            null
+        }
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+
+        val realRepository = DefaultFlagsRepository(
+            featureSdkCore = mockSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "integration-test"
+        )
+
+        // Network call returns null (simulates network failure)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(null)
+
+        val integrationManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = realRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        integrationManager.updateEvaluationsForContext(context)
+
+        // Then
+        inOrder(mockFlagsStateManager) {
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        }
     }
 
     // endregion

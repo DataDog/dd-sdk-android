@@ -82,7 +82,18 @@
     "source": {
       "type": "string",
       "description": "The source of this event",
-      "enum": ["android", "ios", "browser", "flutter", "react-native", "roku", "unity", "kotlin-multiplatform"],
+      "enum": [
+        "android",
+        "ios",
+        "browser",
+        "flutter",
+        "react-native",
+        "roku",
+        "unity",
+        "kotlin-multiplatform",
+        "electron",
+        "rum-cpp"
+      ],
       "readOnly": true
     },
     "view": {
@@ -234,6 +245,7 @@
       "type": "object",
       "description": "Synthetics properties",
       "required": ["test_id", "result_id"],
+      "additionalProperties": true,
       "properties": {
         "test_id": {
           "type": "string",
@@ -362,13 +374,13 @@
           "readOnly": true
         },
         "total_ram": {
-          "type" : "number",
+          "type": "number",
           "description": "Total RAM in megabytes",
           "readOnly": true
         },
         "is_low_ram": {
           "type": "boolean",
-          "description": "Whether the device is considered a low RAM device.",
+          "description": "Whether the device is considered a low RAM device (Android)",
           "readOnly": true
         }
       }
@@ -431,7 +443,7 @@
             },
             "profiling_sample_rate": {
               "type": "number",
-              "description": "The percentage of views profiled",
+              "description": "The percentage of sessions profiled",
               "minimum": 0,
               "maximum": 100,
               "readOnly": true

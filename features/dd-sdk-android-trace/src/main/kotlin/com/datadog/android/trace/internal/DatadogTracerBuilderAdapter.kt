@@ -98,9 +98,9 @@ internal class DatadogTracerBuilderAdapter(
     internal fun properties(): Properties {
         val properties = Properties()
 
-        val propagationStyles = tracingHeadersTypes.joinToString(",")
-        properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-        properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+        val propagationStyles = tracingHeadersTypes.joinToString(",") { it.toPropagationStyle() }
+        properties.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_EXTRACT, propagationStyles)
+        properties.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_INJECT, propagationStyles)
         properties.setProperty(TracerConfig.SERVICE_NAME, serviceName)
         properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
         properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushMinSpans.toString())
@@ -124,5 +124,13 @@ internal class DatadogTracerBuilderAdapter(
         internal const val DEFAULT_SAMPLE_RATE = 100.0
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
         internal const val DEFAULT_URL_AS_RESOURCE_NAME = false
+
+        internal fun TracingHeaderType.toPropagationStyle(): String = when (this) {
+            // dd-trace-java code (TracePropagationStyle.valueOfDisplayName)
+            // treats "B3" as an alias for B3MULTI, not B3 single header.
+            // We must pass this explicitly to get the correct single-header injector.
+            TracingHeaderType.B3 -> "B3SINGLE"
+            else -> name
+        }
     }
 }

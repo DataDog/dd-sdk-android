@@ -4,12 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.picture
+package com.datadog.android.sessionreplay.internal.recorder.resources
 
-internal enum class ImageLoaderType {
-    COIL,
-    COIL3,
-    FRESCO,
-    GLIDE,
-    PICASSO
+import android.graphics.drawable.Drawable
+
+internal interface DrawableKeyGenerator {
+    fun generateKeyFromDrawable(drawable: Drawable): String
 }

@@ -184,7 +184,7 @@ internal class DatadogLateCrashReporter(
     ): ErrorEvent {
         val connectivity = viewEvent.connectivity?.let {
             val connectivityStatus =
-                ErrorEvent.Status.valueOf(it.status.name)
+                ErrorEvent.ConnectivityStatus.valueOf(it.status.name)
             val connectivityInterfaces =
                 it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(

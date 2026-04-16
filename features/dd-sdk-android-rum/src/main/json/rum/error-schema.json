@@ -113,7 +113,7 @@
             "handling_stack": {
               "type": "string",
               "description": "Handling call stack",
-              "readOnly": true
+              "readOnly": false
             },
             "source_type": {
               "type": "string",
@@ -127,7 +127,10 @@
                 "roku",
                 "ndk",
                 "ios+il2cpp",
-                "ndk+il2cpp"
+                "ndk+il2cpp",
+                "windows",
+                "macos",
+                "linux"
               ],
               "readOnly": true
             },
@@ -365,6 +368,18 @@
           "type": "object",
           "description": "Feature flags properties",
           "additionalProperties": true,
+          "readOnly": true
+        },
+        "_dd": {
+          "type": "object",
+          "description": "Internal properties",
+          "properties": {
+            "profiling": {
+              "type": "object",
+              "description": "Profiling context",
+              "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
+            }
+          },
           "readOnly": true
         }
       }

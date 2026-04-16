@@ -52,7 +52,20 @@ output-reports:
   # - 'SarifOutputReport'
 
 comments:
-  active: false
+  active: true
+  AbsentOrWrongFileLicense:
+    active: true
+    licenseTemplateFile: 'license.template'
+    licenseTemplateIsRegex: false
+    excludes:
+      # Gradle build outputs and generated artifacts.
+      - '**/build/**'
+      # Auto-generated Kotlin model fixtures produced by the buildSrc JSON-to-Kotlin code generator.
+      - '**/buildSrc/src/test/kotlin/com/example/model/**'
+      # Fixture files for the NoOpFactory annotation processor tests, read as text data rather than compiled.
+      - '**/tools/noopfactory/src/test/resources/**'
+      # Vendored test files ported from the upstream dd-trace-java library.
+      - '**/features/dd-sdk-android-trace-internal/src/test/kotlin/com/datadog/trace/**'
 
 complexity:
   active: false

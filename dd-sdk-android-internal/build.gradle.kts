@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -40,6 +46,14 @@ android {
 
     testFixtures {
         enable = true
+    }
+
+    libraryVariants.all {
+        packageLibraryProvider.configure {
+            from("src/main/resources") {
+                include("META-INF/**/verification.properties")
+            }
+        }
     }
 }
 

@@ -33,6 +33,7 @@ class com.datadog.android._InternalProxy
   val _telemetry: _TelemetryProxy
   fun setMetricTelemetrySampleRateBypass(Float)
   fun setCustomAppVersion(String)
+  fun flushAndShutdownExecutors()
   companion object 
     fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
 interface com.datadog.android.api.InternalLogger

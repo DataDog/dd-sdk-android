@@ -123,6 +123,29 @@ public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/lifecycle/ProcessLifecycleMonitor : android/app/Application$ActivityLifecycleCallbacks {
+	public fun <init> (Lcom/datadog/android/internal/lifecycle/ProcessLifecycleMonitor$Callback;)V
+	public final fun getActivitiesResumedCounter ()Ljava/util/concurrent/atomic/AtomicInteger;
+	public final fun getActivitiesStartedCounter ()Ljava/util/concurrent/atomic/AtomicInteger;
+	public final fun getCallback ()Lcom/datadog/android/internal/lifecycle/ProcessLifecycleMonitor$Callback;
+	public final fun getWasPaused ()Ljava/util/concurrent/atomic/AtomicBoolean;
+	public final fun getWasStopped ()Ljava/util/concurrent/atomic/AtomicBoolean;
+	public fun onActivityCreated (Landroid/app/Activity;Landroid/os/Bundle;)V
+	public fun onActivityDestroyed (Landroid/app/Activity;)V
+	public fun onActivityPaused (Landroid/app/Activity;)V
+	public fun onActivityResumed (Landroid/app/Activity;)V
+	public fun onActivitySaveInstanceState (Landroid/app/Activity;Landroid/os/Bundle;)V
+	public fun onActivityStarted (Landroid/app/Activity;)V
+	public fun onActivityStopped (Landroid/app/Activity;)V
+}
+
+public abstract interface class com/datadog/android/internal/lifecycle/ProcessLifecycleMonitor$Callback {
+	public abstract fun onPaused ()V
+	public abstract fun onResumed ()V
+	public abstract fun onStarted ()V
+	public abstract fun onStopped ()V
+}
+
 public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
 	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
@@ -551,6 +574,11 @@ public final class com/datadog/android/internal/utils/StrictModeExtKt {
 public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;C)Ljava/lang/StringBuilder;
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;Ljava/lang/String;)Ljava/lang/StringBuilder;
+}
+
+public final class com/datadog/android/internal/utils/StringExtKt {
+	public static final fun fromBase64 (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun toBase64 (Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class com/datadog/android/internal/utils/ThreadExtKt {

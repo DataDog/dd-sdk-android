@@ -25,6 +25,8 @@ import com.datadog.android.rum.RumAttributes.ACTION_TARGET_SELECTED
 
 internal class LayoutNodeUtils {
 
+    private var reflectionFallbackModeActivated = false
+
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod")
     fun resolveLayoutNode(node: LayoutNode): TargetNode? {
         return runSafe("resolveLayoutNode") {
@@ -97,10 +99,34 @@ internal class LayoutNodeUtils {
         }
     }
 
-    fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? {
-        return runSafe("getLayoutNodeBoundsInWindow") {
-            node.layoutDelegate.outerCoordinator.coordinates.boundsInWindow()
-        }
+    fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? = if (reflectionFallbackModeActivated) {
+        getLayoutNodeBoundsInWindowReflection(node)
+    } else {
+        getLayoutNodeBoundsInWindowInternal(node) ?: getLayoutNodeBoundsInWindowReflection(node)
+    }
+
+    private fun getLayoutNodeBoundsInWindowInternal(node: LayoutNode): Rect? = runSafe(
+        "getLayoutNodeBoundsInWindow"
+    ) { node.layoutDelegate.outerCoordinator.coordinates.boundsInWindow() }
+
+    private fun getLayoutNodeBoundsInWindowReflection(node: LayoutNode) = runSafe(
+        "getLayoutNodeBoundsInWindow[reflection]"
+    ) {
+        // TODO RUM-13454 Update compose bom and remove this method
+        reflectionFallbackModeActivated = true
+        val coordinates = node.getMethod("getLayoutDelegate")
+            ?.getMethod("getOuterCoordinator")
+            ?.getMethod("getCoordinates")
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // it's okay if exception will be thrown here
+        Class.forName("androidx.compose.ui.layout.LayoutCoordinatesKt")
+            .getMethod("boundsInWindow", Class.forName("androidx.compose.ui.layout.LayoutCoordinates"))
+            .invoke(null, coordinates) as? Rect
+    }
+
+    private fun Any.getMethod(prefix: String): Any? {
+        return this.javaClass.methods.firstOrNull { it.name == prefix || it.name.startsWith("$prefix$") }
+            ?.invoke(this)
     }
 
     private fun <T> runSafe(callSite: String, action: () -> T): T? {
