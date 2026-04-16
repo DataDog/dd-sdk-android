@@ -15,6 +15,14 @@ public final class com/datadog/android/sqldelight/SqlDelightExtKt {
 public abstract interface class com/datadog/android/sqldelight/TransactionWithSpanAndWithReturn : com/datadog/android/trace/api/span/DatadogSpan, com/squareup/sqldelight/TransactionWithReturn {
 }
 
+public final class com/datadog/android/sqldelight/TransactionWithSpanAndWithReturn$DefaultImpls {
+	public static fun logAttributes (Lcom/datadog/android/sqldelight/TransactionWithSpanAndWithReturn;Ljava/util/Map;J)V
+}
+
 public abstract interface class com/datadog/android/sqldelight/TransactionWithSpanAndWithoutReturn : com/datadog/android/trace/api/span/DatadogSpan, com/squareup/sqldelight/TransactionWithoutReturn {
+}
+
+public final class com/datadog/android/sqldelight/TransactionWithSpanAndWithoutReturn$DefaultImpls {
+	public static fun logAttributes (Lcom/datadog/android/sqldelight/TransactionWithSpanAndWithoutReturn;Ljava/util/Map;J)V
 }
 
