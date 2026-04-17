@@ -7,15 +7,13 @@ package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
+import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.net.TracerProvider
 import java.util.concurrent.atomic.AtomicReference
 
@@ -242,11 +240,6 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         internal const val ALL_IN_SAMPLE_RATE: Double = 100.0
         private const val DEFAULT_TRACE_SAMPLE_RATE: Float = 100f
 
-        // Sentinel value meaning "assume all RUM sessions are sampled" so that no session-based
-        // rebasing is applied until the RUM feature publishes its actual session sample rate.
-        // With this value the effective rate is: traceSampleRate * 100 / 100 = traceSampleRate.
-        private const val NO_SESSION_REBASING_RATE: Float = 100f
-
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
 
         internal fun ApmNetworkInstrumentationConfiguration.createInstrumentation(
@@ -259,22 +252,9 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
             @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference initialized with non-null Float constant
-            val cachedSessionSampleRate = AtomicReference(NO_SESSION_REBASING_RATE)
-            val sessionSampleRateReceiver: FeatureContextUpdateReceiver? =
-                if (customTraceSampler == null) {
-                    FeatureContextUpdateReceiver { featureName, context ->
-                        if (featureName == Feature.RUM_FEATURE_NAME) {
-                            @Suppress(
-                                "UnsafeThirdPartyFunctionCall"
-                            ) // resolveSessionSampleRate always returns non-null Float
-                            cachedSessionSampleRate.set(
-                                resolveSessionSampleRate(context[LogAttributes.RUM_SESSION_SAMPLE_RATE])
-                            )
-                        }
-                    }
-                } else {
-                    null
-                }
+            val cachedSessionSampleRate = AtomicReference(TracingFeature.NO_SESSION_REBASING_RATE)
+            val sessionSampleRateRef: AtomicReference<Float>? =
+                if (customTraceSampler == null) cachedSessionSampleRate else null
             val effectiveSampler = customTraceSampler
                 ?: DeterministicTraceSampler(traceSampleRate) { cachedSessionSampleRate.get() }
 
@@ -290,7 +270,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
                 tracedRequestListener = tracedRequestListener,
                 redacted404ResourceName = redacted404ResourceName,
                 localFirstPartyHostHeaderTypeResolver = localFirstPartyHostHeaderTypeResolver,
-                sessionSampleRateReceiver = sessionSampleRateReceiver
+                sessionSampleRateRef = sessionSampleRateRef
             )
         }
 
@@ -307,10 +287,6 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         }
 
         private fun Map<String, Set<TracingHeaderType>>.deepCopy() = mapValues { (_, v) -> v.toSet() }
-
-        private fun resolveSessionSampleRate(rawSessionSampleRate: Any?): Float {
-            return (rawSessionSampleRate as? Number)?.toFloat() ?: NO_SESSION_REBASING_RATE
-        }
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->

@@ -64,12 +64,7 @@ internal class DatadogCronetEngine(
     override fun getVersionString(): String? = delegate.versionString
 
     override fun shutdown() {
-        try {
-            delegate.shutdown()
-        } finally {
-            apmNetworkInstrumentation?.close()
-            distributedTracingInstrumentation?.close()
-        }
+        delegate.shutdown()
     }
 
     override fun startNetLogToFile(fileName: String?, logAll: Boolean) = delegate.startNetLogToFile(fileName, logAll)

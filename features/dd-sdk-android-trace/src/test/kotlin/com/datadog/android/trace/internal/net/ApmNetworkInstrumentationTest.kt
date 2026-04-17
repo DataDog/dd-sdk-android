@@ -10,7 +10,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
@@ -34,6 +33,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
+import com.datadog.android.trace.internal.SessionSampleRateRegistrationEvent
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -69,6 +69,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -238,7 +239,7 @@ internal class ApmNetworkInstrumentationTest {
             traceSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
         )
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -266,7 +267,7 @@ internal class ApmNetworkInstrumentationTest {
             traceSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
         )
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onRequest(mockRequestInfo)
 
@@ -986,36 +987,48 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M remove context update receiver W close() {receiver was registered}`() {
+    fun `M send SessionSampleRateRegistrationEvent W sdkCore resolves {sessionSampleRateRef provided}`() {
         // Given
-        val mockSessionSampleRateReceiver = mock<FeatureContextUpdateReceiver>()
+        val ref = AtomicReference(0f)
         testedInstrumentation = createInstrumentation(
-            sessionSampleRateReceiver = mockSessionSampleRateReceiver
+            sessionSampleRateRef = ref
         )
-        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
 
         // When
-        testedInstrumentation.close()
+        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
 
         // Then
-        verify(mockSdkCore).setContextUpdateReceiver(mockSessionSampleRateReceiver)
-        verify(mockSdkCore).removeContextUpdateReceiver(mockSessionSampleRateReceiver)
+        verify(mockTracingFeature).sendEvent(SessionSampleRateRegistrationEvent(ref))
     }
 
     @Test
-    fun `M not touch context receivers W close() {receiver never registered}`() {
+    fun `M not send event W sdkCore resolves {sessionSampleRateRef is null}`() {
         // Given
-        val mockSessionSampleRateReceiver = mock<FeatureContextUpdateReceiver>()
         testedInstrumentation = createInstrumentation(
-            sessionSampleRateReceiver = mockSessionSampleRateReceiver
+            sessionSampleRateRef = null
         )
 
         // When
-        testedInstrumentation.close()
+        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
 
         // Then
-        verify(mockSdkCore, never()).setContextUpdateReceiver(any())
-        verify(mockSdkCore, never()).removeContextUpdateReceiver(any())
+        verify(mockTracingFeature, never()).sendEvent(any())
+    }
+
+    @Test
+    fun `M not send event W sdkCore resolves {tracing feature not registered}`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+        val ref = AtomicReference(0f)
+        testedInstrumentation = createInstrumentation(
+            sessionSampleRateRef = ref
+        )
+
+        // When
+        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
+
+        // Then
+        verifyNoInteractions(mockTracingFeature)
     }
 
     // endregion
@@ -1032,7 +1045,7 @@ internal class ApmNetworkInstrumentationTest {
         networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS,
         redacted404ResourceName: Boolean = true,
         traceSampler: Sampler<DatadogSpan> = mockTraceSampler,
-        sessionSampleRateReceiver: FeatureContextUpdateReceiver? = null
+        sessionSampleRateRef: AtomicReference<Float>? = null
     ) = ApmNetworkInstrumentation(
         canSendSpan = canSendSpan,
         sdkInstanceName = null,
@@ -1045,7 +1058,7 @@ internal class ApmNetworkInstrumentationTest {
         localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
         networkingLibraryName = fakeNetworkInstrumentationName,
         networkTracingScope = networkTracingScope,
-        sessionSampleRateReceiver = sessionSampleRateReceiver
+        sessionSampleRateRef = sessionSampleRateRef
     )
 
     companion object {

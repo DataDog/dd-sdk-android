@@ -8,7 +8,7 @@ package com.datadog.android.trace.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
@@ -38,6 +38,7 @@ import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * For internal usage only.
@@ -58,7 +59,11 @@ import java.util.Locale
  * @param localFirstPartyHostHeaderTypeResolver resolver for determining header types for first-party hosts.
  * @param networkingLibraryName the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
  * @param networkTracingScope Tracing scope for the instrumentation. See [ApmNetworkTracingScope] enum for more details.
- * @param sessionSampleRateReceiver optional receiver that caches the RUM session sample rate for sampling decisions. When provided, it is registered with the SDK on first resolution and updated whenever the RUM context changes.
+ * @param sessionSampleRateRef optional [AtomicReference] that [TracingFeature] will keep
+ *        up-to-date with the latest RUM session sample rate. When the SDK core resolves,
+ *        this ref is sent to [TracingFeature] via `sendEvent` so that it is updated whenever
+ *        the RUM context changes. The corresponding [DeterministicTraceSampler] reads from
+ *        this ref on every request (volatile read, no locking).
  */
 @Suppress("LongParameterList")
 @InternalApi
@@ -74,12 +79,9 @@ class ApmNetworkInstrumentation internal constructor(
     internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
     val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL,
-    internal val sessionSampleRateReceiver: FeatureContextUpdateReceiver? = null
+    internal val sessionSampleRateRef: AtomicReference<Float>? = null
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
-    private val receiverLifecycleLock = Any()
-    private var isClosed = false
-    private var isRegistered = false
 
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
@@ -96,13 +98,9 @@ class ApmNetworkInstrumentation internal constructor(
                 WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)
             }
         }
-        sessionSampleRateReceiver?.let { receiver ->
-            synchronized(receiverLifecycleLock) {
-                if (!isClosed && !isRegistered) {
-                    sdkCore.setContextUpdateReceiver(receiver)
-                    isRegistered = true
-                }
-            }
+        sessionSampleRateRef?.let { ref ->
+            sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+                ?.sendEvent(SessionSampleRateRegistrationEvent(ref))
         }
     }
 
@@ -232,20 +230,6 @@ class ApmNetworkInstrumentation internal constructor(
             InternalLogger.Target.MAINTAINER,
             messageBuilder
         )
-    }
-
-    /**
-     * Releases this instrumentation and unregisters context receivers from SDK core.
-     */
-    fun close() {
-        val receiver = sessionSampleRateReceiver ?: return
-        synchronized(receiverLifecycleLock) {
-            isClosed = true
-            if (isRegistered) {
-                isRegistered = false
-                internalSdkCore?.removeContextUpdateReceiver(receiver)
-            }
-        }
     }
 
     private fun RequestTracingState.onRequestIntercepted(

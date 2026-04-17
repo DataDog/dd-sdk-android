@@ -59,7 +59,6 @@ class com.datadog.android.trace.internal.ApmNetworkInstrumentation
   fun onResponseFailed(com.datadog.android.trace.internal.net.RequestTracingState, Throwable)
   fun removeTracingHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
   fun reportInstrumentationError(() -> String)
-  fun close()
 class com.datadog.android.trace.internal.DatadogPropagationHelper
   fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
   fun setTraceContext(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, String, String, Int)

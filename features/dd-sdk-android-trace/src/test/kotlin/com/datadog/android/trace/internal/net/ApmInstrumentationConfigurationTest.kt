@@ -7,9 +7,7 @@
 package com.datadog.android.trace.internal.net
 
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration.Companion.createInstrumentation
 import com.datadog.android.trace.ApmNetworkTracingScope
@@ -259,19 +257,19 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
-    fun `M not create receiver W createInstrumentation() {custom sampler provided}`() {
+    fun `M not create session sample rate ref W createInstrumentation() {custom sampler provided}`() {
         // When
         val result = testedBuilder
             .setTraceSampler(mockTraceSampler)
             .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
-        assertThat(result.sessionSampleRateReceiver).isNull()
+        assertThat(result.sessionSampleRateRef).isNull()
         assertThat(result.traceSampler).isSameAs(mockTraceSampler)
     }
 
     @Test
-    fun `M create receiver W createInstrumentation() {no custom sampler}`(
+    fun `M create session sample rate ref W createInstrumentation() {no custom sampler}`(
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // When
@@ -280,7 +278,7 @@ internal class ApmInstrumentationConfigurationTest {
             .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
-        assertThat(result.sessionSampleRateReceiver).isNotNull()
+        assertThat(result.sessionSampleRateRef).isNotNull()
     }
 
     @Test
@@ -297,7 +295,7 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
-    fun `M rebase trace rate W onContextUpdate() {RUM_FEATURE_NAME with session rate}`(
+    fun `M rebase trace rate W sessionSampleRateRef updated {with session rate}`(
         @FloatForgery(min = 1f, max = 100f) fakeSampleRate: Float,
         @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float
     ) {
@@ -307,35 +305,11 @@ internal class ApmInstrumentationConfigurationTest {
             .createInstrumentation(fakeNetworkLibraryName)
 
         // When
-        result.sessionSampleRateReceiver!!.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
-        )
+        result.sessionSampleRateRef!!.set(fakeSessionRate)
 
         // Then
         val expectedRate = fakeSampleRate * fakeSessionRate / 100f
         assertThat(result.traceSampler.getSampleRate())
             .isCloseTo(expectedRate, Offset.offset(0.001f))
-    }
-
-    @Test
-    fun `M not rebase trace rate W onContextUpdate() {non-RUM feature}`(
-        @FloatForgery(min = 1f, max = 100f) fakeSampleRate: Float,
-        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float,
-        @StringForgery fakeOtherFeature: String
-    ) {
-        // Given
-        val result = testedBuilder
-            .setTraceSampleRate(fakeSampleRate)
-            .createInstrumentation(fakeNetworkLibraryName)
-
-        // When
-        result.sessionSampleRateReceiver!!.onContextUpdate(
-            fakeOtherFeature,
-            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
-        )
-
-        // Then - no rebasing, rate unchanged
-        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
     }
 }
