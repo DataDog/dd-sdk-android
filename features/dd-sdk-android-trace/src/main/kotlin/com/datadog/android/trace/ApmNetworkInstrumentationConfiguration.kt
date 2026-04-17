@@ -240,7 +240,13 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
     internal companion object {
         internal const val ALL_IN_SAMPLE_RATE: Double = 100.0
-        internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 100f
+        private const val DEFAULT_TRACE_SAMPLE_RATE: Float = 100f
+
+        // Sentinel value meaning "assume all RUM sessions are sampled" so that no session-based
+        // rebasing is applied until the RUM feature publishes its actual session sample rate.
+        // With this value the effective rate is: traceSampleRate * 100 / 100 = traceSampleRate.
+        private const val NO_SESSION_REBASING_RATE: Float = 100f
+
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
 
         internal fun ApmNetworkInstrumentationConfiguration.createInstrumentation(
@@ -253,7 +259,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
             @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference initialized with non-null Float constant
-            val cachedSessionSampleRate = AtomicReference(DEFAULT_TRACE_SAMPLE_RATE)
+            val cachedSessionSampleRate = AtomicReference(NO_SESSION_REBASING_RATE)
             val sessionSampleRateReceiver: FeatureContextUpdateReceiver? =
                 if (customTraceSampler == null) {
                     FeatureContextUpdateReceiver { featureName, context ->
@@ -303,7 +309,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         private fun Map<String, Set<TracingHeaderType>>.deepCopy() = mapValues { (_, v) -> v.toSet() }
 
         private fun resolveSessionSampleRate(rawSessionSampleRate: Any?): Float {
-            return (rawSessionSampleRate as? Number)?.toFloat() ?: DEFAULT_TRACE_SAMPLE_RATE
+            return (rawSessionSampleRate as? Number)?.toFloat() ?: NO_SESSION_REBASING_RATE
         }
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =

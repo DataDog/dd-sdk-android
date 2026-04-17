@@ -489,31 +489,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M keep session sample rate stable W getRumContext() {sampler rate changes mid-session}`(
-        forge: Forge
-    ) {
-        // Given
-        // The scope field initializer consumes the first getSampleRate() call (irrelevant to the
-        // snapshot). The second call, inside renewSession(), is the one that gets snapshotted.
-        val fakeSessionRate = forge.aFloat(min = 0f, max = 100f)
-        val fakeLaterRate = forge.aFloat(min = 0f, max = 100f)
-        whenever(mockSessionSampler.getSampleRate()).thenReturn(RumContext.FULL_SESSION_SAMPLE_RATE, fakeSessionRate)
-        whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        initializeTestedScope()
-
-        // When
-        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val firstContext = testedScope.getRumContext()
-        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeLaterRate)
-        val secondContext = testedScope.getRumContext()
-
-        // Then — both contexts must report the rate snapshotted at session creation, not the changed rate
-        assertThat(firstContext.sessionSampleRate).isEqualTo(fakeSessionRate)
-        assertThat(secondContext.sessionSampleRate).isEqualTo(fakeSessionRate)
-    }
-
-    @Test
-    fun `M use full session sample rate W getRumContext() {getSampleRate returns null on renewSession}`(
+    fun `M use full session sample rate W getRumContext() {getSampleRate returns null}`(
         forge: Forge
     ) {
         // Given

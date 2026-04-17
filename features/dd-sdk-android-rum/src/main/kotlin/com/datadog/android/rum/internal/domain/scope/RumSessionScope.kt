@@ -282,7 +282,6 @@ internal class RumSessionScope(
 
     private fun renewSession(time: Time, reason: StartReason) {
         val newSessionId = UUID.randomUUID().toString()
-        sessionSampleRate = sessionSampler.getSampleRate() ?: RumContext.FULL_SESSION_SAMPLE_RATE
         val keepSession = sessionSampler.sample(newSessionId)
         startReason = reason
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED

@@ -38,7 +38,6 @@ import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * For internal usage only.
@@ -79,8 +78,8 @@ class ApmNetworkInstrumentation internal constructor(
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
     private val receiverLifecycleLock = Any()
-    private val isClosed = AtomicBoolean(false)
-    private val isRegistered = AtomicBoolean(false)
+    private var isClosed = false
+    private var isRegistered = false
 
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
@@ -99,9 +98,9 @@ class ApmNetworkInstrumentation internal constructor(
         }
         sessionSampleRateReceiver?.let { receiver ->
             synchronized(receiverLifecycleLock) {
-                if (!isClosed.get() && !isRegistered.get()) {
+                if (!isClosed && !isRegistered) {
                     sdkCore.setContextUpdateReceiver(receiver)
-                    isRegistered.set(true)
+                    isRegistered = true
                 }
             }
         }
@@ -241,8 +240,9 @@ class ApmNetworkInstrumentation internal constructor(
     fun close() {
         val receiver = sessionSampleRateReceiver ?: return
         synchronized(receiverLifecycleLock) {
-            isClosed.set(true)
-            if (isRegistered.compareAndSet(true, false)) {
+            isClosed = true
+            if (isRegistered) {
+                isRegistered = false
                 internalSdkCore?.removeContextUpdateReceiver(receiver)
             }
         }
