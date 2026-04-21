@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.CoreTraceWriter
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
@@ -18,7 +17,6 @@ import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -32,10 +30,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -121,105 +117,5 @@ internal class TracingFeatureTest {
         // When+Then
         assertThat(testedFeature.storageConfiguration)
             .isEqualTo(FeatureStorageConfiguration.DEFAULT)
-    }
-
-    @Test
-    fun `M register context update receiver W initialize()`() {
-        // When
-        testedFeature.onInitialize(mock())
-
-        // Then
-        verify(mockSdkCore).setContextUpdateReceiver(testedFeature)
-    }
-
-    @Test
-    fun `M register event receiver W initialize()`() {
-        // When
-        testedFeature.onInitialize(mock())
-
-        // Then
-        verify(mockSdkCore).setEventReceiver(Feature.TRACING_FEATURE_NAME, testedFeature)
-    }
-
-    @Test
-    fun `M update tracked refs W onContextUpdate() {RUM context with session sample rate}`(
-        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float
-    ) {
-        // Given
-        val fakeRef = AtomicReference(TracingFeature.NO_SESSION_REBASING_RATE)
-        testedFeature.onReceive(SessionSampleRateRegistrationEvent(fakeRef))
-
-        // When
-        testedFeature.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
-        )
-
-        // Then
-        assertThat(fakeRef.get()).isEqualTo(fakeSessionRate)
-    }
-
-    @Test
-    fun `M not update tracked refs W onContextUpdate() {non-RUM feature}`(
-        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float,
-        @StringForgery fakeFeatureName: String
-    ) {
-        // Given
-        val fakeRef = AtomicReference(TracingFeature.NO_SESSION_REBASING_RATE)
-        testedFeature.onReceive(SessionSampleRateRegistrationEvent(fakeRef))
-
-        // When
-        testedFeature.onContextUpdate(
-            fakeFeatureName,
-            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
-        )
-
-        // Then
-        assertThat(fakeRef.get()).isEqualTo(TracingFeature.NO_SESSION_REBASING_RATE)
-    }
-
-    @Test
-    fun `M track ref and initialize with current rate W onReceive() {SessionSampleRateRegistrationEvent}`(
-        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float
-    ) {
-        // Given
-        testedFeature.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionRate)
-        )
-        val fakeRef = AtomicReference(0f)
-
-        // When
-        testedFeature.onReceive(SessionSampleRateRegistrationEvent(fakeRef))
-
-        // Then
-        assertThat(fakeRef.get()).isEqualTo(fakeSessionRate)
-    }
-
-    @Test
-    fun `M initialize ref with default rate W onReceive() {no prior context update}`() {
-        // Given
-        val fakeRef = AtomicReference(0f)
-
-        // When
-        testedFeature.onReceive(SessionSampleRateRegistrationEvent(fakeRef))
-
-        // Then
-        assertThat(fakeRef.get()).isEqualTo(TracingFeature.NO_SESSION_REBASING_RATE)
-    }
-
-    @Test
-    fun `M unregister receivers and clear refs W onStop()`() {
-        // Given
-        testedFeature.onInitialize(mock())
-
-        // When
-        testedFeature.onStop()
-
-        // Then
-        verify(mockSdkCore).removeContextUpdateReceiver(testedFeature)
-        verify(mockSdkCore).removeEventReceiver(Feature.TRACING_FEATURE_NAME)
-        assertThat(testedFeature.internalSessionSampleRate.get())
-            .isEqualTo(TracingFeature.NO_SESSION_REBASING_RATE)
     }
 }

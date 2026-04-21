@@ -164,7 +164,7 @@ internal class DeterministicTraceSamplerTest {
     }
 
     @Test
-    fun `M return sample rate W getSampleRate()`(
+    fun `M return raw sample rate W getSampleRate()`(
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // Given
@@ -205,11 +205,11 @@ internal class DeterministicTraceSamplerTest {
 
     @Test
     fun `M drop all spans W sample() {session sample rate is 50 and rebased rate is 0}`(forge: Forge) {
-        // Given: traceSampleRate=0, sessionSampleRate=50 → rebased = 0*50/100 = 0
+        // Given: traceSampleRate=0, sessionSampleRate=50 -> rebased = 0*50/100 = 0
         val fakeTraceSampleRate = 0f
         val fakeSessionSampleRate = 50f
-        testedSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
-        val spansWithSession = createSpansWithSessionContext(forge)
+        testedSampler = DeterministicTraceSampler(fakeTraceSampleRate)
+        val spansWithSession = createSpansWithSessionContext(forge, fakeSessionSampleRate)
 
         var sampledIn = 0
 
@@ -222,24 +222,30 @@ internal class DeterministicTraceSamplerTest {
 
     @Test
     fun `M apply rebased rate W sample() {session sample rate is 50 - deterministic}`() {
-        // Given: traceSampleRate=50, sessionSampleRate=50 → rebasedRate = 50*50/100 = 25%
+        // Given: traceSampleRate=50, sessionSampleRate=50 -> rebasedRate = 50*50/100 = 25%
         //
         // Knuth hash: hash = lastHexSegment * SAMPLER_HASHER
-        //   n=1 → hash = 1_111_111_111_111_111_111
-        //   n=5 → hash = 5_555_555_555_555_555_555
+        //   n=1 -> hash = 1_111_111_111_111_111_111
+        //   n=5 -> hash = 5_555_555_555_555_555_555
         //
-        // threshold(25%) = MAX_ULONG * 25/100 ≈ 4_611_686_018_427_387_903
-        // threshold(50%) = MAX_ULONG * 50/100 ≈ 9_223_372_036_854_775_807
+        // threshold(25%) = MAX_ULONG * 25/100 ~ 4_611_686_018_427_387_903
+        // threshold(50%) = MAX_ULONG * 50/100 ~ 9_223_372_036_854_775_807
         //
-        // n=1: hash(1.1T) < threshold(25%)(4.6T)  → SAMPLED at 25%
-        // n=5: hash(5.5T) > threshold(25%)(4.6T)  → NOT SAMPLED at 25%  ← rebasing dropped it
-        //      hash(5.5T) < threshold(50%)(9.2T)  → would be SAMPLED at raw 50%  ← proves rebasing had effect
+        // n=1: hash(1.1T) < threshold(25%)(4.6T)  -> SAMPLED at 25%
+        // n=5: hash(5.5T) > threshold(25%)(4.6T)  -> NOT SAMPLED at 25%  <- rebasing dropped it
+        //      hash(5.5T) < threshold(50%)(9.2T)  -> would be SAMPLED at raw 50%  <- proves rebasing had effect
         val traceSampleRate = 50f
         val sessionSampleRate = 50f
-        testedSampler = DeterministicTraceSampler(traceSampleRate) { sessionSampleRate }
+        testedSampler = DeterministicTraceSampler(traceSampleRate)
 
-        val spanSampled = createSpanWithFixedSessionId("aaaaaaaa-bbbb-cccc-dddd-000000000001")
-        val spanDropped = createSpanWithFixedSessionId("aaaaaaaa-bbbb-cccc-dddd-000000000005")
+        val spanSampled = createSpanWithFixedSessionId(
+            sessionId = "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+            sessionSampleRate = sessionSampleRate
+        )
+        val spanDropped = createSpanWithFixedSessionId(
+            sessionId = "aaaaaaaa-bbbb-cccc-dddd-000000000005",
+            sessionSampleRate = sessionSampleRate
+        )
 
         // When + Then
         assertThat(testedSampler.sample(spanSampled)).isTrue() // hash 1.1T < rebased threshold 4.6T
@@ -247,38 +253,25 @@ internal class DeterministicTraceSamplerTest {
     }
 
     @Test
-    fun `M apply rebased rate W sample() {session sample rate provider is below 100}`() {
-        // Given: global rebasing uses provider session sample rate regardless of span session tags
-        // traceSampleRate=50, sessionSampleRate=50 -> effective=25
-        // n=5 -> hash=5.5T > threshold(25%) 4.6T -> NOT SAMPLED
-        val traceSampleRate = 50f
-        val sessionSampleRate = 50f
-        testedSampler = DeterministicTraceSampler(traceSampleRate) { sessionSampleRate }
-
-        val spanWithoutSession = createSpanWithFixedTraceId(5L)
-
-        // When + Then
-        assertThat(testedSampler.sample(spanWithoutSession)).isFalse()
-    }
-
-    @Test
-    fun `M use raw trace rate W sample() {session sample rate is 100}`() {
-        // Given: sessionSampleRate=100 → rebased = traceSampleRate*100/100 = traceSampleRate (50%)
-        // threshold(50%) = MAX_ULONG * 50/100 ≈ 9_223_372_036_854_775_807
+    fun `M use raw trace rate W sample() {session sample rate tag is 100}`() {
+        // Given: sessionSampleRate=100 -> rebased = traceSampleRate*100/100 = traceSampleRate (50%)
+        // threshold(50%) = MAX_ULONG * 50/100 ~ 9_223_372_036_854_775_807
         //
-        // n=5: hash(5.5T) < threshold(50%)(9.2T) → SAMPLED (same as raw 50%)
-        // n=9: hash(9.9T) > threshold(50%)(9.2T) → NOT SAMPLED (same as raw 50%)
+        // n=5: hash(5.5T) < threshold(50%)(9.2T) -> SAMPLED (same as raw 50%)
+        // n=9: hash(9.9T) > threshold(50%)(9.2T) -> NOT SAMPLED (same as raw 50%)
         val traceSampleRate = 50f
         val sessionSampleRate = 100f
-        testedSampler = DeterministicTraceSampler(traceSampleRate) { sessionSampleRate }
+        testedSampler = DeterministicTraceSampler(traceSampleRate)
 
         val spanSampled = createSpanWithFixedSessionId(
             sessionId = "aaaaaaaa-bbbb-cccc-dddd-000000000005",
-            traceIdValue = 5L
+            traceIdValue = 5L,
+            sessionSampleRate = sessionSampleRate
         )
         val spanDropped = createSpanWithFixedSessionId(
             sessionId = "aaaaaaaa-bbbb-cccc-dddd-000000000009",
-            traceIdValue = 9L
+            traceIdValue = 9L,
+            sessionSampleRate = sessionSampleRate
         )
 
         // When + Then — rebased rate == raw trace rate, identical sampling decisions
@@ -287,12 +280,30 @@ internal class DeterministicTraceSamplerTest {
     }
 
     @Test
+    fun `M use raw trace rate W sample() {no session sample rate tag}`() {
+        // Given: no session_sample_rate tag -> no rebasing -> raw trace rate used
+        // threshold(50%) = MAX_ULONG * 50/100 ~ 9_223_372_036_854_775_807
+        //
+        // n=5: hash(5.5T) < threshold(50%)(9.2T) -> SAMPLED
+        // n=9: hash(9.9T) > threshold(50%)(9.2T) -> NOT SAMPLED
+        val traceSampleRate = 50f
+        testedSampler = DeterministicTraceSampler(traceSampleRate)
+
+        val spanSampled = createSpanWithFixedTraceId(5L)
+        val spanDropped = createSpanWithFixedTraceId(9L)
+
+        // When + Then — no tag -> no rebasing -> raw trace rate used
+        assertThat(testedSampler.sample(spanSampled)).isTrue()
+        assertThat(testedSampler.sample(spanDropped)).isFalse()
+    }
+
+    @Test
     fun `M drop all spans W sample() {session sample rate is 0}`(forge: Forge) {
-        // Given: sessionSampleRate=0 → rebased = traceSampleRate*0/100 = 0
+        // Given: sessionSampleRate=0 -> rebased = traceSampleRate*0/100 = 0
         val fakeTraceSampleRate = 50f
         val fakeSessionSampleRate = 0f
-        testedSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
-        val spansWithSession = createSpansWithSessionContext(forge)
+        testedSampler = DeterministicTraceSampler(fakeTraceSampleRate)
+        val spansWithSession = createSpansWithSessionContext(forge, fakeSessionSampleRate)
 
         var sampledIn = 0
 
@@ -303,28 +314,14 @@ internal class DeterministicTraceSamplerTest {
         assertThat(sampledIn).isEqualTo(0)
     }
 
-    @Test
-    fun `M use raw trace rate W sample() {sessionSampleRateProvider is default 100}`() {
-        // Given: no sessionSampleRateProvider -> defaults to 100f -> getSampleRate() returns traceSampleRate
-        // threshold(50%) = MAX_ULONG * 50/100 ≈ 9_223_372_036_854_775_807
-        //
-        // n=5: hash(5.5T) < threshold(50%)(9.2T) → SAMPLED
-        // n=9: hash(9.9T) > threshold(50%)(9.2T) → NOT SAMPLED
-        val traceSampleRate = 50f
-        testedSampler = DeterministicTraceSampler(traceSampleRate) // no sessionSampleRateProvider → default 100f
+    // endregion
 
-        val spanSampled = createSpanWithFixedTraceId(5L)
-        val spanDropped = createSpanWithFixedTraceId(9L)
-
-        // When + Then — no provider → no rebasing → raw trace rate used
-        assertThat(testedSampler.sample(spanSampled)).isTrue()
-        assertThat(testedSampler.sample(spanDropped)).isFalse()
-    }
+    // region getSampleRate(item) — deprecated, kept for V3 compatibility
 
     @Test
     // TODO RUM-13454 -> Remove this test when getSampleRate(DatadogSpan) is removed in V4 (RUM-15590)
     @Suppress("DEPRECATION")
-    fun `M use context session sample rate W getSampleRate(item) {no sessionSampleRateProvider configured}`(
+    fun `M return rebased rate W getSampleRate(item) {session sample rate tag present}`(
         @FloatForgery(min = 0f, max = 100f) traceSampleRate: Float,
         @FloatForgery(min = 0f, max = 99f) sessionSampleRate: Float,
         @LongForgery fakeTraceIdLong: Long
@@ -339,7 +336,7 @@ internal class DeterministicTraceSamplerTest {
         val context = mock<DatadogSpanContext> {
             on { this.traceId } doReturn traceId
             on { tags } doReturn mapOf(
-                "session_sample_rate" to sessionSampleRate
+                LogAttributes.RUM_SESSION_SAMPLE_RATE to sessionSampleRate
             )
         }
         val span = mock<DatadogSpan> {
@@ -356,11 +353,11 @@ internal class DeterministicTraceSamplerTest {
     @Test
     // TODO RUM-13454 -> Remove this test when getSampleRate(DatadogSpan) is removed in V4 (RUM-15590)
     @Suppress("DEPRECATION")
-    fun `M use raw trace rate W getSampleRate(item) {session sample rate unavailable}`(
+    fun `M return raw trace rate W getSampleRate(item) {session sample rate tag unavailable}`(
         @FloatForgery(min = 0f, max = 100f) traceSampleRate: Float,
         @LongForgery fakeTraceIdLong: Long
     ) {
-        // Given: no provider rate and no session_sample_rate tag available
+        // Given: no session_sample_rate tag available
         testedSampler = DeterministicTraceSampler(traceSampleRate)
 
         val traceId = mock<DatadogTraceId> {
@@ -377,7 +374,7 @@ internal class DeterministicTraceSamplerTest {
         // When
         val result = testedSampler.getSampleRate(span)
 
-        // Then — no session rate available → raw trace rate
+        // Then — no session rate available -> raw trace rate
         assertThat(result).isEqualTo(traceSampleRate)
     }
 
@@ -387,11 +384,13 @@ internal class DeterministicTraceSamplerTest {
 
     private fun createSpanWithFixedSessionId(
         sessionId: String? = null,
-        traceIdValue: Long = 0L
+        traceIdValue: Long = 0L,
+        sessionSampleRate: Float? = null
     ): DatadogSpan {
         val traceId = mock<DatadogTraceId> { on { toLong() } doReturn traceIdValue }
         val tagsMap = buildMap<String, Any> {
             if (sessionId != null) put(LogAttributes.RUM_SESSION_ID, sessionId)
+            if (sessionSampleRate != null) put(LogAttributes.RUM_SESSION_SAMPLE_RATE, sessionSampleRate)
         }
         val context = mock<DatadogSpanContext> {
             on { this.traceId } doReturn traceId
@@ -409,14 +408,17 @@ internal class DeterministicTraceSamplerTest {
         return mock<DatadogSpan> { on { context() } doReturn context }
     }
 
-    private fun createSpansWithSessionContext(forge: Forge): List<DatadogSpan> {
+    private fun createSpansWithSessionContext(forge: Forge, sessionSampleRate: Float): List<DatadogSpan> {
         val listSize = forge.anInt(256, 1024)
         return (0 until listSize).map {
             val fakeSessionId = UUID.randomUUID().toString()
             val traceId = mock<DatadogTraceId> { on { toLong() } doReturn forge.aLong() }
             val context = mock<DatadogSpanContext> {
                 on { this.traceId } doReturn traceId
-                on { tags } doReturn mapOf(LogAttributes.RUM_SESSION_ID to fakeSessionId)
+                on { tags } doReturn mapOf(
+                    LogAttributes.RUM_SESSION_ID to fakeSessionId,
+                    LogAttributes.RUM_SESSION_SAMPLE_RATE to sessionSampleRate
+                )
             }
             mock<DatadogSpan> { on { context() } doReturn context }
         }

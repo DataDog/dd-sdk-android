@@ -19,6 +19,8 @@ object RumContextTestsUtils {
     const val RUM_CONTEXT_SESSION_ID = "session_id"
     const val RUM_CONTEXT_APPLICATION_ID = "application_id"
 
+    const val RUM_SESSION_SAMPLE_RATE = "session_sample_rate"
+
     private const val SESSION_SAMPLE_RATE_KEY = "session_sample_rate"
     private const val HEX = 16
 

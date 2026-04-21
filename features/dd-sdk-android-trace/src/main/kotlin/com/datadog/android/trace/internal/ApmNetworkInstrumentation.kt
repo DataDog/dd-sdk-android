@@ -8,7 +8,6 @@ package com.datadog.android.trace.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
@@ -38,7 +37,6 @@ import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * For internal usage only.
@@ -59,11 +57,6 @@ import java.util.concurrent.atomic.AtomicReference
  * @param localFirstPartyHostHeaderTypeResolver resolver for determining header types for first-party hosts.
  * @param networkingLibraryName the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
  * @param networkTracingScope Tracing scope for the instrumentation. See [ApmNetworkTracingScope] enum for more details.
- * @param sessionSampleRateRef optional [AtomicReference] that [TracingFeature] will keep
- *        up-to-date with the latest RUM session sample rate. When the SDK core resolves,
- *        this ref is sent to [TracingFeature] via `sendEvent` so that it is updated whenever
- *        the RUM context changes. The corresponding [DeterministicTraceSampler] reads from
- *        this ref on every request (volatile read, no locking).
  */
 @Suppress("LongParameterList")
 @InternalApi
@@ -78,8 +71,7 @@ class ApmNetworkInstrumentation internal constructor(
     internal val tracedRequestListener: NetworkTracedRequestListener,
     internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
-    val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL,
-    internal val sessionSampleRateRef: AtomicReference<Float>? = null
+    val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
 
@@ -97,10 +89,6 @@ class ApmNetworkInstrumentation internal constructor(
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN, onlyOnce = true) {
                 WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)
             }
-        }
-        sessionSampleRateRef?.let { ref ->
-            sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                ?.sendEvent(SessionSampleRateRegistrationEvent(ref))
         }
     }
 

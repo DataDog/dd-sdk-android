@@ -25,7 +25,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -257,19 +256,18 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
-    fun `M not create session sample rate ref W createInstrumentation() {custom sampler provided}`() {
+    fun `M use custom sampler W createInstrumentation() {custom sampler provided}`() {
         // When
         val result = testedBuilder
             .setTraceSampler(mockTraceSampler)
             .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
-        assertThat(result.sessionSampleRateRef).isNull()
         assertThat(result.traceSampler).isSameAs(mockTraceSampler)
     }
 
     @Test
-    fun `M create session sample rate ref W createInstrumentation() {no custom sampler}`(
+    fun `M return raw trace rate W createInstrumentation() {default sampler}`(
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // When
@@ -277,39 +275,7 @@ internal class ApmInstrumentationConfigurationTest {
             .setTraceSampleRate(fakeSampleRate)
             .createInstrumentation(fakeNetworkLibraryName)
 
-        // Then
-        assertThat(result.sessionSampleRateRef).isNotNull()
-    }
-
-    @Test
-    fun `M use raw trace rate W createInstrumentation() {no RUM context update yet}`(
-        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
-    ) {
-        // When
-        val result = testedBuilder
-            .setTraceSampleRate(fakeSampleRate)
-            .createInstrumentation(fakeNetworkLibraryName)
-
-        // Then - default session rate is 100f (no rebasing)
+        // Then — getSampleRate() returns the raw configured rate (no rebasing without a span)
         assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
-    }
-
-    @Test
-    fun `M rebase trace rate W sessionSampleRateRef updated {with session rate}`(
-        @FloatForgery(min = 1f, max = 100f) fakeSampleRate: Float,
-        @FloatForgery(min = 1f, max = 99f) fakeSessionRate: Float
-    ) {
-        // Given
-        val result = testedBuilder
-            .setTraceSampleRate(fakeSampleRate)
-            .createInstrumentation(fakeNetworkLibraryName)
-
-        // When
-        result.sessionSampleRateRef!!.set(fakeSessionRate)
-
-        // Then
-        val expectedRate = fakeSampleRate * fakeSessionRate / 100f
-        assertThat(result.traceSampler.getSampleRate())
-            .isCloseTo(expectedRate, Offset.offset(0.001f))
     }
 }

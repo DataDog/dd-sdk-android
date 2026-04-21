@@ -354,13 +354,4 @@ internal class DatadogCronetEngineTest {
         assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
         assertThat(testedEngine.apmNetworkInstrumentation).isNull()
     }
-
-    @Test
-    fun `M delegate shutdown W shutdown()`() {
-        // When
-        testedEngine.shutdown()
-
-        // Then
-        verify(mockDelegate).shutdown()
-    }
 }

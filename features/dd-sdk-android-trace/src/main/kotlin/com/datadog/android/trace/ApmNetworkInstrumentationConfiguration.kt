@@ -13,9 +13,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
-import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.net.TracerProvider
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Configuration for APM distributed tracing of network requests.
@@ -251,12 +249,8 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
-            @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference initialized with non-null Float constant
-            val cachedSessionSampleRate = AtomicReference(TracingFeature.NO_SESSION_REBASING_RATE)
-            val sessionSampleRateRef: AtomicReference<Float>? =
-                if (customTraceSampler == null) cachedSessionSampleRate else null
             val effectiveSampler = customTraceSampler
-                ?: DeterministicTraceSampler(traceSampleRate) { cachedSessionSampleRate.get() }
+                ?: DeterministicTraceSampler(traceSampleRate)
 
             return ApmNetworkInstrumentation(
                 canSendSpan = !headerPropagationOnly,
@@ -269,8 +263,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
                 networkingLibraryName = instrumentationName,
                 tracedRequestListener = tracedRequestListener,
                 redacted404ResourceName = redacted404ResourceName,
-                localFirstPartyHostHeaderTypeResolver = localFirstPartyHostHeaderTypeResolver,
-                sessionSampleRateRef = sessionSampleRateRef
+                localFirstPartyHostHeaderTypeResolver = localFirstPartyHostHeaderTypeResolver
             )
         }
 

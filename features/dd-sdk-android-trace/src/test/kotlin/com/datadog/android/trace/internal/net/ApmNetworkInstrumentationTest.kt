@@ -18,6 +18,7 @@ import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.DeterministicTraceSampler
@@ -33,7 +34,6 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
-import com.datadog.android.trace.internal.SessionSampleRateRegistrationEvent
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -69,7 +69,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -223,7 +222,7 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M use rebased trace sample rate in tracing state W onRequest() {deterministic sampler without RUM session id}`(
+    fun `M use rebased trace sample rate in tracing state W onRequest() {session sample rate tag present}`(
         @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float,
         @FloatForgery(min = 0f, max = 99f) fakeSessionSampleRate: Float
     ) {
@@ -232,11 +231,13 @@ internal class ApmNetworkInstrumentationTest {
             on { toLong() } doReturn 1L
         }
         whenever(mockSpanContext.traceId).thenReturn(traceId)
-        whenever(mockSpanContext.tags).thenReturn(emptyMap())
+        whenever(mockSpanContext.tags).thenReturn(
+            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionSampleRate)
+        )
         whenever(mockSpanContext.setSamplingPriority(any())).thenReturn(true)
 
         testedInstrumentation = createInstrumentation(
-            traceSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
+            traceSampler = DeterministicTraceSampler(fakeTraceSampleRate)
         )
 
         _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
@@ -251,7 +252,7 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M set rebased trace sample rate metric W onRequest() {deterministic sampler without RUM session id}`(
+    fun `M set rebased trace sample rate metric W onRequest() {session sample rate tag present}`(
         @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float,
         @FloatForgery(min = 0f, max = 99f) fakeSessionSampleRate: Float
     ) {
@@ -260,11 +261,13 @@ internal class ApmNetworkInstrumentationTest {
             on { toLong() } doReturn 1L
         }
         whenever(mockSpanContext.traceId).thenReturn(traceId)
-        whenever(mockSpanContext.tags).thenReturn(emptyMap())
+        whenever(mockSpanContext.tags).thenReturn(
+            mapOf(LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeSessionSampleRate)
+        )
         whenever(mockSpanContext.setSamplingPriority(any())).thenReturn(true)
 
         testedInstrumentation = createInstrumentation(
-            traceSampler = DeterministicTraceSampler(fakeTraceSampleRate) { fakeSessionSampleRate }
+            traceSampler = DeterministicTraceSampler(fakeTraceSampleRate)
         )
 
         _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
@@ -986,51 +989,6 @@ internal class ApmNetworkInstrumentationTest {
         }
     }
 
-    @Test
-    fun `M send SessionSampleRateRegistrationEvent W sdkCore resolves {sessionSampleRateRef provided}`() {
-        // Given
-        val ref = AtomicReference(0f)
-        testedInstrumentation = createInstrumentation(
-            sessionSampleRateRef = ref
-        )
-
-        // When
-        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
-
-        // Then
-        verify(mockTracingFeature).sendEvent(SessionSampleRateRegistrationEvent(ref))
-    }
-
-    @Test
-    fun `M not send event W sdkCore resolves {sessionSampleRateRef is null}`() {
-        // Given
-        testedInstrumentation = createInstrumentation(
-            sessionSampleRateRef = null
-        )
-
-        // When
-        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
-
-        // Then
-        verify(mockTracingFeature, never()).sendEvent(any())
-    }
-
-    @Test
-    fun `M not send event W sdkCore resolves {tracing feature not registered}`() {
-        // Given
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
-        val ref = AtomicReference(0f)
-        testedInstrumentation = createInstrumentation(
-            sessionSampleRateRef = ref
-        )
-
-        // When
-        testedInstrumentation.reportInstrumentationError { "trigger sdk lookup" }
-
-        // Then
-        verifyNoInteractions(mockTracingFeature)
-    }
-
     // endregion
 
     private fun createTraceState(isSampled: Boolean = true) = RequestTracingState(
@@ -1044,8 +1002,7 @@ internal class ApmNetworkInstrumentationTest {
         canSendSpan: Boolean = true,
         networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS,
         redacted404ResourceName: Boolean = true,
-        traceSampler: Sampler<DatadogSpan> = mockTraceSampler,
-        sessionSampleRateRef: AtomicReference<Float>? = null
+        traceSampler: Sampler<DatadogSpan> = mockTraceSampler
     ) = ApmNetworkInstrumentation(
         canSendSpan = canSendSpan,
         sdkInstanceName = null,
@@ -1057,8 +1014,7 @@ internal class ApmNetworkInstrumentationTest {
         tracedRequestListener = mockNetworkTracedRequestListener,
         localFirstPartyHostHeaderTypeResolver = mockLocalFirstPartyHostResolver,
         networkingLibraryName = fakeNetworkInstrumentationName,
-        networkTracingScope = networkTracingScope,
-        sessionSampleRateRef = sessionSampleRateRef
+        networkTracingScope = networkTracingScope
     )
 
     companion object {
