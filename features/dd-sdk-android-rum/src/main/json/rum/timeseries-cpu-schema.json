@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "rum/timeseries-cpu-schema.json",
+  "title": "RumTimeseriesCpuEvent",
+  "type": "object",
+  "description": "Schema for a CPU timeseries event.",
+  "required": ["_dd", "application", "date", "session", "source", "timeseries", "type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "RUM event type",
+      "const": "timeseries",
+      "readOnly": true
+    },
+    "_dd": {
+      "type": "object",
+      "description": "Internal properties",
+      "required": ["format_version"],
+      "properties": {
+        "format_version": {
+          "type": "integer",
+          "const": 2,
+          "description": "Version of the RUM event format",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
+    "application": {
+      "type": "object",
+      "description": "Application properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the application",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
+    "session": {
+      "type": "object",
+      "description": "Session properties",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the session",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the session",
+          "enum": ["user", "synthetics", "ci_test"],
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
+    "source": {
+      "type": "string",
+      "description": "The source of this event",
+      "enum": [
+        "android",
+        "ios",
+        "browser",
+        "flutter",
+        "react-native",
+        "roku",
+        "unity",
+        "kotlin-multiplatform",
+        "electron",
+        "rum-cpp"
+      ],
+      "readOnly": true
+    },
+    "date": {
+      "type": "integer",
+      "description": "Start of the event in ms from epoch",
+      "minimum": 0,
+      "readOnly": true
+    },
+    "service": {
+      "type": "string",
+      "description": "The service name for this application"
+    },
+    "version": {
+      "type": "string",
+      "description": "The version for this application"
+    },
+    "timeseries": {
+      "type": "object",
+      "description": "CPU timeseries properties",
+      "required": ["id", "name", "start", "end", "data"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the timeseries batch",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name identifying the timeseries metric",
+          "readOnly": true
+        },
+        "start": {
+          "type": "integer",
+          "description": "Timestamp of the first sample in nanoseconds from epoch",
+          "readOnly": true
+        },
+        "end": {
+          "type": "integer",
+          "description": "Timestamp of the last sample in nanoseconds from epoch",
+          "readOnly": true
+        },
+        "data": {
+          "type": "array",
+          "description": "Array of CPU data points",
+          "items": {
+            "type": "object",
+            "description": "A single CPU data point",
+            "required": ["timestamp", "data_point"],
+            "properties": {
+              "timestamp": {
+                "type": "integer",
+                "description": "Sample timestamp in nanoseconds from epoch",
+                "readOnly": true
+              },
+              "data_point": {
+                "type": "object",
+                "description": "CPU measurements for this sample",
+                "required": ["cpu_usage"],
+                "properties": {
+                  "cpu_usage": {
+                    "type": "number",
+                    "description": "CPU usage as a percentage (0.0 to 100.0)",
+                    "readOnly": true
+                  }
+                },
+                "readOnly": true
+              }
+            },
+            "readOnly": true
+          },
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    }
+  }
+}
