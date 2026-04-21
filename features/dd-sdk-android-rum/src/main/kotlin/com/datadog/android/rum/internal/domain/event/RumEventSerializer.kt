@@ -16,6 +16,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumTimeseriesCpuEvent
+import com.datadog.android.rum.model.RumTimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -55,6 +57,12 @@ internal class RumEventSerializer(
             }
             is VitalAppLaunchEvent -> {
                 serializeVitalAppLaunchEvent(model)
+            }
+            is RumTimeseriesMemoryEvent -> {
+                model.toJson().toString()
+            }
+            is RumTimeseriesCpuEvent -> {
+                model.toJson().toString()
             }
             is TelemetryDebugEvent -> {
                 model.toJson().toString()

@@ -19,6 +19,8 @@ import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollecting
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
@@ -58,9 +60,10 @@ internal class RumSessionScope(
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    rumSessionTypeOverride: RumSessionType?,
+    private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    private val timeseriesCollector: TimeseriesCollecting = NoOpTimeseriesCollector()
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -226,6 +229,7 @@ internal class RumSessionScope(
 
     private fun stopSession() {
         isActive = false
+        timeseriesCollector.stop()
         sessionEndedMetricDispatcher.onSessionStopped(sessionId)
     }
 
@@ -280,6 +284,9 @@ internal class RumSessionScope(
     }
 
     private fun renewSession(time: Time, reason: StartReason) {
+        if (sessionState == State.TRACKED) {
+            timeseriesCollector.stop()
+        }
         val newSessionId = UUID.randomUUID().toString()
         val keepSession = sessionSampler.sample(newSessionId)
         startReason = reason
@@ -294,6 +301,12 @@ internal class RumSessionScope(
                 startReason = reason,
                 ntpOffsetAtStartMs = sdkCore.time.serverTimeOffsetMs,
                 backgroundEventTracking = backgroundTrackingEnabled
+            )
+            val applicationId = parentScope.getRumContext().applicationId
+            timeseriesCollector.start(
+                sessionId = sessionId,
+                applicationId = applicationId,
+                sessionType = rumSessionTypeOverride ?: RumSessionType.USER
             )
         }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
