@@ -46,6 +46,8 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollecting
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -105,7 +107,8 @@ internal class DatadogRumMonitor(
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    timeseriesCollector: TimeseriesCollecting = NoOpTimeseriesCollector()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -128,7 +131,8 @@ internal class DatadogRumMonitor(
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        timeseriesCollector = timeseriesCollector
     )
 
     internal var debugListener: RumDebugListener? = null

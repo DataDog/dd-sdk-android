@@ -70,6 +70,9 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollecting
+import com.datadog.android.rum.internal.timeseries.TimeseriesSessionCollector
 import com.datadog.android.rum.internal.metric.slowframes.DefaultSlowFramesListener
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -178,6 +181,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    internal var timeseriesCollector: TimeseriesCollecting = NoOpTimeseriesCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -270,6 +274,10 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
+        if (configuration.enableTimeseries) {
+            timeseriesCollector = createTimeseriesCollector()
+        }
+
         initRumAppStartupDetector()
 
         sdkCore.setEventReceiver(name, this)
@@ -355,6 +363,9 @@ internal class RumFeature(
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
+        timeseriesCollector.stop()
+        timeseriesCollector = NoOpTimeseriesCollector()
+
         cleanupInfoProviders()
 
         val detector = rumAppStartupDetector
@@ -410,6 +421,18 @@ internal class RumFeature(
             ),
             eventMetaSerializer = RumEventMetaSerializer(),
             sdkCore = sdkCore
+        )
+    }
+
+    private fun createTimeseriesCollector(): TimeseriesCollecting {
+        val activityManager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        return TimeseriesSessionCollector(
+            memoryReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
+            writer = dataWriter,
+            sdkCore = sdkCore,
+            totalRamBytes = memoryInfo.totalMem
         )
     }
 
@@ -770,7 +793,8 @@ internal class RumFeature(
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
         val insightsCollector: InsightsCollector,
-        val appStartupActivityPredicate: AppStartupActivityPredicate
+        val appStartupActivityPredicate: AppStartupActivityPredicate,
+        val enableTimeseries: Boolean
     )
 
     internal companion object {
@@ -824,7 +848,8 @@ internal class RumFeature(
             collectAccessibility = false,
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
-            appStartupActivityPredicate = DefaultAppStartupActivityPredicate
+            appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
+            enableTimeseries = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

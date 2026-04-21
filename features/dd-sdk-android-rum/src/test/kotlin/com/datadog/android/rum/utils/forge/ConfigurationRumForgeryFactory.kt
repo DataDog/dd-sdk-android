@@ -74,7 +74,8 @@ internal class ConfigurationRumForgeryFactory :
             collectAccessibility = forge.aBool(),
             disableJankStats = false,
             insightsCollector = mock(),
-            appStartupActivityPredicate = mock()
+            appStartupActivityPredicate = mock(),
+            enableTimeseries = forge.aBool()
         )
     }
 }

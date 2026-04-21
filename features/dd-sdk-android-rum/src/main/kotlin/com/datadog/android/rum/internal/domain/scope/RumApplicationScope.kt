@@ -20,6 +20,8 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollecting
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
@@ -55,7 +57,8 @@ internal class RumApplicationScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val timeseriesCollector: TimeseriesCollecting = NoOpTimeseriesCollector()
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -85,7 +88,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            timeseriesCollector = timeseriesCollector
         )
     )
 
@@ -207,7 +211,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            timeseriesCollector = timeseriesCollector
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
