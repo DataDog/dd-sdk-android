@@ -102,7 +102,13 @@ internal class CronetRequestCallback(
     ) = delegate.onReadCompleted(request, info, byteBuffer)
 
     private fun finishSuccessRequestTracing(response: UrlResponseInfo?) {
-        val responseInfo = response?.let { CronetHttpResponseInfo(it) }
+        val requestInfo = apmTracingStateHolder.get()?.createRequestInfo()
+            ?: distributedTracingStateHolder.get()?.createRequestInfo()
+        val responseInfo = if (response != null && requestInfo != null) {
+            CronetHttpResponseInfo(response, requestInfo)
+        } else {
+            null
+        }
 
         apmTracingStateHolder.getAndSet(null)?.let { apmTracingState ->
             if (responseInfo != null) {

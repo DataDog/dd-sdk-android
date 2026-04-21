@@ -5,12 +5,14 @@
  */
 package com.datadog.android.cronet.internal
 
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.internal.network.HttpSpec
 import org.chromium.net.UrlResponseInfo
 
 internal data class CronetHttpResponseInfo(
-    private val response: UrlResponseInfo
+    private val response: UrlResponseInfo,
+    override val request: HttpRequestInfo
 ) : HttpResponseInfo {
 
     override val url: String get() = response.url
@@ -35,7 +37,7 @@ internal data class CronetHttpResponseInfo(
         get() {
             /*
              *  Content-Length is expected to be declared once or in case of multiple repetitions should have same value.
-             *  Otherwise it's assumed that Content-Length is invalid
+             *  Otherwise, it's assumed that Content-Length is invalid
              *  according to  https://www.rfc-editor.org/rfc/rfc9110.pdf, page 63:
              *
              * Likewise, a sender forward a message with a Content-Length header field value that does not match the ABNF

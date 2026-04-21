@@ -7,6 +7,7 @@ package com.datadog.android.okhttp.internal
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import okhttp3.Response
 import okhttp3.ResponseBody
@@ -64,6 +65,8 @@ internal class OkHttpResponseInfo(
             )
             null
         }
+
+    override val request: HttpRequestInfo get() = OkHttpRequestInfo(originalResponse.request)
 
     internal companion object {
 

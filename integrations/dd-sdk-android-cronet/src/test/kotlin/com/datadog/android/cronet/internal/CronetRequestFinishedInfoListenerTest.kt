@@ -136,7 +136,7 @@ internal class CronetRequestFinishedInfoListenerTest {
         // Then
         verify(mockRumNetworkInstrumentation).stopResource(
             requestInfo = fakeRequestInfo,
-            responseInfo = CronetHttpResponseInfo(mockResponseInfo)
+            responseInfo = CronetHttpResponseInfo(mockResponseInfo, fakeRequestInfo)
         )
     }
 

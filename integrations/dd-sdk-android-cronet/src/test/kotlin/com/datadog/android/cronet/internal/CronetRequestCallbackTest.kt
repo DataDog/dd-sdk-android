@@ -388,6 +388,7 @@ internal class CronetRequestCallbackTest {
         // Given
         val mockDistributedTracingState: RequestTracingState = mock()
         whenever(mockDistributedTracingInstrumentation.onRequest(fakeRequestInfo)) doReturn mockDistributedTracingState
+        whenever(mockDistributedTracingState.createRequestInfo()) doReturn mockMutableRequestInfo
         testedCallback.onRequestStarted(fakeRequestInfo)
 
         // When
@@ -476,6 +477,7 @@ internal class CronetRequestCallbackTest {
         // Given
         val mockDistributedTracingState: RequestTracingState = mock()
         whenever(mockDistributedTracingInstrumentation.onRequest(fakeRequestInfo)) doReturn mockDistributedTracingState
+        whenever(mockDistributedTracingState.createRequestInfo()) doReturn mockMutableRequestInfo
         testedCallback.onRequestStarted(fakeRequestInfo)
 
         // When

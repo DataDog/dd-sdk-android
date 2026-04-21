@@ -91,6 +91,20 @@ internal class OkHttpResponseInfoTest {
     }
 
     @Test
+    fun `M delegate W request property`() {
+        // Given
+        val mockRequest = mock<Request>()
+        val mockResponse = mock<Response> { on { request } doReturn mockRequest }
+
+        // When
+        val result = OkHttpResponseInfo(mockResponse, mockInternalLogger).request
+
+        // Then
+        assertThat(result).isInstanceOf(OkHttpRequestInfo::class.java)
+        assertThat(result.toOkHttpRequest()).isSameAs(mockRequest)
+    }
+
+    @Test
     fun `M delegate W contentType property { content type header present }`(
         @StringForgery fakeContentType: String,
         @StringForgery fakeContentSubType: String

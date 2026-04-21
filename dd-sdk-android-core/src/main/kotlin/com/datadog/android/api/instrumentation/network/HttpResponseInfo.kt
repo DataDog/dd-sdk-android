@@ -38,4 +38,9 @@ interface HttpResponseInfo {
      */
     @get:WorkerThread
     val contentLength: Long?
+
+    /**
+     * Represents the HTTP request associated with the response.
+     */
+    val request: HttpRequestInfo
 }
