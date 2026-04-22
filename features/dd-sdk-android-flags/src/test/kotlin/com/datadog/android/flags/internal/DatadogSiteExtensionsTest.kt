@@ -10,10 +10,10 @@ import com.datadog.android.DatadogSite
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 
 @ExtendWith(ForgeExtension::class)
@@ -56,10 +56,14 @@ internal class DatadogSiteExtensionsTest {
 
     // region getFlagsEndpoint - Error Cases
 
-    @Test
-    fun `M return null W getFlagsEndpoint() { unsupported site }`(@StringForgery customerDomain: String) {
+    @ParameterizedTest
+    @EnumSource(DatadogSite::class, names = ["US1_FED", "US2_FED"])
+    fun `M return null W getFlagsEndpoint() { unsupported site }`(
+        site: DatadogSite,
+        @StringForgery customerDomain: String
+    ) {
         // When
-        val result = DatadogSite.US1_FED.getFlagsEndpoint(customerDomain)
+        val result = site.getFlagsEndpoint(customerDomain)
 
         // Then
         assertThat(result).isNull()
