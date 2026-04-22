@@ -3,18 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.rum.featureoperations
+package com.datadog.android.rum.operations
 
 /**
- * Represents the possible reasons for a failed feature operation.
+ * Represents the possible reasons for a failed operation.
  */
-@Deprecated(
-    "Use com.datadog.android.rum.operations.FailureReason instead",
-    replaceWith = ReplaceWith(
-        expression = "FailureReason",
-        imports = ["com.datadog.android.rum.operations.FailureReason"]
-    )
-)
 enum class FailureReason {
     /**
      * Represents a failure caused by an error during execution.

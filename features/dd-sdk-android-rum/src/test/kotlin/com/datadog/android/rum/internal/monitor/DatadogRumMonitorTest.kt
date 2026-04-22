@@ -32,7 +32,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -52,13 +51,15 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME
-import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_OPERATION_KEY
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.operations.FailureReason
+import com.datadog.android.rum.operations.OperationOptions
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
@@ -2760,7 +2761,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M produce StartFeatureOperation event W startFeatureOperation`(
+    fun `M produce StartOperation event W startOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2768,9 +2769,9 @@ internal class DatadogRumMonitorTest {
         val operationKey = forge.aNullable { key }
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        assertMethodCallProducesValidEvent<RumRawEvent.StartFeatureOperation>(
+        assertMethodCallProducesValidEvent<RumRawEvent.StartOperation>(
             whenCalled = {
-                testedMonitor.startFeatureOperation(name, operationKey, attributes)
+                testedMonitor.startOperation(name, operationKey, OperationOptions.Empty, attributes)
             },
             then = { event ->
                 assertThat(event.name).isEqualTo(name)
@@ -2783,7 +2784,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M produce StopFeatureOperation event W succeedFeatureOperation { successful }`(
+    fun `M produce StopOperation event W succeedOperation { successful }`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2791,9 +2792,9 @@ internal class DatadogRumMonitorTest {
         val operationKey = forge.aNullable { key }
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        assertMethodCallProducesValidEvent<RumRawEvent.StopFeatureOperation>(
+        assertMethodCallProducesValidEvent<RumRawEvent.StopOperation>(
             whenCalled = {
-                testedMonitor.succeedFeatureOperation(name, operationKey, attributes)
+                testedMonitor.succeedOperation(name, operationKey, attributes)
             },
             then = { event ->
                 assertThat(event.name).isEqualTo(name)
@@ -2807,7 +2808,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M produce StopFeatureOperation event W failFeatureOperation { failed }`(
+    fun `M produce StopOperation event W failOperation { failed }`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2816,9 +2817,9 @@ internal class DatadogRumMonitorTest {
         val failureReason = forge.aValueFrom(FailureReason::class.java)
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        assertMethodCallProducesValidEvent<RumRawEvent.StopFeatureOperation>(
+        assertMethodCallProducesValidEvent<RumRawEvent.StopOperation>(
             whenCalled = {
-                testedMonitor.failFeatureOperation(name, operationKey, failureReason, attributes)
+                testedMonitor.failOperation(name, operationKey, failureReason, attributes)
             },
             then = { event ->
                 assertThat(event.name).isEqualTo(name)
@@ -2832,7 +2833,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W startFeatureOperation`(
+    fun `M log user message W startOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2842,19 +2843,19 @@ internal class DatadogRumMonitorTest {
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
-        testedMonitor.startFeatureOperation(name, operationKey, attributes)
+        testedMonitor.startOperation(name, operationKey, OperationOptions.Empty, attributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            "Feature Operation `$name` (operationKey `$operationKey`) started."
+            "Operation `$name` (operationKey `$operationKey`) started."
         )
     }
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W succeedFeatureOperation`(
+    fun `M log user message W succeedOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2863,19 +2864,19 @@ internal class DatadogRumMonitorTest {
         val operationKey = forge.aNullable { key }
 
         // When
-        testedMonitor.succeedFeatureOperation(name, operationKey, fakeAttributes)
+        testedMonitor.succeedOperation(name, operationKey, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
+            "Operation `$name` (operationKey `$operationKey`) successfully ended."
         )
     }
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W failFeatureOperation`(
+    fun `M log user message W failOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2885,20 +2886,20 @@ internal class DatadogRumMonitorTest {
         val failureReason = forge.aValueFrom(FailureReason::class.java)
 
         // When
-        testedMonitor.failFeatureOperation(name, operationKey, failureReason, fakeAttributes)
+        testedMonitor.failOperation(name, operationKey, failureReason, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully " +
+            "Operation `$name` (operationKey `$operationKey`) unsuccessfully " +
                 "ended with the following failure reason: $failureReason."
         )
     }
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log telemetry message W startFeatureOperation`(
+    fun `M log telemetry message W startOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2907,7 +2908,7 @@ internal class DatadogRumMonitorTest {
         val operationKey = forge.aNullable { key }
 
         // When
-        testedMonitor.startFeatureOperation(name, operationKey, fakeAttributes)
+        testedMonitor.startOperation(name, operationKey, OperationOptions.Empty, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyApiUsage(
@@ -2920,7 +2921,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log telemetry message W succeedFeatureOperation`(
+    fun `M log telemetry message W succeedOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2929,7 +2930,7 @@ internal class DatadogRumMonitorTest {
         val operationKey = forge.aNullable { key }
 
         // When
-        testedMonitor.succeedFeatureOperation(name, operationKey, fakeAttributes)
+        testedMonitor.succeedOperation(name, operationKey, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyApiUsage(
@@ -2942,7 +2943,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log telemetry message W failFeatureOperation`(
+    fun `M log telemetry message W failOperation`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
@@ -2952,7 +2953,7 @@ internal class DatadogRumMonitorTest {
         val failureReason = forge.aValueFrom(FailureReason::class.java)
 
         // When
-        testedMonitor.failFeatureOperation(name, operationKey, failureReason, fakeAttributes)
+        testedMonitor.failOperation(name, operationKey, failureReason, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyApiUsage(
@@ -2965,17 +2966,17 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W startFeatureOperation { operation name is blank }`(
+    fun `M log user message W startOperation { operation name is blank }`(
         @StringForgery(StringForgeryType.WHITESPACE) name: String
     ) {
         // When
-        testedMonitor.startFeatureOperation(name, null, fakeAttributes)
+        testedMonitor.startOperation(name, null, OperationOptions.Empty, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            FO_ERROR_INVALID_NAME.format(Locale.US, name)
+            OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
         )
 
         verifyNoInteractions(mockApplicationScope)
@@ -2984,18 +2985,18 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W startFeatureOperation { operation key is blank }`(
+    fun `M log user message W startOperation { operation key is blank }`(
         @StringForgery name: String,
         @StringForgery(StringForgeryType.WHITESPACE) operationKey: String
     ) {
         // When
-        testedMonitor.startFeatureOperation(name, operationKey, fakeAttributes)
+        testedMonitor.startOperation(name, operationKey, OperationOptions.Empty, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+            OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
 
         verifyNoInteractions(mockApplicationScope)
@@ -3004,17 +3005,17 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W succeedFeatureOperation { operation name is blank }`(
+    fun `M log user message W succeedOperation { operation name is blank }`(
         @StringForgery(StringForgeryType.WHITESPACE) name: String
     ) {
         // When
-        testedMonitor.succeedFeatureOperation(name, null, fakeAttributes)
+        testedMonitor.succeedOperation(name, null, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            FO_ERROR_INVALID_NAME.format(Locale.US, name)
+            OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
         )
 
         verifyNoInteractions(mockApplicationScope)
@@ -3023,18 +3024,18 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W succeedFeatureOperation { operation key is blank }`(
+    fun `M log user message W succeedOperation { operation key is blank }`(
         @StringForgery name: String,
         @StringForgery(StringForgeryType.WHITESPACE) operationKey: String
     ) {
         // When
-        testedMonitor.succeedFeatureOperation(name, operationKey, fakeAttributes)
+        testedMonitor.succeedOperation(name, operationKey, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+            OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
 
         verifyNoInteractions(mockApplicationScope)
@@ -3043,20 +3044,20 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W failFeatureOperation { operation name is blank }`(
+    fun `M log user message W failOperation { operation name is blank }`(
         @StringForgery(StringForgeryType.WHITESPACE) name: String,
         forge: Forge
     ) {
         val failureReason = forge.aValueFrom(FailureReason::class.java)
 
         // When
-        testedMonitor.failFeatureOperation(name, null, failureReason, fakeAttributes)
+        testedMonitor.failOperation(name, null, failureReason, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            FO_ERROR_INVALID_NAME.format(Locale.US, name)
+            OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
         )
 
         verifyNoInteractions(mockApplicationScope)
@@ -3065,7 +3066,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W failFeatureOperation { operation key is blank }`(
+    fun `M log user message W failOperation { operation key is blank }`(
         @StringForgery name: String,
         @StringForgery(StringForgeryType.WHITESPACE) operationKey: String,
         forge: Forge
@@ -3073,13 +3074,13 @@ internal class DatadogRumMonitorTest {
         val failureReason = forge.aValueFrom(FailureReason::class.java)
 
         // When
-        testedMonitor.failFeatureOperation(name, operationKey, failureReason, fakeAttributes)
+        testedMonitor.failOperation(name, operationKey, failureReason, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+            OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
 
         verifyNoInteractions(mockApplicationScope)
