@@ -243,6 +243,52 @@ internal class TimeseriesSessionCollectorTest {
     }
 
     @Test
+    fun `M have start less than or equal to end W flush() { memory }`() {
+        // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 3,
+            cpuUsageProvider = { fakeCpuUsage },
+            executorFactory = { mockExecutor }
+        )
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        repeat(3) { sampleRunnable.run() }
+
+        // Then
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(2)).write(any(), captor.capture(), any())
+        val memoryEvent = captor.allValues.filterIsInstance<RumTimeseriesMemoryEvent>().first()
+        assertThat(memoryEvent.timeseries.start).isLessThanOrEqualTo(memoryEvent.timeseries.end)
+    }
+
+    @Test
+    fun `M have start less than or equal to end W flush() { cpu }`() {
+        // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 3,
+            cpuUsageProvider = { fakeCpuUsage },
+            executorFactory = { mockExecutor }
+        )
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        repeat(3) { sampleRunnable.run() }
+
+        // Then
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(2)).write(any(), captor.capture(), any())
+        val cpuEvent = captor.allValues.filterIsInstance<RumTimeseriesCpuEvent>().first()
+        assertThat(cpuEvent.timeseries.start).isLessThanOrEqualTo(cpuEvent.timeseries.end)
+    }
+
+    @Test
     fun `M write memory event with correct dataPoints W flush()`() {
         // Given
         testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
@@ -257,7 +303,8 @@ internal class TimeseriesSessionCollectorTest {
         verify(mockWriter, times(2)).write(any(), captor.capture(), any())
         val memoryEvent = captor.allValues.filterIsInstance<RumTimeseriesMemoryEvent>().first()
         val dataPoint = memoryEvent.timeseries.data.first().dataPoint
-        assertThat(dataPoint.memoryMax).isEqualTo(fakeMemoryBytes.toLong())
+        assertThat(dataPoint.memoryMax.toDouble())
+            .isCloseTo(fakeMemoryBytes, org.assertj.core.data.Offset.offset(0.001))
         assertThat(dataPoint.memoryPercent.toDouble())
             .isCloseTo(fakeMemoryBytes / fakeTotalRamBytes * 100.0, org.assertj.core.data.Offset.offset(0.001))
     }
