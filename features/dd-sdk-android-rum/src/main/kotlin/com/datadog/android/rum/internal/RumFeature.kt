@@ -849,7 +849,7 @@ internal class RumFeature(
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
-            enableTimeseries = false
+            enableTimeseries = true // TODO: RUM-13949 remove - enabled for timeseries testing
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
