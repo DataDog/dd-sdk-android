@@ -47,7 +47,6 @@ internal class TimeseriesSessionCollector(
 
     private val memoryBuffer = mutableListOf<RumTimeseriesMemoryEvent.Data>()
     private val cpuBuffer = mutableListOf<RumTimeseriesCpuEvent.Data>()
-    private var batchStartNs: Long = 0L
 
     private var prevCpuTicks: Long = 0L
     private val cpuClockTicks: Long = Os.sysconf(OsConstants._SC_CLK_TCK)
@@ -59,7 +58,6 @@ internal class TimeseriesSessionCollector(
         synchronized(this) {
             memoryBuffer.clear()
             cpuBuffer.clear()
-            batchStartNs = System.nanoTime()
         }
         prevCpuTicks = readCpuTicks()
 
@@ -93,7 +91,6 @@ internal class TimeseriesSessionCollector(
             if (memoryBuffer.size >= batchSize) {
                 flushMemoryBatch()
                 memoryBuffer.clear()
-                batchStartNs = System.nanoTime()
             }
             if (cpuBuffer.size >= batchSize) {
                 flushCpuBatch()
@@ -127,12 +124,13 @@ internal class TimeseriesSessionCollector(
 
     private fun flushMemoryBatch() {
         if (memoryBuffer.isEmpty()) return
-        val startNs = batchStartNs
+        val startNs = memoryBuffer.first().timestamp
         val endNs = memoryBuffer.last().timestamp
         val data = memoryBuffer.toList()
         val currentSessionId = sessionId
         val currentApplicationId = applicationId
         val currentSessionType = sessionType
+
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
             val event = RumTimeseriesMemoryEvent(
                 dd = RumTimeseriesMemoryEvent.Dd(),
@@ -161,12 +159,13 @@ internal class TimeseriesSessionCollector(
 
     private fun flushCpuBatch() {
         if (cpuBuffer.isEmpty()) return
-        val startNs = batchStartNs
+        val startNs = cpuBuffer.first().timestamp
         val endNs = cpuBuffer.last().timestamp
         val data = cpuBuffer.toList()
         val currentSessionId = sessionId
         val currentApplicationId = applicationId
         val currentSessionType = sessionType
+
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
             val event = RumTimeseriesCpuEvent(
                 dd = RumTimeseriesCpuEvent.Dd(),
