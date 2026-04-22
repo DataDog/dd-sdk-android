@@ -94,7 +94,7 @@ exoplayer = "2.19.1"
 newPipeExtractor = "v0.24.6"
 navigation3 = "1.0.0-alpha01"
 kotlinxSerializationCore = "1.8.1"
-lifecycleViewmodelNav3 = "1.0.0-alpha01"
+lifecycleViewmodelNav3 = "2.10.0"
 openFeature = "0.6.2"
 
 # Local Server
