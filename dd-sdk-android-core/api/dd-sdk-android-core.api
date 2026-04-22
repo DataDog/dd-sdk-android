@@ -64,6 +64,7 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field STAGING Lcom/datadog/android/DatadogSite;
 	public static final field US1 Lcom/datadog/android/DatadogSite;
 	public static final field US1_FED Lcom/datadog/android/DatadogSite;
+	public static final field US2_FED Lcom/datadog/android/DatadogSite;
 	public static final field US3 Lcom/datadog/android/DatadogSite;
 	public static final field US5 Lcom/datadog/android/DatadogSite;
 	public final fun getIntakeEndpoint ()Ljava/lang/String;
