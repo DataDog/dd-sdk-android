@@ -58,10 +58,8 @@ open class DeterministicTraceSampler(
     ) : this(sampleRate.toFloat())
 
     /** @inheritDoc */
-    // TODO RUM-13454 -> Remove the @Suppress when getSampleRate(DatadogSpan) is removed in V4 (RUM-15590)
-    @Suppress("DEPRECATION")
     override fun sample(item: DatadogSpan): Boolean =
-        computeSamplingDecision(getSampleRate(item), SpanSamplingIdProvider.provideId(item))
+        computeSamplingDecision(resolveEffectiveSampleRate(item), SpanSamplingIdProvider.provideId(item))
 
     /**
      * Returns the effective sample rate for [item], applying cross-product rebasing when the

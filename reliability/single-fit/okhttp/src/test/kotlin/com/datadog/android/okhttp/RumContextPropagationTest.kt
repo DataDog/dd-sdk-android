@@ -13,8 +13,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
-import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
-import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_HASHER
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_THRESHOLD
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
@@ -237,6 +235,8 @@ class RumContextPropagationTest {
          *
          * isSampled = SAMPLING_THRESHOLD < MAX_ID / (2 * SAMPLE_HASHER).
          */
+        private const val SAMPLER_HASHER: ULong = 1111111111111111111u
+        private const val MAX_ID: ULong = 0xFFFFFFFFFFFFFFFFUL
         private val SAMPLING_THRESHOLD: Long = (MAX_ID.toDouble() / (2.0 * SAMPLER_HASHER.toDouble())).toLong()
         private const val SAMPLE_RATE = 50f
         private val SAMPLED_IDS = listOf(SAMPLING_THRESHOLD - 1, SAMPLING_THRESHOLD - 2)

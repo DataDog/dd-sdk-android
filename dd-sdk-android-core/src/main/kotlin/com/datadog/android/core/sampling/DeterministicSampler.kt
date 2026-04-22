@@ -83,11 +83,13 @@ open class DeterministicSampler<T : Any>(
          * within the [DeterministicSampler] implementation. This value is a good number for
          * Knuth hashing (large, prime, fit in 64 bit long).
          */
+        @Deprecated("RUM-13454: Implementation detail, will be removed in v4 (RUM-15590).")
         const val SAMPLER_HASHER: ULong = 1111111111111111111u
 
         /**
          * The maximum value used as an upper limit for computing hash-based sampling thresholds.
          */
+        @Deprecated("RUM-13454: Implementation detail, will be removed in v4 (RUM-15590).")
         const val MAX_ID: ULong = 0xFFFFFFFFFFFFFFFFUL
     }
 }
