@@ -46,8 +46,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
     internal var localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer = DEFAULT_LOCAL_TRACER_FACTORY,
     internal var traceContextInjection: TraceContextInjection = TraceContextInjection.SAMPLED,
     internal var tracedRequestListener: NetworkTracedRequestListener = NoOpNetworkTracedRequestListener(),
-    internal var traceSampleRate: Float = DEFAULT_TRACE_SAMPLE_RATE,
-    internal var customTraceSampler: Sampler<DatadogSpan>? = null,
+    internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE),
     internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracer.getOrNull() },
     internal var networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS,
     internal var headerPropagationOnly: Boolean = false
@@ -122,7 +121,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 100f).
      */
     fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float) = apply {
-        this.traceSampleRate = sampleRate
+        this.traceSampler = DeterministicTraceSampler(sampleRate)
     }
 
     /**
@@ -133,7 +132,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      * By default it is a sampler accepting 100% of the traces.
      */
     fun setTraceSampler(traceSampler: Sampler<DatadogSpan>) = apply {
-        this.customTraceSampler = traceSampler
+        this.traceSampler = traceSampler
     }
 
     /**
@@ -219,8 +218,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         localTracerFactory = localTracerFactory,
         traceContextInjection = traceContextInjection,
         tracedRequestListener = tracedRequestListener,
-        traceSampleRate = traceSampleRate,
-        customTraceSampler = customTraceSampler,
+        traceSampler = traceSampler,
         globalTracerProvider = globalTracerProvider,
         networkTracingScope = networkTracingScope,
         headerPropagationOnly = headerPropagationOnly
@@ -249,13 +247,10 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
-            val effectiveSampler = customTraceSampler
-                ?: DeterministicTraceSampler(traceSampleRate)
-
             return ApmNetworkInstrumentation(
                 canSendSpan = !headerPropagationOnly,
                 traceOrigin = traceOrigin,
-                traceSampler = effectiveSampler,
+                traceSampler = traceSampler,
                 tracerProvider = tracerProvider,
                 sdkInstanceName = sdkInstanceName,
                 injectionType = traceContextInjection,

@@ -1725,6 +1725,46 @@ internal open class TracingInterceptorTest {
         )
     }
 
+    @Test
+    fun `M set raw agent_psr W intercept() {non-DeterministicTraceSampler}`(
+        @FloatForgery(min = 1f, max = 100f) fakeSampleRate: Float
+    ) {
+        // Given
+        whenever(mockTraceSampler.getSampleRate()) doReturn fakeSampleRate
+        whenever(mockSpan.isRootSpan) doReturn true
+        whenever(mockSpanContext.setSamplingPriority(any())) doReturn true
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanContext).setMetric(
+            eq("_dd.agent_psr"),
+            eq(fakeSampleRate.toDouble() / 100.0)
+        )
+    }
+
+    @Test
+    fun `M set zero agent_psr W intercept() {non-DeterministicTraceSampler, null sample rate}`() {
+        // Given
+        whenever(mockTraceSampler.getSampleRate()) doReturn null
+        whenever(mockSpan.isRootSpan) doReturn true
+        whenever(mockSpanContext.setSamplingPriority(any())) doReturn true
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanContext).setMetric(
+            eq("_dd.agent_psr"),
+            eq(0.0)
+        )
+    }
+
     // endregion
 
     // region Internal

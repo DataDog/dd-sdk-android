@@ -142,7 +142,7 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
-    fun `M keep custom sampler W setTraceSampler() then setTraceSampleRate()`(
+    fun `M use last writer W setTraceSampler() then setTraceSampleRate()`(
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // When
@@ -152,7 +152,8 @@ internal class ApmInstrumentationConfigurationTest {
             .createInstrumentation(fakeNetworkLibraryName)
 
         // Then
-        assertThat(result.traceSampler).isSameAs(mockTraceSampler)
+        assertThat(result.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
     }
 
     @Test
@@ -253,29 +254,5 @@ internal class ApmInstrumentationConfigurationTest {
 
         // Then
         assertThat(result.networkTracingScope).isEqualTo(fakeScope)
-    }
-
-    @Test
-    fun `M use custom sampler W createInstrumentation() {custom sampler provided}`() {
-        // When
-        val result = testedBuilder
-            .setTraceSampler(mockTraceSampler)
-            .createInstrumentation(fakeNetworkLibraryName)
-
-        // Then
-        assertThat(result.traceSampler).isSameAs(mockTraceSampler)
-    }
-
-    @Test
-    fun `M return raw trace rate W createInstrumentation() {default sampler}`(
-        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
-    ) {
-        // When
-        val result = testedBuilder
-            .setTraceSampleRate(fakeSampleRate)
-            .createInstrumentation(fakeNetworkLibraryName)
-
-        // Then — getSampleRate() returns the raw configured rate (no rebasing without a span)
-        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
     }
 }
