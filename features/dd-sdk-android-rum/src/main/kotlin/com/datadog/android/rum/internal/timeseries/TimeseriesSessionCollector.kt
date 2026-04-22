@@ -84,7 +84,7 @@ internal class TimeseriesSessionCollector(
     }
 
     private fun sample() {
-        val timestampNs = System.nanoTime()
+        val timestampNs = System.currentTimeMillis() * 1_000_000L
         collectMemorySample(timestampNs)
         collectCpuSample(timestampNs)
         synchronized(this) {
@@ -110,7 +110,7 @@ internal class TimeseriesSessionCollector(
         val memoryBytes = memoryReader.readVitalData() ?: return
         if (totalRamBytes <= 0L) return
         val memoryPercent = memoryBytes / totalRamBytes * PERCENT_FACTOR
-        val dataPoint = RumTimeseriesMemoryEvent.DataPoint(memoryBytes.toLong(), memoryPercent)
+        val dataPoint = RumTimeseriesMemoryEvent.DataPoint(memoryBytes, memoryPercent)
         val data = RumTimeseriesMemoryEvent.Data(timestampNs, dataPoint)
         synchronized(this) { memoryBuffer.add(data) }
     }
