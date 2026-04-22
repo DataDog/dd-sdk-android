@@ -440,7 +440,7 @@ class SampleApplication : Application() {
             .setUploadFrequency(UploadFrequency.FREQUENT)
 
         try {
-            configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
+            configBuilder.useSite(DatadogSite.STAGING) // TODO: RUM-13949 remove - staging override for timeseries testing
         } catch (e: IllegalArgumentException) {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
