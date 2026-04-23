@@ -222,7 +222,7 @@ dependencies {
 
     // Multithreading
     implementation(libs.rxJava3)
-    implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
+    implementation("com.squareup.retrofit2:adapter-rxjava3:3.0.0")
     implementation(libs.rxJava3Android)
     implementation(libs.coroutinesCore)
 
