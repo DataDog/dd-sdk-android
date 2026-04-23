@@ -77,5 +77,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.3.0")
-    implementation("com.google.android.gms:play-services-wearable:17.1.0")
+    implementation("com.google.android.gms:play-services-wearable:19.0.0")
 }
