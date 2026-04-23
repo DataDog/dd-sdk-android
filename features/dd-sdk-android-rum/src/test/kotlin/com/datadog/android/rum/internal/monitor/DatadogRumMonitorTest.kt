@@ -53,6 +53,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_OPERATION_KEY
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -96,6 +97,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.same
@@ -2980,6 +2982,105 @@ internal class DatadogRumMonitorTest {
 
         verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M warn but still emit W startFeatureOperation { operation name contains invalid character }`() {
+        // vital.name is documented in _vital-common-schema.json as restricted to
+        // letters, digits, and - _ . @ $. Names outside that set are warned
+        // about but still emitted — the backend is the source of truth on the
+        // policy, so client-side drop would force a customer SDK bump if the
+        // rule were ever relaxed.
+        val invalidName = "user login"
+
+        assertMethodCallProducesValidEvent<RumRawEvent.StartFeatureOperation>(
+            whenCalled = {
+                testedMonitor.startFeatureOperation(invalidName, null, fakeAttributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(invalidName)
+            }
+        )
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_NAME_CHARACTERS.format(Locale.US, invalidName)
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M warn but still emit W startFeatureOperation { operation name contains non-ASCII character }`() {
+        // Pins the ASCII-only semantics of Java Pattern's `\w` (no
+        // UNICODE_CHARACTER_CLASS flag). Non-ASCII letters must fail the
+        // character-set regex. If this test ever starts failing because
+        // "ログイン" is accepted, the regex has gained Unicode semantics — that
+        // would be a silent behavior change and is caught here.
+        val invalidName = "ログイン"
+
+        assertMethodCallProducesValidEvent<RumRawEvent.StartFeatureOperation>(
+            whenCalled = {
+                testedMonitor.startFeatureOperation(invalidName, null, fakeAttributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(invalidName)
+            }
+        )
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_NAME_CHARACTERS.format(Locale.US, invalidName)
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M accept name W startFeatureOperation { name only uses schema-allowed characters }`() {
+        val validNames = listOf(
+            "login",
+            "step42",
+            "login-v2",
+            "user_login",
+            "login.v2",
+            "login@prod",
+            "login\$1",
+            "LoginV2",
+            "login-v2@1.0.0_step\$1"
+        )
+
+        validNames.forEach { validName ->
+            // When
+            testedMonitor.startFeatureOperation(validName, null, fakeAttributes)
+        }
+
+        // Then — no user-facing WARN was logged (character-set path never fired)
+        verify(mockInternalLogger, never()).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            isNull(),
+            any(),
+            isNull()
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M not restrict operationKey to name character set W startFeatureOperation`() {
+        // operation_key has no character-set restriction in the schema.
+        testedMonitor.startFeatureOperation("login", "session 42 / user foo", fakeAttributes)
+
+        verify(mockInternalLogger, never()).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            isNull(),
+            any(),
+            isNull()
+        )
     }
 
     @OptIn(ExperimentalRumApi::class)
