@@ -442,6 +442,59 @@ internal class TimeseriesSessionCollectorTest {
         verify(mockWriter, never()).write(any(), any(), any())
     }
 
+    @Test
+    fun `M write delta shaped event W flush() { delta compression enabled, memory }`() {
+        // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 3,
+            cpuUsageProvider = { fakeCpuUsage },
+            executorFactory = { mockExecutor },
+            enableDeltaCompression = true
+        )
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        repeat(3) { sampleRunnable.run() }
+
+        // Then - the written object is a JsonObject (not RumTimeseriesMemoryEvent)
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(2)).write(any(), captor.capture(), any())
+        val memoryPayload = captor.allValues.filterIsInstance<com.google.gson.JsonObject>()
+            .first { it.has("timeseries") && it.getAsJsonObject("timeseries").get("name").asString == "memory" }
+        val dataField = memoryPayload.getAsJsonObject("timeseries").get("data").asJsonObject
+        assertThat(dataField.get("precision").asInt).isEqualTo(4)
+        assertThat(dataField.has("ts")).isTrue()
+        assertThat(dataField.has("memory_max")).isTrue()
+        assertThat(dataField.has("memory_percent")).isTrue()
+    }
+
+    @Test
+    fun `M not write event W flush() { delta compression enabled, single sample, memory }`() {
+        // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 100,
+            cpuUsageProvider = { null },
+            executorFactory = { mockExecutor },
+            enableDeltaCompression = true
+        )
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        sampleRunnable.run()
+
+        // When
+        testedCollector.stop()
+
+        // Then - no events written (single sample dropped)
+        verify(mockWriter, never()).write(any(), any(), any())
+    }
+
     private fun captureScheduledRunnable(): Runnable {
         val captor = argumentCaptor<Runnable>()
         verify(mockExecutor).schedule(captor.capture(), any(), any())
