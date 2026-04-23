@@ -808,22 +808,34 @@ internal class DatadogRumMonitor(
         sdkCore.internalLogger.reportOperationApiUsage(ActionType.FAIL)
     }
 
-    private fun operationArgumentsValid(name: String, operationKey: String?) = when {
-        name.isBlank() -> {
+    private fun operationArgumentsValid(name: String, operationKey: String?): Boolean {
+        // Blank / empty names are rejected: the backend rejects them with
+        // its own non-empty precondition before evaluating the character-set
+        // regex, so drop client-side to match.
+        if (name.isBlank()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
             }
-            false
+            return false
         }
 
-        operationKey?.isBlank() == true -> {
+        // Names that fail the backend's `[\w.@$-]*` character-set regex
+        // trigger a warning but the event is still emitted — the backend is
+        // the source of truth, so client-side drop would force a customer
+        // SDK bump if the rule is ever relaxed.
+        if (!name.matches(VALID_OPERATION_NAME_REGEX)) {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                OPERATION_ERROR_INVALID_NAME_CHARACTERS.format(Locale.US, name)
+            }
+        }
+
+        val operationKeyIsBlank = operationKey?.isBlank() == true
+        if (operationKeyIsBlank) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
             }
-            false
         }
-
-        else -> true
+        return !operationKeyIsBlank
     }
 
     // endregion
@@ -1028,8 +1040,27 @@ internal class DatadogRumMonitor(
         internal const val OPERATION_ERROR_INVALID_NAME =
             "Operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
+        internal const val OPERATION_ERROR_INVALID_NAME_CHARACTERS =
+            "Operation name \"%s\" does not match the backend-accepted " +
+                "pattern [\\w.@$-]* (letters, digits, _ . @ $ -). The vital event " +
+                "will still be sent and may be rejected by the backend."
+
         internal const val OPERATION_ERROR_INVALID_OPERATION_KEY =
             "Operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+
+        /**
+         * Mirrors the backend's server-side `vital.name` validation regex
+         * `[\w.@$-]*`. Names that do not match generate a developer warning
+         * but the event is still emitted — the backend is the single source
+         * of truth, so client-side drop would force a customer SDK bump if
+         * the policy is ever relaxed. `operationKey` is a separate parameter
+         * with its own validation.
+         *
+         * `\w` in `java.util.regex.Pattern` is ASCII-only (`[A-Za-z0-9_]`)
+         * unless `UNICODE_CHARACTER_CLASS` is set, which is what the backend
+         * regex assumes.
+         */
+        internal val VALID_OPERATION_NAME_REGEX = Regex("^[\\w.@$-]*$")
 
         private fun InternalLogger.reportOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)
