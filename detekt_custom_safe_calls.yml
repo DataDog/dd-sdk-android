@@ -72,6 +72,7 @@ datadog:
       - "android.os.LocaleList.get(kotlin.Int)"
       - "android.os.LocaleList.size()"
       - "android.os.Looper.getMainLooper()"
+      - "android.os.Looper.myLooper()"
       - "android.os.Looper.setMessageLogging(android.util.Printer?)"
       - "android.os.Process.getStartElapsedRealtime()"
       - "android.os.Process.getStartUptimeMillis()"

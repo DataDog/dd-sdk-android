@@ -137,7 +137,8 @@ internal class RumFeature(
     private val lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
         DatadogLateCrashReporter(it)
     },
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
+    private val handler: Handler = Handler(Looper.getMainLooper())
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
@@ -178,7 +179,7 @@ internal class RumFeature(
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
-    private var rumAppStartupDetector: RumAppStartupDetector? = null
+    internal var rumAppStartupDetector: RumAppStartupDetector? = null
 
     // region Feature
 
@@ -355,7 +356,17 @@ internal class RumFeature(
 
         cleanupInfoProviders()
 
-        rumAppStartupDetector?.destroy()
+        val detector = rumAppStartupDetector
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            @Suppress("ThreadSafety") // just verified we are on the main thread
+            detector?.destroy()
+        } else {
+            handler.post {
+                @Suppress("ThreadSafety") // handler posts to the main looper
+                detector?.destroy()
+            }
+        }
+
         rumAppStartupDetector = null
 
         GlobalRumMonitor.unregister(sdkCore)
