@@ -51,7 +51,7 @@ internal class ExecutionResultComparisonAssert(
                 "Expected composite execution result to have clients: " +
                     "$expected but was ${actual.keys}. ${requestState()}"
             }
-            .containsAll(expected)
+            .isEqualTo(expected)
     }
 
     fun haveResponseStatusCode(expected: Int) = apply {
