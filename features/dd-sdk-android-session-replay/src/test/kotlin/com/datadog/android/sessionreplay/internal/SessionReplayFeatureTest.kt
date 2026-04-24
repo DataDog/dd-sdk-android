@@ -93,10 +93,6 @@ internal class SessionReplayFeatureTest {
 
     private var fakeSampleRate: Float = 75f
 
-    private fun sampledInSessionId(sessionId: String): String {
-        return sessionId.replaceAfterLast("-", "000000000000")
-    }
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSampleRate = forge.aFloat(min = 1f, max = 100f)
@@ -1333,6 +1329,10 @@ internal class SessionReplayFeatureTest {
             verify(mockRecorder).resumeRecorders()
             verify(mockRecorder).stopRecorders()
         }
+    }
+
+    private fun sampledInSessionId(sessionId: String): String {
+        return sessionId.replaceAfterLast("-", "000000000000")
     }
 
     internal data class SessionRecordingScenario(

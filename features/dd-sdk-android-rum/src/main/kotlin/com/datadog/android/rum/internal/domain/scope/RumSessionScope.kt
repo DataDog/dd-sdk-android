@@ -65,7 +65,7 @@ internal class RumSessionScope(
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
-    internal val sessionSampleRate: Float = sessionSampler.getSampleRate() ?: RumContext.FULL_SESSION_SAMPLE_RATE
+    internal val sessionSampleRate: Float = sessionSampler.getSampleRate() ?: RumContext.SAMPLE_ALL_RATE
     private var startReason: StartReason = StartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
     private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedTimeNanos())
@@ -304,7 +304,11 @@ internal class RumSessionScope(
             mapOf(
                 SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId,
-                RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to sessionSampleRate
+                RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to sessionSampleRate,
+                // Kept for backward compatibility with older Session Replay modules that
+                // don't yet consume sessionSampleRate.
+                // RUM-15962: Remove with SDK v4 release (RUM-13454).
+                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to (sessionState == State.TRACKED)
             )
         )
     }
@@ -316,6 +320,9 @@ internal class RumSessionScope(
         internal const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         internal const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
         internal const val RUM_SESSION_ID_BUS_MESSAGE_KEY = "sessionId"
+
+        // RUM-15962: Remove with SDK v4 release (RUM-13454).
+        internal const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         internal const val RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY = "sessionSampleRate"
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)

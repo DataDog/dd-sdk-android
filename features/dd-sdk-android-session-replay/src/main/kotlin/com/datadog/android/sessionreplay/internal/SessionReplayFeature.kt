@@ -279,7 +279,7 @@ internal class SessionReplayFeature(
                 DeterministicSampler(
                     idConverter = SessionSamplingIdProvider::provideId,
                     sampleRate = DeterministicSampling.combinedSampleRate(
-                        sessionSampleRate = sessionData.sessionSampleRate,
+                        rumSessionSampleRate = sessionData.sessionSampleRate,
                         featureSampleRate = configuredSampleRate
                     )
                 ).sample(sessionData.sessionId)

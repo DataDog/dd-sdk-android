@@ -15,17 +15,17 @@ object DeterministicSampling {
 
     /**
      * Returns the effective sampling rate when a child feature's [featureSampleRate] is applied
-     * on top of a parent session's [sessionSampleRate].
+     * on top of a parent session's [rumSessionSampleRate].
      *
      * The combined rate represents the probability that both the session AND the child feature
      * are sampled in, preserving the deterministic guarantee: any session that passes the combined
      * threshold is guaranteed to have also passed the session-level threshold.
      *
-     * @param sessionSampleRate The RUM session sampling rate (0–100).
+     * @param rumSessionSampleRate The RUM session sampling rate (0–100).
      * @param featureSampleRate The child feature sampling rate (0–100).
      * @return The effective combined rate, clamped to [0, 100].
      */
-    fun combinedSampleRate(sessionSampleRate: Float, featureSampleRate: Float): Float =
-        (sessionSampleRate * featureSampleRate / SAMPLE_ALL_RATE)
+    fun combinedSampleRate(rumSessionSampleRate: Float, featureSampleRate: Float): Float =
+        (rumSessionSampleRate * featureSampleRate / SAMPLE_ALL_RATE)
             .coerceIn(0f, SAMPLE_ALL_RATE)
 }

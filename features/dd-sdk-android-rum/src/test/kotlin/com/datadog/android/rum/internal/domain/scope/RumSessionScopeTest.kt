@@ -1243,7 +1243,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1252,7 +1254,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1288,7 +1292,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1297,7 +1303,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1326,7 +1334,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1334,7 +1344,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1364,7 +1376,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1373,7 +1387,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1404,7 +1420,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1413,7 +1431,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.thirdValue).isEqualTo(
@@ -1422,7 +1442,9 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1453,7 +1475,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1461,7 +1485,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1492,7 +1518,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1500,7 +1528,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1532,7 +1562,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1540,7 +1572,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.thirdValue).isEqualTo(
@@ -1548,7 +1582,9 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
