@@ -55,6 +55,9 @@ internal class WebViewRumEventMapperWithoutSRTest {
     @StringForgery
     lateinit var fakeResolvedNativeViewId: String
 
+    @StringForgery
+    lateinit var fakeAnonymousId: String
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -82,7 +85,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -106,7 +110,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -130,7 +135,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -154,7 +160,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -178,7 +185,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -205,7 +213,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -239,7 +248,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then
@@ -283,7 +293,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            false
+            false,
+            fakeAnonymousId
         )
 
         // Then

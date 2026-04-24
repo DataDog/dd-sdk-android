@@ -25,6 +25,7 @@ import com.datadog.android.sdk.integration.rum.ExpectedVitalAppLaunchEvent
 import com.datadog.android.sdk.integration.rum.RumTest
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
+import leakcanary.LeakAssertions
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -105,6 +106,8 @@ internal class AppStartupAutoForwardTest :
             )
             true
         }.doWait(timeoutMs = FINAL_WAIT_MS)
+
+        LeakAssertions.assertNoLeaks()
     }
 
     companion object {

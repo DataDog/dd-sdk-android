@@ -55,6 +55,9 @@ internal class WebViewRumEventMapperTest {
     @StringForgery
     lateinit var fakeResolvedNativeViewId: String
 
+    @StringForgery
+    lateinit var fakeAnonymousId: String
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -82,7 +85,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -106,7 +110,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -130,7 +135,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -154,7 +160,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -178,7 +185,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -205,7 +213,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             fakeRumContext,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -239,7 +248,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -250,7 +260,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
                 WebViewRumEventMapper.DD_KEY_NAME,
-                WebViewRumEventMapper.CONTAINER_KEY_NAME
+                WebViewRumEventMapper.CONTAINER_KEY_NAME,
+                WebViewRumEventMapper.USR_KEY_NAME
             )
             .isEqualTo(fakeRumJsonObject)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
@@ -283,7 +294,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumJsonObject,
             null,
             fakeServerTimeOffset,
-            true
+            true,
+            fakeAnonymousId
         )
 
         // Then
@@ -294,7 +306,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
                 WebViewRumEventMapper.DD_KEY_NAME,
-                WebViewRumEventMapper.CONTAINER_KEY_NAME
+                WebViewRumEventMapper.CONTAINER_KEY_NAME,
+                WebViewRumEventMapper.USR_KEY_NAME
             )
             .isEqualTo(fakeRumJsonObject)
         val container = mappedEvent
@@ -304,6 +317,104 @@ internal class WebViewRumEventMapperTest {
             WebViewRumEventMapper.SOURCE_VALUE
         )
         assertThat(container).doesNotHaveField(WebViewRumEventMapper.VIEW_KEY_NAME)
+    }
+
+    @Test
+    fun `M add anonymous id and preserve web usr fields W mapEvent() { event already has usr }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject
+        val webUsrId = forge.anAlphabeticalString()
+        val webUsrName = forge.anAlphabeticalString()
+        val webUsrEmail = forge.aStringMatching("[a-z]+@[a-z]+\\.[a-z]+")
+        val existingUsr = JsonObject().apply {
+            addProperty(USR_ID_KEY, webUsrId)
+            addProperty(USR_NAME_KEY, webUsrName)
+            addProperty(USR_EMAIL_KEY, webUsrEmail)
+        }
+        fakeRumJsonObject.add(WebViewRumEventMapper.USR_KEY_NAME, existingUsr)
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId
+        )
+
+        // Then
+        val usr = mappedEvent.getAsJsonObject(WebViewRumEventMapper.USR_KEY_NAME)
+        // Web fields preserved
+        assertThat(usr).hasField(USR_ID_KEY, webUsrId)
+        assertThat(usr).hasField(USR_NAME_KEY, webUsrName)
+        assertThat(usr).hasField(USR_EMAIL_KEY, webUsrEmail)
+        // Native anonymous_id added
+        assertThat(usr).hasField(
+            WebViewRumEventMapper.ANONYMOUS_ID_KEY_NAME,
+            fakeAnonymousId
+        )
+    }
+
+    @Test
+    fun `M overwrite anonymous id W mapEvent() { browser already set anonymous_id }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject
+        val browserAnonymousId = forge.anAlphabeticalString()
+        val existingUsr = JsonObject().apply {
+            addProperty(WebViewRumEventMapper.ANONYMOUS_ID_KEY_NAME, browserAnonymousId)
+        }
+        fakeRumJsonObject.add(WebViewRumEventMapper.USR_KEY_NAME, existingUsr)
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId
+        )
+
+        // Then
+        val usr = mappedEvent.getAsJsonObject(WebViewRumEventMapper.USR_KEY_NAME)
+        assertThat(usr).hasField(WebViewRumEventMapper.ANONYMOUS_ID_KEY_NAME, fakeAnonymousId)
+    }
+
+    @Test
+    fun `M add anonymous id in new usr object W mapEvent() { no usr set }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject
+        fakeRumJsonObject.remove(WebViewRumEventMapper.USR_KEY_NAME)
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId
+        )
+
+        // Then
+        val expectedUsr = JsonObject().apply {
+            addProperty(WebViewRumEventMapper.ANONYMOUS_ID_KEY_NAME, fakeAnonymousId)
+        }
+        val usr = mappedEvent.getAsJsonObject(WebViewRumEventMapper.USR_KEY_NAME)
+        assertThat(usr).usingRecursiveComparison().isEqualTo(expectedUsr)
     }
 
     private fun assertMappedEvent(
@@ -317,7 +428,8 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.APPLICATION_KEY_NAME,
                 WebViewRumEventMapper.SESSION_KEY_NAME,
                 WebViewRumEventMapper.DATE_KEY_NAME,
-                WebViewRumEventMapper.DD_KEY_NAME
+                WebViewRumEventMapper.DD_KEY_NAME,
+                WebViewRumEventMapper.USR_KEY_NAME
             )
             .isEqualTo(expectedEvent)
 
@@ -336,5 +448,11 @@ internal class WebViewRumEventMapperTest {
         )
         assertThat(container.getAsJsonObject(WebViewRumEventMapper.VIEW_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeResolvedNativeViewId)
+    }
+
+    companion object {
+        private const val USR_ID_KEY = "id"
+        private const val USR_NAME_KEY = "name"
+        private const val USR_EMAIL_KEY = "email"
     }
 }

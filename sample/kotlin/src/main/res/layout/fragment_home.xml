@@ -145,12 +145,12 @@
                 app:layout_constraintTop_toBottomOf="@id/navigation_data_list"/>
 
         <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/navigation_picture"
+                android:id="@+id/navigation_image"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
-                android:text="@string/title_picture"
-                android:drawableStart="@drawable/ic_picture_black_24dp"
+                android:text="@string/title_image"
+                android:drawableStart="@drawable/ic_image_black_24dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/navigation_view_pager"/>
@@ -161,10 +161,10 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:text="@string/title_cronet_image"
-                android:drawableStart="@drawable/ic_picture_black_24dp"
+                android:drawableStart="@drawable/ic_image_black_24dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/navigation_picture"/>
+                app:layout_constraintTop_toBottomOf="@id/navigation_image"/>
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/navigation_compose"

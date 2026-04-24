@@ -10,6 +10,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
@@ -625,12 +626,15 @@ internal class WebViewTrackingTest {
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
         val fakeApplicationId = forge.getForgery<UUID>().toString()
         val fakeSessionId = forge.getForgery<UUID>().toString()
+        val fakeAnonymousId = forge.anAlphabeticalString()
+        val fakeUserInfo = UserInfo(anonymousId = fakeAnonymousId)
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
             add("container", JsonObject().apply { addProperty("source", "android") })
             add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
             add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
+            add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
         }
 
         whenever(
@@ -653,6 +657,7 @@ internal class WebViewTrackingTest {
         )
         val mockDatadogContext = mock<DatadogContext>()
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
+        whenever(mockDatadogContext.userInfo) doReturn fakeUserInfo
         val mockEventBatchWriter = mock<EventBatchWriter>()
         val mockEventWriteScope = mock<EventWriteScope>()
         whenever(mockEventWriteScope.invoke(any())) doAnswer {

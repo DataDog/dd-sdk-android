@@ -8,7 +8,7 @@ package com.datadog.android.okhttp.otel
 
 import com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder
 import com.datadog.android.trace.api.DatadogTracingConstants
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.opentelemetry.trace.OtelSpan
 import io.opentelemetry.api.trace.Span
 import okhttp3.Request
@@ -23,15 +23,15 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
     // we need to trigger sampling decision at this point, because we are doing context propagation out of OpenTelemetry
     val builder = OkHttpRequestInfoBuilder(this)
     if (span is OtelSpan) {
-        DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(span.datadogSpanContext)
-        DatadogTracingToolkit.propagationHelper.setTraceContext(
+        _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(span.datadogSpanContext)
+        _TraceInternalProxy.propagationHelper.setTraceContext(
             builder,
             span.spanContext.traceId,
             span.spanContext.spanId,
             span.datadogSpanContext.samplingPriority
         )
     } else {
-        DatadogTracingToolkit.propagationHelper.setTraceContext(
+        _TraceInternalProxy.propagationHelper.setTraceContext(
             builder,
             span.spanContext.traceId,
             span.spanContext.spanId,

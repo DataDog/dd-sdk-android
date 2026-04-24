@@ -43,13 +43,15 @@ internal class ExecutionResultComparisonAssert(
         }
     }
 
-    fun haveExpectedClients() = apply {
+    fun haveExpectedClients() = haveExpectedClients(EXPECTED_CLIENTS_ALL)
+
+    fun haveExpectedClients(expected: Set<String>) = apply {
         assertThat(actual.keys)
             .overridingErrorMessage {
                 "Expected composite execution result to have clients: " +
-                    "$EXPECTED_CLIENTS but was ${actual.keys}. ${requestState()}"
+                    "$expected but was ${actual.keys}. ${requestState()}"
             }
-            .containsAll(EXPECTED_CLIENTS)
+            .isEqualTo(expected)
     }
 
     fun haveResponseStatusCode(expected: Int) = apply {
@@ -111,7 +113,8 @@ internal class ExecutionResultComparisonAssert(
     private fun requestState() = request.toString()
 
     companion object {
-        private val EXPECTED_CLIENTS = setOf("Cronet", "OkHttp")
+        private val EXPECTED_CLIENTS_ALL = setOf("Cronet", "OkHttp", "InstrumentedOkHttp")
+        internal val EXPECTED_OKHTTP_CLIENTS = setOf("OkHttp", "InstrumentedOkHttp")
 
         internal fun assertThat(actual: Map<String, ClientExecutionResult>, request: TestRequest) =
             ExecutionResultComparisonAssert(actual, request)

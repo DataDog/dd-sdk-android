@@ -5,6 +5,7 @@
  */
 package com.datadog.android.rum.internal.net
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -49,13 +50,16 @@ class RumNetworkInstrumentation internal constructor(
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 ) {
-
-    internal val sdkCoreReference = SdkReference(sdkInstanceName) {
+    private val sdkCoreReference = SdkReference(sdkInstanceName) {
         it.networkMonitor?.apply {
             notifyInterceptorInstantiated()
             reportNetworkingLibraryType(libraryType)
         }
     }
+
+    /** SDK core instance. */
+    val sdkCore: SdkCore?
+        get() = sdkCoreReference.get()
 
     /**
      * Sends an event to indicate that resource timing information is expected for this request.
@@ -95,6 +99,7 @@ class RumNetworkInstrumentation internal constructor(
      * @param responseInfo the response information
      * @param attributes additional attributes to attach to the resource event
      */
+    @WorkerThread
     fun stopResource(
         requestInfo: HttpRequestInfo,
         responseInfo: HttpResponseInfo,
@@ -138,10 +143,10 @@ class RumNetworkInstrumentation internal constructor(
     }
 
     private fun ifRumEnabled(block: (FeatureSdkCore) -> Unit) {
-        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
-        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
+        val featureSdkCore = sdkCore as? FeatureSdkCore
+        val rumFeature = featureSdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
-            block(sdkCore)
+            block(featureSdkCore)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -149,7 +154,7 @@ class RumNetworkInstrumentation internal constructor(
                 "SDK instance with name=$sdkInstanceName"
             }
 
-            (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
+            (featureSdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, networkInstrumentationName, prefix) }
@@ -229,6 +234,7 @@ class RumNetworkInstrumentation internal constructor(
                 else -> RumResourceKind.fromMimeType(mimeType)
             }
 
+        @WorkerThread
         private fun HttpResponseInfo.getBodyLength(): Long? {
             val isStream = HttpSpec.ContentType.isStream(contentType)
             val isWebSocket = !headers[HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()

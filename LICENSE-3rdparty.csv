@@ -71,6 +71,8 @@ import,com.hannesdorfmann,Apache-2.0,Copyright (c) 2015 Hannes Dorfmann.
 import,com.jakewharton.timber,Apache-2.0,Copyright 2013 Jake Wharton
 import,com.launchdarkly,Apache-2.0,Copyright 2016 Catamorphic, Co.
 import,com.lyft.kronos,Apache-2.0,Copyright (C) 2018 Lyft Inc.
+import,com.squareup.curtains,Apache-2.0,"Copyright 2021 Square, Inc"
+import,com.squareup.leakcanary,Apache-2.0,"Copyright 2015 Square, Inc"
 import,com.squareup.moshi,Apache-2.0,"Copyright 2013 Square, Inc"
 import,com.squareup.okhttp3,Apache-2.0,"Copyright 2019 Square, Inc"
 import,com.squareup.okio,Apache-2.0,"Copyright 2013 Square, Inc"

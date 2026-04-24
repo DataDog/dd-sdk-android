@@ -34,9 +34,9 @@ import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.TraceContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -367,7 +367,7 @@ internal constructor(
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
             datadogSpan != null -> {
-                DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
+                _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
             openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
@@ -441,7 +441,7 @@ internal constructor(
             for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext != null && DatadogTracingToolkit.propagationHelper.isExtractedContext(headerContext)) {
+        return if (headerContext != null && _TraceInternalProxy.propagationHelper.isExtractedContext(headerContext)) {
             headerContext
         } else {
             tagContext
@@ -450,7 +450,7 @@ internal constructor(
 
     private fun extractTraceContext(request: Request): DatadogSpanContext? =
         request.getTraceContextTag()?.let {
-            DatadogTracingToolkit.propagationHelper.createExtractedContext(
+            _TraceInternalProxy.propagationHelper.createExtractedContext(
                 it.traceId,
                 it.spanId,
                 it.samplingPriority
@@ -623,7 +623,7 @@ internal constructor(
 
                     W3C_BAGGAGE_KEY -> carrier.replaceHeader(
                         key,
-                        DatadogTracingToolkit.mergeBaggage(
+                        _TraceInternalProxy.mergeBaggage(
                             resolveExistingBaggageHeaderValue(carrier),
                             value
                         )

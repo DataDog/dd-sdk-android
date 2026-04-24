@@ -38,6 +38,14 @@ plugins {
 
 android {
     namespace = "com.datadog.android.coil"
+
+    libraryVariants.all {
+        packageLibraryProvider.configure {
+            from("src/main/resources") {
+                include("META-INF/**/verification.properties")
+            }
+        }
+    }
 }
 
 dependencies {
