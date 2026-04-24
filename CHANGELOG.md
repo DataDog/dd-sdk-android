@@ -1,3 +1,8 @@
+# 3.9.1 / 2026-04-23
+
+* [BUGFIX] Cache reflection lookups in `LayoutNodeUtils`. See [#3381](https://github.com/DataDog/dd-sdk-android/pull/3381)
+* [IMPROVEMENT] Add `fed2` endpoint to `DatadogSite`. See [#3391](https://github.com/DataDog/dd-sdk-android/pull/3391)
+
 # 3.9.0 / 2026-04-16
 
 * [FEATURE] Track GraphQL errors. See [#3275](https://github.com/DataDog/dd-sdk-android/pull/3275)
