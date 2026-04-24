@@ -19,7 +19,6 @@ plugins {
     id("com.android.application")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
-    kotlin("kapt")
     id("com.github.ben-manes.versions")
     id("org.jetbrains.dokka-javadoc")
     id("com.squareup.sqldelight")
@@ -76,7 +75,7 @@ android {
 
     flavorDimensions += listOf("site")
     productFlavors {
-        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "ap2", "staging")
+        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "us2_fed", "eu1", "ap1", "ap2", "staging")
 
         regions.forEachIndexed { index, region ->
             register(region) {
@@ -214,7 +213,7 @@ dependencies {
     implementation(libs.bundles.fresco)
     implementation(libs.bundles.glide)
     implementation(libs.picasso)
-    kapt(libs.glideCompiler)
+    ksp(libs.glideKsp)
 
     // Local Storage
     implementation(libs.sqlDelight)
@@ -237,6 +236,9 @@ dependencies {
     // Misc
     implementation(libs.timber)
     api("com.facebook.stetho:stetho:1.6.0")
+
+    // Leak detection
+    debugImplementation(libs.leakCanaryAndroid)
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)

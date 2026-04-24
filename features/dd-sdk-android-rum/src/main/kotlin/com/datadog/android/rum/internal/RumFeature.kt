@@ -75,7 +75,6 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredicate
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
-import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -691,52 +690,25 @@ internal class RumFeature(
             application = appContext.applicationContext as Application,
             sdkCore = sdkCore as InternalSdkCore,
             listener = object : RumAppStartupDetector.Listener {
-                private val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(sdkCore = sdkCore)
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
-                    val activity = scenario.activity.get() ?: return
                     val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-
                     rumMonitor.sendAppStartEvent(scenario)
-                    subscribeToFirstFrameDrawn(scenario, activity, rumMonitor, wasForwarded = false)
                 }
 
-                override fun onNextActivityCreated(
-                    pendingScenario: RumStartupScenario,
-                    activity: Activity
-                ) {
-                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
-                    subscribeToFirstFrameDrawn(pendingScenario, activity, rumMonitor, wasForwarded = true)
-                }
-
-                private fun subscribeToFirstFrameDrawn(
+                override fun onTTIDComputed(
                     scenario: RumStartupScenario,
-                    activity: Activity,
-                    rumMonitor: AdvancedRumMonitor,
+                    durationNs: Long,
                     wasForwarded: Boolean
                 ) {
-                    val callback = object : RumFirstDrawTimeReporter.Callback {
-                        override fun onFirstFrameDrawn(timestampNs: Long) {
-                            // Another activity may have already reported TTID
-                            val pending = rumAppStartupDetector?.getPendingScenario()
-                            if (pending !== scenario) return
-
-                            val durationNs = timestampNs - scenario.initialTime.nanoTime
-                            val info = RumTTIDInfo(
-                                scenario = scenario,
-                                durationNs = durationNs,
-                                wasForwarded = wasForwarded
-                            )
-
-                            rumMonitor.sendTTIDEvent(info)
-                            rumAppStartupDetector?.clearPendingScenario()
-                        }
-                    }
-
-                    rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
-                        activity = activity,
-                        callback = callback
+                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
+                    val info = RumTTIDInfo(
+                        scenario = scenario,
+                        durationNs = durationNs,
+                        wasForwarded = wasForwarded
                     )
+
+                    rumMonitor.sendTTIDEvent(info)
                 }
             },
             appStartupActivityPredicate = configuration.appStartupActivityPredicate

@@ -241,6 +241,7 @@ class com.datadog.android.rum.internal.net.GraphQLExtractor
   companion object 
     const val MAX_GRAPHQL_BODY_PEEK: Long
 class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
+  val sdkCore: com.datadog.android.api.SdkCore?
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
   fun sendTiming(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun startResource(com.datadog.android.api.instrumentation.network.HttpRequestInfo)

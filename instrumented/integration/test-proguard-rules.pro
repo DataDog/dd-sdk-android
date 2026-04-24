@@ -43,3 +43,7 @@
 -dontwarn org.apiguardian.api.API
 -dontwarn kotlinx.coroutines.BuildersKt
 -dontwarn kotlinx.coroutines.CoroutineScope
+
+# LeakCanary + Shark (heap analyzer) — keep for instrumentation test leak detection
+-keep class leakcanary.** { *; }
+-keep class shark.** { *; }

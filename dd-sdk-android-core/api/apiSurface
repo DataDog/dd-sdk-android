@@ -23,6 +23,7 @@ enum com.datadog.android.DatadogSite
   - AP1
   - AP2
   - US1_FED
+  - US2_FED
   - STAGING
   val intakeEndpoint: String
 class com.datadog.android._InternalProxy

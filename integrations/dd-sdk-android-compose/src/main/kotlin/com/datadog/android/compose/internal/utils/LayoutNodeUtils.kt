@@ -9,6 +9,7 @@
 package com.datadog.android.compose.internal.utils
 
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.node.LayoutNode
 import androidx.compose.ui.semantics.Role
@@ -22,10 +23,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.compose.DatadogSemanticsPropertyKey
 import com.datadog.android.rum.RumAttributes.ACTION_TARGET_ROLE
 import com.datadog.android.rum.RumAttributes.ACTION_TARGET_SELECTED
+import java.lang.reflect.Method
 
 internal class LayoutNodeUtils {
 
-    private var reflectionFallbackModeActivated = false
+    private val methodResolver = MethodResolver()
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod")
     fun resolveLayoutNode(node: LayoutNode): TargetNode? {
@@ -99,33 +101,35 @@ internal class LayoutNodeUtils {
         }
     }
 
-    fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? = if (reflectionFallbackModeActivated) {
-        getLayoutNodeBoundsInWindowReflection(node)
-    } else {
-        getLayoutNodeBoundsInWindowInternal(node) ?: getLayoutNodeBoundsInWindowReflection(node)
+    fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? = when (methodResolver.state) {
+        MethodResolver.State.UNKNOWN -> {
+            getLayoutNodeBoundsInWindowInternal(node) ?: getLayoutNodeBoundsInWindowReflection(node)
+        }
+
+        MethodResolver.State.MANGLING_FAILED -> getLayoutNodeBoundsInWindowReflection(node)
+        MethodResolver.State.REFLECTION_FAILED -> getLayoutNodeBoundsInWindowInternal(node)
     }
 
-    private fun getLayoutNodeBoundsInWindowInternal(node: LayoutNode): Rect? = runSafe(
+    internal fun getLayoutNodeBoundsInWindowInternal(node: LayoutNode): Rect? = runSafe(
         "getLayoutNodeBoundsInWindow"
     ) { node.layoutDelegate.outerCoordinator.coordinates.boundsInWindow() }
 
-    private fun getLayoutNodeBoundsInWindowReflection(node: LayoutNode) = runSafe(
+    internal fun getLayoutNodeBoundsInWindowReflection(node: LayoutNode) = runSafe(
         "getLayoutNodeBoundsInWindow[reflection]"
     ) {
         // TODO RUM-13454 Update compose bom and remove this method
-        reflectionFallbackModeActivated = true
-        val coordinates = node.getMethod("getLayoutDelegate")
-            ?.getMethod("getOuterCoordinator")
-            ?.getMethod("getCoordinates")
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // it's okay if exception will be thrown here
-        Class.forName("androidx.compose.ui.layout.LayoutCoordinatesKt")
-            .getMethod("boundsInWindow", Class.forName("androidx.compose.ui.layout.LayoutCoordinates"))
-            .invoke(null, coordinates) as? Rect
+        methodResolver.state = MethodResolver.State.MANGLING_FAILED
+        val coordinates = node.invokeWithReflection("getLayoutDelegate")
+            ?.invokeWithReflection("getOuterCoordinator")
+            ?.invokeWithReflection("getCoordinates") as? LayoutCoordinates
+        coordinates?.boundsInWindow()
     }
 
-    private fun Any.getMethod(prefix: String): Any? {
-        return this.javaClass.methods.firstOrNull { it.name == prefix || it.name.startsWith("$prefix$") }
+    @Suppress("UnsafeThirdPartyFunctionCall") // runSafe in the caller swallows any Throwable
+    private fun Any.invokeWithReflection(prefix: String): Any? {
+        if (methodResolver.state == MethodResolver.State.REFLECTION_FAILED) return null
+        return methodResolver
+            .findMethod(javaClass, prefix)
             ?.invoke(this)
     }
 
@@ -153,6 +157,35 @@ internal class LayoutNodeUtils {
         val customAttributes: Map<String, Any?> = mapOf()
     )
 
+    internal class MethodResolver {
+        // RUM-15813: Kotlin internal accessors in androidx.compose.ui are JVM-mangled with
+        // a module suffix (plain / "$ui" / "$ui_release"). The mangling is stable per class,
+        // but NOT necessarily the same across classes in the reflection chain: e.g. on Compose
+        // UI 1.10 LayoutNode.getLayoutDelegate$ui is mangled while LayoutNodeLayoutDelegate
+        // exposes getOuterCoordinator without a suffix. We therefore cache the resolved suffix
+        // per owner-class rather than once globally.
+        //
+        enum class State {
+            UNKNOWN, // — Try internal mangling resolution, if fails - reflection.
+            MANGLING_FAILED, // Mangling resolution failed - allowing reflection attempt
+            REFLECTION_FAILED // Reflection resolution failed - switching back to mangling resolution (even if it fails)
+        }
+
+        var state: State = State.UNKNOWN
+            set(value) {
+                if (value.ordinal > field.ordinal) {
+                    field = value
+                }
+            }
+
+        val classPrefixMethodsCache: MutableMap<Class<*>, MutableMap<String, Method?>> = mutableMapOf()
+
+        fun findMethod(klass: Class<*>, prefix: String): Method? =
+            classPrefixMethodsCache
+                .resolveMethod(klass, prefix)
+                .also { if (it == null) state = State.REFLECTION_FAILED }
+    }
+
     companion object {
         private const val CLASS_NAME_CLICKABLE_ELEMENT =
             "androidx.compose.foundation.ClickableElement"
@@ -168,5 +201,33 @@ internal class LayoutNodeUtils {
             "androidx.compose.foundation.gestures.ScrollableElement"
         private const val CLASS_NAME_SELECTABLE_ELEMENT =
             "androidx.compose.foundation.selection.SelectableElement"
+
+        // Empty suffix covers public accessors; "$ui" and "$ui_release" cover Kotlin-internal
+        // accessors in the androidx.compose.ui module (the exact suffix depends on build
+        // configuration). Ordered by likelihood — public first, release build second.
+        private val SUPPORTED_MANGLING_SUFFIXES = listOf("", "\$ui_release", "\$ui")
+
+        private fun MutableMap<Class<*>, MutableMap<String, Method?>>.resolveMethod(
+            klass: Class<*>,
+            methodPrefix: String
+        ): Method? {
+            val klassCache: MutableMap<String, Method?> = getOrPut(klass) { mutableMapOf() }
+
+            if (!klassCache.containsKey(methodPrefix)) {
+                klassCache[methodPrefix] = searchManglings(klass, methodPrefix)
+            }
+
+            return klassCache[methodPrefix]
+        }
+
+        private fun searchManglings(klass: Class<*>, prefix: String): Method? = SUPPORTED_MANGLING_SUFFIXES
+            .firstNotNullOfOrNull {
+                try {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // NoSuchMethodException is expected here
+                    klass.getMethod("$prefix$it")
+                } catch (@Suppress("SwallowedException") _: NoSuchMethodException) {
+                    null
+                }
+            }
     }
 }
