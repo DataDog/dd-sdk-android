@@ -7,7 +7,7 @@
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.okhttp.internal.OkHttpHttpResponseInfo.Companion.ERROR_PEEK_BODY
+import com.datadog.android.okhttp.internal.OkHttpResponseInfo.Companion.ERROR_PEEK_BODY
 import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -58,7 +58,7 @@ internal class OkHttpResponseInfoTest {
         val mockResponse = mock<Response> { on { request } doReturn mockRequest }
 
         // When
-        val result = OkHttpHttpResponseInfo(mockResponse, mockInternalLogger).url
+        val result = OkHttpResponseInfo(mockResponse, mockInternalLogger).url
 
         // Then
         assertThat(result).isEqualTo(fakeUrl)
@@ -70,7 +70,7 @@ internal class OkHttpResponseInfoTest {
         val mockResponse = mock<Response> { on { code } doReturn fakeStatusCode }
 
         // When
-        val result = OkHttpHttpResponseInfo(mockResponse, mockInternalLogger).statusCode
+        val result = OkHttpResponseInfo(mockResponse, mockInternalLogger).statusCode
 
         // Then
         assertThat(result).isEqualTo(fakeStatusCode)
@@ -84,7 +84,7 @@ internal class OkHttpResponseInfoTest {
         val mockResponse = mock<Response> { on { headers } doReturn mockHeaders }
 
         // When
-        val result = OkHttpHttpResponseInfo(mockResponse, mockInternalLogger).headers
+        val result = OkHttpResponseInfo(mockResponse, mockInternalLogger).headers
 
         // Then
         assertThat(result).isEqualTo(fakeHeaders)
@@ -102,7 +102,7 @@ internal class OkHttpResponseInfoTest {
         val mockResponse = mock<Response> { on { body } doReturn responseBody }
 
         // When
-        val result = OkHttpHttpResponseInfo(mockResponse, mockInternalLogger).contentType
+        val result = OkHttpResponseInfo(mockResponse, mockInternalLogger).contentType
 
         // Then
         assertThat(result).isEqualTo(contentType)
@@ -117,7 +117,7 @@ internal class OkHttpResponseInfoTest {
         val response = mock<Response> { on { body } doReturn mockResponseBody }
 
         // When
-        val result = OkHttpHttpResponseInfo(response, mockInternalLogger).contentLength
+        val result = OkHttpResponseInfo(response, mockInternalLogger).contentLength
 
         // Then
         assertThat(result).isEqualTo(fakeContentLength)
@@ -132,7 +132,7 @@ internal class OkHttpResponseInfoTest {
         val response = mock<Response> { on { peekBody(any()) } doReturn mockResponseBody }
 
         // When
-        val result = OkHttpHttpResponseInfo(response, mockInternalLogger).contentLength
+        val result = OkHttpResponseInfo(response, mockInternalLogger).contentLength
 
         // Then
         assertThat(result).isEqualTo(fakeContentLength)
@@ -147,7 +147,7 @@ internal class OkHttpResponseInfoTest {
         }
 
         // When
-        OkHttpHttpResponseInfo(response, mockInternalLogger).contentLength
+        OkHttpResponseInfo(response, mockInternalLogger).contentLength
 
         // Then
         mockInternalLogger.verifyLog(
@@ -167,7 +167,7 @@ internal class OkHttpResponseInfoTest {
         }
 
         // When
-        OkHttpHttpResponseInfo(response, mockInternalLogger).contentLength
+        OkHttpResponseInfo(response, mockInternalLogger).contentLength
 
         // Then
         mockInternalLogger.verifyLog(
@@ -187,7 +187,7 @@ internal class OkHttpResponseInfoTest {
         }
 
         // When
-        OkHttpHttpResponseInfo(response, mockInternalLogger).contentLength
+        OkHttpResponseInfo(response, mockInternalLogger).contentLength
 
         // Then
         mockInternalLogger.verifyLog(

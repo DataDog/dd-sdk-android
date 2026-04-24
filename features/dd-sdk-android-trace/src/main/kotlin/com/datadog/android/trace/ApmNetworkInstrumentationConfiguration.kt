@@ -80,9 +80,14 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
     /**
      * Set the origin of the trace.
      * @param traceOrigin the origin of the trace.
+     * @param replace if true (default), always replaces the current trace origin;
+     * if false, only sets the trace origin when it hasn't been set yet.
      */
-    fun setTraceOrigin(traceOrigin: String) = apply {
-        this.traceOrigin = traceOrigin
+    @JvmOverloads
+    fun setTraceOrigin(traceOrigin: String, replace: Boolean = true) = apply {
+        if (replace || this.traceOrigin == null) {
+            this.traceOrigin = traceOrigin
+        }
     }
 
     /**
@@ -191,7 +196,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      *
      * @return `true` if client-side APM spans are disabled and only tracing headers
      * are propagated, `false` otherwise.
-     * @see headerPropagationOnly
+     * @see setHeaderPropagationOnly
      */
     fun isHeaderPropagationOnly(): Boolean {
         return headerPropagationOnly
