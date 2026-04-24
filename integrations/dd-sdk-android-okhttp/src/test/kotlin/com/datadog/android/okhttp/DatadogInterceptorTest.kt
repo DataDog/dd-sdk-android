@@ -10,8 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.network.GraphQLHeaders
-import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.toBase64
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
