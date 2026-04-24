@@ -177,7 +177,7 @@ interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val headers: Map<String, List<String>>
   val contentType: String?
   val contentLength: Long?
-  val request: HttpRequestInfo
+  val request: HttpRequestInfo?
 interface com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
   fun newBuilder(): HttpRequestInfoBuilder
 data class com.datadog.android.api.net.Request

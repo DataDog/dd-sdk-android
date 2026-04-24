@@ -6,7 +6,6 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -40,7 +39,7 @@ internal class CronetResponseInfoTest {
     lateinit var mockUrlResponseInfo: UrlResponseInfo
 
     @Mock
-    lateinit var mockRequestInfo: HttpRequestInfo
+    lateinit var mockRequestInfo: CronetHttpRequestInfo
 
     lateinit var fakeHeaders: Map<String, List<String>>
 
@@ -132,6 +131,18 @@ internal class CronetResponseInfoTest {
 
         // Then
         assertThat(result).isSameAs(mockRequestInfo)
+    }
+
+    @Test
+    fun `M return null W request property { null request }`() {
+        // Given
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, null)
+
+        // When
+        val result = responseInfo.request
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @Test

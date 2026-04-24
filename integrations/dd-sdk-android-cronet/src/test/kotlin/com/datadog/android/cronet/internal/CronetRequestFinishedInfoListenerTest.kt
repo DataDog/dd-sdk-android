@@ -5,7 +5,6 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.cronet.internal.CronetRequestFinishedInfoListener.Companion.minus
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
@@ -54,8 +53,8 @@ internal class CronetRequestFinishedInfoListenerTest {
     @Mock
     private lateinit var mockResponseInfo: UrlResponseInfo
 
-    @Forgery
-    private lateinit var fakeRequestInfo: HttpRequestInfo
+    @Mock
+    private lateinit var fakeRequestInfo: CronetHttpRequestInfo
 
     private lateinit var testedListener: CronetRequestFinishedInfoListener
 

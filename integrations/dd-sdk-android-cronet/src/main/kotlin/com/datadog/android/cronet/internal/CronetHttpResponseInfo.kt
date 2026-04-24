@@ -5,14 +5,13 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.internal.network.HttpSpec
 import org.chromium.net.UrlResponseInfo
 
 internal data class CronetHttpResponseInfo(
     private val response: UrlResponseInfo,
-    override val request: HttpRequestInfo
+    override val request: CronetHttpRequestInfo?
 ) : HttpResponseInfo {
 
     override val url: String get() = response.url

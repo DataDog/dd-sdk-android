@@ -102,25 +102,25 @@ internal class CronetRequestCallback(
     ) = delegate.onReadCompleted(request, info, byteBuffer)
 
     private fun finishSuccessRequestTracing(response: UrlResponseInfo?) {
-        val requestInfo = apmTracingStateHolder.get()?.createRequestInfo()
-            ?: distributedTracingStateHolder.get()?.createRequestInfo()
-        val responseInfo = if (response != null && requestInfo != null) {
-            CronetHttpResponseInfo(response, requestInfo)
-        } else {
-            null
-        }
-
         apmTracingStateHolder.getAndSet(null)?.let { apmTracingState ->
-            if (responseInfo != null) {
-                apmNetworkInstrumentation?.onResponseSucceeded(apmTracingState, responseInfo)
+            if (response != null) {
+                val requestInfo = apmTracingState.createRequestInfo() as? CronetHttpRequestInfo
+                apmNetworkInstrumentation?.onResponseSucceeded(
+                    apmTracingState,
+                    CronetHttpResponseInfo(response, requestInfo)
+                )
             }
         } ?: apmNetworkInstrumentation?.reportInstrumentationError {
             "Request tracing state not found for ${response?.url}. Instrumentation may be broken."
         }
 
         distributedTracingStateHolder.getAndSet(null)?.let { distributedTracingState ->
-            if (responseInfo != null) {
-                distributedTracingInstrumentation?.onResponseSucceeded(distributedTracingState, responseInfo)
+            if (response != null) {
+                val requestInfo = distributedTracingState.createRequestInfo() as? CronetHttpRequestInfo
+                distributedTracingInstrumentation?.onResponseSucceeded(
+                    distributedTracingState,
+                    CronetHttpResponseInfo(response, requestInfo)
+                )
             }
         }
     }
