@@ -754,22 +754,38 @@ internal class DatadogRumMonitor(
         sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
     }
 
-    private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
-        name.isBlank() -> {
+    private fun featureOperationArgumentsValid(name: String, operationKey: String?): Boolean {
+        // Blank / empty names are rejected: the backend rejects them with
+        // its own non-empty precondition before evaluating the character-set
+        // regex, so drop client-side to match.
+        if (name.isBlank()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 FO_ERROR_INVALID_NAME.format(Locale.US, name)
             }
-            false
+            return false
         }
 
-        operationKey?.isBlank() == true -> {
+        // Names that fail the backend's `[\w.@$-]*` character-set regex
+        // trigger a warning but the event is still emitted — the backend is
+        // the source of truth, so client-side drop would force a customer
+        // SDK bump if the rule is ever relaxed.
+        @Suppress(
+            "UnsafeThirdPartyFunctionCall"
+        ) // Regex is a compile-time constant; matches() cannot throw on a non-null input
+        val nameMatchesBackendPattern = VALID_OPERATION_NAME_REGEX.matches(name)
+        if (!nameMatchesBackendPattern) {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                FO_ERROR_INVALID_NAME_CHARACTERS.format(Locale.US, name)
+            }
+        }
+
+        val operationKeyIsBlank = operationKey?.isBlank() == true
+        if (operationKeyIsBlank) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
             }
-            false
         }
-
-        else -> true
+        return !operationKeyIsBlank
     }
 
     // endregion
@@ -952,8 +968,27 @@ internal class DatadogRumMonitor(
         internal const val FO_ERROR_INVALID_NAME =
             "Feature operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
+        internal const val FO_ERROR_INVALID_NAME_CHARACTERS =
+            "Feature operation name \"%s\" does not match the backend-accepted " +
+                "pattern [\\w.@\$-]* (letters, digits, _ . @ \$ -). The vital event " +
+                "will still be sent and may be rejected by the backend."
+
         internal const val FO_ERROR_INVALID_OPERATION_KEY =
             "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+
+        /**
+         * Mirrors the backend's server-side `vital.name` validation regex
+         * `[\w.@$-]*`. Names that do not match generate a developer warning
+         * but the event is still emitted — the backend is the single source
+         * of truth, so client-side drop would force a customer SDK bump if
+         * the policy is ever relaxed. `operationKey` is a separate parameter
+         * with its own validation.
+         *
+         * `\w` in `java.util.regex.Pattern` is ASCII-only (`[A-Za-z0-9_]`)
+         * unless `UNICODE_CHARACTER_CLASS` is set, which is what the backend
+         * regex assumes.
+         */
+        internal val VALID_OPERATION_NAME_REGEX = Regex("^[\\w.@\$-]*$")
 
         private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)
