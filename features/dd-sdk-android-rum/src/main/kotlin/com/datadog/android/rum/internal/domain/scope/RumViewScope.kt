@@ -240,8 +240,8 @@ internal open class RumViewScope(
             is RumRawEvent.AddViewAttributes -> onAddViewAttributes(event)
             is RumRawEvent.RemoveViewAttributes -> onRemoveViewAttributes(event)
 
-            is RumRawEvent.StartFeatureOperation -> onStartFeatureOperation(event, datadogContext, writeScope, writer)
-            is RumRawEvent.StopFeatureOperation -> onStopFeatureOperation(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StartOperation -> onStartOperation(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopOperation -> onStopOperation(event, datadogContext, writeScope, writer)
 
             else -> delegateEventToChildren(event, datadogContext, writeScope, writer)
         }
@@ -256,8 +256,8 @@ internal open class RumViewScope(
         }
     }
 
-    private fun onStartFeatureOperation(
-        event: RumRawEvent.StartFeatureOperation,
+    private fun onStartOperation(
+        event: RumRawEvent.StartOperation,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
@@ -278,8 +278,8 @@ internal open class RumViewScope(
         sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
-    private fun onStopFeatureOperation(
-        event: RumRawEvent.StopFeatureOperation,
+    private fun onStopOperation(
+        event: RumRawEvent.StopOperation,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
