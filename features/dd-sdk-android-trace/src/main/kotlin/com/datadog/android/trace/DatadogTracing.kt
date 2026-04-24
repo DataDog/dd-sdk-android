@@ -14,7 +14,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
 import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.core.CoreTracer
 
@@ -35,8 +35,8 @@ object DatadogTracing {
      */
     @JvmStatic
     fun newTracerBuilder(sdkCore: SdkCore = Datadog.getInstance()): DatadogTracerBuilder = when {
-        DatadogTracingToolkit.testBuilderProvider != null -> {
-            DatadogTracingToolkit.testBuilderProvider as DatadogTracerBuilder
+        _TraceInternalProxy.testBuilderProvider != null -> {
+            _TraceInternalProxy.testBuilderProvider as DatadogTracerBuilder
         }
         sdkCore !is FeatureSdkCore -> {
             NoOpDatadogTracerBuilder()

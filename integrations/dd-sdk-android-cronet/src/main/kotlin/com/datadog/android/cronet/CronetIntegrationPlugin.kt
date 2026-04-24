@@ -19,7 +19,7 @@ import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import org.chromium.net.CronetEngine
 import java.util.concurrent.Executor
 import java.util.concurrent.SynchronousQueue
@@ -129,7 +129,7 @@ class CronetIntegrationPlugin internal constructor(
         private fun ApmNetworkInstrumentationConfiguration.createDistributedTracingInstrumentation(
             rumInstrumentationExists: Boolean
         ): ApmNetworkInstrumentation? = if (rumInstrumentationExists) {
-            DatadogTracingToolkit.createApmNetworkInstrumentation(
+            _TraceInternalProxy.createApmNetworkInstrumentation(
                 CRONET_NETWORK_INSTRUMENTATION_NAME,
                 copy()
                     .setHeaderPropagationOnly()
@@ -143,7 +143,7 @@ class CronetIntegrationPlugin internal constructor(
         private fun ApmNetworkInstrumentationConfiguration.createApmInstrumentation(
             rumInstrumentationExists: Boolean
         ): ApmNetworkInstrumentation? = if (!isHeaderPropagationOnly() || !rumInstrumentationExists) {
-            DatadogTracingToolkit.createApmNetworkInstrumentation(
+            _TraceInternalProxy.createApmNetworkInstrumentation(
                 CRONET_NETWORK_INSTRUMENTATION_NAME,
                 this
             )

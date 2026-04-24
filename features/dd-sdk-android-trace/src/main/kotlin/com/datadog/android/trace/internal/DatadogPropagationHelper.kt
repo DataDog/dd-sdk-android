@@ -172,7 +172,7 @@ class DatadogPropagationHelper internal constructor() {
 
                 W3CHttpCodec.BAGGAGE_KEY -> carrier.replaceHeader(
                     key,
-                    DatadogTracingToolkit.mergeBaggage(
+                    _TraceInternalProxy.mergeBaggage(
                         carrier.resolveExistingBaggageHeaderValue(),
                         value
                     )
@@ -268,7 +268,7 @@ class DatadogPropagationHelper internal constructor() {
             headerSamplingPriority != null -> headerSamplingPriority
 
             datadogSpan != null -> {
-                DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
+                _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
 
@@ -413,7 +413,7 @@ class DatadogPropagationHelper internal constructor() {
             build()
                 .headers[W3CHttpCodec.BAGGAGE_KEY].orEmpty()
                 .reduce { acc, header ->
-                    DatadogTracingToolkit.mergeBaggage(acc, header)
+                    _TraceInternalProxy.mergeBaggage(acc, header)
                 }
         } catch (_: UnsupportedOperationException) {
             // Header values collection is empty

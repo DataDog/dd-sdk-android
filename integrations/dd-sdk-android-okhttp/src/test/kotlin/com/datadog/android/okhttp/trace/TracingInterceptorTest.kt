@@ -34,7 +34,7 @@ import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.DatadogPropagationHelper
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.fromHex
 import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.utils.verifyLog
@@ -703,7 +703,7 @@ internal open class TracingInterceptorTest {
         // Given
 
         val fakeExpectedTraceId = DatadogTraceId.fromHex(fakeTraceContext.traceId)
-        val fakeExpectedSpanId = DatadogTracingToolkit.spanIdConverter.fromHex(fakeTraceContext.spanId)
+        val fakeExpectedSpanId = _TraceInternalProxy.spanIdConverter.fromHex(fakeTraceContext.spanId)
         val fakeExtractedContext = forge.newSpanContextMock<DatadogSpanContext>(
             fakeExpectedTraceId,
             fakeExpectedSpanId
@@ -715,7 +715,7 @@ internal open class TracingInterceptorTest {
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val response = testedInterceptor.intercept(mockChain)
 
@@ -815,7 +815,7 @@ internal open class TracingInterceptorTest {
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val response = testedInterceptor.intercept(mockChain)
 

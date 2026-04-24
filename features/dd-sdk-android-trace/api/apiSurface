@@ -70,7 +70,11 @@ class com.datadog.android.trace.internal.DatadogSpanIdConverter
   fun fromHex(String): Long
   fun toHexStringPadded(Long): String
 fun com.datadog.android.trace.api.trace.DatadogTraceId.Companion.fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
-object com.datadog.android.trace.internal.DatadogTracingToolkit
+class com.datadog.android.trace.internal.RumContextPropagator
+  constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
+  companion object 
+    fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
+object com.datadog.android.trace.internal._TraceInternalProxy
   val spanIdConverter: DatadogSpanIdConverter
   var propagationHelper: DatadogPropagationHelper
   fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
@@ -80,10 +84,6 @@ object com.datadog.android.trace.internal.DatadogTracingToolkit
   fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun mergeBaggage(String?, String): String
   fun createApmNetworkInstrumentation(String, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
-class com.datadog.android.trace.internal.RumContextPropagator
-  constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
-  companion object 
-    fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
 data class com.datadog.android.trace.internal.net.RequestTracingState
   constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null)
   fun createRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo

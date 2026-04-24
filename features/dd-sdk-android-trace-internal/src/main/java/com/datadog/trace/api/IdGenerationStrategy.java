@@ -2,8 +2,6 @@ package com.datadog.trace.api;
 
 import static java.lang.Long.MAX_VALUE;
 
-import android.os.Build;
-
 import androidx.annotation.VisibleForTesting;
 
 import java.security.SecureRandom;
@@ -99,11 +97,7 @@ public abstract class IdGenerationStrategy {
     private final SecureRandom secureRandom;
 
     private static ThrowingSupplier<SecureRandom> getSecureRandomSupplier() {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        return SecureRandom::getInstanceStrong;
-      }else{
-        return SecureRandom::new;
-      }
+      return SecureRandom::new;
     }
 
     SRandom(boolean traceId128BitGenerationEnabled) {

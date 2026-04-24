@@ -18,7 +18,7 @@ import com.datadog.android.trace.internal.DatadogSpanContextAdapter
 import com.datadog.android.trace.internal.DatadogTraceIdAdapter
 import com.datadog.android.trace.internal.DatadogTracerAdapter
 import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpanContext
@@ -47,17 +47,17 @@ fun DatadogSpan.forceSamplingDecision() {
     (this as DatadogSpanAdapter).delegate.forceSamplingDecision()
 }
 
-fun DatadogTracingToolkit.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
+fun _TraceInternalProxy.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
     testBuilderProvider = mock
 }
 
-fun DatadogTracingToolkit.clear() {
+fun _TraceInternalProxy.clear() {
     setTracingAdapterBuilderMock(null)
 }
 
-fun DatadogTracingToolkit.withMockPropagationHelper(
+fun _TraceInternalProxy.withMockPropagationHelper(
     mockHelper: DatadogPropagationHelper,
-    block: DatadogTracingToolkit.() -> Unit
+    block: _TraceInternalProxy.() -> Unit
 ) {
     val helper = propagationHelper
     try {

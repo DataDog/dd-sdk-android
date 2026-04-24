@@ -23,7 +23,7 @@ import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import okhttp3.EventListener
 import okhttp3.OkHttpClient
 
@@ -168,7 +168,7 @@ class OkHttpIntegrationPlugin internal constructor(
         private fun ApmNetworkInstrumentationConfiguration.createApmInstrumentation(
             rumInstrumentationExists: Boolean
         ) = if (!isHeaderPropagationOnly() || !rumInstrumentationExists) {
-            DatadogTracingToolkit.createApmNetworkInstrumentation(
+            _TraceInternalProxy.createApmNetworkInstrumentation(
                 OKHTTP_NETWORK_INSTRUMENTATION_NAME,
                 this
             )
@@ -179,7 +179,7 @@ class OkHttpIntegrationPlugin internal constructor(
         private fun ApmNetworkInstrumentationConfiguration.createDistributedTracingInstrumentation(
             rumInstrumentationExists: Boolean
         ) = if (rumInstrumentationExists) {
-            DatadogTracingToolkit.createApmNetworkInstrumentation(
+            _TraceInternalProxy.createApmNetworkInstrumentation(
                 OKHTTP_NETWORK_INSTRUMENTATION_NAME,
                 configuration = copy()
                     .setHeaderPropagationOnly()

@@ -309,7 +309,7 @@ internal class MiscUtilsTest {
                 kotlinObject.map { JsonSerializer.toJsonElement(it) }
             )
 
-            is Map<*, *> -> assertThat(jsonElement.asJsonObject).satisfies {
+            is Map<*, *> -> jsonElement.asJsonObject.let {
                 assertThat(kotlinObject.keys.map { key -> key.toString() })
                     .containsExactlyElementsOf(it.keySet())
                 kotlinObject.entries.forEach { entry ->
