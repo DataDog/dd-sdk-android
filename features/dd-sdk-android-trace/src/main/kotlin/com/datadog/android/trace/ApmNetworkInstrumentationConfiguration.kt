@@ -234,7 +234,8 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
     internal companion object {
         internal const val ALL_IN_SAMPLE_RATE: Double = 100.0
-        internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 100f
+        private const val DEFAULT_TRACE_SAMPLE_RATE: Float = 100f
+
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
 
         internal fun ApmNetworkInstrumentationConfiguration.createInstrumentation(

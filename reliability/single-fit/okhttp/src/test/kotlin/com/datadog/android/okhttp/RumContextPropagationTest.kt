@@ -13,8 +13,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
-import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
-import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_HASHER
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_THRESHOLD
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
@@ -82,7 +80,10 @@ class RumContextPropagationTest {
     @Test
     fun `M send rum sessionId in baggage header W call is made`(forge: Forge) {
         // Given
-        val rumContext = forge.aRumContext(SAMPLED_IDS.random())
+        val rumContext = forge.aRumContext(
+            sessionId = SAMPLED_IDS.random(),
+            sessionSampleRate = 100f
+        )
         val accountInfo = forge.getForgery<AccountInfo>()
         val userInfo = forge.getForgery<UserInfo>()
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext, accountInfo, userInfo)
@@ -96,11 +97,13 @@ class RumContextPropagationTest {
 
         // Then
         assertSentRequest {
-            assertThat(getHeader(HEADER_BAGGAGE)).isEqualTo(
-                "account.id=${accountInfo.id}," +
-                    userInfo.id?.let { "user.id=$it," }.orEmpty() +
-                    "session.id=${rumContext[RUM_CONTEXT_SESSION_ID]}"
-            )
+            val baggageEntries = getHeader(HEADER_BAGGAGE)?.split(",").orEmpty()
+            val expectedEntries = buildList {
+                add("account.id=${accountInfo.id}")
+                userInfo.id?.let { add("user.id=$it") }
+                add("session.id=${rumContext[RUM_CONTEXT_SESSION_ID]}")
+            }
+            assertThat(baggageEntries).containsExactlyInAnyOrder(*expectedEntries.toTypedArray())
         }
     }
 
@@ -111,7 +114,10 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = SAMPLED_IDS.random())
+        val rumContext = forge.aRumContext(
+            sessionId = SAMPLED_IDS.random(),
+            sessionSampleRate = 100f
+        )
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
@@ -229,6 +235,8 @@ class RumContextPropagationTest {
          *
          * isSampled = SAMPLING_THRESHOLD < MAX_ID / (2 * SAMPLE_HASHER).
          */
+        private const val SAMPLER_HASHER: ULong = 1111111111111111111u
+        private const val MAX_ID: ULong = 0xFFFFFFFFFFFFFFFFUL
         private val SAMPLING_THRESHOLD: Long = (MAX_ID.toDouble() / (2.0 * SAMPLER_HASHER.toDouble())).toLong()
         private const val SAMPLE_RATE = 50f
         private val SAMPLED_IDS = listOf(SAMPLING_THRESHOLD - 1, SAMPLING_THRESHOLD - 2)

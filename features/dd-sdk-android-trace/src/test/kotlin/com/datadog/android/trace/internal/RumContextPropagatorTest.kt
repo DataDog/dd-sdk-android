@@ -24,6 +24,7 @@ import com.datadog.android.trace.internal.RumContextPropagator.Companion.injectR
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_ACTION_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_APPLICATION_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_ID
+import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_SAMPLE_RATE
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_VIEW_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
 import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
@@ -293,6 +294,7 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
+        verify(span).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, fakeRumContext[RUM_CONTEXT_SESSION_SAMPLE_RATE])
         verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, fakeDatadogContext.accountInfo?.id as? Any)
         verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, fakeDatadogContext.userInfo.id as? Any)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
@@ -317,6 +319,9 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
+        verify(
+            span
+        ).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, fakeRumContext[RUM_CONTEXT_SESSION_SAMPLE_RATE])
         verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, fakeDatadogContext.accountInfo?.id as? Any)
         verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, fakeDatadogContext.userInfo.id as? Any)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
@@ -339,6 +344,7 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(span).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, null as Any?)
         verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, null as Any?)
         verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, null as Any?)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
@@ -362,6 +368,7 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(span).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, null as Any?)
         verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, null as Any?)
         verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, null as Any?)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)

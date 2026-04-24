@@ -142,6 +142,21 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
+    fun `M use last writer W setTraceSampler() then setTraceSampleRate()`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // When
+        val result = testedBuilder
+            .setTraceSampler(mockTraceSampler)
+            .setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then
+        assertThat(result.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
     fun `M set trace context injection W setTraceContextInjection()`(forge: Forge) {
         // Given
         val fakeInjection = forge.aValueFrom(TraceContextInjection::class.java)

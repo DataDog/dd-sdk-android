@@ -31,6 +31,7 @@ import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -242,7 +243,16 @@ open class DatadogInterceptor internal constructor(
             buildMap {
                 put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
-                put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
+                // TODO RUM-13454 -> Remove the cast to DeterministicTraceSampler - V4 (RUM-15590)
+                @Suppress("DEPRECATION")
+                put(
+                    RumAttributes.RULE_PSR,
+                    (
+                        (traceSampler as? DeterministicTraceSampler)?.getSampleRate(span)
+                            ?: traceSampler.getSampleRate()
+                            ?: ZERO_SAMPLE_RATE
+                        ) / ALL_IN_SAMPLE_RATE
+                )
                 putAll(graphqlAttributes)
                 putAll(graphqlErrorAttributes)
             }

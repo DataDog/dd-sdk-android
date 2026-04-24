@@ -258,9 +258,15 @@ internal constructor(
 
             val spanContext = span.context()
             if (spanContext.setSamplingPriority(samplingPriority)) {
+                // TODO RUM-13454 -> Remove the cast to DeterministicTraceSampler - V4 (RUM-15590)
+                @Suppress("DEPRECATION")
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
-                    (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+                    (
+                        (traceSampler as? DeterministicTraceSampler)?.getSampleRate(span)
+                            ?: traceSampler.getSampleRate()
+                            ?: ZERO_SAMPLE_RATE
+                        ) / ALL_IN_SAMPLE_RATE
                 )
             }
         }

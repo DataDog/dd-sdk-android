@@ -65,6 +65,7 @@ internal class RumSessionScope(
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
+    internal var sessionSampleRate: Float = sessionSampler.getSampleRate() ?: RumContext.FULL_SESSION_SAMPLE_RATE
     private var startReason: StartReason = StartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
     private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedTimeNanos())
@@ -211,7 +212,8 @@ internal class RumSessionScope(
             sessionId = sessionId,
             sessionState = sessionState,
             sessionStartReason = startReason,
-            isSessionActive = isActive
+            isSessionActive = isActive,
+            sessionSampleRate = sessionSampleRate
         )
     }
 

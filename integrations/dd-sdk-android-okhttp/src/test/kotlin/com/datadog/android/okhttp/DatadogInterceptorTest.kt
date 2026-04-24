@@ -1381,5 +1381,55 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(resHeaders).isEqualTo(fakeActualResponseHeaders)
     }
 
+    // region rule_psr rebasing
+
+    @Test
+    fun `M set rebased rule_psr W intercept() {DeterministicTraceSampler, span has session_sample_rate tag}`(
+        @FloatForgery(min = 1f, max = 100f) fakeTraceSampleRate: Float,
+        @FloatForgery(min = 1f, max = 99f) fakeSessionSampleRate: Float,
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given — force upstream sampling-priority KEEP so isSampled=true regardless of rate
+        fakeRequest = forgeRequest {
+            it.addHeader(
+                TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
+                com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP.toString()
+            )
+        }
+        val deterministicSampler = DeterministicTraceSampler(fakeTraceSampleRate)
+        whenever(mockSpanContext.tags) doReturn mapOf("session_sample_rate" to fakeSessionSampleRate)
+        stubChain(mockChain, statusCode)
+
+        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
+        val datadogInterceptor = DatadogInterceptor(
+            sdkInstanceName = null,
+            tracedHosts = fakeLocalHosts,
+            tracedRequestListener = mockRequestListener,
+            rumResourceAttributesProvider = mockRumAttributesProvider,
+            traceSampler = deterministicSampler,
+            traceContextInjection = TraceContextInjection.ALL,
+            redacted404ResourceName = fakeRedacted404Resources,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { mockTracer }
+        )
+
+        // When
+        datadogInterceptor.intercept(mockChain)
+
+        // Then
+        val expectedRulePsr = fakeTraceSampleRate * fakeSessionSampleRate / 100f / 100f
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            any<ResourceId>(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        assertThat(attrsCaptor.firstValue[RumAttributes.RULE_PSR])
+            .isEqualTo(expectedRulePsr)
+    }
+
     // endregion
 }

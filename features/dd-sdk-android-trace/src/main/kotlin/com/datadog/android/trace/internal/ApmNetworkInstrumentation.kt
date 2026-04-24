@@ -32,6 +32,7 @@ import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.trace.internal.net.TracerProvider
 import com.datadog.android.trace.internal.net.applyPriority
 import com.datadog.android.trace.internal.net.buildSpan
+import com.datadog.android.trace.internal.net.effectiveSampleRate
 import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
@@ -73,6 +74,7 @@ class ApmNetworkInstrumentation internal constructor(
     val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
 ) {
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
+
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
 
@@ -148,7 +150,7 @@ class ApmNetworkInstrumentation internal constructor(
         return RequestTracingState(
             span = span,
             isSampled = isSampled,
-            sampleRate = traceSampler.getSampleRate(),
+            sampleRate = traceSampler.effectiveSampleRate(span),
             requestInfoBuilder = tracedRequestInfoBuilder
         )
     }

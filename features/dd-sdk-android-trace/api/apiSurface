@@ -22,6 +22,8 @@ open class com.datadog.android.trace.DeterministicTraceSampler : com.datadog.and
   constructor(() -> Float)
   constructor(Float)
   constructor(Double)
+  override fun sample(com.datadog.android.trace.api.span.DatadogSpan): Boolean
+  DEPRECATED fun getSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float
 annotation com.datadog.android.trace.ExperimentalTraceApi
 object com.datadog.android.trace.GlobalDatadogTracer
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean

@@ -9,6 +9,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -35,8 +36,17 @@ internal fun DatadogSpan.applyPriority(isSampled: Boolean, traceSampler: Sampler
     if (spanContext.setSamplingPriority(samplingPriority)) {
         spanContext.setMetric(
             AGENT_PSR_ATTRIBUTE,
-            (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+            (traceSampler.effectiveSampleRate(this) ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
         )
+    }
+}
+
+// TODO RUM-13454 -> Remove the cast to DeterministicTraceSampler - V4 (RUM-15590)
+@Suppress("DEPRECATION")
+internal fun Sampler<DatadogSpan>.effectiveSampleRate(span: DatadogSpan): Float? {
+    return when (this) {
+        is DeterministicTraceSampler -> getSampleRate(span)
+        else -> getSampleRate()
     }
 }
 
