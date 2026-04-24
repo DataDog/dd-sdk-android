@@ -28,7 +28,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DatadogTracingToolkitTest {
+internal class TraceInternalProxyTest {
 
     private lateinit var fakeTracedHosts: Map<String, Set<TracingHeaderType>>
 
@@ -50,7 +50,7 @@ internal class DatadogTracingToolkitTest {
         val builder = ApmNetworkInstrumentationConfiguration(fakeTracedHosts)
 
         // When
-        val result: ApmNetworkInstrumentation = DatadogTracingToolkit.createApmNetworkInstrumentation(
+        val result: ApmNetworkInstrumentation = _TraceInternalProxy.createApmNetworkInstrumentation(
             fakeInstrumentationName,
             builder
         )
@@ -73,7 +73,7 @@ internal class DatadogTracingToolkitTest {
 
         // When
         val result: ApmNetworkInstrumentation =
-            DatadogTracingToolkit.createApmNetworkInstrumentation(
+            _TraceInternalProxy.createApmNetworkInstrumentation(
                 fakeInstrumentationName,
                 builder
             )

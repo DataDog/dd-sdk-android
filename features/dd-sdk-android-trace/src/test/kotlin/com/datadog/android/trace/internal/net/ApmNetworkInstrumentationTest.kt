@@ -31,7 +31,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -207,7 +207,7 @@ internal class ApmNetworkInstrumentationTest {
     @Test
     fun `M return RequestTraceState with span W onRequest() {traceable first party url}`() {
         // Given
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -221,7 +221,7 @@ internal class ApmNetworkInstrumentationTest {
     @Test
     fun `M set span resource name W onRequest()`() {
         // Given
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onRequest(mockRequestInfo)
 
@@ -233,7 +233,7 @@ internal class ApmNetworkInstrumentationTest {
     @Test
     fun `M set span tags W onRequest()`() {
         // Given
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onRequest(mockRequestInfo)
 
@@ -250,7 +250,7 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockLocalFirstPartyHostResolver.isFirstPartyUrl(fakeUrl)) doReturn false
         whenever(mockSdkCore.firstPartyHostResolver.isFirstPartyUrl(fakeUrl)) doReturn false
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -267,7 +267,7 @@ internal class ApmNetworkInstrumentationTest {
             networkTracingScope = ApmNetworkTracingScope.EXCLUDE_INTERNAL_REDIRECTS
         )
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -282,7 +282,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockTracerProvider.provideTracer(any(), any(), any())) doReturn null
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -297,7 +297,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)) doReturn false
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -310,7 +310,7 @@ internal class ApmNetworkInstrumentationTest {
     @Test
     fun `M propagate sampled headers W onRequest() {sampled}`() {
         // Given
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onRequest(mockRequestInfo)
 
@@ -329,7 +329,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         whenever(mockTraceSampler.sample(mockSpan)) doReturn false
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onRequest(mockRequestInfo)
 
@@ -353,7 +353,7 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mockGlobalResolver
         whenever(mockGlobalResolver.headerTypesForUrl(fakeUrl)) doReturn setOf(TracingHeaderType.TRACECONTEXT)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onRequest(mockRequestInfo)
 
@@ -375,7 +375,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -394,7 +394,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -413,7 +413,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -429,7 +429,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -447,7 +447,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -466,7 +466,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState(isSampled = fakeIsSampled)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -491,7 +491,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState(isSampled = fakeIsSampled)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -511,7 +511,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -529,7 +529,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -548,7 +548,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         val traceState = createTraceState(isSampled = fakeIsSampled)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -569,7 +569,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         val traceState = createTraceState(isSampled = false)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -591,7 +591,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState(isSampled = fakeIsSampled)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -616,7 +616,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -635,7 +635,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -656,7 +656,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -677,7 +677,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -694,7 +694,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given - canSendSpan=true is set in setUp
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -714,7 +714,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -733,7 +733,7 @@ internal class ApmNetworkInstrumentationTest {
         // Given
         datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
 
@@ -755,7 +755,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState(isSampled = fakeIsSampled)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -774,7 +774,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState(isSampled = fakeIsSampled)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -793,7 +793,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
@@ -816,7 +816,7 @@ internal class ApmNetworkInstrumentationTest {
 
         val traceState = createTraceState()
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
@@ -914,7 +914,7 @@ internal class ApmNetworkInstrumentationTest {
     @Test
     fun `M delegate to propagation helper W removeTracingHeaders()`() {
         // Given
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             testedInstrumentation.removeTracingHeaders(mockRequestBuilder)
 
