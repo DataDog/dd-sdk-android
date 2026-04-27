@@ -3261,6 +3261,7 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
     constructor(kotlin.String)
     - CRONET
     - OKHTTP
+    - LEGACY_OKHTTP
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type

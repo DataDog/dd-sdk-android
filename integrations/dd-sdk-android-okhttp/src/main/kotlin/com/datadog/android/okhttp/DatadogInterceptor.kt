@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
@@ -187,7 +188,12 @@ open class DatadogInterceptor internal constructor(
 
     override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         super.onSdkInstanceReady(sdkCore)
-        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.apply {
+            notifyInterceptorInstantiated()
+            reportNetworkingLibraryType(
+                InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
+            )
+        }
     }
 
     // endregion
