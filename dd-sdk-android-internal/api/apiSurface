@@ -224,6 +224,7 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
+fun isMainThread(): Boolean
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long

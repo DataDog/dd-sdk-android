@@ -36,6 +36,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.thread.isMainThread
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -357,7 +358,7 @@ internal class RumFeature(
         cleanupInfoProviders()
 
         val detector = rumAppStartupDetector
-        if (Looper.myLooper() == Looper.getMainLooper()) {
+        if (isMainThread()) {
             @Suppress("ThreadSafety") // just verified we are on the main thread
             detector?.destroy()
         } else {
