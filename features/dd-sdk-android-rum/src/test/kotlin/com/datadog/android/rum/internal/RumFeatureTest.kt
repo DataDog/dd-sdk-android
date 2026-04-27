@@ -13,6 +13,7 @@ import android.app.ApplicationExitInfo
 import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
+import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.NoOpDataWriter
@@ -42,6 +43,7 @@ import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
+import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -96,6 +98,7 @@ import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -1622,6 +1625,63 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.initialized).isFalse()
+    }
+
+    @Test
+    fun `M destroy startup detector directly W onStop() {on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        val mockDetector: RumAppStartupDetector = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.rumAppStartupDetector = mockDetector
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockDetector).destroy()
+        verifyNoInteractions(mockHandler)
+    }
+
+    @Test
+    fun `M post destroy to handler W onStop() {not on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        whenever(mockHandler.post(any())) doAnswer {
+            it.getArgument(0, Runnable::class.java).run()
+            true
+        }
+
+        val mockDetector: RumAppStartupDetector = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.rumAppStartupDetector = mockDetector
+
+        // When
+        Thread { testedFeature.onStop() }.apply {
+            start()
+            join()
+        }
+
+        // Then
+        inOrder(mockHandler, mockDetector) {
+            verify(mockHandler).post(any())
+            verify(mockDetector).destroy()
+            verifyNoMoreInteractions()
+        }
     }
 
     // endregion
