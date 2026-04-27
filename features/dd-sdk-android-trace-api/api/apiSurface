@@ -42,6 +42,7 @@ object com.datadog.android.trace.api.DatadogTracingConstants
     const val MESSAGE: String
     const val STACK: String
     const val STATUS: String
+    const val TIMESTAMP_MS: String
   object ErrorPriorities
     const val UNSET: Byte
     const val HTTP_SERVER_DECORATOR: Byte
@@ -85,7 +86,6 @@ interface com.datadog.android.trace.api.span.DatadogSpan
   fun logErrorMessage(String)
   fun logMessage(String)
   fun logAttributes(Map<String, Any>)
-  fun logAttributes(Map<String, Any>, Long)
 interface com.datadog.android.trace.api.span.DatadogSpanBuilder
   fun start(): DatadogSpan
   fun withOrigin(String?): DatadogSpanBuilder

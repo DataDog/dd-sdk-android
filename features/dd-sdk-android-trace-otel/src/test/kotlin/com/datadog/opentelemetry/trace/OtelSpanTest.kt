@@ -194,8 +194,10 @@ internal class OtelSpanTest {
 
         // Then
         verify(mockAgentSpan).logAttributes(
-            mapOf(DatadogTracingConstants.LogAttributes.MESSAGE to fakeEventName),
-            2_000_000L
+            mapOf(
+                DatadogTracingConstants.LogAttributes.MESSAGE to fakeEventName,
+                DatadogTracingConstants.LogAttributes.TIMESTAMP_MS to 2_000_000L
+            )
         )
     }
 
@@ -210,7 +212,7 @@ internal class OtelSpanTest {
         testedSpan.addEvent(fakeEventName, Attributes.empty(), 1000L, java.util.concurrent.TimeUnit.MILLISECONDS)
 
         // Then
-        verify(mockAgentSpan, never()).logAttributes(any(), any())
+        verify(mockAgentSpan, never()).logAttributes(any())
     }
 
     // endregion

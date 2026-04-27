@@ -84,20 +84,22 @@ public class OtelSpan implements Span {
 
   @Override
   public Span addEvent(String name, Attributes attributes) {
-      if (this.recording) {
-          this.delegate.logAttributes(toNonNullMap(name, attributes));
-      }
+    if (this.recording) {
+      this.delegate.logAttributes(toNonNullMap(name, attributes));
+    }
     return this;
   }
 
   @Override
   public Span addEvent(String name, Attributes attributes, long timestamp, TimeUnit unit) {
-      if (this.recording) {
-          this.delegate.logAttributes(toNonNullMap(name, attributes), unit.toMillis(timestamp));
-      }
+    if (this.recording) {
+      Map<String, Object> fields = toNonNullMap(name, attributes);
+      // LogFeature's maximum timestamp resolution is milliseconds.
+      fields.put(DatadogTracingConstants.LogAttributes.TIMESTAMP_MS, unit.toMillis(timestamp));
+      this.delegate.logAttributes(fields);
+    }
     return this;
   }
-
 
   private Map<String, Object> toNonNullMap(String name, Attributes attributes) {
     Map<String, Object> fields = new HashMap<>();

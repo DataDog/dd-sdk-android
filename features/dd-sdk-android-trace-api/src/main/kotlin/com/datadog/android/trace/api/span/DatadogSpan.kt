@@ -190,16 +190,15 @@ interface DatadogSpan {
      *
      * @param attributes A map containing key-value pairs of attributes to be logged.
      *                   These attributes provide additional context or metadata for the span.
+     *
+     * Reserved keys (extracted by the SDK and removed from the emitted attributes payload):
+     * - [com.datadog.android.trace.api.DatadogTracingConstants.LogAttributes.MESSAGE] — log message body.
+     * - [com.datadog.android.trace.api.DatadogTracingConstants.LogAttributes.STATUS] — log severity.
+     * - [com.datadog.android.trace.api.DatadogTracingConstants.LogAttributes.ERROR_OBJECT],
+     *   [com.datadog.android.trace.api.DatadogTracingConstants.LogAttributes.ERROR_KIND],
+     *   [com.datadog.android.trace.api.DatadogTracingConstants.LogAttributes.STACK] — error metadata.
+     * - [com.datadog.android.trace.api.DatadogTracingConstants.LogAttributes.TIMESTAMP_MS] — overrides
+     *   the log event timestamp (must be a [Long] in milliseconds since the Unix epoch).
      */
     fun logAttributes(attributes: Map<String, Any>)
-
-    /**
-     * Logs a set of attributes with a custom timestamp and associates them with the current [DatadogSpan].
-     *
-     * @param attributes A map containing key-value pairs of attributes to be logged.
-     * @param timestampMs The timestamp in milliseconds since epoch at which the event occurred.
-     */
-    fun logAttributes(attributes: Map<String, Any>, timestampMs: Long) {
-        logAttributes(attributes)
-    }
 }

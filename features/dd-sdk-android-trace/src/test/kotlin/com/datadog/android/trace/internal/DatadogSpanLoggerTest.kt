@@ -162,29 +162,54 @@ internal class DatadogSpanLoggerTest {
     }
 
     @Test
-    fun `M use provided timestamp W log(Map) { custom timestampMs }`(
+    fun `M use provided timestamp W log(Map) { TIMESTAMP_MS reserved key in attributes }`(
         forge: Forge,
         @LongForgery(min = 1L) fakeCustomTimestamp: Long
     ) {
         // Given
         @Suppress("UNCHECKED_CAST")
-        val fakeAttributes: Map<String, Any> = forge.exhaustiveAttributes()
-            .filterValues { it != null } as Map<String, Any>
+        val fakeAttributes: Map<String, Any> = (
+            forge.exhaustiveAttributes().filterValues { it != null } +
+                (DatadogTracingConstants.LogAttributes.TIMESTAMP_MS to fakeCustomTimestamp)
+            ) as Map<String, Any>
 
         // When
-        testedLogger.log(fakeAttributes, fakeSpan, fakeCustomTimestamp)
+        testedLogger.log(fakeAttributes, fakeSpan)
 
         // Then
         argumentCaptor<Map<Any, Any>> {
             verify(mockLogFeatureScope).sendEvent(capture())
             assertThat(firstValue["timestamp"]).isEqualTo(fakeCustomTimestamp)
+            @Suppress("UNCHECKED_CAST")
+            val emittedAttributes = firstValue["attributes"] as Map<String, Any>
+            assertThat(emittedAttributes).doesNotContainKey(DatadogTracingConstants.LogAttributes.TIMESTAMP_MS)
         }
     }
 
     @Test
-    fun `M use timeProvider W log(Map) { no timestampMs }`(forge: Forge) {
+    fun `M use timeProvider W log(Map) { no TIMESTAMP_MS reserved key }`(forge: Forge) {
         // Given
         val fakeAttributes = forge.aMap { aString() to aString() }
+
+        // When
+        testedLogger.log(fakeAttributes, fakeSpan)
+
+        // Then
+        argumentCaptor<Map<Any, Any>> {
+            verify(mockLogFeatureScope).sendEvent(capture())
+            assertThat(firstValue["timestamp"]).isEqualTo(fakeTimestamp)
+        }
+    }
+
+    @Test
+    fun `M fall back to timeProvider W log(Map) { TIMESTAMP_MS is not a Long }`(
+        forge: Forge,
+        @StringForgery fakeNonLongTimestamp: String
+    ) {
+        // Given
+        val fakeAttributes: Map<String, Any> = mapOf(
+            DatadogTracingConstants.LogAttributes.TIMESTAMP_MS to fakeNonLongTimestamp
+        )
 
         // When
         testedLogger.log(fakeAttributes, fakeSpan)
