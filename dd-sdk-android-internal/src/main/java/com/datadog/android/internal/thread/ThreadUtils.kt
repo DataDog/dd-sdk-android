@@ -8,7 +8,9 @@ package com.datadog.android.internal.thread
 
 import android.os.Looper
 
-// Returns if the current thread is the main thread
+/**
+ * @return true if the current thread is the main thread, false otherwise
+ */
 fun isMainThread(): Boolean {
     return Looper.myLooper() == Looper.getMainLooper()
 }
