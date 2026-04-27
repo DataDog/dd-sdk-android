@@ -117,7 +117,7 @@ internal class DeltaEncoderTest {
         assertThat(ts[1].asLong).isEqualTo(1_000_000_000L)
         assertThat(ts[2].asLong).isEqualTo(1_000_000_000L)
 
-        val cpuUsage = result.getAsJsonArray("cpu_usage")
+        val cpuUsage = result.getAsJsonArray("value")
         // 42.5 * 10000 = 425_000
         assertThat(cpuUsage[0].asLong).isEqualTo(425_000L)
         // (43.0 - 42.5) * 10000 = 5_000

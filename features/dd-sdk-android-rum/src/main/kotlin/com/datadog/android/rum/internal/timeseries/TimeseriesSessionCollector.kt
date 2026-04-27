@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.timeseries
 
 import android.system.Os
 import android.system.OsConstants
-import android.util.Log
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
@@ -28,6 +27,13 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
+/**
+ * Collects memory and CPU samples at 1s intervals during a RUM session and flushes them
+ * as RumTimeseriesMemoryEvent / RumTimeseriesCpuEvent batches via the RUM feature writer.
+ *
+ * Each flush sends two events per metric: one with schema=object (full array) and one with
+ * the delta-compressed schema (delta-object for memory, delta-scalar for CPU).
+ */
 @Suppress("TooManyFunctions")
 internal class TimeseriesSessionCollector(
     private val memoryReader: VitalReader,
@@ -37,8 +43,7 @@ internal class TimeseriesSessionCollector(
     private val batchSize: Int = DEFAULT_BATCH_SIZE,
     private val samplingIntervalMs: Long = DEFAULT_SAMPLING_INTERVAL_MS,
     internal val cpuUsageProvider: (() -> Double?)? = null,
-    internal val executorFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
-    private val enableDeltaCompression: Boolean = false
+    internal val executorFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() }
 ) : TimeseriesCollecting {
 
     private var sessionId: String = ""
@@ -149,28 +154,26 @@ internal class TimeseriesSessionCollector(
                 timeseries = RumTimeseriesMemoryEvent.Timeseries(
                     id = UUID.randomUUID().toString(),
                     name = MEMORY_METRIC_NAME,
+                    schema = RumTimeseriesMemoryEvent.Schema.OBJECT,
                     start = startNs,
                     end = endNs,
                     data = data
                 )
             )
-            if (enableDeltaCompression) {
-                val deltaData = DeltaEncoder.encodeMemory(data) ?: return@withWriteContext
-                val json = event.toJson() as JsonObject
-                json.getAsJsonObject("timeseries").add("data", deltaData)
-                writeScope { batchWriter ->
-                    writer.write(batchWriter, json, EventType.DEFAULT)
-                }
-                val normalSize = event.toJson().toString().length
-                val deltaSize = json.toString().length
-                Log.d(
-                    "Timeseries",
-                    "[Timeseries] delta flush: signal=memory normal=${normalSize}B delta=${deltaSize}B ratio=${"%.1f".format(normalSize.toDouble() / deltaSize.toDouble())}x"
-                )
-            } else {
-                writeScope { batchWriter ->
-                    writer.write(batchWriter, event, EventType.DEFAULT)
-                }
+
+            // object schema — full array of data points
+            writeScope { batchWriter ->
+                writer.write(batchWriter, event, EventType.DEFAULT)
+            }
+
+            // delta-object schema — columnar delta-compressed payload
+            val deltaData = DeltaEncoder.encodeMemory(data) ?: return@withWriteContext
+            val deltaJson = event.toJson() as JsonObject
+            val tsJson = deltaJson.getAsJsonObject("timeseries")
+            tsJson.addProperty("schema", "delta-object")
+            tsJson.add("data", deltaData)
+            writeScope { batchWriter ->
+                writer.write(batchWriter, deltaJson, EventType.DEFAULT)
             }
         }
     }
@@ -199,28 +202,26 @@ internal class TimeseriesSessionCollector(
                 timeseries = RumTimeseriesCpuEvent.Timeseries(
                     id = UUID.randomUUID().toString(),
                     name = CPU_METRIC_NAME,
+                    schema = RumTimeseriesCpuEvent.Schema.OBJECT,
                     start = startNs,
                     end = endNs,
                     data = data
                 )
             )
-            if (enableDeltaCompression) {
-                val deltaData = DeltaEncoder.encodeCpu(data) ?: return@withWriteContext
-                val json = event.toJson() as JsonObject
-                json.getAsJsonObject("timeseries").add("data", deltaData)
-                writeScope { batchWriter ->
-                    writer.write(batchWriter, json, EventType.DEFAULT)
-                }
-                val normalSize = event.toJson().toString().length
-                val deltaSize = json.toString().length
-                Log.d(
-                    "Timeseries",
-                    "[Timeseries] delta flush: signal=cpu normal=${normalSize}B delta=${deltaSize}B ratio=${"%.1f".format(normalSize.toDouble() / deltaSize.toDouble())}x"
-                )
-            } else {
-                writeScope { batchWriter ->
-                    writer.write(batchWriter, event, EventType.DEFAULT)
-                }
+
+            // object schema — full array of data points
+            writeScope { batchWriter ->
+                writer.write(batchWriter, event, EventType.DEFAULT)
+            }
+
+            // delta-scalar schema — columnar delta-compressed payload
+            val deltaData = DeltaEncoder.encodeCpu(data) ?: return@withWriteContext
+            val deltaJson = event.toJson() as JsonObject
+            val tsJson = deltaJson.getAsJsonObject("timeseries")
+            tsJson.addProperty("schema", "delta-scalar")
+            tsJson.add("data", deltaData)
+            writeScope { batchWriter ->
+                writer.write(batchWriter, deltaJson, EventType.DEFAULT)
             }
         }
     }

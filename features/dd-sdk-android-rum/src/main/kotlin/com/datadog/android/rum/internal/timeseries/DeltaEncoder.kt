@@ -78,7 +78,7 @@ internal object DeltaEncoder {
         return JsonObject().apply {
             addProperty("precision", PRECISION)
             add("ts", tsArray)
-            add("cpu_usage", cpuUsageArray)
+            add("value", cpuUsageArray)
         }
     }
 }
