@@ -94,7 +94,7 @@
     "timeseries": {
       "type": "object",
       "description": "Memory timeseries properties",
-      "required": ["id", "name", "start", "end", "data"],
+      "required": ["id", "name", "schema", "start", "end", "data"],
       "properties": {
         "id": {
           "type": "string",
@@ -105,6 +105,12 @@
         "name": {
           "type": "string",
           "description": "Name identifying the timeseries metric",
+          "readOnly": true
+        },
+        "schema": {
+          "type": "string",
+          "description": "Wire-shape discriminator for the data field",
+          "enum": ["object", "delta-object"],
           "readOnly": true
         },
         "start": {

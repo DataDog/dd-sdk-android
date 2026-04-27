@@ -443,7 +443,7 @@ internal class TimeseriesSessionCollectorTest {
     }
 
     @Test
-    fun `M write delta shaped event W flush() { delta compression enabled, memory }`() {
+    fun `M write both object and delta events W flush() { memory batch }`() {
         // Given
         testedCollector = TimeseriesSessionCollector(
             memoryReader = mockMemoryReader,
@@ -451,20 +451,27 @@ internal class TimeseriesSessionCollectorTest {
             sdkCore = mockSdkCore,
             totalRamBytes = fakeTotalRamBytes,
             batchSize = 3,
-            cpuUsageProvider = { fakeCpuUsage },
-            executorFactory = { mockExecutor },
-            enableDeltaCompression = true
+            cpuUsageProvider = { null },
+            executorFactory = { mockExecutor }
         )
         testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
         val sampleRunnable = captureScheduledRunnable()
         repeat(3) { sampleRunnable.run() }
 
-        // Then - the written object is a JsonObject (not RumTimeseriesMemoryEvent)
+        // Then - 2 writes per flush: 1 typed object event + 1 delta JsonObject
         val captor = argumentCaptor<Any>()
         verify(mockWriter, times(2)).write(any(), captor.capture(), any())
-        val memoryPayload = captor.allValues.filterIsInstance<com.google.gson.JsonObject>()
-            .first { it.has("timeseries") && it.getAsJsonObject("timeseries").get("name").asString == "memory" }
-        val dataField = memoryPayload.getAsJsonObject("timeseries").get("data").asJsonObject
+
+        val typedEvents = captor.allValues.filterIsInstance<RumTimeseriesMemoryEvent>()
+        assertThat(typedEvents).hasSize(1)
+        assertThat(typedEvents[0].timeseries.schema).isEqualTo(RumTimeseriesMemoryEvent.Schema.OBJECT)
+
+        val deltaPayloads = captor.allValues.filterIsInstance<JsonObject>()
+            .filter { it.has("timeseries") && it.getAsJsonObject("timeseries").get("name").asString == "memory" }
+        assertThat(deltaPayloads).hasSize(1)
+        val tsJson = deltaPayloads[0].getAsJsonObject("timeseries")
+        assertThat(tsJson.get("schema").asString).isEqualTo("delta-object")
+        val dataField = tsJson.get("data").asJsonObject
         assertThat(dataField.get("precision").asInt).isEqualTo(4)
         assertThat(dataField.has("ts")).isTrue()
         assertThat(dataField.has("memory_max")).isTrue()
@@ -472,7 +479,7 @@ internal class TimeseriesSessionCollectorTest {
     }
 
     @Test
-    fun `M not write event W flush() { delta compression enabled, single sample, memory }`() {
+    fun `M write only object event W flush() { single sample, memory }`() {
         // Given
         testedCollector = TimeseriesSessionCollector(
             memoryReader = mockMemoryReader,
@@ -481,8 +488,7 @@ internal class TimeseriesSessionCollectorTest {
             totalRamBytes = fakeTotalRamBytes,
             batchSize = 100,
             cpuUsageProvider = { null },
-            executorFactory = { mockExecutor },
-            enableDeltaCompression = true
+            executorFactory = { mockExecutor }
         )
         testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
         val sampleRunnable = captureScheduledRunnable()
@@ -491,8 +497,10 @@ internal class TimeseriesSessionCollectorTest {
         // When
         testedCollector.stop()
 
-        // Then - no events written (single sample dropped)
-        verify(mockWriter, never()).write(any(), any(), any())
+        // Then - object event is written, but DeltaEncoder requires >1 samples so no delta event
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(1)).write(any(), captor.capture(), any())
+        assertThat(captor.firstValue).isInstanceOf(RumTimeseriesMemoryEvent::class.java)
     }
 
     private fun captureScheduledRunnable(): Runnable {
