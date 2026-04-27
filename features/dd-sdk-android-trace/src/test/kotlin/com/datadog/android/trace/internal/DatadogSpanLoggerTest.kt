@@ -203,7 +203,6 @@ internal class DatadogSpanLoggerTest {
 
     @Test
     fun `M fall back to timeProvider W log(Map) { TIMESTAMP_MS is not a Long }`(
-        forge: Forge,
         @StringForgery fakeNonLongTimestamp: String
     ) {
         // Given
