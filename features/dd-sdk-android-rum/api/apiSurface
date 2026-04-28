@@ -1550,13 +1550,13 @@ data class com.datadog.android.rum.model.ResourceEvent
       fun fromJsonObject(com.google.gson.JsonObject): Location
   sealed class Path
     abstract fun toJson(): com.google.gson.JsonElement
-    data class String : RumGraphql.Path
+    data class String : Path
       constructor(kotlin.String)
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): kotlin.String
         fun fromJsonPrimitive(com.google.gson.JsonPrimitive): kotlin.String
-    data class Long : RumGraphql.Path
+    data class Long : Path
       constructor(kotlin.Long)
       override fun toJson(): com.google.gson.JsonElement
       companion object 

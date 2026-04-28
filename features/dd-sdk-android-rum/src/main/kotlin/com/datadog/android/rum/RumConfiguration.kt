@@ -411,6 +411,17 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables memory and CPU timeseries collection.
+         * When enabled, samples are collected at 1-second intervals and sent as
+         * batched [RumTimeseriesMemoryEvent] / [RumTimeseriesCpuEvent] events.
+         * @param enabled whether to enable timeseries collection (default: false)
+         */
+        fun setEnableTimeseries(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(enableTimeseries = enabled)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {
