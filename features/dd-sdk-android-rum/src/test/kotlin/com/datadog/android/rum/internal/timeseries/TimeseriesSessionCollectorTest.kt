@@ -123,7 +123,8 @@ internal class TimeseriesSessionCollectorTest {
             sdkCore = mockSdkCore,
             totalRamBytes = fakeTotalRamBytes,
             cpuUsageProvider = { fakeCpuUsage },
-            executorFactory = { mockExecutor }
+            executorFactory = { mockExecutor },
+            compressionSampler = { false }
         )
     }
 
@@ -443,7 +444,7 @@ internal class TimeseriesSessionCollectorTest {
     }
 
     @Test
-    fun `M write both object and delta events W flush() { memory batch }`() {
+    fun `M write delta event W flush() { delta compression sampled, memory batch }`() {
         // Given
         testedCollector = TimeseriesSessionCollector(
             memoryReader = mockMemoryReader,
@@ -452,24 +453,20 @@ internal class TimeseriesSessionCollectorTest {
             totalRamBytes = fakeTotalRamBytes,
             batchSize = 3,
             cpuUsageProvider = { null },
-            executorFactory = { mockExecutor }
+            executorFactory = { mockExecutor },
+            compressionSampler = { true }
         )
         testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
         val sampleRunnable = captureScheduledRunnable()
         repeat(3) { sampleRunnable.run() }
 
-        // Then - 2 writes per flush: 1 typed object event + 1 delta JsonObject
+        // Then - 1 delta JsonObject written, no typed object event
         val captor = argumentCaptor<Any>()
-        verify(mockWriter, times(2)).write(any(), captor.capture(), any())
+        verify(mockWriter, times(1)).write(any(), captor.capture(), any())
+        assertThat(captor.allValues.filterIsInstance<RumTimeseriesMemoryEvent>()).isEmpty()
 
-        val typedEvents = captor.allValues.filterIsInstance<RumTimeseriesMemoryEvent>()
-        assertThat(typedEvents).hasSize(1)
-        assertThat(typedEvents[0].timeseries.schema).isEqualTo(RumTimeseriesMemoryEvent.Schema.OBJECT)
-
-        val deltaPayloads = captor.allValues.filterIsInstance<JsonObject>()
-            .filter { it.has("timeseries") && it.getAsJsonObject("timeseries").get("name").asString == "memory" }
-        assertThat(deltaPayloads).hasSize(1)
-        val tsJson = deltaPayloads[0].getAsJsonObject("timeseries")
+        val deltaPayload = captor.firstValue as JsonObject
+        val tsJson = deltaPayload.getAsJsonObject("timeseries")
         assertThat(tsJson.get("schema").asString).isEqualTo("delta-object")
         val dataField = tsJson.get("data").asJsonObject
         assertThat(dataField.get("precision").asInt).isEqualTo(4)
@@ -479,8 +476,93 @@ internal class TimeseriesSessionCollectorTest {
     }
 
     @Test
-    fun `M write only object event W flush() { single sample, memory }`() {
+    fun `M write object event W flush() { object schema sampled, memory batch }`() {
         // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 3,
+            cpuUsageProvider = { null },
+            executorFactory = { mockExecutor },
+            compressionSampler = { false }
+        )
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        repeat(3) { sampleRunnable.run() }
+
+        // Then - typed object event written, no JsonObject delta
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(1)).write(any(), captor.capture(), any())
+        val typedEvents = captor.allValues.filterIsInstance<RumTimeseriesMemoryEvent>()
+        assertThat(typedEvents).hasSize(1)
+        assertThat(typedEvents[0].timeseries.schema).isEqualTo(RumTimeseriesMemoryEvent.Schema.OBJECT)
+        assertThat(captor.allValues.filterIsInstance<JsonObject>()).isEmpty()
+    }
+
+    @Test
+    fun `M write delta event W flush() { delta compression sampled, cpu batch }`() {
+        // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 3,
+            cpuUsageProvider = { fakeCpuUsage },
+            executorFactory = { mockExecutor },
+            compressionSampler = { true }
+        )
+        whenever(mockMemoryReader.readVitalData()) doReturn null
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        repeat(3) { sampleRunnable.run() }
+
+        // Then - 1 delta JsonObject written, no typed object event
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(1)).write(any(), captor.capture(), any())
+        assertThat(captor.allValues.filterIsInstance<RumTimeseriesCpuEvent>()).isEmpty()
+
+        val deltaPayload = captor.firstValue as JsonObject
+        val tsJson = deltaPayload.getAsJsonObject("timeseries")
+        assertThat(tsJson.get("schema").asString).isEqualTo("delta-scalar")
+        val dataField = tsJson.get("data").asJsonObject
+        assertThat(dataField.get("precision").asInt).isEqualTo(4)
+        assertThat(dataField.has("ts")).isTrue()
+        assertThat(dataField.has("value")).isTrue()
+    }
+
+    @Test
+    fun `M write object event W flush() { object schema sampled, cpu batch }`() {
+        // Given
+        testedCollector = TimeseriesSessionCollector(
+            memoryReader = mockMemoryReader,
+            writer = mockWriter,
+            sdkCore = mockSdkCore,
+            totalRamBytes = fakeTotalRamBytes,
+            batchSize = 3,
+            cpuUsageProvider = { fakeCpuUsage },
+            executorFactory = { mockExecutor },
+            compressionSampler = { false }
+        )
+        whenever(mockMemoryReader.readVitalData()) doReturn null
+        testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        val sampleRunnable = captureScheduledRunnable()
+        repeat(3) { sampleRunnable.run() }
+
+        // Then - typed object event written, no JsonObject delta
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(1)).write(any(), captor.capture(), any())
+        val typedEvents = captor.allValues.filterIsInstance<RumTimeseriesCpuEvent>()
+        assertThat(typedEvents).hasSize(1)
+        assertThat(typedEvents[0].timeseries.schema).isEqualTo(RumTimeseriesCpuEvent.Schema.OBJECT)
+        assertThat(captor.allValues.filterIsInstance<JsonObject>()).isEmpty()
+    }
+
+    @Test
+    fun `M fall back to object event W flush() { delta sampled, single sample }`() {
+        // Given — delta sampled but only 1 sample: DeltaEncoder returns null, falls back to object
         testedCollector = TimeseriesSessionCollector(
             memoryReader = mockMemoryReader,
             writer = mockWriter,
@@ -488,7 +570,8 @@ internal class TimeseriesSessionCollectorTest {
             totalRamBytes = fakeTotalRamBytes,
             batchSize = 100,
             cpuUsageProvider = { null },
-            executorFactory = { mockExecutor }
+            executorFactory = { mockExecutor },
+            compressionSampler = { true }
         )
         testedCollector.start(fakeSessionId, fakeApplicationId, RumSessionType.USER)
         val sampleRunnable = captureScheduledRunnable()
@@ -497,10 +580,12 @@ internal class TimeseriesSessionCollectorTest {
         // When
         testedCollector.stop()
 
-        // Then - object event is written, but DeltaEncoder requires >1 samples so no delta event
+        // Then - falls back to object event, no JsonObject delta
         val captor = argumentCaptor<Any>()
         verify(mockWriter, times(1)).write(any(), captor.capture(), any())
         assertThat(captor.firstValue).isInstanceOf(RumTimeseriesMemoryEvent::class.java)
+        assertThat((captor.firstValue as RumTimeseriesMemoryEvent).timeseries.schema)
+            .isEqualTo(RumTimeseriesMemoryEvent.Schema.OBJECT)
     }
 
     private fun captureScheduledRunnable(): Runnable {

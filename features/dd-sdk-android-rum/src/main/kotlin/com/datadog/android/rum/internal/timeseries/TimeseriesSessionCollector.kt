@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit
  * Collects memory and CPU samples at 1s intervals during a RUM session and flushes them
  * as RumTimeseriesMemoryEvent / RumTimeseriesCpuEvent batches via the RUM feature writer.
  *
- * Each flush sends two events per metric: one with schema=object (full array) and one with
- * the delta-compressed schema (delta-object for memory, delta-scalar for CPU).
+ * At session start a coin is flipped: 50% of sessions send full-array object schema events,
+ * 50% send delta-compressed events (delta-object for memory, delta-scalar for CPU).
  */
 @Suppress("TooManyFunctions")
 internal class TimeseriesSessionCollector(
@@ -43,7 +43,8 @@ internal class TimeseriesSessionCollector(
     private val batchSize: Int = DEFAULT_BATCH_SIZE,
     private val samplingIntervalMs: Long = DEFAULT_SAMPLING_INTERVAL_MS,
     internal val cpuUsageProvider: (() -> Double?)? = null,
-    internal val executorFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() }
+    internal val executorFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    internal val compressionSampler: () -> Boolean = { Math.random() < 0.5 }
 ) : TimeseriesCollecting {
 
     private var sessionId: String = ""
@@ -58,11 +59,13 @@ internal class TimeseriesSessionCollector(
 
     private var prevCpuTicks: Long = 0L
     private val cpuClockTicks: Long = Os.sysconf(OsConstants._SC_CLK_TCK)
+    private var useDeltaCompression: Boolean = false
 
     override fun start(sessionId: String, applicationId: String, sessionType: RumSessionType) {
         this.sessionId = sessionId
         this.applicationId = applicationId
         this.sessionType = sessionType
+        useDeltaCompression = compressionSampler()
         synchronized(this) {
             memoryBuffer.clear()
             cpuBuffer.clear()
@@ -138,6 +141,7 @@ internal class TimeseriesSessionCollector(
         val currentSessionId = sessionId
         val currentApplicationId = applicationId
         val currentSessionType = sessionType
+        val useDelta = useDeltaCompression
 
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
             val event = RumTimeseriesMemoryEvent(
@@ -161,19 +165,19 @@ internal class TimeseriesSessionCollector(
                 )
             )
 
-            // object schema — full array of data points
-            writeScope { batchWriter ->
-                writer.write(batchWriter, event, EventType.DEFAULT)
-            }
-
-            // delta-object schema — columnar delta-compressed payload
-            val deltaData = DeltaEncoder.encodeMemory(data) ?: return@withWriteContext
-            val deltaJson = event.toJson() as JsonObject
-            val tsJson = deltaJson.getAsJsonObject("timeseries")
-            tsJson.addProperty("schema", "delta-object")
-            tsJson.add("data", deltaData)
-            writeScope { batchWriter ->
-                writer.write(batchWriter, deltaJson, EventType.DEFAULT)
+            if (useDelta) {
+                val deltaData = DeltaEncoder.encodeMemory(data)
+                if (deltaData != null) {
+                    val deltaJson = event.toJson() as JsonObject
+                    val tsJson = deltaJson.getAsJsonObject("timeseries")
+                    tsJson.addProperty("schema", "delta-object")
+                    tsJson.add("data", deltaData)
+                    writeScope { batchWriter -> writer.write(batchWriter, deltaJson, EventType.DEFAULT) }
+                } else {
+                    writeScope { batchWriter -> writer.write(batchWriter, event, EventType.DEFAULT) }
+                }
+            } else {
+                writeScope { batchWriter -> writer.write(batchWriter, event, EventType.DEFAULT) }
             }
         }
     }
@@ -186,6 +190,7 @@ internal class TimeseriesSessionCollector(
         val currentSessionId = sessionId
         val currentApplicationId = applicationId
         val currentSessionType = sessionType
+        val useDelta = useDeltaCompression
 
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
             val event = RumTimeseriesCpuEvent(
@@ -209,19 +214,19 @@ internal class TimeseriesSessionCollector(
                 )
             )
 
-            // object schema — full array of data points
-            writeScope { batchWriter ->
-                writer.write(batchWriter, event, EventType.DEFAULT)
-            }
-
-            // delta-scalar schema — columnar delta-compressed payload
-            val deltaData = DeltaEncoder.encodeCpu(data) ?: return@withWriteContext
-            val deltaJson = event.toJson() as JsonObject
-            val tsJson = deltaJson.getAsJsonObject("timeseries")
-            tsJson.addProperty("schema", "delta-scalar")
-            tsJson.add("data", deltaData)
-            writeScope { batchWriter ->
-                writer.write(batchWriter, deltaJson, EventType.DEFAULT)
+            if (useDelta) {
+                val deltaData = DeltaEncoder.encodeCpu(data)
+                if (deltaData != null) {
+                    val deltaJson = event.toJson() as JsonObject
+                    val tsJson = deltaJson.getAsJsonObject("timeseries")
+                    tsJson.addProperty("schema", "delta-scalar")
+                    tsJson.add("data", deltaData)
+                    writeScope { batchWriter -> writer.write(batchWriter, deltaJson, EventType.DEFAULT) }
+                } else {
+                    writeScope { batchWriter -> writer.write(batchWriter, event, EventType.DEFAULT) }
+                }
+            } else {
+                writeScope { batchWriter -> writer.write(batchWriter, event, EventType.DEFAULT) }
             }
         }
     }
