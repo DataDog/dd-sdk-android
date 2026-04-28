@@ -39,8 +39,9 @@ data class Version(
             override val suffix: String = "-dev"
         }
 
-        object Snapshot : Type() {
-            override val suffix: String = "-SNAPSHOT"
+        data class Snapshot(val label: String? = null) : Type() {
+            override val suffix: String =
+                if (label.isNullOrEmpty()) "-SNAPSHOT" else "-$label-SNAPSHOT"
         }
     }
 
