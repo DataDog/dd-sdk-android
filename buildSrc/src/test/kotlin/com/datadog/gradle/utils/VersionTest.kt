@@ -117,10 +117,20 @@ class VersionTest {
     @Test
     fun addSuffixForSnapshot() {
         // When
-        val name = Version(4, 11, 5, Version.Type.Snapshot).name
+        val name = Version(4, 11, 5, Version.Type.Snapshot()).name
 
         // Then
         val expected = "4.11.5-SNAPSHOT"
+        assertThat(name).isEqualTo(expected)
+    }
+
+    @Test
+    fun addSuffixForLabeledSnapshot() {
+        // When
+        val name = Version(4, 11, 5, Version.Type.Snapshot("timeseries")).name
+
+        // Then
+        val expected = "4.11.5-timeseries-SNAPSHOT"
         assertThat(name).isEqualTo(expected)
     }
 }

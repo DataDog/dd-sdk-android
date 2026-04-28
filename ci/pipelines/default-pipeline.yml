@@ -92,6 +92,11 @@ stages:
       - cache/notifications/
     policy: pull
 
+# Skip job on the timeseries dogfooding branch — that branch only runs the manual snapshot publish.
+.except-dogfooding-branch:
+  except:
+    - bplasovska/feature/timeseries-dogfooding
+
 # CI IMAGE
 
 ci-image:
@@ -124,6 +129,8 @@ create_key:
 # STATIC ANALYSIS
 
 static-analysis:
+  extends:
+    - .except-dogfooding-branch
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
@@ -137,6 +144,7 @@ static-analysis:
 analysis:detekt-custom:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags:
     - "arch:amd64"
   image: $CI_IMAGE_DOCKER
@@ -157,6 +165,7 @@ analysis:detekt-custom:
 test:debug:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -178,6 +187,7 @@ test:debug:
 test:tools:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -188,6 +198,8 @@ test:tools:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:kover:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -224,6 +236,7 @@ test:kover:
 test-pyramid:core-it-min-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -239,6 +252,7 @@ test-pyramid:core-it-min-api:
 test-pyramid:core-it-latest-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -254,6 +268,7 @@ test-pyramid:core-it-latest-api:
 test-pyramid:core-it-median-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -269,6 +284,7 @@ test-pyramid:core-it-median-api:
 test-pyramid:single-fit-logs:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -286,6 +302,7 @@ test-pyramid:single-fit-logs:
 test-pyramid:single-fit-rum:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -303,6 +320,7 @@ test-pyramid:single-fit-rum:
 test-pyramid:single-fit-trace:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -320,6 +338,7 @@ test-pyramid:single-fit-trace:
 test-pyramid:single-fit-okhttp:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -339,6 +358,7 @@ test-pyramid:single-fit-okhttp:
 test-pyramid:legacy-integration-instrumented-min-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -354,6 +374,7 @@ test-pyramid:legacy-integration-instrumented-min-api:
 test-pyramid:legacy-integration-instrumented-latest-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -369,6 +390,7 @@ test-pyramid:legacy-integration-instrumented-latest-api:
 test-pyramid:legacy-integration-instrumented-median-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -399,6 +421,7 @@ test-pyramid:ndk-instrumented-latest-api:
 test-pyramid:detekt-api-coverage:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -554,6 +577,18 @@ publish:release-all:
     expire_in: 7 days
     paths:
       - "**/verification-metadata.xml"
+
+publish:snapshot-timeseries:
+  tags: [ "arch:amd64" ]
+  only:
+    - bplasovska/feature/timeseries-dogfooding
+  when: manual
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew publishToSonatype --stacktrace --no-daemon
 
 
 # SLACK NOTIFICATIONS
