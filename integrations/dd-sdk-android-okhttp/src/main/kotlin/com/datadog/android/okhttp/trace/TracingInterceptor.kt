@@ -38,6 +38,7 @@ import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.TraceContext
+import com.datadog.android.trace.internal.net.effectiveSampleRate
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -260,7 +261,7 @@ internal constructor(
             if (spanContext.setSamplingPriority(samplingPriority)) {
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
-                    (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+                    (traceSampler.effectiveSampleRate(span) ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
                 )
             }
         }

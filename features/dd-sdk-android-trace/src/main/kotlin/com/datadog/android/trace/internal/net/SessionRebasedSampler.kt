@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal.net
 
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.sampling.DeterministicSampling
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -26,9 +27,10 @@ import com.datadog.android.trace.api.span.DatadogSpan
  *
  * @param delegate the underlying sampler to wrap.
  */
-internal class SessionRebasedSampler(
+@InternalApi
+class SessionRebasedSampler(
     private val delegate: Sampler<DatadogSpan>
-) : Sampler<DatadogSpan> {
+) : Sampler<DatadogSpan>, SpanAwareSampler {
 
     override fun sample(item: DatadogSpan): Boolean {
         if (delegate !is DeterministicTraceSampler) return delegate.sample(item)
@@ -43,18 +45,10 @@ internal class SessionRebasedSampler(
 
     override fun getSampleRate(): Float? = delegate.getSampleRate()
 
-    /**
-     * Returns the effective (rebased) sample rate for the given span.
-     * If the span has a `session_sample_rate` tag and the delegate is a [DeterministicTraceSampler],
-     * the rate is rebased. Otherwise, the raw delegate rate is returned.
-     */
-    internal fun getEffectiveSampleRate(item: DatadogSpan): Float {
-        val rawRate = delegate.getSampleRate() ?: SAMPLE_ALL_RATE
-        return if (delegate is DeterministicTraceSampler) {
-            computeEffectiveRate(item, rawRate)
-        } else {
-            rawRate
-        }
+    override fun getSampleRate(span: DatadogSpan): Float? {
+        if (delegate !is DeterministicTraceSampler) return delegate.getSampleRate()
+        val rawRate = delegate.getSampleRate()
+        return computeEffectiveRate(span, rawRate)
     }
 
     private fun computeEffectiveRate(item: DatadogSpan, rawRate: Float): Float {
@@ -64,9 +58,5 @@ internal class SessionRebasedSampler(
         } else {
             rawRate
         }
-    }
-
-    internal companion object {
-        internal const val SAMPLE_ALL_RATE = 100f
     }
 }
