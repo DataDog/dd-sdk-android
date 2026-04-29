@@ -130,13 +130,18 @@ class RumNetworkInstrumentation internal constructor(
      * @param throwable the error that occurred
      */
     fun stopResourceWithError(requestInfo: HttpRequestInfo, throwable: Throwable) = ifRumEnabled { sdkCore ->
+        val resourceHeaderAttributes = resourceHeadersExtractor?.toResourceAttributes(
+            rawRequestHeaders = requestInfo.headers,
+            rawResponseHeaders = emptyMap(),
+            internalLogger = sdkCore.internalLogger
+        ) ?: emptyMap()
         sdkCore.networkMonitor?.stopResourceWithError(
             buildResourceId(requestInfo, generateUuid = false),
             null,
             ERROR_MSG_FORMAT.format(Locale.US, networkInstrumentationName, requestInfo.method, requestInfo.url),
             RumErrorSource.NETWORK,
             throwable,
-            rumResourceAttributesProvider.onProvideAttributes(requestInfo, null, throwable)
+            rumResourceAttributesProvider.onProvideAttributes(requestInfo, null, throwable) + resourceHeaderAttributes
         )
     }
 

@@ -499,6 +499,60 @@ internal class RumNetworkInstrumentationTest {
     }
 
     @Test
+    fun `M include request header attributes W stopResourceWithError() { trackResourceHeaders enabled }`(
+        @Forgery fakeThrowable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        val fakeHeaderName = "x-request-id"
+        val fakeHeaderValue = forge.anAsciiString()
+        val fakeResponseHeaderName = "x-cache"
+
+        val extractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders(fakeHeaderName, fakeResponseHeaderName)
+            .build()
+
+        testedInstrumentation = RumNetworkInstrumentation(
+            sdkInstanceName = null,
+            networkInstrumentationName = fakeNetworkInstrumentationName,
+            rumResourceAttributesProvider = mockRumResourceAttributesProvider,
+            libraryType = fakeLibraryType,
+            resourceHeadersExtractor = extractor
+        )
+
+        fakeRequestInfo = fakeRequestInfo.copy(
+            headers = mapOf(fakeHeaderName to listOf(fakeHeaderValue))
+        )
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn emptyMap()
+
+        // When
+        testedInstrumentation.stopResourceWithError(fakeRequestInfo, fakeThrowable)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResourceWithError(
+                any<ResourceId>(),
+                anyOrNull(),
+                any<String>(),
+                any<RumErrorSource>(),
+                any<Throwable>(),
+                capture()
+            )
+            @Suppress("UNCHECKED_CAST")
+            val extractedRequestHeaders = firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+            assertThat(extractedRequestHeaders).isNotNull
+            assertThat(extractedRequestHeaders).containsEntry(fakeHeaderName, fakeHeaderValue)
+            assertThat(firstValue).doesNotContainKey(RumAttributes.RESPONSE_HEADERS)
+        }
+    }
+
+    @Test
     fun `M log warning W reportInstrumentationError()`(
         @StringForgery fakeErrorMessage: String
     ) {

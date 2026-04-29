@@ -1333,6 +1333,43 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `M include request header attributes in stopResourceWithError W intercept() { trackResourceHeaders enabled }`(
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id", "x-cache")
+            .build()
+
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        fakeRequest = forgeRequest { it.addHeader("X-Request-Id", "abc-123") }
+        whenever(mockChain.request()) doReturn fakeRequest
+        whenever(mockChain.proceed(any())) doThrow throwable
+
+        // When
+        assertThrows<Throwable>(throwable.message.orEmpty()) {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        // Then
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResourceWithError(
+            any<ResourceId>(),
+            anyOrNull(),
+            any<String>(),
+            any<RumErrorSource>(),
+            any<Throwable>(),
+            attrsCaptor.capture()
+        )
+        @Suppress("UNCHECKED_CAST")
+        val reqHeaders = attrsCaptor.firstValue[RumAttributes.REQUEST_HEADERS] as? Map<String, String>
+        assertThat(reqHeaders).isNotNull
+        assertThat(reqHeaders).containsEntry("x-request-id", "abc-123")
+        assertThat(attrsCaptor.firstValue).doesNotContainKey(RumAttributes.RESPONSE_HEADERS)
+    }
+
+    @Test
     fun `M header attributes override provider attributes W intercept() { conflicting keys }`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
