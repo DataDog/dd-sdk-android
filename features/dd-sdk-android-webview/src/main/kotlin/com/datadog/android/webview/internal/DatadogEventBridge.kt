@@ -7,7 +7,12 @@
 package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.HostsSanitizer
+import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.internal.sampling.DeterministicSampling
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.google.gson.JsonArray
 
 /**
@@ -20,7 +25,8 @@ import com.google.gson.JsonArray
 internal class DatadogEventBridge(
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
     private val allowedHosts: List<String>,
-    private val privacyLevel: String
+    private val privacyLevel: String,
+    private val sdkCore: FeatureSdkCore
 ) {
 
     // region Bridge
@@ -70,10 +76,50 @@ internal class DatadogEventBridge(
         return capabilities.toString()
     }
 
+    /**
+     * Called from the browser-sdk to get the trace sampling decision from the native SDK.
+     * Returns 'true', 'false', or 'null' as a string:
+     * - 'true' if traces should be sampled
+     * - 'false' if traces should not be sampled
+     * - 'null' if no decision can be made (no active session, or no tracing configured)
+     */
+    @JavascriptInterface
+    fun getIsTraceSampled(): String {
+        val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false)
+        val sessionId = rumContext[SESSION_ID_KEY] as? String ?: return NULL_STRING
+        val sessionState = rumContext[SESSION_STATE_KEY] as? String
+        if (sessionState != TRACKED_STATE) return NULL_STRING
+
+        val sessionSampleRate = (rumContext[SESSION_SAMPLE_RATE_KEY] as? Number)?.toFloat()
+            ?: return NULL_STRING
+
+        val tracingContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false)
+        val traceSampleRate = (tracingContext[TRACE_SAMPLE_RATE_KEY] as? Number)?.toFloat()
+            ?: return NULL_STRING
+
+        val combinedRate = DeterministicSampling.combinedSampleRate(sessionSampleRate, traceSampleRate)
+        val sampler = DeterministicSampler<String>(
+            SessionSamplingIdProvider::provideId,
+            combinedRate
+        )
+
+        return if (sampler.sample(sessionId)) TRUE_STRING else FALSE_STRING
+    }
+
     // endregion
 
     companion object {
         internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
+
+        private const val SESSION_ID_KEY = "session_id"
+        private const val SESSION_STATE_KEY = "session_state"
+        private const val SESSION_SAMPLE_RATE_KEY = "session_sample_rate"
+        private const val TRACKED_STATE = "TRACKED"
+        private const val TRACE_SAMPLE_RATE_KEY = "okhttp_interceptor_sample_rate"
+
+        private const val TRUE_STRING = "true"
+        private const val FALSE_STRING = "false"
+        private const val NULL_STRING = "null"
 
         internal val capabilities = JsonArray().apply {
             add("records")

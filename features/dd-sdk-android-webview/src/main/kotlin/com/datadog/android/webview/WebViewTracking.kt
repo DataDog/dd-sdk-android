@@ -95,7 +95,7 @@ object WebViewTracking {
             System.identityHashCode(webView).toString()
         )
         webView.addJavascriptInterface(
-            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel),
+            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel, featureSdkCore),
             DATADOG_EVENT_BRIDGE_NAME
         )
         featureSdkCore.internalLogger.logApiUsage {

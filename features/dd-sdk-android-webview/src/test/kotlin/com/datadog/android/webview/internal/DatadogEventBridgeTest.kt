@@ -6,6 +6,8 @@
 
 package com.datadog.android.webview.internal
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -18,8 +20,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.net.URL
 
@@ -39,12 +43,16 @@ internal class DatadogEventBridgeTest {
     @StringForgery
     lateinit var fakePrivacyLevel: String
 
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
     @BeforeEach
     fun `set up`() {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             emptyList(),
-            fakePrivacyLevel
+            fakePrivacyLevel,
+            mockSdkCore
         )
     }
 
@@ -66,7 +74,7 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mock(), hosts, fakePrivacyLevel)
+        testedDatadogEventBridge = DatadogEventBridge(mock(), hosts, fakePrivacyLevel, mockSdkCore)
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -87,7 +95,8 @@ internal class DatadogEventBridgeTest {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             hosts,
-            fakePrivacyLevel
+            fakePrivacyLevel,
+            mockSdkCore
         )
 
         // When
@@ -109,7 +118,8 @@ internal class DatadogEventBridgeTest {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             hosts,
-            fakePrivacyLevel
+            fakePrivacyLevel,
+            mockSdkCore
         )
 
         // When
@@ -138,5 +148,120 @@ internal class DatadogEventBridgeTest {
 
         // Then
         assertThat(capabilities).isEqualTo(expectedCapabilities)
+    }
+
+    @Test
+    fun `M return true W getIsTraceSampled() { tracked session, sampled }`() {
+        // Given
+        val sessionId = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a"
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to sessionId,
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 100f
+                )
+            )
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false)))
+            .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 100f))
+
+        // When
+        val result = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(result).isEqualTo("true")
+    }
+
+    @Test
+    fun `M return false W getIsTraceSampled() { tracked session, not sampled }`() {
+        // Given
+        // This UUID hashes to ~50.68%, so at combined rate 40% (100% session * 40% trace) it's not sampled
+        val sessionId = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a"
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to sessionId,
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 100f
+                )
+            )
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false)))
+            .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 40f))
+
+        // When
+        val result = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(result).isEqualTo("false")
+    }
+
+    @Test
+    fun `M return null W getIsTraceSampled() { no session id }`() {
+        // Given
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(emptyMap())
+
+        // When
+        val result = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(result).isEqualTo("null")
+    }
+
+    @Test
+    fun `M return null W getIsTraceSampled() { session not tracked }`() {
+        // Given
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to "some-session-id",
+                    "session_state" to "NOT_TRACKED"
+                )
+            )
+
+        // When
+        val result = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(result).isEqualTo("null")
+    }
+
+    @Test
+    fun `M return null W getIsTraceSampled() { no trace sample rate configured }`() {
+        // Given
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to "some-session-id",
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 100f
+                )
+            )
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false)))
+            .thenReturn(emptyMap())
+
+        // When
+        val result = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(result).isEqualTo("null")
+    }
+
+    @Test
+    fun `M return null W getIsTraceSampled() { no session sample rate }`() {
+        // Given
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to "some-session-id",
+                    "session_state" to "TRACKED"
+                )
+            )
+
+        // When
+        val result = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(result).isEqualTo("null")
     }
 }
