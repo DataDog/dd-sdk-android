@@ -23,6 +23,7 @@ import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.NetworkTracedRequestListener
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
@@ -167,6 +168,7 @@ internal class ApmNetworkInstrumentationTest {
         mockSpanBuilder = mock {
             on { withOrigin(anyOrNull()) } doAnswer { mockSpanBuilder }
             on { withParentContext(anyOrNull()) } doAnswer { mockSpanBuilder }
+            on { ignoreActiveSpan() } doAnswer { mockSpanBuilder }
             on { start() } doReturn mockSpan
         }
         whenever(mockTracer.buildSpan(any())) doReturn mockSpanBuilder
@@ -274,6 +276,50 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             assertThat(result.span).isNotNull()
             assertThat(result.isSampled).isTrue()
+        }
+    }
+
+    @Test
+    fun `M use parent context W onRequest() {canSendSpan=false, parent sampling UNSET}`() {
+        // Given
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val parentSpanContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.UNSET
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).withParentContext(parentSpanContext)
+            verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        }
+    }
+
+    @Test
+    fun `M honor explicit parent W onRequest() {canSendSpan=false, active span DROP, extracted parent KEEP}`() {
+        // Given - an explicit extracted parent (KEEP) takes precedence over a dropped
+        // local active span. The active span's drop status must not leak into the
+        // sampling decision for a request that has its own parent context.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val droppedActiveSpan: DatadogSpan = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        whenever(mockTracer.activeSpan()) doReturn droppedActiveSpan
+        val parentSpanContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).withParentContext(parentSpanContext)
+            verify(mockSpanBuilder, never()).ignoreActiveSpan()
         }
     }
 

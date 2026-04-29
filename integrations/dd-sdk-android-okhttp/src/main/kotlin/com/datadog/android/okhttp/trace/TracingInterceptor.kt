@@ -345,12 +345,19 @@ internal constructor(
 
     private fun buildSpan(tracer: DatadogTracer, request: Request): DatadogSpan {
         val parentContext = extractParentContext(tracer, request)
+        val shouldIgnoreParent = !canSendSpan() && isParentDropped(tracer, parentContext)
         val url = request.url.toString()
 
-        val span = tracer.buildSpan(SPAN_NAME)
+        val builder = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
-            .withParentContext(parentContext)
-            .start()
+
+        if (shouldIgnoreParent) {
+            builder.ignoreActiveSpan()
+        } else {
+            builder.withParentContext(parentContext)
+        }
+
+        val span = builder.start()
 
         span.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
         span.setTag(Tags.KEY_HTTP_URL, url)
@@ -358,6 +365,13 @@ internal constructor(
         span.setTag(Tags.KEY_SPAN_KIND, Tags.VALUE_SPAN_KIND_CLIENT)
 
         return span
+    }
+
+    private fun isParentDropped(tracer: DatadogTracer, explicitParent: DatadogSpanContext?): Boolean {
+        // Only consult the local active span. Explicit parents (request tags or propagated
+        // headers) represent developer intent and must be honored regardless of priority.
+        val priority = if (explicitParent != null) null else tracer.activeSpan()?.samplingPriority
+        return priority == PrioritySampling.SAMPLER_DROP || priority == PrioritySampling.USER_DROP
     }
 
     private fun extractSamplingDecision(request: Request): Boolean? {

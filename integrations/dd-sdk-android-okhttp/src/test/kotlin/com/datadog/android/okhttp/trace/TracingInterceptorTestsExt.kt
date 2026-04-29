@@ -102,5 +102,6 @@ internal fun Forge.newSpanBuilderMock(
     on { withOrigin(anyOrNull()) } doReturn it
     on { withParentContext(context) } doReturn it
     on { withParentContext(null as DatadogSpanContext?) } doReturn it
+    on { ignoreActiveSpan() } doReturn it
     on { start() } doReturn localSpan
 }

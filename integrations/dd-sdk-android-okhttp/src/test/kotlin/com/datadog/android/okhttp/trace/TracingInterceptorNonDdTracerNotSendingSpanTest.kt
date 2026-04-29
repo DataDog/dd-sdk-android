@@ -530,7 +530,9 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val parentSpanContext: DatadogSpanContext = mock()
+        val parentSpanContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+        }
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
         whenever(mockPropagation.extract(any<Request>(), any())) doReturn parentSpanContext
         whenever(mockPropagationHelper.isExtractedContext(parentSpanContext)) doReturn true
