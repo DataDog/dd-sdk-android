@@ -240,4 +240,33 @@ internal class ApmInstrumentationConfigurationTest {
         // Then
         assertThat(result.networkTracingScope).isEqualTo(fakeScope)
     }
+
+    @Test
+    fun `M wrap sampler in SessionRebasedSampler W createInstrumentation() { headerPropagationOnly }`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // When
+        val result = testedBuilder
+            .setTraceSampleRate(fakeSampleRate)
+            .setHeaderPropagationOnly()
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then
+        assertThat(result.traceSampler).isInstanceOf(SessionRebasedSampler::class.java)
+        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M not wrap sampler W createInstrumentation() { not headerPropagationOnly }`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // When
+        val result = testedBuilder
+            .setTraceSampleRate(fakeSampleRate)
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then
+        assertThat(result.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
+    }
 }
