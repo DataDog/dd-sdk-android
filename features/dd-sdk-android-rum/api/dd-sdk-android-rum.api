@@ -283,20 +283,21 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun createRumNetworkInstrumentation (Ljava/lang/String;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;)Lcom/datadog/android/rum/internal/net/RumNetworkInstrumentation;
-	public final fun extractRequestHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
-	public final fun extractResponseHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInsightsCollector (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun toResourceAttributes (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
 }
 
 public final class com/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration {
 	public fun <init> ()V
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
+	public final fun trackResourceHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
+	public static synthetic fun trackResourceHeaders$default (Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;ILjava/lang/Object;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 }
 
 public final class com/datadog/android/rum/configuration/SlowFramesConfiguration {
