@@ -18,6 +18,7 @@ object RumContextTestsUtils {
     const val RUM_CONTEXT_ACTION_ID = "action_id"
     const val RUM_CONTEXT_SESSION_ID = "session_id"
     const val RUM_CONTEXT_APPLICATION_ID = "application_id"
+    const val RUM_CONTEXT_SESSION_SAMPLE_RATE = "session_sample_rate"
 
     private const val HEX = 16
 
@@ -25,6 +26,7 @@ object RumContextTestsUtils {
         put(RUM_CONTEXT_VIEW_ID, getForgery<UUID>().toString())
         put(RUM_CONTEXT_ACTION_ID, getForgery<UUID>().toString())
         put(RUM_CONTEXT_APPLICATION_ID, getForgery<UUID>().toString())
+        put(RUM_CONTEXT_SESSION_SAMPLE_RATE, aFloat(min = 0f, max = 100f))
         sessionId?.let {
             put(
                 RUM_CONTEXT_SESSION_ID,

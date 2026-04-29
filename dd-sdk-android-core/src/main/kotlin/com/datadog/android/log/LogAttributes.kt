@@ -280,6 +280,13 @@ object LogAttributes {
     const val RUM_ACTION_ID: String = "user_action.id"
 
     /**
+     * The sample rate applied to the active RUM session. (Number)
+     * Used to propagate the session sample rate to other features (e.g. Tracing)
+     * for cross-product sampling correlation.
+     */
+    const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
+
+    /**
      * The name of the application or service generating the log events. (String)
      * This value is filled automatically by the [Logger].
      * @see [Configuration.Builder.service]
