@@ -33,6 +33,7 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.TrackResourceHeaders
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
@@ -52,6 +53,7 @@ internal class TelemetryEventHandler(
 ) : RumSessionListener {
 
     private var trackNetworkRequests = false
+    private var trackResourceHeaders: TrackResourceHeaders? = null
 
     private val eventIDsSeenInCurrentSession = mutableSetOf<TelemetryEventId>()
     private var totalEventsSeenInCurrentSession = 0
@@ -139,6 +141,16 @@ internal class TelemetryEventHandler(
 
                 is InternalTelemetryEvent.InterceptorInstantiated -> {
                     trackNetworkRequests = true
+                    null
+                }
+
+                is InternalTelemetryEvent.ResourceHeadersTrackingConfigured -> {
+                    trackResourceHeaders = when (event.mode) {
+                        InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS ->
+                            TrackResourceHeaders.DEFAULT_HEADERS
+                        InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM ->
+                            TrackResourceHeaders.CUSTOM
+                    }
                     null
                 }
             }
@@ -397,7 +409,8 @@ internal class TelemetryEventHandler(
                     tnsTimeThresholdMs = tnsTimeBasedThreshold,
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
-                    selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators()
+                    selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
+                    trackResourceHeaders = trackResourceHeaders
                 )
             )
         )

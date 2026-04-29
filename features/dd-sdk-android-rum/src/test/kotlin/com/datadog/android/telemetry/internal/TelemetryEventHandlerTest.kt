@@ -687,6 +687,77 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
+    fun `M omit trackResourceHeaders W handleEvent() { configuration, no prior signal }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackResourceHeaders(null)
+        }
+    }
+
+    @Test
+    fun `M set trackResourceHeaders W handleEvent() { ResourceHeadersTrackingConfigured DEFAULT_HEADERS }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
+                )
+            ),
+            mockWriter
+        )
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackResourceHeaders(
+                TelemetryConfigurationEvent.TrackResourceHeaders.DEFAULT_HEADERS
+            )
+        }
+    }
+
+    @Test
+    fun `M set trackResourceHeaders W handleEvent() { ResourceHeadersTrackingConfigured CUSTOM }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+                )
+            ),
+            mockWriter
+        )
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackResourceHeaders(
+                TelemetryConfigurationEvent.TrackResourceHeaders.CUSTOM
+            )
+        }
+    }
+
+    @Test
     fun `M create config event W handleEvent() { configuration, no SessionReplay }`(
         @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
     ) {

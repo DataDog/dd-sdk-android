@@ -65,6 +65,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -154,6 +155,44 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
             InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
         )
+    }
+
+    @Test
+    fun `M call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { extractor uses defaults }`() {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // When
+        (testedInterceptor as DatadogInterceptor).onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        verify(rumMonitor.mockInstance).notifyResourceHeadersTrackingConfigured(
+            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
+        )
+    }
+
+    @Test
+    fun `M call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { extractor uses custom }`() {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id")
+            .build()
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // When
+        (testedInterceptor as DatadogInterceptor).onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        verify(rumMonitor.mockInstance).notifyResourceHeadersTrackingConfigured(
+            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+        )
+    }
+
+    @Test
+    fun `M not call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { no extractor }`() {
+        // Then
+        verify(rumMonitor.mockInstance, never()).notifyResourceHeadersTrackingConfigured(any())
     }
 
     @Test

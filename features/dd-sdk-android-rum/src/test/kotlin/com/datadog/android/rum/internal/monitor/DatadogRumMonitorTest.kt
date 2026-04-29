@@ -2281,6 +2281,26 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle ResourceHeadersTrackingConfigured telemetry W notifyResourceHeadersTrackingConfigured()`(
+        @Forgery fakeMode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
+    ) {
+        // When
+        testedMonitor.notifyResourceHeadersTrackingConfigured(fakeMode)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            val event = lastValue.event
+            assertThat(event).isInstanceOf(InternalTelemetryEvent.ResourceHeadersTrackingConfigured::class.java)
+            assertThat((event as InternalTelemetryEvent.ResourceHeadersTrackingConfigured).mode)
+                .isEqualTo(fakeMode)
+        }
+    }
+
+    @Test
     fun `M call enableJankStatsTracking on RUM feature W enableJankStatsTracking`() {
         // Given
         val mockActivity = mock<Activity>()
