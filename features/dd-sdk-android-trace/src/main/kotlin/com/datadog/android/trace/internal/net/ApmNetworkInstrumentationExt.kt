@@ -13,6 +13,7 @@ import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.AGENT_PSR_ATTRIBUTE
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.ALL_IN_SAMPLE_RATE
@@ -74,14 +75,22 @@ internal fun DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean
 internal fun DatadogTracer.buildSpan(
     request: HttpRequestInfo,
     networkInstrumentationName: String,
-    traceOrigin: String?
+    traceOrigin: String?,
+    ignoreDroppedParent: Boolean
 ): DatadogSpan {
     val parentContext = propagationHelper.extractParentContext(this, request)
+    val shouldIgnoreParent = ignoreDroppedParent && isParentDropped(this, parentContext)
 
-    val span = buildSpan(SPAN_NAME.format(Locale.US, networkInstrumentationName))
+    val builder = buildSpan(SPAN_NAME.format(Locale.US, networkInstrumentationName))
         .withOrigin(traceOrigin)
-        .withParentContext(parentContext)
-        .start()
+
+    if (shouldIgnoreParent) {
+        builder.ignoreActiveSpan()
+    } else {
+        builder.withParentContext(parentContext)
+    }
+
+    val span = builder.start()
 
     span.resourceName = request.url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
     span.setTag(Tags.KEY_HTTP_URL, request.url)
@@ -89,4 +98,11 @@ internal fun DatadogTracer.buildSpan(
     span.setTag(Tags.KEY_SPAN_KIND, Tags.VALUE_SPAN_KIND_CLIENT)
 
     return span
+}
+
+private fun isParentDropped(tracer: DatadogTracer, explicitParent: DatadogSpanContext?): Boolean {
+    // Only consult the local active span. Explicit parents (request tags or propagated
+    // headers) represent developer intent and must be honored regardless of priority.
+    val priority = if (explicitParent != null) null else tracer.activeSpan()?.samplingPriority
+    return priority == PrioritySampling.SAMPLER_DROP || priority == PrioritySampling.USER_DROP
 }

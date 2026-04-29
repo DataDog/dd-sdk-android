@@ -1653,6 +1653,30 @@ internal open class TracingInterceptorTest {
         )
     }
 
+    // region HBS with dropped parent (APM path)
+
+    @Test
+    fun `M use parent context W intercept() { active span dropped, APM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val droppedActiveSpan = forge.newSpanMock(
+            samplingPriority = PrioritySampling.SAMPLER_DROP
+        )
+        whenever(mockTracer.activeSpan()) doReturn droppedActiveSpan
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        verify(mockSpanBuilder).withParentContext(null as DatadogSpanContext?)
+    }
+
+    // endregion
+
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int = forge.anInt(min = 200, max = 600)) {

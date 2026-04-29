@@ -128,7 +128,7 @@ class ApmNetworkInstrumentation internal constructor(
             return RequestTracingState(requestInfoBuilder)
         }
 
-        val span = tracer.buildSpan(request, networkingLibraryName, traceOrigin)
+        val span = tracer.buildSpan(request, networkingLibraryName, traceOrigin, ignoreDroppedParent = !canSendSpan)
         val isSampled = span.isSampled(request)
         if (span.isRootSpan) {
             span.applyPriority(isSampled, traceSampler)
