@@ -54,10 +54,10 @@ class RumNetworkInstrumentation internal constructor(
     internal val resourceHeadersExtractor: ResourceHeadersExtractor?
 ) {
     private val sdkCoreReference = SdkReference(sdkInstanceName) {
-        it.networkMonitor?.apply {
-            notifyInterceptorInstantiated()
-            reportNetworkingLibraryType(libraryType)
-        }
+        it.networkMonitor?.reportNetworkInstrumentationConfigured(
+            type = libraryType,
+            resourceHeadersExtractor = resourceHeadersExtractor
+        )
     }
 
     /** SDK core instance. */
