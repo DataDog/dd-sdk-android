@@ -65,12 +65,15 @@ internal class WebViewRumEventConsumer(
         try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
                 ?.asString?.let { offsetProvider.getOffset(it, datadogContext) } ?: 0L
+            val traceSampleRate = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]
+                ?.get(TRACE_SAMPLE_RATE_KEY) as? Float
             return webViewRumEventMapper.mapEvent(
                 event,
                 rumContext,
                 timeOffset,
                 sessionReplayEnabled,
-                datadogContext.userInfo.anonymousId
+                datadogContext.userInfo.anonymousId,
+                traceSampleRate
             )
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
@@ -113,6 +116,7 @@ internal class WebViewRumEventConsumer(
         const val RUM_EVENT_TYPE = "rum"
         const val VIEW_KEY_NAME = "view"
         const val VIEW_ID_KEY_NAME = "id"
+        const val TRACE_SAMPLE_RATE_KEY = "okhttp_interceptor_sample_rate"
         const val JSON_PARSING_ERROR_MESSAGE = "The bundled web RUM event could not be deserialized"
         val RUM_EVENT_TYPES = setOf(
             VIEW_EVENT_TYPE,
