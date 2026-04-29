@@ -2281,6 +2281,49 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle ResourceHeadersTrackingConfigured telemetry W notifyResourceHeadersTrackingConfigured()`(
+        @Forgery fakeMode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
+    ) {
+        // When
+        testedMonitor.notifyResourceHeadersTrackingConfigured(fakeMode)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            val event = lastValue.event
+            assertThat(event).isInstanceOf(InternalTelemetryEvent.ResourceHeadersTrackingConfigured::class.java)
+            assertThat((event as InternalTelemetryEvent.ResourceHeadersTrackingConfigured).mode)
+                .isEqualTo(fakeMode)
+        }
+    }
+
+    @Test
+    fun `M forward each event W notifyResourceHeadersTrackingConfigured() {called multiple times}`(
+        @Forgery fakeMode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
+    ) {
+        // When
+        testedMonitor.notifyResourceHeadersTrackingConfigured(fakeMode)
+        testedMonitor.notifyResourceHeadersTrackingConfigured(fakeMode)
+
+        // Then
+        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
+            verify(mockTelemetryEventHandler, times(2)).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            allValues.forEach { wrapper ->
+                val event = wrapper.event
+                assertThat(event).isInstanceOf(InternalTelemetryEvent.ResourceHeadersTrackingConfigured::class.java)
+                assertThat((event as InternalTelemetryEvent.ResourceHeadersTrackingConfigured).mode)
+                    .isEqualTo(fakeMode)
+            }
+        }
+    }
+
+    @Test
     fun `M call enableJankStatsTracking on RUM feature W enableJankStatsTracking`() {
         // Given
         val mockActivity = mock<Activity>()

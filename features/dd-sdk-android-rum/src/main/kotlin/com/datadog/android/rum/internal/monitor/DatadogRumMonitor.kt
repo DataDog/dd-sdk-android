@@ -641,6 +641,14 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun notifyResourceHeadersTrackingConfigured(
+        mode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
+    ) {
+        handleEvent(
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ResourceHeadersTrackingConfigured(mode))
+        )
+    }
+
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }

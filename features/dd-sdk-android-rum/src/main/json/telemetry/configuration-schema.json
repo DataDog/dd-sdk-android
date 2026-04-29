@@ -515,6 +515,12 @@
                   "description": "Whether trace baggage is propagated to child spans",
                   "readOnly": false
                 },
+                "track_resource_headers": {
+                  "type": "string",
+                  "description": "How the SDK tracks resource request/response headers",
+                  "enum": ["default_headers", "custom"],
+                  "readOnly": false
+                },
                 "beta_encode_cookie_options": {
                   "type": "boolean",
                   "description": "Whether the beta encode cookie options is enabled",
