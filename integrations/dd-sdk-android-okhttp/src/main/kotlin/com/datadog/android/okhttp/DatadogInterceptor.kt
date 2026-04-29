@@ -263,7 +263,7 @@ open class DatadogInterceptor internal constructor(
     }
 
     private fun handleThrowable(
-        sdkCore: SdkCore,
+        sdkCore: FeatureSdkCore,
         request: Request,
         throwable: Throwable
     ) {
@@ -271,6 +271,14 @@ open class DatadogInterceptor internal constructor(
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
         val url = request.url.toString()
+        val resourceHeaderAttributes = resourceHeadersExtractor?.let {
+            _RumInternalProxy.toResourceAttributes(
+                extractor = it,
+                rawRequestHeaders = request.headers.toMultimap(),
+                rawResponseHeaders = emptyMap(),
+                internalLogger = sdkCore.internalLogger
+            )
+        } ?: emptyMap()
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
@@ -278,7 +286,7 @@ open class DatadogInterceptor internal constructor(
             ERROR_MSG_FORMAT.format(Locale.US, method, url),
             RumErrorSource.NETWORK,
             throwable,
-            rumResourceAttributesProvider.onProvideAttributes(request, null, throwable)
+            rumResourceAttributesProvider.onProvideAttributes(request, null, throwable) + resourceHeaderAttributes
         )
     }
 
