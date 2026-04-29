@@ -167,10 +167,10 @@ internal class SessionRebasedSamplerTest {
 
     // endregion
 
-    // region getEffectiveSampleRate()
+    // region getSampleRate(span)
 
     @Test
-    fun `M return rebased rate W getEffectiveSampleRate() { session tag present }`(
+    fun `M return rebased rate W getSampleRate(span) { session tag present }`(
         @FloatForgery(min = 0f, max = 100f) fakeTraceRate: Float,
         @FloatForgery(min = 0f, max = 99.99f) fakeSessionRate: Float,
         forge: Forge
@@ -183,14 +183,14 @@ internal class SessionRebasedSamplerTest {
         val expectedRate = (fakeTraceRate * fakeSessionRate / 100f).coerceAtMost(100f)
 
         // When
-        val result = testedSampler.getEffectiveSampleRate(span)
+        val result = testedSampler.getSampleRate(span)
 
         // Then
         assertThat(result).isCloseTo(expectedRate, Offset.offset(0.001f))
     }
 
     @Test
-    fun `M return raw rate W getEffectiveSampleRate() { session tag absent }`(
+    fun `M return raw rate W getSampleRate(span) { session tag absent }`(
         @FloatForgery(min = 0f, max = 100f) fakeTraceRate: Float,
         forge: Forge
     ) {
@@ -200,14 +200,14 @@ internal class SessionRebasedSamplerTest {
         val span = createSpan(forge, sessionSampleRate = null)
 
         // When
-        val result = testedSampler.getEffectiveSampleRate(span)
+        val result = testedSampler.getSampleRate(span)
 
         // Then
         assertThat(result).isEqualTo(fakeTraceRate)
     }
 
     @Test
-    fun `M return raw rate W getEffectiveSampleRate() { session tag is 100 }`(
+    fun `M return raw rate W getSampleRate(span) { session tag is 100 }`(
         @FloatForgery(min = 0f, max = 100f) fakeTraceRate: Float,
         forge: Forge
     ) {
@@ -217,15 +217,55 @@ internal class SessionRebasedSamplerTest {
         val span = createSpan(forge, sessionSampleRate = 100f)
 
         // When
-        val result = testedSampler.getEffectiveSampleRate(span)
+        val result = testedSampler.getSampleRate(span)
 
         // Then
-        assertThat(result).isEqualTo(fakeTraceRate)
+        assertThat(result).isCloseTo(fakeTraceRate, Offset.offset(0.001f))
+    }
+
+    @Test
+    fun `M return raw rate W getSampleRate(span) { custom sampler delegate }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRawRate = forge.aFloat(min = 0f, max = 100f)
+        val mockDelegate = mock<Sampler<DatadogSpan>>()
+        whenever(mockDelegate.getSampleRate()).thenReturn(fakeRawRate)
+        val testedSampler = SessionRebasedSampler(mockDelegate)
+        val span = createSpan(forge, sessionSampleRate = 50f)
+
+        // When
+        val result = testedSampler.getSampleRate(span)
+
+        // Then
+        assertThat(result).isEqualTo(fakeRawRate)
+    }
+
+    @Test
+    fun `M return delegate per-span rate W getSampleRate(span) { delegate is SpanAwareSampler }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStaticRate = forge.aFloat(min = 0f, max = 50f)
+        val fakePerSpanRate = forge.aFloat(min = 50.01f, max = 100f)
+        val stubDelegate = mock<SpanAwareDelegateSampler>()
+        whenever(stubDelegate.getSampleRate()).thenReturn(fakeStaticRate)
+        whenever(stubDelegate.getSampleRate(org.mockito.kotlin.any())).thenReturn(fakePerSpanRate)
+        val testedSampler = SessionRebasedSampler(stubDelegate)
+        val span = createSpan(forge, sessionSampleRate = 50f)
+
+        // When
+        val result = testedSampler.getSampleRate(span)
+
+        // Then
+        assertThat(result).isEqualTo(fakePerSpanRate)
     }
 
     // endregion
 
     // region helpers
+
+    internal interface SpanAwareDelegateSampler : Sampler<DatadogSpan>, SpanAwareSampler
 
     private fun createSpan(forge: Forge, sessionSampleRate: Float?): DatadogSpan {
         val tags = buildMap<String, Any> {
