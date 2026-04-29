@@ -13,6 +13,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
+import com.datadog.android.trace.internal.net.SessionRebasedSampler
 import com.datadog.android.trace.internal.net.TracerProvider
 
 /**
@@ -246,10 +247,16 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
+            val effectiveSampler = if (headerPropagationOnly) {
+                SessionRebasedSampler(traceSampler)
+            } else {
+                traceSampler
+            }
+
             return ApmNetworkInstrumentation(
                 canSendSpan = !headerPropagationOnly,
                 traceOrigin = traceOrigin,
-                traceSampler = traceSampler,
+                traceSampler = effectiveSampler,
                 tracerProvider = tracerProvider,
                 sdkInstanceName = sdkInstanceName,
                 injectionType = traceContextInjection,
