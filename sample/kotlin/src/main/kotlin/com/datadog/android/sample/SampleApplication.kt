@@ -39,6 +39,7 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -102,7 +103,8 @@ class SampleApplication : Application() {
     @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
     private val okHttpClient = OkHttpClient.Builder()
         .configureDatadogInstrumentation(
-            rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+            rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration()
+                .trackResourceHeaders(resourceHeadersExtractor),
             apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
         )
         .build()
@@ -496,6 +498,22 @@ class SampleApplication : Application() {
         init {
             System.loadLibrary("datadog-ndk-sample")
         }
+
+        internal val resourceHeadersExtractor = ResourceHeadersExtractor.Builder()
+            .captureHeaders(
+                "accept-ranges",
+                "content-disposition",
+                "server",
+                "user-agent",
+                "via",
+                "x-cache-hits",
+                "x-served-by",
+                "x-datadog-trace-id",
+                "x-datadog-parent-id",
+                "x-datadog-origin",
+                "traceparent"
+            )
+            .build()
 
         internal const val ATTR_IS_MAPPED = "is_mapped"
 

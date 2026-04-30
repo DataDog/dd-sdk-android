@@ -441,6 +441,9 @@ internal class TelemetryEventHandler(
 
                         InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.OKHTTP ->
                             TelemetryUsageEvent.Type.OKHTTP
+
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP ->
+                            TelemetryUsageEvent.Type.LEGACY_OKHTTP
                     }
                 )
             }

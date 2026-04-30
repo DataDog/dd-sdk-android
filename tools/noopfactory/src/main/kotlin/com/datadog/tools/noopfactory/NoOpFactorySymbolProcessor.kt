@@ -8,6 +8,7 @@ package com.datadog.tools.noopfactory
 
 import com.datadog.tools.annotation.NoOpImplementation
 import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
@@ -119,6 +120,15 @@ class NoOpFactorySymbolProcessor(
             .addAnnotation(
                 AnnotationSpec.builder(Suppress::class)
                     .addMember("%S", "ktlint")
+                    .apply {
+                        interfaceDeclaration.getAllSuperTypes()
+                            .map { it.declaration.containingFile }
+                            .let { it.plus(declarationSourceFile) }
+                            .filterNotNull()
+                            .flatMap { it.getAnnotationsByType(Suppress::class).flatMap { it.names.toList() } }
+                            .toSet()
+                            .forEach { addMember("%S", it) }
+                    }
                     .build()
             )
             .addType(typeSpec)
