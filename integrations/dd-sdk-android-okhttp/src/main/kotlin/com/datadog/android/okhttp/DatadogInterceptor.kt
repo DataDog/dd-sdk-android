@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
@@ -187,33 +188,17 @@ open class DatadogInterceptor internal constructor(
 
     override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         super.onSdkInstanceReady(sdkCore)
-        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.apply {
+            notifyInterceptorInstantiated()
+            reportNetworkingLibraryType(
+                InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
+            )
+        }
     }
 
     // endregion
 
     // region Internal
-
-    private fun extractHeaderAttributes(
-        sdkCore: FeatureSdkCore,
-        response: Response
-    ): Map<String, Any?> {
-        val extractor = resourceHeadersExtractor ?: return emptyMap()
-        val reqHeaders = _RumInternalProxy.extractRequestHeaders(
-            extractor,
-            response.request.headers.toMultimap(),
-            sdkCore.internalLogger
-        )
-        val resHeaders = _RumInternalProxy.extractResponseHeaders(
-            extractor,
-            response.headers.toMultimap(),
-            sdkCore.internalLogger
-        )
-        return buildMap {
-            if (reqHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, reqHeaders)
-            if (resHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, resHeaders)
-        }
-    }
 
     @WorkerThread
     private fun handleResponse(
@@ -248,7 +233,14 @@ open class DatadogInterceptor internal constructor(
             }
         }
 
-        val headerAttributes = extractHeaderAttributes(sdkCore, response)
+        val resourceHeaderAttributes = resourceHeadersExtractor?.let {
+            _RumInternalProxy.toResourceAttributes(
+                extractor = it,
+                rawRequestHeaders = response.request.headers.toMultimap(),
+                rawResponseHeaders = response.headers.toMultimap(),
+                internalLogger = sdkCore.internalLogger
+            )
+        } ?: emptyMap()
 
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
@@ -256,7 +248,9 @@ open class DatadogInterceptor internal constructor(
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
             kind,
-            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null) + headerAttributes
+            attributes +
+                rumResourceAttributesProvider.onProvideAttributes(request, response, null) +
+                resourceHeaderAttributes
         )
     }
 
@@ -424,6 +418,8 @@ open class DatadogInterceptor internal constructor(
 
         /**
          * Enables capturing HTTP request and response headers in RUM Resource events.
+         *
+         * Sensitive headers matching the [ResourceHeadersExtractor.SECURITY_PATTERN] are automatically filtered out, even if specified in the [extractor].
          *
          * @param extractor the [ResourceHeadersExtractor] specifying which headers to capture.
          * Defaults to a configuration that captures common safe headers.

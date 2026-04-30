@@ -124,9 +124,12 @@ interface com.datadog.android.rum.RumMonitor
   fun addViewLoadingTime(Boolean)
   fun addViewAttributes(Map<String, Any?>)
   fun removeViewAttributes(Collection<String>)
-  fun startFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
-  fun succeedFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
-  fun failFeatureOperation(String, String? = null, com.datadog.android.rum.featureoperations.FailureReason, Map<String, Any?> = emptyMap())
+  DEPRECATED fun startFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
+  fun startOperation(String, String? = null, com.datadog.android.rum.operations.OperationOptions = OperationOptions.Empty, Map<String, Any?> = emptyMap())
+  DEPRECATED fun succeedFeatureOperation(String, String? = null, Map<String, Any?> = emptyMap())
+  fun succeedOperation(String, String? = null, Map<String, Any?> = emptyMap())
+  DEPRECATED fun failFeatureOperation(String, String? = null, com.datadog.android.rum.featureoperations.FailureReason, Map<String, Any?> = emptyMap())
+  fun failOperation(String, String? = null, com.datadog.android.rum.operations.FailureReason, Map<String, Any?> = emptyMap())
   fun reportAppFullyDisplayed()
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
@@ -184,12 +187,12 @@ class com.datadog.android.rum._RumInternalProxy
     fun setDisableJankStats(com.datadog.android.rum.RumConfiguration.Builder, Boolean): com.datadog.android.rum.RumConfiguration.Builder
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
     fun createRumNetworkInstrumentation(String, com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration)
-    fun extractRequestHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
-    fun extractResponseHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
+    fun toResourceAttributes(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
     fun setRumViewEventWriteConfig(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.configuration.RumViewEventWriteConfig): com.datadog.android.rum.RumConfiguration.Builder
 class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
+  fun trackResourceHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build())
 sealed interface com.datadog.android.rum.configuration.RumViewEventWriteConfig
   object AlwaysFullView : RumViewEventWriteConfig
   object FullViewOnlyAtStart : RumViewEventWriteConfig
@@ -205,7 +208,7 @@ enum com.datadog.android.rum.configuration.VitalsUpdateFrequency
   - NEVER
 interface com.datadog.android.rum.event.ViewEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ViewEvent>
   override fun map(com.datadog.android.rum.model.ViewEvent): com.datadog.android.rum.model.ViewEvent
-enum com.datadog.android.rum.featureoperations.FailureReason
+DEPRECATED enum com.datadog.android.rum.featureoperations.FailureReason
   - ERROR
   - ABANDONED
   - OTHER
@@ -272,6 +275,12 @@ class com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIden
   companion object 
 typealias RumVitalAppLaunchEvent = VitalAppLaunchEvent
 typealias RumVitalOperationStepEvent = VitalOperationStepEvent
+enum com.datadog.android.rum.operations.FailureReason
+  - ERROR
+  - ABANDONED
+  - OTHER
+sealed class com.datadog.android.rum.operations.OperationOptions
+  object Empty : OperationOptions
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
@@ -3628,6 +3637,7 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
     constructor(kotlin.String)
     - CRONET
     - OKHTTP
+    - LEGACY_OKHTTP
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type

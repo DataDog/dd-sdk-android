@@ -4,12 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum
 
 import android.app.Activity
 import androidx.fragment.app.Fragment
-import com.datadog.android.rum.featureoperations.FailureReason
+import com.datadog.android.rum.operations.FailureReason
+import com.datadog.android.rum.operations.OperationOptions
 import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.rum.featureoperations.FailureReason as DeprecatedFailureReason
 
 /**
  *  A class enabling Datadog RUM features.
@@ -335,8 +339,28 @@ interface RumMonitor {
      * For example, multiple network requests (photo or file uploads) for the same URL.
      * @param attributes additional custom attributes to attach to the feature operation.
      */
-    @ExperimentalRumApi
+    @Deprecated(
+        message = "Use startOperation instead.",
+        replaceWith = ReplaceWith("startOperation(name, operationKey, attributes)")
+    )
     fun startFeatureOperation(name: String, operationKey: String? = null, attributes: Map<String, Any?> = emptyMap())
+
+    /**
+     * Starts the [name] operation.
+     *
+     * @param name the name of the operation.
+     * @param operationKey optional operation key. Allows to track multiple operations of the same [name].
+     * For example, multiple network requests (photo or file uploads) for the same URL.
+     * @param options options to attach to this operation.
+     * @param attributes additional custom attributes to attach to the operation.
+     */
+    @ExperimentalRumApi
+    fun startOperation(
+        name: String,
+        operationKey: String? = null,
+        options: OperationOptions = OperationOptions.Empty,
+        attributes: Map<String, Any?> = emptyMap()
+    )
 
     /**
      * Finishes the [name] feature operation with successful status.
@@ -348,8 +372,24 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the feature operation. Can be
      * used to add some result data produced as the result of the operation.
      */
-    @ExperimentalRumApi
+    @Deprecated(
+        message = "Use succeedOperation instead.",
+        replaceWith = ReplaceWith("succeedOperation(name, operationKey, attributes)")
+    )
     fun succeedFeatureOperation(name: String, operationKey: String? = null, attributes: Map<String, Any?> = emptyMap())
+
+    /**
+     * Finishes the [name] operation with successful status.
+     *
+     * @param name the name of the operation.
+     * @param operationKey optional operation key identifying a specific operation
+     * instance from the list of operations of the same [name]. Should be provided if [operationKey] was
+     * provided during [startOperation] invocation.
+     * @param attributes additional custom attributes to attach to the operation. Can be
+     * used to add some result data produced as the result of the operation.
+     */
+    @ExperimentalRumApi
+    fun succeedOperation(name: String, operationKey: String? = null, attributes: Map<String, Any?> = emptyMap())
 
     /**
      * Finishes the [name] feature operation with failure status.
@@ -362,8 +402,31 @@ interface RumMonitor {
      * @param attributes additional custom attributes to attach to the feature operation. Can be
      * used to add some result data produced as the result of the operation.
      */
-    @ExperimentalRumApi
+    @Deprecated(
+        message = "Use failOperation instead.",
+        replaceWith = ReplaceWith("failOperation(name, operationKey, failureReason, attributes)")
+    )
     fun failFeatureOperation(
+        name: String,
+        operationKey: String? = null,
+        // when removing this remove @Suppress("DEPRECATION") also at the file level (for the import)
+        @Suppress("DEPRECATION") failureReason: DeprecatedFailureReason,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    /**
+     * Finishes the [name] operation with failure status.
+     *
+     * @param name the name of the operation.
+     * @param operationKey optional operation key identifying a specific operation
+     * instance from the list of operations of the same [name]. Should be provided if [operationKey] was
+     * provided during [startOperation] invocation.
+     * @param failureReason the reason for the operation failure.
+     * @param attributes additional custom attributes to attach to the operation. Can be
+     * used to add some result data produced as the result of the operation.
+     */
+    @ExperimentalRumApi
+    fun failOperation(
         name: String,
         operationKey: String? = null,
         failureReason: FailureReason,

@@ -14,7 +14,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.startup.RumStartupScenario
@@ -25,6 +24,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.operations.FailureReason
 import java.util.Locale
 
 // region Resource.Method conversion
@@ -715,7 +715,7 @@ internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTa
 
 // endregion
 
-// region FeatureOperation
+// region Operation
 
 internal fun RumSessionScope.StartReason.toVitalOperationStepSessionPrecondition():
     VitalOperationStepEvent.SessionPrecondition {
