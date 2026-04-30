@@ -324,6 +324,46 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
+    fun `M honor parent W onRequest() {canSendSpan=false, extracted parent DROP}`() {
+        // Given - extracted parent context with DROP priority. Explicit parents (header- or
+        // tag-propagated) represent developer/upstream intent and must be honored as-is.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val parentSpanContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).withParentContext(parentSpanContext)
+            verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        }
+    }
+
+    @Test
+    fun `M use parent W onRequest() {canSendSpan=false, parent context resolves to KEEP}`() {
+        // Given - parent context returns SAMPLER_KEEP, simulating the post-resolution state
+        // after setTracingSamplingPriorityIfNecessary forces the lazy sampling decision.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val parentSpanContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).withParentContext(parentSpanContext)
+            verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        }
+    }
+
+    @Test
     fun `M return RequestTraceState without span W onRequest() {tracer not available}`() {
         // Given
         whenever(mockTracerProvider.provideTracer(any(), any(), any())) doReturn null

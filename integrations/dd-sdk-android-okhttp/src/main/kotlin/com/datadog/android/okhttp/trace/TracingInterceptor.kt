@@ -370,7 +370,11 @@ internal constructor(
     private fun isParentDropped(tracer: DatadogTracer, explicitParent: DatadogSpanContext?): Boolean {
         // Only consult the local active span. Explicit parents (request tags or propagated
         // headers) represent developer intent and must be honored regardless of priority.
-        val priority = if (explicitParent != null) null else tracer.activeSpan()?.samplingPriority
+        val activeContext = if (explicitParent != null) null else tracer.activeSpan()?.context()
+        // Force resolution of the active span's sampling priority — a manual span backed
+        // by a PendingTrace can read UNSET until the sampler commits at inject time.
+        activeContext?.let { _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(it) }
+        val priority = activeContext?.samplingPriority
         return priority == PrioritySampling.SAMPLER_DROP || priority == PrioritySampling.USER_DROP
     }
 
