@@ -312,7 +312,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val mimeType = forge.anElementFrom(DatadogInterceptor.STREAM_CONTENT_TYPES)
+        val mimeType = forge.anElementFrom(
+            HttpSpec.ContentType.values().filter(HttpSpec.ContentType::isStream)
+        )
         fakeMediaType = mimeType.toMediaType()
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()

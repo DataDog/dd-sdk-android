@@ -9,6 +9,7 @@ package com.datadog.android.okhttp.internal.graphql
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.internal.OkHttpRequestInfo
 import com.datadog.android.okhttp.internal.OkHttpResponseInfo
 import com.datadog.android.rum.RumAttributes
@@ -63,22 +64,31 @@ internal class OkHttpGraphQLAdapter(
         graphQLExtractor.extractGraphQLAttributes(OkHttpRequestInfo(request))
 
     @WorkerThread
+    @Suppress("ReturnCount")
     fun extractGraphQLErrorAttributes(
         response: Response,
         graphqlAttributes: Map<String, Any?>,
         internalLogger: InternalLogger
     ): Map<String, Any> {
         if (graphqlAttributes.isEmpty()) return emptyMap()
+        // Streaming responses surface GraphQL errors per-frame, not as a top-level `errors` array.
+        // Draining their bodies via peekBody().string() would block until the (potentially unbounded) body completes.
+        val body = response.body
+        val mimeType = body?.contentType()?.let { it.type + "/" + it.subtype }
+        val isStream = HttpSpec.ContentType.isStream(mimeType)
+        val isWebSocket = !response.header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
+        if (body == null || isStream || isWebSocket) return emptyMap()
+
         return try {
             val responseInfo = OkHttpResponseInfo(response, internalLogger)
 
             @Suppress("UnsafeThirdPartyFunctionCall") // exceptions are caught
-            val body = response
+            val bodyString = response
                 .peekBody(GraphQLExtractor.MAX_GRAPHQL_BODY_PEEK)
                 .string()
             graphQLExtractor.extractGraphQLErrors(
                 responseInfo.contentType,
-                body,
+                bodyString,
                 internalLogger
             )?.let {
                 mapOf(RumAttributes.GRAPHQL_ERRORS to it)
