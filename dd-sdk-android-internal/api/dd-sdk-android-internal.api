@@ -364,6 +364,16 @@ public final class com/datadog/android/internal/rum/RumSessionRenewedEvent {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/sampling/DeterministicSampling {
+	public static final field INSTANCE Lcom/datadog/android/internal/sampling/DeterministicSampling;
+	public final fun combinedSampleRate (FF)F
+}
+
+public final class com/datadog/android/internal/sampling/SessionSamplingIdProvider {
+	public static final field INSTANCE Lcom/datadog/android/internal/sampling/SessionSamplingIdProvider;
+	public final fun provideId-I7RO_PI (Ljava/lang/String;)J
+}
+
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
@@ -420,6 +430,7 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 
 public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType : java/lang/Enum {
 	public static final field CRONET Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
+	public static final field LEGACY_OKHTTP Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 	public static final field OKHTTP Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
@@ -523,6 +534,10 @@ public final class com/datadog/android/internal/thread/NamedRunnable : com/datad
 	public fun <init> (Ljava/lang/String;Ljava/lang/Runnable;)V
 	public fun getName ()Ljava/lang/String;
 	public fun run ()V
+}
+
+public final class com/datadog/android/internal/thread/ThreadUtilsKt {
+	public static final fun isMainThread ()Z
 }
 
 public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {

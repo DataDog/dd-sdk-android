@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.net
+package com.datadog.android.rum.configuration
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
-import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -31,7 +31,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumInstrumentationConfigurationTest {
+internal class RumNetworkInstrumentationConfigurationTest {
 
     private lateinit var testedConfiguration: RumNetworkInstrumentationConfiguration
 
@@ -84,6 +84,40 @@ internal class RumInstrumentationConfigurationTest {
     }
 
     @Test
+    fun `M have null resourceHeadersExtractor by default W createInstrumentation()`() {
+        // When
+        val result = testedConfiguration.createInstrumentation(fakeInstrumentationName, fakeLibraryType)
+
+        // Then
+        assertThat(result.resourceHeadersExtractor).isNull()
+    }
+
+    @Test
+    fun `M set default extractor W trackResourceHeaders()`() {
+        // When
+        val result = testedConfiguration.trackResourceHeaders()
+            .createInstrumentation(fakeInstrumentationName, fakeLibraryType)
+
+        // Then
+        assertThat(result.resourceHeadersExtractor).isNotNull
+    }
+
+    @Test
+    fun `M set custom extractor W trackResourceHeaders(extractor)`() {
+        // Given
+        val customExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id")
+            .build()
+
+        // When
+        val result = testedConfiguration.trackResourceHeaders(customExtractor)
+            .createInstrumentation(fakeInstrumentationName, fakeLibraryType)
+
+        // Then
+        assertThat(result.resourceHeadersExtractor).isSameAs(customExtractor)
+    }
+
+    @Test
     fun `M return self W chaining builder methods()`(
         @StringForgery fakeSdkInstanceName: String
     ) {
@@ -91,6 +125,7 @@ internal class RumInstrumentationConfigurationTest {
         val result = testedConfiguration
             .setSdkInstanceName(fakeSdkInstanceName)
             .setRumResourceAttributesProvider(mockResourceAttributesProvider)
+            .trackResourceHeaders()
 
         // Then
         assertThat(result).isSameAs(testedConfiguration)

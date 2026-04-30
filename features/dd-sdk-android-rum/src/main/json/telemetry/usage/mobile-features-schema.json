@@ -51,7 +51,7 @@
         "type": {
           "type": "string",
           "description": "The network instrumentation API used",
-          "enum": ["CRONET", "OKHTTP"]
+          "enum": ["CRONET", "OKHTTP", "LEGACY_OKHTTP"]
         }
       }
     }

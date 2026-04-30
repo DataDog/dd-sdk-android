@@ -173,6 +173,10 @@ data class com.datadog.android.internal.profiling.ProfilingRumContext
   constructor(String, String, String?, String?)
 data class com.datadog.android.internal.rum.RumSessionRenewedEvent
   constructor(String, Boolean)
+object com.datadog.android.internal.sampling.DeterministicSampling
+  fun combinedSampleRate(Float, Float): Float
+object com.datadog.android.internal.sampling.SessionSamplingIdProvider
+  fun provideId(String): ULong
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
@@ -215,6 +219,7 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
       enum LibraryType
         - CRONET
         - OKHTTP
+        - LEGACY_OKHTTP
   object InterceptorInstantiated : InternalTelemetryEvent
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
@@ -229,6 +234,7 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
+fun isMainThread(): Boolean
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long
