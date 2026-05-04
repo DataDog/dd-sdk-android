@@ -31,9 +31,8 @@ import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
-import com.datadog.android.rum.assertj.VitalFeatureOperationPropertiesAssert
+import com.datadog.android.rum.assertj.VitalOperationPropertiesAssert
 import com.datadog.android.rum.event.ViewEventMapper
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
@@ -73,6 +72,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.operations.FailureReason
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyApiUsage
@@ -8779,17 +8779,17 @@ internal class RumViewScopeTest {
 
     // endregion
 
-    // region Feature Operations
+    // region Operations
 
     @Test
-    fun `M do nothing if view is stopped W handleEvent { StartFeatureOperation }`(
+    fun `M do nothing if view is stopped W handleEvent { StartOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
         @LongForgery(min = 0) duration: Long,
         forge: Forge
     ) {
         // Given
-        val event = RumRawEvent.StartFeatureOperation(
+        val event = RumRawEvent.StartOperation(
             name,
             attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
             operationKey = forge.aNullable { key },
@@ -8806,14 +8806,14 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M do nothing if view is stopped W handleEvent { StopFeatureOperation }`(
+    fun `M do nothing if view is stopped W handleEvent { StopOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
         @LongForgery(min = 0) duration: Long,
         forge: Forge
     ) {
         // Given
-        val event = RumRawEvent.StopFeatureOperation(
+        val event = RumRawEvent.StopOperation(
             name,
             attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
             operationKey = forge.aNullable { key },
@@ -8830,7 +8830,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send view update W handleEvent { StartFeatureOperation }`(
+    fun `M send view update W handleEvent { StartOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
         @LongForgery(min = 0) duration: Long,
@@ -8838,7 +8838,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        val event = RumRawEvent.StartFeatureOperation(
+        val event = RumRawEvent.StartOperation(
             name,
             attributes = attributes,
             operationKey = forge.aNullable { key },
@@ -8859,7 +8859,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send view update W handleEvent { StopFeatureOperation }`(
+    fun `M send view update W handleEvent { StopOperation }`(
         @StringForgery key: String,
         @StringForgery name: String,
         @LongForgery(min = 0) duration: Long,
@@ -8867,7 +8867,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        val event = RumRawEvent.StopFeatureOperation(
+        val event = RumRawEvent.StopOperation(
             name,
             attributes = attributes,
             operationKey = forge.aNullable { key },
@@ -8889,7 +8889,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send VitalEvent W handleEvent { StartFeatureOperation }`(
+    fun `M send VitalEvent W handleEvent { StartOperation }`(
         @StringForgery key: String,
         @StringForgery fakeName: String,
         @LongForgery(min = 0) fakeDuration: Long,
@@ -8898,7 +8898,7 @@ internal class RumViewScopeTest {
         // Given
         val fakeOperationKey = forge.aNullable { key }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
-        val event = RumRawEvent.StartFeatureOperation(
+        val event = RumRawEvent.StartOperation(
             fakeName,
             operationKey = fakeOperationKey,
             attributes = attributes,
@@ -8949,9 +8949,9 @@ internal class RumViewScopeTest {
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
 
-            val featureOperationsProps = lastValue.vital
+            val operationsProps = lastValue.vital
 
-            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+            VitalOperationPropertiesAssert.assertThat(operationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalOperationStepEvent.StepType.START)
@@ -8960,7 +8960,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event with synthetics info W handleEvent(VitalEvent) { StartFeatureOperation }`(
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StartOperation }`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         forge: Forge
@@ -8970,7 +8970,7 @@ internal class RumViewScopeTest {
         val fakeDuration: Long = forge.aLong(min = 0)
         val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
-        val event = RumRawEvent.StartFeatureOperation(
+        val event = RumRawEvent.StartOperation(
             fakeName,
             operationKey = fakeOperationKey,
             attributes = attributes,
@@ -9024,9 +9024,9 @@ internal class RumViewScopeTest {
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
 
-            val featureOperationsProps = lastValue.vital
+            val operationsProps = lastValue.vital
 
-            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+            VitalOperationPropertiesAssert.assertThat(operationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalOperationStepEvent.StepType.START)
@@ -9035,7 +9035,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send VitalEvent W handleEvent { StopFeatureOperation, succeed }`(
+    fun `M send VitalEvent W handleEvent { StopOperation, succeed }`(
         @StringForgery key: String,
         @StringForgery fakeName: String,
         @LongForgery(min = 0) fakeDuration: Long,
@@ -9044,7 +9044,7 @@ internal class RumViewScopeTest {
         // Given
         val fakeOperationKey = forge.aNullable { key }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
-        val event = RumRawEvent.StopFeatureOperation(
+        val event = RumRawEvent.StopOperation(
             fakeName,
             operationKey = fakeOperationKey,
             attributes = attributes,
@@ -9096,9 +9096,9 @@ internal class RumViewScopeTest {
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
 
-            val featureOperationsProps = lastValue.vital
+            val operationsProps = lastValue.vital
 
-            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+            VitalOperationPropertiesAssert.assertThat(operationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalOperationStepEvent.StepType.END)
@@ -9107,7 +9107,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopFeatureOperation, succeed }`(
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopOperation, succeed }`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         forge: Forge
@@ -9117,7 +9117,7 @@ internal class RumViewScopeTest {
         val fakeDuration: Long = forge.aLong(min = 0)
         val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
-        val event = RumRawEvent.StopFeatureOperation(
+        val event = RumRawEvent.StopOperation(
             fakeName,
             operationKey = fakeOperationKey,
             attributes = attributes,
@@ -9171,9 +9171,9 @@ internal class RumViewScopeTest {
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
 
-            val featureOperationsProps = lastValue.vital
+            val operationsProps = lastValue.vital
 
-            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+            VitalOperationPropertiesAssert.assertThat(operationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalOperationStepEvent.StepType.END)
@@ -9182,7 +9182,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send VitalEvent W handleEvent { StopFeatureOperation, failed }`(
+    fun `M send VitalEvent W handleEvent { StopOperation, failed }`(
         @StringForgery key: String,
         @StringForgery fakeName: String,
         @LongForgery(min = 0) fakeDuration: Long,
@@ -9192,7 +9192,7 @@ internal class RumViewScopeTest {
         val fakeOperationKey = forge.aNullable { key }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val failureReason = forge.aValueFrom(FailureReason::class.java)
-        val event = RumRawEvent.StopFeatureOperation(
+        val event = RumRawEvent.StopOperation(
             fakeName,
             operationKey = fakeOperationKey,
             attributes = attributes,
@@ -9244,9 +9244,9 @@ internal class RumViewScopeTest {
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
 
-            val featureOperationsProps = lastValue.vital
+            val operationsProps = lastValue.vital
 
-            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+            VitalOperationPropertiesAssert.assertThat(operationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalOperationStepEvent.StepType.END)
@@ -9255,7 +9255,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopFeatureOperation, failed }`(
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopOperation, failed }`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String,
         forge: Forge
@@ -9266,7 +9266,7 @@ internal class RumViewScopeTest {
         val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val failureReason = forge.aValueFrom(FailureReason::class.java)
-        val event = RumRawEvent.StopFeatureOperation(
+        val event = RumRawEvent.StopOperation(
             fakeName,
             operationKey = fakeOperationKey,
             attributes = attributes,
@@ -9321,9 +9321,9 @@ internal class RumViewScopeTest {
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
 
-            val featureOperationsProps = lastValue.vital
+            val operationsProps = lastValue.vital
 
-            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+            VitalOperationPropertiesAssert.assertThat(operationsProps)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
                 .hasVitalStepType(VitalOperationStepEvent.StepType.END)

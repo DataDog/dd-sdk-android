@@ -163,6 +163,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun addViewLoadingTime (Z)V
 	public abstract fun clearAttributes ()V
 	public abstract fun failFeatureOperation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/featureoperations/FailureReason;Ljava/util/Map;)V
+	public abstract fun failOperation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/operations/FailureReason;Ljava/util/Map;)V
 	public abstract fun getAttributes ()Ljava/util/Map;
 	public abstract fun getCurrentSessionId (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun getDebug ()Z
@@ -172,6 +173,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startFeatureOperation (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun startOperation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/operations/OperationOptions;Ljava/util/Map;)V
 	public abstract fun startResource (Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startView (Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
@@ -181,6 +183,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun stopSession ()V
 	public abstract fun stopView (Ljava/lang/Object;Ljava/util/Map;)V
 	public abstract fun succeedFeatureOperation (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun succeedOperation (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 }
 
 public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
@@ -188,8 +191,10 @@ public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
 	public static synthetic fun addError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun addErrorWithStacktrace$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun failFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/featureoperations/FailureReason;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun failOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/operations/FailureReason;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startAction$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun startOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/operations/OperationOptions;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startView$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopAction$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
@@ -198,6 +203,7 @@ public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopView$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun succeedFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun succeedOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/rum/RumPerformanceMetric : java/lang/Enum {
@@ -277,8 +283,6 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun createRumNetworkInstrumentation (Ljava/lang/String;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;)Lcom/datadog/android/rum/internal/net/RumNetworkInstrumentation;
-	public final fun extractRequestHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
-	public final fun extractResponseHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -286,12 +290,15 @@ public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumViewEventWriteConfig (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun toResourceAttributes (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
 }
 
 public final class com/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration {
 	public fun <init> ()V
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
+	public final fun trackResourceHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
+	public static synthetic fun trackResourceHeaders$default (Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;ILjava/lang/Object;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 }
 
 public abstract interface class com/datadog/android/rum/configuration/RumViewEventWriteConfig {
@@ -9560,6 +9567,21 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$VitalOp
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventView;
 }
 
+public final class com/datadog/android/rum/operations/FailureReason : java/lang/Enum {
+	public static final field ABANDONED Lcom/datadog/android/rum/operations/FailureReason;
+	public static final field ERROR Lcom/datadog/android/rum/operations/FailureReason;
+	public static final field OTHER Lcom/datadog/android/rum/operations/FailureReason;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/operations/FailureReason;
+	public static fun values ()[Lcom/datadog/android/rum/operations/FailureReason;
+}
+
+public abstract class com/datadog/android/rum/operations/OperationOptions {
+}
+
+public final class com/datadog/android/rum/operations/OperationOptions$Empty : com/datadog/android/rum/operations/OperationOptions {
+	public static final field INSTANCE Lcom/datadog/android/rum/operations/OperationOptions$Empty;
+}
+
 public final class com/datadog/android/rum/resource/ContextExtKt {
 	public static final fun getAssetAsRumResource (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/api/SdkCore;)Ljava/io/InputStream;
 	public static synthetic fun getAssetAsRumResource$default (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;
@@ -11174,6 +11196,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Track
 public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Type : java/lang/Enum {
 	public static final field CRONET Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type$Companion;
+	public static final field LEGACY_OKHTTP Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public static final field OKHTTP Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public final fun toJson ()Lcom/google/gson/JsonElement;

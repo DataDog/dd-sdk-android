@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum.internal.monitor
 
 import android.app.Activity
@@ -42,7 +44,6 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -68,6 +69,8 @@ import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.operations.FailureReason
+import com.datadog.android.rum.operations.OperationOptions
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
@@ -77,6 +80,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import com.datadog.android.rum.featureoperations.FailureReason as DeprecatedFailureReason
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class DatadogRumMonitor(
@@ -696,14 +700,25 @@ internal class DatadogRumMonitor(
 
     // endregion
 
-    // region Feature Operations
+    // region Operations
+
+    @OptIn(ExperimentalRumApi::class)
+    @Deprecated("Use startOperation instead.", replaceWith = ReplaceWith("startOperation"))
+    override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        startOperation(name, operationKey, OperationOptions.Empty, attributes)
+    }
 
     @ExperimentalRumApi
-    override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        if (!featureOperationArgumentsValid(name, operationKey)) return
+    override fun startOperation(
+        name: String,
+        operationKey: String?,
+        options: OperationOptions,
+        attributes: Map<String, Any?>
+    ) {
+        if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
-            RumRawEvent.StartFeatureOperation(
+            RumRawEvent.StartOperation(
                 name,
                 operationKey,
                 attributes.toMap(),
@@ -711,17 +726,27 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) started."
+            "Operation `$name` (operationKey `$operationKey`) started."
         }
-        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.START)
+        sdkCore.internalLogger.reportOperationApiUsage(ActionType.START)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Deprecated("Use succeedOperation instead.", replaceWith = ReplaceWith("succeedOperation"))
+    override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        succeedOperation(name, operationKey, attributes)
     }
 
     @ExperimentalRumApi
-    override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        if (!featureOperationArgumentsValid(name, operationKey)) return
+    override fun succeedOperation(
+        name: String,
+        operationKey: String?,
+        attributes: Map<String, Any?>
+    ) {
+        if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
-            RumRawEvent.StopFeatureOperation(
+            RumRawEvent.StopOperation(
                 name,
                 operationKey,
                 attributes.toMap(),
@@ -730,22 +755,40 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
+            "Operation `$name` (operationKey `$operationKey`) successfully ended."
         }
-        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.SUCCEED)
+        sdkCore.internalLogger.reportOperationApiUsage(ActionType.SUCCEED)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Deprecated("Use failOperation instead.", replaceWith = ReplaceWith("failOperation"))
+    override fun failFeatureOperation(
+        name: String,
+        operationKey: String?,
+        // when removing this remove @Suppress("DEPRECATION") also at the file level (for the import)
+        @Suppress("DEPRECATION") failureReason: DeprecatedFailureReason,
+        attributes: Map<String, Any?>
+    ) {
+        @Suppress("DEPRECATION")
+        val newFailureReason = when (failureReason) {
+            DeprecatedFailureReason.ERROR -> FailureReason.ERROR
+            DeprecatedFailureReason.ABANDONED -> FailureReason.ABANDONED
+            DeprecatedFailureReason.OTHER -> FailureReason.OTHER
+        }
+        failOperation(name, operationKey, newFailureReason, attributes)
     }
 
     @ExperimentalRumApi
-    override fun failFeatureOperation(
+    override fun failOperation(
         name: String,
         operationKey: String?,
         failureReason: FailureReason,
         attributes: Map<String, Any?>
     ) {
-        if (!featureOperationArgumentsValid(name, operationKey)) return
+        if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
-            RumRawEvent.StopFeatureOperation(
+            RumRawEvent.StopOperation(
                 name,
                 operationKey,
                 attributes.toMap(),
@@ -754,23 +797,23 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
+            "Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
                 " with the following failure reason: $failureReason."
         }
-        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
+        sdkCore.internalLogger.reportOperationApiUsage(ActionType.FAIL)
     }
 
-    private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
+    private fun operationArgumentsValid(name: String, operationKey: String?) = when {
         name.isBlank() -> {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
-                FO_ERROR_INVALID_NAME.format(Locale.US, name)
+                OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
             }
             false
         }
 
         operationKey?.isBlank() == true -> {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
-                FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+                OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
             }
             false
         }
@@ -955,13 +998,13 @@ internal class DatadogRumMonitor(
         internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
             "Cannot write JVM crash, because write context is not available."
 
-        internal const val FO_ERROR_INVALID_NAME =
-            "Feature operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+        internal const val OPERATION_ERROR_INVALID_NAME =
+            "Operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
-        internal const val FO_ERROR_INVALID_OPERATION_KEY =
-            "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+        internal const val OPERATION_ERROR_INVALID_OPERATION_KEY =
+            "Operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
-        private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
+        private fun InternalLogger.reportOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)
         }
     }
