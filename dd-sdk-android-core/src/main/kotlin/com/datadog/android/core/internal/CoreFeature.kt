@@ -662,7 +662,7 @@ internal class CoreFeature(
             internalLogger,
             executorContext = "context",
             capacity = Int.MAX_VALUE,
-            notifyThreshold = 1024,
+            notifyThreshold = 2048,
             // just notify when reached
             onItemDropped = {},
             onThresholdReached = {},

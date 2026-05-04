@@ -8,6 +8,9 @@ package com.datadog.android.core.internal.utils
 
 import androidx.annotation.CheckResult
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.thread.BackPressureExecutorService
+import com.datadog.android.core.internal.thread.ObservableLinkedBlockingQueue
+import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.lint.InternalApi
 import java.util.Locale
 import java.util.concurrent.Callable
@@ -19,6 +22,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
@@ -39,8 +43,15 @@ fun Executor.executeSafe(
     runnable: Runnable
 ) {
     try {
+        // TODO RUM-16125 This approach doesn't work for `submit` calls
+        // not the cleanest approach, but the least invasive considering code changes scope
+        val wrappedRunnable = if (isWithNamedExecutionUnits && runnable !is NamedRunnable) {
+            NamedRunnable(operationName, runnable)
+        } else {
+            runnable
+        }
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-        execute(runnable)
+        execute(wrappedRunnable)
     } catch (e: RejectedExecutionException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -182,3 +193,9 @@ fun <T> Future<T>?.getSafe(
         null
     }
 }
+
+private val Executor.isWithNamedExecutionUnits: Boolean
+    // BackPressureExecutorService is ThreadPoolExecutor + ObservableLinkedBlockingQueue anyway, but let's keep it
+    // in case it changes in the future
+    get() = (this is BackPressureExecutorService) ||
+        (this is ThreadPoolExecutor && queue is ObservableLinkedBlockingQueue)
