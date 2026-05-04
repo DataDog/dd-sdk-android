@@ -30,6 +30,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.internal.net.reportNetworkInstrumentationConfigured
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TraceContextInjection
@@ -188,12 +189,10 @@ open class DatadogInterceptor internal constructor(
 
     override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         super.onSdkInstanceReady(sdkCore)
-        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.apply {
-            notifyInterceptorInstantiated()
-            reportNetworkingLibraryType(
-                InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
-            )
-        }
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.reportNetworkInstrumentationConfigured(
+            type = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP,
+            resourceHeadersExtractor = resourceHeadersExtractor
+        )
     }
 
     // endregion

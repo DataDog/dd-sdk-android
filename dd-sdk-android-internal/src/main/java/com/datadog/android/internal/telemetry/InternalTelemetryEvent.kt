@@ -85,4 +85,11 @@ sealed class InternalTelemetryEvent {
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()
+
+    class ResourceHeadersTrackingConfigured(val mode: Mode) : InternalTelemetryEvent() {
+        enum class Mode {
+            DEFAULT_HEADERS,
+            CUSTOM
+        }
+    }
 }

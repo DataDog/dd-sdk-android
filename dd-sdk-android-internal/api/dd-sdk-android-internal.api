@@ -446,6 +446,18 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
+	public fun <init> (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;)V
+	public final fun getMode ()Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode : java/lang/Enum {
+	public static final field CUSTOM Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+	public static final field DEFAULT_HEADERS Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+}
+
 public final class com/datadog/android/internal/telemetry/TracingHeaderType : java/lang/Enum {
 	public static final field B3 Lcom/datadog/android/internal/telemetry/TracingHeaderType;
 	public static final field B3MULTI Lcom/datadog/android/internal/telemetry/TracingHeaderType;

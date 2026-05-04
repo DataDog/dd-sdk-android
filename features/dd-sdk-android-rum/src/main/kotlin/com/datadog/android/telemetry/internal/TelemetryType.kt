@@ -12,5 +12,6 @@ internal enum class TelemetryType {
     CONFIGURATION,
     INTERCEPTOR_SETUP,
     API_USAGE,
-    METRIC
+    METRIC,
+    RESOURCE_HEADERS_SETUP
 }
