@@ -15,13 +15,17 @@ internal open class ObservableLinkedBlockingQueue<E : Any>(
     capacity: Int = Int.MAX_VALUE
 ) : LinkedBlockingQueue<E>(capacity) {
 
-    private val lastDumpTimestamp: AtomicLong = AtomicLong(0)
+    private val lastDumpTimestamp = AtomicLong(0)
 
     fun dumpQueue(currentTimestamp: Long): Map<String, Int>? {
         val last = lastDumpTimestamp.get()
         val timeSinceLastDump = currentTimestamp - last
         return if (timeSinceLastDump > DUMPING_TIME_INTERVAL_IN_MS) {
-            if (lastDumpTimestamp.compareAndSet(last, currentTimestamp)) {
+            // we may have unbounded queue which does only notification, so limit the size when we are making a copy,
+            // 2048 elements is more than enough to get an understanding
+            if (size <= MAX_SIZE_TO_DUMP &&
+                lastDumpTimestamp.compareAndSet(last, currentTimestamp)
+            ) {
                 buildDumpMap()
             } else {
                 null
@@ -43,5 +47,6 @@ internal open class ObservableLinkedBlockingQueue<E : Any>(
 
     companion object {
         private val DUMPING_TIME_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(5)
+        internal const val MAX_SIZE_TO_DUMP = 2048
     }
 }
