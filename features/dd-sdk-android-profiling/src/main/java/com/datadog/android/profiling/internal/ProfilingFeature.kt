@@ -35,6 +35,11 @@ internal class ProfilingFeature(
 
     internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
+    internal val pendingRumEvents = PendingRumEventsBuffer()
+
+    @Volatile
+    private var isLaunchProfilingActive: Boolean = false
+
     @Volatile
     private var ttidEvent: ProfilerEvent? = null
 
@@ -70,6 +75,7 @@ internal class ProfilingFeature(
         setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
+        isLaunchProfilingActive = profiler.isRunning(sdkCore.name)
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
@@ -80,7 +86,8 @@ internal class ProfilingFeature(
             appContext = appContext,
             profiler = profiler,
             sdkCore = sdkCore,
-            sampleRate = configuration.continuousSampleRate
+            sampleRate = configuration.continuousSampleRate,
+            onActiveWindowStarted = pendingRumEvents::clear
         ).apply {
             start(launchProfilingActive = profiler.isRunning(sdkCore.name))
         }
@@ -94,6 +101,7 @@ internal class ProfilingFeature(
             scheduledExecutorService.shutdown()
         }
         sdkCore.removeEventReceiver(name)
+        pendingRumEvents.clear()
     }
 
     override fun onReceive(event: Any) {
@@ -101,10 +109,17 @@ internal class ProfilingFeature(
             is ProfilerEvent.TTID,
             is ProfilerEvent.TTIDNotTracked -> onTtidEvent(event as ProfilerEvent)
 
-            is ProfilerEvent.RumLongTaskEvent ->
-                continuousProfilingScheduler?.onRumLongTaskEvent(event)
+            is ProfilerEvent.RumLongTaskEvent -> {
+                if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
+                    pendingRumEvents.add(event)
+                }
+            }
 
-            is ProfilerEvent.RumAnrEvent -> continuousProfilingScheduler?.onRumAnrEvent(event)
+            is ProfilerEvent.RumAnrEvent -> {
+                if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
+                    pendingRumEvents.add(event)
+                }
+            }
             is RumSessionRenewedEvent -> onRumSessionRenewed(event)
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -131,6 +146,8 @@ internal class ProfilingFeature(
         if (tag == ProfilingStartReason.APPLICATION_LAUNCH.value) {
             // Launch profiling ended with error such as rate limiting error.
             // Unblock the continuous scheduler so it doesn't wait forever.
+            isLaunchProfilingActive = false
+            pendingRumEvents.clear()
             continuousProfilingScheduler?.onAppLaunchProfilingComplete()
         } else if (tag == ProfilingStartReason.CONTINUOUS.value) {
             continuousProfilingScheduler?.onActiveWindowEnded()
@@ -179,12 +196,14 @@ internal class ProfilingFeature(
                 // profiler result and the TTID event are needed.
                 val event = ttidEvent ?: return
                 if (!isTtidProfileSent.getAndSet(true)) {
+                    isLaunchProfilingActive = false
+                    val (longTasks, anrEvents) = pendingRumEvents.drain()
                     if (event is ProfilerEvent.TTID) {
                         dataWriter.write(
                             profilingResult = result,
-                            rumContext = event.rumContext,
-                            vitalId = event.vitalId,
-                            vitalName = event.vitalName
+                            ttidEvent = event,
+                            longTasks = longTasks,
+                            anrEvents = anrEvents
                         )
                     }
                     continuousProfilingScheduler?.onAppLaunchProfilingComplete()
@@ -194,8 +213,7 @@ internal class ProfilingFeature(
             ProfilingStartReason.CONTINUOUS.value -> {
                 val scheduler = continuousProfilingScheduler ?: return
                 scheduler.onActiveWindowEnded()
-                val longTasks = scheduler.pendingLongTasks.toList()
-                val anrEvents = scheduler.pendingAnrEvents.toList()
+                val (longTasks, anrEvents) = pendingRumEvents.drain()
                 if (longTasks.isEmpty() && anrEvents.isEmpty()) {
                     logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
                     return
@@ -212,7 +230,6 @@ internal class ProfilingFeature(
                         anrEvents.size
                     )
                 )
-                scheduler.onContinuousProfileWritten(longTasks, anrEvents)
             }
         }
     }

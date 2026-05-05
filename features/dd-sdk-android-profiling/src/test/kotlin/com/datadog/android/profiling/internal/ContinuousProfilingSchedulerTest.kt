@@ -9,9 +9,7 @@ package com.datadog.android.profiling.internal
 import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.profiling.forge.Configurator
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -64,11 +62,7 @@ internal class ContinuousProfilingSchedulerTest {
     @Mock
     private lateinit var mockFuture: ScheduledFuture<Any>
 
-    @Forgery
-    private lateinit var fakeRumLongTaskEvent: ProfilerEvent.RumLongTaskEvent
-
-    @Forgery
-    private lateinit var fakeRumAnrEvent: ProfilerEvent.RumAnrEvent
+    private var activeWindowStartedCount = 0
 
     private val fakeInstanceName = "test-sdk-instance"
 
@@ -85,11 +79,13 @@ internal class ContinuousProfilingSchedulerTest {
             )
         ) doReturn mockFuture
 
+        activeWindowStartedCount = 0
         testedScheduler = ContinuousProfilingScheduler(
             profiler = mockProfiler,
             appContext = mockApplication,
             sdkCore = mockSdkCore,
-            sampleRate = 100f
+            sampleRate = 100f,
+            onActiveWindowStarted = { activeWindowStartedCount++ }
         )
     }
 
@@ -376,150 +372,22 @@ internal class ContinuousProfilingSchedulerTest {
         verify(mockFuture).cancel(false)
     }
 
-    @Test
-    fun `M clear pending RUM events W stop()`() {
-        // Given
-        openActiveWindow()
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).containsOnly(fakeRumLongTaskEvent)
-        assertThat(testedScheduler.pendingAnrEvents).containsOnly(fakeRumAnrEvent)
-
-        // When
-        testedScheduler.stop()
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).isEmpty()
-        assertThat(testedScheduler.pendingAnrEvents).isEmpty()
-    }
-
     // endregion
 
     @Test
-    fun `M drop long task event W receive RUM events {accumulation window closed}`() {
-        // When
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).isEmpty()
-        assertThat(testedScheduler.pendingAnrEvents).isEmpty()
-    }
-
-    @Test
-    fun `M drop events after window closed W onActiveWindowEnded()`() {
+    fun `M invoke onActiveWindowStarted callback W each new active window starts`() {
         // Given
-        openActiveWindow()
-        testedScheduler.onActiveWindowEnded()
-
-        // When
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).isEmpty()
-        assertThat(testedScheduler.pendingAnrEvents).isEmpty()
-    }
-
-    @Test
-    fun `M clear stale residuals W new active window starts`() {
-        // Given
-        openActiveWindow()
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-        testedScheduler.onActiveWindowEnded()
-
-        // When
-        openActiveWindow()
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).isEmpty()
-        assertThat(testedScheduler.pendingAnrEvents).isEmpty()
-    }
-
-    @Test
-    fun `M clear pending RUM events W onContinuousProfileWritten()`() {
-        // Given
-        openActiveWindow()
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-
-        // When
-        testedScheduler.onContinuousProfileWritten(
-            writtenLongTasks = listOf(fakeRumLongTaskEvent),
-            writtenAnrEvents = listOf(fakeRumAnrEvent)
-        )
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).isEmpty()
-        assertThat(testedScheduler.pendingAnrEvents).isEmpty()
-    }
-
-    @Test
-    fun `M keep unwritten RUM events W onContinuousProfileWritten() {new events arrived after snapshot}`(
-        @Forgery fakeNewLongTask: ProfilerEvent.RumLongTaskEvent,
-        @Forgery fakeNewAnrEvent: ProfilerEvent.RumAnrEvent
-    ) {
-        // Given
-        openActiveWindow()
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-        testedScheduler.onRumLongTaskEvent(fakeNewLongTask)
-        testedScheduler.onRumAnrEvent(fakeNewAnrEvent)
-
-        // When
-        testedScheduler.onContinuousProfileWritten(
-            writtenLongTasks = listOf(fakeRumLongTaskEvent),
-            writtenAnrEvents = listOf(fakeRumAnrEvent)
-        )
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks).containsExactly(fakeNewLongTask)
-        assertThat(testedScheduler.pendingAnrEvents).containsExactly(fakeNewAnrEvent)
-    }
-
-    @Test
-    fun `M accumulate multiple long tasks W onRumLongTaskEvent() {called multiple times}`(
-        @Forgery fakeRumLongTaskEvent2: ProfilerEvent.RumLongTaskEvent
-    ) {
-        // Given
-        openActiveWindow()
-
-        // When
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent)
-        testedScheduler.onRumLongTaskEvent(fakeRumLongTaskEvent2)
-
-        // Then
-        assertThat(testedScheduler.pendingLongTasks)
-            .containsExactly(fakeRumLongTaskEvent, fakeRumLongTaskEvent2)
-    }
-
-    @Test
-    fun `M accumulate multiple ANR events W onRumAnrEvent() {called multiple times}`(
-        @Forgery fakeRumAnrEvent2: ProfilerEvent.RumAnrEvent
-    ) {
-        // Given
-        openActiveWindow()
-
-        // When
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent)
-        testedScheduler.onRumAnrEvent(fakeRumAnrEvent2)
-
-        // Then
-        assertThat(testedScheduler.pendingAnrEvents)
-            .containsExactly(fakeRumAnrEvent, fakeRumAnrEvent2)
-    }
-
-    private fun openActiveWindow() {
-        testedScheduler.rumSessionSampled = true
+        testedScheduler.onRumSessionRenewed(sessionSampled = true)
         testedScheduler.start(launchProfilingActive = true)
-        testedScheduler.onAppLaunchProfilingComplete()
-        // Run the cooldown runnable to trigger scheduleNextCycle(), which sets isActive = true
         val runnableCaptor = argumentCaptor<Runnable>()
+        testedScheduler.onAppLaunchProfilingComplete()
         verify(mockSchedulerExecutor, atLeastOnce()).schedule(runnableCaptor.capture(), any(), any())
+
+        // When — fire the cooldown runnable to trigger scheduleNextCycle
         runnableCaptor.lastValue.run()
+
+        // Then
+        assertThat(activeWindowStartedCount).isEqualTo(1)
     }
 
     // endregion

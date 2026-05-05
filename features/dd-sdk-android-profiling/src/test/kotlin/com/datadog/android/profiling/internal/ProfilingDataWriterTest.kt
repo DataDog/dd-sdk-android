@@ -16,7 +16,6 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.profiling.ProfilerEvent
-import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.assertj.RumMobileEventsAssert.Companion.assertThat
@@ -27,7 +26,6 @@ import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMobileEvents
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -107,21 +105,16 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M write the result in a batch W write`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeProfilingRumContext: ProfilingRumContext,
-        @StringForgery fakeVitalId: String,
-        forge: Forge
+        @Forgery fakeTTID: ProfilerEvent.TTID
     ) {
         // Given
-        val fakeVitalName = forge.aNullable { aString() }
         val file = tmp.resolve(fakeResult.resultFilePath)
         file.writeBytes(fakeByteArray)
 
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            rumContext = fakeProfilingRumContext,
-            vitalId = fakeVitalId,
-            vitalName = fakeVitalName
+            ttidEvent = fakeTTID
         )
 
         // Then
@@ -153,14 +146,14 @@ internal class ProfilingDataWriterTest {
             .hasRuntime(ProfileEvent.Family.ANDROID)
             .hasVersion(4)
             .hasTags(expectedTagList)
-            .hasApplicationId(fakeProfilingRumContext.applicationId)
-            .hasSessionId(fakeProfilingRumContext.sessionId)
-            .hasVitalIds(listOf(fakeVitalId))
-            .hasVitalNames(listOf(fakeVitalName.orEmpty()))
+            .hasApplicationId(fakeTTID.rumContext.applicationId)
+            .hasSessionId(fakeTTID.rumContext.sessionId)
+            .hasVitalIds(listOf(fakeTTID.vitalId))
+            .hasVitalNames(listOf(fakeTTID.vitalName.orEmpty()))
             .apply {
-                if (fakeProfilingRumContext.viewId != null && fakeProfilingRumContext.viewName != null) {
-                    hasViewIds(listOf(fakeProfilingRumContext.viewId.orEmpty()))
-                    hasViewNames(listOf(fakeProfilingRumContext.viewName.orEmpty()))
+                if (fakeTTID.rumContext.viewId != null && fakeTTID.rumContext.viewName != null) {
+                    hasViewIds(listOf(fakeTTID.rumContext.viewId.orEmpty()))
+                    hasViewNames(listOf(fakeTTID.rumContext.viewName.orEmpty()))
                 } else {
                     hasViewIds(null)
                     hasViewNames(null)
@@ -175,9 +168,7 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W write {can't read perfetto File}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeProfilingRumContext: ProfilingRumContext,
-        @StringForgery fakeVitalId: String,
-        forge: Forge
+        @Forgery fakeTTID: ProfilerEvent.TTID
     ) {
         // Given
         // Don't create the tmp file so it can't be found
@@ -185,9 +176,7 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult,
-            rumContext = fakeProfilingRumContext,
-            vitalId = fakeVitalId,
-            vitalName = forge.aNullable { aString() }
+            ttidEvent = fakeTTID
         )
 
         // Then
@@ -197,9 +186,7 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W file is empty`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeProfilingRumContext: ProfilingRumContext,
-        @StringForgery fakeVitalId: String,
-        forge: Forge
+        @Forgery fakeTTID: ProfilerEvent.TTID
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
@@ -208,13 +195,76 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            rumContext = fakeProfilingRumContext,
-            vitalId = fakeVitalId,
-            vitalName = forge.aNullable { aString() }
+            ttidEvent = fakeTTID
         )
 
         // Then
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M write launch profile with long task events W write {RUM long task events present}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeTTID: ProfilerEvent.TTID,
+        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(fakeByteArray)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            ttidEvent = fakeTTID,
+            longTasks = listOf(fakeLongTask),
+            anrEvents = emptyList()
+        )
+
+        // Then
+        val captor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = captor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val profileEvent = ProfileEvent.fromJson(String(captor.firstValue.data))
+        assertThat(profileEvent)
+            .hasLongTaskIds(listOf(fakeLongTask.id))
+            .hasErrorIds(emptyList())
+        // metadata is still raw perfetto bytes for launch profiles
+        assertThat(captor.firstValue.metadata).isEqualTo(fakeByteArray)
+    }
+
+    @Test
+    fun `M write launch profile with ANR events W write {RUM ANR events present}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeTTID: ProfilerEvent.TTID,
+        @Forgery fakeAnrEvent: ProfilerEvent.RumAnrEvent
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(fakeByteArray)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            ttidEvent = fakeTTID,
+            longTasks = emptyList(),
+            anrEvents = listOf(fakeAnrEvent)
+        )
+
+        // Then
+        val captor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = captor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val profileEvent = ProfileEvent.fromJson(String(captor.firstValue.data))
+        assertThat(profileEvent)
+            .hasLongTaskIds(emptyList())
+            .hasErrorIds(listOf(fakeAnrEvent.id))
+        assertThat(captor.firstValue.metadata).isEqualTo(fakeByteArray)
     }
 
     @Test
