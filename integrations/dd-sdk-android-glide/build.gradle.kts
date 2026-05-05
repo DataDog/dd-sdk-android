@@ -38,6 +38,14 @@ plugins {
 
 android {
     namespace = "com.datadog.android.glide"
+
+    libraryVariants.all {
+        packageLibraryProvider.configure {
+            from("src/main/resources") {
+                include("META-INF/**/verification.properties")
+            }
+        }
+    }
 }
 
 dependencies {
@@ -55,6 +63,7 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)

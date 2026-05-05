@@ -3,6 +3,8 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package com.datadog.android.sample
 
 import android.annotation.SuppressLint
@@ -28,9 +30,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.ndk.NdkCrashReports
-import com.datadog.android.okhttp.DatadogEventListener
-import com.datadog.android.okhttp.DatadogInterceptor
-import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.okhttp.configureDatadogInstrumentation
 import com.datadog.android.profiling.Profiling
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
@@ -38,14 +38,16 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
-import com.datadog.android.sample.picture.Coil3ImageLoader
-import com.datadog.android.sample.picture.CoilImageLoader
-import com.datadog.android.sample.picture.FrescoImageLoader
-import com.datadog.android.sample.picture.PicassoImageLoader
+import com.datadog.android.sample.image.Coil3ImageLoader
+import com.datadog.android.sample.image.CoilImageLoader
+import com.datadog.android.sample.image.FrescoImageLoader
+import com.datadog.android.sample.image.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -57,7 +59,9 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
+import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.ExperimentalTraceApi
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
@@ -96,16 +100,13 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
+    @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(
-            DatadogInterceptor.Builder(tracedHosts)
-                .build()
+        .configureDatadogInstrumentation(
+            rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration()
+                .trackResourceHeaders(resourceHeadersExtractor),
+            apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
         )
-        .addNetworkInterceptor(
-            TracingInterceptor.Builder(tracedHosts)
-                .build()
-        )
-        .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 
     private val retrofitClient = Retrofit.Builder()
@@ -494,8 +495,24 @@ class SampleApplication : Application() {
         private const val SESSION_REPLAY_PRIVACY_SAMPLING = 75
 
         init {
-            System.loadLibrary("datadog-native-sample-lib")
+            System.loadLibrary("datadog-ndk-sample")
         }
+
+        internal val resourceHeadersExtractor = ResourceHeadersExtractor.Builder()
+            .captureHeaders(
+                "accept-ranges",
+                "content-disposition",
+                "server",
+                "user-agent",
+                "via",
+                "x-cache-hits",
+                "x-served-by",
+                "x-datadog-trace-id",
+                "x-datadog-parent-id",
+                "x-datadog-origin",
+                "traceparent"
+            )
+            .build()
 
         internal const val ATTR_IS_MAPPED = "is_mapped"
 

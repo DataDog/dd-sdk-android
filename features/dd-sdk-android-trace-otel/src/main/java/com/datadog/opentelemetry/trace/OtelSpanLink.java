@@ -13,7 +13,7 @@ import androidx.annotation.Nullable;
 import com.datadog.android.trace.api.span.DatadogSpanLink;
 import com.datadog.android.trace.api.trace.DatadogTraceId;
 import com.datadog.android.trace.internal.DatadogTraceExtKt;
-import com.datadog.android.trace.internal.DatadogTracingToolkit;
+import com.datadog.android.trace.internal._TraceInternalProxy;
 import com.datadog.opentelemetry.context.propagation.TraceStateHelper;
 
 import java.util.Collections;
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.SpanContext;
 
 public class OtelSpanLink implements DatadogSpanLink {
@@ -31,18 +32,18 @@ public class OtelSpanLink implements DatadogSpanLink {
   private final Map<String, String> attributes;
 
   public OtelSpanLink(SpanContext spanContext) {
-    this(spanContext, io.opentelemetry.api.common.Attributes.empty());
+    this(spanContext, Attributes.empty());
   }
 
-  public OtelSpanLink(SpanContext spanContext, io.opentelemetry.api.common.Attributes attributes) {
+  public OtelSpanLink(SpanContext spanContext, Attributes attributes) {
     traceId = DatadogTraceExtKt.fromHex(DatadogTraceId.Companion, spanContext.getTraceId());
-    spanId = DatadogTracingToolkit.spanIdConverter.fromHex(spanContext.getSpanId());
+    spanId = _TraceInternalProxy.spanIdConverter.fromHex(spanContext.getSpanId());
     sampled = spanContext.isSampled();
     traceState = TraceStateHelper.encodeHeader(spanContext.getTraceState());
     this.attributes = convertAttributes(attributes);
   }
 
-  private static Map<String, String> convertAttributes(io.opentelemetry.api.common.Attributes attributes) {
+  private static Map<String, String> convertAttributes(Attributes attributes) {
     if (attributes.isEmpty()) return Collections.emptyMap();
 
 

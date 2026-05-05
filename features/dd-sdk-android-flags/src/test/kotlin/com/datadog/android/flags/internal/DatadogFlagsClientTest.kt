@@ -236,7 +236,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeFlagValue)
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -309,7 +309,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeFlagValue)
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -1340,7 +1340,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeFlagValue)
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -1703,7 +1703,7 @@ internal class DatadogFlagsClientTest {
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -1733,7 +1733,7 @@ internal class DatadogFlagsClientTest {
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -1763,7 +1763,7 @@ internal class DatadogFlagsClientTest {
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -1793,7 +1793,7 @@ internal class DatadogFlagsClientTest {
         )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 
@@ -1823,105 +1823,14 @@ internal class DatadogFlagsClientTest {
             context = fakeContext,
             data = fakeFlag
         )
-        argumentCaptor<Any> {
-            verify(mockRumEvaluationLogger).logEvaluation(
-                flagKey = eq(fakeFlagKey),
-                value = capture()
-            )
-            assertThat(lastValue.toString()).isEqualTo(fakeFlagValue.toString())
-        }
-    }
-
-    @Test
-    fun `M track raw value and warn W trackFlagSnapshotEvaluation() { invalid JSON object }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val invalidJson = "{invalid-json"
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.OBJECT.value,
-            variationValue = invalidJson,
-            doLog = true
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-
-        // When
-        testedClient.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext)
-
-        // Then
-        verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
-            context = fakeContext,
-            data = fakeFlag
-        )
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = invalidJson
+            value = fakeFlag.variationKey
         )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                anyOrNull(),
-                eq(false),
-                eq(null)
-            )
-
-            val message = firstValue.invoke()
-            assertThat(message).contains("Flag '$fakeFlagKey'")
-            assertThat(message).contains("Failed to parse value '$invalidJson' as 'object'")
-        }
     }
 
     @Test
-    fun `M track raw value and warn W trackFlagSnapshotEvaluation() { unknown type }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeValue = "some-value"
-        val unknownType = "unknown-type"
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = unknownType,
-            variationValue = fakeValue,
-            doLog = true
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-
-        // When
-        testedClient.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext)
-
-        // Then
-        verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
-            context = fakeContext,
-            data = fakeFlag
-        )
-        verify(mockRumEvaluationLogger).logEvaluation(
-            flagKey = fakeFlagKey,
-            value = fakeValue
-        )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                anyOrNull(),
-                eq(false),
-                eq(null)
-            )
-            val message = firstValue.invoke()
-            assertThat(message).contains("Flag '$fakeFlagKey'")
-            assertThat(message).contains("Failed to parse value '$fakeValue' as '$unknownType'")
-        }
-    }
-
-    @Test
-    fun `M not track exposure W trackFlagSnapshotEvaluation() { doLog is false }`(forge: Forge) {
+    fun `M not track exposure but still log RUM W trackFlagSnapshotEvaluation() { doLog is false }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aBool()
@@ -1940,7 +1849,10 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verifyNoInteractions(mockProcessor)
-        verifyNoInteractions(mockRumEvaluationLogger)
+        verify(mockRumEvaluationLogger).logEvaluation(
+            flagKey = fakeFlagKey,
+            value = fakeFlag.variationKey
+        )
     }
 
     @Test
@@ -1979,7 +1891,7 @@ internal class DatadogFlagsClientTest {
         verifyNoInteractions(mockProcessor)
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
-            value = fakeFlagValue
+            value = fakeFlag.variationKey
         )
     }
 

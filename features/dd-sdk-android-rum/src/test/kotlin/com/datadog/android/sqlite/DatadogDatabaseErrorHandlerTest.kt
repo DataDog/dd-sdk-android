@@ -13,8 +13,8 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

@@ -314,8 +314,7 @@ internal class MutationResolverTest {
         fakeCurrentSnapshot.forEachIndexed { index, wireframe ->
             val previousId = if (index > 0) fakeCurrentSnapshot[index - 1].id() else null
             expectedAdds.add(
-                com.datadog.android.sessionreplay.model.MobileSegment.Add
-                    (previousId, wireframe)
+                MobileSegment.Add(previousId, wireframe)
             )
         }
 

@@ -21,7 +21,8 @@ import com.datadog.android.lint.InternalApi
 interface MutableHttpRequestInfo {
     /**
      * Creates a modifier to modify this request info.
-     * @return a new [com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder] initialized with this request's data.
+     * @return a new [com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder]
+     * initialized with this request's data.
      */
     fun newBuilder(): HttpRequestInfoBuilder
 }

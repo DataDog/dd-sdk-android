@@ -37,7 +37,17 @@
     "source": {
       "type": "string",
       "description": "The source of this event",
-      "enum": ["android", "ios", "browser", "flutter", "react-native", "unity", "kotlin-multiplatform"],
+      "enum": [
+        "android",
+        "ios",
+        "browser",
+        "flutter",
+        "react-native",
+        "unity",
+        "kotlin-multiplatform",
+        "electron",
+        "rum-cpp"
+      ],
       "readOnly": true
     },
     "version": {
@@ -133,13 +143,13 @@
               "readOnly": true
             },
             "total_ram": {
-              "type" : "number",
+              "type": "number",
               "description": "Total RAM in megabytes",
               "readOnly": true
             },
             "is_low_ram": {
               "type": "boolean",
-              "description": "Whether the device is considered a low RAM device.",
+              "description": "Whether the device is considered a low RAM device (Android)",
               "readOnly": true
             }
           }

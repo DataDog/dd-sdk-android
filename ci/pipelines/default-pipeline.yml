@@ -17,6 +17,23 @@ stages:
     - source ./ci/scripts/vault_config.sh
     - source ./ci/scripts/get-secret.sh
 
+  source-secrets-macos:
+    - vault login -method=aws -no-print
+    - export DD_ANDROID_SECRETS_PATH_PREFIX="kv/aws/arn:aws:iam::486234852809:role/ci-dd-sdk-android/"
+    - source ./ci/scripts/vault_config.sh
+    - source ./ci/scripts/get-secret.sh
+
+  setup-dd-tracer:
+    - export DD_TRACER_FOLDER="$HOME/dd-java-agent"
+    - mkdir -p "$DD_TRACER_FOLDER"
+    - curl -Lo "$DD_TRACER_FOLDER/dd-java-agent.jar" https://dtdg.co/latest-java-tracer
+    - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
+    - export DD_CIVISIBILITY_AGENTLESS_ENABLED=true
+
+  setup-dd-ci-cli:
+    - npm install -g @datadog/datadog-ci
+    - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
+
   # macOS AMI will already have cmdline-tools installed
   install-android-api-components:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
@@ -26,20 +43,27 @@ stages:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
     - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
     - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+  setup-macos-ami-runner:
+    - !reference [ .snippets, source-secrets-macos ]
+    - !reference [ .snippets, setup-dd-tracer ]
+    - !reference [ .snippets, setup-dd-ci-cli ]
+    - !reference [ .snippets, install-android-api-components ]
   run-legacy-integration-instrumented:
     - set +e
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :instrumented:integration:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
+    - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname instrumented/integration/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   run-core-it-instrumented:
     - set +e
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:core-it:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
+    - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
@@ -177,6 +201,8 @@ test:kover:
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportFeatures  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportIntegrations  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - bash <(cat ./ci/scripts/codecov.sh) -t $CODECOV_TOKEN
+    - npm install -g @datadog/datadog-ci
+    - datadog-ci coverage upload --format=jacoco . || true
   artifacts:
     when: always
     expire_in: 1 week
@@ -198,7 +224,7 @@ test-pyramid:core-it-min-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-latest-api:
@@ -213,7 +239,7 @@ test-pyramid:core-it-latest-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:core-it-median-api:
@@ -228,7 +254,7 @@ test-pyramid:core-it-median-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-core-it-instrumented]
 
 test-pyramid:single-fit-logs:
@@ -313,7 +339,7 @@ test-pyramid:legacy-integration-instrumented-min-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-latest-api:
@@ -328,7 +354,7 @@ test-pyramid:legacy-integration-instrumented-latest-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:legacy-integration-instrumented-median-api:
@@ -343,7 +369,7 @@ test-pyramid:legacy-integration-instrumented-median-api:
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
-    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-legacy-integration-instrumented]
 
 test-pyramid:detekt-api-coverage:

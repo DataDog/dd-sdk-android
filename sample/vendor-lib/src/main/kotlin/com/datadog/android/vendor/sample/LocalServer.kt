@@ -80,7 +80,7 @@ public class LocalServer {
         Logs.enable(logsConfig, instance)
 
         val tracesConfig = TraceConfiguration.Builder().build()
-        Trace.enable(tracesConfig)
+        Trace.enable(tracesConfig, instance)
         logger = Logger.Builder(instance)
             .setLogcatLogsEnabled(true)
             .build()

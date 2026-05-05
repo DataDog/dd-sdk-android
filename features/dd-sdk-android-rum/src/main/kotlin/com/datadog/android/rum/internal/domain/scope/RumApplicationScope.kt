@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
@@ -37,7 +38,7 @@ import java.util.concurrent.TimeUnit
 internal class RumApplicationScope(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
-    internal val sampleRate: Float,
+    internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
     private val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
@@ -66,7 +67,7 @@ internal class RumApplicationScope(
             parentScope = this,
             sdkCore = sdkCore,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-            sampleRate = sampleRate,
+            sessionSampler = sessionSampler,
             backgroundTrackingEnabled = backgroundTrackingEnabled,
             trackFrustrations = trackFrustrations,
             viewChangedListener = this,
@@ -188,7 +189,7 @@ internal class RumApplicationScope(
             parentScope = this,
             sdkCore = sdkCore,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-            sampleRate = sampleRate,
+            sessionSampler = sessionSampler,
             backgroundTrackingEnabled = backgroundTrackingEnabled,
             trackFrustrations = trackFrustrations,
             viewChangedListener = this,

@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -21,6 +22,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +37,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -365,6 +368,34 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M close response body W readPrecomputedFlags()`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
+        @BoolForgery fakeIsSuccessfulResponse: Boolean
+    ) {
+        // Given
+        val fakeRequest = Request.Builder()
+            .url(fakeUrl)
+            .build()
+
+        val fakeResponseBody = mock<ResponseBody>()
+        val fakeResponse = mock<Response> {
+            on { isSuccessful } doReturn fakeIsSuccessfulResponse
+            on { body } doReturn fakeResponseBody
+        }
+
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        verify(fakeResponseBody).close()
     }
 
     // endregion

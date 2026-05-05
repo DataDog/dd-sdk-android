@@ -69,9 +69,11 @@ internal class RumAppStartupTelemetryReporterTest {
         // Given
         val appStartIndex = forge.anInt(min = 0)
 
+        val wasForwarded = forge.aBool()
         val info = RumTTIDInfo(
             scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+            durationNs = forge.aLong(min = 0, max = 10000),
+            wasForwarded = wasForwarded
         )
 
         // When
@@ -99,6 +101,8 @@ internal class RumAppStartupTelemetryReporterTest {
                     RumAppStartupTelemetryReporterImpl.KEY_HAS_SAVED_INSTANCE_STATE,
                     info.scenario.hasSavedInstanceStateBundle
                 )
+
+                put(RumAppStartupTelemetryReporterImpl.KEY_WAS_FORWARDED, wasForwarded)
 
                 info.scenario.appStartActivityOnCreateGapNs?.let {
                     put(RumAppStartupTelemetryReporterImpl.KEY_GAP_NS, it)

@@ -9,7 +9,7 @@ package com.datadog.android.trace.internal.net
 import com.datadog.android.lint.InternalApi
 
 /**
- * The context of a trace to be propagated through the OkHttp requests for Datadog tracing.
+ * The context of a trace to be propagated through HTTP requests for Datadog tracing.
  */
 @InternalApi
 // TODO RUM-13441: this class should be internal after refactor of TracingInterceptor.

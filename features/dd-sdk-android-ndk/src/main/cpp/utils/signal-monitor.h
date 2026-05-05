@@ -7,7 +7,6 @@
 #ifndef SIGNAL_MONITOR_H
 #define SIGNAL_MONITOR_H
 
-#include <jni.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus

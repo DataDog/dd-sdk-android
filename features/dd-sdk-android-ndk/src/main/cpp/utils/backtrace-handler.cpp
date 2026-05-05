@@ -6,14 +6,9 @@
 
 #include "backtrace-handler.h"
 
-#include <cstdlib>
 #include <cstdio>
 #include <dlfcn.h>
-#include <fcntl.h>
-#include <iomanip>
-#include <iosfwd>
 #include <unwind.h>
-#include <unistd.h>
 #include <string>
 
 struct BacktraceState {
@@ -30,7 +25,7 @@ namespace {
             if (state->current == state->end) {
                 return _URC_END_OF_STACK;
             } else {
-                // we set the state->current to current+1 and we set
+                // we set the state->current to current+1, and we set
                 // its value as the pointer of the current stack line
                 *state->current++ = pointer_to_stack_line;
             }
@@ -95,7 +90,7 @@ bool copyString(const std::string &str, char *ptr, size_t max_size) {
     size_t str_size = str.size();
     size_t copy_size = std::min(str_size, max_size - 1);
     memcpy(ptr, str.data(), copy_size);
-    ptr[str.size()] = '\0';
+    ptr[copy_size] = '\0';
     return copy_size == str_size;
 }
 
@@ -119,7 +114,3 @@ bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size
     }
     return copyString(backtrace, backtrace_ptr, max_size);
 }
-
-
-
-
