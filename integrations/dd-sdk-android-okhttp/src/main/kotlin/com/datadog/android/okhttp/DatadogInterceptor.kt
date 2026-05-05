@@ -34,6 +34,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.internal.net.reportNetworkInstrumentationConfigured
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -395,12 +396,18 @@ open class DatadogInterceptor internal constructor(
          * Builds the [DatadogInterceptor].
          */
         override fun build(): DatadogInterceptor {
+            val currentTraceSampler = traceSampler
+            val effectiveTraceSampler = if (currentTraceSampler is DeterministicTraceSampler) {
+                SessionRebasedSampler(currentTraceSampler)
+            } else {
+                currentTraceSampler
+            }
             return DatadogInterceptor(
                 sdkInstanceName,
                 tracedHostsWithHeaderType,
                 tracedRequestListener,
                 rumResourceAttributesProvider,
-                SessionRebasedSampler(traceSampler),
+                effectiveTraceSampler,
                 traceContextInjection,
                 redacted404ResourceName,
                 localTracerFactory,

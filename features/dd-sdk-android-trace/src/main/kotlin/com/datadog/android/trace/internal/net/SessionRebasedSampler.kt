@@ -16,24 +16,24 @@ import com.datadog.android.trace.api.span.DatadogSpan
 /**
  * A [Sampler] decorator that rebases the trace sample rate against the RUM session sample rate.
  *
- * When the delegate is a [DeterministicTraceSampler] and the span carries a
- * [LogAttributes.RUM_SESSION_SAMPLE_RATE] tag (injected by [com.datadog.android.trace.internal.RumContextPropagator]),
- * the effective sample rate becomes `traceSampleRate * sessionSampleRate / 100`.
- * This ensures that the combined probability of a trace being sampled within a sampled RUM session
- * is correctly represented.
+ * When the span carries a [LogAttributes.RUM_SESSION_SAMPLE_RATE] tag (injected by
+ * [com.datadog.android.trace.internal.RumContextPropagator]), the effective sample rate becomes
+ * `traceSampleRate * sessionSampleRate / 100`. This ensures that the combined probability of a
+ * trace being sampled within a sampled RUM session is correctly represented.
  *
- * For custom (non-[DeterministicTraceSampler]) delegates, the decorator passes through
- * to the delegate without rebasing.
+ * Only [DeterministicTraceSampler] delegates participate in rebasing; this constraint is enforced
+ * at the construction sites, which only wrap the default trace sampler (or one set via
+ * `setTraceSampleRate`). Custom samplers passed via `setTraceSampler` are not wrapped and bypass
+ * rebasing entirely.
  *
- * @param delegate the underlying sampler to wrap.
+ * @param delegate the underlying [DeterministicTraceSampler] to wrap.
  */
 @InternalApi
 class SessionRebasedSampler(
-    private val delegate: Sampler<DatadogSpan>
+    private val delegate: DeterministicTraceSampler
 ) : Sampler<DatadogSpan>, SpanAwareSampler {
 
     override fun sample(item: DatadogSpan): Boolean {
-        if (delegate !is DeterministicTraceSampler) return delegate.sample(item)
         val rawRate = delegate.getSampleRate()
         val effectiveRate = computeEffectiveRate(item, rawRate)
         return if (effectiveRate == rawRate) {
@@ -43,10 +43,9 @@ class SessionRebasedSampler(
         }
     }
 
-    override fun getSampleRate(): Float? = delegate.getSampleRate()
+    override fun getSampleRate(): Float = delegate.getSampleRate()
 
-    override fun getSampleRate(span: DatadogSpan): Float? {
-        if (delegate !is DeterministicTraceSampler) return delegate.effectiveSampleRate(span)
+    override fun getSampleRate(span: DatadogSpan): Float {
         val rawRate = delegate.getSampleRate()
         return computeEffectiveRate(span, rawRate)
     }

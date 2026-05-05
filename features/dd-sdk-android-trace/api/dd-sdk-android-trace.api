@@ -184,7 +184,7 @@ public final class com/datadog/android/trace/internal/net/RequestTracingStateKt 
 }
 
 public final class com/datadog/android/trace/internal/net/SessionRebasedSampler : com/datadog/android/core/sampling/Sampler, com/datadog/android/trace/internal/net/SpanAwareSampler {
-	public fun <init> (Lcom/datadog/android/core/sampling/Sampler;)V
+	public fun <init> (Lcom/datadog/android/trace/DeterministicTraceSampler;)V
 	public fun getSampleRate ()Ljava/lang/Float;
 	public fun getSampleRate (Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
 	public fun sample (Lcom/datadog/android/trace/api/span/DatadogSpan;)Z

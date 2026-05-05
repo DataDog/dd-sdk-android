@@ -119,6 +119,11 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      * Set the trace sample rate controlling the sampling of APM traces created for
      * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
      * sampling decision will be used instead.
+     *
+     * When `headerPropagationOnly` is enabled, the effective trace sample rate is automatically combined with
+     * the active RUM session sample rate, ensuring the backend receives correct sampling metadata
+     * (`_dd.agent_psr` / `_dd.rule_psr`) for RUM-to-APM correlation.
+     *
      * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 100f).
      */
     fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float) = apply {
@@ -129,6 +134,11 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      * Set the trace sampler controlling the sampling of APM traces created for
      * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
      * sampling decision will be used instead.
+     *
+     * Note: custom samplers passed here do not participate in cross-product rebasing with the RUM session
+     * sample rate (even when `headerPropagationOnly` is enabled). Use [setTraceSampleRate] if you need
+     * correlated sampling between RUM sessions and APM traces.
+     *
      * @param traceSampler the trace sampler controlling the sampling of APM traces.
      * By default it is a sampler accepting 100% of the traces.
      */
@@ -247,10 +257,11 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
             val tracerProvider = TracerProvider(localTracerFactory, globalTracerProvider)
 
-            val effectiveSampler = if (headerPropagationOnly) {
-                SessionRebasedSampler(traceSampler)
+            val currentTraceSampler = traceSampler
+            val effectiveSampler = if (headerPropagationOnly && currentTraceSampler is DeterministicTraceSampler) {
+                SessionRebasedSampler(currentTraceSampler)
             } else {
-                traceSampler
+                currentTraceSampler
             }
 
             return ApmNetworkInstrumentation(
