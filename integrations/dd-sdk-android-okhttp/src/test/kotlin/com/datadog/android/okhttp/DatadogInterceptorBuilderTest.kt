@@ -239,8 +239,7 @@ internal class DatadogInterceptorBuilderTest {
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
-        assertThat(interceptor.traceSampler).isInstanceOf(SessionRebasedSampler::class.java)
-        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(mockSampler.getSampleRate())
+        assertThat(interceptor.traceSampler).isSameAs(mockSampler)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }

@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.internal.net
 
-import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -26,8 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -127,25 +124,6 @@ internal class SessionRebasedSamplerTest {
         assertThat(sampledCount).isEqualTo(0)
     }
 
-    @Test
-    fun `M delegate to custom sampler W sample() { delegate is not DeterministicTraceSampler }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockDelegate = mock<Sampler<DatadogSpan>>()
-        whenever(mockDelegate.sample(org.mockito.kotlin.any())).thenReturn(true)
-        val testedSampler = SessionRebasedSampler(mockDelegate)
-
-        val span = createSpan(forge, sessionSampleRate = 50f)
-
-        // When
-        val result = testedSampler.sample(span)
-
-        // Then
-        assertThat(result).isTrue()
-        verify(mockDelegate).sample(span)
-    }
-
     // endregion
 
     // region getSampleRate()
@@ -223,49 +201,9 @@ internal class SessionRebasedSamplerTest {
         assertThat(result).isCloseTo(fakeTraceRate, Offset.offset(0.001f))
     }
 
-    @Test
-    fun `M return raw rate W getSampleRate(span) { custom sampler delegate }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeRawRate = forge.aFloat(min = 0f, max = 100f)
-        val mockDelegate = mock<Sampler<DatadogSpan>>()
-        whenever(mockDelegate.getSampleRate()).thenReturn(fakeRawRate)
-        val testedSampler = SessionRebasedSampler(mockDelegate)
-        val span = createSpan(forge, sessionSampleRate = 50f)
-
-        // When
-        val result = testedSampler.getSampleRate(span)
-
-        // Then
-        assertThat(result).isEqualTo(fakeRawRate)
-    }
-
-    @Test
-    fun `M return delegate per-span rate W getSampleRate(span) { delegate is SpanAwareSampler }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeStaticRate = forge.aFloat(min = 0f, max = 50f)
-        val fakePerSpanRate = forge.aFloat(min = 50.01f, max = 100f)
-        val stubDelegate = mock<SpanAwareDelegateSampler>()
-        whenever(stubDelegate.getSampleRate()).thenReturn(fakeStaticRate)
-        whenever(stubDelegate.getSampleRate(org.mockito.kotlin.any())).thenReturn(fakePerSpanRate)
-        val testedSampler = SessionRebasedSampler(stubDelegate)
-        val span = createSpan(forge, sessionSampleRate = 50f)
-
-        // When
-        val result = testedSampler.getSampleRate(span)
-
-        // Then
-        assertThat(result).isEqualTo(fakePerSpanRate)
-    }
-
     // endregion
 
     // region helpers
-
-    internal interface SpanAwareDelegateSampler : Sampler<DatadogSpan>, SpanAwareSampler
 
     private fun createSpan(forge: Forge, sessionSampleRate: Float?): DatadogSpan {
         val tags = buildMap<String, Any> {
