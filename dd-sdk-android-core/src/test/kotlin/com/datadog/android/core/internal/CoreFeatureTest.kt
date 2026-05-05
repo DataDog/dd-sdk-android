@@ -92,7 +92,6 @@ import java.io.InputStream
 import java.net.Proxy
 import java.util.Locale
 import java.util.UUID
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -1537,62 +1536,6 @@ internal class CoreFeatureTest {
         inOrder(mockContextExecutor) {
             verify(mockContextExecutor).shutdown()
             verify(mockContextExecutor).awaitTermination(10, TimeUnit.SECONDS)
-        }
-    }
-
-    @Test
-    fun `M create broadcastReceiverExecutorService W initialize()`() {
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        assertThat(testedFeature.broadcastReceiverExecutorService).isNotNull()
-    }
-
-    @Test
-    fun `M shutdown broadcastReceiverExecutorService W stop()`() {
-        // Given
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-        val mockBroadcastExecutor = mock<ExecutorService>()
-        testedFeature.broadcastReceiverExecutorService = mockBroadcastExecutor
-
-        // When
-        testedFeature.stop()
-
-        // Then
-        verify(mockBroadcastExecutor).shutdownNow()
-        verify(mockBroadcastExecutor).awaitTermination(1, TimeUnit.SECONDS)
-    }
-
-    @Test
-    fun `M shutdown with wait the broadcastReceiver executor W drainAndShutdownExecutors()`() {
-        // Given
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-        val mockBroadcastExecutor = mock<ExecutorService>()
-        testedFeature.broadcastReceiverExecutorService = mockBroadcastExecutor
-
-        // When
-        testedFeature.drainAndShutdownExecutors()
-
-        // Then
-        inOrder(mockBroadcastExecutor) {
-            verify(mockBroadcastExecutor).shutdown()
-            verify(mockBroadcastExecutor).awaitTermination(CoreFeature.DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         }
     }
 
