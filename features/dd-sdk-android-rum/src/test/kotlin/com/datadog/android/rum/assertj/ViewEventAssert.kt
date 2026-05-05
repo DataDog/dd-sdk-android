@@ -825,6 +825,26 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSessionReplaySampleRate(expected: Long?): ViewEventAssert {
+        assertThat(actual.dd.configuration?.sessionReplaySampleRate)
+            .overridingErrorMessage(
+                "Expected RUM event to have sessionReplaySampleRate: $expected" +
+                    " but instead was: ${actual.dd.configuration?.sessionReplaySampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasTraceSampleRate(expected: Float?): ViewEventAssert {
+        assertThat(actual.dd.configuration?.traceSampleRate)
+            .overridingErrorMessage(
+                "Expected RUM event to have traceSampleRate: $expected" +
+                    " but instead was: ${actual.dd.configuration?.traceSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)

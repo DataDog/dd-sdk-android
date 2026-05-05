@@ -39,12 +39,13 @@ import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.asTimingsPayload
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aFilteredMap
 import com.datadog.tools.unit.forge.anException
+import com.datadog.tools.unit.forge.anHttpHeaderMap
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -3490,6 +3491,184 @@ internal class RumResourceScopeTest {
         }
     }
 
+    @Test
+    fun `M use graphql errors W handleEvent { errors attribute present }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+        val errorsJson = """[{"message":"field not found","code":"VALIDATION_ERROR",""" +
+            """"locations":[{"line":2,"column":3}],"path":["user","name"]}]"""
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_VARIABLES to variables,
+                RumAttributes.GRAPHQL_ERRORS to errorsJson
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isEqualTo(1L)
+            val errors = checkNotNull(graphql.errors)
+            assertThat(errors).hasSize(1)
+            val error = errors[0]
+            assertThat(error.message).isEqualTo("field not found")
+            assertThat(error.code).isEqualTo("VALIDATION_ERROR")
+            val locations = checkNotNull(error.locations)
+            assertThat(locations).hasSize(1)
+            assertThat(locations[0].line).isEqualTo(2L)
+            assertThat(locations[0].column).isEqualTo(3L)
+            assertThat(error.path).hasSize(2)
+        }
+    }
+
+    @Test
+    fun `M use graphql errors with multiple errors W handleEvent`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val errorsJson = """[{"message":"error one"},{"message":"error two"}]"""
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_ERRORS to errorsJson
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isEqualTo(2L)
+            val errors = checkNotNull(graphql.errors)
+            assertThat(errors).hasSize(2)
+            assertThat(errors[0].message).isEqualTo("error one")
+            assertThat(errors[1].message).isEqualTo("error two")
+        }
+    }
+
+    @Test
+    fun `M ignore graphql errors W handleEvent { errors attribute is null }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
+            assertThat(graphql.errors).isNull()
+        }
+    }
+
+    @Test
+    fun `M ignore graphql errors W handleEvent { errors attribute is empty string }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_ERRORS to ""
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
+            assertThat(graphql.errors).isNull()
+        }
+    }
+
+    @Test
+    fun `M ignore graphql errors W handleEvent { errors attribute is invalid JSON }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_ERRORS to "not valid json"
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val graphql = checkNotNull(firstValue.resource.graphql)
+            assertThat(graphql.errorCount).isNull()
+            assertThat(graphql.errors).isNull()
+        }
+    }
+
     // region write notification
 
     @Test
@@ -3684,7 +3863,7 @@ internal class RumResourceScopeTest {
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockInsightsCollector).onNetworkRequest(any(), any())
+        verify(mockInsightsCollector).onNetworkRequest(any())
     }
 
     // endregion
@@ -3755,6 +3934,91 @@ internal class RumResourceScopeTest {
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasNoGraphql()
+        }
+    }
+
+    // endregion
+
+    // region Resource Headers
+
+    @Test
+    fun `M map request and response headers to ResourceEvent W handleEvent { header attributes present }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val requestHeaders = forge.anHttpHeaderMap()
+        val responseHeaders = forge.anHttpHeaderMap()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.REQUEST_HEADERS to requestHeaders,
+                RumAttributes.RESPONSE_HEADERS to responseHeaders
+            )
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasRequestHeaders(requestHeaders)
+                .hasResponseHeaders(responseHeaders)
+        }
+    }
+
+    @Test
+    fun `M have no request or response W handleEvent { no header attributes }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasNoRequestHeaders()
+                .hasNoResponseHeaders()
+        }
+    }
+
+    @Test
+    fun `M remove header attributes from custom context W handleEvent { header attributes present }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val requestHeaders = forge.anHttpHeaderMap()
+        val responseHeaders = forge.anHttpHeaderMap()
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.REQUEST_HEADERS to requestHeaders,
+                RumAttributes.RESPONSE_HEADERS to responseHeaders
+            )
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val contextProperties = firstValue.context?.additionalProperties
+            assertThat(contextProperties).doesNotContainKey(RumAttributes.REQUEST_HEADERS)
+            assertThat(contextProperties).doesNotContainKey(RumAttributes.RESPONSE_HEADERS)
         }
     }
 

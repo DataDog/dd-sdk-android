@@ -26,5 +26,5 @@ enum class ApmNetworkTracingScope {
      * from one to another but the internal requests like redirects and retries ( if networking library allows that)
      * will not be traced.
      */
-    APPLICATION_LEVEL_REQUESTS_ONLY
+    EXCLUDE_INTERNAL_REDIRECTS
 }

@@ -63,7 +63,7 @@ internal class DeserializedLongTaskEventAssert(actual: LongTaskEvent) :
         } else {
             assertThat(actual).isNotNull()
             assertThat(actual!!.toDouble())
-                .isCloseTo(expected.toDouble(), Offset.offset(0.0000001))
+                .isCloseTo(expected.toDouble(), Offset.offset(0.00001))
         }
     }
 

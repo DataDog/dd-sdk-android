@@ -28,6 +28,13 @@ class InternalTelemetryApiUsageForgeryFactory : ForgeryFactory<InternalTelemetry
             ),
             InternalTelemetryEvent.ApiUsage.TrackWebView(
                 additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+            ),
+            InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(
+                type = forge.aValueFrom(
+                    InternalTelemetryEvent.ApiUsage.NetworkInstrumentation
+                        .LibraryType::class.java
+                ),
+                additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
             )
         )
     }

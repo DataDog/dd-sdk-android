@@ -13,11 +13,15 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 
 internal interface RumFirstDrawTimeReporter {
+    interface Handle {
+        fun unsubscribe()
+    }
+
     interface Callback {
         fun onFirstFrameDrawn(timestampNs: Long)
     }
 
-    fun subscribeToFirstFrameDrawn(activity: Activity, callback: Callback)
+    fun subscribeToFirstFrameDrawn(activity: Activity, callback: Callback): Handle
 
     companion object {
         fun create(sdkCore: InternalSdkCore): RumFirstDrawTimeReporter {

@@ -20,12 +20,12 @@ import com.datadog.android.core.internal.NoOpContextProvider
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.internal.time.TimeProvider

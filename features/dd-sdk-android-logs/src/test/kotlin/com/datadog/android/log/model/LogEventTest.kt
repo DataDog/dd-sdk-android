@@ -36,6 +36,6 @@ internal class LogEventTest {
         val result = LogEvent.fromJson(json)
 
         // Then
-        assertThat(result).isEqualTo(result)
+        assertThat(result.toJson().toString()).isEqualTo(json)
     }
 }

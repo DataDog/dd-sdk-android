@@ -26,7 +26,7 @@ import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
-import com.datadog.android.sessionreplay.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import fr.xgouchet.elmyr.Forge

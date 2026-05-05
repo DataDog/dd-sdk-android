@@ -4,6 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
 // CORE LIBRARY
 include(":dd-sdk-android-core")
 include(":dd-sdk-android-internal")

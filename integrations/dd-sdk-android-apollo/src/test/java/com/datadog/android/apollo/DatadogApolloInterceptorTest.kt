@@ -6,7 +6,6 @@
 
 package com.datadog.android.apollo
 
-import android.util.Base64
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.CustomScalarAdapters
 import com.apollographql.apollo.api.ExecutionContext
@@ -14,6 +13,7 @@ import com.apollographql.apollo.api.Operation
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain
 import com.datadog.android.apollo.internal.VariablesExtractor
 import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.utils.toBase64
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -427,11 +427,6 @@ internal class DatadogApolloInterceptorTest {
         } else {
             verify(requestBuilder).addHttpHeader(eq(headerName), any<String>())
         }
-    }
-
-    private fun String.toBase64(): String {
-        val bytes = this.toByteArray(Charsets.UTF_8)
-        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     private fun checkHeaderWasNotAdded(

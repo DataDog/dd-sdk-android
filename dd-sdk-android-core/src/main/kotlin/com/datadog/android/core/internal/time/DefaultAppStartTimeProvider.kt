@@ -23,16 +23,27 @@ internal class DefaultAppStartTimeProvider(
             buildSdkVersionProvider.isAtLeastN -> {
                 val timeProvider = timeProviderFactory()
                 val diffMs = timeProvider.getDeviceElapsedRealtimeMillis() - Process.getStartElapsedRealtime()
-                val result = timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+                val computedAppStartTimeNs =
+                    timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
+                val contentProviderCreateTimeNs = DdRumContentProvider.createTimeNs
+                val isAfterContentProviderInit = computedAppStartTimeNs > contentProviderCreateTimeNs
+                val isTooFarBeforeContentProviderInit =
+                    contentProviderCreateTimeNs - computedAppStartTimeNs >
+                        PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS
 
                 /**
                  * Occasionally [Process.getStartElapsedRealtime] returns buggy values. We filter them and fall back
                  * to the time of creation of [DdRumContentProvider].
+                 * Two directions are guarded:
+                 * - computedAppStartTimeNs > createTimeNs: app start appears to be after content provider init,
+                 * which is impossible.
+                 * - computedAppStartTimeNs is more than the threshold before createTimeNs: app start appears
+                 * unreasonably far in the past.
                  */
-                if (DdRumContentProvider.createTimeNs - result > PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS) {
-                    DdRumContentProvider.createTimeNs
+                if (isAfterContentProviderInit || isTooFarBeforeContentProviderInit) {
+                    contentProviderCreateTimeNs
                 } else {
-                    result
+                    computedAppStartTimeNs
                 }
             }
             else -> DdRumContentProvider.createTimeNs

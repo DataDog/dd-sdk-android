@@ -27,6 +27,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -771,6 +772,80 @@ class ManualTrackingRumTest {
                 doesNotHaveField("feature_flag")
             }
     }
+    // endregion
+
+    // region Sample Rates
+
+    @RepeatedTest(16)
+    fun `M send view event with sessionReplaySampleRate W startView() + stopView() { SR context set }`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        @LongForgery(min = 0L, max = 100L) fakeSrSampleRate: Long
+    ) {
+        // Given
+        stubSdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
+            it["session_replay_sample_rate"] = fakeSrSampleRate
+        }
+
+        // When
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.stopView(viewKey)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasRumEvent(index = 1) {
+                hasType("view")
+                hasSessionReplaySampleRate(fakeSrSampleRate)
+            }
+    }
+
+    @RepeatedTest(16)
+    fun `M send view event with traceSampleRate W startView() + stopView() { tracing context set }`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float
+    ) {
+        // Given
+        stubSdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+            it["okhttp_interceptor_sample_rate"] = fakeTraceSampleRate
+        }
+
+        // When
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.stopView(viewKey)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasRumEvent(index = 1) {
+                hasType("view")
+                hasTraceSampleRate(fakeTraceSampleRate)
+            }
+    }
+
+    @RepeatedTest(16)
+    fun `M send view event with no sample rates W startView() + stopView() { no SR or tracing context }`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String
+    ) {
+        // When
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.stopView(viewKey)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasRumEvent(index = 1) {
+                hasType("view")
+                doesNotHaveSessionReplaySampleRate()
+                doesNotHaveTraceSampleRate()
+            }
+    }
+
     // endregion
 
     companion object {

@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp.internal
 
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -232,10 +233,10 @@ internal class OkHttpRequestResourceIdentifierTest {
         val request = Request.Builder()
             .apply {
                 when (method) {
-                    "POST" -> post(body)
-                    "PUT" -> put(body)
-                    "PATCH" -> patch(body)
-                    "DELETE" -> delete(body)
+                    HttpSpec.Method.POST -> post(body)
+                    HttpSpec.Method.PUT -> put(body)
+                    HttpSpec.Method.PATCH -> patch(body)
+                    HttpSpec.Method.DELETE -> delete(body)
                 }
             }
             .url(fakeUrl)

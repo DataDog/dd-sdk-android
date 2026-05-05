@@ -726,6 +726,46 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasRequestHeaders(expectedHeaders: Map<String, String>): ResourceEventAssert {
+        assertThat(actual.resource.request).isNotNull
+        assertThat(actual.resource.request?.headers?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event data to have resource.request.headers $expectedHeaders " +
+                    "but was ${actual.resource.request?.headers?.additionalProperties}"
+            )
+            .isEqualTo(expectedHeaders)
+        return this
+    }
+
+    fun hasResponseHeaders(expectedHeaders: Map<String, String>): ResourceEventAssert {
+        assertThat(actual.resource.response).isNotNull
+        assertThat(actual.resource.response?.headers?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event data to have resource.response.headers $expectedHeaders " +
+                    "but was ${actual.resource.response?.headers?.additionalProperties}"
+            )
+            .isEqualTo(expectedHeaders)
+        return this
+    }
+
+    fun hasNoRequestHeaders(): ResourceEventAssert {
+        assertThat(actual.resource.request)
+            .overridingErrorMessage(
+                "Expected event data to have no resource.request but was ${actual.resource.request}"
+            )
+            .isNull()
+        return this
+    }
+
+    fun hasNoResponseHeaders(): ResourceEventAssert {
+        assertThat(actual.resource.response)
+            .overridingErrorMessage(
+                "Expected event data to have no resource.response but was ${actual.resource.response}"
+            )
+            .isNull()
+        return this
+    }
+
     companion object {
 
         internal const val TIMESTAMP_THRESHOLD_MS = 50L

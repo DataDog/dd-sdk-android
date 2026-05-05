@@ -6,7 +6,7 @@
 
 #include <string>
 #include "greatest/greatest.h"
-#include "datadog-native-lib.h"
+#include "datadog-ndk.h"
 
 using namespace std;
 

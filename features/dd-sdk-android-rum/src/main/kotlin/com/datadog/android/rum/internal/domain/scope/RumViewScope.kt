@@ -100,8 +100,15 @@ internal open class RumViewScope(
     private val internalAttributes: MutableMap<String, Any?> = mutableMapOf()
     private var memoizedParentAttributes: Map<String, Any?> = emptyMap()
 
-    private val sessionId: String = parentScope.getRumContext().sessionId
     internal val viewId: String = UUID.randomUUID().toString()
+    private val sessionId: String = parentScope.getRumContext().let {
+        if (it.syntheticsTestId != null) {
+            logSynthetics("_dd.application.id", it.applicationId)
+            logSynthetics("_dd.session.id", it.sessionId)
+            logSynthetics("_dd.view.id", viewId)
+        }
+        it.sessionId
+    }
 
     private val startedNanos: Long = eventTime.nanoTime
     internal var stoppedNanos: Long = eventTime.nanoTime
@@ -186,6 +193,7 @@ internal open class RumViewScope(
             logSynthetics("_dd.session.id", rumContext.sessionId)
             logSynthetics("_dd.view.id", viewId)
         }
+
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
         slowFramesListener?.onViewCreated(viewId, startedNanos)
@@ -244,8 +252,8 @@ internal open class RumViewScope(
             is RumRawEvent.AddViewAttributes -> onAddViewAttributes(event)
             is RumRawEvent.RemoveViewAttributes -> onRemoveViewAttributes(event)
 
-            is RumRawEvent.StartFeatureOperation -> onStartFeatureOperation(event, datadogContext, writeScope, writer)
-            is RumRawEvent.StopFeatureOperation -> onStopFeatureOperation(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StartOperation -> onStartOperation(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopOperation -> onStopOperation(event, datadogContext, writeScope, writer)
 
             else -> delegateEventToChildren(event, datadogContext, writeScope, writer)
         }
@@ -260,8 +268,8 @@ internal open class RumViewScope(
         }
     }
 
-    private fun onStartFeatureOperation(
-        event: RumRawEvent.StartFeatureOperation,
+    private fun onStartOperation(
+        event: RumRawEvent.StartOperation,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
@@ -282,8 +290,8 @@ internal open class RumViewScope(
         sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
-    private fun onStopFeatureOperation(
-        event: RumRawEvent.StopFeatureOperation,
+    private fun onStopOperation(
+        event: RumRawEvent.StopOperation,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
@@ -1188,7 +1196,7 @@ internal open class RumViewScope(
         val slowFramesRate = if (viewComplete) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
         insightsCollector.onSlowFrameRate(uiSlownessReport?.slowFramesRate(stoppedNanos))
 
-        if (viewComplete && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
+        if (viewComplete && rumContext.sessionState != RumSessionScope.State.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(
                 interactionToNextViewMetricResolver.getState(viewId),
                 networkSettledMetricResolver.getState()
@@ -1348,7 +1356,11 @@ internal open class RumViewScope(
                         sessionPrecondition = rumContext.sessionStartReason.toViewSessionPrecondition()
                     ),
                     replayStats = replayStats,
-                    configuration = ViewEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ViewEvent.Configuration(
+                        sessionSampleRate = sampleRate,
+                        sessionReplaySampleRate = resolveSessionReplaySampleRate(datadogContext),
+                        traceSampleRate = resolveTraceSampleRate(datadogContext)
+                    )
                 ),
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
@@ -1428,7 +1440,7 @@ internal open class RumViewScope(
     ) {
         delegateEventToChildren(event, datadogContext, writeScope, writer)
         if (stopped) return
-        insightsCollector.onLongTask(event.eventTime.nanoTime, event.durationNs)
+        insightsCollector.onLongTask(event.durationNs)
         val rumContext = getRumContext()
         val longTaskCustomAttributes = getCustomAttributes().toMutableMap().apply {
             put(RumAttributes.LONG_TASK_TARGET, event.target)
@@ -1614,6 +1626,16 @@ internal open class RumViewScope(
         }
     }
 
+    private fun resolveSessionReplaySampleRate(datadogContext: DatadogContext): Long? {
+        val srContext = datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME]
+        return srContext?.get(SESSION_REPLAY_SAMPLE_RATE_KEY) as? Long
+    }
+
+    private fun resolveTraceSampleRate(datadogContext: DatadogContext): Float? {
+        val tracingContext = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]
+        return tracingContext?.get(TRACE_SAMPLE_RATE) as? Float
+    }
+
     private fun logSynthetics(key: String, value: String) {
         /**
          * We use [android.util.Log] here instead of [InternalLogger] because we want to log regardless of the
@@ -1626,6 +1648,12 @@ internal open class RumViewScope(
 
     companion object {
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
+
+        // Must match SessionReplayFeature.SESSION_REPLAY_SAMPLE_RATE_KEY in dd-sdk-android-session-replay
+        internal const val SESSION_REPLAY_SAMPLE_RATE_KEY = "session_replay_sample_rate"
+
+        // Must match TracingInterceptor.OKHTTP_INTERCEPTOR_SAMPLE_RATE in dd-sdk-android-okhttp
+        internal const val TRACE_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"

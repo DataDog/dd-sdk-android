@@ -12,7 +12,9 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 import java.nio.file.Paths
 
 class ApiSurfacePlugin : Plugin<Project> {
@@ -48,11 +50,12 @@ class ApiSurfacePlugin : Plugin<Project> {
                 }
             }
 
-        val kotlinCompilations = target.tasks.withType<KotlinCompile>()
+        val kotlinCompilations = target.tasks.withType<KotlinCompilationTask<KotlinJvmCompilerOptions>>()
         val generateCompilerMetaTask = target.tasks
             .register<GenerateCompilerMetaTask>(TASK_GEN_COMPILER_METADATA) {
                 compiledClassesDirectory.set(
-                    kotlinCompilations.named("compileDebugKotlin").flatMap { it.destinationDirectory }
+                    kotlinCompilations.named("compileDebugKotlin")
+                        .flatMap { (it as KotlinCompileTool).destinationDirectory }
                 )
                 metadataInfoFile.set(compilerMetaFile)
             }
@@ -63,7 +66,7 @@ class ApiSurfacePlugin : Plugin<Project> {
                 dependsOn(TASK_GEN_COMPILER_METADATA)
             }
 
-        target.taskConfig<KotlinCompile> {
+        target.taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
             if (name == "compileDebugKotlin") {
                 finalizedBy(generateCompilerMetaTask)
             }

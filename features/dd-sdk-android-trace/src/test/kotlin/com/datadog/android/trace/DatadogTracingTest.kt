@@ -16,8 +16,8 @@ import com.datadog.android.trace.DatadogTracing.ErrorMessages.buildWrongWrapperM
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.DatadogTracerAdapter
-import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer

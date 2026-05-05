@@ -134,10 +134,24 @@ object DatadogTracingConstants {
         const val TRACE_SAMPLE_RATE: String = "trace.sample.rate"
 
         /**Constant used to specify the propagation style for extracting context headers during distributed tracing. */
+        @Deprecated(
+            "Use TRACE_PROPAGATION_STYLE_EXTRACT instead.",
+            replaceWith = ReplaceWith("TRACE_PROPAGATION_STYLE_EXTRACT")
+        )
         const val PROPAGATION_STYLE_EXTRACT: String = "propagation.style.extract"
 
         /** Defines the property key for configuring the propagation style during the injection phase. */
+        @Deprecated(
+            "Use TRACE_PROPAGATION_STYLE_INJECT instead.",
+            replaceWith = ReplaceWith("TRACE_PROPAGATION_STYLE_INJECT")
+        )
         const val PROPAGATION_STYLE_INJECT: String = "propagation.style.inject"
+
+        /** Constant used to specify the propagation style for extracting context headers during distributed tracing. */
+        const val TRACE_PROPAGATION_STYLE_EXTRACT: String = "trace.propagation.style.extract"
+
+        /** Defines the property key for configuring the propagation style during the injection phase. */
+        const val TRACE_PROPAGATION_STYLE_INJECT: String = "trace.propagation.style.inject"
 
         /**
          * A constant key used to retrieve or set the service name configuration

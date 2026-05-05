@@ -172,7 +172,7 @@ class DatadogPropagationHelper internal constructor() {
 
                 W3CHttpCodec.BAGGAGE_KEY -> carrier.replaceHeader(
                     key,
-                    DatadogTracingToolkit.mergeBaggage(
+                    _TraceInternalProxy.mergeBaggage(
                         carrier.resolveExistingBaggageHeaderValue(),
                         value
                     )
@@ -242,6 +242,17 @@ class DatadogPropagationHelper internal constructor() {
     }
 
     /**
+     * Removes all tracing headers from the request.
+     * This is useful when starting a new independent trace for redirect requests.
+     *
+     * @param builder the request builder to remove headers from.
+     * @return the modified request info builder.
+     */
+    fun removeAllTracingHeaders(builder: HttpRequestInfoBuilder) = builder.apply {
+        ALL_TRACING_HEADERS.forEach { removeHeader(it) }
+    }
+
+    /**
      * Extracts the sampling decision from the request.
      * Checks headers and tags for existing sampling decisions.
      *
@@ -257,7 +268,7 @@ class DatadogPropagationHelper internal constructor() {
             headerSamplingPriority != null -> headerSamplingPriority
 
             datadogSpan != null -> {
-                DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
+                _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
 
@@ -345,6 +356,9 @@ class DatadogPropagationHelper internal constructor() {
             W3CHttpCodec.TRACE_STATE_KEY
         )
 
+        internal val ALL_TRACING_HEADERS: Set<String> =
+            DATADOG_CODEC_HEADERS + B3M_CODEC_HEADERS + W3C_CODEC_HEADERS + B3HttpCodec.B3_KEY
+
         private fun HttpRequestInfoBuilder.resetDatadogHeaders(
             span: DatadogSpan,
             tracer: DatadogTracer
@@ -376,16 +390,14 @@ class DatadogPropagationHelper internal constructor() {
             val spanId = span.context().spanId.toString()
             addHeader(
                 W3CHttpCodec.TRACE_PARENT_KEY,
-                // TODO RUM-11445 InvalidStringFormat false alarm
-                @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
+                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                 W3C_TRACE_PARENT_DROP_SAMPLING_DECISION.format(
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
             )
             // TODO RUM-2121 3rd party vendor information will be erased
-            // TODO RUM-11445 InvalidStringFormat false alarm
-            @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
+            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
             var traceStateHeader = W3C_TRACE_STATE_DROP_SAMPLING_DECISION
                 .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
@@ -401,7 +413,7 @@ class DatadogPropagationHelper internal constructor() {
             build()
                 .headers[W3CHttpCodec.BAGGAGE_KEY].orEmpty()
                 .reduce { acc, header ->
-                    DatadogTracingToolkit.mergeBaggage(acc, header)
+                    _TraceInternalProxy.mergeBaggage(acc, header)
                 }
         } catch (_: UnsupportedOperationException) {
             // Header values collection is empty

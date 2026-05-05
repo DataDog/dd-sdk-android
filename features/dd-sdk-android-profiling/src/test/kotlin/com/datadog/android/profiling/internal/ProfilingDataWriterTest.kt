@@ -138,20 +138,21 @@ internal class ProfilingDataWriterTest {
             .hasStart(formatIsoUtc(fakeResult.start))
             .hasEnd(formatIsoUtc(fakeResult.end))
             .hasAttachments(listOf("perfetto.proto"))
-            .hasFamily("android")
-            .hasRuntime("android")
-            .hasVersion("4")
+            .hasFamily(ProfileEvent.Family.ANDROID)
+            .hasRuntime(ProfileEvent.Family.ANDROID)
+            .hasVersion(4)
             .hasTags(expectedTagList)
             .hasApplicationId(fakeTTIDRumContext.applicationId)
             .hasSessionId(fakeTTIDRumContext.sessionId)
-            .hasVitalId(fakeTTIDRumContext.vitalId)
+            .hasVitalIds(listOf(fakeTTIDRumContext.vitalId))
+            .hasVitalNames(listOf(fakeTTIDRumContext.vitalName.orEmpty()))
             .apply {
                 if (fakeTTIDRumContext.viewId != null && fakeTTIDRumContext.viewName != null) {
-                    hasViewId(fakeTTIDRumContext.viewId)
-                    hasViewName(fakeTTIDRumContext.viewName)
+                    hasViewIds(listOf(fakeTTIDRumContext.viewId.orEmpty()))
+                    hasViewNames(listOf(fakeTTIDRumContext.viewName.orEmpty()))
                 } else {
-                    hasViewId(null)
-                    hasViewName(null)
+                    hasViewIds(null)
+                    hasViewNames(null)
                 }
             }
         assertThat(argumentCaptor.firstValue.metadata).isEqualTo(

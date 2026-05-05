@@ -12,6 +12,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -40,6 +41,14 @@ plugins {
 
 android {
     namespace = "com.datadog.android.trace.api"
+
+    libraryVariants.all {
+        packageLibraryProvider.configure {
+            from("src/main/resources") {
+                include("META-INF/**/verification.properties")
+            }
+        }
+    }
 }
 
 dependencies {
@@ -66,3 +75,8 @@ publishingConfig(
     "Tracing engine API specification used for internal module communication."
 )
 detektCustomConfig()
+
+taskConfig<Test> {
+    // this module has no tests
+    failOnNoDiscoveredTests = false
+}

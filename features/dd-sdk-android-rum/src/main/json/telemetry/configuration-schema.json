@@ -117,6 +117,11 @@
                   "description": "Whether resources are tracked",
                   "readOnly": false
                 },
+                "track_early_requests": {
+                  "type": "boolean",
+                  "description": "Whether early requests are tracked",
+                  "readOnly": false
+                },
                 "track_long_task": {
                   "type": "boolean",
                   "description": "Whether long tasks are tracked",
@@ -145,7 +150,7 @@
                 },
                 "session_persistence": {
                   "type": "string",
-                  "enum": ["local-storage", "cookie"],
+                  "enum": ["local-storage", "cookie", "memory"],
                   "description": "Configure the storage strategy for persisting sessions"
                 },
                 "store_contexts_across_pages": {
@@ -167,6 +172,18 @@
                 "use_allowed_tracing_urls": {
                   "type": "boolean",
                   "description": "Whether the allowed tracing urls list is used"
+                },
+                "use_allowed_graph_ql_urls": {
+                  "type": "boolean",
+                  "description": "Whether the allowed GraphQL urls list is used"
+                },
+                "use_track_graph_ql_payload": {
+                  "type": "boolean",
+                  "description": "Whether GraphQL payload tracking is used for at least one GraphQL endpoint"
+                },
+                "use_track_graph_ql_response_errors": {
+                  "type": "boolean",
+                  "description": "Whether GraphQL response errors tracking is used for at least one GraphQL endpoint"
                 },
                 "selected_tracing_propagators": {
                   "type": "array",
@@ -479,6 +496,34 @@
                 "remote_configuration_id": {
                   "type": "string",
                   "description": "The id of the remote configuration",
+                  "readOnly": false
+                },
+                "use_remote_configuration_proxy": {
+                  "type": "boolean",
+                  "description": "Whether a proxy is used for remote configuration",
+                  "readOnly": false
+                },
+                "profiling_sample_rate": {
+                  "type": "number",
+                  "description": "The percentage of sessions with Profiling enabled",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "readOnly": false
+                },
+                "propagate_trace_baggage": {
+                  "type": "boolean",
+                  "description": "Whether trace baggage is propagated to child spans",
+                  "readOnly": false
+                },
+                "track_resource_headers": {
+                  "type": "string",
+                  "description": "How the SDK tracks resource request/response headers",
+                  "enum": ["default_headers", "custom"],
+                  "readOnly": false
+                },
+                "beta_encode_cookie_options": {
+                  "type": "boolean",
+                  "description": "Whether the beta encode cookie options is enabled",
                   "readOnly": false
                 }
               }

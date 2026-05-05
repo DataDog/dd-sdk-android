@@ -400,7 +400,8 @@ public class DDSpanContext
     this.topLevel = isTopLevel(parentServiceName, this.serviceName);
   }
 
-  // TODO this logic is inconsistent with hasResourceName
+  // TODO RUM-13454 this logic is inconsistent with hasResourceName, to be fixed in the next major
+  //  release. See https://github.com/DataDog/dd-sdk-android/pull/3244
   public CharSequence getResourceName() {
     return isResourceNameSet() ? resourceName : operationName;
   }

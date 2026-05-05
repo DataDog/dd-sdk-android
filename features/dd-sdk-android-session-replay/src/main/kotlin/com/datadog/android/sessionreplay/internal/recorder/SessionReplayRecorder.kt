@@ -36,6 +36,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGenerator
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceDrawableKeyGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
 import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
@@ -138,7 +139,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         val bitmapCachesManager = BitmapCachesManager(
             bitmapPool = BitmapPool(),
             resourcesLRUCache = ResourcesLRUCache(),
-            logger = internalLogger
+            logger = internalLogger,
+            keyGenerator = ResourceDrawableKeyGenerator()
         )
 
         this.resourceResolver = ResourceResolver(

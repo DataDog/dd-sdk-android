@@ -46,6 +46,11 @@ internal class DatadogSiteTest {
     }
 
     @Test
+    fun `M return intake endpoint W intakeEndpoint {US2-FED}`() {
+        assertThat(DatadogSite.US2_FED.intakeEndpoint).isEqualTo("https://browser-intake-us2-ddog-gov.com")
+    }
+
+    @Test
     fun `M return intake endpoint W intakeEndpoint {EU1}`() {
         assertThat(DatadogSite.EU1.intakeEndpoint).isEqualTo("https://browser-intake-datadoghq.eu")
     }

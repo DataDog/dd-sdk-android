@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum.internal.monitor
 
 import android.app.Activity
@@ -24,6 +26,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
@@ -40,7 +43,6 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -66,6 +68,8 @@ import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.operations.FailureReason
+import com.datadog.android.rum.operations.OperationOptions
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
@@ -75,12 +79,13 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import com.datadog.android.rum.featureoperations.FailureReason as DeprecatedFailureReason
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class DatadogRumMonitor(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
-    internal val sampleRate: Float,
+    internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
@@ -108,7 +113,7 @@ internal class DatadogRumMonitor(
     internal var rootScope = RumApplicationScope(
         applicationId = applicationId,
         sdkCore = sdkCore,
-        sampleRate = sampleRate,
+        sessionSampler = sessionSampler,
         backgroundTrackingEnabled = backgroundTrackingEnabled,
         trackFrustrations = trackFrustrations,
         firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
@@ -633,6 +638,20 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun reportNetworkingLibraryType(type: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType) {
+        handleEvent(
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(type))
+        )
+    }
+
+    override fun notifyResourceHeadersTrackingConfigured(
+        mode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
+    ) {
+        handleEvent(
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ResourceHeadersTrackingConfigured(mode))
+        )
+    }
+
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
@@ -686,14 +705,25 @@ internal class DatadogRumMonitor(
 
     // endregion
 
-    // region Feature Operations
+    // region Operations
+
+    @OptIn(ExperimentalRumApi::class)
+    @Deprecated("Use startOperation instead.", replaceWith = ReplaceWith("startOperation"))
+    override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        startOperation(name, operationKey, OperationOptions.Empty, attributes)
+    }
 
     @ExperimentalRumApi
-    override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        if (!featureOperationArgumentsValid(name, operationKey)) return
+    override fun startOperation(
+        name: String,
+        operationKey: String?,
+        options: OperationOptions,
+        attributes: Map<String, Any?>
+    ) {
+        if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
-            RumRawEvent.StartFeatureOperation(
+            RumRawEvent.StartOperation(
                 name,
                 operationKey,
                 attributes.toMap(),
@@ -701,17 +731,27 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) started."
+            "Operation `$name` (operationKey `$operationKey`) started."
         }
-        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.START)
+        sdkCore.internalLogger.reportOperationApiUsage(ActionType.START)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Deprecated("Use succeedOperation instead.", replaceWith = ReplaceWith("succeedOperation"))
+    override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        succeedOperation(name, operationKey, attributes)
     }
 
     @ExperimentalRumApi
-    override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        if (!featureOperationArgumentsValid(name, operationKey)) return
+    override fun succeedOperation(
+        name: String,
+        operationKey: String?,
+        attributes: Map<String, Any?>
+    ) {
+        if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
-            RumRawEvent.StopFeatureOperation(
+            RumRawEvent.StopOperation(
                 name,
                 operationKey,
                 attributes.toMap(),
@@ -720,22 +760,40 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
+            "Operation `$name` (operationKey `$operationKey`) successfully ended."
         }
-        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.SUCCEED)
+        sdkCore.internalLogger.reportOperationApiUsage(ActionType.SUCCEED)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Deprecated("Use failOperation instead.", replaceWith = ReplaceWith("failOperation"))
+    override fun failFeatureOperation(
+        name: String,
+        operationKey: String?,
+        // when removing this remove @Suppress("DEPRECATION") also at the file level (for the import)
+        @Suppress("DEPRECATION") failureReason: DeprecatedFailureReason,
+        attributes: Map<String, Any?>
+    ) {
+        @Suppress("DEPRECATION")
+        val newFailureReason = when (failureReason) {
+            DeprecatedFailureReason.ERROR -> FailureReason.ERROR
+            DeprecatedFailureReason.ABANDONED -> FailureReason.ABANDONED
+            DeprecatedFailureReason.OTHER -> FailureReason.OTHER
+        }
+        failOperation(name, operationKey, newFailureReason, attributes)
     }
 
     @ExperimentalRumApi
-    override fun failFeatureOperation(
+    override fun failOperation(
         name: String,
         operationKey: String?,
         failureReason: FailureReason,
         attributes: Map<String, Any?>
     ) {
-        if (!featureOperationArgumentsValid(name, operationKey)) return
+        if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
-            RumRawEvent.StopFeatureOperation(
+            RumRawEvent.StopOperation(
                 name,
                 operationKey,
                 attributes.toMap(),
@@ -744,23 +802,23 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
+            "Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
                 " with the following failure reason: $failureReason."
         }
-        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
+        sdkCore.internalLogger.reportOperationApiUsage(ActionType.FAIL)
     }
 
-    private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
+    private fun operationArgumentsValid(name: String, operationKey: String?) = when {
         name.isBlank() -> {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
-                FO_ERROR_INVALID_NAME.format(Locale.US, name)
+                OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
             }
             false
         }
 
         operationKey?.isBlank() == true -> {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
-                FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+                OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
             }
             false
         }
@@ -796,9 +854,10 @@ internal class DatadogRumMonitor(
                     val (datadogContext, eventWriteScope) = writeContext
                     @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                     rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
-                    val currentFeatureContext = currentRumContext()
+                    val rumContext = currentRumContext()
                     sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-                        it.putAll(currentFeatureContext.toMap())
+                        it.clear()
+                        rumContext?.toMap()?.let(it::putAll)
                     }
                 } else {
                     sdkCore.internalLogger.log(
@@ -815,7 +874,8 @@ internal class DatadogRumMonitor(
                 ?.withWriteContext(
                     withFeatureContexts = setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        Feature.PROFILING_FEATURE_NAME
+                        Feature.PROFILING_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ) { datadogContext, writeScope ->
                     // avoid trowing a RejectedExecutionException
@@ -826,7 +886,7 @@ internal class DatadogRumMonitor(
                         val future = executorService.submitSafe(
                             "Rum event handling",
                             sdkCore.internalLogger,
-                            NamedCallable<RumContext>("${event::class.simpleName}") {
+                            NamedCallable("${event::class.simpleName}") {
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
@@ -835,11 +895,10 @@ internal class DatadogRumMonitor(
                             }
                         )
                         val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
-                        if (rumContext != null) {
-                            // we are on the context thread already, so useContextThread=false
-                            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                                it.putAll(rumContext.toMap())
-                            }
+                        // we are on the context thread already, so useContextThread=false
+                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+                            it.clear()
+                            rumContext?.toMap()?.let(it::putAll)
                         }
                     }
                 }
@@ -885,12 +944,11 @@ internal class DatadogRumMonitor(
         }
     }
 
-    private fun currentRumContext(): RumContext {
-        val activeSession = rootScope.activeSession
-        val context = activeSession?.activeView?.getRumContext()
-            ?: activeSession?.getRumContext()
-            ?: rootScope.getRumContext()
-        return context
+    private fun currentRumContext(): RumContext? {
+        val activeSession = rootScope.activeSession ?: return null
+        val context = activeSession.activeView?.getRumContext()
+            ?: activeSession.getRumContext()
+        return if (context.sessionId == RumContext.NULL_UUID) null else context
     }
 
     internal fun notifyDebugListenerWithState() {
@@ -945,13 +1003,13 @@ internal class DatadogRumMonitor(
         internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
             "Cannot write JVM crash, because write context is not available."
 
-        internal const val FO_ERROR_INVALID_NAME =
-            "Feature operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+        internal const val OPERATION_ERROR_INVALID_NAME =
+            "Operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
-        internal const val FO_ERROR_INVALID_OPERATION_KEY =
-            "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+        internal const val OPERATION_ERROR_INVALID_OPERATION_KEY =
+            "Operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
-        private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
+        private fun InternalLogger.reportOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)
         }
     }

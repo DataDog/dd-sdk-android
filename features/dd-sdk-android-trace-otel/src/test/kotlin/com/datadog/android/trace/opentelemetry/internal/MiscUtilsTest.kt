@@ -9,7 +9,7 @@ package com.datadog.android.trace.opentelemetry.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
-import com.datadog.android.trace.opentelemetry.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

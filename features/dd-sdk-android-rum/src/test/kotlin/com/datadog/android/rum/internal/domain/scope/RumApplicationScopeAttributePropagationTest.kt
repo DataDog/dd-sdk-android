@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -136,6 +137,9 @@ internal class RumApplicationScopeAttributePropagationTest {
     @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
 
+    @Mock
+    lateinit var mockSessionSampler: Sampler<String>
+
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -197,10 +201,12 @@ internal class RumApplicationScopeAttributePropagationTest {
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
         whenever(rumMonitor.mockSdkCore.timeProvider) doReturn mock()
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
             sdkCore = rumMonitor.mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostHeaderTypeResolver = mockResolver,

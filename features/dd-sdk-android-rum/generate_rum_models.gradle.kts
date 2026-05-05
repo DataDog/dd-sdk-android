@@ -18,6 +18,7 @@ createJsonModelsGenerationTask("generateRumModelsFromJson") {
         "_view-container-schema.json",
         "_view-accessibility-schema.json",
         "_view-performance-schema.json",
+        "_view-properties-schema.json",
         "_vital-common-schema.json"
     )
     inputNameMapping = mapOf(
