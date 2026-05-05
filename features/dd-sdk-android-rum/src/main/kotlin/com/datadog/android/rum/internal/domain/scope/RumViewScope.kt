@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -89,7 +90,8 @@ internal open class RumViewScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val viewIdentityResolver: ViewIdentityResolver
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -182,6 +184,16 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
+
+        viewIdentityResolver.setCurrentScreen(url)
+
+        val rumContext = parentScope.getRumContext()
+        if (rumContext.syntheticsTestId != null) {
+            logSynthetics("_dd.application.id", rumContext.applicationId)
+            logSynthetics("_dd.session.id", rumContext.sessionId)
+            logSynthetics("_dd.view.id", viewId)
+        }
+
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
         slowFramesListener?.onViewCreated(viewId, startedNanos)
@@ -472,7 +484,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            viewIdentityResolver = viewIdentityResolver
         )
     }
 
@@ -1676,7 +1689,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            viewIdentityResolver: ViewIdentityResolver
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1713,7 +1727,8 @@ internal open class RumViewScope(
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                viewIdentityResolver = viewIdentityResolver
             )
         }
 

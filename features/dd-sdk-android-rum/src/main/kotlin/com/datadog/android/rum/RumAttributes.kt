@@ -100,6 +100,31 @@ object RumAttributes {
      */
     const val INTERNAL_INSTRUMENTATION_TYPE: String = "_dd.instrumentation_type"
 
+    /**
+     * Stable view identity for heatmap correlation (maps to schema field permanent_id).
+     */
+    internal const val INTERNAL_ACTION_TARGET_IDENTITY: String = "_dd.action.target.permanent_id"
+
+    /**
+     * Width of the action target element (in pixels).
+     */
+    internal const val INTERNAL_ACTION_TARGET_WIDTH: String = "_dd.action.target.width"
+
+    /**
+     * Height of the action target element (in pixels).
+     */
+    internal const val INTERNAL_ACTION_TARGET_HEIGHT: String = "_dd.action.target.height"
+
+    /**
+     * X coordinate of the touch position relative to the target element (in pixels).
+     */
+    internal const val INTERNAL_ACTION_POSITION_X: String = "_dd.action.position.x"
+
+    /**
+     * Y coordinate of the touch position relative to the target element (in pixels).
+     */
+    internal const val INTERNAL_ACTION_POSITION_Y: String = "_dd.action.position.y"
+
     // endregion
 
     // region Resource

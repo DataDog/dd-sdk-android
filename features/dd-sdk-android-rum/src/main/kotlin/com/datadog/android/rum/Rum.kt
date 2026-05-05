@@ -171,7 +171,8 @@ object Rum {
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )
             },
-            insightsCollector = rumFeature.insightsCollector
+            insightsCollector = rumFeature.insightsCollector,
+            viewIdentityResolver = rumFeature.viewIdentityResolver
         )
     }
 

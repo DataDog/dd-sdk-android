@@ -36,6 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -100,7 +101,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
@@ -108,7 +111,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -171,7 +175,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
@@ -179,7 +185,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -234,11 +241,15 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes1 = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStartAttributes2 = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStopAttributes1 = expectedStartAttributes1 +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection1)
@@ -249,7 +260,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -322,7 +334,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes1 = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
 
         val expectedStopAttributes1 = expectedStartAttributes1 +
@@ -332,7 +346,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -399,13 +414,16 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(nonScrollingTarget, expectedResourceName)
         val expectedStartAttributes = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to nonScrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to nonScrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to nonScrollingTarget.height.toLong()
         )
         testedListener = GesturesListener(
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -416,8 +434,23 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .addAction(RumActionType.TAP, "", expectedStartAttributes)
+        verify(rumMonitor.mockInstance).addAction(
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
+                    expectedStartAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
+                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
+                    expectedStartAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
+                val widthMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH] ==
+                    expectedStartAttributes[RumAttributes.INTERNAL_ACTION_TARGET_WIDTH]
+                val heightMatches = attributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT] ==
+                    expectedStartAttributes[RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT]
+                classMatches && resourceMatches && widthMatches && heightMatches &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_X) &&
+                    attributes.containsKey(RumAttributes.INTERNAL_ACTION_POSITION_Y)
+            }
+        )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
@@ -452,7 +485,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -505,7 +539,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -568,7 +603,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -634,7 +670,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
@@ -642,7 +680,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -712,7 +751,9 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.simpleName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
@@ -720,7 +761,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -780,7 +822,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -843,7 +886,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -906,7 +950,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -969,11 +1014,15 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         val expectedStartAttributes1 = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStartAttributes2 = mutableMapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollingTarget.javaClass.canonicalName,
-            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName,
+            RumAttributes.INTERNAL_ACTION_TARGET_WIDTH to scrollingTarget.width.toLong(),
+            RumAttributes.INTERNAL_ACTION_TARGET_HEIGHT to scrollingTarget.height.toLong()
         )
         val expectedStopAttributes1 = expectedStartAttributes1 +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection1)
@@ -983,7 +1032,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -1043,7 +1093,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)
@@ -1088,7 +1139,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             contextRef = WeakReference(mockAppContext),
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
             composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         // When
@@ -1165,7 +1217,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            viewIdentityResolver = mockViewIdentityResolver
         )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         whenever(
@@ -1204,6 +1257,242 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
+
+    // region View Identity Tests
+
+    @Test
+    fun `M include view identity W onScroll() { viewIdentityResolver returns value }`(
+        forge: Forge
+    ) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val fakeViewIdentity = forge.anAlphabeticalString(size = 32)
+        val expectedDirection = GesturesListener.SCROLL_DIRECTION_DOWN
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val scrollingTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        whenever(mockViewIdentityResolver.resolveViewIdentity(scrollingTarget)).thenReturn(fakeViewIdentity)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            argThat {
+                this[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] == fakeViewIdentity
+            }
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            argThat {
+                this[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] == fakeViewIdentity
+            }
+        )
+    }
+
+    @Test
+    fun `M not include view identity W onScroll() { viewIdentityResolver returns null }`(
+        forge: Forge
+    ) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val expectedDirection = GesturesListener.SCROLL_DIRECTION_DOWN
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val scrollingTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        whenever(mockViewIdentityResolver.resolveViewIdentity(scrollingTarget)).thenReturn(null)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            argThat {
+                !this.containsKey(RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY)
+            }
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            argThat {
+                !this.containsKey(RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY)
+            }
+        )
+    }
+
+    @Test
+    fun `M include view identity W onSwipe() { viewIdentityResolver returns value }`(
+        forge: Forge
+    ) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val fakeViewIdentity = forge.anAlphabeticalString(size = 32)
+        val expectedDirection = GesturesListener.SCROLL_DIRECTION_DOWN
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val scrollingTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        whenever(mockViewIdentityResolver.resolveViewIdentity(scrollingTarget)).thenReturn(fakeViewIdentity)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onFling(startDownEvent, endUpEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            argThat {
+                this[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] == fakeViewIdentity
+            }
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SWIPE),
+            any(),
+            argThat {
+                this[RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY] == fakeViewIdentity
+            }
+        )
+    }
+
+    @Test
+    fun `M not include view identity W onSwipe() { viewIdentityResolver returns null }`(
+        forge: Forge
+    ) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val expectedDirection = GesturesListener.SCROLL_DIRECTION_DOWN
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val scrollingTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        whenever(mockViewIdentityResolver.resolveViewIdentity(scrollingTarget)).thenReturn(null)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            viewIdentityResolver = mockViewIdentityResolver
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onFling(startDownEvent, endUpEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            argThat {
+                !this.containsKey(RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY)
+            }
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SWIPE),
+            any(),
+            argThat {
+                !this.containsKey(RumAttributes.INTERNAL_ACTION_TARGET_IDENTITY)
+            }
+        )
+    }
+
+    // endregion
 
     // endregion
 

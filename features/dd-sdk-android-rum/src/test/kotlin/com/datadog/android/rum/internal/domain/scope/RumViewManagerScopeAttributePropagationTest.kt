@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -148,6 +149,9 @@ internal class RumViewManagerScopeAttributePropagationTest {
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
 
+    @Mock
+    lateinit var mockViewIdentityResolver: ViewIdentityResolver
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeParentAttributes = forge.exhaustiveAttributes()
@@ -176,7 +180,8 @@ internal class RumViewManagerScopeAttributePropagationTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = fakeRumSessionType,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
     }
 

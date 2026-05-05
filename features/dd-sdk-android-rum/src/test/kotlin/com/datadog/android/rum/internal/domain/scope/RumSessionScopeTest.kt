@@ -20,6 +20,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
@@ -127,6 +128,9 @@ internal class RumSessionScopeTest {
 
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
+    lateinit var mockViewIdentityResolver: ViewIdentityResolver
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
@@ -1786,7 +1790,8 @@ internal class RumSessionScopeTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager },
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
 
         if (withMockChildScope) {

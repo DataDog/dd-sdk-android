@@ -34,6 +34,9 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.identity.NoOpViewIdentityResolver
+import com.datadog.android.internal.identity.ViewIdentityResolver
+import com.datadog.android.internal.identity.ViewIdentityResolverImpl
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.isMainThread
@@ -178,6 +181,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    internal var viewIdentityResolver: ViewIdentityResolver = NoOpViewIdentityResolver()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -222,6 +226,12 @@ internal class RumFeature(
         telemetryConfigurationSampleRate = configuration.telemetryConfigurationSampleRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
+        viewIdentityResolver = ViewIdentityResolverImpl(appContext.packageName)
+        // Store in feature context for cross-feature access (e.g., Session Replay)
+        sdkCore.updateFeatureContext(name) { context ->
+            context[ViewIdentityResolver.FEATURE_CONTEXT_KEY] = viewIdentityResolver
+        }
+
         batteryInfoProvider = DefaultBatteryInfoProvider(
             applicationContext = appContext,
             timeProvider = sdkCore.timeProvider
@@ -238,7 +248,8 @@ internal class RumFeature(
                 configuration.interactionPredicate,
                 composeActionTrackingStrategy = configuration.composeActionTrackingStrategy,
                 buildSdkVersionProvider,
-                sdkCore.internalLogger
+                sdkCore.internalLogger,
+                viewIdentityResolver
             )
         } else {
             NoOpUserActionTrackingStrategy()
@@ -354,6 +365,7 @@ internal class RumFeature(
         anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
+        viewIdentityResolver = NoOpViewIdentityResolver()
 
         cleanupInfoProviders()
 
@@ -863,14 +875,16 @@ internal class RumFeature(
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
             buildSdkVersionProvider: BuildSdkVersionProvider,
-            internalLogger: InternalLogger
+            internalLogger: InternalLogger,
+            viewIdentityResolver: ViewIdentityResolver
         ): UserActionTrackingStrategy {
             val gesturesTracker =
                 provideGestureTracker(
                     customProviders = touchTargetExtraAttributesProviders,
                     interactionPredicate = interactionPredicate,
                     composeActionTrackingStrategy = composeActionTrackingStrategy,
-                    internalLogger = internalLogger
+                    internalLogger = internalLogger,
+                    viewIdentityResolver = viewIdentityResolver
                 )
             return if (buildSdkVersionProvider.isAtLeastQ) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
@@ -883,7 +897,8 @@ internal class RumFeature(
             customProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
-            internalLogger: InternalLogger
+            internalLogger: InternalLogger,
+            viewIdentityResolver: ViewIdentityResolver
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
@@ -891,7 +906,8 @@ internal class RumFeature(
                 providers,
                 interactionPredicate,
                 composeActionsTrackingStrategy = composeActionTrackingStrategy,
-                internalLogger
+                internalLogger,
+                viewIdentityResolver
             )
         }
 

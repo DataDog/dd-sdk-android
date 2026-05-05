@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -19,7 +20,8 @@ internal class DatadogGesturesTracker(
     internal val targetAttributesProviders: Array<ViewAttributesProvider>,
     internal val interactionPredicate: InteractionPredicate,
     private val composeActionsTrackingStrategy: ActionTrackingStrategy,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val viewIdentityResolver: ViewIdentityResolver
 ) : GesturesTracker {
 
     // region GesturesTracker
@@ -109,7 +111,8 @@ internal class DatadogGesturesTracker(
                 interactionPredicate = interactionPredicate,
                 contextRef = WeakReference(context),
                 composeActionTrackingStrategy = composeActionsTrackingStrategy,
-                internalLogger = internalLogger
+                internalLogger = internalLogger,
+                viewIdentityResolver = viewIdentityResolver
             )
         )
     }

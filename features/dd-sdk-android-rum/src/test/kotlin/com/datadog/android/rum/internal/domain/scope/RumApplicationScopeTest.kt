@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
@@ -105,6 +106,9 @@ internal class RumApplicationScopeTest {
 
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
+
+    @Mock
+    lateinit var mockViewIdentityResolver: ViewIdentityResolver
 
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
@@ -198,7 +202,8 @@ internal class RumApplicationScopeTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewIdentityResolver = mockViewIdentityResolver
         )
     }
 
