@@ -66,6 +66,15 @@ stages:
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
+  run-ndk-instrumented:
+    - set +e
+    - exit_code=0
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - GRADLE_OPTS="-Xmx3072m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :features:dd-sdk-android-ndk:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - $ANDROID_HOME/platform-tools/adb emu kill
+    - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname features/dd-sdk-android-ndk/build/outputs/androidTest-results/connected/debug/
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
   set-publishing-credentials:
     - !reference [.snippets, source-secrets]
     - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
@@ -371,6 +380,21 @@ test-pyramid:legacy-integration-instrumented-median-api:
   script:
     - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-legacy-integration-instrumented]
+
+test-pyramid:ndk-instrumented-latest-api:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "macos:sonoma", "specific:true" ]
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "36"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, setup-macos-ami-runner]
+    - !reference [.snippets, run-ndk-instrumented]
 
 test-pyramid:detekt-api-coverage:
   extends:
