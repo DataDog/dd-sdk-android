@@ -24,6 +24,7 @@ internal class CallbackNetworkInfoProvider(
     ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
 
+    @Volatile
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
 
     // region NetworkCallback

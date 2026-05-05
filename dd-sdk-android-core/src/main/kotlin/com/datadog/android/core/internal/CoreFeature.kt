@@ -203,6 +203,7 @@ internal class CoreFeature(
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
     internal lateinit var contextExecutorService: ThreadPoolExecutor
+    internal lateinit var broadcastReceiverExecutorService: ExecutorService
     internal lateinit var backpressureStrategy: BackPressureStrategy
 
     internal var localDataEncryption: Encryption? = null
@@ -379,6 +380,9 @@ internal class CoreFeature(
         ioTasks.forEach {
             it.run()
         }
+
+        broadcastReceiverExecutorService.shutdown()
+        broadcastReceiverExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
     }
 
     // region Internal
@@ -593,7 +597,10 @@ internal class CoreFeature(
         trackingConsentProvider = TrackingConsentProvider(consent)
 
         // System Info Provider
-        systemInfoProvider = BroadcastReceiverSystemInfoProvider(internalLogger = internalLogger)
+        systemInfoProvider = BroadcastReceiverSystemInfoProvider(
+            internalLogger = internalLogger,
+            executorService = broadcastReceiverExecutorService
+        )
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
@@ -610,7 +617,10 @@ internal class CoreFeature(
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
             CallbackNetworkInfoProvider(internalLogger = internalLogger)
         } else {
-            BroadcastReceiverNetworkInfoProvider()
+            BroadcastReceiverNetworkInfoProvider(
+                internalLogger = internalLogger,
+                executorService = broadcastReceiverExecutorService
+            )
         }
         networkInfoProvider.register(appContext)
     }
@@ -655,6 +665,12 @@ internal class CoreFeature(
         persistenceExecutorService = executorServiceFactory.create(
             internalLogger = internalLogger,
             executorContext = "storage",
+            backPressureStrategy = backpressureStrategy,
+            timeProvider = timeProvider
+        )
+        broadcastReceiverExecutorService = executorServiceFactory.create(
+            internalLogger = internalLogger,
+            executorContext = "broadcast-receiver",
             backPressureStrategy = backpressureStrategy,
             timeProvider = timeProvider
         )
@@ -707,11 +723,13 @@ internal class CoreFeature(
         uploadExecutorService.shutdownNow()
         contextExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
+        broadcastReceiverExecutorService.shutdownNow()
 
         try {
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             contextExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+            broadcastReceiverExecutorService.awaitTermination(1, TimeUnit.SECONDS)
         } catch (e: InterruptedException) {
             try {
                 // Restore the interrupted status

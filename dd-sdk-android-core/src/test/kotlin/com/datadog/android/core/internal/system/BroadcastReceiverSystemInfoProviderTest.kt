@@ -11,6 +11,10 @@ import android.content.Intent
 import android.os.BatteryManager
 import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.core.internal.thread.BackPressureExecutorService
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.utils.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -43,8 +47,11 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
+import org.assertj.core.api.Assertions.assertThat as assertThatString
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -68,15 +75,23 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
+
     @IntForgery
     var fakePluggedStatus: Int = 0
 
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
+        whenever(mockExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
 
-        testedProvider =
-            BroadcastReceiverSystemInfoProvider(mockInternalLogger)
+        testedProvider = BroadcastReceiverSystemInfoProvider(
+            internalLogger = mockInternalLogger,
+            executorService = mockExecutorService
+        )
     }
 
     @Test
@@ -471,6 +486,50 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         assertDoesNotThrow {
             testedProvider.onReceive(mockContext, intent)
         }
+    }
+
+    @Test
+    fun `M dispatch onReceive on background broadcast-receiver thread W onReceive() {real executor}`() {
+        // Given
+        val fakeBackPressureStrategy = BackPressureStrategy(
+            capacity = 128,
+            onThresholdReached = {},
+            onItemDropped = {},
+            backpressureMitigation = BackPressureMitigation.IGNORE_NEWEST
+        )
+        val realExecutor = BackPressureExecutorService(
+            logger = mockInternalLogger,
+            executorContext = "broadcast-receiver",
+            backpressureStrategy = fakeBackPressureStrategy,
+            timeProvider = DefaultTimeProvider()
+        )
+        val capturedThreadName = AtomicReference<String>()
+        val latch = CountDownLatch(1)
+
+        val batteryIntent: Intent = mock()
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+        whenever(batteryIntent.getIntExtra(any(), any())) doAnswer {
+            capturedThreadName.set(Thread.currentThread().name)
+            latch.countDown()
+            it.arguments[1] as Int
+        }
+        whenever(batteryIntent.getBooleanExtra(any(), any())) doAnswer {
+            it.arguments[1] as Boolean
+        }
+
+        val provider = BroadcastReceiverSystemInfoProvider(
+            internalLogger = mockInternalLogger,
+            executorService = realExecutor
+        )
+
+        // When
+        provider.onReceive(mockContext, batteryIntent)
+        latch.await(3, TimeUnit.SECONDS)
+        realExecutor.shutdown()
+        realExecutor.awaitTermination(3, TimeUnit.SECONDS)
+
+        // Then
+        assertThatString(capturedThreadName.get()).startsWith("datadog-broadcast-receiver-thread-")
     }
 
     // endregion

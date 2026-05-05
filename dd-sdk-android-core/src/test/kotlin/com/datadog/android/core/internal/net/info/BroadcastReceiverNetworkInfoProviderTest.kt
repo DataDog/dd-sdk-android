@@ -12,8 +12,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.telephony.TelephonyManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -29,15 +34,20 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Stream
 import android.net.NetworkInfo as AndroidNetworkInfo
+import org.assertj.core.api.Assertions.assertThat as assertThatString
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -68,6 +78,12 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
+
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -76,8 +92,15 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
         whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
+        whenever(mockExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
 
-        testedProvider = BroadcastReceiverNetworkInfoProvider(mockBuildSdkVersionProvider)
+        testedProvider = BroadcastReceiverNetworkInfoProvider(
+            internalLogger = mockInternalLogger,
+            executorService = mockExecutorService,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
     }
 
     @Test
@@ -465,6 +488,46 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCarrierName(null)
             .hasCarrierId(null)
             .hasCellularTechnology(null)
+    }
+
+    @Test
+    fun `M dispatch onReceive on background broadcast-receiver thread W onReceive() {real executor}`() {
+        // Given
+        val fakeBackPressureStrategy = BackPressureStrategy(
+            capacity = 128,
+            onThresholdReached = {},
+            onItemDropped = {},
+            backpressureMitigation = BackPressureMitigation.IGNORE_NEWEST
+        )
+        val realExecutor = BackPressureExecutorService(
+            logger = mockInternalLogger,
+            executorContext = "broadcast-receiver",
+            backpressureStrategy = fakeBackPressureStrategy,
+            timeProvider = DefaultTimeProvider()
+        )
+        val capturedThreadName = AtomicReference<String>()
+        val latch = CountDownLatch(1)
+
+        whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE)) doAnswer {
+            capturedThreadName.set(Thread.currentThread().name)
+            latch.countDown()
+            mockConnectivityManager
+        }
+
+        val provider = BroadcastReceiverNetworkInfoProvider(
+            internalLogger = mockInternalLogger,
+            executorService = realExecutor,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+
+        // When
+        provider.onReceive(mockContext, mockIntent)
+        latch.await(3, TimeUnit.SECONDS)
+        realExecutor.shutdown()
+        realExecutor.awaitTermination(3, TimeUnit.SECONDS)
+
+        // Then
+        assertThatString(capturedThreadName.get()).startsWith("datadog-broadcast-receiver-thread-")
     }
 
     // region Internal
