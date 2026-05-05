@@ -215,25 +215,25 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
         override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean = true
 
-        override fun <T : Any?> submit(task: Callable<T>?): Future<T>? = null
+        override fun <T> submit(task: Callable<T>?): Future<T>? = null
 
-        override fun <T : Any?> submit(task: Runnable?, result: T): Future<T>? = null
+        override fun <T> submit(task: Runnable?, result: T): Future<T>? = null
 
         override fun submit(task: Runnable?): Future<*>? = null
 
-        override fun <T : Any?> invokeAll(
+        override fun <T> invokeAll(
             tasks: MutableCollection<out Callable<T>>?
         ): MutableList<Future<T>> = mutableListOf()
 
-        override fun <T : Any?> invokeAll(
+        override fun <T> invokeAll(
             tasks: MutableCollection<out Callable<T>>?,
             timeout: Long,
             unit: TimeUnit?
         ): MutableList<Future<T>> = mutableListOf()
 
-        override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? = null
+        override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? = null
 
-        override fun <T : Any?> invokeAny(
+        override fun <T> invokeAny(
             tasks: MutableCollection<out Callable<T>>?,
             timeout: Long,
             unit: TimeUnit?
@@ -253,31 +253,31 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
         override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean = true
 
-        override fun <T : Any?> submit(task: Callable<T>?): Future<T>? = null
+        override fun <T> submit(task: Callable<T>?): Future<T>? = null
 
-        override fun <T : Any?> submit(task: Runnable?, result: T): Future<T>? = null
+        override fun <T> submit(task: Runnable?, result: T): Future<T>? = null
 
         override fun submit(task: Runnable?): Future<*>? = null
 
-        override fun <T : Any?> invokeAll(
+        override fun <T> invokeAll(
             tasks: MutableCollection<out Callable<T>>?
         ): MutableList<Future<T>> = mutableListOf()
 
-        override fun <T : Any?> invokeAll(
+        override fun <T> invokeAll(
             tasks: MutableCollection<out Callable<T>>?,
             timeout: Long,
             unit: TimeUnit?
         ): MutableList<Future<T>> = mutableListOf()
 
-        override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? = null
+        override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? = null
 
-        override fun <T : Any?> invokeAny(
+        override fun <T> invokeAny(
             tasks: MutableCollection<out Callable<T>>?,
             timeout: Long,
             unit: TimeUnit?
         ): T? = null
 
-        override fun <V : Any?> schedule(callable: Callable<V>?, delay: Long, unit: TimeUnit?): ScheduledFuture<V> {
+        override fun <V> schedule(callable: Callable<V>?, delay: Long, unit: TimeUnit?): ScheduledFuture<V> {
             return NoOpScheduledFuture()
         }
 

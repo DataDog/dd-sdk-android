@@ -7,7 +7,7 @@
 package com.datadog.android.internal.utils
 
 /**
- * Normalizes an Int value (font size, view dimension, view position, etc.) according with the
+ * Normalizes an Int value (font size, view dimension, view position, etc.) according to the
  * device pixels density.
  * Example: if a device has a DPI = 2, the normalized height of a view will be
  * view.height/2.

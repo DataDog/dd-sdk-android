@@ -15,7 +15,7 @@ package com.datadog.android.internal.profiler
  * @param block the lambda function traced by this newly created [BenchmarkSpan]
  *
  */
-inline fun <T : Any?> withinBenchmarkSpan(
+inline fun <T> withinBenchmarkSpan(
     operationName: String,
     additionalProperties: Map<String, String> = emptyMap(),
     block: BenchmarkSpan.() -> T

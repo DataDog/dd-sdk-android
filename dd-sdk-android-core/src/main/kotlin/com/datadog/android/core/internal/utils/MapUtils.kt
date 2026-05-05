@@ -17,7 +17,7 @@ internal fun <K, V> Iterable<Pair<K, V>>.toMutableMap(): MutableMap<K, V> {
 }
 
 /**
- * @return the [MutableMap] if its not `null`, or the empty [MutableMap] otherwise.
+ * @return the [MutableMap] if it is not `null`, or the empty [MutableMap] otherwise.
  */
 internal fun <K, V> MutableMap<K, V>?.orEmpty(): MutableMap<K, V> {
     return this ?: mutableMapOf()

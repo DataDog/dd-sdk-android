@@ -69,7 +69,7 @@ internal class GzipRequestInterceptor(private val internalLogger: InternalLogger
 
     // region Internal
 
-    private fun gzip(body: RequestBody): RequestBody? {
+    private fun gzip(body: RequestBody): RequestBody {
         return object : RequestBody() {
             override fun contentType(): MediaType? {
                 return body.contentType()

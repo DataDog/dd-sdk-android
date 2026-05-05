@@ -128,7 +128,7 @@ internal class RotatingDnsResolverTest {
     @RepeatedTest(30)
     fun `M not throw exception W concurrent access to lookup`(forge: Forge) {
         // Given
-        // we need to keep the list of addresses low as it can only be reproduced with low number and it reflects
+        // we need to keep the list of addresses low as it can only be reproduced with low number, and it reflects
         // the real use case where we have a small number of addresses to rotate
         fakeInetAddresses = forge.aList(size = forge.anInt(min = 1, max = 3)) { mock() }
         whenever(mockDelegate.lookup(fakeHostname)) doReturn fakeInetAddresses

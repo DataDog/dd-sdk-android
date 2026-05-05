@@ -9,7 +9,6 @@ package com.datadog.android.core.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
-import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
 import com.datadog.android.core.internal.metrics.BenchmarkUploads
@@ -97,9 +96,6 @@ internal class ConsentAwareStorageTest {
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
-
-    @Forgery
-    lateinit var fakeEventType: EventType
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeRootDirName: String

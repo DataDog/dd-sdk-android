@@ -148,7 +148,7 @@ interface com.datadog.android.internal.profiler.BenchmarkSpan
   fun stop()
 interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
   fun startSpan(): BenchmarkSpan
-fun <T: Any?> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
+fun <T> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
 interface com.datadog.android.internal.profiler.BenchmarkTracer
   fun spanBuilder(String, Map<String, String> = emptyMap()): BenchmarkSpanBuilder
 interface com.datadog.android.internal.profiler.ExecutionTimer

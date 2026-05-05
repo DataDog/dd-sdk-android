@@ -15,7 +15,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.verify
@@ -67,7 +66,7 @@ class NamedRunnableTest {
             expectedStringBuilder.append(fakeStringList[index])
             expectedStringBuilder.append("_")
         }
-        val mockRunnable = Mockito.mock<Runnable>()
+        val mockRunnable = mock<Runnable>()
 
         // When
         val testedRunnable = NamedRunnable(originalStringBuilder.toString(), mockRunnable)
