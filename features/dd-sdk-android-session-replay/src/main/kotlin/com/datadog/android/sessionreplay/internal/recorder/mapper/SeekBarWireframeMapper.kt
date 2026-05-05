@@ -82,12 +82,13 @@ internal open class SeekBarWireframeMapper(
         screenDensity: Float,
         thumbColor: Int
     ): MobileSegment.Wireframe? {
+        val thumb = view.thumb ?: return null
         val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
             ?: return null
         val backgroundColor = colorStringFormatter.formatColorAndAlphaAsHexString(thumbColor, OPAQUE_ALPHA_VALUE)
 
-        val thumbWidth = view.thumb.bounds.width().densityNormalized(screenDensity).toLong()
-        val thumbHeight = view.thumb.bounds.height().densityNormalized(screenDensity).toLong()
+        val thumbWidth = thumb.bounds.width().densityNormalized(screenDensity).toLong()
+        val thumbHeight = thumb.bounds.height().densityNormalized(screenDensity).toLong()
         return MobileSegment.Wireframe.ShapeWireframe(
             id = thumbId,
             x = (trackBounds.x + (trackBounds.width * normalizedProgress).toLong() - (thumbWidth / 2)),
