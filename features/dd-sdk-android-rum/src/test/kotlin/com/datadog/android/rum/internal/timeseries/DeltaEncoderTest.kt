@@ -65,6 +65,7 @@ internal class DeltaEncoderTest {
 
         // Then
         assertThat(result.get("precision").asInt).isEqualTo(4)
+        assertThat(result.get("resolution").asString).isEqualTo("ns")
 
         val ts = result.getAsJsonArray("ts")
         assertThat(ts[0].asLong).isEqualTo(1_000_000_000L)
@@ -111,6 +112,7 @@ internal class DeltaEncoderTest {
 
         // Then
         assertThat(result.get("precision").asInt).isEqualTo(4)
+        assertThat(result.get("resolution").asString).isEqualTo("ns")
 
         val ts = result.getAsJsonArray("ts")
         assertThat(ts[0].asLong).isEqualTo(1_000_000_000L)
