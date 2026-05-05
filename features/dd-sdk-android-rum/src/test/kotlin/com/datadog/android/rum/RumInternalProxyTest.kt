@@ -7,11 +7,13 @@
 package com.datadog.android.rum
 
 import android.app.Activity
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -98,24 +100,27 @@ internal class RumInternalProxyTest {
 
     @Test
     fun `M return RumNetworkInstrumentation W createInstrumentation()`(
-        @StringForgery fakeInstrumentationName: String
+        @StringForgery fakeInstrumentationName: String,
+        @Forgery fakeLibraryType: LibraryType
     ) {
         // Given
         val builder = RumNetworkInstrumentationConfiguration()
 
         // When
         val result = with(_RumInternalProxy.Companion) {
-            builder.createInstrumentation(fakeInstrumentationName)
+            builder.createInstrumentation(fakeInstrumentationName, fakeLibraryType)
         }
 
         // Then
         assertThat(result).isNotNull()
         assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
+        assertThat(result.libraryType).isEqualTo(fakeLibraryType)
     }
 
     @Test
     fun `M return RumNetworkInstrumentation W createRumNetworkInstrumentation()`(
-        @StringForgery fakeInstrumentationName: String
+        @StringForgery fakeInstrumentationName: String,
+        @Forgery fakeLibraryType: LibraryType
     ) {
         // Given
         val configuration = RumNetworkInstrumentationConfiguration()
@@ -123,11 +128,13 @@ internal class RumInternalProxyTest {
         // When
         val result = _RumInternalProxy.createRumNetworkInstrumentation(
             fakeInstrumentationName,
+            fakeLibraryType,
             configuration
         )
 
         // Then
         assertThat(result).isNotNull()
         assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
+        assertThat(result.libraryType).isEqualTo(fakeLibraryType)
     }
 }

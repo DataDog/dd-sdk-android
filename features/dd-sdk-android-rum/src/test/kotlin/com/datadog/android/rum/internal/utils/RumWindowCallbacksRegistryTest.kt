@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.utils
 
 import android.app.Activity
 import android.view.Window
-import com.datadog.android.rum.internal.FixedWindowCallback
+import com.datadog.android.internal.utils.FixedWindowCallback
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 import org.assertj.core.api.Assertions.assertThat

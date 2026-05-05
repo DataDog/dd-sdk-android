@@ -33,6 +33,7 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.TrackResourceHeaders
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
@@ -52,6 +53,7 @@ internal class TelemetryEventHandler(
 ) : RumSessionListener {
 
     private var trackNetworkRequests = false
+    private var trackResourceHeaders: TrackResourceHeaders? = null
 
     private val eventIDsSeenInCurrentSession = mutableSetOf<TelemetryEventId>()
     private var totalEventsSeenInCurrentSession = 0
@@ -71,7 +73,7 @@ internal class TelemetryEventHandler(
         if (!canWrite(event)) return
 
         eventIDsSeenInCurrentSession.add(event.identity)
-        totalEventsSeenInCurrentSession++
+        if (event !is InternalTelemetryEvent.Configuration) totalEventsSeenInCurrentSession++
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext(
             withFeatureContexts = setOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME,
@@ -141,6 +143,16 @@ internal class TelemetryEventHandler(
                     trackNetworkRequests = true
                     null
                 }
+
+                is InternalTelemetryEvent.ResourceHeadersTrackingConfigured -> {
+                    trackResourceHeaders = when (event.mode) {
+                        InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS ->
+                            TrackResourceHeaders.DEFAULT_HEADERS
+                        InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM ->
+                            TrackResourceHeaders.CUSTOM
+                    }
+                    null
+                }
             }
             if (telemetryEvent != null) {
                 writeScope {
@@ -161,8 +173,8 @@ internal class TelemetryEventHandler(
     private fun canWrite(event: InternalTelemetryEvent): Boolean {
         if (!eventSampler.sample(event)) return false
 
-        if (event is InternalTelemetryEvent.Configuration && !configurationExtraSampler.sample(event)) {
-            return false
+        if (event is InternalTelemetryEvent.Configuration) {
+            return configurationExtraSampler.sample(event)
         }
 
         val eventIdentity = event.identity
@@ -397,12 +409,14 @@ internal class TelemetryEventHandler(
                     tnsTimeThresholdMs = tnsTimeBasedThreshold,
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
-                    selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators()
+                    selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
+                    trackResourceHeaders = trackResourceHeaders
                 )
             )
         )
     }
 
+    @Suppress("LongMethod")
     private fun createApiUsageEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
@@ -431,6 +445,20 @@ internal class TelemetryEventHandler(
             }
             is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
                 TelemetryUsageEvent.Usage.TrackWebView()
+            }
+            is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
+                TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation(
+                    type = when (event.type) {
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.CRONET ->
+                            TelemetryUsageEvent.Type.CRONET
+
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.OKHTTP ->
+                            TelemetryUsageEvent.Type.OKHTTP
+
+                        InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP ->
+                            TelemetryUsageEvent.Type.LEGACY_OKHTTP
+                    }
+                )
             }
         }
 
@@ -484,7 +512,7 @@ internal class TelemetryEventHandler(
                     InternalLogger.Target.TELEMETRY,
                     {
                         "GlobalDatadogTracer class exists in the runtime classpath, " +
-                            "but there is an error invoking isRegistered method"
+                            "but there is an error invoking getOrNull method"
                     },
                     t
                 )

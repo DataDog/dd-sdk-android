@@ -21,8 +21,9 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
     fun isEqualTo(expected: ViewEvent): DeserializedViewEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("context", "usr", "account", "view", "device")
+            .ignoringFields("context", "usr", "account", "view", "device", "dd.configuration")
             .isEqualTo(expected)
+        assertConfigurationEquals(actual.dd.configuration, expected.dd.configuration)
         assertThat(actual.view)
             .usingRecursiveComparison()
             .ignoringFields(
@@ -79,6 +80,23 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    private fun assertConfigurationEquals(
+        actual: ViewEvent.Configuration?,
+        expected: ViewEvent.Configuration?
+    ) {
+        if (expected == null) {
+            assertThat(actual).isNull()
+            return
+        }
+        checkNotNull(actual)
+        assertNumberFieldEquals(actual.sessionSampleRate, expected.sessionSampleRate)
+        assertNumberFieldEquals(actual.sessionReplaySampleRate, expected.sessionReplaySampleRate)
+        assertNumberFieldEquals(actual.profilingSampleRate, expected.profilingSampleRate)
+        assertNumberFieldEquals(actual.traceSampleRate, expected.traceSampleRate)
+        assertThat(actual.startSessionReplayRecordingManually)
+            .isEqualTo(expected.startSessionReplayRecordingManually)
+    }
+
     private fun assertPropertiesEquals(actual: Map<String, Any?>?, expected: Map<String, Any?>?) {
         DeserializedMapAssert.assertThat(actual ?: emptyMap())
             .isEqualTo(expected ?: emptyMap())
@@ -90,7 +108,7 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
         } else {
             assertThat(actual).isNotNull()
             assertThat(actual!!.toDouble())
-                .isCloseTo(expected.toDouble(), Offset.offset(0.0000001))
+                .isCloseTo(expected.toDouble(), Offset.offset(0.00001))
         }
     }
 

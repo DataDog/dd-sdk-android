@@ -31,5 +31,6 @@ internal fun InternalTelemetryEvent.type(): TelemetryType {
         is InternalTelemetryEvent.Metric -> TelemetryType.METRIC
         is InternalTelemetryEvent.ApiUsage -> TelemetryType.API_USAGE
         is InternalTelemetryEvent.InterceptorInstantiated -> TelemetryType.INTERCEPTOR_SETUP
+        is InternalTelemetryEvent.ResourceHeadersTrackingConfigured -> TelemetryType.RESOURCE_HEADERS_SETUP
     }
 }

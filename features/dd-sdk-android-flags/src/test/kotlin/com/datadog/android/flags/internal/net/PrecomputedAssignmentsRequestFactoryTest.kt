@@ -24,6 +24,8 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -49,7 +51,10 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeDatadogContext = fakeDatadogContext.copy(
-            site = forge.aValueFrom(DatadogSite::class.java, exclude = listOf(DatadogSite.US1_FED)),
+            site = forge.aValueFrom(
+                DatadogSite::class.java,
+                exclude = listOf(DatadogSite.US1_FED, DatadogSite.US2_FED)
+            ),
             featuresContext = fakeDatadogContext.featuresContext +
                 mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
         )
@@ -252,8 +257,10 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     // region create() - Error cases
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(DatadogSite::class, names = ["US1_FED", "US2_FED"])
     fun `M return null W create() { unsupported site and no custom endpoint }`(
+        site: DatadogSite,
         @StringForgery fakeTargetingKey: String
     ) {
         // Given
@@ -262,7 +269,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             attributes = emptyMap()
         )
         fakeDatadogContext = fakeDatadogContext.copy(
-            site = DatadogSite.US1_FED
+            site = site
         )
 
         // When

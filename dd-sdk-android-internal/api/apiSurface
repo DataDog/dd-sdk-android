@@ -60,24 +60,81 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
-interface com.datadog.android.internal.identity.ViewIdentityResolver
-  fun setCurrentScreen(String?)
-  fun onWindowRefreshed(android.view.View)
-  fun resolveViewIdentity(android.view.View): String?
-  companion object 
-    const val FEATURE_CONTEXT_KEY: String
-class com.datadog.android.internal.identity.ViewIdentityResolverImpl : ViewIdentityResolver
-  constructor(String)
-  override fun setCurrentScreen(String?)
-  override fun onWindowRefreshed(android.view.View)
-  override fun resolveViewIdentity(android.view.View): String?
-  companion object 
+class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.app.Application.ActivityLifecycleCallbacks
+  constructor(Callback)
+  val activitiesResumedCounter: java.util.concurrent.atomic.AtomicInteger
+  val activitiesStartedCounter: java.util.concurrent.atomic.AtomicInteger
+  val wasPaused: java.util.concurrent.atomic.AtomicBoolean
+  val wasStopped: java.util.concurrent.atomic.AtomicBoolean
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityResumed(android.app.Activity)
+  interface Callback
+    fun onStarted()
+    fun onResumed()
+    fun onStopped()
+    fun onPaused()
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER
   - DD_GRAPHQL_VARIABLES_HEADER
   - DD_GRAPHQL_TYPE_HEADER
   - DD_GRAPHQL_PAYLOAD_HEADER
+object com.datadog.android.internal.network.HttpSpec
+  object Method
+    const val GET: String
+    const val POST: String
+    const val PATCH: String
+    const val PUT: String
+    const val HEAD: String
+    const val DELETE: String
+    const val TRACE: String
+    const val OPTIONS: String
+    const val CONNECT: String
+    fun values()
+    fun isMethodWithBody(String)
+  object Header
+    const val CONTENT_TYPE: String
+    const val CONTENT_LENGTH: String
+    const val LOCATION: String
+    const val RETRY_AFTER: String
+    const val WEBSOCKET_ACCEPT_HEADER: String
+    fun values()
+  object StatusCode
+    const val OK: Int
+    const val MOVED_PERMANENTLY: Int
+    const val FOUND: Int
+    const val SEE_OTHER: Int
+    const val TEMPORARY_REDIRECT: Int
+    const val PERMANENT_REDIRECT: Int
+    const val BAD_REQUEST: Int
+    const val UNAUTHORIZED: Int
+    const val FORBIDDEN: Int
+    const val NOT_FOUND: Int
+    const val METHOD_NOT_ALLOWED: Int
+    const val REQUEST_TIMEOUT: Int
+    const val TOO_MANY_REQUESTS: Int
+    const val INTERNAL_ERROR: Int
+    const val BAD_GATEWAY: Int
+    const val SERVICE_UNAVAILABLE: Int
+    const val GATEWAY_TIMEOUT: Int
+    const val NETWORK_AUTHENTICATION_REQUIRED: Int
+    fun values()
+    fun clientErrors(Int): List<Int>
+    fun serverErrors()
+  object ContentType
+    const val APPLICATION_JSON: String
+    const val TEXT_PLAIN: String
+    const val TEXT_EVENT_STREAM: String
+    const val APPLICATION_GRPC: String
+    const val APPLICATION_GRPC_PROTO: String
+    const val APPLICATION_GRPC_JSON: String
+    fun values()
+    fun isStream(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
@@ -106,7 +163,11 @@ sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
   data class TTID : ProfilerStopEvent
     constructor(TTIDRumContext? = null)
 data class com.datadog.android.internal.profiling.TTIDRumContext
-  constructor(String, String, String, String?, String?)
+  constructor(String, String, String, String?, String?, String?)
+object com.datadog.android.internal.sampling.DeterministicSampling
+  fun combinedSampleRate(Float, Float): Float
+object com.datadog.android.internal.sampling.SessionSamplingIdProvider
+  fun provideId(String): ULong
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
@@ -116,6 +177,7 @@ interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val isAtLeastR: Boolean
   val isAtLeastS: Boolean
   val isAtLeastTiramisu: Boolean
+  val isAtLeastVanillaIceCream: Boolean
   companion object 
     val DEFAULT: BuildSdkVersionProvider
 sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -143,7 +205,18 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
         - FAIL
     class TrackWebView : ApiUsage
       constructor(MutableMap<String, Any?> = mutableMapOf())
+    class NetworkInstrumentation : ApiUsage
+      constructor(LibraryType, MutableMap<String, Any?> = mutableMapOf())
+      enum LibraryType
+        - CRONET
+        - OKHTTP
+        - LEGACY_OKHTTP
   object InterceptorInstantiated : InternalTelemetryEvent
+  class ResourceHeadersTrackingConfigured : InternalTelemetryEvent
+    constructor(Mode)
+    enum Mode
+      - DEFAULT_HEADERS
+      - CUSTOM
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
   - B3
@@ -157,6 +230,7 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
+fun isMainThread(): Boolean
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long
@@ -194,6 +268,8 @@ fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
+fun String.toBase64(): String
+fun String.fromBase64(): String?
 fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String

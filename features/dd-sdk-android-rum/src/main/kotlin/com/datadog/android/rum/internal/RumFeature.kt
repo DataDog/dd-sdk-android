@@ -36,6 +36,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.thread.isMainThread
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -75,8 +76,8 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
+import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredicate
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
-import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -108,6 +109,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -136,7 +138,8 @@ internal class RumFeature(
     private val lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
         DatadogLateCrashReporter(it)
     },
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
+    private val handler: Handler = Handler(Looper.getMainLooper())
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
@@ -177,7 +180,7 @@ internal class RumFeature(
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
-    private var rumAppStartupDetector: RumAppStartupDetector? = null
+    internal var rumAppStartupDetector: RumAppStartupDetector? = null
 
     // region Feature
 
@@ -354,7 +357,17 @@ internal class RumFeature(
 
         cleanupInfoProviders()
 
-        rumAppStartupDetector?.destroy()
+        val detector = rumAppStartupDetector
+        if (isMainThread()) {
+            @Suppress("ThreadSafety") // just verified we are on the main thread
+            detector?.destroy()
+        } else {
+            handler.post {
+                @Suppress("ThreadSafety") // handler posts to the main looper
+                detector?.destroy()
+            }
+        }
+
         rumAppStartupDetector = null
 
         GlobalRumMonitor.unregister(sdkCore)
@@ -697,32 +710,28 @@ internal class RumFeature(
             application = appContext.applicationContext as Application,
             sdkCore = sdkCore as InternalSdkCore,
             listener = object : RumAppStartupDetector.Listener {
-                private val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(sdkCore = sdkCore)
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
-                    val activity = scenario.activity.get() ?: return
-                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
-
+                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
                     rumMonitor.sendAppStartEvent(scenario)
-
-                    val callback = object : RumFirstDrawTimeReporter.Callback {
-                        override fun onFirstFrameDrawn(timestampNs: Long) {
-                            val durationNs = timestampNs - scenario.initialTime.nanoTime
-                            val info = RumTTIDInfo(
-                                scenario = scenario,
-                                durationNs = durationNs
-                            )
-
-                            rumMonitor.sendTTIDEvent(info)
-                        }
-                    }
-
-                    rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
-                        activity = activity,
-                        callback = callback
-                    )
                 }
-            }
+
+                override fun onTTIDComputed(
+                    scenario: RumStartupScenario,
+                    durationNs: Long,
+                    wasForwarded: Boolean
+                ) {
+                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
+                    val info = RumTTIDInfo(
+                        scenario = scenario,
+                        durationNs = durationNs,
+                        wasForwarded = wasForwarded
+                    )
+
+                    rumMonitor.sendTTIDEvent(info)
+                }
+            },
+            appStartupActivityPredicate = configuration.appStartupActivityPredicate
         )
     }
 
@@ -760,7 +769,8 @@ internal class RumFeature(
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
-        val insightsCollector: InsightsCollector
+        val insightsCollector: InsightsCollector,
+        val appStartupActivityPredicate: AppStartupActivityPredicate
     )
 
     internal companion object {
@@ -813,7 +823,8 @@ internal class RumFeature(
             rumSessionTypeOverride = null,
             collectAccessibility = false,
             disableJankStats = false,
-            insightsCollector = NoOpInsightsCollector()
+            insightsCollector = NoOpInsightsCollector(),
+            appStartupActivityPredicate = DefaultAppStartupActivityPredicate
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

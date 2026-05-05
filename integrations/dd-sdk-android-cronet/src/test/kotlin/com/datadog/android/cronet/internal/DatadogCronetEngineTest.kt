@@ -6,7 +6,6 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.cronet.DatadogCronetEngine
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -52,6 +51,9 @@ internal class DatadogCronetEngineTest {
     @Mock
     lateinit var mockApmNetworkInstrumentation: ApmNetworkInstrumentation
 
+    @Mock
+    lateinit var mockDistributedTracingInstrumentation: ApmNetworkInstrumentation
+
     lateinit var testedEngine: DatadogCronetEngine
 
     @BeforeEach
@@ -59,7 +61,8 @@ internal class DatadogCronetEngineTest {
         testedEngine = DatadogCronetEngine(
             mockDelegate,
             rumNetworkInstrumentation = mockRumNetworkInstrumentation,
-            apmNetworkInstrumentation = null
+            apmNetworkInstrumentation = null,
+            distributedTracingInstrumentation = null
         )
     }
 
@@ -288,7 +291,7 @@ internal class DatadogCronetEngineTest {
         val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequestBuilder::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
     }
 
     @Test
@@ -299,7 +302,8 @@ internal class DatadogCronetEngineTest {
         testedEngine = DatadogCronetEngine(
             mockDelegate,
             rumNetworkInstrumentation = mockRumNetworkInstrumentation,
-            apmNetworkInstrumentation = mockApmNetworkInstrumentation
+            apmNetworkInstrumentation = mockApmNetworkInstrumentation,
+            distributedTracingInstrumentation = mockDistributedTracingInstrumentation
         )
         val mockCallback = mock<UrlRequest.Callback>()
         val mockExecutor = mock<Executor>()
@@ -316,7 +320,7 @@ internal class DatadogCronetEngineTest {
         val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequestBuilder::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
         assertThat(testedEngine.apmNetworkInstrumentation)
             .isSameAs(mockApmNetworkInstrumentation)
     }
@@ -329,7 +333,8 @@ internal class DatadogCronetEngineTest {
         testedEngine = DatadogCronetEngine(
             mockDelegate,
             rumNetworkInstrumentation = mockRumNetworkInstrumentation,
-            apmNetworkInstrumentation = null
+            apmNetworkInstrumentation = null,
+            distributedTracingInstrumentation = null
         )
         val mockCallback = mock<UrlRequest.Callback>()
         val mockExecutor = mock<Executor>()
@@ -346,7 +351,7 @@ internal class DatadogCronetEngineTest {
         val result = testedEngine.newUrlRequestBuilder(url, mockCallback, mockExecutor)
 
         // Then
-        assertThat(result).isInstanceOf(DatadogUrlRequestBuilder::class.java)
+        assertThat(result).isInstanceOf(CronetUrlRequestBuilder::class.java)
         assertThat(testedEngine.apmNetworkInstrumentation).isNull()
     }
 }

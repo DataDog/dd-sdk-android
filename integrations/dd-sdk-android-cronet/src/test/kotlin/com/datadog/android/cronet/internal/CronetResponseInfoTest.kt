@@ -6,8 +6,7 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -40,7 +39,7 @@ internal class CronetResponseInfoTest {
     lateinit var mockUrlResponseInfo: UrlResponseInfo
 
     @Mock
-    lateinit var mockInternalLogger: InternalLogger
+    lateinit var mockRequestInfo: CronetHttpRequestInfo
 
     lateinit var fakeHeaders: Map<String, List<String>>
 
@@ -55,7 +54,7 @@ internal class CronetResponseInfoTest {
     ) {
         // Given
         whenever(mockUrlResponseInfo.url).thenReturn(fakeUrl)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.url
@@ -70,7 +69,7 @@ internal class CronetResponseInfoTest {
     ) {
         // Given
         whenever(mockUrlResponseInfo.httpStatusCode).thenReturn(fakeStatusCode)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.statusCode
@@ -84,7 +83,7 @@ internal class CronetResponseInfoTest {
         // Given
 
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.headers
@@ -98,9 +97,9 @@ internal class CronetResponseInfoTest {
         @StringForgery fakeContentType: String
     ) {
         // Given
-        val fakeHeaders = fakeHeaders + mapOf(HttpSpec.Headers.CONTENT_TYPE to listOf(fakeContentType))
+        val fakeHeaders = fakeHeaders + mapOf(HttpSpec.Header.CONTENT_TYPE to listOf(fakeContentType))
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentType
@@ -113,10 +112,34 @@ internal class CronetResponseInfoTest {
     fun `M return null W contentType property { no content type header }`() {
         // Given
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(emptyMap())
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentType
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return request W request property`() {
+        // Given
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
+
+        // When
+        val result = responseInfo.request
+
+        // Then
+        assertThat(result).isSameAs(mockRequestInfo)
+    }
+
+    @Test
+    fun `M return null W request property { null request }`() {
+        // Given
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, null)
+
+        // When
+        val result = responseInfo.request
 
         // Then
         assertThat(result).isNull()
@@ -127,9 +150,9 @@ internal class CronetResponseInfoTest {
         @LongForgery(min = 1) fakeContentLength: Long
     ) {
         // Given
-        val fakeHeaders = fakeHeaders + mapOf(HttpSpec.Headers.CONTENT_LENGTH to listOf(fakeContentLength.toString()))
+        val fakeHeaders = fakeHeaders + mapOf(HttpSpec.Header.CONTENT_LENGTH to listOf(fakeContentLength.toString()))
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentLength
@@ -145,7 +168,7 @@ internal class CronetResponseInfoTest {
         // Given
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(emptyMap())
         whenever(mockUrlResponseInfo.receivedByteCount).thenReturn(fakeByteCount)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentLength
@@ -159,7 +182,7 @@ internal class CronetResponseInfoTest {
         // Given
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(emptyMap())
         whenever(mockUrlResponseInfo.receivedByteCount).thenReturn(0L)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentLength
@@ -173,7 +196,7 @@ internal class CronetResponseInfoTest {
         // Given
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(emptyMap())
         whenever(mockUrlResponseInfo.receivedByteCount).thenReturn(-1L)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentLength
@@ -188,11 +211,11 @@ internal class CronetResponseInfoTest {
     ) {
         // Given
         val fakeHeaders = fakeHeaders + mapOf(
-            HttpSpec.Headers.CONTENT_LENGTH to listOf(fakeInvalidContentLength)
+            HttpSpec.Header.CONTENT_LENGTH to listOf(fakeInvalidContentLength)
         )
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
         whenever(mockUrlResponseInfo.receivedByteCount).thenReturn(100L)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentLength
@@ -207,10 +230,10 @@ internal class CronetResponseInfoTest {
         @LongForgery(min = 1, max = 999) fakeByteCount: Long
     ) {
         // Given
-        val fakeHeaders = fakeHeaders + mapOf(HttpSpec.Headers.CONTENT_LENGTH to listOf(fakeHeaderLength.toString()))
+        val fakeHeaders = fakeHeaders + mapOf(HttpSpec.Header.CONTENT_LENGTH to listOf(fakeHeaderLength.toString()))
         whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
         whenever(mockUrlResponseInfo.receivedByteCount).thenReturn(fakeByteCount)
-        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
 
         // When
         val result = responseInfo.contentLength

@@ -15,7 +15,12 @@ internal interface Profiler {
 
     var internalLogger: InternalLogger?
 
-    fun start(appContext: Context, sdkInstanceNames: Set<String>)
+    fun start(
+        appContext: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>,
+        sdkInstanceNames: Set<String>
+    )
 
     fun stop(sdkInstanceName: String)
 

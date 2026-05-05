@@ -96,15 +96,15 @@ internal class DefaultInsightsCollector internal constructor(
         clear()
     }
 
-    override fun onSlowFrame(startedTimestamp: Long, durationNs: Long) = registerEvent(
+    override fun onSlowFrame(durationNs: Long) = registerEvent(
         TimelineEvent.SlowFrame(durationNs)
     )
 
-    override fun onLongTask(startedTimestamp: Long, durationNs: Long) = registerEvent(
+    override fun onLongTask(durationNs: Long) = registerEvent(
         TimelineEvent.LongTask(durationNs)
     )
 
-    override fun onNetworkRequest(startedTimestamp: Long, durationNs: Long) = registerEvent(
+    override fun onNetworkRequest(durationNs: Long) = registerEvent(
         TimelineEvent.Resource(durationNs)
     )
 

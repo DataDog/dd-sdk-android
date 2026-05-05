@@ -27,8 +27,8 @@ import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_VIEW_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
 import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
-import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.completedWithErrorFutureMock
 import com.datadog.tools.unit.forge.anException

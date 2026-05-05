@@ -7,10 +7,11 @@
 package com.datadog.android.tests.elmyr
 
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
-import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.internal.network.HttpSpec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -31,8 +32,8 @@ class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
         override val headers: Map<String, List<String>>,
         override val contentType: String?,
         override val method: String,
-        internal val contentLength: Long?,
-        internal val tags: Map<Any, Any?>
+        val contentLength: Long?,
+        val tags: Map<Any, Any?>
     ) : HttpRequestInfo, ExtendedRequestInfo, MutableHttpRequestInfo {
 
         @Suppress("UNCHECKED_CAST")
@@ -57,6 +58,17 @@ class RequestInfoForgeryFactory : ForgeryFactory<HttpRequestInfo> {
             request = request.copy(tags = request.tags.toMutableMap().also { it[type] = tag })
         }
 
+        override fun setMethod(
+            method: String,
+            body: HttpRequestBody?
+        ) = apply { request = request.copy(method = method) }
+
         override fun build(): HttpRequestInfo = request.copy()
+    }
+}
+
+class MutableRequestInfoForgeryFactory : ForgeryFactory<MutableHttpRequestInfo> {
+    override fun getForgery(forge: Forge): MutableHttpRequestInfo {
+        return RequestInfoForgeryFactory().getForgery(forge) as MutableHttpRequestInfo
     }
 }

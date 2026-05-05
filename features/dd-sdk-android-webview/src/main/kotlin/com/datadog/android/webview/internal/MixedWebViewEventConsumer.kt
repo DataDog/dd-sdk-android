@@ -34,7 +34,7 @@ internal class MixedWebViewEventConsumer(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    { WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(US, event) }
+                    { WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(US, webEvent.keySet()) }
                 )
                 return
             }
@@ -45,7 +45,7 @@ internal class MixedWebViewEventConsumer(
                         InternalLogger.Target.MAINTAINER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    { WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, event) }
+                    { WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, webEvent.keySet()) }
                 )
                 return
             }
@@ -73,7 +73,7 @@ internal class MixedWebViewEventConsumer(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event) },
+                { WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event.length) },
                 e
             )
         }
@@ -84,11 +84,11 @@ internal class MixedWebViewEventConsumer(
         const val EVENT_KEY = "event"
         const val LOG_EVENT_TYPE = "log"
         const val WEB_EVENT_PARSING_ERROR_MESSAGE = "We could not deserialize the" +
-            " delegated browser event: %s."
-        const val WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE = "The web event: %s is missing" +
-            " the event type."
-        const val WEB_EVENT_MISSING_WRAPPED_EVENT = "The web event: %s is missing" +
-            " the wrapped event object."
+            " delegated browser event (size: %d chars)."
+        const val WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE = "The web event is missing" +
+            " the event type. Received keys: %s."
+        const val WEB_EVENT_MISSING_WRAPPED_EVENT = "The web event is missing" +
+            " the wrapped event object. Received keys: %s."
         const val WRONG_EVENT_TYPE_ERROR_MESSAGE = "The event type %s for the bundled" +
             " web event is unknown."
     }

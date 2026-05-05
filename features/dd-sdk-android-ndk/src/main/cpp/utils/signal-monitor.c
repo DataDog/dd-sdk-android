@@ -7,19 +7,13 @@
 #include "signal-monitor.h"
 
 #include <android/log.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <jni.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #include "backtrace-handler.h"
-#include "datadog-native-lib.h"
+#include "datadog-ndk.h"
 
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static stack_t signal_stack;
@@ -92,7 +86,7 @@ void free_up_memory() {
 
 void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
     // It may happen that the process is killed during this function execution.
-    // Therefore this function may never return.
+    // Therefore, this function may never return.
 
     if(pthread_mutex_trylock(&mutex) != 0){
         // There is no action to take if the mutex cannot be acquired.
@@ -112,7 +106,7 @@ void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
                 // This handler can handle signal number, info, and user context
                 // (POSIX). From sigaction(2): > If this bit is set, the handler
                 // function is assumed to be pointed to by the sa_sigaction member of
-                // struct sigaction and should match the proto- type shown above or as
+                // struct sigaction and should match the prototype shown above or as
                 // below in EXAMPLES.  This bit should not be set when assigning SIG_DFL
                 // or SIG_IGN.
                 previous.sa_sigaction(signum, info, user_context);
@@ -155,7 +149,7 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
 
             // in case the stacktrace is bigger than the required size it will be truncated
             // because we are unwinding the stack strace at this level we are always going to
-            // to have for the top 3 levels at the top of the trace the executed lines from our
+            // have for the top 3 levels at the top of the trace the executed lines from our
             // library: handle_signal, generate_backtrace and capture_backtrace.
             // If you are changing this code make sure to start from the new frame
             // index when generating the backtrace.
@@ -184,9 +178,9 @@ bool configure_signal_stack() {
     // we are specifically requesting that the signal handler should be executed in a freshly new
     // signal stack for which we allocate extra memory here.
     // Art is already allocating memory for the signal stack here:
-    // https://android.googlesource.com/platform/art/+/master/runtime/thread_linux.cc#35) but
+    // https://android.googlesource.com/platform/art/+/master/runtime/thread_linux.cc#35 but
     // because we need a bit more than that we will re - allocate it on our end.
-    size_t expected_stack_size = 32 * 1024; // 32K -- same as the ART but on  our own dedicated stack
+    size_t expected_stack_size = 32 * 1024; // 32K -- same as the ART but on our own dedicated stack
     size_t stack_size = expected_stack_size < MINSIGSTKSZ ? MINSIGSTKSZ : expected_stack_size;
     if ((signal_stack.ss_sp = calloc(1, stack_size)) == NULL) {
         return false;

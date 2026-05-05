@@ -8,6 +8,7 @@ package com.datadog.gradle.plugin.gitclone
 
 import com.datadog.gradle.utils.execShell
 import org.gradle.api.DefaultTask
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
@@ -15,13 +16,16 @@ import java.io.File
 import java.nio.file.Files.createTempDirectory
 import javax.inject.Inject
 
-open class GitCloneDependenciesTask @Inject constructor(
+abstract class GitCloneDependenciesTask @Inject constructor(
     private val execOperations: ExecOperations
 ) : DefaultTask() {
 
-    @get: Input
+    @get:Input
     var extension: GitCloneDependenciesExtension =
         GitCloneDependenciesExtension()
+
+    @get:Input
+    abstract val projectDirPath: Property<String>
 
     init {
         group = "datadog"
@@ -53,7 +57,7 @@ open class GitCloneDependenciesTask @Inject constructor(
         } else {
             File("${target.absolutePath}${File.separator}${dependency.originSubFolder}")
         }
-        val copyTo = File(project.projectDir.path + File.separator + dependency.destinationFolder)
+        val copyTo = File(projectDirPath.get() + File.separator + dependency.destinationFolder)
         copySources(copyFrom, copyTo, dependency.excludedPrefixes)
 
         deleteClone(target)

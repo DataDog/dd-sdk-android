@@ -9,6 +9,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.TracerConfig
 import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter.Companion.DEFAULT_URL_AS_RESOURCE_NAME
+import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter.Companion.toPropagationStyle
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.api.DD128bTraceId
 import com.datadog.trace.api.DD64bTraceId
@@ -69,8 +70,8 @@ class DatadogTracerBuilderAdapterTest {
     fun `M return default properties W properties() {no method called}`() {
         // Given
         val expected = Properties()
-        expected.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, EXPECTED_DEFAULT_PROPAGATION)
-        expected.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, EXPECTED_DEFAULT_PROPAGATION)
+        expected.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_EXTRACT, EXPECTED_DEFAULT_PROPAGATION)
+        expected.setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_INJECT, EXPECTED_DEFAULT_PROPAGATION)
         expected.setProperty(TracerConfig.SERVICE_NAME, fakeServiceName)
         expected.setProperty(TracerConfig.TRACE_RATE_LIMIT, Int.MAX_VALUE.toString())
         expected.setProperty(
@@ -106,8 +107,8 @@ class DatadogTracerBuilderAdapterTest {
         )
 
         val expected = Properties().apply {
-            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, fakeHeaderType.toString())
-            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, fakeHeaderType.toString())
+            setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_EXTRACT, fakeHeaderType.toPropagationStyle())
+            setProperty(TracerConfig.TRACE_PROPAGATION_STYLE_INJECT, fakeHeaderType.toPropagationStyle())
             setProperty(TracerConfig.SERVICE_NAME, fakeServiceName)
             setProperty(TracerConfig.TRACE_RATE_LIMIT, fakeTraceLimit.toString())
             setProperty(TracerConfig.TRACE_SAMPLE_RATE, (fakeSampleRate / 100.0).toString())

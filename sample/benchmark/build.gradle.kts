@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForBenchmark
 import com.datadog.gradle.config.dependencyUpdateConfig
@@ -10,7 +16,7 @@ plugins {
     id("com.android.application")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
-    kotlin("kapt")
+    alias(libs.plugins.kotlinSPGradlePlugin)
     kotlin("plugin.serialization")
     id("kotlin-parcelize")
     alias(libs.plugins.datadogGradlePlugin)
@@ -99,8 +105,8 @@ dependencies {
     implementation(libs.bundles.androidXCompose)
     implementation(libs.coilCompose)
     implementation(libs.daggerLib)
-    kapt(libs.daggerCompiler)
-    kapt(libs.glideCompiler)
+    ksp(libs.daggerCompiler)
+    ksp(libs.glideKsp)
     implementation(libs.coroutinesCore)
     implementation(libs.bundles.ktorClient)
     implementation(libs.kotlinxSerializationJson)

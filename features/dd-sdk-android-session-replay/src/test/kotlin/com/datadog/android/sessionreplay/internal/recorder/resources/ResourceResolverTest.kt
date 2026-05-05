@@ -965,9 +965,9 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M return cache miss W resolveResourceId() { failed to generate resource key }`() {
+    fun `M proceed to copy drawable W resolveResourceId() { cache miss }`() {
         // Given
-        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockDrawable)).thenReturn(null)
+        // getFromResourceCache returns null by default (cache miss)
 
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(

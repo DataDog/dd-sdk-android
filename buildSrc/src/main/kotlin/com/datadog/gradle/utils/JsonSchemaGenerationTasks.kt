@@ -14,7 +14,8 @@ import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.register
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.io.File
 import java.nio.file.Paths
 
@@ -28,6 +29,7 @@ fun Project.createRumSchemaCloneTask(
 ) {
     val task = tasks.register<GitCloneDependenciesTask>(taskName) {
         extension.apply(action)
+        projectDirPath.set(layout.projectDirectory.asFile.path)
     }
 
     val rootTask = rootProject.tasks.maybeCreate(CLONE_ALL_RUM_SCHEMAS_TASK_NAME)
@@ -78,6 +80,12 @@ fun Project.createJsonModelsGenerationTask(
             if (!exists()) mkdirs()
         }
         destinationPackageDirectory.set(outputPackageDir)
+        inputDir.set(layout.projectDirectory.dir(inputDirPath))
+        inputFiles.from(
+            inputDir.map {
+                it.asFileTree.matching { include { it.file.isFile && it.file.extension == "json" } }
+            }
+        )
     }
 
     val rootTask = rootProject.tasks.maybeCreate(GENERATE_ALL_JSON_MODELS_TASK_NAME)
@@ -88,7 +96,7 @@ fun Project.createJsonModelsGenerationTask(
         dependsOn(task)
     }
 
-    taskConfig<KotlinCompile> {
+    taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
         dependsOn(task)
     }
 

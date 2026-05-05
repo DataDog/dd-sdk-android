@@ -280,9 +280,9 @@ internal class VitalEventAssert(
 
     fun hasConnectivityInfo(expected: NetworkInfo?) = apply {
         val expectedStatus = if (expected?.isConnected() == true) {
-            VitalOperationStepEvent.Status.CONNECTED
+            VitalOperationStepEvent.ConnectivityStatus.CONNECTED
         } else {
-            VitalOperationStepEvent.Status.NOT_CONNECTED
+            VitalOperationStepEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalOperationStepEvent.Interface.ETHERNET)
