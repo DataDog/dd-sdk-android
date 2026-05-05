@@ -5,7 +5,7 @@
 
 
 #include <android/log.h>
-#include <datadog-native-lib.h>
+#include <datadog-ndk.h>
 #include "greatest/greatest.h"
 #include "utils/string-utils.h"
 

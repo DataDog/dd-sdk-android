@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.okhttp.trace
 
 import androidx.annotation.FloatRange
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -20,7 +23,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.GlobalDatadogTracer
@@ -31,9 +34,9 @@ import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.TraceContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -41,6 +44,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
 import java.util.concurrent.atomic.AtomicReference
+import com.datadog.android.okhttp.TraceContext as DeprecatedTraceContext
 
 /**
  * Provides automatic trace integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -102,22 +106,15 @@ internal constructor(
     private val rumContextPropagator = RumContextPropagator { sdkCoreReference.get() as? FeatureSdkCore }
 
     init {
-        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
-
-        // update meta for the configuration telemetry reporting, can be done directly from this thread
-        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
-            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
-            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
-                tracedHosts.values.flatten()
-                    .map(TracingHeaderType::toInternalTracingHeaderType)
-                    .toSet()
-            )
-        }
+        // Trigger SDK instance acquisition. If the SDK is already initialized, this will invoke
+        // [onSdkInstanceReady] synchronously, where we populate the tracing feature context.
+        sdkCoreReference.get()
     }
 
     // region Interceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         return doIntercept(chain, chain.request())
     }
@@ -126,6 +123,7 @@ internal constructor(
      * This method is a part of Datadog SDK internal API. It is not meant for public use.
      */
     @InternalApi
+    @WorkerThread
     protected fun doIntercept(
         chain: Interceptor.Chain,
         request: Request
@@ -210,6 +208,7 @@ internal constructor(
     // region Internal
 
     internal open fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
+        updateTracingFeatureContext(sdkCore)
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
             sdkCore.firstPartyHostResolver.isEmpty()
         ) {
@@ -218,6 +217,18 @@ internal constructor(
                 InternalLogger.Target.USER,
                 { WARNING_TRACING_NO_HOSTS },
                 onlyOnce = true
+            )
+        }
+    }
+
+    private fun updateTracingFeatureContext(sdkCore: FeatureSdkCore) {
+        // Update meta for the configuration telemetry reporting, can be done directly from this thread.
+        sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
+                tracedHosts.values.flatten()
+                    .map(TracingHeaderType::toTelemetryTracingHeaderType)
+                    .toSet()
             )
         }
     }
@@ -351,17 +362,23 @@ internal constructor(
     private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         val datadogSpan = request.tag(DatadogSpan::class.java)
-        val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
+        val openTelemetrySpanSamplingPriority = request.getTraceContextTag()?.samplingPriority
 
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
             datadogSpan != null -> {
-                DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
+                _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
             openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
             else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
+    }
+
+    internal fun Request.getTraceContextTag(): TraceContext? {
+        return this.tag(DeprecatedTraceContext::class.java)?.let {
+            TraceContext(it.traceId, it.spanId, it.samplingPriority)
+        } ?: this.tag(TraceContext::class.java)
     }
 
     @Suppress("ReturnCount")
@@ -424,7 +441,7 @@ internal constructor(
             for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext != null && DatadogTracingToolkit.propagationHelper.isExtractedContext(headerContext)) {
+        return if (headerContext != null && _TraceInternalProxy.propagationHelper.isExtractedContext(headerContext)) {
             headerContext
         } else {
             tagContext
@@ -432,8 +449,8 @@ internal constructor(
     }
 
     private fun extractTraceContext(request: Request): DatadogSpanContext? =
-        request.tag(TraceContext::class.java)?.let {
-            DatadogTracingToolkit.propagationHelper.createExtractedContext(
+        request.getTraceContextTag()?.let {
+            _TraceInternalProxy.propagationHelper.createExtractedContext(
                 it.traceId,
                 it.spanId,
                 it.samplingPriority
@@ -514,16 +531,14 @@ internal constructor(
             val spanId = span.context().spanId.toString()
             requestBuilder.addHeader(
                 W3C_TRACEPARENT_KEY,
-                // TODO RUM-11445 InvalidStringFormat false alarm
-                @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
+                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                 W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
             )
             // TODO RUM-2121 3rd party vendor information will be erased
-            // TODO RUM-11445 InvalidStringFormat false alarm
-            @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
+            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
             var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
                 .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
@@ -608,7 +623,7 @@ internal constructor(
 
                     W3C_BAGGAGE_KEY -> carrier.replaceHeader(
                         key,
-                        DatadogTracingToolkit.mergeBaggage(
+                        _TraceInternalProxy.mergeBaggage(
                             resolveExistingBaggageHeaderValue(carrier),
                             value
                         )
@@ -821,6 +836,28 @@ internal constructor(
         fun setTraceContextInjection(traceContextInjection: TraceContextInjection): R {
             this.traceContextInjection = traceContextInjection
             return getThis()
+        }
+
+        /**
+         * Deprecated. Use setTraceContextInjection(com.datadog.android.trace.TraceContextInjection) instead.
+         *
+         * Set the trace context injection behavior for this interceptor in the intercepted requests.
+         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
+         * will be propagated in the intercepted requests no matter if the span created around the request
+         * is sampled or not.
+         * @param traceContextInjection the trace context injection option.
+         * @see TraceContextInjection.ALL
+         * @see TraceContextInjection.SAMPLED
+         */
+        @Deprecated("Use setTraceContextInjection(com.datadog.android.trace.TraceContextInjection) instead")
+        fun setTraceContextInjection(traceContextInjection: com.datadog.android.okhttp.TraceContextInjection): R {
+            return setTraceContextInjection(
+                when (traceContextInjection) {
+                    com.datadog.android.okhttp.TraceContextInjection.ALL -> TraceContextInjection.ALL
+                    com.datadog.android.okhttp.TraceContextInjection.SAMPLED -> TraceContextInjection.SAMPLED
+                }
+            )
         }
 
         /**

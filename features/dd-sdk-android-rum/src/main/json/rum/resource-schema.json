@@ -71,19 +71,19 @@
             },
             "encoded_body_size": {
               "type": "integer",
-              "description": "Size in octet of the resource before removing any applied content encodings",
+              "description": "Size in octet of the response body before removing any applied content encodings",
               "minimum": 0,
               "readOnly": true
             },
             "decoded_body_size": {
               "type": "integer",
-              "description": "Size in octet of the resource after removing any applied encoding",
+              "description": "Size in octet of the response body after removing any applied encoding",
               "minimum": 0,
               "readOnly": true
             },
             "transfer_size": {
               "type": "integer",
-              "description": "Size in octet of the fetched resource",
+              "description": "Size in octet of the fetched response resource",
               "minimum": 0,
               "readOnly": true
             },
@@ -301,6 +301,9 @@
                 "headers": {
                   "type": "object",
                   "description": "HTTP headers of the resource request",
+                  "propertyNames": {
+                    "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+                  },
                   "additionalProperties": {
                     "type": "string"
                   },
@@ -316,6 +319,9 @@
                 "headers": {
                   "type": "object",
                   "description": "HTTP headers of the resource response",
+                  "propertyNames": {
+                    "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+                  },
                   "additionalProperties": {
                     "type": "string"
                   },
@@ -327,7 +333,6 @@
             "graphql": {
               "type": "object",
               "description": "GraphQL requests parameters",
-              "required": ["operationType"],
               "properties": {
                 "operationType": {
                   "type": "string",

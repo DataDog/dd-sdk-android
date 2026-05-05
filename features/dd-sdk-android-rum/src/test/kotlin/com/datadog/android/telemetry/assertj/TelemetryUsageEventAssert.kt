@@ -180,6 +180,17 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
                 assertThat(actual.telemetry.usage)
                     .isInstanceOf(TelemetryUsageEvent.Usage.TrackWebView::class.java)
             }
+
+            is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
+                val actualUsage =
+                    actual.telemetry.usage as TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation
+                assertThat(actualUsage.type.name)
+                    .overridingErrorMessage(
+                        "Expected androidNetworkInstrumentation event to have type ${expected.type.name}" +
+                            " but was ${actualUsage.type.name}"
+                    )
+                    .isEqualTo(expected.type.name)
+            }
         }
     }
 

@@ -99,6 +99,17 @@
         <activity android:name=".rum.AppLaunchPlaygroundActivity"
             android:label="@string/activity_app_launch"
             android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".rum.startup.InterstitialSplashActivity"
+            android:label="@string/activity_app_launch"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".rum.startup.MainContentActivity"
+            android:label="@string/activity_app_launch"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".rum.startup.AuthActivity"
+            android:label="@string/activity_app_launch"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".rum.startup.AsyncInterstitialSplashActivity"
+            android:label="@string/activity_app_launch"
+            android:windowSoftInputMode="adjustResize"/>
     </application>
-
 </manifest>

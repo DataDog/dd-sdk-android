@@ -811,6 +811,17 @@ internal class DatadogPropagationHelperTest {
     }
 
     @Test
+    fun `M remove all tracing headers W removeAllTracingHeaders()`() {
+        // When
+        testedHelper.removeAllTracingHeaders(mockRequestModifier)
+
+        // Then
+        DatadogPropagationHelper.ALL_TRACING_HEADERS.forEach { headerKey ->
+            verify(mockRequestModifier).removeHeader(headerKey)
+        }
+    }
+
+    @Test
     fun `M add drop sampling B3 header W propagateNotSampledHeaders() {ALL injection type, B3}`() {
         // Given
         val tracingHeaderTypes = setOf(TracingHeaderType.B3)

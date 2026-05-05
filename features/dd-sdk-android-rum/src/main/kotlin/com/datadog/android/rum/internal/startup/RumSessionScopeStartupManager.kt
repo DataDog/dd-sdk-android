@@ -124,7 +124,8 @@ internal class RumSessionScopeStartupManagerImpl(
                     sessionId = rumContext.sessionId,
                     viewId = rumContext.viewId,
                     viewName = rumContext.viewName,
-                    vitalId = ttidEvent.vital.id
+                    vitalId = ttidEvent.vital.id,
+                    vitalName = ttidEvent.vital.name
                 )
             )
         )

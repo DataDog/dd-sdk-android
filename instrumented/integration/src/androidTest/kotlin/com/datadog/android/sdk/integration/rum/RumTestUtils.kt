@@ -200,6 +200,11 @@ private fun JsonObject.verifyEventMatches(event: ExpectedVitalAppLaunchEvent) {
         .hasField("vital") {
             hasField("app_launch_metric", event.appLaunchMetric.metric)
         }
+
+    if (event.viewArguments.isNotEmpty()) {
+        assertThat(this.getAsJsonObject("view"))
+            .containsAttributes(event.viewArguments)
+    }
 }
 
 private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {

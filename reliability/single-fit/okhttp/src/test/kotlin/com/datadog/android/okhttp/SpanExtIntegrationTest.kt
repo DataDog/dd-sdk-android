@@ -18,7 +18,7 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.replace
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.withinSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
@@ -62,7 +62,7 @@ class SpanExtIntegrationTest {
 
     private fun JsonArray.getObject(index: Int) = get(index).asJsonObject
     private fun StubEvent.asJson(): JsonObject = JsonParser.parseString(eventData).asJsonObject
-    private fun DatadogSpan.getSpanId(): String = DatadogTracingToolkit.spanIdConverter
+    private fun DatadogSpan.getSpanId(): String = _TraceInternalProxy.spanIdConverter
         .toHexStringPadded(context().spanId)
     private fun registerTracer(
         sampleRate: Double? = null,

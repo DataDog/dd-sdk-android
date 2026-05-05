@@ -7,6 +7,7 @@
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.instrumentation.network.tag
+import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,7 +31,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(BaseConfigurator::class)
 internal class OkHttpRequestInfoBuilderTest {
 
-    @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
+    @StringForgery(regex = URL_FORGERY_PATTERN)
     lateinit var fakeUrl: String
 
     private lateinit var testedModifier: OkHttpRequestInfoBuilder
@@ -43,7 +44,7 @@ internal class OkHttpRequestInfoBuilderTest {
 
     @Test
     fun `M update url W setUrl()`(
-        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") newUrl: String
+        @StringForgery(regex = URL_FORGERY_PATTERN) newUrl: String
     ) {
         // When
         testedModifier.setUrl(newUrl)

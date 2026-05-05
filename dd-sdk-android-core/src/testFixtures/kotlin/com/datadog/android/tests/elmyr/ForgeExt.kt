@@ -6,13 +6,21 @@
 
 package com.datadog.android.tests.elmyr
 
+import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
+import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+
+const val URL_FORGERY_PATTERN = "http(s?)://[a-z]+\\.com/[a-z]+"
 
 fun Forge.exhaustiveAttributes(
     excludedKeys: Set<String> = emptySet()
@@ -52,6 +60,34 @@ fun <T : Forge> T.useCoreFactories(): T {
     addFactory(ThreadDumpForgeryFactory())
     addFactory(RequestExecutionContextForgeryFactory())
     addFactory(RequestInfoForgeryFactory())
+    addFactory(MutableRequestInfoForgeryFactory())
 
     return this
 }
+
+fun Forge.aHostName(): String {
+    val regionSize = anInt(min = 2, max = 4)
+    return "${anAlphabeticalString(Case.LOWER)}.${anAlphabeticalString(Case.LOWER, regionSize)}"
+}
+
+fun Forge.anUrlString(): String = aStringMatching(URL_FORGERY_PATTERN)
+
+fun Forge.anHttpRequestInfo(headers: Map<String, String>): HttpRequestInfo {
+    return getForgery<MutableHttpRequestInfo>()
+        .newBuilder()
+        .apply { headers.forEach { (key, value) -> addHeader(key, value) } }
+        .build()
+}
+
+fun Forge.anOkHttpResponse(
+    request: Request,
+    statusCode: Int,
+    configure: Response.Builder.() -> Unit = {}
+): Response =
+    Response.Builder()
+        .request(request)
+        .protocol(Protocol.HTTP_2)
+        .code(statusCode)
+        .message(anAsciiString())
+        .apply(configure)
+        .build()

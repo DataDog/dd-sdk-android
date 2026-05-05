@@ -26,7 +26,7 @@ import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
-import com.datadog.android.trace.opentelemetry.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.opentelemetry.trace.OtelSpanContext
 import com.datadog.tools.unit.completedFutureMock

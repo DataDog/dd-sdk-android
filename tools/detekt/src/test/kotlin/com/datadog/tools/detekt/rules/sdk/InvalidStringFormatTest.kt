@@ -485,7 +485,7 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
     }
 
     @Test
@@ -509,7 +509,7 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
     }
 
     @Test
@@ -531,7 +531,7 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
     }
 
     @Test
@@ -555,7 +555,7 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
     }
 
     @Test
@@ -580,7 +580,7 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
     }
 
     @Test
@@ -598,7 +598,7 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
     }
 
     @Test
@@ -616,7 +616,83 @@ internal class InvalidStringFormatTest {
             .compileAndLintWithContext(kotlinEnv.env, code)
 
         // Then
-        assertThat(findings).hasSize(0)
+        assertThat(findings).isEmpty()
+    }
+
+    // endregion
+
+    // region Test same-class companion object constants
+
+    @Test
+    fun `Ignores valid String format {same class companion object constant, ext}`() {
+        // Given
+        val code =
+            """
+                class Foo {
+                    companion object {
+                        private const val PATTERN = "00-%s-%s-00"
+                    }
+
+                    fun test(a: String, b: String): String {
+                        return PATTERN.format(a, b)
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = InvalidStringFormat()
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).isEmpty()
+    }
+
+    @Test
+    fun `Warns invalid argument count {same class companion object constant, ext}`() {
+        // Given
+        val code =
+            """
+                class Foo {
+                    companion object {
+                        private const val PATTERN = "00-%s-%s-00"
+                    }
+
+                    fun test(a: String): String {
+                        return PATTERN.format(a)
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = InvalidStringFormat()
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `Ignores valid String format {same class companion object constant, single arg}`() {
+        // Given
+        val code =
+            """
+                class Foo {
+                    companion object {
+                        private const val PATTERN = "dd=p:%s;s:0"
+                    }
+
+                    fun test(a: String): String {
+                        return PATTERN.format(a)
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = InvalidStringFormat()
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).isEmpty()
     }
 
     // endregion

@@ -14,7 +14,6 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -447,13 +446,12 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        trackResolution(resolution.flagKey, resolution.flag, resolution.value, resolution.context)
+        trackResolution(resolution.flagKey, resolution.flag, resolution.context)
     }
 
-    private fun <T : Any> trackResolution(
+    private fun trackResolution(
         flagKey: String,
         flag: UnparsedFlag,
-        flagValue: T,
         context: EvaluationContext
     ) {
         // Exposure logging (only when doLog=true)
@@ -461,9 +459,11 @@ internal class DatadogFlagsClient(
             if (flagsConfiguration.trackExposures) {
                 writeExposureEvent(flagKey, flag, context)
             }
-            if (flagsConfiguration.rumIntegrationEnabled) {
-                logEvaluation(flagKey, flagValue)
-            }
+        }
+
+        // RUM feature flag tracking - fires for all successful evaluations with a variant key
+        if (flagsConfiguration.rumIntegrationEnabled && flag.variationKey.isNotBlank()) {
+            logEvaluation(flagKey, flag.variationKey)
         }
 
         // Evaluation logging for all evaluations (when enabled)
@@ -515,39 +515,8 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        val flagValue = parseFlagValueString(flagKey, flag)
-
-        trackResolution(flagKey, flag, flagValue, context)
-    }
-
-    private fun parseFlagValueString(flagKey: String, flag: UnparsedFlag): Any {
-        val kClass = variationTypeToKClass[flag.variationType] ?: String::class
-
-        val conversionResult = FlagValueConverter.convert(flag.variationValue, flag.variationType, kClass)
-        val flagValue = conversionResult.getOrElse { exception ->
-            featureSdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { "Flag '$flagKey': Failed to parse value '${flag.variationValue}' as '${flag.variationType}'" },
-                exception
-            )
-            // Pass raw value as a string to not lose information.
-            flag.variationValue
-        }
-
-        return flagValue
+        trackResolution(flagKey, flag, context)
     }
 
     // endregion
-
-    companion object {
-        private val variationTypeToKClass = mapOf(
-            VariationType.BOOLEAN.value to Boolean::class,
-            VariationType.STRING.value to String::class,
-            VariationType.INTEGER.value to Int::class,
-            VariationType.NUMBER.value to Double::class,
-            VariationType.FLOAT.value to Double::class,
-            VariationType.OBJECT.value to JSONObject::class
-        )
-    }
 }

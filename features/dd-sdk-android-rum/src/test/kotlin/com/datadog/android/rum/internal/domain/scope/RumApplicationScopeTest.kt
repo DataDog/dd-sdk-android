@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
@@ -34,7 +35,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.verifyLog
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -139,6 +140,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockSessionSampler: Sampler<String>
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -175,10 +179,13 @@ internal class RumApplicationScopeTest {
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
             sdkCore = mockSdkCore,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostHeaderTypeResolver = mockResolver,
@@ -207,7 +214,7 @@ internal class RumApplicationScopeTest {
         assertThat(childScopes).hasSize(1)
         val childScope = childScopes.firstOrNull()
         checkNotNull(childScope)
-        assertThat(childScope.sampleRate).isEqualTo(fakeSampleRate)
+        assertThat(childScope.sessionSampler).isSameAs(mockSessionSampler)
         assertThat(childScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(childScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
@@ -375,7 +382,7 @@ internal class RumApplicationScopeTest {
         assertThat(testedScope.childScopes).hasSize(1)
         val newSession = testedScope.childScopes.first()
         assertThat(newSession).isNotSameAs(initialSession)
-        assertThat(newSession.sampleRate).isEqualTo(fakeSampleRate)
+        assertThat(newSession.sessionSampler).isSameAs(mockSessionSampler)
         assertThat(newSession.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(newSession.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }

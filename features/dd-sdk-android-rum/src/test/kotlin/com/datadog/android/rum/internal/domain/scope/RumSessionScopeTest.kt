@@ -18,8 +18,11 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.identity.ViewIdentityResolver
 import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -156,6 +159,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockEventWriteScope: EventWriteScope
 
+    @Mock
+    lateinit var mockSessionSampler: Sampler<String>
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -219,6 +225,8 @@ internal class RumSessionScopeTest {
 
         whenever(mockBatteryInfoProvider.getState()) doReturn fakeBatteryInfo
         whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(100f)
 
         fakeParentAttributes = forge.exhaustiveAttributes()
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
@@ -251,7 +259,8 @@ internal class RumSessionScopeTest {
     @Test
     fun `M have a ViewManager child scope W init() { with same sample rate }`() {
         // Given
-        initializeTestedScope(fakeSampleRate, false)
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
+        initializeTestedScope(withMockChildScope = false)
 
         // When
         val childScope = testedScope.childScope
@@ -434,7 +443,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(100f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        initializeTestedScope()
 
         // When
         val result =
@@ -455,7 +465,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
 
         // When
         val result =
@@ -472,37 +483,65 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M create new context W handleEvent(view)+getRumContext() {sampling = x}`(
+    fun `M set TRACKED W renewSession() {sampler returns true}`(forge: Forge) {
+        // Given
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        initializeTestedScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `M set NOT_TRACKED W renewSession() {sampler returns false}`(forge: Forge) {
+        // Given
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.NOT_TRACKED)
+    }
+
+    @Test
+    fun `M set TRACKED W renewSession() {DeterministicSampler + SessionSamplingIdProvider, sampleRate=100}`(
         forge: Forge
     ) {
-        var tracked = 0
-        var untracked = 0
-        var other = 0
-        val knownSessionId = mutableSetOf<String>()
+        // Given: real DeterministicSampler wired with SessionSamplingIdProvider at 100% rate
+        val realSampler = DeterministicSampler(
+            idConverter = SessionSamplingIdProvider::provideId,
+            sampleRate = 100f
+        )
+        initializeTestedScope(sessionSampler = realSampler)
 
-        repeat(1000) {
-            // Given
-            initializeTestedScope(fakeSampleRate)
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
-            // When
-            testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-            val context = testedScope.getRumContext()
+        // Then: any UUID-shaped session id is always kept at 100%
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
 
-            // Then
-            assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
-            assertThat(knownSessionId).doesNotContain(context.sessionId)
-            knownSessionId.add(context.sessionId)
-            when (context.sessionState) {
-                RumSessionScope.State.NOT_TRACKED -> untracked++
-                RumSessionScope.State.TRACKED -> tracked++
-                RumSessionScope.State.EXPIRED -> other++
-            }
-        }
+    @Test
+    fun `M set NOT_TRACKED W renewSession() {DeterministicSampler + SessionSamplingIdProvider, sampleRate=0}`(
+        forge: Forge
+    ) {
+        // Given: real DeterministicSampler wired with SessionSamplingIdProvider at 0% rate
+        val realSampler = DeterministicSampler(
+            idConverter = SessionSamplingIdProvider::provideId,
+            sampleRate = 0f
+        )
+        initializeTestedScope(sessionSampler = realSampler)
 
-        assertThat(other).isZero()
-        val sampledRate = tracked.toFloat() * 100f / (tracked + untracked).toFloat()
-        // because sampling is random based we can't guarantee exactly 75%
-        assertThat(sampledRate).isCloseTo(fakeSampleRate, offset(5f))
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then: any UUID-shaped session id is always dropped at 0%
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.NOT_TRACKED)
     }
 
     @Test
@@ -510,7 +549,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(100f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        initializeTestedScope()
 
         // When
         val result = testedScope
@@ -536,7 +576,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(100f, backgroundTrackingEnabled = true)
+        initializeTestedScope(backgroundTrackingEnabled = true)
 
         // When
         val result = testedScope
@@ -562,7 +602,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(100f, backgroundTrackingEnabled = false)
+        initializeTestedScope(backgroundTrackingEnabled = false)
 
         // When
         val result = testedScope
@@ -1106,7 +1146,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
@@ -1136,7 +1177,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val initialContext = testedScope.getRumContext()
 
@@ -1161,7 +1203,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val initialContext = testedScope.getRumContext()
 
@@ -1202,18 +1245,22 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    testedScope.getRumContext().sessionId
+                    testedScope.getRumContext().sessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    testedScope.getRumContext().sessionId
+                    testedScope.getRumContext().sessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1247,18 +1294,22 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    testedScope.getRumContext().sessionId
+                    testedScope.getRumContext().sessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    testedScope.getRumContext().sessionId
+                    testedScope.getRumContext().sessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1286,16 +1337,20 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1323,18 +1378,22 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    firstSessionId
+                    firstSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    secondSessionId
+                    secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1363,27 +1422,33 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    firstSessionId
+                    firstSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    secondSessionId
+                    secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.thirdValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    secondSessionId
+                    secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1393,7 +1458,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val firstSessionId = testedScope.getRumContext().sessionId
 
@@ -1412,17 +1478,20 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
-
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1432,7 +1501,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val firstSessionId = testedScope.getRumContext().sessionId
 
@@ -1451,16 +1521,20 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
@@ -1470,7 +1544,8 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        initializeTestedScope(0f)
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        initializeTestedScope()
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val firstSessionId = testedScope.getRumContext().sessionId
 
@@ -1490,38 +1565,42 @@ internal class RumSessionScopeTest {
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
         assertThat(argumentCaptor.thirdValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId
+                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                    (testedScope.sessionState == RumSessionScope.State.TRACKED)
             )
         )
     }
 
     @Test
-    fun `M do nothing W session is updated {no SessionReplay feature registered}`(
-        forge: Forge
-    ) {
+    fun `M do nothing W session is updated {no SessionReplay feature registered}`() {
         // Given
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(null)
 
         // When
-        initializeTestedScope(forge.aFloat())
+        initializeTestedScope()
 
         // Then
         verifyNoInteractions(mockSessionReplayFeatureScope)
@@ -1683,7 +1762,7 @@ internal class RumSessionScopeTest {
     }
 
     private fun initializeTestedScope(
-        sampleRate: Float = 100f,
+        sessionSampler: Sampler<String> = mockSessionSampler,
         withMockChildScope: Boolean = true,
         backgroundTrackingEnabled: Boolean? = null
     ) {
@@ -1691,7 +1770,7 @@ internal class RumSessionScopeTest {
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
             sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
-            sampleRate = sampleRate,
+            sessionSampler = sessionSampler,
             backgroundTrackingEnabled = backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,

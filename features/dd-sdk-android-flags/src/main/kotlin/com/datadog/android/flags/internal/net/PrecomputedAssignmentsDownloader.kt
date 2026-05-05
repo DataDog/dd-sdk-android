@@ -65,6 +65,9 @@ internal class PrecomputedAssignmentsDownloader(
             onlyOnce = true
         )
 
+        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
+        response.body?.close()
+
         null
     }
 }

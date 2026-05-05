@@ -8,13 +8,41 @@ package com.datadog.gradle.plugin.verification
 
 import com.datadog.gradle.config.AndroidConfig
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import java.io.File
 import java.security.MessageDigest
 
-open class GenerateVerificationXmlTask : DefaultTask() {
+abstract class GenerateVerificationXmlTask : DefaultTask() {
+
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputFile
+    abstract val aarFile: RegularFileProperty
+
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputFile
+    abstract val pomFile: RegularFileProperty
+
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputFile
+    abstract val moduleFile: RegularFileProperty
+
+    @get:Input
+    abstract val projectName: Property<String>
+
+    @get:Input
+    abstract val projectGroup: Property<String>
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
 
     init {
         group = "datadog"
@@ -22,25 +50,14 @@ open class GenerateVerificationXmlTask : DefaultTask() {
             "Generate the verification-metadata.xml for the artifact built from the module"
     }
 
-    private val md = MessageDigest.getInstance("SHA-256")
-
     // region Task
 
     @TaskAction
     fun applyTask() {
-        val buildDir = project.layout.buildDirectory.asFile.get()
-        val projectDir = project.layout.projectDirectory.asFile
-        val publicationReleaseDir = File(File(buildDir, "publications"), "release")
-        val outputFile = File(projectDir, VerificationXmlPlugin.XML_FILE_NAME)
-
-        val aarFile = File(File(File(buildDir, "outputs"), "aar"), "${project.name}-release.aar")
-        val pomFile = File(publicationReleaseDir, "pom-default.xml")
-        val moduleFile = File(publicationReleaseDir, "module.json")
-
         val filesWithExt = mapOf(
-            aarFile to "aar",
-            pomFile to "pom",
-            moduleFile to "module"
+            aarFile.get().asFile to "aar",
+            pomFile.get().asFile to "pom",
+            moduleFile.get().asFile to "module"
         )
 
         val publicKey = System.getenv("GPG_PUBLIC_FINGERPRINT")
@@ -54,13 +71,13 @@ open class GenerateVerificationXmlTask : DefaultTask() {
             }
             TAG_COMPONENTS {
                 TAG_COMPONENT {
-                    attribute(ATTR_GROUP, project.group)
-                    attribute(ATTR_NAME, project.name)
+                    attribute(ATTR_GROUP, projectGroup.get())
+                    attribute(ATTR_NAME, projectName.get())
                     attribute(ATTR_VERSION, AndroidConfig.VERSION.name)
 
                     filesWithExt.forEach { (file, ext) ->
                         TAG_ARTIFACT {
-                            attribute(ATTR_NAME, "${project.name}-${AndroidConfig.VERSION.name}.$ext")
+                            attribute(ATTR_NAME, "${projectName.get()}-${AndroidConfig.VERSION.name}.$ext")
                             TAG_SHA256 {
                                 attribute(ATTR_VALUE, file.sha256())
                                 attribute(ATTR_ORIGIN, ORIGIN)
@@ -82,7 +99,7 @@ open class GenerateVerificationXmlTask : DefaultTask() {
                 singleLineTextElements = true
             )
         )
-        outputFile.writeText(XML_PREFIX + xmlContent, Charsets.UTF_8)
+        outputFile.get().asFile.writeText(XML_PREFIX + xmlContent, Charsets.UTF_8)
     }
 
     // endregion
@@ -90,7 +107,8 @@ open class GenerateVerificationXmlTask : DefaultTask() {
     // region Internal
 
     fun File.sha256(): String {
-        return md.digest(readBytes()).fold("", { str, byte -> str + "%02x".format(byte) })
+        return MessageDigest.getInstance("SHA-256")
+            .digest(readBytes()).fold("", { str, byte -> str + "%02x".format(byte) })
     }
 
     // endregion

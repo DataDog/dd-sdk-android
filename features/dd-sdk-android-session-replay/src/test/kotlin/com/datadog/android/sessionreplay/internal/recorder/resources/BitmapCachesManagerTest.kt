@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
@@ -21,9 +22,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -41,7 +42,10 @@ internal class BitmapCachesManagerTest {
     lateinit var mockBitmapPool: BitmapPool
 
     @Mock
-    lateinit var mockResourcesCache: ResourcesLRUCache
+    lateinit var mockResourcesCache: Cache<String, ByteArray>
+
+    @Mock
+    lateinit var mockKeyGenerator: DrawableKeyGenerator
 
     @Mock
     lateinit var mockLogger: InternalLogger
@@ -52,6 +56,9 @@ internal class BitmapCachesManagerTest {
     @Mock
     lateinit var mockBitmap: Bitmap
 
+    @Mock
+    lateinit var mockDrawable: Drawable
+
     @StringForgery
     lateinit var fakeResourceId: String
 
@@ -60,24 +67,32 @@ internal class BitmapCachesManagerTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockResourcesCache.generateKeyFromDrawable(any())).thenReturn(fakeResourceId)
-
         testedCachesManager = createBitmapCachesManager(
             bitmapPool = mockBitmapPool,
             resourcesLRUCache = mockResourcesCache,
+            keyGenerator = mockKeyGenerator,
             logger = mockLogger
         )
     }
 
     @Test
     fun `M register callbacks only once W registerCallbacks`() {
+        // Given
+        val mockComponentCallbacksCache = mock(ResourcesLRUCache::class.java)
+        testedCachesManager = createBitmapCachesManager(
+            bitmapPool = mockBitmapPool,
+            resourcesLRUCache = mockComponentCallbacksCache,
+            keyGenerator = mockKeyGenerator,
+            logger = mockLogger
+        )
+
         // When
         repeat(times = 5) {
             testedCachesManager.registerCallbacks(mockApplicationContext)
         }
 
         // Then
-        verify(mockApplicationContext).registerComponentCallbacks(mockResourcesCache)
+        verify(mockApplicationContext).registerComponentCallbacks(mockComponentCallbacksCache)
         verify(mockApplicationContext).registerComponentCallbacks(mockBitmapPool)
     }
 
@@ -88,6 +103,7 @@ internal class BitmapCachesManagerTest {
         testedCachesManager = createBitmapCachesManager(
             bitmapPool = mockBitmapPool,
             resourcesLRUCache = fakeBase64CacheInstance,
+            keyGenerator = mockKeyGenerator,
             logger = mockLogger
         )
 
@@ -132,6 +148,19 @@ internal class BitmapCachesManagerTest {
         // Then
         verify(mockResourcesCache).get(fakeResourceKey)
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M delegate to key generator W generateResourceKeyFromDrawable`() {
+        // Given
+        whenever(mockKeyGenerator.generateKeyFromDrawable(mockDrawable)).thenReturn(fakeResourceKey)
+
+        // When
+        val result = testedCachesManager.generateResourceKeyFromDrawable(mockDrawable)
+
+        // Then
+        verify(mockKeyGenerator).generateKeyFromDrawable(mockDrawable)
+        assertThat(result).isEqualTo(fakeResourceKey)
     }
 
     @Test
@@ -190,11 +219,13 @@ internal class BitmapCachesManagerTest {
     private fun createBitmapCachesManager(
         bitmapPool: BitmapPool,
         resourcesLRUCache: Cache<String, ByteArray>,
+        keyGenerator: DrawableKeyGenerator,
         logger: InternalLogger
     ): BitmapCachesManager =
         BitmapCachesManager(
             bitmapPool = bitmapPool,
             resourcesLRUCache = resourcesLRUCache,
+            keyGenerator = keyGenerator,
             logger = logger
         )
 

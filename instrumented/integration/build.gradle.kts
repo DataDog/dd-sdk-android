@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
@@ -97,14 +96,18 @@ dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":integrations:dd-sdk-android-cronet"))
+    implementation(libs.cronetPlayServices)
 
     implementation(libs.gson)
     implementation(libs.kotlin)
     implementation(libs.bundles.androidXSupportBase)
     implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
+    implementation(libs.leakCanaryAndroid)
 
     androidTestImplementation(project(":dd-sdk-android-internal"))
+    androidTestImplementation(libs.leakCanaryInstrumentation)
     androidTestImplementation(project(":tools:unit")) {
         attributes {
             attribute(

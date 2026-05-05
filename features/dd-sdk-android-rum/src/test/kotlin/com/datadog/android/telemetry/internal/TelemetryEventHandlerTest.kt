@@ -34,7 +34,6 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.verifyLog
 import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
@@ -48,6 +47,7 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -86,6 +86,7 @@ import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
@@ -686,6 +687,77 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
+    fun `M omit trackResourceHeaders W handleEvent() { configuration, no prior signal }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackResourceHeaders(null)
+        }
+    }
+
+    @Test
+    fun `M set trackResourceHeaders W handleEvent() { ResourceHeadersTrackingConfigured DEFAULT_HEADERS }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
+                )
+            ),
+            mockWriter
+        )
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackResourceHeaders(
+                TelemetryConfigurationEvent.TrackResourceHeaders.DEFAULT_HEADERS
+            )
+        }
+    }
+
+    @Test
+    fun `M set trackResourceHeaders W handleEvent() { ResourceHeadersTrackingConfigured CUSTOM }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+                )
+            ),
+            mockWriter
+        )
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackResourceHeaders(
+                TelemetryConfigurationEvent.TrackResourceHeaders.CUSTOM
+            )
+        }
+    }
+
+    @Test
     fun `M create config event W handleEvent() { configuration, no SessionReplay }`(
         @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
     ) {
@@ -985,7 +1057,7 @@ internal class TelemetryEventHandlerTest {
 
         val events = forge.aList(
             size = MAX_EVENTS_PER_SESSION_TEST * 10
-        ) { forge.forgeWritableInternalTelemetryEvent() }
+        ) { forge.forgeWritableInternalTelemetryEvent(InternalTelemetryEvent.Configuration::class) }
             // remove unwanted identity collisions
             .groupBy { it.identity }
             .map { RumRawEvent.TelemetryEventWrapper(it.value.first()) }
@@ -1125,6 +1197,60 @@ internal class TelemetryEventHandlerTest {
             target = InternalLogger.Target.MAINTAINER,
             message = TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
         )
+    }
+
+    @Test
+    fun `M still write configuration event W handleEvent() { max events per session reached }`(
+        forge: Forge,
+        @Forgery fakeConfigurationEvent: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        repeat(MAX_EVENTS_PER_SESSION_TEST + 1) {
+            val event = forge.getForgery<InternalTelemetryEvent.Metric>()
+            testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(event), mockWriter)
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfigurationEvent),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<Any> {
+            verify(
+                mockWriter,
+                times(MAX_EVENTS_PER_SESSION_TEST + 1)
+            ).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(lastValue).isInstanceOf(TelemetryConfigurationEvent::class.java)
+        }
+    }
+
+    @Test
+    fun `M not count configuration toward limit W handleEvent() { configuration then other events }`(
+        forge: Forge,
+        @Forgery fakeConfigurationEvent: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfigurationEvent),
+            mockWriter
+        )
+
+        // When
+        repeat(MAX_EVENTS_PER_SESSION_TEST) {
+            testedTelemetryHandler.handleEvent(
+                RumRawEvent.TelemetryEventWrapper(forge.getForgery<InternalTelemetryEvent.Metric>()),
+                mockWriter
+            )
+        }
+
+        // Then
+        // 1 configuration + MAX metric events = all should be written
+        verify(
+            mockWriter,
+            times(MAX_EVENTS_PER_SESSION_TEST + 1)
+        ).write(eq(mockEventBatchWriter), any(), eq(EventType.TELEMETRY))
     }
 
     @Test
@@ -1618,13 +1744,17 @@ internal class TelemetryEventHandlerTest {
             )
     }
 
-    private fun Forge.forgeWritableInternalTelemetryEvent(): InternalTelemetryEvent {
-        return anElementFrom(
-            getForgery<InternalTelemetryEvent.Log.Error>(),
-            getForgery<InternalTelemetryEvent.Log.Debug>(),
-            getForgery<InternalTelemetryEvent.Configuration>(),
-            getForgery<InternalTelemetryEvent.Metric>()
-        )
+    private fun Forge.forgeWritableInternalTelemetryEvent(
+        vararg exclude: KClass<InternalTelemetryEvent.Configuration>
+    ): InternalTelemetryEvent {
+        val allowedClasses = setOf(
+            InternalTelemetryEvent.Log.Error::class,
+            InternalTelemetryEvent.Log.Debug::class,
+            InternalTelemetryEvent.Configuration::class,
+            InternalTelemetryEvent.Metric::class
+        ) - exclude.toSet()
+
+        return anElementFrom(allowedClasses.map { getForgery(it.java) })
     }
 
     private fun Map<String, Any?>.withDiagnosticAttributes(): Map<String, Any?> {

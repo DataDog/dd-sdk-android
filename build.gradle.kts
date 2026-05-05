@@ -16,6 +16,21 @@ plugins {
     `maven-publish`
     alias(libs.plugins.nexusPublishGradlePlugin)
     alias(libs.plugins.dependencyLicenseGradlePlugin)
+
+    // just load into the classpath, so that we can use version-less id(string) in submodules
+    // ideally we need to use aliases in submodules
+    alias(libs.plugins.kotlinSPGradlePlugin) apply false
+    alias(libs.plugins.sqlDelightGradlePlugin) apply false
+    alias(libs.plugins.binaryCompatibilityGradlePlugin) apply false
+    alias(libs.plugins.kotlinxSerializationPlugin) apply false
+    alias(libs.plugins.koverPlugin) apply false
+
+    // don't add these to the classpath, otherwise there will be a conflict, because they are already coming
+    // from buildSrc classpath. May be solved with convention plugins though.
+    // alias(libs.plugins.androidLibraryPlugin) apply false
+    // alias(libs.plugins.kotlinAndroidPlugin) apply false
+    // alias(libs.plugins.dokkaGradlePlugin) apply false
+    // alias(libs.plugins.versionsGradlePlugin) apply false
 }
 
 version = AndroidConfig.VERSION.name
@@ -28,14 +43,7 @@ buildscript {
     }
 
     dependencies {
-        classpath(libs.androidToolsGradlePlugin)
-        classpath(libs.kotlinGradlePlugin)
-        classpath(libs.kotlinSPGradlePlugin)
-        classpath(libs.dokkaGradlePlugin)
         classpath(libs.unmockGradlePlugin)
-        classpath(libs.sqlDelightGradlePlugin)
-        classpath(libs.binaryCompatibilityGradlePlugin)
-        classpath(libs.kotlinxSerializationPlugin)
     }
 }
 
@@ -139,7 +147,7 @@ registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
 }
 
 registerSubModuleAggregationTask(
-    "checkDependencyLicencesAll",
+    "checkDependencyLicensesAll",
     "checkDependencyLicenses",
     // check licenses for all modules, not only for published ones
     subModuleNamePrefix = ""
@@ -155,7 +163,7 @@ registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTra
  * Task necessary to be compliant with the shared Android static analysis pipeline
  */
 tasks.register("checkGeneratedFiles") {
-    dependsOn("checkDependencyLicencesAll")
+    dependsOn("checkDependencyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")
     dependsOn("checkCompilerMetadataChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")
