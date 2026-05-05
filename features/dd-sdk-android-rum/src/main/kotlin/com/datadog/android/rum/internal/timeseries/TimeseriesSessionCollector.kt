@@ -157,7 +157,6 @@ internal class TimeseriesSessionCollector(
                 version = datadogContext.version,
                 timeseries = RumTimeseriesMemoryEvent.Timeseries(
                     id = UUID.randomUUID().toString(),
-                    name = MEMORY_METRIC_NAME,
                     schema = RumTimeseriesMemoryEvent.Schema.OBJECT,
                     start = startNs,
                     end = endNs,
@@ -206,7 +205,6 @@ internal class TimeseriesSessionCollector(
                 version = datadogContext.version,
                 timeseries = RumTimeseriesCpuEvent.Timeseries(
                     id = UUID.randomUUID().toString(),
-                    name = CPU_METRIC_NAME,
                     schema = RumTimeseriesCpuEvent.Schema.OBJECT,
                     start = startNs,
                     end = endNs,
@@ -254,8 +252,6 @@ internal class TimeseriesSessionCollector(
         internal const val DEFAULT_BATCH_SIZE = 30
         internal const val DEFAULT_SAMPLING_INTERVAL_MS = 1000L
         private const val NANOS_PER_MS = 1_000_000L
-        internal const val MEMORY_METRIC_NAME = "memory"
-        internal const val CPU_METRIC_NAME = "cpu"
         internal const val OPERATION_NAME = "Timeseries sampling"
         private const val PERCENT_FACTOR = 100.0
         private const val UTIME_IDX = 13

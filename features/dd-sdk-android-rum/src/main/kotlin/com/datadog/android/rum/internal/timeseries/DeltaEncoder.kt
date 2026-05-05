@@ -47,6 +47,7 @@ internal object DeltaEncoder {
 
         return JsonObject().apply {
             addProperty("precision", PRECISION)
+            addProperty("resolution", "ns")
             add("ts", tsArray)
             add("memory_max", memoryMaxArray)
             add("memory_percent", memoryPercentArray)
@@ -77,6 +78,7 @@ internal object DeltaEncoder {
 
         return JsonObject().apply {
             addProperty("precision", PRECISION)
+            addProperty("resolution", "ns")
             add("ts", tsArray)
             add("value", cpuUsageArray)
         }

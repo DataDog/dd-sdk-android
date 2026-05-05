@@ -105,6 +105,7 @@
         "name": {
           "type": "string",
           "description": "Name identifying the timeseries metric",
+          "const": "cpu",
           "readOnly": true
         },
         "schema": {
