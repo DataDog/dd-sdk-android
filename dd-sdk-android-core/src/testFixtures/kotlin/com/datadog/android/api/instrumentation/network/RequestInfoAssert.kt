@@ -42,7 +42,7 @@ class RequestInfoAssert private constructor(actual: HttpRequestInfo) :
             .isEqualTo(tag)
     }
 
-    companion object Companion {
+    companion object {
         fun assertThat(info: HttpRequestInfo) = RequestInfoAssert(info)
     }
 }

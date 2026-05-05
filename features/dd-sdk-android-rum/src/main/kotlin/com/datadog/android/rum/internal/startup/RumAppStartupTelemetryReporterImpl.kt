@@ -32,6 +32,7 @@ internal class RumAppStartupTelemetryReporterImpl(
                     put(KEY_PROCESS_START_IMPORTANCE, processStartImportance)
 
                     put(KEY_HAS_SAVED_INSTANCE_STATE, info.scenario.hasSavedInstanceStateBundle)
+                    put(KEY_WAS_FORWARDED, info.wasForwarded)
 
                     info.scenario.appStartActivityOnCreateGapNs?.let {
                         put(KEY_GAP_NS, it)
@@ -56,6 +57,7 @@ internal class RumAppStartupTelemetryReporterImpl(
         const val KEY_CP_PROCESS_START_DIFF_NS: String = "cp_process_start_diff_ns"
         const val KEY_PROCESS_START_IMPORTANCE = "process_start_importance"
         const val KEY_HAS_SAVED_INSTANCE_STATE = "has_saved_instance_state"
+        const val KEY_WAS_FORWARDED = "was_forwarded"
 
         private const val SAMPLING_RATE = 15.0f
     }

@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import androidx.annotation.FloatRange
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
@@ -84,6 +85,11 @@ class _InternalProxy internal constructor(
     fun setCustomAppVersion(version: String) {
         val coreFeature = (sdkCore as? DatadogCore)?.coreFeature
         coreFeature?.packageVersionProvider?.version = version
+    }
+
+    @WorkerThread
+    fun flushAndShutdownExecutors() {
+        Datadog.flushAndShutdownExecutors()
     }
 
     companion object {

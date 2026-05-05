@@ -94,7 +94,10 @@ internal class EvaluationsManager(
                         )
 
                         val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
-                        if (hadFlags) {
+                        // Only use cached flags if they match the requested context to avoid
+                        // serving flags from a different user/context.
+                        val cachedContextMatches = flagsRepository.getEvaluationContext() == context
+                        if (hadFlags && cachedContextMatches) {
                             flagStateManager.updateState(FlagsClientState.Stale)
                         } else {
                             flagStateManager.updateState(FlagsClientState.Error(throwable))

@@ -4,7 +4,7 @@ include_directories(
         ../cpp/utils
 )
 add_library(
-        datadog-native-lib-test
+        datadog-ndk-test
         SHARED
         integration-tests.cpp
         test-crash-log.cpp
@@ -20,4 +20,4 @@ find_library( # Sets the name of the path variable.
         # Specifies the name of the NDK library that
         # you want CMake to locate.
         log)
-target_link_libraries(datadog-native-lib-test datadog-native-lib ${log-lib})
+target_link_libraries(datadog-ndk-test datadog-ndk ${log-lib})

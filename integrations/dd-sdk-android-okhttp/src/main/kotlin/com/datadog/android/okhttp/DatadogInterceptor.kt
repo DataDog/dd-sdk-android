@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp
 
-import android.util.Base64
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -14,9 +14,10 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.internal.network.GraphQLHeaders
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
+import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -27,13 +28,15 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.internal.net.reportNetworkInstrumentationConfigured
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -49,10 +52,10 @@ import java.util.UUID
  * For RUM integration: this interceptor will log the request as a RUM Resource, and fill the
  * request information (url, method, status code, optional error). Note that RUM Resources are only
  * tracked when a view is active. You can use one of the existing [ViewTrackingStrategy] when
- * configuring the SDK (see [RumConfiguration.Builder.useViewTrackingStrategy]) or start a view
+ * configuring the SDK (see [com.datadog.android.rum.RumConfiguration.Builder.useViewTrackingStrategy]) or start a view
  * manually (see [RumMonitor.startView]).
  *
- * For APM integration: This interceptor will create a [Span] around the request and fill the
+ * For APM integration: This interceptor will create a [DatadogSpan] around the request and fill the
  * request information (url, method, status code, optional error). It will also propagate the span
  * and trace information in the request header to link it with backend spans.
  *
@@ -84,7 +87,8 @@ open class DatadogInterceptor internal constructor(
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
-    globalTracerProvider: () -> DatadogTracer?
+    globalTracerProvider: () -> DatadogTracer?,
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -103,9 +107,12 @@ open class DatadogInterceptor internal constructor(
                 sdkReference = sdkCoreReference
             )
 
+    private val okHttpGraphQLAdapter = OkHttpGraphQLAdapter()
+
     // region Interceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
@@ -140,10 +147,7 @@ open class DatadogInterceptor internal constructor(
         }
 
         val internalLogger = (sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
-        val localChain = chainWithoutDDHeaders(
-            internalLogger = internalLogger,
-            originalChain = chain
-        )
+        val localChain = okHttpGraphQLAdapter.wrapChainWithoutDDHeaders(internalLogger, chain)
 
         return doIntercept(localChain, request)
     }
@@ -153,6 +157,7 @@ open class DatadogInterceptor internal constructor(
     // region TracingInterceptor
 
     /** @inheritdoc */
+    @WorkerThread
     override fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -184,13 +189,17 @@ open class DatadogInterceptor internal constructor(
 
     override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         super.onSdkInstanceReady(sdkCore)
-        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.notifyInterceptorInstantiated()
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.reportNetworkInstrumentationConfigured(
+            type = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP,
+            resourceHeadersExtractor = resourceHeadersExtractor
+        )
     }
 
     // endregion
 
     // region Internal
 
+    @WorkerThread
     private fun handleResponse(
         sdkCore: FeatureSdkCore,
         request: Request,
@@ -208,25 +217,29 @@ open class DatadogInterceptor internal constructor(
         val attributes = if (!isSampled || span == null) {
             emptyMap<String, Any?>()
         } else {
+            val graphqlAttributes = okHttpGraphQLAdapter.extractGraphQLAttributes(request)
+            val graphqlErrorAttributes = okHttpGraphQLAdapter.extractGraphQLErrorAttributes(
+                response,
+                graphqlAttributes,
+                sdkCore.internalLogger
+            )
             buildMap {
                 put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
-
-                request.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it.fromBase64())
-                }
-                request.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it.fromBase64())
-                }
-                request.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_VARIABLES, it.fromBase64())
-                }
-                request.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]?.let {
-                    put(RumAttributes.GRAPHQL_PAYLOAD, it.fromBase64())
-                }
+                putAll(graphqlAttributes)
+                putAll(graphqlErrorAttributes)
             }
         }
+
+        val resourceHeaderAttributes = resourceHeadersExtractor?.let {
+            _RumInternalProxy.toResourceAttributes(
+                extractor = it,
+                rawRequestHeaders = response.request.headers.toMultimap(),
+                rawResponseHeaders = response.headers.toMultimap(),
+                internalLogger = sdkCore.internalLogger
+            )
+        } ?: emptyMap()
 
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
@@ -234,44 +247,10 @@ open class DatadogInterceptor internal constructor(
             statusCode,
             getBodyLength(response, sdkCore.internalLogger),
             kind,
-            attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
+            attributes +
+                rumResourceAttributesProvider.onProvideAttributes(request, response, null) +
+                resourceHeaderAttributes
         )
-    }
-
-    private fun chainWithoutDDHeaders(
-        internalLogger: InternalLogger,
-        originalChain: Interceptor.Chain
-    ): Interceptor.Chain {
-        return if (hasGraphQLHeaders(originalChain.request().headers)) {
-            object : Interceptor.Chain by originalChain {
-                override fun proceed(request: Request): Response {
-                    return try {
-                        val cleanedRequest = request.newBuilder().apply {
-                            removeGraphQLHeaders(this)
-                        }.build()
-                        return originalChain.proceed(cleanedRequest)
-                    } catch (e: IllegalStateException) {
-                        internalLogger.log(
-                            level = InternalLogger.Level.WARN,
-                            target = InternalLogger.Target.MAINTAINER,
-                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
-                            throwable = e
-                        )
-                        originalChain.proceed(request) // fallback to the original request
-                    } catch (e: IOException) {
-                        internalLogger.log(
-                            level = InternalLogger.Level.WARN,
-                            target = InternalLogger.Target.MAINTAINER,
-                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
-                            throwable = e
-                        )
-                        originalChain.proceed(request) // fallback to the original request
-                    }
-                }
-            }
-        } else {
-            originalChain
-        }
     }
 
     private fun Request.Builder.safeBuild(): Request? {
@@ -280,10 +259,6 @@ open class DatadogInterceptor internal constructor(
         } catch (_: IllegalStateException) {
             null
         }
-    }
-
-    private fun removeGraphQLHeaders(requestBuilder: Request.Builder) {
-        GraphQLHeaders.values().forEach { requestBuilder.removeHeader(it.headerValue) }
     }
 
     private fun handleThrowable(
@@ -373,22 +348,9 @@ open class DatadogInterceptor internal constructor(
         }
     }
 
-    private fun hasGraphQLHeaders(headers: Headers): Boolean {
-        return GraphQLHeaders.values().any { headers[it.headerValue] != null }
-    }
-
     private fun ResponseBody.contentLengthOrNull(): Long? {
         return contentLength().let {
             if (it < 0L) null else it
-        }
-    }
-
-    private fun String.fromBase64(): String? {
-        return try {
-            val decodedBytes = Base64.decode(this, Base64.NO_WRAP)
-            decodedBytes?.toString(Charsets.UTF_8)
-        } catch (_: IllegalArgumentException) {
-            null
         }
     }
 
@@ -410,6 +372,7 @@ open class DatadogInterceptor internal constructor(
         BaseBuilder<DatadogInterceptor, Builder>(tracedHostsWithHeaderType) {
 
         private var rumResourceAttributesProvider: RumResourceAttributesProvider = NoOpRumResourceAttributesProvider()
+        private var resourceHeadersExtractor: ResourceHeadersExtractor? = null
 
         constructor(tracedHosts: List<String>) : this(
             tracedHosts.associateWith {
@@ -437,19 +400,33 @@ open class DatadogInterceptor internal constructor(
                 traceContextInjection,
                 redacted404ResourceName,
                 localTracerFactory,
-                globalTracerProvider
+                globalTracerProvider,
+                resourceHeadersExtractor
             )
         }
 
         /**
          * Sets the [RumResourceAttributesProvider] to use to provide custom attributes to the RUM.
-         * By default it won't attach any custom attributes.
+         * By default, it won't attach any custom attributes.
          * @param rumResourceAttributesProvider the [RumResourceAttributesProvider] to use.
          */
         fun setRumResourceAttributesProvider(rumResourceAttributesProvider: RumResourceAttributesProvider): Builder {
             this.rumResourceAttributesProvider = rumResourceAttributesProvider
             return this
         }
+
+        /**
+         * Enables capturing HTTP request and response headers in RUM Resource events.
+         *
+         * Sensitive headers matching the [ResourceHeadersExtractor.SECURITY_PATTERN] are automatically filtered out, even if specified in the [extractor].
+         *
+         * @param extractor the [ResourceHeadersExtractor] specifying which headers to capture.
+         * Defaults to a configuration that captures common safe headers.
+         * @return this builder for chaining.
+         */
+        fun trackResourceHeaders(
+            extractor: ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
+        ): Builder = apply { resourceHeadersExtractor = extractor }
     }
 
     // endregion
@@ -468,9 +445,6 @@ open class DatadogInterceptor internal constructor(
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
-
-        internal const val ERROR_FAILED_BUILD_REQUEST =
-            "Failed to build interceptor chain after removing DD headers. Falling back to original chain."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."

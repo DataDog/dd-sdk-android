@@ -15,7 +15,9 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
@@ -127,11 +129,16 @@ object Rum {
 
         val rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore = sdkCore)
 
+        val sessionSampler = DeterministicSampler(
+            idConverter = SessionSamplingIdProvider::provideId,
+            sampleRate = rumFeature.sampleRate
+        )
+
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-            sampleRate = rumFeature.sampleRate,
+            sessionSampler = sessionSampler,
             writer = rumFeature.dataWriter,
             handler = Handler(Looper.getMainLooper()),
             telemetryEventHandler = TelemetryEventHandler(

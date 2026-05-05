@@ -29,11 +29,13 @@ repositories {
 dependencies {
 
     // Dependencies used to configure the gradle plugins
+    // note: it is possible to use lightweight -api artifacts for Kotlin and AGP plugins
+    // but since buildSrc leaks to the buildscript, we still have to load plugin artifacts
+    // and then it will be classpath conflict. Maybe convention plugins will fix that.
     implementation(libs.kotlinGradlePlugin)
     implementation(libs.androidToolsGradlePlugin)
     implementation(libs.versionsGradlePlugin)
     implementation(libs.dokkaGradlePlugin)
-    implementation(libs.kover)
 
     // check api surface
     implementation(libs.kotlinGrammarParser)

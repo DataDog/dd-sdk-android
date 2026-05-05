@@ -13,12 +13,7 @@ sealed class FlagsClientState {
     /**
      * The client is not ready to evaluate flags.
      *
-     * This state occurs:
-     * - Before the first [setEvaluationContext()] call (initialization)
-     * - After client shutdown
-     * - When the provider is not initialized or unavailable
-     *
-     * No flags are available for evaluation in this state.
+     * This state occurs before the first [setEvaluationContext()] call.
      * Maps to OpenFeature's [NOT_READY] state.
      */
     object NotReady : FlagsClientState()

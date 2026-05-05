@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -128,6 +130,9 @@ internal class RumSessionScopeAttributePropagationTest {
     @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
 
+    @Mock
+    lateinit var mockSessionSampler: Sampler<String>
+
     lateinit var fakeParentAttributes: Map<String, Any?>
 
     @Forgery
@@ -164,11 +169,13 @@ internal class RumSessionScopeAttributePropagationTest {
         whenever(mockSdkCore.internalLogger) doReturn mock()
         whenever(mockSdkCore.timeProvider) doReturn mock()
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+        whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
+        whenever(mockSessionSampler.sample(any())).thenReturn(true)
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
             sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
-            sampleRate = fakeSampleRate,
+            sessionSampler = mockSessionSampler,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
             viewChangedListener = mockViewChangedListener,

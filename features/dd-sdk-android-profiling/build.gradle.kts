@@ -91,6 +91,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
+apply(from = "clone_profiling_schema.gradle.kts")
 apply(from = "generate_profiling_models.gradle.kts")
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()

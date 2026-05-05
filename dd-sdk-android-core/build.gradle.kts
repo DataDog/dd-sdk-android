@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
@@ -138,6 +139,15 @@ dependencies {
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
 }
 
 unMock {

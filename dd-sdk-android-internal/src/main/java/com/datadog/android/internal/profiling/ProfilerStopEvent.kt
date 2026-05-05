@@ -24,15 +24,17 @@ sealed class ProfilerStopEvent {
  * RUM context at TTID mark.
  *
  * @param applicationId The Id of the application of RUM.
- * @param sessionId The Id of the RUM session where TTID is captured
- * @param vitalId The Id of the TTID vital event
- * @param viewId The Id of the view where TTID is captured
+ * @param sessionId The ID of the RUM session where TTID is captured
+ * @param vitalId The ID of the TTID vital event
+ * @param vitalName The name of the TTID vital event
+ * @param viewId The ID of the view where TTID is captured
  * @param viewName The name of the view where TTID is captured
  */
 data class TTIDRumContext(
     val applicationId: String,
     val sessionId: String,
     val vitalId: String,
+    val vitalName: String?,
     val viewId: String?,
     val viewName: String?
 )

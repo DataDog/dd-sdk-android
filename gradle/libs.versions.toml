@@ -22,7 +22,7 @@ androidXComposeBom = "2023.10.01" # Next version will bring coroutines
 androidXComposeNavigation = "2.6.0"
 androidXComposeRuntime = "1.5.14"
 androidXConstraintLayout = "2.0.4"
-androidXCore = "1.17.0"
+androidXCore = "1.15.0"
 androidXFragment = "1.2.4"
 androidXLeanback = "1.0.0"
 androidXLifecycle = "2.8.7"
@@ -52,16 +52,17 @@ androidXJunitCore = "1.5.0"
 espresso = "3.5.1"
 
 # Tests Tools
-assertJ = "3.18.1"
+assertJ = "3.27.7"
 elmyr = "1.3.1"
+leakCanary = "2.14"
 mockitoKotlin = "5.1.0"
 mockitoAndroid = "5.12.0"
 kover = "0.7.6"
 kspTesting = "1.5.0"
 
 # Tools
-detekt = "1.23.0"
-dokka = "2.0.0"
+detekt = "1.23.4"
+dokka = "2.1.0"
 unmock = "0.9.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
@@ -74,7 +75,7 @@ kotlinPoet = "1.14.2"
 kotlinGrammarParser = "41b00c0"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.17.0"
-dependencyLicense = "0.5.0"
+dependencyLicense = "0.7.0"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations
@@ -83,7 +84,7 @@ coil = "1.0.0"
 coilCompose = "2.1.0"
 coil3 = "3.0.4"
 fresco = "2.3.0"
-glide = "4.11.0"
+glide = "5.0.5"
 picasso = "2.8"
 room = "2.5.1"
 rxJava3 = "3.0.0"
@@ -113,16 +114,12 @@ material3Android = "1.1.2"
 androidToolsGradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "androidToolsPlugin" }
 apolloRuntime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-kotlinSPGradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
+versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
-sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
-binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
-versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
-kotlinxSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 
 # Annotation processors
-glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
+glideKsp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
 roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
 # Common
@@ -205,16 +202,16 @@ elmyrInject = { module = "com.github.xgouchet.Elmyr:inject", version.ref = "elmy
 elmyrJUnit4 = { module = "com.github.xgouchet.Elmyr:junit4", version.ref = "elmyr" }
 elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmyr" }
 elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
+leakCanaryAndroid = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakCanary" }
+leakCanaryInstrumentation = { module = "com.squareup.leakcanary:leakcanary-android-instrumentation", version.ref = "leakCanary" }
 mockitoAndroid = { module = "org.mockito:mockito-android", version.ref = "mockitoAndroid" }
 mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-kover = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
 kspTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "kspTesting" }
 androidLintTests = { module = "com.android.tools.lint:lint-tests", version.ref = "androidLint" }
 systemStubsJupiter = { module = "uk.org.webcompere:system-stubs-jupiter", version.ref = "systemStubsJupiter" }
 
 # Tools
-detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
 detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
 detektTest = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 okHttpMock = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okHttp" }
@@ -384,3 +381,11 @@ datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", versi
 composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 apolloPlugin = { id = "com.apollographql.apollo", version.ref = "apollo" }
 dependencyLicenseGradlePlugin = { id = "com.datadoghq.dependency-license", version.ref = "dependencyLicense" }
+kotlinAndroidPlugin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+androidLibraryPlugin = { id = "com.android.library", version.ref = "androidToolsPlugin" }
+kotlinSPGradlePlugin = { id = "com.google.devtools.ksp", version.ref = "kotlinSP" }
+dokkaGradlePlugin = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+sqlDelightGradlePlugin = { id = "com.squareup.sqldelight", version.ref = "sqlDelight" }
+binaryCompatibilityGradlePlugin = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibility" }
+kotlinxSerializationPlugin = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+koverPlugin = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

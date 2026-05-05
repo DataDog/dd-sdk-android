@@ -180,6 +180,11 @@
                       "description": "CSS selector path of the target element",
                       "readOnly": true
                     },
+                    "composed_path_selector": {
+                      "type": "string",
+                      "description": "Selector data based on the click event composed path",
+                      "readOnly": true
+                    },
                     "width": {
                       "type": "integer",
                       "description": "Width of the target element (in pixels)",

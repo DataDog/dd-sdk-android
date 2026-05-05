@@ -56,26 +56,23 @@ interface InsightsCollector {
     /**
      * Notifies the collector that a long task has been detected.
      *
-     * @param startedTimestamp the timestamp when the long task started, in nanoseconds.
      * @param durationNs the duration of the long task, in nanoseconds.
      */
-    fun onLongTask(startedTimestamp: Long, durationNs: Long)
+    fun onLongTask(durationNs: Long)
 
     /**
      * Notifies the collector that a slow frame has been detected.
      *
-     * @param startedTimestamp the timestamp when the slow frame started, in nanoseconds.
      * @param durationNs the duration of the slow frame, in nanoseconds.
      */
-    fun onSlowFrame(startedTimestamp: Long, durationNs: Long)
+    fun onSlowFrame(durationNs: Long)
 
     /**
      * Notifies the collector that a network request has been detected.
      *
-     * @param startedTimestamp the timestamp when the network request started, in nanoseconds.
      * @param durationNs the duration of the network request, in nanoseconds.
      */
-    fun onNetworkRequest(startedTimestamp: Long, durationNs: Long)
+    fun onNetworkRequest(durationNs: Long)
 
     /**
      * Notifies the collector with the latest CPU vital value.

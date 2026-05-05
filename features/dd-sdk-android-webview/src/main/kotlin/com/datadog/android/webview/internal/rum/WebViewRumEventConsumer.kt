@@ -65,7 +65,13 @@ internal class WebViewRumEventConsumer(
         try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
                 ?.asString?.let { offsetProvider.getOffset(it, datadogContext) } ?: 0L
-            return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset, sessionReplayEnabled)
+            return webViewRumEventMapper.mapEvent(
+                event,
+                rumContext,
+                timeOffset,
+                sessionReplayEnabled,
+                datadogContext.userInfo.anonymousId
+            )
         } catch (e: ClassCastException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,

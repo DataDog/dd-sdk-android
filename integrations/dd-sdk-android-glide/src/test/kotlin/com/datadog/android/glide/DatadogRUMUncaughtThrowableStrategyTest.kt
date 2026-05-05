@@ -6,10 +6,10 @@
 
 package com.datadog.android.glide
 
-import com.datadog.android.glide.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -26,7 +26,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
-import java.lang.RuntimeException
 import kotlin.reflect.full.declaredFunctions
 import kotlin.reflect.jvm.isAccessible
 

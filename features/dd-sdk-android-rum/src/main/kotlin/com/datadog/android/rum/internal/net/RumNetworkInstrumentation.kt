@@ -5,6 +5,7 @@
  */
 package com.datadog.android.rum.internal.net
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -13,7 +14,8 @@ import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.tag
 import com.datadog.android.core.SdkReference
-import com.datadog.android.core.internal.net.HttpSpec
+import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -22,30 +24,45 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
 import java.util.Locale
 import java.util.UUID
 
 /**
+ * For internal usage only.
+ *
  * Handles RUM (Real User Monitoring) instrumentation for network resources.
  * This class provides methods to track HTTP requests and responses as RUM resources.
  *
  * This class operates as a middle layer between any specific library instrumentation and SDK core
- * components, making possible to share same logic between different networking libraries (OkHttp, Cronet, etc)
+ * components, making it possible to share the same logic between different networking libraries
+ * (OkHttp, Cronet, etc.).
  *
  * @param sdkInstanceName the name of the SDK instance to use, or null for the default instance
  * @param networkInstrumentationName the name of the network layer being instrumented (e.g., "OkHttp", "Cronet")
  * @param rumResourceAttributesProvider provider for custom attributes to attach to RUM resources
+ * @param libraryType the type of networking library being instrumented, used for telemetry reporting
+ * @param resourceHeadersExtractor optional extractor for capturing HTTP request/response headers in RUM Resource events
  */
 @InternalApi
 class RumNetworkInstrumentation internal constructor(
     internal val sdkInstanceName: String?,
     internal val networkInstrumentationName: String,
-    internal val rumResourceAttributesProvider: RumResourceAttributesProvider
+    internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
+    internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType,
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor?
 ) {
     private val sdkCoreReference = SdkReference(sdkInstanceName) {
-        it.networkMonitor?.notifyInterceptorInstantiated()
+        it.networkMonitor?.reportNetworkInstrumentationConfigured(
+            type = libraryType,
+            resourceHeadersExtractor = resourceHeadersExtractor
+        )
     }
+
+    /** SDK core instance. */
+    val sdkCore: SdkCore?
+        get() = sdkCoreReference.get()
 
     /**
      * Sends an event to indicate that resource timing information is expected for this request.
@@ -85,17 +102,25 @@ class RumNetworkInstrumentation internal constructor(
      * @param responseInfo the response information
      * @param attributes additional attributes to attach to the resource event
      */
+    @WorkerThread
     fun stopResource(
         requestInfo: HttpRequestInfo,
         responseInfo: HttpResponseInfo,
         attributes: Map<String, Any?> = emptyMap()
     ) = ifRumEnabled { sdkCore ->
+        val resourceHeaderAttributes = resourceHeadersExtractor?.toResourceAttributes(
+            rawRequestHeaders = responseInfo.request?.headers ?: requestInfo.headers,
+            rawResponseHeaders = responseInfo.headers,
+            internalLogger = sdkCore.internalLogger
+        ) ?: emptyMap()
         sdkCore.networkMonitor?.stopResource(
             buildResourceId(requestInfo, generateUuid = false),
             responseInfo.statusCode,
             responseInfo.getBodyLength(),
             responseInfo.getRumResourceKind(),
-            attributes + rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null)
+            attributes +
+                rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null) +
+                resourceHeaderAttributes
         )
     }
 
@@ -119,19 +144,19 @@ class RumNetworkInstrumentation internal constructor(
      * Reports an instrumentation error to the internal logger.
      * @param message the error message to report
      */
-    fun reportInstrumentationError(message: String) = ifRumEnabled { sdkCore ->
+    fun reportInstrumentationError(message: () -> String) = ifRumEnabled { sdkCore ->
         sdkCore.internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            { "Unable to instrument RUM resource: $message" }
+            { "Unable to instrument RUM resource: ${message()}" }
         )
     }
 
     private fun ifRumEnabled(block: (FeatureSdkCore) -> Unit) {
-        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
-        val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
+        val featureSdkCore = sdkCore as? FeatureSdkCore
+        val rumFeature = featureSdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
-            block(sdkCore)
+            block(featureSdkCore)
         } else {
             val prefix = if (sdkInstanceName == null) {
                 "Default SDK instance"
@@ -139,7 +164,7 @@ class RumNetworkInstrumentation internal constructor(
                 "SDK instance with name=$sdkInstanceName"
             }
 
-            (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
+            (featureSdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, networkInstrumentationName, prefix) }
@@ -193,26 +218,25 @@ class RumNetworkInstrumentation internal constructor(
         private fun HttpRequestInfo.toRumResourceMethod(
             networkInstrumentationName: String,
             internalLogger: InternalLogger
-        ) =
-            when (method) {
-                HttpSpec.Method.GET -> RumResourceMethod.GET
-                HttpSpec.Method.PUT -> RumResourceMethod.PUT
-                HttpSpec.Method.PATCH -> RumResourceMethod.PATCH
-                HttpSpec.Method.HEAD -> RumResourceMethod.HEAD
-                HttpSpec.Method.DELETE -> RumResourceMethod.DELETE
-                HttpSpec.Method.POST -> RumResourceMethod.POST
-                HttpSpec.Method.TRACE -> RumResourceMethod.TRACE
-                HttpSpec.Method.OPTIONS -> RumResourceMethod.OPTIONS
-                HttpSpec.Method.CONNECT -> RumResourceMethod.CONNECT
-                else -> {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                        { UNSUPPORTED_HTTP_METHOD.format(Locale.US, method, networkInstrumentationName) }
-                    )
-                    RumResourceMethod.GET
-                }
+        ) = when (method.uppercase(Locale.US)) {
+            HttpSpec.Method.GET -> RumResourceMethod.GET
+            HttpSpec.Method.PUT -> RumResourceMethod.PUT
+            HttpSpec.Method.PATCH -> RumResourceMethod.PATCH
+            HttpSpec.Method.HEAD -> RumResourceMethod.HEAD
+            HttpSpec.Method.DELETE -> RumResourceMethod.DELETE
+            HttpSpec.Method.POST -> RumResourceMethod.POST
+            HttpSpec.Method.TRACE -> RumResourceMethod.TRACE
+            HttpSpec.Method.OPTIONS -> RumResourceMethod.OPTIONS
+            HttpSpec.Method.CONNECT -> RumResourceMethod.CONNECT
+            else -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { UNSUPPORTED_HTTP_METHOD.format(Locale.US, method, networkInstrumentationName) }
+                )
+                RumResourceMethod.GET
             }
+        }
 
         private fun HttpResponseInfo.getRumResourceKind() =
             when (val mimeType = contentType) {
@@ -220,9 +244,10 @@ class RumNetworkInstrumentation internal constructor(
                 else -> RumResourceKind.fromMimeType(mimeType)
             }
 
+        @WorkerThread
         private fun HttpResponseInfo.getBodyLength(): Long? {
             val isStream = HttpSpec.ContentType.isStream(contentType)
-            val isWebSocket = !headers[HttpSpec.Headers.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()
+            val isWebSocket = !headers[HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER].isNullOrEmpty()
             return if (isStream || isWebSocket) null else contentLength
         }
 

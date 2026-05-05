@@ -109,7 +109,7 @@ internal class NdkCrashReportsFeature(
         var exception: Throwable? = null
         try {
             allowThreadDiskReads {
-                System.loadLibrary("datadog-native-lib")
+                System.loadLibrary("datadog-ndk")
             }
             nativeLibraryLoaded = true
         } catch (e: SecurityException) {

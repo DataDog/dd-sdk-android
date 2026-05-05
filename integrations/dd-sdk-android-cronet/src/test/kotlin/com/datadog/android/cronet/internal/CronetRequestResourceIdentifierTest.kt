@@ -6,9 +6,9 @@
 
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.core.internal.net.HttpSpec
-import com.datadog.android.cronet.DatadogCronetEngine
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation.Companion.buildResourceId
+import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -39,7 +39,7 @@ import java.util.concurrent.Executor
 @ForgeConfiguration(Configurator::class)
 internal class CronetRequestResourceIdentifierTest {
 
-    @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")
+    @StringForgery(regex = URL_FORGERY_PATTERN)
     private lateinit var fakeUrl: String
 
     @StringForgery(regex = "x-[a-z]+/[a-z]+")
@@ -52,7 +52,7 @@ internal class CronetRequestResourceIdentifierTest {
     lateinit var mockEngine: DatadogCronetEngine
 
     @Mock
-    lateinit var mockCallback: DatadogRequestCallback
+    lateinit var mockCallback: CronetRequestCallback
 
     @Mock
     lateinit var mockExecutor: Executor
@@ -227,20 +227,20 @@ internal class CronetRequestResourceIdentifierTest {
         method: String
     ) {
         // Given
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = fakeUrl,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(method) }
 
-        requestContext.addHeader(HttpSpec.Headers.CONTENT_TYPE, fakeContentType)
+        requestContext.addHeader(HttpSpec.Header.CONTENT_TYPE, fakeContentType)
         requestContext.setUploadDataProvider(
             mock<UploadDataProvider> { on { length } doThrow IOException("") },
             mockExecutor
         )
 
-        val request = CronetHttpRequestInfo(requestContext)
+        val request = requestContext.asCronetRequestInfo()
 
         // When
         val actual = request.uniqueId
@@ -256,20 +256,20 @@ internal class CronetRequestResourceIdentifierTest {
         contentLength: Long? = null,
         contentType: String? = null
     ): CronetHttpRequestInfo {
-        val requestContext = DatadogCronetRequestContext(
+        val requestContext = CronetRequestContext(
             url = url,
             engine = mockEngine,
-            datadogRequestCallback = mockCallback,
+            requestCallback = mockCallback,
             executor = mockExecutor
         ).apply { setHttpMethod(method) }
-        contentType?.let { requestContext.addHeader(HttpSpec.Headers.CONTENT_TYPE, it) }
+        contentType?.let { requestContext.addHeader(HttpSpec.Header.CONTENT_TYPE, it) }
         contentLength?.let {
             requestContext.setUploadDataProvider(
                 mock<UploadDataProvider> { on { length } doReturn contentLength },
                 mockExecutor
             )
         }
-        return CronetHttpRequestInfo(requestContext)
+        return requestContext.asCronetRequestInfo()
     }
 
     private val CronetHttpRequestInfo.uniqueId: String

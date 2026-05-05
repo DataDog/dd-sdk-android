@@ -77,7 +77,6 @@ internal class PathUtils(
         // path initial bounds
         val originalBounds = RectF()
 
-        @Suppress("DEPRECATION") // # TODO RUM-7784 replace when possible
         path.computeBounds(originalBounds, true)
 
         // calculate the scale factor
