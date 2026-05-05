@@ -136,6 +136,7 @@ open class TextViewMapper<in T : TextView>(
             y = viewGlobalBounds.y,
             width = viewGlobalBounds.width,
             height = viewGlobalBounds.height,
+            permanentId = resolveViewIdentity(textView, mappingContext.viewIdentityProvider),
             shapeStyle = null,
             border = null,
             text = capturedText,

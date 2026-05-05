@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapp
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.ViewIdentityProvider
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
@@ -59,6 +60,9 @@ internal class HiddenViewMapperTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockViewIdentityProvider: ViewIdentityProvider
+
     private lateinit var testedViewMapper: HiddenViewMapper
 
     @BeforeEach
@@ -68,6 +72,9 @@ internal class HiddenViewMapperTest {
 
         whenever(mockMappingContext.systemInformation)
             .thenReturn(mockSystemInformation)
+
+        whenever(mockMappingContext.viewIdentityProvider)
+            .thenReturn(mockViewIdentityProvider)
 
         whenever(mockSystemInformation.screenDensity)
             .thenReturn(1f)

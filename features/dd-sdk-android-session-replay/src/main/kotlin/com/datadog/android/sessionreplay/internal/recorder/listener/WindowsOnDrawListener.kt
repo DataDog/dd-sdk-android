@@ -19,8 +19,10 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.internal.recorder.ViewIdentityResolverAdapter
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import com.datadog.android.sessionreplay.internal.utils.getViewIdentityResolver
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
@@ -54,10 +56,19 @@ internal class WindowsOnDrawListener(
         override fun run() {
             val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
 
-            // is is very important to have the windows sorted by their z-order
+            // It is very important to have the windows sorted by their z-order
             val context = rootViews.firstOrNull()?.context ?: return
             val systemInformation = miscUtils.resolveSystemInformation(context)
             val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
+
+            // Fetch viewIdentityResolver lazily from RUM's feature context (see getViewIdentityResolver docs)
+            val viewIdentityResolver = sdkCore.getViewIdentityResolver()
+
+            // onWindowRefreshed is a no-op when using NoOpViewIdentityResolver (heatmap tracking disabled)
+            rootViews.forEach { viewIdentityResolver.onWindowRefreshed(it) }
+
+            // Wrap the internal resolver with the public adapter interface
+            val viewIdentityProvider = ViewIdentityResolverAdapter(viewIdentityResolver)
 
             val nodes = sdkCore.internalLogger.measureMethodCallPerf(
                 METHOD_CALL_CALLER_CLASS,
@@ -73,7 +84,8 @@ internal class WindowsOnDrawListener(
                             systemInformation = systemInformation,
                             textAndInputPrivacy = textAndInputPrivacy,
                             imagePrivacy = imagePrivacy,
-                            recordedDataQueueRefs = recordedDataQueueRefs
+                            recordedDataQueueRefs = recordedDataQueueRefs,
+                            viewIdentityProvider = viewIdentityProvider
                         )
                     }
                 }
