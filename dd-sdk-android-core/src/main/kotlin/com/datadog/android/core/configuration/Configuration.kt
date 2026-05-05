@@ -185,7 +185,7 @@ internal constructor(
         /**
          * Defines the Batch processing level, defining the maximum number of batches processed
          * sequentially without a delay within one reading/uploading cycle.
-         * @param batchProcessingLevel the desired batch processing level. By default it's set to
+         * @param batchProcessingLevel the desired batch processing level. By default, it's set to
          * [BatchProcessingLevel.MEDIUM].
          * @see BatchProcessingLevel
          */
@@ -218,7 +218,7 @@ internal constructor(
         }
 
         /**
-         * Allows to set the encryption for the local data. By default no encryption is used for
+         * Allows to set the encryption for the local data. By default, no encryption is used for
          * the local data.
          *
          * @param dataEncryption An encryption object complying [Encryption] interface.

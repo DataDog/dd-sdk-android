@@ -559,7 +559,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         private val known5GSubtypesWithNames =
             known5GSubtypes.map { NetworkType(mobileSubtypeNames[it], it) }
 
-        @Suppress("unused")
         @JvmStatic
         fun `2gSubtypeToMobileTypes`(): Stream<Arguments> {
             return allCombinations(known2GSubtypesWithNames, knownMobileTypesWithNames)
@@ -567,7 +566,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
                 .stream()
         }
 
-        @Suppress("unused")
         @JvmStatic
         fun `3gSubtypeToMobileTypes`(): Stream<Arguments> {
             return allCombinations(known3GSubtypesWithNames, knownMobileTypesWithNames)
@@ -575,7 +573,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
                 .stream()
         }
 
-        @Suppress("unused")
         @JvmStatic
         fun `4gSubtypeToMobileTypes`(): Stream<Arguments> {
             return allCombinations(known4GSubtypesWithNames, knownMobileTypesWithNames)
@@ -583,7 +580,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
                 .stream()
         }
 
-        @Suppress("unused")
         @JvmStatic
         fun `5gSubtypeToMobileTypes`(): Stream<Arguments> {
             return allCombinations(known5GSubtypesWithNames, knownMobileTypesWithNames)
@@ -591,7 +587,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
                 .stream()
         }
 
-        @Suppress("unused")
         @JvmStatic
         fun getKnownMobileTypes(): List<MobileType> {
             return knownMobileTypesWithNames

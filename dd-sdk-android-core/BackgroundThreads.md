@@ -33,7 +33,7 @@ This instance (one per `CoreFeature`) is used to process the data upload process
 It is specifically used for:
 
 - (internal) creates the initial Configuration Telemetry on `DatadogCore` startup
-  (delayed to allow cross platform SDKs to update the configuration)
+  (delayed to allow cross-platform SDKs to update the configuration)
 - (internal) used in the `DataUploadScheduler` to schedule regular upload cycles
 
 ##### Load and scalability
@@ -50,7 +50,7 @@ Except for our unit tests, the actual implementation is our own `LoggingSchedule
 
 This instance (one in our basic Android lifecycle based VTS, i.e.: Activity, Legacy Fragment and Oreo+ Fragment)
 is used to delay the call to `RumMonitor.stopView()`. This is linked with ticket `RUM-616` to avoid gaps in the
-session coverage. (cf : [Github PR #1578](https://github.com/DataDog/dd-sdk-android/pull/1578)).
+session coverage. (cf : [GitHub PR #1578](https://github.com/DataDog/dd-sdk-android/pull/1578)).
 
 ##### Load and scalability
 
@@ -94,7 +94,7 @@ Except for our unit tests, the actual implementation is our own `BackPressureExe
 ##### Purpose and Usage
 
 This instance (one per `DatadogRumMonitor`) is used to defer the process of raw events (usually captured from the
-main thread) and eventually generate actual Json event that needs to be written on disk.
+main thread) and eventually generate actual JSON event that needs to be written on disk.
 
 ##### Load and scalability
 

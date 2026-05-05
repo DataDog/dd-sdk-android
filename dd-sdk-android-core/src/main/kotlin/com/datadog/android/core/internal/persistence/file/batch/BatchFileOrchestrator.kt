@@ -146,7 +146,7 @@ internal class BatchFileOrchestrator(
         return pendingFiles.decrementAndGet()
     }
 
-    @Suppress("LiftReturnOrAssignment", "ReturnCount")
+    @Suppress("ReturnCount")
     private fun isRootDirValid(): Boolean {
         if (rootDir.existsSafe(internalLogger)) {
             if (rootDir.isDirectory) {

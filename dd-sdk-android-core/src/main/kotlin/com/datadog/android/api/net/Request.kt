@@ -21,7 +21,7 @@ data class Request(
     val description: String,
     val url: String,
     val headers: Map<String, String>,
-    // won't generate custom equals/hashcode, because ID field is enough to identify the request
+    // won't generate custom equals/hashcode, because ID field is enough to identify the request,
     // and we don't want to have array content comparison
     @Suppress("ArrayInDataClass") val body: ByteArray,
     val contentType: String? = null

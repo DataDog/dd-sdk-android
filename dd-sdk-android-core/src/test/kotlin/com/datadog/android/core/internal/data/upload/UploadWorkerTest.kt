@@ -938,30 +938,5 @@ internal class UploadWorkerTest {
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(appContext, logger)
         }
-
-        @JvmStatic
-        fun errorWithRetryStatusValues(): List<UploadStatus> {
-            val forge = Forge().apply {
-                Configurator().configure(this)
-            }
-
-            return listOf(
-                forge.getForgery(UploadStatus.Success::class.java),
-
-                forge.getForgery(UploadStatus.InvalidTokenError::class.java),
-                forge.getForgery(UploadStatus.HttpClientRateLimiting::class.java),
-                forge.getForgery(UploadStatus.HttpClientError::class.java),
-                forge.getForgery(UploadStatus.HttpServerError::class.java),
-                forge.getForgery(UploadStatus.HttpRedirection::class.java),
-                forge.getForgery(UploadStatus.UnknownHttpError::class.java),
-
-                forge.getForgery(UploadStatus.NetworkError::class.java),
-                forge.getForgery(UploadStatus.DNSError::class.java),
-                forge.getForgery(UploadStatus.RequestCreationError::class.java),
-
-                forge.getForgery(UploadStatus.UnknownException::class.java),
-                forge.getForgery(UploadStatus.UnknownStatus::class.java)
-            )
-        }
     }
 }

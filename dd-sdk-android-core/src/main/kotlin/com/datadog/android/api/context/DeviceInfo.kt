@@ -13,7 +13,7 @@ package com.datadog.android.api.context
  * @property deviceBrand Device marketing brand, e.g. Samsung.
  * @property deviceModel Device SKU model, e.g. SM-988GN.
  * @property deviceType Device type info.
- * @property deviceBuildId Build Id, ex. "ac45fd".
+ * @property deviceBuildId Build ID, ex. "ac45fd".
  * @property osName Operating system name, e.g. Android.
  * @property osMajorVersion Major operating system version, e.g. 8.
  * @property osVersion Full operating system version, e.g. 8.1.1.

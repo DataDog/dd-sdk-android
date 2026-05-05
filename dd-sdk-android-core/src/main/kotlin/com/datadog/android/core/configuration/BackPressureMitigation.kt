@@ -14,6 +14,6 @@ enum class BackPressureMitigation {
     /**  Drop the oldest items already in the queue to make room for new ones. */
     DROP_OLDEST,
 
-    /**  Ignore newest items that are not yet in the queue. */
+    /**  Ignore the newest items that are not yet in the queue. */
     IGNORE_NEWEST
 }

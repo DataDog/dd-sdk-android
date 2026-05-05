@@ -502,7 +502,7 @@ internal class CoreFeature(
         // When the host app uses the `directBootAware` flag on a  file encrypted device,
         // the app can wake up during the boot sequence before the device is unlocked
         // This mean any file I/O or access to shared preferences will throw an exception
-        // This safe context creates a device-protected storage which can be used for non sensitive
+        // This safe context creates a device-protected storage which can be used for non-sensitive
         // data. It should not be used to store the data captured by the SDK.
         return appContext.createDeviceProtectedStorageContext() ?: appContext
     }

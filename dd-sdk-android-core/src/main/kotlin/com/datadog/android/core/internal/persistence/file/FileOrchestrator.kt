@@ -36,7 +36,7 @@ internal interface FileOrchestrator {
 
     /**
      * @return a List of all flushable files. A flushable file is any file (readable or writable)
-     * which contains valid data and is ready to be uploaded to the events endpoint.
+     * which contains valid data and is ready to be uploaded to the `events` endpoint.
      */
     @WorkerThread
     fun getFlushableFiles(): List<File>

@@ -47,7 +47,7 @@ interface BuildSdkVersionProvider {
     companion object {
 
         /**
-         * Default implementation which calls Build.VERSION under the hood.
+         * Default implementation which calls `Build.VERSION` under the hood.
          */
         val DEFAULT: BuildSdkVersionProvider = object : BuildSdkVersionProvider {
 
