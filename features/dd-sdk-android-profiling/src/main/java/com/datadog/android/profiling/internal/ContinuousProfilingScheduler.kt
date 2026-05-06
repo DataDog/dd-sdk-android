@@ -15,9 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.FeatureContextKeys
-import com.datadog.android.internal.profiling.ProfilerEvent
 import java.util.Locale
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -29,7 +27,8 @@ internal class ContinuousProfilingScheduler(
     private val appContext: Context,
     private val profiler: Profiler,
     private val sdkCore: FeatureSdkCore,
-    private val sampleRate: Float
+    private val sampleRate: Float,
+    private val onActiveWindowStarted: () -> Unit = {}
 ) {
 
     @Volatile
@@ -42,12 +41,8 @@ internal class ContinuousProfilingScheduler(
     @Volatile
     private var pendingFuture: ScheduledFuture<*>? = null
 
-    internal val pendingLongTasks: MutableList<ProfilerEvent.RumLongTaskEvent> =
-        CopyOnWriteArrayList()
-    internal val pendingAnrEvents: MutableList<ProfilerEvent.RumAnrEvent> = CopyOnWriteArrayList()
-
     @Volatile
-    private var isActive: Boolean = false
+    internal var isActive: Boolean = false
 
     private val schedulerExecutor: ScheduledExecutorService = profiler.scheduledExecutorService
 
@@ -75,30 +70,10 @@ internal class ContinuousProfilingScheduler(
         logToUser { LOG_STOPPED }
         pendingFuture?.cancel(false)
         isActive = false
-        pendingLongTasks.clear()
-        pendingAnrEvents.clear()
-    }
-
-    fun onRumLongTaskEvent(event: ProfilerEvent.RumLongTaskEvent) {
-        if (!isActive) return
-        pendingLongTasks.add(event)
-    }
-
-    fun onRumAnrEvent(event: ProfilerEvent.RumAnrEvent) {
-        if (!isActive) return
-        pendingAnrEvents.add(event)
     }
 
     fun onActiveWindowEnded() {
         isActive = false
-    }
-
-    fun onContinuousProfileWritten(
-        writtenLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        writtenAnrEvents: List<ProfilerEvent.RumAnrEvent>
-    ) {
-        pendingLongTasks.removeAll(writtenLongTasks.toSet())
-        pendingAnrEvents.removeAll(writtenAnrEvents.toSet())
     }
 
     fun onAppLaunchProfilingComplete() {
@@ -114,8 +89,7 @@ internal class ContinuousProfilingScheduler(
     private fun scheduleNextCycle() {
         val activeMs = jitter(CONTINUOUS_WINDOW_DURATION_MS)
         if (rumSessionSampled) {
-            pendingLongTasks.clear()
-            pendingAnrEvents.clear()
+            onActiveWindowStarted()
             isActive = true
             logToUser { LOG_ACTIVE_WINDOW_STARTED.format(Locale.US, activeMs) }
             profiler.start(

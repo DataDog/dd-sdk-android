@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -425,6 +426,7 @@ internal class ProfilingFeatureTest {
         // Then
         verify(mockDataWriter).write(
             profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)),
+            ttidEvent = isNull(),
             longTasks = eq(listOf(fakeRumLongTaskEvent)),
             anrEvents = eq(emptyList())
         )
@@ -464,9 +466,320 @@ internal class ProfilingFeatureTest {
         // Then
         verify(mockDataWriter).write(
             profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)),
+            ttidEvent = isNull(),
             longTasks = eq(emptyList()),
             anrEvents = eq(listOf(fakeRumAnrEvent))
         )
+    }
+
+    @Test
+    fun `M accumulate RUM events in feature lists W continuous active window open`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        // Close launch window
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            PerfettoResult(
+                start = 0L,
+                end = 1L,
+                tag = ProfilingStartReason.APPLICATION_LAUNCH.value,
+                resultFilePath = "/fake"
+            )
+        )
+        // Open continuous active window
+        testedFeature.onReceive(
+            RumSessionRenewedEvent(
+                sessionId = fakeSessionId,
+                sessionSampled = true
+            )
+        )
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+        runnableCaptor.firstValue.run()
+
+        // When
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).containsExactly(fakeRumLongTaskEvent)
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).containsExactly(fakeRumAnrEvent)
+    }
+
+    @Test
+    fun `M not accumulate RUM events W no profiling window is active {between windows}`() {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 0f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M clear RUM events W new continuous active window starts`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        // Close launch window
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            PerfettoResult(
+                start = 0L,
+                end = 1L,
+                tag = ProfilingStartReason.APPLICATION_LAUNCH.value,
+                resultFilePath = "/fake"
+            )
+        )
+        // Open window 1
+        testedFeature.onReceive(
+            RumSessionRenewedEvent(
+                sessionId = fakeSessionId,
+                sessionSampled = true
+            )
+        )
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(
+            runnableCaptor.capture(),
+            any(),
+            any()
+        )
+        runnableCaptor.lastValue.run() // fires cooldown → opens window 1
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isNotEmpty()
+        // End window 1
+        callbackCaptor.firstValue.onSuccess(
+            PerfettoResult(
+                start = 0L,
+                end = 1L,
+                tag = ProfilingStartReason.CONTINUOUS.value,
+                resultFilePath = "/fake"
+            )
+        )
+
+        // When
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(
+            runnableCaptor.capture(),
+            any(),
+            any()
+        )
+        runnableCaptor.lastValue.run()
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M keep unwritten RUM events W continuous profile written {new events after snapshot}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeNewLongTask: ProfilerEvent.RumLongTaskEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.dataWriter = mockDataWriter
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(RumSessionRenewedEvent(fakeSessionId, sessionSampled = true))
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+        runnableCaptor.firstValue.run()
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeNewLongTask)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+        )
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+    }
+
+    @Test
+    fun `M write launch event with long task events W app-launch profiling result received`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+
+        // Then
+        verify(mockDataWriter).write(
+            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)),
+            ttidEvent = eq(fakeTTID),
+            longTasks = eq(listOf(fakeRumLongTaskEvent)),
+            anrEvents = eq(emptyList())
+        )
+    }
+
+    @Test
+    fun `M write launch event with ANR events W app-launch profiling result received`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeRumAnrEvent)
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+
+        // Then
+        verify(mockDataWriter).write(
+            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)),
+            ttidEvent = eq(fakeTTID),
+            longTasks = eq(emptyList()),
+            anrEvents = eq(listOf(fakeRumAnrEvent))
+        )
+    }
+
+    @Test
+    fun `M not accumulate RUM events W profiler not running {launch profiling not active}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M clear pending RUM events W app-launch profiling failed`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // When
+        testedFeature.onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M not accumulate RUM events after launch window closed W RUM events after launch write`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+
+        // When
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M clear pending RUM events W app-launch profiling result written`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeRumAnrEvent)
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+        )
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
     }
 
     @Test
