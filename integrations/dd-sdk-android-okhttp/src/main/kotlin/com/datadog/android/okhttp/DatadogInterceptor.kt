@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
@@ -288,8 +289,8 @@ open class DatadogInterceptor internal constructor(
                 // manually rebuild the mimetype as `toString()` can also include the charsets
                 it.type + "/" + it.subtype
             }
-            val isStream = contentType in STREAM_CONTENT_TYPES
-            val isWebSocket = !response.header(WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
+            val isStream = HttpSpec.ContentType.isStream(contentType)
+            val isWebSocket = !response.header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
             if (body == null || isStream || isWebSocket) {
                 return null
             }
@@ -432,15 +433,6 @@ open class DatadogInterceptor internal constructor(
     // endregion
 
     internal companion object {
-        internal val STREAM_CONTENT_TYPES = setOf(
-            "text/event-stream",
-            "application/grpc",
-            "application/grpc+proto",
-            "application/grpc+json"
-        )
-
-        internal const val WEBSOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept"
-
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +

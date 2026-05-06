@@ -35,6 +35,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
@@ -273,6 +274,32 @@ internal class OkHttpGraphQLAdapterTest {
             any<Boolean>(),
             anyOrNull()
         )
+    }
+
+    @Test
+    fun `M return empty and skip extraction W extractGraphQLErrorAttributes() {streaming response}`(
+        @StringForgery fakeOpName: String,
+        @StringForgery fakeBody: String
+    ) {
+        // Given
+        val streamContentType = forge.anElementFrom(
+            HttpSpec.ContentType.values().filter(HttpSpec.ContentType::isStream)
+        )
+        val request = Request.Builder()
+            .url("https://example.com/graphql")
+            .build()
+
+        val response = forge.anOkHttpResponse(request, 200) {
+            body(fakeBody.toResponseBody(streamContentType.toMediaType()))
+        }
+        val graphqlAttributes = mapOf<String, Any?>(RumAttributes.GRAPHQL_OPERATION_NAME to fakeOpName)
+
+        // When
+        val result = testedHelper.extractGraphQLErrorAttributes(response, graphqlAttributes, mockInternalLogger)
+
+        // Then
+        assertThat(result).isEmpty()
+        verify(mockGraphQLExtractor, never()).extractGraphQLErrors(any(), any(), any())
     }
 
     // endregion
