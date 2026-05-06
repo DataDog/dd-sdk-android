@@ -593,7 +593,10 @@ internal class CoreFeature(
         trackingConsentProvider = TrackingConsentProvider(consent)
 
         // System Info Provider
-        systemInfoProvider = BroadcastReceiverSystemInfoProvider(internalLogger = internalLogger)
+        systemInfoProvider = BroadcastReceiverSystemInfoProvider(
+            internalLogger = internalLogger,
+            executorService = contextExecutorService
+        )
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
@@ -610,7 +613,10 @@ internal class CoreFeature(
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
             CallbackNetworkInfoProvider(internalLogger = internalLogger)
         } else {
-            BroadcastReceiverNetworkInfoProvider()
+            BroadcastReceiverNetworkInfoProvider(
+                internalLogger = internalLogger,
+                executorService = contextExecutorService
+            )
         }
         networkInfoProvider.register(appContext)
     }
