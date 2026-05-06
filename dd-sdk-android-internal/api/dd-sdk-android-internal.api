@@ -123,34 +123,35 @@ public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/identity/NoOpViewIdentityResolver : com/datadog/android/internal/identity/ViewIdentityResolver {
-	public fun <init> ()V
-	public fun onWindowRefreshed (Landroid/view/View;)V
-	public fun resolveViewIdentity (Landroid/view/View;)Ljava/lang/String;
-	public fun setCurrentScreen (Ljava/lang/String;)V
-}
-
-public abstract interface class com/datadog/android/internal/identity/ViewIdentityResolver {
-	public static final field Companion Lcom/datadog/android/internal/identity/ViewIdentityResolver$Companion;
-	public static final field FEATURE_CONTEXT_KEY Ljava/lang/String;
-	public abstract fun onWindowRefreshed (Landroid/view/View;)V
-	public abstract fun resolveViewIdentity (Landroid/view/View;)Ljava/lang/String;
-	public abstract fun setCurrentScreen (Ljava/lang/String;)V
-}
-
-public final class com/datadog/android/internal/identity/ViewIdentityResolver$Companion {
-	public static final field FEATURE_CONTEXT_KEY Ljava/lang/String;
-}
-
-public final class com/datadog/android/internal/identity/ViewIdentityResolverImpl : com/datadog/android/internal/identity/ViewIdentityResolver {
-	public static final field Companion Lcom/datadog/android/internal/identity/ViewIdentityResolverImpl$Companion;
+public final class com/datadog/android/internal/heatmaps/HeatmapIdentifier {
+	public static final field Companion Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion;
 	public fun <init> (Ljava/lang/String;)V
-	public fun onWindowRefreshed (Landroid/view/View;)V
-	public fun resolveViewIdentity (Landroid/view/View;)Ljava/lang/String;
-	public fun setCurrentScreen (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRawValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/identity/ViewIdentityResolverImpl$Companion {
+public final class com/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion {
+}
+
+public abstract interface class com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry {
+	public static final field Companion Lcom/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry$Companion;
+	public abstract fun heatmapIdentifier (J)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public abstract fun setHeatmapIdentifiers (Ljava/util/Map;)V
+}
+
+public final class com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry$Companion {
+	public final fun create ()Lcom/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry;
+}
+
+public final class com/datadog/android/internal/heatmaps/NoOpHeatmapIdentifierRegistry : com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry {
+	public fun <init> ()V
+	public fun heatmapIdentifier (J)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public fun setHeatmapIdentifiers (Ljava/util/Map;)V
 }
 
 public final class com/datadog/android/internal/lifecycle/ProcessLifecycleMonitor : android/app/Application$ActivityLifecycleCallbacks {
