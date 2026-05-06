@@ -18,6 +18,7 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants$LogAttr
 	public static final field MESSAGE Ljava/lang/String;
 	public static final field STACK Ljava/lang/String;
 	public static final field STATUS Ljava/lang/String;
+	public static final field TIMESTAMP_MS Ljava/lang/String;
 }
 
 public final class com/datadog/android/trace/api/DatadogTracingConstants$PrioritySampling {

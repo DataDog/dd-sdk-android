@@ -42,6 +42,7 @@ object com.datadog.android.trace.api.DatadogTracingConstants
     const val MESSAGE: String
     const val STACK: String
     const val STATUS: String
+    const val TIMESTAMP_MS: String
   object ErrorPriorities
     const val UNSET: Byte
     const val HTTP_SERVER_DECORATOR: Byte
