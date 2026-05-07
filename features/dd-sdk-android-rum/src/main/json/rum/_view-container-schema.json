@@ -37,7 +37,8 @@
             "unity",
             "kotlin-multiplatform",
             "electron",
-            "rum-cpp"
+            "rum-cpp",
+            "maui"
           ],
           "readOnly": true
         }
