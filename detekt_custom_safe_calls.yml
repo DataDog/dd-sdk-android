@@ -700,6 +700,7 @@ datadog:
       - "java.util.Date.constructor(kotlin.Long)"
       - "java.util.function.Consumer(kotlin.Function1)"
       - "java.util.HashMap.clear()"
+      - "java.util.HashMap.constructor()"
       - "java.util.HashMap.orEmpty()"
       - "java.util.HashSet.addAll(kotlin.collections.Collection)"
       - "java.util.HashSet.find(kotlin.Function1)"
