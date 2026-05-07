@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal
 
+import android.app.Application
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -17,8 +18,10 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
@@ -53,6 +56,8 @@ internal class ProfilingFeature(
     @Volatile
     private var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
 
+    private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         customEndpointUrl = configuration.customEndpointUrl,
         internalLogger = sdkCore.internalLogger
@@ -82,18 +87,30 @@ internal class ProfilingFeature(
         }
         dataWriter = createDataWriter(sdkCore)
 
-        continuousProfilingScheduler = ContinuousProfilingScheduler(
+        val scheduler = ContinuousProfilingScheduler(
             appContext = appContext,
             profiler = profiler,
             sdkCore = sdkCore,
+            timeProvider = DefaultTimeProvider(),
             sampleRate = configuration.continuousSampleRate,
             onActiveWindowStarted = pendingRumEvents::clear
         ).apply {
             start(launchProfilingActive = profiler.isRunning(sdkCore.name))
         }
+        continuousProfilingScheduler = scheduler
+
+        if (appContext is Application) {
+            processLifecycleMonitor = ProcessLifecycleMonitor(ProfilingLifecycleCallback(scheduler)).apply {
+                appContext.registerActivityLifecycleCallbacks(this)
+            }
+        }
     }
 
     override fun onStop() {
+        processLifecycleMonitor?.let { monitor ->
+            (appContext as? Application)?.unregisterActivityLifecycleCallbacks(monitor)
+        }
+        processLifecycleMonitor = null
         continuousProfilingScheduler?.stop()
         profiler.apply {
             stop(sdkCore.name)

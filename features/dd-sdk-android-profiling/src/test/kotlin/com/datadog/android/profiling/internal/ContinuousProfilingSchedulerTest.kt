@@ -9,6 +9,7 @@ package com.datadog.android.profiling.internal
 import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -23,9 +24,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -62,6 +65,9 @@ internal class ContinuousProfilingSchedulerTest {
     @Mock
     private lateinit var mockFuture: ScheduledFuture<Any>
 
+    @Mock
+    private lateinit var mockTimeProvider: TimeProvider
+
     private var activeWindowStartedCount = 0
 
     private val fakeInstanceName = "test-sdk-instance"
@@ -79,11 +85,19 @@ internal class ContinuousProfilingSchedulerTest {
             )
         ) doReturn mockFuture
 
+        // Make submit() execute the runnable immediately (synchronous for testing).
+        whenever(mockSchedulerExecutor.submit(any<Runnable>())) doAnswer { invocation ->
+            (invocation.getArgument<Runnable>(0)).run()
+            @Suppress("UNCHECKED_CAST")
+            mockFuture
+        }
+
         activeWindowStartedCount = 0
         testedScheduler = ContinuousProfilingScheduler(
             profiler = mockProfiler,
             appContext = mockApplication,
             sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
             sampleRate = 100f,
             onActiveWindowStarted = { activeWindowStartedCount++ }
         )
@@ -159,6 +173,7 @@ internal class ContinuousProfilingSchedulerTest {
             profiler = mockProfiler,
             appContext = mockApplication,
             sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
             sampleRate = 0f
         )
 
@@ -176,6 +191,7 @@ internal class ContinuousProfilingSchedulerTest {
             profiler = mockProfiler,
             appContext = mockApplication,
             sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
             sampleRate = 0f
         )
 
@@ -197,6 +213,7 @@ internal class ContinuousProfilingSchedulerTest {
             profiler = mockProfiler,
             appContext = mockApplication,
             sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
             sampleRate = 0f
         )
         testedScheduler.start(launchProfilingActive = false)
@@ -372,12 +389,225 @@ internal class ContinuousProfilingSchedulerTest {
         verify(mockFuture).cancel(false)
     }
 
+    @Test
+    fun `M cancel grace period future W stop() {grace period running}`() {
+        // Given
+        openActiveWindow()
+        testedScheduler.onBackground()
+
+        // When
+        testedScheduler.stop()
+
+        // Then
+        verify(mockFuture, atLeastOnce()).cancel(false)
+    }
+
     // endregion
 
+    // region lifecycle — onBackground / onForeground
+
     @Test
-    fun `M invoke onActiveWindowStarted callback W each new active window starts`() {
+    fun `M start grace period timer W onBackground() {active window running}`() {
         // Given
-        testedScheduler.onRumSessionRenewed(sessionSampled = true)
+        openActiveWindow()
+        val delayCaptor = argumentCaptor<Long>()
+        whenever(
+            mockSchedulerExecutor.schedule(any<Runnable>(), delayCaptor.capture(), any<TimeUnit>())
+        ) doReturn mockFuture
+
+        // When
+        testedScheduler.onBackground()
+
+        // Then
+        assertThat(delayCaptor.lastValue)
+            .isEqualTo(ContinuousProfilingScheduler.BACKGROUND_GRACE_PERIOD_MS)
+    }
+
+    @Test
+    fun `M cancel active window timer W onBackground() {active window running}`() {
+        // Given
+        openActiveWindow()
+
+        // When
+        testedScheduler.onBackground()
+
+        // Then
+        verify(mockFuture).cancel(false)
+    }
+
+    @Test
+    fun `M NOT stop profiler W onBackground() {active window running}`() {
+        // Given
+        openActiveWindow()
+
+        // When
+        testedScheduler.onBackground()
+
+        // Then
+        verify(mockProfiler, never()).stop(any())
+    }
+
+    @Test
+    fun `M resume active window W onForeground() {grace period not expired}`() {
+        // Given
+        openActiveWindow()
+        testedScheduler.onBackground()
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.ACTIVE)
+        verify(mockProfiler, never()).start(any(), any(), any(), any(), eq(0))
+    }
+
+    @Test
+    fun `M stop profiler W grace period expires`() {
+        // Given
+        openActiveWindow()
+        testedScheduler.onBackground()
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(
+            runnableCaptor.capture(),
+            any(),
+            any()
+        )
+
+        // When
+        runnableCaptor.lastValue.run()
+
+        // Then
+        verify(mockProfiler).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M start cooldown W onForeground() {after grace period expired}`() {
+        // Given
+        openActiveWindow()
+        testedScheduler.onBackground()
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(
+            runnableCaptor.capture(),
+            any(),
+            any()
+        )
+        runnableCaptor.lastValue.run() // expire grace period
+        val delayCaptor = argumentCaptor<Long>()
+        whenever(
+            mockSchedulerExecutor.schedule(any<Runnable>(), delayCaptor.capture(), any<TimeUnit>())
+        ) doReturn mockFuture
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        val cooldownBase = ContinuousProfilingScheduler.CONTINUOUS_COOLDOWN_DURATION_MS
+        assertThat(delayCaptor.lastValue)
+            .isBetween((cooldownBase * 0.8).toLong(), (cooldownBase * 1.2).toLong())
+    }
+
+    @Test
+    fun `M pause cooldown timer W onBackground() {cooldown running}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onAppLaunchProfilingComplete()
+
+        // When
+        testedScheduler.onBackground()
+
+        // Then
+        verify(mockFuture).cancel(false)
+    }
+
+    @Test
+    fun `M resume cooldown with remaining time W onForeground() {paused cooldown}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onAppLaunchProfilingComplete()
+        testedScheduler.onBackground()
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
+    }
+
+    @Test
+    fun `M do nothing W onBackground() {scheduler not started}`() {
+        // When
+        testedScheduler.onBackground()
+
+        // Then
+        verify(mockProfiler, never()).stop(any())
+        verify(mockFuture, never()).cancel(any())
+    }
+
+    @Test
+    fun `M do nothing W onForeground() {scheduler not started}`() {
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockSchedulerExecutor, never()).schedule(any<Runnable>(), any(), any())
+    }
+
+    @Test
+    fun `M ignore second background W onBackground() {already in grace period}`() {
+        // Given
+        openActiveWindow()
+        testedScheduler.onBackground() // → GRACE_PERIOD
+
+        // When
+        testedScheduler.onBackground()
+
+        // Then
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.GRACE_PERIOD)
+        verify(mockFuture, times(1)).cancel(false)
+    }
+
+    @Test
+    fun `M ignore foreground W onForeground() {state is ACTIVE}`() {
+        // Given
+        openActiveWindow()
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.ACTIVE)
+    }
+
+    @Test
+    fun `M ignore foreground W onForeground() {state is COOLDOWN}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = false)
+        check(testedScheduler.state == ContinuousProfilingScheduler.State.COOLDOWN)
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
+    }
+
+    @Test
+    fun `M re-enter grace period W onBackground() {after foreground resumed active window}`() {
+        // Given
+        openActiveWindow()
+        testedScheduler.onBackground() // ACTIVE → GRACE_PERIOD
+        testedScheduler.onForeground() // GRACE_PERIOD → ACTIVE
+
+        // When
+        testedScheduler.onBackground() // ACTIVE → GRACE_PERIOD again
+
+        // Then
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.GRACE_PERIOD)
+    }
+
+    private fun openActiveWindow() {
+        testedScheduler.rumSessionSampled = true
         testedScheduler.start(launchProfilingActive = true)
         val runnableCaptor = argumentCaptor<Runnable>()
         testedScheduler.onAppLaunchProfilingComplete()
