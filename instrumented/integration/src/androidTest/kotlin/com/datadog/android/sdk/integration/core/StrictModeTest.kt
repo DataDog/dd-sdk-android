@@ -18,7 +18,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
-@Suppress("TestFunctionName")
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class StrictModeTest {
@@ -35,7 +34,7 @@ class StrictModeTest {
     }
 
     @Test
-    fun M_disable_disk_read_checks_W_allowThreadDiskReads() {
+    fun disablesDiskReadChecksWhenAllowingThreadDiskReads() {
         // Given
         StrictMode.setThreadPolicy(
             ThreadPolicy.Builder()
@@ -62,7 +61,7 @@ class StrictModeTest {
     }
 
     @Test
-    fun M_disable_disk_read_checks_temporarily_W_allowThreadDiskReads() {
+    fun disablesDiskReadChecksTemporarilyWhenAllowingThreadDiskReads() {
         // Given
         StrictMode.setThreadPolicy(
             ThreadPolicy.Builder()
@@ -90,7 +89,7 @@ class StrictModeTest {
     }
 
     @Test
-    fun M_disable_disk_write_checks_W_allowThreadDiskWrites() {
+    fun disablesDiskWriteChecksWhenAllowingThreadDiskWrites() {
         // Given
         val threadPolicy = ThreadPolicy.Builder()
             .detectAll()
