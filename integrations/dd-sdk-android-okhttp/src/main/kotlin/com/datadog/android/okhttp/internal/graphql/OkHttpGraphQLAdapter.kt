@@ -14,63 +14,33 @@ import com.datadog.android.okhttp.internal.OkHttpRequestInfo
 import com.datadog.android.okhttp.internal.OkHttpResponseInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.net.GraphQLExtractor
-import okhttp3.Headers
-import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
-import java.io.IOException
 
 internal class OkHttpGraphQLAdapter(
     private val graphQLExtractor: GraphQLExtractor = GraphQLExtractor()
 ) {
 
-    fun wrapChainWithoutDDHeaders(
-        internalLogger: InternalLogger,
-        originalChain: Interceptor.Chain
-    ): Interceptor.Chain {
-        return if (hasGraphQLHeaders(originalChain.request().headers)) {
-            object : Interceptor.Chain by originalChain {
-                override fun proceed(request: Request): Response {
-                    return try {
-                        val cleanedRequest = request.newBuilder().apply {
-                            removeGraphQLHeaders(this)
-                        }.build()
-                        return originalChain.proceed(cleanedRequest)
-                    } catch (e: IllegalStateException) {
-                        internalLogger.log(
-                            level = InternalLogger.Level.WARN,
-                            target = InternalLogger.Target.MAINTAINER,
-                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
-                            throwable = e
-                        )
-                        originalChain.proceed(request) // fallback to the original request
-                    } catch (e: IOException) {
-                        internalLogger.log(
-                            level = InternalLogger.Level.WARN,
-                            target = InternalLogger.Target.MAINTAINER,
-                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
-                            throwable = e
-                        )
-                        originalChain.proceed(request) // fallback to the original request
-                    }
-                }
-            }
-        } else {
-            originalChain
-        }
+    fun stripHeadersAndTag(request: Request, builder: Request.Builder) {
+        val attributes = graphQLExtractor.extractGraphQLAttributes(OkHttpRequestInfo(request))
+        if (attributes.isEmpty()) return
+
+        GraphQLHeaders.values().forEach { builder.removeHeader(it.headerValue) }
+        @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
+        builder.tag(GraphQLAttributes::class.java, GraphQLAttributes(attributes))
     }
 
-    fun extractGraphQLAttributes(request: Request): Map<String, Any?> =
-        graphQLExtractor.extractGraphQLAttributes(OkHttpRequestInfo(request))
+    fun readGraphQLAttributesFromTag(request: Request): Map<String, Any?> =
+        request.tag(GraphQLAttributes::class.java)?.attributes.orEmpty()
 
     @WorkerThread
     @Suppress("ReturnCount")
     fun extractGraphQLErrorAttributes(
         response: Response,
-        graphqlAttributes: Map<String, Any?>,
+        graphQLAttributes: Map<String, Any?>,
         internalLogger: InternalLogger
     ): Map<String, Any> {
-        if (graphqlAttributes.isEmpty()) return emptyMap()
+        if (graphQLAttributes.isEmpty()) return emptyMap()
         // Streaming responses surface GraphQL errors per-frame, not as a top-level `errors` array.
         // Draining their bodies via peekBody().string() would block until the (potentially unbounded) body completes.
         val body = response.body
@@ -104,18 +74,12 @@ internal class OkHttpGraphQLAdapter(
         }
     }
 
-    internal fun hasGraphQLHeaders(headers: Headers): Boolean =
-        GraphQLHeaders.values().any { headers[it.headerValue] != null }
-
-    private fun removeGraphQLHeaders(requestBuilder: Request.Builder) {
-        GraphQLHeaders.values().forEach { requestBuilder.removeHeader(it.headerValue) }
-    }
-
     internal companion object {
-        internal const val ERROR_FAILED_BUILD_REQUEST =
-            "Failed to build interceptor chain after removing DD headers. Falling back to original chain."
-
         internal const val ERROR_PEEK_BODY_GRAPHQL =
             "Failed to peek response body for GraphQL errors."
     }
 }
+
+internal data class GraphQLAttributes(
+    val attributes: Map<String, Any?>
+)
