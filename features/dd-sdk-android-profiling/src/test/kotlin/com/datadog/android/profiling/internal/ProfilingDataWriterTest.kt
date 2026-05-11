@@ -18,12 +18,13 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
-import com.datadog.android.profiling.assertj.RumMobileEventsAssert.Companion.assertThat
+import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
-import com.datadog.android.profiling.model.RumMobileEvents
+import com.datadog.android.profiling.model.RumMetadataEvent
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -324,26 +325,24 @@ internal class ProfilingDataWriterTest {
         // Then
         val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
         assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
-        val rumMobileEvents = RumMobileEvents.fromJson(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
-        assertThat(rumMobileEvents)
-            .hasErrors(
-                listOf(
-                    RumMobileEvents.Error(
-                        id = fakeAnrEvent.id,
-                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs),
-                        durationNs = fakeAnrEvent.durationNs
-                    )
-                )
-            )
-            .hasLongTasks(
-                listOf(
-                    RumMobileEvents.LongTask(
-                        id = fakeLongTask.id,
-                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs),
-                        durationNs = fakeLongTask.durationNs
-                    )
-                )
-            )
+        val rumMobileEvents = JsonParser.parseString(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+            .asJsonArray
+            .map {
+                RumMetadataEvent.fromJsonObject(it.asJsonObject)
+            }
+        assertThat(rumMobileEvents).hasSize(2)
+        val actualAnr = rumMobileEvents.first { it.type == RumMetadataEvent.Type.ERROR }
+        val actualLongTask = rumMobileEvents.first { it.type == RumMetadataEvent.Type.LONG_TASK }
+        assertThat(actualAnr)
+            .hasId(fakeAnrEvent.id)
+            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs))
+            .hasDurationNs(fakeAnrEvent.durationNs)
+            .hasName(null)
+        assertThat(actualLongTask)
+            .hasId(fakeLongTask.id)
+            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs))
+            .hasDurationNs(fakeLongTask.durationNs)
+            .hasName(null)
     }
 
     @Test
@@ -398,18 +397,19 @@ internal class ProfilingDataWriterTest {
             .hasErrorIds(listOf(fakeAnrEvent.id))
         val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
         assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
-        val rumMobileEvents = RumMobileEvents.fromJson(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
-        assertThat(rumMobileEvents)
-            .hasErrors(
-                listOf(
-                    RumMobileEvents.Error(
-                        id = fakeAnrEvent.id,
-                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs),
-                        durationNs = fakeAnrEvent.durationNs
-                    )
-                )
-            )
-            .hasLongTasks(null)
+        val rumMobileEvents = JsonParser.parseString(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+            .asJsonArray
+            .map {
+                RumMetadataEvent.fromJsonObject(it.asJsonObject)
+            }
+        assertThat(rumMobileEvents).hasSize(1)
+        val actualAnr = rumMobileEvents.first()
+        assertThat(actualAnr)
+            .hasId(fakeAnrEvent.id)
+            .hasType(RumMetadataEvent.Type.ERROR)
+            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs))
+            .hasDurationNs(fakeAnrEvent.durationNs)
+            .hasName(null)
     }
 
     @Test
@@ -445,18 +445,19 @@ internal class ProfilingDataWriterTest {
             .hasErrorIds(emptyList())
         val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
         assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
-        val rumMobileEvents = RumMobileEvents.fromJson(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
-        assertThat(rumMobileEvents)
-            .hasLongTasks(
-                listOf(
-                    RumMobileEvents.LongTask(
-                        id = fakeLongTask.id,
-                        startNs = TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs),
-                        durationNs = fakeLongTask.durationNs
-                    )
-                )
-            )
-            .hasErrors(null)
+        val rumMobileEvents = JsonParser.parseString(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+            .asJsonArray
+            .map {
+                RumMetadataEvent.fromJsonObject(it.asJsonObject)
+            }
+        assertThat(rumMobileEvents).hasSize(1)
+        val actualLongTask = rumMobileEvents.first()
+        assertThat(actualLongTask)
+            .hasId(fakeLongTask.id)
+            .hasType(RumMetadataEvent.Type.LONG_TASK)
+            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs))
+            .hasDurationNs(fakeLongTask.durationNs)
+            .hasName(null)
     }
 
     @Test

@@ -12,7 +12,7 @@ createJsonModelsGenerationTask("generateProfilingModelsFromJson") {
     extraInputWatchDir = project.layout.projectDirectory.dir("src/main/json/profiling")
     inputNameMapping = mapOf(
         "profile-event-schema.json" to "ProfileEvent",
-        "rum-mobile-events-schema.json" to "RumMobileEvents"
+        "profile-rum-metadata-event-schema.json" to "RumMetadataEvent"
     )
     targetPackageName = "com.datadog.android.profiling.model"
 }
