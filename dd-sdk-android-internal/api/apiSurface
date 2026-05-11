@@ -63,9 +63,10 @@ data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
 data class com.datadog.android.internal.heatmaps.HeatmapIdentifier
   constructor(String)
   companion object 
+    fun create(List<String>, String, String): HeatmapIdentifier?
 interface com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-  fun setHeatmapIdentifiers(Map<Long, HeatmapIdentifier>)
-  fun heatmapIdentifier(Long): HeatmapIdentifier?
+  fun setHeatmapIdentifiers(Map<Long, HeatmapIdentifier>, String)
+  fun getHeatmapIdentifier(Long, String): HeatmapIdentifier?
   companion object 
     fun create(): HeatmapIdentifierRegistry
 class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.app.Application.ActivityLifecycleCallbacks

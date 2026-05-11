@@ -15,14 +15,24 @@ import com.datadog.tools.annotation.NoOpImplementation
 interface HeatmapIdentifierRegistry {
 
     /**
-     * Replaces the current set of identifiers with [identifiers].
+     * Replaces the current snapshot with [identifiers], scoped to [screenName].
+     *
+     * @param identifiers a map of [android.view.View.getId] values to their [HeatmapIdentifier]s,
+     *   computed during the most recent Session Replay view tree traversal.
+     * @param screenName the RUM view URL active when the snapshot was computed. Used to
+     *   guard against stale reads after screen navigation.
      */
-    fun setHeatmapIdentifiers(identifiers: Map<Long, HeatmapIdentifier>)
+    fun setHeatmapIdentifiers(identifiers: Map<Long, HeatmapIdentifier>, screenName: String)
 
     /**
-     * Returns the [HeatmapIdentifier] for the view with the given [viewId], or null if unknown.
+     * Returns the [HeatmapIdentifier] for the view with the given [viewId], or null if the
+     * view is unknown or if [currentScreenName] does not match the screen that produced the
+     * current snapshot (indicating the snapshot is stale).
+     *
+     * @param viewId the Android view ID of the tapped view.
+     * @param currentScreenName the RUM view URL active at the time of the tap.
      */
-    fun heatmapIdentifier(viewId: Long): HeatmapIdentifier?
+    fun getHeatmapIdentifier(viewId: Long, currentScreenName: String): HeatmapIdentifier?
 
     companion object {
 

@@ -13,31 +13,35 @@ import kotlin.concurrent.write
 /**
  * Internal — construct via [HeatmapIdentifierRegistry.create].
  *
- * Writes (one per Session Replay traversal) atomically replace the snapshot; reads
- * (per RUM tap action) are non-blocking with respect to other reads.
+ * Writes (one per Session Replay traversal) atomically replace the entire snapshot so reads
+ * always see a complete, consistent map — never a partial update. Reads are non-blocking
+ * with respect to other reads.
+ *
+ * Note: there is no guarantee that a read sees the snapshot that was current at the exact
+ * moment of a tap. If SR writes a new snapshot between the tap and the RUM lookup, the read
+ * returns the newer snapshot. The screen name guard ensures a stale cross-screen snapshot
+ * returns null — the worst case is a missed tap, not a wrong one.
  */
 internal class HeatmapIdentifierStore : HeatmapIdentifierRegistry {
 
     private val lock = ReentrantReadWriteLock()
 
-    private var identifiers: Map<Long, HeatmapIdentifier> = HashMap()
+    private var snapshotScreenName: String? = null
+    private val identifiers: MutableMap<Long, HeatmapIdentifier> = mutableMapOf()
 
-    override fun setHeatmapIdentifiers(identifiers: Map<Long, HeatmapIdentifier>) {
-        // HashMap(int) throws IllegalArgumentException only for a negative argument;
-        // putAll() throws NullPointerException only for a null map. Map.size is non-negative
-        // and the parameter is non-null, so neither throws here.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val snapshot: Map<Long, HeatmapIdentifier> = HashMap<Long, HeatmapIdentifier>(identifiers.size).apply {
-            putAll(identifiers)
-        }
+    override fun setHeatmapIdentifiers(identifiers: Map<Long, HeatmapIdentifier>, screenName: String) {
         lock.write {
-            this.identifiers = snapshot
+            this.snapshotScreenName = screenName
+            this.identifiers.clear()
+            // putAll() throws NullPointerException only for a null map; the parameter is non-null.
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            this.identifiers.putAll(identifiers)
         }
     }
 
-    override fun heatmapIdentifier(viewId: Long): HeatmapIdentifier? {
+    override fun getHeatmapIdentifier(viewId: Long, currentScreenName: String): HeatmapIdentifier? {
         return lock.read {
-            identifiers[viewId]
+            if (snapshotScreenName == currentScreenName) identifiers[viewId] else null
         }
     }
 }

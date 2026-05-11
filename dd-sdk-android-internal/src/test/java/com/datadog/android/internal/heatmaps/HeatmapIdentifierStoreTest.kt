@@ -33,35 +33,82 @@ internal class HeatmapIdentifierStoreTest {
     }
 
     @Test
+    fun `M return null W getHeatmapIdentifier { store not initialized }`(
+        @LongForgery fakeViewId: Long,
+        @StringForgery fakeScreenName: String
+    ) {
+        assertThat(testedStore.getHeatmapIdentifier(fakeViewId, fakeScreenName)).isNull()
+    }
+
+    @Test
     fun `M replace snapshot W setHeatmapIdentifiers { called twice }`(forge: Forge) {
         // Given
+        val fakeScreenName = forge.anAlphabeticalString()
         val firstViewId = forge.aLong()
         val secondViewId = forge.aLong(min = firstViewId + 1L)
         val firstIdentifier = HeatmapIdentifier(forge.anAlphabeticalString())
         val secondIdentifier = HeatmapIdentifier(forge.anAlphabeticalString())
-        testedStore.setHeatmapIdentifiers(mapOf(firstViewId to firstIdentifier))
+        testedStore.setHeatmapIdentifiers(mapOf(firstViewId to firstIdentifier), fakeScreenName)
 
         // When
-        testedStore.setHeatmapIdentifiers(mapOf(secondViewId to secondIdentifier))
+        testedStore.setHeatmapIdentifiers(mapOf(secondViewId to secondIdentifier), fakeScreenName)
 
         // Then
-        assertThat(testedStore.heatmapIdentifier(firstViewId)).isNull()
-        assertThat(testedStore.heatmapIdentifier(secondViewId)).isEqualTo(secondIdentifier)
+        assertThat(testedStore.getHeatmapIdentifier(firstViewId, fakeScreenName)).isNull()
+        assertThat(testedStore.getHeatmapIdentifier(secondViewId, fakeScreenName)).isEqualTo(secondIdentifier)
     }
 
     @Test
     fun `M return null W heatmapIdentifier { snapshot replaced with empty }`(
         @LongForgery fakeViewId: Long,
-        @StringForgery fakeRawValue: String
+        @StringForgery fakeRawValue: String,
+        @StringForgery fakeScreenName: String
     ) {
         // Given
-        testedStore.setHeatmapIdentifiers(mapOf(fakeViewId to HeatmapIdentifier(fakeRawValue)))
+        testedStore.setHeatmapIdentifiers(mapOf(fakeViewId to HeatmapIdentifier(fakeRawValue)), fakeScreenName)
 
         // When
-        testedStore.setHeatmapIdentifiers(emptyMap())
+        testedStore.setHeatmapIdentifiers(emptyMap(), fakeScreenName)
 
         // Then
-        assertThat(testedStore.heatmapIdentifier(fakeViewId)).isNull()
+        assertThat(testedStore.getHeatmapIdentifier(fakeViewId, fakeScreenName)).isNull()
+    }
+
+    @Test
+    fun `M return null W heatmapIdentifier { screen name mismatch }`(
+        @LongForgery fakeViewId: Long,
+        @StringForgery fakeRawValue: String,
+        @StringForgery fakeSnapshotScreenName: String
+    ) {
+        // Given
+        val fakeCurrentScreenName = fakeSnapshotScreenName + "_different"
+        testedStore.setHeatmapIdentifiers(
+            mapOf(fakeViewId to HeatmapIdentifier(fakeRawValue)),
+            fakeSnapshotScreenName
+        )
+
+        // When - RUM reads with a different screen name (stale snapshot)
+        val result = testedStore.getHeatmapIdentifier(fakeViewId, fakeCurrentScreenName)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return identifier W heatmapIdentifier { screen name matches }`(
+        @LongForgery fakeViewId: Long,
+        @StringForgery fakeRawValue: String,
+        @StringForgery fakeScreenName: String
+    ) {
+        // Given
+        val fakeIdentifier = HeatmapIdentifier(fakeRawValue)
+        testedStore.setHeatmapIdentifiers(mapOf(fakeViewId to fakeIdentifier), fakeScreenName)
+
+        // When
+        val result = testedStore.getHeatmapIdentifier(fakeViewId, fakeScreenName)
+
+        // Then
+        assertThat(result).isEqualTo(fakeIdentifier)
     }
 
     // region factory
@@ -69,15 +116,16 @@ internal class HeatmapIdentifierStoreTest {
     @Test
     fun `M return functional registry W HeatmapIdentifierRegistry create()`(
         @LongForgery fakeViewId: Long,
-        @StringForgery fakeRawValue: String
+        @StringForgery fakeRawValue: String,
+        @StringForgery fakeScreenName: String
     ) {
         // Given
         val testedRegistry = HeatmapIdentifierRegistry.create()
         val fakeIdentifier = HeatmapIdentifier(fakeRawValue)
 
         // When
-        testedRegistry.setHeatmapIdentifiers(mapOf(fakeViewId to fakeIdentifier))
-        val result = testedRegistry.heatmapIdentifier(fakeViewId)
+        testedRegistry.setHeatmapIdentifiers(mapOf(fakeViewId to fakeIdentifier), fakeScreenName)
+        val result = testedRegistry.getHeatmapIdentifier(fakeViewId, fakeScreenName)
 
         // Then
         assertThat(result).isEqualTo(fakeIdentifier)
@@ -90,6 +138,7 @@ internal class HeatmapIdentifierStoreTest {
     @Test
     fun `M not throw W concurrent setHeatmapIdentifiers { multiple writers }`(forge: Forge) {
         // Given
+        val fakeScreenName = forge.anAlphabeticalString()
         val viewIdA = forge.aLong()
         val viewIdB = forge.aLong(min = viewIdA + 1L)
         val identifierA = HeatmapIdentifier(forge.anAlphabeticalString())
@@ -102,7 +151,7 @@ internal class HeatmapIdentifierStoreTest {
             Thread {
                 try {
                     repeat(iterations) {
-                        testedStore.setHeatmapIdentifiers(mapOf(viewIdA to identifierA))
+                        testedStore.setHeatmapIdentifiers(mapOf(viewIdA to identifierA), fakeScreenName)
                     }
                 } catch (t: Throwable) {
                     firstError.compareAndSet(null, t)
@@ -111,7 +160,7 @@ internal class HeatmapIdentifierStoreTest {
             Thread {
                 try {
                     repeat(iterations) {
-                        testedStore.setHeatmapIdentifiers(mapOf(viewIdB to identifierB))
+                        testedStore.setHeatmapIdentifiers(mapOf(viewIdB to identifierB), fakeScreenName)
                     }
                 } catch (t: Throwable) {
                     firstError.compareAndSet(null, t)
@@ -123,8 +172,8 @@ internal class HeatmapIdentifierStoreTest {
         // Then
         assertThat(firstError.get()).isNull()
         // Atomic replacement: exactly one snapshot survives, never a merged state.
-        val resultA = testedStore.heatmapIdentifier(viewIdA)
-        val resultB = testedStore.heatmapIdentifier(viewIdB)
+        val resultA = testedStore.getHeatmapIdentifier(viewIdA, fakeScreenName)
+        val resultB = testedStore.getHeatmapIdentifier(viewIdB, fakeScreenName)
         val finalIsAOnly = resultA == identifierA && resultB == null
         val finalIsBOnly = resultA == null && resultB == identifierB
         assertThat(finalIsAOnly || finalIsBOnly).isTrue()
@@ -133,6 +182,7 @@ internal class HeatmapIdentifierStoreTest {
     @Test
     fun `M not throw W concurrent setHeatmapIdentifiers and heatmapIdentifier`(forge: Forge) {
         // Given
+        val fakeScreenName = forge.anAlphabeticalString()
         val viewId = forge.aLong()
         val identifierA = HeatmapIdentifier(forge.anAlphabeticalString())
         val identifierB = HeatmapIdentifier(forge.anAlphabeticalString())
@@ -144,7 +194,7 @@ internal class HeatmapIdentifierStoreTest {
             try {
                 repeat(iterations) { i ->
                     val identifier = if (i % 2 == 0) identifierA else identifierB
-                    testedStore.setHeatmapIdentifiers(mapOf(viewId to identifier))
+                    testedStore.setHeatmapIdentifiers(mapOf(viewId to identifier), fakeScreenName)
                 }
             } catch (t: Throwable) {
                 firstError.compareAndSet(null, t)
@@ -153,7 +203,7 @@ internal class HeatmapIdentifierStoreTest {
         val reader = Thread {
             try {
                 repeat(iterations) {
-                    testedStore.heatmapIdentifier(viewId)
+                    testedStore.getHeatmapIdentifier(viewId, fakeScreenName)
                 }
             } catch (t: Throwable) {
                 firstError.compareAndSet(null, t)
@@ -164,13 +214,14 @@ internal class HeatmapIdentifierStoreTest {
         // Then
         assertThat(firstError.get()).isNull()
         // Final value is one of the published identifiers, never torn or stale.
-        val finalResult = testedStore.heatmapIdentifier(viewId)
+        val finalResult = testedStore.getHeatmapIdentifier(viewId, fakeScreenName)
         assertThat(finalResult).isIn(identifierA, identifierB)
     }
 
     @Test
     fun `M return only published values W sustained many-thread race`(forge: Forge) {
         // Given
+        val fakeScreenName = forge.anAlphabeticalString()
         val viewId = forge.aLong()
         val publishedIdentifiers = forge.aList(size = NUM_DISTINCT_IDENTIFIERS) {
             HeatmapIdentifier(forge.anAlphabeticalString())
@@ -187,7 +238,7 @@ internal class HeatmapIdentifierStoreTest {
                 try {
                     repeat(WRITES_PER_WRITER) { i ->
                         val identifier = publishedIdentifiers[i % publishedIdentifiers.size]
-                        testedStore.setHeatmapIdentifiers(mapOf(viewId to identifier))
+                        testedStore.setHeatmapIdentifiers(mapOf(viewId to identifier), fakeScreenName)
                     }
                 } catch (t: Throwable) {
                     firstError.compareAndSet(null, t)
@@ -200,7 +251,7 @@ internal class HeatmapIdentifierStoreTest {
                     repeat(READS_PER_READER) {
                         // ConcurrentLinkedQueue.add() doesn't throw for non-null elements
                         @Suppress("UnsafeThirdPartyFunctionCall")
-                        testedStore.heatmapIdentifier(viewId)?.let { seenValues.add(it) }
+                        testedStore.getHeatmapIdentifier(viewId, fakeScreenName)?.let { seenValues.add(it) }
                     }
                 } catch (t: Throwable) {
                     firstError.compareAndSet(null, t)
