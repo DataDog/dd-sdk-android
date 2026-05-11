@@ -9,7 +9,6 @@ package com.datadog.android.okhttp.internal.graphql
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.internal.network.HttpSpec
-import com.datadog.android.internal.utils.toBase64
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.net.GraphQLExtractor
 import com.datadog.android.tests.elmyr.anOkHttpResponse
@@ -32,7 +31,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -65,114 +63,90 @@ internal class OkHttpGraphQLAdapterTest {
         testedHelper = OkHttpGraphQLAdapter(mockGraphQLExtractor)
     }
 
-    // region wrapChainWithoutDDHeaders
+    // region convertHeadersToTag
 
     @Test
-    fun `M strip GraphQL headers W wrapChainWithoutDDHeaders() {with DD headers}`(
-        @StringForgery fakeGraphQLName: String,
-        @StringForgery fakeUserAgent: String
+    fun `M strip DD headers and attach tag W convertHeadersToTag() {graphql request}`(
+        @StringForgery fakeOperationName: String
     ) {
         // Given
+        val attrs = mapOf<String, Any?>(RumAttributes.GRAPHQL_OPERATION_NAME to fakeOperationName)
+        whenever(mockGraphQLExtractor.extractGraphQLAttributes(any())) doReturn attrs
+
         val request = Request.Builder()
             .url("https://example.com/graphql")
-            .addHeader("User-Agent", fakeUserAgent)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
+            .header(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "encoded-name")
+            .header(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "encoded-type")
+            .header(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, "encoded-vars")
+            .header(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, "encoded-payload")
+            .header("User-Agent", "test-agent")
             .build()
-        val response = forge.anOkHttpResponse(request, 200) {
-            body("""{"data":{}}""".toResponseBody(HttpSpec.ContentType.APPLICATION_JSON.toMediaType()))
+        val builder = request.newBuilder()
+
+        // When
+        testedHelper.convertHeadersToTag(request, builder)
+        val result = builder.build()
+
+        // Then
+        GraphQLHeaders.values().forEach {
+            assertThat(result.header(it.headerValue)).isNull()
         }
-        whenever(mockChain.request()) doReturn request
-        whenever(mockChain.proceed(any())) doReturn response
-
-        // When
-        val wrappedChain = testedHelper.wrapChainWithoutDDHeaders(mockInternalLogger, mockChain)
-        wrappedChain.proceed(request)
-
-        // Then
-        val requestCaptor = argumentCaptor<Request>()
-        verify(mockChain).proceed(requestCaptor.capture())
-        val cleanedRequest = requestCaptor.firstValue
-        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
-        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(result.header("User-Agent")).isEqualTo("test-agent")
+        assertThat(result.tag(GraphQLAttributes::class.java)).isEqualTo(GraphQLAttributes(attrs))
     }
 
     @Test
-    fun `M return original chain W wrapChainWithoutDDHeaders() {without DD headers}`(
-        @StringForgery fakeUserAgent: String
-    ) {
+    fun `M not modify builder W convertHeadersToTag() {empty attributes}`() {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader("User-Agent", fakeUserAgent)
-            .build()
+        whenever(mockGraphQLExtractor.extractGraphQLAttributes(any())) doReturn emptyMap()
 
-        whenever(mockChain.request()) doReturn request
+        val request = Request.Builder()
+            .url("https://example.com/api")
+            .header("User-Agent", "test-agent")
+            .build()
+        val builder = request.newBuilder()
 
         // When
-        val wrappedChain = testedHelper.wrapChainWithoutDDHeaders(mockInternalLogger, mockChain)
+        testedHelper.convertHeadersToTag(request, builder)
+        val result = builder.build()
 
         // Then
-        assertThat(wrappedChain).isSameAs(mockChain)
+        assertThat(result.header("User-Agent")).isEqualTo("test-agent")
+        assertThat(result.tag(GraphQLAttributes::class.java)).isNull()
     }
 
     // endregion
 
-    // region hasGraphQLHeaders
+    // region readGraphQLAttributesFromTag
 
     @Test
-    fun `M return true W hasGraphQLHeaders() {with any GraphQL header}`(
-        @StringForgery fakeValue: String
+    fun `M return tagged attributes W readGraphQLAttributesFromTag() {tag present}`(
+        @StringForgery fakeOperationName: String
     ) {
         // Given
+        val attrs = mapOf<String, Any?>(RumAttributes.GRAPHQL_OPERATION_NAME to fakeOperationName)
         val request = Request.Builder()
             .url("https://example.com/graphql")
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeValue)
+            .tag(GraphQLAttributes::class.java, GraphQLAttributes(attrs))
             .build()
 
         // When
-        val result = testedHelper.hasGraphQLHeaders(request.headers)
+        val result = testedHelper.readGraphQLAttributesFromTag(request)
 
         // Then
-        assertThat(result).isTrue()
+        assertThat(result).isEqualTo(attrs)
     }
 
     @Test
-    fun `M return false W hasGraphQLHeaders() {without GraphQL headers}`() {
+    fun `M return empty map W readGraphQLAttributesFromTag() {no tag}`() {
         // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader("User-Agent", "test")
-            .build()
+        val request = Request.Builder().url("https://example.com/api").build()
 
         // When
-        val result = testedHelper.hasGraphQLHeaders(request.headers)
+        val result = testedHelper.readGraphQLAttributesFromTag(request)
 
         // Then
-        assertThat(result).isFalse()
-    }
-
-    // endregion
-
-    // region extractGraphQLAttributes
-
-    @Test
-    fun `M delegate to graphQLExtractor W extractGraphQLAttributes()`(
-        @StringForgery fakeGraphQLName: String
-    ) {
-        // Given
-        val request = Request.Builder()
-            .url("https://example.com/graphql")
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName.toBase64())
-            .build()
-        val expectedAttributes = mapOf("key" to "value")
-        whenever(mockGraphQLExtractor.extractGraphQLAttributes(any())) doReturn expectedAttributes
-
-        // When
-        val result = testedHelper.extractGraphQLAttributes(request)
-
-        // Then
-        assertThat(result).isEqualTo(expectedAttributes)
-        verify(mockGraphQLExtractor).extractGraphQLAttributes(any())
+        assertThat(result).isEmpty()
     }
 
     // endregion

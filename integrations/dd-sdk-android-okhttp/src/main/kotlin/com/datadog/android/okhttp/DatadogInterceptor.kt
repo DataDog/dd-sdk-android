@@ -118,13 +118,14 @@ open class DatadogInterceptor internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
-        val request = chain.request()
-            .newBuilder()
+        val originalRequest = chain.request()
+        val request = originalRequest.newBuilder()
             .apply {
                 @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
                 tag(UUID::class.java, UUID.randomUUID())
+                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this)
             }
-            .safeBuild() ?: chain.request()
+            .safeBuild() ?: originalRequest
 
         if (rumFeature != null) {
             val url = request.url.toString()
@@ -147,10 +148,7 @@ open class DatadogInterceptor internal constructor(
             )
         }
 
-        val internalLogger = (sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
-        val localChain = okHttpGraphQLAdapter.wrapChainWithoutDDHeaders(internalLogger, chain)
-
-        return doIntercept(localChain, request)
+        return doIntercept(chain, request)
     }
 
     // endregion
@@ -218,18 +216,18 @@ open class DatadogInterceptor internal constructor(
         val attributes = if (!isSampled || span == null) {
             emptyMap<String, Any?>()
         } else {
-            val graphqlAttributes = okHttpGraphQLAdapter.extractGraphQLAttributes(request)
-            val graphqlErrorAttributes = okHttpGraphQLAdapter.extractGraphQLErrorAttributes(
+            val graphQLAttributes = okHttpGraphQLAdapter.readGraphQLAttributesFromTag(request)
+            val graphQLErrorAttributes = okHttpGraphQLAdapter.extractGraphQLErrorAttributes(
                 response,
-                graphqlAttributes,
+                graphQLAttributes,
                 sdkCore.internalLogger
             )
             buildMap {
                 put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
-                putAll(graphqlAttributes)
-                putAll(graphqlErrorAttributes)
+                putAll(graphQLAttributes)
+                putAll(graphQLErrorAttributes)
             }
         }
 
