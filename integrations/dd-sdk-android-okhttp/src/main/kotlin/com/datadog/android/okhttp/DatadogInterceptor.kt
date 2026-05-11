@@ -123,7 +123,7 @@ open class DatadogInterceptor internal constructor(
             .apply {
                 @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
                 tag(UUID::class.java, UUID.randomUUID())
-                okHttpGraphQLAdapter.stripHeadersAndTag(originalRequest, this)
+                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this)
             }
             .safeBuild() ?: originalRequest
 

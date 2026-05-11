@@ -63,10 +63,10 @@ internal class OkHttpGraphQLAdapterTest {
         testedHelper = OkHttpGraphQLAdapter(mockGraphQLExtractor)
     }
 
-    // region stripHeadersAndTag
+    // region convertHeadersToTag
 
     @Test
-    fun `M strip DD headers and attach tag W stripHeadersAndTag() {graphql request}`(
+    fun `M strip DD headers and attach tag W convertHeadersToTag() {graphql request}`(
         @StringForgery fakeOperationName: String
     ) {
         // Given
@@ -84,7 +84,7 @@ internal class OkHttpGraphQLAdapterTest {
         val builder = request.newBuilder()
 
         // When
-        testedHelper.stripHeadersAndTag(request, builder)
+        testedHelper.convertHeadersToTag(request, builder)
         val result = builder.build()
 
         // Then
@@ -96,7 +96,7 @@ internal class OkHttpGraphQLAdapterTest {
     }
 
     @Test
-    fun `M not modify builder W stripHeadersAndTag() {empty attributes}`() {
+    fun `M not modify builder W convertHeadersToTag() {empty attributes}`() {
         // Given
         whenever(mockGraphQLExtractor.extractGraphQLAttributes(any())) doReturn emptyMap()
 
@@ -107,7 +107,7 @@ internal class OkHttpGraphQLAdapterTest {
         val builder = request.newBuilder()
 
         // When
-        testedHelper.stripHeadersAndTag(request, builder)
+        testedHelper.convertHeadersToTag(request, builder)
         val result = builder.build()
 
         // Then
