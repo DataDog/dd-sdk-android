@@ -17,6 +17,7 @@ import java.io.File
 @RunWith(Parameterized::class)
 class JsonSchemaReaderTest(
     internal val inputSchema: String,
+    internal val expectedName: String,
     internal val outputType: TypeDefinition
 ) {
 
@@ -39,13 +40,14 @@ class JsonSchemaReaderTest(
             NoOpLogger()
         )
 
-        val generatedType = testedReader.readSchema(File(inputPath))
+        val generatedRoot = testedReader.readSchema(File(inputPath))
 
-        assertThat(generatedType)
+        val expectedRoot = RootSchema(expectedName, outputType)
+        assertThat(generatedRoot)
             .overridingErrorMessage(
-                "Expected definition:\n$outputType\nbut was:\n$generatedType"
+                "Expected root schema:\n$expectedRoot\nbut was:\n$generatedRoot"
             )
-            .isEqualTo(outputType)
+            .isEqualTo(expectedRoot)
     }
 
     companion object {
@@ -53,43 +55,45 @@ class JsonSchemaReaderTest(
         @Parameterized.Parameters(name = "{index}: {0}")
         fun data(): Collection<Array<Any>> {
             return listOf(
-                arrayOf("arrays", Article),
-                arrayOf("one_of", Animal),
-                arrayOf("defaults_with_optionals", Bike),
-                arrayOf("nested", Book),
-                arrayOf("additional_props", Comment),
-                arrayOf("additional_props_any", Company),
-                arrayOf("additional_props_merged", AdditionalPropsMerged),
-                arrayOf("additional_props_single_merge", AdditionalPropsSingleMerge),
-                arrayOf("definition_name_conflict", Conflict),
-                arrayOf("root_schema_with_no_type", Country),
-                arrayOf("definition", Customer),
-                arrayOf("definition_with_id", Customer),
-                arrayOf("nested_enum", DateTime),
-                arrayOf("external_description", Delivery),
-                arrayOf("types", Demo),
-                arrayOf("external_description_complex_path", Employee),
-                arrayOf("top_level_definition", Foo),
-                arrayOf("one_of_ref", Household),
-                arrayOf("enum_number", Jacket),
-                arrayOf("constant", Location),
-                arrayOf("read_only", Message),
-                arrayOf("enum_array", Order),
-                arrayOf("description", Opus),
-                arrayOf("one_of_complex", Paper),
-                arrayOf("minimal", Person),
-                arrayOf("required", Product),
-                arrayOf("external_nested_description", Shipping),
-                arrayOf("external_nested_description_properties", Shipping),
-                arrayOf("enum", Style),
-                arrayOf("all_of", User),
-                arrayOf("all_of_merged", UserMerged),
-                arrayOf("constant_number", Version),
-                arrayOf("sets", Video),
-                arrayOf("one_of_nested", WeirdCombo),
-                arrayOf("required_for_other_all_of", RequiredForOtherAllOf),
-                arrayOf("path_array_with_integer", PathArrayWithInteger),
-                arrayOf("path_array_with_number", PathArrayWithNumber)
+                arrayOf("arrays", "Article", Article),
+                arrayOf("one_of", "Animal", Animal),
+                arrayOf("defaults_with_optionals", "Bike", Bike),
+                arrayOf("nested", "Book", Book),
+                arrayOf("additional_props", "Comment", Comment),
+                arrayOf("additional_props_any", "Company", Company),
+                arrayOf("additional_props_merged", "AdditionalPropsMerged", AdditionalPropsMerged),
+                arrayOf("additional_props_single_merge", "AdditionalPropsSingleMerge", AdditionalPropsSingleMerge),
+                arrayOf("definition_name_conflict", "Conflict", Conflict),
+                arrayOf("root_schema_with_no_type", "Country", Country),
+                arrayOf("definition", "Customer", Customer),
+                arrayOf("definition_with_id", "Customer", Customer),
+                arrayOf("nested_enum", "DateTime", DateTime),
+                arrayOf("external_description", "Delivery", Delivery),
+                arrayOf("types", "Demo", Demo),
+                arrayOf("external_description_complex_path", "Employee", Employee),
+                arrayOf("top_level_definition", "Foo", Foo),
+                arrayOf("one_of_ref", "Household", Household),
+                arrayOf("enum_number", "Jacket", Jacket),
+                arrayOf("constant", "Location", Location),
+                arrayOf("read_only", "Message", Message),
+                arrayOf("enum_array", "Order", Order),
+                arrayOf("description", "Opus", Opus),
+                arrayOf("one_of_complex", "Paper", Paper),
+                arrayOf("minimal", "Person", Person),
+                arrayOf("required", "Product", Product),
+                arrayOf("external_nested_description", "Shipping", Shipping),
+                arrayOf("external_nested_description_properties", "Shipping", Shipping),
+                arrayOf("enum", "Style", Style),
+                arrayOf("all_of", "User", User),
+                arrayOf("all_of_merged", "UserMerged", UserMerged),
+                arrayOf("constant_number", "Version", Version),
+                arrayOf("sets", "Video", Video),
+                arrayOf("one_of_nested", "WeirdCombo", WeirdCombo),
+                arrayOf("required_for_other_all_of", "RequiredForOtherAllOf", RequiredForOtherAllOf),
+                arrayOf("path_array_with_integer", "PathArrayWithInteger", PathArrayWithInteger),
+                arrayOf("path_array_with_number", "PathArrayWithNumber", PathArrayWithNumber),
+                arrayOf("top_level_array", "Tasks", Tasks),
+                arrayOf("top_level_unique_array", "TagSet", TagSet)
             )
         }
     }

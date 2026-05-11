@@ -32,6 +32,8 @@ import com.datadog.gradle.plugin.jsonschema.Person
 import com.datadog.gradle.plugin.jsonschema.Product
 import com.datadog.gradle.plugin.jsonschema.Shipping
 import com.datadog.gradle.plugin.jsonschema.Style
+import com.datadog.gradle.plugin.jsonschema.TagSet
+import com.datadog.gradle.plugin.jsonschema.Tasks
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
 import com.datadog.gradle.plugin.jsonschema.User
 import com.datadog.gradle.plugin.jsonschema.UserMerged
@@ -65,7 +67,7 @@ class FileGeneratorTest(
         val outputPath = clazz.getResource("/output/$outputFile.kt").file
         val testedGenerator = FileGenerator(tempDir, "com.example.model", NoOpLogger())
 
-        testedGenerator.generate(inputType)
+        testedGenerator.generate(inputType, outputFile)
 
         val generatedFile = Files.find(
             Paths.get(tempDir.toURI()),
@@ -132,7 +134,9 @@ class FileGeneratorTest(
                 arrayOf(Video, "Video"),
                 arrayOf(WeirdCombo, "WeirdCombo"),
                 arrayOf(PathArrayWithInteger, "PathArrayWithInteger"),
-                arrayOf(PathArrayWithNumber, "PathArrayWithNumber")
+                arrayOf(PathArrayWithNumber, "PathArrayWithNumber"),
+                arrayOf(Tasks, "Tasks"),
+                arrayOf(TagSet, "TagSet")
             )
         }
     }

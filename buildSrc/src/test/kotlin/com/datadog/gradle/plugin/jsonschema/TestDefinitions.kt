@@ -1112,3 +1112,54 @@ val PathArrayWithNumber = TypeDefinition.Class(
     ),
     required = setOf("path")
 )
+
+val TagSet = TypeDefinition.Array(
+    items = TypeDefinition.Class(
+        name = "Tag",
+        properties = listOf(
+            TypeProperty(
+                name = "name",
+                type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                readOnly = true
+            )
+        ),
+        required = setOf("name")
+    ),
+    uniqueItems = true
+)
+
+val Tasks = TypeDefinition.Array(
+    items = TypeDefinition.Class(
+        name = "Task",
+        properties = listOf(
+            TypeProperty(
+                name = "id",
+                type = TypeDefinition.Primitive(
+                    type = JsonPrimitiveType.STRING,
+                    description = "Task identifier."
+                ),
+                readOnly = true
+            ),
+            TypeProperty(
+                name = "title",
+                type = TypeDefinition.Primitive(
+                    type = JsonPrimitiveType.STRING,
+                    description = "Human-readable task title."
+                ),
+                readOnly = true
+            ),
+            TypeProperty(
+                name = "priority",
+                type = TypeDefinition.Primitive(
+                    type = JsonPrimitiveType.INTEGER,
+                    description = "Optional priority."
+                ),
+                readOnly = true
+            )
+        ),
+        required = setOf("id", "title"),
+        description = "A single task."
+    ),
+    uniqueItems = false,
+    description = "A flat list of tasks."
+)

@@ -24,7 +24,7 @@ class JsonSchemaReader(
 
     // region JsonSchemaReader
 
-    fun readSchema(schemaFile: File): TypeDefinition {
+    fun readSchema(schemaFile: File): RootSchema {
         logger.info("Reading schema ${schemaFile.name}")
         val schema = loadSchema(schemaFile)
         currentFile = schemaFile
@@ -33,7 +33,16 @@ class JsonSchemaReader(
         val typeName = (customName ?: schema.title ?: fileName).toCamelCase()
 
         val rawType = transform(schema, typeName, schemaFile)
-        return sanitize(rawType)
+        val sanitized = sanitize(rawType)
+        // For Class/OneOfClass roots, prefer the type's resolved `name` — it may have been picked up
+        // from a referenced schema's `title` (e.g. when the root is a bare `$ref`) and that's the
+        // expected file name. For types without an embedded name (Array), fall back to typeName.
+        val rootName = when (sanitized) {
+            is TypeDefinition.Class -> sanitized.name
+            is TypeDefinition.OneOfClass -> sanitized.name
+            else -> typeName
+        }
+        return RootSchema(rootName, sanitized)
     }
 
     // endregion
@@ -404,22 +413,33 @@ class JsonSchemaReader(
     }
 
     private fun sanitize(type: TypeDefinition): TypeDefinition {
-        if (type is TypeDefinition.Class) {
-            val names = type.getChildrenTypeNames().distinct().sortedBy { it.first }
-            val duplicates = mutableSetOf<String>()
-
-            names.forEachIndexed { i, n ->
-                if (i > 0) {
-                    if (n.first == names[i - 1].first) {
-                        duplicates.add(n.first)
-                    }
+        return when (type) {
+            is TypeDefinition.Class -> sanitizeClass(type)
+            is TypeDefinition.Array -> {
+                val items = type.items
+                if (items is TypeDefinition.Class) {
+                    type.copy(items = sanitizeClass(items))
+                } else {
+                    type
                 }
             }
-
-            return type.renameRecursive(duplicates, "")
-        } else {
-            return type
+            else -> type
         }
+    }
+
+    private fun sanitizeClass(type: TypeDefinition.Class): TypeDefinition.Class {
+        val names = type.getChildrenTypeNames().distinct().sortedBy { it.first }
+        val duplicates = mutableSetOf<String>()
+
+        names.forEachIndexed { i, n ->
+            if (i > 0) {
+                if (n.first == names[i - 1].first) {
+                    duplicates.add(n.first)
+                }
+            }
+        }
+
+        return type.renameRecursive(duplicates, "") as TypeDefinition.Class
     }
     // endregion
 

@@ -128,8 +128,8 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
         val reader = JsonSchemaReader(inputNameMapping.get(), logger)
         val generator = FileGenerator(outputDir, targetPackageName.get(), logger)
         files.forEach {
-            val type = reader.readSchema(it)
-            generator.generate(type)
+            val root = reader.readSchema(it)
+            generator.generate(root.definition, root.name)
         }
     }
 

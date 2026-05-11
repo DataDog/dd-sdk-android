@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tasks",
+  "description": "A flat list of tasks.",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/Task"
+  },
+  "definitions": {
+    "Task": {
+      "type": "object",
+      "description": "A single task.",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Task identifier.",
+          "readOnly": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable task title.",
+          "readOnly": true
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Optional priority.",
+          "readOnly": true
+        }
+      }
+    }
+  }
+}

@@ -34,22 +34,10 @@ class ClassJsonElementDeserializerGenerator(
 
         funBuilder.throws(ClassNameRef.JsonParseException)
         funBuilder.addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
-        funBuilder.beginControlFlow("try")
 
-        funBuilder.appendDeserializerFunctionBlock(definition, rootTypeName)
-
-        caughtExceptions.forEach {
-            funBuilder.nextControlFlow(
-                "catch (%L: %T)",
-                Identifier.CAUGHT_EXCEPTION,
-                it
-            )
-            funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
-            funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
-            funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
-            funBuilder.addStatement(")")
+        funBuilder.wrapInDeserializerTryCatch(returnType, ELEMENT_DESERIALIZER_EXCEPTIONS) {
+            appendDeserializerFunctionBlock(definition, rootTypeName)
         }
-        funBuilder.endControlFlow()
 
         return funBuilder.build()
     }
@@ -366,14 +354,4 @@ class ClassJsonElementDeserializerGenerator(
     }
 
     // endregion
-
-    companion object {
-        private const val PARSE_ERROR_MSG = "Unable to parse json into type"
-
-        private val caughtExceptions = arrayOf(
-            ClassNameRef.IllegalStateException,
-            ClassNameRef.NumberFormatException,
-            ClassNameRef.NullPointerException
-        )
-    }
 }

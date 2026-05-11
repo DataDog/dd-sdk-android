@@ -24,6 +24,7 @@ class FileGenerator(
     private val classGenerator = ClassGenerator(packageName, knownTypes)
     private val enumGenerator = EnumClassGenerator(packageName, knownTypes)
     private val oneOfPrimitiveOptionGenerator = OneOfPrimitiveOptionGenerator(packageName)
+    private val arrayWrapperClassGenerator = ArrayWrapperClassGenerator(packageName, knownTypes)
 
     private val multiClassGenerator = MultiClassGenerator(
         classGenerator = classGenerator,
@@ -35,12 +36,15 @@ class FileGenerator(
     // region FileGenerator
 
     /**
-     * Generate a Kotlin file based on the input schema file
+     * Generate a Kotlin file based on the input schema file.
+     *
+     * @param definition the root [TypeDefinition] read from the schema
+     * @param rootTypeName the name to give the generated top-level Kotlin type
      */
-    fun generate(typeDefinition: TypeDefinition) {
-        logger.info("Generating class for type $typeDefinition with package name $packageName")
+    fun generate(definition: TypeDefinition, rootTypeName: String) {
+        logger.info("Generating class $rootTypeName for type $definition with package name $packageName")
         knownTypes.clear()
-        generateFile(typeDefinition)
+        generateFile(definition, rootTypeName)
     }
 
     // endregion
@@ -58,13 +62,7 @@ class FileGenerator(
     /**
      *  Generate a Kotlin file based on the root schema definition
      */
-    private fun generateFile(definition: TypeDefinition) {
-        val rootTypeName = when (definition) {
-            is TypeDefinition.Class -> definition.name
-            is TypeDefinition.OneOfClass -> definition.name
-            else -> error("Top level type $definition is not supported")
-        }
-
+    private fun generateFile(definition: TypeDefinition, rootTypeName: String) {
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)
 
         knownTypes.add(
@@ -107,6 +105,7 @@ class FileGenerator(
             is TypeDefinition.Class -> classGenerator.generate(definition, rootTypeName)
             is TypeDefinition.Enum -> enumGenerator.generate(definition, rootTypeName)
             is TypeDefinition.OneOfClass -> multiClassGenerator.generate(definition, rootTypeName)
+            is TypeDefinition.Array -> arrayWrapperClassGenerator.generate(definition, rootTypeName)
             else -> throw IllegalArgumentException("Can't generate a file for type $definition")
         }
     }
