@@ -15,6 +15,8 @@ plugins {
 buildscript {
     repositories {
         // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+        // No google() here because buildSrc's buildscript only resolves the
+        // kotlin-dsl plugin, which lives on Maven Central.
         val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
         if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
         val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
@@ -24,15 +26,17 @@ buildscript {
 }
 
 repositories {
+    // google() FIRST so AndroidX / AGP artifacts resolve directly from dl.google.com
+    // (depot does not mirror Google Maven).
+    google()
+    maven { setUrl("https://maven.google.com") }
     // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
     val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
     if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
     val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
     if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
     mavenCentral()
-    google()
     maven { setUrl("https://plugins.gradle.org/m2/") }
-    maven { setUrl("https://maven.google.com") }
     maven { setUrl("https://jitpack.io") }
 }
 

@@ -7,7 +7,7 @@
 
 import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.depotProxied
+import com.datadog.gradle.config.depotProxy
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
@@ -38,13 +38,15 @@ version = AndroidConfig.VERSION.name
 
 buildscript {
     repositories {
+        // google() FIRST so AndroidX / AGP artifacts resolve directly from dl.google.com
+        // (depot does not mirror Google Maven).
+        google()
         // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
         // Inlined here because `buildscript {}` runs before buildSrc classes are on the classpath.
         val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
         if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
         val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
         if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
-        google()
         mavenCentral()
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Gradle) }
     }
@@ -55,8 +57,12 @@ buildscript {
 }
 
 allprojects {
-    repositories.depotProxied(providers) {
+    repositories {
+        // google() FIRST so AndroidX / Compose / AGP resolve directly from dl.google.com
+        // (depot does not mirror Google Maven). The depot is inserted after google() but
+        // before mavenCentral() so that 429-prone Maven Central resolution is mirrored.
         google()
+        depotProxy(providers)
         mavenCentral()
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
     }

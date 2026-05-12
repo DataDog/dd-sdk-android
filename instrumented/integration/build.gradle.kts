@@ -5,7 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.depotProxied
+import com.datadog.gradle.config.depotProxy
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
@@ -81,9 +81,12 @@ android {
     }
 }
 
-repositories.depotProxied(providers) {
+repositories {
+    // google() FIRST so AndroidX artifacts resolve directly from dl.google.com
+    // (depot does not mirror Google Maven).
     google()
     mavenLocal()
+    depotProxy(providers)
     mavenCentral()
 }
 
