@@ -23,7 +23,7 @@ import java.util.concurrent.Future
  * @param operation the operation to report
  */
 @InternalApi
-fun <R : Any?> InternalLogger.measureMethodCallPerf(
+fun <R> InternalLogger.measureMethodCallPerf(
     callerClass: Class<*>,
     operationName: String,
     samplingRate: Float = 100f,

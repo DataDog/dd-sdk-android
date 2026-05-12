@@ -19,7 +19,7 @@ interface Feature {
     val name: String
 
     /**
-     * This method is called during feature initialization. At this stage feature should setup itself.
+     * This method is called during feature initialization. At this stage feature should set up itself.
      *
      * @param appContext Application context.
      */

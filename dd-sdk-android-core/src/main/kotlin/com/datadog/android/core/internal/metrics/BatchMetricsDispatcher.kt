@@ -250,7 +250,7 @@ internal class BatchMetricsDispatcher(
         /* The value for the type of the metric.*/
         internal const val BATCH_CLOSED_TYPE_VALUE = "batch closed"
 
-        /* The value of the tracking consent according with this file origin.*/
+        /* The value of the tracking consent according to this file origin.*/
         internal const val TRACKING_CONSENT_KEY = "consent"
 
         /* The file name.*/

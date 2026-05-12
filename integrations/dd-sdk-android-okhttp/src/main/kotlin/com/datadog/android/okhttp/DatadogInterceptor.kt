@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
@@ -30,6 +31,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.internal.net.reportNetworkInstrumentationConfigured
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TraceContextInjection
@@ -116,13 +118,14 @@ open class DatadogInterceptor internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
-        val request = chain.request()
-            .newBuilder()
+        val originalRequest = chain.request()
+        val request = originalRequest.newBuilder()
             .apply {
                 @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
                 tag(UUID::class.java, UUID.randomUUID())
+                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this)
             }
-            .safeBuild() ?: chain.request()
+            .safeBuild() ?: originalRequest
 
         if (rumFeature != null) {
             val url = request.url.toString()
@@ -145,10 +148,7 @@ open class DatadogInterceptor internal constructor(
             )
         }
 
-        val internalLogger = (sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
-        val localChain = okHttpGraphQLAdapter.wrapChainWithoutDDHeaders(internalLogger, chain)
-
-        return doIntercept(localChain, request)
+        return doIntercept(chain, request)
     }
 
     // endregion
@@ -188,12 +188,10 @@ open class DatadogInterceptor internal constructor(
 
     override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         super.onSdkInstanceReady(sdkCore)
-        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.apply {
-            notifyInterceptorInstantiated()
-            reportNetworkingLibraryType(
-                InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
-            )
-        }
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.reportNetworkInstrumentationConfigured(
+            type = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP,
+            resourceHeadersExtractor = resourceHeadersExtractor
+        )
     }
 
     // endregion
@@ -218,18 +216,18 @@ open class DatadogInterceptor internal constructor(
         val attributes = if (!isSampled || span == null) {
             emptyMap<String, Any?>()
         } else {
-            val graphqlAttributes = okHttpGraphQLAdapter.extractGraphQLAttributes(request)
-            val graphqlErrorAttributes = okHttpGraphQLAdapter.extractGraphQLErrorAttributes(
+            val graphQLAttributes = okHttpGraphQLAdapter.readGraphQLAttributesFromTag(request)
+            val graphQLErrorAttributes = okHttpGraphQLAdapter.extractGraphQLErrorAttributes(
                 response,
-                graphqlAttributes,
+                graphQLAttributes,
                 sdkCore.internalLogger
             )
             buildMap {
                 put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
-                putAll(graphqlAttributes)
-                putAll(graphqlErrorAttributes)
+                putAll(graphQLAttributes)
+                putAll(graphQLErrorAttributes)
             }
         }
 
@@ -289,8 +287,8 @@ open class DatadogInterceptor internal constructor(
                 // manually rebuild the mimetype as `toString()` can also include the charsets
                 it.type + "/" + it.subtype
             }
-            val isStream = contentType in STREAM_CONTENT_TYPES
-            val isWebSocket = !response.header(WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
+            val isStream = HttpSpec.ContentType.isStream(contentType)
+            val isWebSocket = !response.header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
             if (body == null || isStream || isWebSocket) {
                 return null
             }
@@ -433,15 +431,6 @@ open class DatadogInterceptor internal constructor(
     // endregion
 
     internal companion object {
-        internal val STREAM_CONTENT_TYPES = setOf(
-            "text/event-stream",
-            "application/grpc",
-            "application/grpc+proto",
-            "application/grpc+json"
-        )
-
-        internal const val WEBSOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept"
-
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +

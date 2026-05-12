@@ -11,7 +11,7 @@ import com.datadog.android.internal.time.TimeProvider
 /**
  * A global holder of [BenchmarkProfiler]
  * allowing registration and retrieval of [BenchmarkProfiler] and [BenchmarkMeter] implementations.
- * This should only used by internal benchmarking.
+ * This should only be used by internal benchmarking.
  */
 object GlobalBenchmark {
 

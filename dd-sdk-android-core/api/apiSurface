@@ -133,7 +133,7 @@ interface com.datadog.android.api.feature.FeatureScope
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
-fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
+fun <R> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
 fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
@@ -294,13 +294,13 @@ enum com.datadog.android.core.configuration.UploadFrequency
 interface com.datadog.android.core.configuration.UploadSchedulerStrategy
   fun getMsDelayUntilNextUpload(String, Int, Int?, Throwable?): Long
 interface com.datadog.android.core.constraints.DataConstraints
-  fun <T: Any?> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
+  fun <T> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
   fun validateTags(List<String>): List<String>
   fun validateTimings(Map<String, Long>): MutableMap<String, Long>
 class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstraints
   constructor(com.datadog.android.api.InternalLogger)
   override fun validateTags(List<String>): List<String>
-  override fun <T: Any?> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
+  override fun <T> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
   override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
 sealed class com.datadog.android.core.feature.event.JvmCrash
   abstract val throwable: Throwable
