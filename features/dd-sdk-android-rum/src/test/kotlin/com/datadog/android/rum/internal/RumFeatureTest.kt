@@ -16,6 +16,7 @@ import android.content.res.Resources
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
@@ -42,6 +43,7 @@ import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvide
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -406,9 +408,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M store and register viewTrackingStrategy W initialize()`(
-        @Forgery fakeApplicationId: UUID
-    ) {
+    fun `M store and register viewTrackingStrategy W initialize()`(@Forgery fakeApplicationId: UUID) {
         // Given
         val mockViewTrackingStrategy = mock<ViewTrackingStrategy>()
         fakeConfiguration =
@@ -449,9 +449,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M bundle the custom attributes providers W initialize()`(
-        @IntForgery(0, 10) attributesCount: Int
-    ) {
+    fun `M bundle the custom attributes providers W initialize()`(@IntForgery(0, 10) attributesCount: Int) {
         // Given
         val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
             mock()
@@ -546,9 +544,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M build config with gestures enabled W initialize() {Android Q}`(
-        @IntForgery(0, 10) attributesCount: Int
-    ) {
+    fun `M build config with gestures enabled W initialize() {Android Q}`(@IntForgery(0, 10) attributesCount: Int) {
         // Given
         val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
             mock()
@@ -844,6 +840,28 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M flush timeseries before resetting writer W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockDatadogMonitor = mock<DatadogRumMonitor>()
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mockDatadogMonitor, mockSdkCore)
+
+        var writerAtFlushTime: DataWriter<Any>? = null
+        doAnswer {
+            writerAtFlushTime = testedFeature.dataWriter
+        }.whenever(mockDatadogMonitor).stopActiveTimeseries()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(writerAtFlushTime).isNotNull
+        assertThat(writerAtFlushTime).isNotInstanceOf(NoOpDataWriter::class.java)
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    @Test
     fun `M remove associated monitor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -859,9 +877,7 @@ internal class RumFeatureTest {
 
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
-    fun `M initialize vital executor W initialize { frequency != NEVER }()`(
-        fakeFrequency: VitalsUpdateFrequency
-    ) {
+    fun `M initialize vital executor W initialize { frequency != NEVER }()`(fakeFrequency: VitalsUpdateFrequency) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = fakeFrequency
@@ -1068,9 +1084,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M log dev warning and do nothing else W onReceive() { unknown type property value }`(
-        forge: Forge
-    ) {
+    fun `M log dev warning and do nothing else W onReceive() { unknown type property value }`(forge: Forge) {
         // Given
         val event = mapOf(
             "type" to forge.anAlphabeticalString()
@@ -1097,10 +1111,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
-    fun `M add crash W onReceive() { JVM crash event }`(
-        @Forgery fakeThreads: List<ThreadDump>,
-        forge: Forge
-    ) {
+    fun `M add crash W onReceive() { JVM crash event }`(@Forgery fakeThreads: List<ThreadDump>, forge: Forge) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val fakeThrowable = forge.aThrowable()
@@ -1159,10 +1170,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M consume last fatal ANR crash W consumeLastFatalAnr()`(
-        @Forgery fakeViewEventJson: JsonObject,
-        forge: Forge
-    ) {
+    fun `M consume last fatal ANR crash W consumeLastFatalAnr()`(@Forgery fakeViewEventJson: JsonObject, forge: Forge) {
         // Given
         val appExitInfo = forge.anApplicationExitInfoList(mustInclude = ApplicationExitInfo.REASON_ANR)
 
@@ -1190,9 +1198,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M not consume last fatal ANR crash W consumeLastFatalAnr() { no last view event }`(
-        forge: Forge
-    ) {
+    fun `M not consume last fatal ANR crash W consumeLastFatalAnr() { no last view event }`(forge: Forge) {
         // Given
         val appExitInfo = forge.anApplicationExitInfoList(mustInclude = ApplicationExitInfo.REASON_ANR)
 
@@ -1249,9 +1255,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M log error W consumeLastFatalAnr() { error getting historical exit reasons }`(
-        forge: Forge
-    ) {
+    fun `M log error W consumeLastFatalAnr() { error getting historical exit reasons }`(forge: Forge) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         val exceptionThrown = forge.anException()
@@ -1306,9 +1310,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + logger error
 
     @Test
-    fun `M add error W onReceive() { logger error event }`(
-        forge: Forge
-    ) {
+    fun `M add error W onReceive() { logger error event }`(forge: Forge) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
@@ -1336,9 +1338,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M log dev warning W onReceive() { logger error event + missing message field }`(
-        forge: Forge
-    ) {
+    fun `M log dev warning W onReceive() { logger error event + missing message field }`(forge: Forge) {
         // Given
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
@@ -1362,9 +1362,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M add error with stacktrace W onReceive() { logger error with stacktrace event }`(
-        forge: Forge
-    ) {
+    fun `M add error with stacktrace W onReceive() { logger error with stacktrace event }`(forge: Forge) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val fakeStacktrace = forge.aNullable { forge.anAlphabeticalString() }
@@ -1392,9 +1390,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M log dev warning W onReceive() {logger error event with stacktrace + missing message field}`(
-        forge: Forge
-    ) {
+    fun `M log dev warning W onReceive() {logger error event with stacktrace + missing message field}`(forge: Forge) {
         // Given
         val fakeThrowable = forge.aNullable { forge.aThrowable() }
         val fakeAttributes = forge.aNullable { forge.exhaustiveAttributes() }
@@ -1443,9 +1439,7 @@ internal class RumFeatureTest {
     // region FeatureEventReceiver#onReceive + telemetry event
 
     @Test
-    fun `M handle telemetry event W onReceive()`(
-        @Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent
-    ) {
+    fun `M handle telemetry event W onReceive()`(@Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent) {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -1705,9 +1699,7 @@ internal class RumFeatureTest {
         )
     }
 
-    private fun Forge.anApplicationExitInfoList(
-        mustInclude: Int? = null
-    ): List<ApplicationExitInfo> {
+    private fun Forge.anApplicationExitInfoList(mustInclude: Int? = null): List<ApplicationExitInfo> {
         val appExitInfos = aList {
             mock<ApplicationExitInfo>().apply {
                 whenever(reason) doReturn anApplicationExitInfoReason()
@@ -1722,33 +1714,29 @@ internal class RumFeatureTest {
         return appExitInfos
     }
 
-    private fun Forge.anApplicationExitInfoReason(): Int {
-        return anElementFrom(
-            ApplicationExitInfo.REASON_UNKNOWN,
-            ApplicationExitInfo.REASON_EXIT_SELF,
-            ApplicationExitInfo.REASON_SIGNALED,
-            ApplicationExitInfo.REASON_LOW_MEMORY,
-            ApplicationExitInfo.REASON_CRASH,
-            ApplicationExitInfo.REASON_CRASH_NATIVE,
-            ApplicationExitInfo.REASON_ANR,
-            ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
-            ApplicationExitInfo.REASON_PERMISSION_CHANGE,
-            ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
-            ApplicationExitInfo.REASON_USER_REQUESTED,
-            ApplicationExitInfo.REASON_USER_STOPPED,
-            ApplicationExitInfo.REASON_DEPENDENCY_DIED,
-            ApplicationExitInfo.REASON_OTHER,
-            ApplicationExitInfo.REASON_FREEZER,
-            ApplicationExitInfo.REASON_PACKAGE_STATE_CHANGE,
-            ApplicationExitInfo.REASON_PACKAGE_UPDATED
-        )
-    }
+    private fun Forge.anApplicationExitInfoReason(): Int = anElementFrom(
+        ApplicationExitInfo.REASON_UNKNOWN,
+        ApplicationExitInfo.REASON_EXIT_SELF,
+        ApplicationExitInfo.REASON_SIGNALED,
+        ApplicationExitInfo.REASON_LOW_MEMORY,
+        ApplicationExitInfo.REASON_CRASH,
+        ApplicationExitInfo.REASON_CRASH_NATIVE,
+        ApplicationExitInfo.REASON_ANR,
+        ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
+        ApplicationExitInfo.REASON_PERMISSION_CHANGE,
+        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+        ApplicationExitInfo.REASON_USER_REQUESTED,
+        ApplicationExitInfo.REASON_USER_STOPPED,
+        ApplicationExitInfo.REASON_DEPENDENCY_DIED,
+        ApplicationExitInfo.REASON_OTHER,
+        ApplicationExitInfo.REASON_FREEZER,
+        ApplicationExitInfo.REASON_PACKAGE_STATE_CHANGE,
+        ApplicationExitInfo.REASON_PACKAGE_UPDATED
+    )
 
-    private fun mockSameThreadExecutorService(): ExecutorService {
-        return mock<ExecutorService>().apply {
-            whenever(execute(any())) doAnswer {
-                it.getArgument<Runnable>(0).run()
-            }
+    private fun mockSameThreadExecutorService(): ExecutorService = mock<ExecutorService>().apply {
+        whenever(execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
         }
     }
 
@@ -1758,8 +1746,6 @@ internal class RumFeatureTest {
 
         @TestConfigurationsProvider
         @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, mainLooper)
-        }
+        fun getTestConfigurations(): List<TestConfiguration> = listOf(appContext, mainLooper)
     }
 }

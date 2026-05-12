@@ -82,6 +82,15 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.Buffer
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.Pipeline
+import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
+import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
+import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
+import com.datadog.android.rum.internal.timeseries.serializer.MemoryEventSerializer
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -111,6 +120,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -141,7 +151,8 @@ internal class RumFeature(
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : StorageBackedFeature, FeatureEventReceiver {
+) : StorageBackedFeature,
+    FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
@@ -179,6 +190,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    internal var timeseriesFactory: TimeseriesFactory = NoOpTimeseriesFactory()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -272,6 +284,10 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
+        configuration.timeseriesConfiguration?.let {
+            timeseriesFactory = createTimeseriesCollectingFactory(it)
+        }
+
         initRumAppStartupDetector()
 
         sdkCore.setEventReceiver(name, this)
@@ -336,6 +352,9 @@ internal class RumFeature(
 
         unregisterTrackingStrategies(appContext)
 
+        timeseriesFactory = NoOpTimeseriesFactory()
+        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopActiveTimeseries()
+
         dataWriter = NoOpDataWriter()
 
         viewTrackingStrategy = NoOpViewTrackingStrategy()
@@ -386,11 +405,8 @@ internal class RumFeature(
         displayInfoProvider = NoOpDisplayInfoProvider()
     }
 
-    private fun createDataWriter(
-        configuration: Configuration,
-        sdkCore: InternalSdkCore
-    ): DataWriter<Any> {
-        return RumDataWriter(
+    private fun createDataWriter(configuration: Configuration, sdkCore: InternalSdkCore): DataWriter<Any> =
+        RumDataWriter(
             eventSerializer = MapperSerializer(
                 RumEventMapper(
                     viewEventMapper = configuration.viewEventMapper,
@@ -408,6 +424,72 @@ internal class RumFeature(
             eventMetaSerializer = RumEventMetaSerializer(),
             sdkCore = sdkCore
         )
+
+    private fun createTimeseriesCollectingFactory(configuration: TimeseriesConfiguration): TimeseriesFactory {
+        return RumSessionScopeTimeseriesFactory(
+            internalLogger = sdkCore.internalLogger,
+            collectInBackground = configuration.collectInBackground,
+            scheduledExecutorService = configuration.executorFactory(),
+            pipelinesProvider = { sessionId, applicationId, sessionType ->
+                listOf(
+                    Pipeline(
+                        sdkCore = sdkCore,
+                        reader = CpuDatapointReader(
+                            cpuTimeProvider = sdkCore.timeProvider,
+                            intervalMs = configuration.intervalMs,
+                            internalLogger = sdkCore.internalLogger
+                        ),
+                        buffer = Buffer(configuration.bufferSize),
+                        serializer = CpuEventSerializer(
+                            sessionId = sessionId,
+                            applicationId = applicationId,
+                            sessionType = sessionType,
+                            timeProvider = sdkCore.timeProvider,
+                            useDeltaCompression = configuration.useDeltaCompression
+                        ),
+                        dataWriter = dataWriter
+                    ),
+                    Pipeline(
+                        sdkCore = sdkCore,
+                        reader = VitalReaderWrapper(
+                            vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
+                            timeProvider = sdkCore.timeProvider,
+                            intervalMs = configuration.intervalMs
+                        ),
+                        buffer = Buffer(configuration.bufferSize),
+                        serializer = MemoryEventSerializer(
+                            sessionId = sessionId,
+                            applicationId = applicationId,
+                            sessionType = sessionType,
+                            totalRamBytes = readTotalRamBytes(),
+                            timeProvider = sdkCore.timeProvider,
+                            useDeltaCompression = configuration.useDeltaCompression
+                        ),
+                        dataWriter = dataWriter
+                    )
+                )
+            }
+        )
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun readTotalRamBytes(): Long = try {
+        (appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)
+            // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
+            // RuntimeException on broken Android implementations; fall back to 0.
+            ?.run {
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                ActivityManager.MemoryInfo().also { getMemoryInfo(it) }.totalMem
+            }
+            ?: 0L
+    } catch (e: RuntimeException) {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            { "Failed to read total RAM via ActivityManager" },
+            e
+        )
+        0L
     }
 
     // region FeatureEventReceiver
@@ -605,11 +687,7 @@ internal class RumFeature(
         return FPSVitalListener(frameRateVitalMonitor)
     }
 
-    private fun initializeVitalMonitor(
-        vitalReader: VitalReader,
-        vitalObserver: VitalObserver,
-        periodInMs: Long
-    ) {
+    private fun initializeVitalMonitor(vitalReader: VitalReader, vitalObserver: VitalObserver, periodInMs: Long) {
         val readerRunnable = VitalReaderRunnable(
             sdkCore,
             vitalReader,
@@ -712,11 +790,7 @@ internal class RumFeature(
                     rumMonitor.sendAppStartEvent(scenario)
                 }
 
-                override fun onTTIDComputed(
-                    scenario: RumStartupScenario,
-                    durationNs: Long,
-                    wasForwarded: Boolean
-                ) {
+                override fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean) {
                     val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
                     val info = RumTTIDInfo(
                         scenario = scenario,
@@ -766,7 +840,8 @@ internal class RumFeature(
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
         val insightsCollector: InsightsCollector,
-        val appStartupActivityPredicate: AppStartupActivityPredicate
+        val appStartupActivityPredicate: AppStartupActivityPredicate,
+        val timeseriesConfiguration: TimeseriesConfiguration?
     )
 
     internal companion object {
@@ -820,7 +895,8 @@ internal class RumFeature(
             collectAccessibility = false,
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
-            appStartupActivityPredicate = DefaultAppStartupActivityPredicate
+            appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
+            timeseriesConfiguration = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
@@ -893,8 +969,6 @@ internal class RumFeature(
 
         internal fun isTrackNonFatalAnrsEnabledByDefault(
             buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
-        ): Boolean {
-            return !buildSdkVersionProvider.isAtLeastR
-        }
+        ): Boolean = !buildSdkVersionProvider.isAtLeastR
     }
 }

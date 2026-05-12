@@ -54,6 +54,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -300,7 +301,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -332,7 +334,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
 
         // When
@@ -407,7 +410,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -450,7 +454,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -463,9 +468,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W stopView()`(
-        @StringForgery(type = StringForgeryType.ASCII) key: String
-    ) {
+    fun `M delegate event to rootScope W stopView()`(@StringForgery(type = StringForgeryType.ASCII) key: String) {
         // When
         testedMonitor.stopView(key, fakeAttributes)
 
@@ -487,10 +490,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addAction()`(
-        @Forgery type: RumActionType,
-        @StringForgery name: String
-    ) {
+    fun `M delegate event to rootScope W addAction()`(@Forgery type: RumActionType, @StringForgery name: String) {
         // When
         testedMonitor.addAction(type, name, fakeAttributes)
 
@@ -514,10 +514,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W startAction()`(
-        @Forgery type: RumActionType,
-        @StringForgery name: String
-    ) {
+    fun `M delegate event to rootScope W startAction()`(@Forgery type: RumActionType, @StringForgery name: String) {
         // When
         testedMonitor.startAction(type, name, fakeAttributes)
 
@@ -541,10 +538,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W stopAction()`(
-        @Forgery type: RumActionType,
-        @StringForgery name: String
-    ) {
+    fun `M delegate event to rootScope W stopAction()`(@Forgery type: RumActionType, @StringForgery name: String) {
         // When
         testedMonitor.stopAction(type, name, fakeAttributes)
 
@@ -1028,9 +1022,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W waitForResourceTiming()`(
-        @StringForgery key: String
-    ) {
+    fun `M delegate event to rootScope W waitForResourceTiming()`(@StringForgery key: String) {
         // When
         testedMonitor.waitForResourceTiming(key)
 
@@ -1076,9 +1068,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addTiming()`(
-        @StringForgery name: String
-    ) {
+    fun `M delegate event to rootScope W addTiming()`(@StringForgery name: String) {
         // When
         testedMonitor.addTiming(name)
 
@@ -1100,9 +1090,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     @OptIn(ExperimentalRumApi::class)
-    fun `M delegate event to rootScope W addViewLoadingTime()`(
-        @BoolForgery fakeOverwrite: Boolean
-    ) {
+    fun `M delegate event to rootScope W addViewLoadingTime()`(@BoolForgery fakeOverwrite: Boolean) {
         testedMonitor.addViewLoadingTime(fakeOverwrite)
 
         argumentCaptor<RumRawEvent> {
@@ -1142,9 +1130,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W removeViewAttributes()`(
-        @StringForgery fakeAttributes: List<String>
-    ) {
+    fun `M delegate event to rootScope W removeViewAttributes()`(@StringForgery fakeAttributes: List<String>) {
         testedMonitor.removeViewAttributes(fakeAttributes)
 
         argumentCaptor<RumRawEvent> {
@@ -1270,9 +1256,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W start() { application is not in foreground }`(
-        forge: Forge
-    ) {
+    fun `M delegate event to rootScope W start() { application is not in foreground }`(forge: Forge) {
         // Given
         DdRumContentProvider.processImportance = forge.anElementFrom(
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
@@ -1719,10 +1703,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addLongTask`(
-        @LongForgery duration: Long,
-        @StringForgery target: String
-    ) {
+    fun `M delegate event to rootScope W addLongTask`(@LongForgery duration: Long, @StringForgery target: String) {
         testedMonitor.addLongTask(duration, target)
 
         argumentCaptor<RumRawEvent> {
@@ -1790,9 +1771,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventSent {error}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventSent {error}`(@StringForgery viewId: String) {
         testedMonitor.eventSent(viewId, StorageEvent.Error())
 
         argumentCaptor<RumRawEvent> {
@@ -1810,9 +1789,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventSent {longTask}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventSent {longTask}`(@StringForgery viewId: String) {
         testedMonitor.eventSent(viewId, StorageEvent.LongTask)
 
         argumentCaptor<RumRawEvent> {
@@ -1831,9 +1808,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventSent {frozenFrame}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventSent {frozenFrame}`(@StringForgery viewId: String) {
         testedMonitor.eventSent(viewId, StorageEvent.FrozenFrame)
 
         argumentCaptor<RumRawEvent> {
@@ -1898,9 +1873,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventDropped {error}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventDropped {error}`(@StringForgery viewId: String) {
         testedMonitor.eventDropped(viewId, StorageEvent.Error())
 
         argumentCaptor<RumRawEvent> {
@@ -1918,9 +1891,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventDropped {longTask}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventDropped {longTask}`(@StringForgery viewId: String) {
         testedMonitor.eventDropped(viewId, StorageEvent.LongTask)
 
         argumentCaptor<RumRawEvent> {
@@ -1939,9 +1910,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventDropped {frozenFrame}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventDropped {frozenFrame}`(@StringForgery viewId: String) {
         testedMonitor.eventDropped(viewId, StorageEvent.FrozenFrame)
 
         argumentCaptor<RumRawEvent> {
@@ -2033,7 +2002,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
 
         // When
@@ -2073,7 +2043,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
 
         // When
@@ -2114,7 +2085,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2138,9 +2110,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M notify debug listener with active RUM views W notifyDebugListenerWithState()`(
-        forge: Forge
-    ) {
+    fun `M notify debug listener with active RUM views W notifyDebugListenerWithState()`(forge: Forge) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
         testedMonitor.rootScope = mockRumApplicationScope
@@ -2172,9 +2142,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M notify debug listener with empty list W notifyDebugListenerWithState() {inactive}`(
-        forge: Forge
-    ) {
+    fun `M notify debug listener with empty list W notifyDebugListenerWithState() {inactive}`(forge: Forge) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
         testedMonitor.rootScope = mockRumApplicationScope
@@ -2350,7 +2318,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -2378,9 +2347,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M handle performance metric update W updatePerformanceMetric()`(
-        forge: Forge
-    ) {
+    fun `M handle performance metric update W updatePerformanceMetric()`(forge: Forge) {
         // Given
         val metric = forge.aValueFrom(RumPerformanceMetric::class.java)
         val value = forge.aDouble()
@@ -2402,9 +2369,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M handle external refresh rate update W updateExternalRefreshRate()`(
-        forge: Forge
-    ) {
+    fun `M handle external refresh rate update W updateExternalRefreshRate()`(forge: Forge) {
         // Given
         val frameTimeSeconds = forge.aDouble(min = 0.001, max = 1.0)
 
@@ -2425,9 +2390,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate internal view attributes W setInternalViewAttribute()`(
-        forge: Forge
-    ) {
+    fun `M delegate internal view attributes W setInternalViewAttribute()`(forge: Forge) {
         // Given
         val key = forge.aString()
         val value = forge.anInt()
@@ -2470,9 +2433,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M allow only one thread inside rootScope#handleEvent at the time W handleEvent()`(
-        forge: Forge
-    ) {
+    fun `M allow only one thread inside rootScope#handleEvent at the time W handleEvent()`(forge: Forge) {
         // Given
         var isMethodOccupied = false
         val mockRootScope = mock<RumApplicationScope>().apply {
@@ -2600,9 +2561,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M return empty map W addAttribute()++ + clearAttributes() + getAttributes()`(
-        forge: Forge
-    ) {
+    fun `M return empty map W addAttribute()++ + clearAttributes() + getAttributes()`(forge: Forge) {
         // Given
         forge.exhaustiveAttributes().forEach { (k, v) ->
             testedMonitor.addAttribute(k, v)
@@ -2716,9 +2675,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M clear feature context W handleEvent() { no active session }`(
-        @Forgery fakeRumEvent: RumRawEvent
-    ) {
+    fun `M clear feature context W handleEvent() { no active session }`(@Forgery fakeRumEvent: RumRawEvent) {
         // Given
         val mockApplicationScope = mock<RumApplicationScope>()
         whenever(mockApplicationScope.activeSession) doReturn null
@@ -2737,9 +2694,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M not update feature context W handleEvent() { event processing failed }`(
-        @Forgery fakeRumEvent: RumRawEvent
-    ) {
+    fun `M not update feature context W handleEvent() { event processing failed }`(@Forgery fakeRumEvent: RumRawEvent) {
         // Given
         val mockFeatureScope = mock<FeatureScope>()
         whenever(mockFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))) doReturn null
@@ -2853,11 +2808,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W startOperation`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
+    fun `M log user message W startOperation`(@StringForgery key: String, @StringForgery name: String, forge: Forge) {
         // Given
         val operationKey = forge.aNullable { key }
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
@@ -2875,11 +2826,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W succeedOperation`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
+    fun `M log user message W succeedOperation`(@StringForgery key: String, @StringForgery name: String, forge: Forge) {
         // Given
         val operationKey = forge.aNullable { key }
 
@@ -2896,11 +2843,7 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W failOperation`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
+    fun `M log user message W failOperation`(@StringForgery key: String, @StringForgery name: String, forge: Forge) {
         // Given
         val operationKey = forge.aNullable { key }
         val failureReason = forge.aValueFrom(FailureReason::class.java)

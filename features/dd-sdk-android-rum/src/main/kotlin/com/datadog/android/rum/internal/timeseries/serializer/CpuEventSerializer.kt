@@ -61,11 +61,14 @@ internal class CpuEventSerializer(
             )
         ).toJson() as JsonObject
 
+        // <DOGFOODING ONLY>
+        val timeseriesJson = json.getAsJsonObject("timeseries")
         if (deltaEncoded != null) {
-            val timeseriesJson = json.getAsJsonObject("timeseries")
             timeseriesJson.remove("data")
             timeseriesJson.add("data", deltaEncoded)
         }
+        timeseriesJson.addProperty("count", data.size)
+        // </DOGFOODING ONLY>
         return json
     }
 

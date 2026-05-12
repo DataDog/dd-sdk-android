@@ -110,10 +110,7 @@ object Rum {
 
     // region private
 
-    private fun createMonitor(
-        sdkCore: InternalSdkCore,
-        rumFeature: RumFeature
-    ): DatadogRumMonitor {
+    private fun createMonitor(sdkCore: InternalSdkCore, rumFeature: RumFeature): DatadogRumMonitor {
         val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(
             internalLogger = sdkCore.internalLogger,
             sessionSamplingRate = rumFeature.configuration.sampleRate
@@ -171,7 +168,8 @@ object Rum {
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )
             },
-            insightsCollector = rumFeature.insightsCollector
+            insightsCollector = rumFeature.insightsCollector,
+            timeseriesFactory = rumFeature.timeseriesFactory
         )
     }
 

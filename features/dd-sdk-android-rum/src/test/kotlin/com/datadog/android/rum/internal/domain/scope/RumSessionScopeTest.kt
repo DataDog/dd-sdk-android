@@ -235,6 +235,7 @@ internal class RumSessionScopeTest {
         whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
         whenever(mockSessionSampler.getSampleRate()).thenReturn(100f)
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
 
         fakeParentAttributes = forge.exhaustiveAttributes()
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
@@ -1942,6 +1943,55 @@ internal class RumSessionScopeTest {
         val inOrder = inOrder(mockTimeseries)
         inOrder.verify(mockTimeseries, times(2)).onSessionStart()
         inOrder.verify(mockTimeseries).onViewTypeUpdate(RumViewType.FOREGROUND)
+    }
+
+    @Test
+    fun `M stop previous timeseries W renewSession { ResetSession renews tracked session }`(forge: Forge) {
+        // Given
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val firstTimeseries = mockTimeseries
+        val secondTimeseries: Timeseries = mock()
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn secondTimeseries
+
+        // When
+        testedScope.handleEvent(RumRawEvent.ResetSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(firstTimeseries).onSessionStart()
+        verify(firstTimeseries).onSessionStop()
+        verify(secondTimeseries).onSessionStart()
+    }
+
+    @Test
+    fun `M stop previous timeseries W renewSession { expired session then new interaction }`(forge: Forge) {
+        // Given
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(backgroundTrackingEnabled = false, timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val firstTimeseries = mockTimeseries
+        val secondTimeseries: Timeseries = mock()
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn secondTimeseries
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        testedScope.handleEvent(forge.startActionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(firstTimeseries).onSessionStart()
+        verify(firstTimeseries).onSessionStop()
+        verify(secondTimeseries).onSessionStart()
+    }
+
+    @Test
+    fun `M not stop timeseries W handleEvent { StopSession, no tracked session }`() {
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockTimeseries)
     }
 
     // endregion

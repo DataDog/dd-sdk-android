@@ -30,6 +30,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -65,6 +66,7 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@OptIn(ExperimentalRumApi::class)
 internal class RumConfigurationBuilderTest {
 
     private lateinit var testedBuilder: RumConfiguration.Builder
@@ -166,9 +168,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M bundle the custom attributes providers W trackInteractions()`(
-        @IntForgery(0, 10) attributesCount: Int
-    ) {
+    fun `M bundle the custom attributes providers W trackInteractions()`(@IntForgery(0, 10) attributesCount: Int) {
         // Given
         val mockProviders = Array<ViewAttributesProvider>(attributesCount) {
             mock()
@@ -515,9 +515,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(
-        @Forgery fakeFrequency: VitalsUpdateFrequency
-    ) {
+    fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(@Forgery fakeFrequency: VitalsUpdateFrequency) {
         // When
         val rumConfiguration = testedBuilder
             .setVitalsUpdateFrequency(fakeFrequency)
@@ -530,9 +528,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M use track frustration flag W trackFrustrations`(
-        @BoolForgery fakeTrackFrustrations: Boolean
-    ) {
+    fun `M use track frustration flag W trackFrustrations`(@BoolForgery fakeTrackFrustrations: Boolean) {
         // When
         val rumConfiguration = testedBuilder
             .trackFrustrations(fakeTrackFrustrations)
@@ -545,9 +541,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M log warning W builder with missing application ID`(
-        @BoolForgery fakeTrackFrustrations: Boolean
-    ) {
+    fun `M log warning W builder with missing application ID`(@BoolForgery fakeTrackFrustrations: Boolean) {
         // When
         val rumConfiguration = testedBuilder
             .trackFrustrations(fakeTrackFrustrations)
@@ -640,9 +634,7 @@ internal class RumConfigurationBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M changes default trackAnonymousUser W trackAnonymousUser()`(
-        @BoolForgery trackAnonymousUser: Boolean
-    ) {
+    fun `M changes default trackAnonymousUser W trackAnonymousUser()`(@BoolForgery trackAnonymousUser: Boolean) {
         // When
         val rumConfiguration = testedBuilder
             .trackAnonymousUser(trackAnonymousUser)
@@ -685,9 +677,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M set rumSessionTypeOverride W setRumSessionTypeOverride()`(
-        forge: Forge
-    ) {
+    fun `M set rumSessionTypeOverride W setRumSessionTypeOverride()`(forge: Forge) {
         // Given
         val rumSessionTypeOverride = forge.aValueFrom(RumSessionType::class.java)
 
@@ -738,5 +728,39 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.insightsCollector)
             .isInstanceOf(NoOpInsightsCollector::class.java)
+    }
+
+    @Test
+    fun `M store provided configuration W enableTimeseries(config)`() {
+        // Given
+        val fakeConfig = TimeseriesConfiguration(bufferSize = 10, intervalMs = 500L)
+
+        // When
+        val rumConfiguration = testedBuilder.enableTimeseries(fakeConfig).build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration)
+            .isSameAs(fakeConfig)
+    }
+
+    @Test
+    fun `M store default configuration W enableTimeseries()`() {
+        // When
+        val rumConfiguration = testedBuilder.enableTimeseries().build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration).isNotNull
+    }
+
+    @Test
+    fun `M nullify configuration W disableTimeseries()`() {
+        // Given
+        testedBuilder.enableTimeseries()
+
+        // When
+        val rumConfiguration = testedBuilder.disableTimeseries().build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration).isNull()
     }
 }

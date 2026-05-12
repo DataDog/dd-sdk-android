@@ -28,6 +28,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -358,9 +359,7 @@ data class RumConfiguration internal constructor(
          *
          * @param slowFramesConfiguration The configuration to be applied to the [SlowFramesListener].
          */
-        fun setSlowFramesConfiguration(
-            slowFramesConfiguration: SlowFramesConfiguration?
-        ): Builder {
+        fun setSlowFramesConfiguration(slowFramesConfiguration: SlowFramesConfiguration?): Builder {
             rumConfig = rumConfig.copy(slowFramesConfiguration = slowFramesConfiguration)
             return this
         }
@@ -411,6 +410,34 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Enables memory and CPU timeseries collection.
+         *
+         * When enabled, the SDK samples device memory (RSS) and CPU usage at
+         * [TimeseriesConfiguration.intervalMs] (default 1 s) and emits a batched
+         * timeseries event every [TimeseriesConfiguration.bufferSize] samples (default 30).
+         * Collection runs on a single background thread named `datadog-timeseries`.
+         *
+         * To disable, call [disableTimeseries].
+         *
+         * @param configuration optional fine-tuning of sampling interval and batch size.
+         */
+        @JvmOverloads
+        @ExperimentalRumApi
+        fun enableTimeseries(configuration: TimeseriesConfiguration = TimeseriesConfiguration()): Builder {
+            rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
+            return this
+        }
+
+        /**
+         * Disables timeseries collection (default state).
+         */
+        @ExperimentalRumApi
+        fun disableTimeseries(): Builder {
+            rumConfig = rumConfig.copy(timeseriesConfiguration = null)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {
@@ -457,9 +484,7 @@ data class RumConfiguration internal constructor(
          *
          * @param composeActionTrackingStrategy custom actions tracking strategy.
          */
-        internal fun setComposeActionTrackingStrategy(
-            composeActionTrackingStrategy: ActionTrackingStrategy
-        ): Builder {
+        internal fun setComposeActionTrackingStrategy(composeActionTrackingStrategy: ActionTrackingStrategy): Builder {
             rumConfig =
                 rumConfig.copy(composeActionTrackingStrategy = composeActionTrackingStrategy)
             return this

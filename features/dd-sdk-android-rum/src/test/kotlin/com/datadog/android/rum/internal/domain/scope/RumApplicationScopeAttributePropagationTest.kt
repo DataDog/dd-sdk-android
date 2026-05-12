@@ -27,6 +27,8 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -136,6 +138,12 @@ internal class RumApplicationScopeAttributePropagationTest {
     @Mock
     lateinit var mockSessionSampler: Sampler<String>
 
+    @Mock
+    lateinit var mockTimeseriesFactory: TimeseriesFactory
+
+    @Mock
+    lateinit var mockTimeseries: Timeseries
+
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -199,6 +207,7 @@ internal class RumApplicationScopeAttributePropagationTest {
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
             sdkCore = rumMonitor.mockSdkCore,
@@ -219,7 +228,8 @@ internal class RumApplicationScopeAttributePropagationTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = mockTimeseriesFactory
         )
     }
 
@@ -246,8 +256,6 @@ internal class RumApplicationScopeAttributePropagationTest {
 
         @TestConfigurationsProvider
         @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
+        fun getTestConfigurations(): List<TestConfiguration> = listOf(rumMonitor)
     }
 }

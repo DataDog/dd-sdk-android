@@ -29,6 +29,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
+import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -55,8 +56,10 @@ internal class RumApplicationScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    private val insightsCollector: InsightsCollector
-) : RumScope, RumViewChangedListener {
+    private val insightsCollector: InsightsCollector,
+    private val timeseriesFactory: TimeseriesFactory
+) : RumScope,
+    RumViewChangedListener {
 
     override val parentScope: RumScope? = null
 
@@ -85,7 +88,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            timeseriesFactory = timeseriesFactory
         )
     )
 
@@ -135,17 +139,11 @@ internal class RumApplicationScope(
         return this
     }
 
-    override fun isActive(): Boolean {
-        return true
-    }
+    override fun isActive(): Boolean = true
 
-    override fun getRumContext(): RumContext {
-        return rumContext
-    }
+    override fun getRumContext(): RumContext = rumContext
 
-    override fun getCustomAttributes(): Map<String, Any?> {
-        return GlobalRumMonitor.get(sdkCore).getAttributes()
-    }
+    override fun getCustomAttributes(): Map<String, Any?> = GlobalRumMonitor.get(sdkCore).getAttributes()
 
     // endregion
 
@@ -207,7 +205,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            timeseriesFactory = timeseriesFactory
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

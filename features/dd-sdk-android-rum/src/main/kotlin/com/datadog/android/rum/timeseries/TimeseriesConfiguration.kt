@@ -23,6 +23,9 @@ import java.util.concurrent.ScheduledExecutorService
  *                   Defaults to [DEFAULT_INTERVAL_MS].
  * @param collectInBackground Whether to keep sampling timeseries when the app is in background.
  *                            Defaults to `false`.
+ * @param useDeltaCompression Whether to encode each sample as a delta from the previous value
+ *                            instead of an absolute value. Reduces payload size when values
+ *                            change slowly. Defaults to `false`.
  */
 
 class TimeseriesConfiguration
@@ -30,7 +33,8 @@ class TimeseriesConfiguration
 constructor(
     bufferSize: Int = DEFAULT_BUFFER_SIZE,
     intervalMs: Long = DEFAULT_INTERVAL_MS,
-    val collectInBackground: Boolean = false
+    val collectInBackground: Boolean = false,
+    val useDeltaCompression: Boolean = false
 ) {
     val bufferSize: Int = if (bufferSize > 0) bufferSize else DEFAULT_BUFFER_SIZE
     val intervalMs: Long = if (intervalMs >= MIN_INTERVAL_MS) intervalMs else DEFAULT_INTERVAL_MS

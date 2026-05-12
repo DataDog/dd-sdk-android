@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature
@@ -13,6 +14,7 @@ import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionI
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.NoOpInitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -21,60 +23,59 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
 
-internal class ConfigurationRumForgeryFactory :
-    ForgeryFactory<RumFeature.Configuration> {
-    override fun getForgery(forge: Forge): RumFeature.Configuration {
-        return RumFeature.Configuration(
-            customEndpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            sampleRate = forge.aFloat(0f, 100f),
-            telemetrySampleRate = forge.aFloat(0f, 100f),
-            telemetryConfigurationSampleRate = forge.aFloat(0f, 100f),
-            userActionTracking = forge.aBool(),
-            touchTargetExtraAttributesProviders = forge.aList { mock() },
-            interactionPredicate = mock(),
-            viewTrackingStrategy = forge.anElementFrom(
-                ActivityViewTrackingStrategy(forge.aBool(), mock()),
-                FragmentViewTrackingStrategy(forge.aBool(), mock(), mock()),
-                MixedViewTrackingStrategy(forge.aBool(), mock(), mock(), mock()),
-                NavigationViewTrackingStrategy(forge.anInt(), forge.aBool(), mock()),
-                mock(),
-                null
-            ),
-            viewEventMapper = mock(),
-            actionEventMapper = mock(),
-            resourceEventMapper = mock(),
-            errorEventMapper = mock(),
-            longTaskEventMapper = mock(),
-            vitalOperationStepEventMapper = mock(),
-            vitalAppLaunchEventMapper = mock(),
-            telemetryConfigurationMapper = mock(),
-            longTaskTrackingStrategy = mock(),
-            backgroundEventTracking = forge.aBool(),
-            trackFrustrations = forge.aBool(),
-            trackNonFatalAnrs = forge.aBool(),
-            vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
-            sessionListener = mock(),
-            additionalConfig = forge.aMap { aString() to aString() },
-            initialResourceIdentifier = forge.anElementFrom(
-                NoOpInitialResourceIdentifier(),
-                TimeBasedInitialResourceIdentifier(
-                    timeThresholdInMilliseconds = forge.aLong(min = 1)
-                )
-            ),
-            lastInteractionIdentifier = forge.anElementFrom(
-                NoOpLastInteractionIdentifier(),
-                TimeBasedInteractionIdentifier(
-                    timeThresholdInMilliseconds = forge.aLong(min = 1)
-                )
-            ),
-            trackAnonymousUser = forge.aBool(),
-            composeActionTrackingStrategy = mock(),
-            slowFramesConfiguration = forge.getForgery(),
-            rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
-            collectAccessibility = forge.aBool(),
-            disableJankStats = false,
-            insightsCollector = mock(),
-            appStartupActivityPredicate = mock()
-        )
-    }
+@OptIn(ExperimentalRumApi::class)
+internal class ConfigurationRumForgeryFactory : ForgeryFactory<RumFeature.Configuration> {
+    override fun getForgery(forge: Forge): RumFeature.Configuration = RumFeature.Configuration(
+        customEndpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
+        sampleRate = forge.aFloat(0f, 100f),
+        telemetrySampleRate = forge.aFloat(0f, 100f),
+        telemetryConfigurationSampleRate = forge.aFloat(0f, 100f),
+        userActionTracking = forge.aBool(),
+        touchTargetExtraAttributesProviders = forge.aList { mock() },
+        interactionPredicate = mock(),
+        viewTrackingStrategy = forge.anElementFrom(
+            ActivityViewTrackingStrategy(forge.aBool(), mock()),
+            FragmentViewTrackingStrategy(forge.aBool(), mock(), mock()),
+            MixedViewTrackingStrategy(forge.aBool(), mock(), mock(), mock()),
+            NavigationViewTrackingStrategy(forge.anInt(), forge.aBool(), mock()),
+            mock(),
+            null
+        ),
+        viewEventMapper = mock(),
+        actionEventMapper = mock(),
+        resourceEventMapper = mock(),
+        errorEventMapper = mock(),
+        longTaskEventMapper = mock(),
+        vitalOperationStepEventMapper = mock(),
+        vitalAppLaunchEventMapper = mock(),
+        telemetryConfigurationMapper = mock(),
+        longTaskTrackingStrategy = mock(),
+        backgroundEventTracking = forge.aBool(),
+        trackFrustrations = forge.aBool(),
+        trackNonFatalAnrs = forge.aBool(),
+        vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
+        sessionListener = mock(),
+        additionalConfig = forge.aMap { aString() to aString() },
+        initialResourceIdentifier = forge.anElementFrom(
+            NoOpInitialResourceIdentifier(),
+            TimeBasedInitialResourceIdentifier(
+                timeThresholdInMilliseconds = forge.aLong(min = 1)
+            )
+        ),
+        lastInteractionIdentifier = forge.anElementFrom(
+            NoOpLastInteractionIdentifier(),
+            TimeBasedInteractionIdentifier(
+                timeThresholdInMilliseconds = forge.aLong(min = 1)
+            )
+        ),
+        trackAnonymousUser = forge.aBool(),
+        composeActionTrackingStrategy = mock(),
+        slowFramesConfiguration = forge.getForgery(),
+        rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
+        collectAccessibility = forge.aBool(),
+        disableJankStats = false,
+        insightsCollector = mock(),
+        appStartupActivityPredicate = mock(),
+        timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration() }
+    )
 }

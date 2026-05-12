@@ -243,7 +243,7 @@ internal class RumSessionScope(
         timeseries.onSessionStart()
     }
 
-    private fun stopTimeseries() {
+    internal fun stopTimeseries() {
         timeseries.onSessionStop()
         timeseries = NoOpTimeseries()
     }

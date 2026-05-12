@@ -64,6 +64,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
+import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -105,8 +106,10 @@ internal class DatadogRumMonitor(
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
-) : RumMonitor, AdvancedRumMonitor {
+    insightsCollector: InsightsCollector,
+    timeseriesFactory: TimeseriesFactory
+) : RumMonitor,
+    AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
         applicationId = applicationId,
@@ -128,7 +131,8 @@ internal class DatadogRumMonitor(
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        timeseriesFactory = timeseriesFactory
     )
 
     internal var debugListener: RumDebugListener? = null
@@ -211,23 +215,14 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun stopAction(
-        type: RumActionType,
-        name: String,
-        attributes: Map<String, Any?>
-    ) {
+    override fun stopAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StopAction(type, name, attributes.toMap(), eventTime)
         )
     }
 
-    override fun startResource(
-        key: String,
-        method: RumResourceMethod,
-        url: String,
-        attributes: Map<String, Any?>
-    ) {
+    override fun startResource(key: String, method: RumResourceMethod, url: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StartResource(key, url, method, attributes.toMap(), eventTime)
@@ -300,12 +295,7 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun startResource(
-        key: ResourceId,
-        method: RumResourceMethod,
-        url: String,
-        attributes: Map<String, Any?>
-    ) {
+    override fun startResource(key: ResourceId, method: RumResourceMethod, url: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StartResource(key, url, method, attributes.toMap(), eventTime)
@@ -474,9 +464,7 @@ internal class DatadogRumMonitor(
         globalAttributes.remove(key)
     }
 
-    override fun getAttributes(): Map<String, Any?> {
-        return globalAttributes
-    }
+    override fun getAttributes(): Map<String, Any?> = globalAttributes
 
     override fun clearAttributes() {
         globalAttributes.clear()
@@ -517,12 +505,7 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addCrash(
-        message: String,
-        source: RumErrorSource,
-        throwable: Throwable,
-        threads: List<ThreadDump>
-    ) {
+    override fun addCrash(message: String, source: RumErrorSource, throwable: Throwable, threads: List<ThreadDump>) {
         val now = getCurrentTime()
         val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
@@ -661,16 +644,11 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.SetInternalViewAttribute(key, value))
     }
 
-    override fun setSyntheticsAttribute(
-        testId: String,
-        resultId: String
-    ) {
+    override fun setSyntheticsAttribute(testId: String, resultId: String) {
         handleEvent(RumRawEvent.SetSyntheticsTestAttribute(testId, resultId))
     }
 
-    override fun _getInternal(): _RumInternalProxy {
-        return internalProxy
-    }
+    override fun _getInternal(): _RumInternalProxy = internalProxy
 
     override fun sendTelemetryEvent(telemetryEvent: InternalTelemetryEvent) {
         handleEvent(RumRawEvent.TelemetryEventWrapper(telemetryEvent))
@@ -682,9 +660,7 @@ internal class DatadogRumMonitor(
             ?.enableJankStatsTracking(activity)
     }
 
-    override fun sendTTIDEvent(
-        info: RumTTIDInfo
-    ) {
+    override fun sendTTIDEvent(info: RumTTIDInfo) {
         handleEvent(
             RumRawEvent.AppStartTTIDEvent(
                 info = info
@@ -740,11 +716,7 @@ internal class DatadogRumMonitor(
     }
 
     @ExperimentalRumApi
-    override fun succeedOperation(
-        name: String,
-        operationKey: String?,
-        attributes: Map<String, Any?>
-    ) {
+    override fun succeedOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
         if (!operationArgumentsValid(name, operationKey)) return
 
         handleEvent(
@@ -838,6 +810,28 @@ internal class DatadogRumMonitor(
         executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         tasks.forEach {
             it.run()
+        }
+    }
+
+    /**
+     * Stops the timeseries collector on the currently active session, if any.
+     *
+     * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
+     * the sampling [java.util.concurrent.ScheduledExecutorService] is shut down while the monitor
+     * is still reachable. Without this call, the executor keeps running after SDK teardown and a
+     * subsequent [com.datadog.android.Datadog.initialize] would create a second
+     * `datadog-timeseries` thread in the same process.
+     *
+     * Must be called **before** [RumFeature.dataWriter] is replaced with a
+     * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
+     * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
+     * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
+     * de-initializes and shuts down its context executor before the async write task fires, the
+     * write is silently skipped regardless.
+     */
+    internal fun stopActiveTimeseries() {
+        synchronized(rootScope) {
+            rootScope.activeSession?.stopTimeseries()
         }
     }
 
@@ -964,16 +958,14 @@ internal class DatadogRumMonitor(
         }
     }
 
-    private fun getEventTime(attributes: Map<String, Any?>): Time {
-        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: getCurrentTime()
-    }
+    private fun getEventTime(attributes: Map<String, Any?>): Time =
+        (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: getCurrentTime()
 
     private fun getCurrentTime() =
         Time(sdkCore.timeProvider.getDeviceTimestampMillis(), sdkCore.timeProvider.getDeviceElapsedTimeNanos())
 
-    private fun getErrorType(attributes: Map<String, Any?>): String? {
-        return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
-    }
+    private fun getErrorType(attributes: Map<String, Any?>): String? =
+        attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
 
     private fun getErrorSourceType(attributes: Map<String, Any?>): RumErrorSourceType {
         val sourceType = attributes[RumAttributes.INTERNAL_ERROR_SOURCE_TYPE] as? String
