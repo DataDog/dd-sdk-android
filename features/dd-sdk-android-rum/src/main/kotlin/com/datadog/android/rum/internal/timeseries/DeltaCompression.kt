@@ -10,7 +10,7 @@ import kotlin.math.roundToLong
 
 internal object DeltaCompression {
 
-    fun roundToLongSafely(value: Double, replaceNaNWith: Long = 0L, scale: Long = SCALE): Long = try {
+    fun roundToLongSafely(value: Double, scale: Long, replaceNaNWith: Long = 0L): Long = try {
         (value * scale).roundToLong()
     } catch (_: IllegalArgumentException) {
         replaceNaNWith
@@ -24,5 +24,4 @@ internal object DeltaCompression {
     }
 
     const val PRECISION = 4
-    const val SCALE: Long = 10_000L // 10^4
 }
