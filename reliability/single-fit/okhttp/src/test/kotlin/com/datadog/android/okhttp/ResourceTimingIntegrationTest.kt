@@ -17,6 +17,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -138,7 +139,8 @@ internal class ResourceTimingIntegrationTest {
         assertThat(resourceEvents).hasSize(1)
 
         val resource = resourceEvents.single().resourceJson()
-        assertThat(resource.get("url").asString).contains(mockServer.hostName)
+        assertThat(resource.get("url").asString)
+            .isEqualTo(mockServer.url("/api/foo").toString())
         assertThat(resource.get("status_code").asInt).isEqualTo(200)
         assertThat(resource.get("duration").asLong).isGreaterThan(0)
 
@@ -204,12 +206,12 @@ internal class ResourceTimingIntegrationTest {
 
         val errorEvents = getEventsByType("error")
         assertThat(errorEvents).hasSize(1)
-        val errorJson = JsonParser.parseString(errorEvents.single().eventData).asJsonObject
-        val resourceSection = errorJson.getAsJsonObject("error")?.getAsJsonObject("resource")
-        assertThat(resourceSection)
+        val errorEvent = ErrorEvent.fromJson(errorEvents.single().eventData)
+        assertThat(errorEvent.error.resource)
             .withFailMessage("Network failure error must carry an 'error.resource' section")
             .isNotNull
-        assertThat(resourceSection!!.get("url").asString).contains(mockServer.hostName)
+        assertThat(errorEvent.error.resource!!.url)
+            .isEqualTo(mockServer.url("/api/disconnect").toString())
     }
 
     @Test
@@ -225,7 +227,7 @@ internal class ResourceTimingIntegrationTest {
 
         // When
         repeat(CONCURRENT_REQUESTS) {
-            executor.submit {
+            executor.execute {
                 try {
                     startGate.await()
                     okHttpClient.newCall(
@@ -250,7 +252,8 @@ internal class ResourceTimingIntegrationTest {
         assertThat(resourceEvents).hasSize(CONCURRENT_REQUESTS)
         resourceEvents.forEach { event ->
             val resource = event.resourceJson()
-            assertThat(resource.get("url").asString).contains(mockServer.hostName)
+            assertThat(resource.get("url").asString)
+                .isEqualTo(mockServer.url("/api/concurrent").toString())
             assertThat(resource.get("status_code").asInt).isEqualTo(200)
             assertThat(resource.get("duration").asLong).isGreaterThan(0)
             assertThat(resource.has("first_byte")).isTrue()
