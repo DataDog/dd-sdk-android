@@ -58,13 +58,15 @@ buildscript {
 
 allprojects {
     repositories {
-        // google() FIRST so AndroidX / Compose / AGP resolve directly from dl.google.com
-        // (depot does not mirror Google Maven). The depot is inserted after google() but
-        // before mavenCentral() so that 429-prone Maven Central resolution is mirrored.
+        // google() and jitpack BEFORE depot so artifacts hosted on those repos resolve
+        // directly (depot mirrors only Maven Central, and returns a non-404 response for
+        // paths it doesn't host, which causes Gradle to pin module attribution to depot
+        // and skip fallback to other repos). The depot is then inserted before
+        // mavenCentral() so that 429-prone Maven Central resolution is mirrored.
         google()
+        maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
         depotProxy(providers)
         mavenCentral()
-        maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
     }
 }
 

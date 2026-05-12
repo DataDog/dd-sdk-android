@@ -26,10 +26,12 @@ buildscript {
 }
 
 repositories {
-    // google() FIRST so AndroidX / AGP artifacts resolve directly from dl.google.com
-    // (depot does not mirror Google Maven).
+    // google() and jitpack FIRST so artifacts hosted on those repos resolve directly
+    // (depot mirrors only Maven Central and returns non-404 for paths it doesn't host,
+    // which would cause Gradle to pin module attribution to depot and skip fallbacks).
     google()
     maven { setUrl("https://maven.google.com") }
+    maven { setUrl("https://jitpack.io") }
     // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
     val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
     if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
@@ -37,7 +39,6 @@ repositories {
     if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
     mavenCentral()
     maven { setUrl("https://plugins.gradle.org/m2/") }
-    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {
