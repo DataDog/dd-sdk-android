@@ -31,7 +31,6 @@ import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseries
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.timeseries.Timeseries
-import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -65,7 +64,7 @@ internal class RumSessionScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val timeseriesFactory: TimeseriesFactory = NoOpTimeseriesFactory()
+    private val timeseriesFactory: Timeseries.Factory = NoOpTimeseriesFactory()
 ) : RumScope {
 
     private var timeseries: Timeseries = NoOpTimeseries()
@@ -236,14 +235,14 @@ internal class RumSessionScope(
 
     private fun startTimeseries() {
         timeseries = timeseriesFactory.create(
-            sessionId,
-            parentScope.getRumContext().applicationId,
-            rumSessionTypeOverride ?: RumSessionType.USER
+            sessionId = sessionId,
+            applicationId = parentScope.getRumContext().applicationId,
+            sessionType = rumSessionTypeOverride ?: RumSessionType.USER
         )
         timeseries.onSessionStart()
     }
 
-    private fun stopTimeseries() {
+    internal fun stopTimeseries() {
         timeseries.onSessionStop()
         timeseries = NoOpTimeseries()
     }

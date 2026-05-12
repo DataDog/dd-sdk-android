@@ -16,7 +16,8 @@ import com.datadog.android.rum.ExperimentalRumApi
 class TimeseriesConfiguration internal constructor(
     internal val bufferSize: Int,
     internal val intervalMs: Long,
-    internal val collectInBackground: Boolean
+    internal val collectInBackground: Boolean,
+    internal val useDeltaCompression: Boolean
 ) {
 
     /**
@@ -28,6 +29,7 @@ class TimeseriesConfiguration internal constructor(
         private var bufferSize: Int = DEFAULT_BUFFER_SIZE
         private var intervalMs: Long = DEFAULT_INTERVAL_MS
         private var collectInBackground: Boolean = false
+        private var useDeltaCompression: Boolean = false
 
         /**
          * Sets the number of samples accumulated per pipeline before sending a batch event.
@@ -59,22 +61,31 @@ class TimeseriesConfiguration internal constructor(
             this.collectInBackground = collectInBackground
         }
 
+        /**
+         * Sets whether to encode each sample as a delta from the previous value instead of an
+         * absolute value. Reduces payload size when values change slowly. Defaults to `false`.
+         */
+        fun setUseDeltaCompression(useDeltaCompression: Boolean): Builder = apply {
+            this.useDeltaCompression = useDeltaCompression
+        }
+
         /** Builds a [TimeseriesConfiguration] from the current builder state. */
         fun build(): TimeseriesConfiguration = TimeseriesConfiguration(
             bufferSize = bufferSize,
             intervalMs = intervalMs,
-            collectInBackground = collectInBackground
+            collectInBackground = collectInBackground,
+            useDeltaCompression = useDeltaCompression
         )
     }
 
     companion object {
         /** Default number of samples to accumulate before emitting a timeseries event. */
-        const val DEFAULT_BUFFER_SIZE: Int = 30
+        internal const val DEFAULT_BUFFER_SIZE: Int = 30
 
         /** Default sampling interval in milliseconds. */
-        const val DEFAULT_INTERVAL_MS: Long = 1000L
+        internal const val DEFAULT_INTERVAL_MS: Long = 1000L
 
         /** Minimum allowed sampling interval in milliseconds. */
-        const val MIN_INTERVAL_MS: Long = 100L
+        internal const val MIN_INTERVAL_MS: Long = 100L
     }
 }

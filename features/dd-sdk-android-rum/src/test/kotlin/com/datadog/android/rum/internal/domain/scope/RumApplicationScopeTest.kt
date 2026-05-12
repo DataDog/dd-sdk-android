@@ -30,6 +30,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -57,6 +58,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -139,6 +141,12 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockSessionSampler: Sampler<String>
 
+    @Mock
+    lateinit var mockTimeseriesFactory: Timeseries.Factory
+
+    @Mock
+    lateinit var mockTimeseries: Timeseries
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -177,6 +185,7 @@ internal class RumApplicationScopeTest {
 
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -198,7 +207,8 @@ internal class RumApplicationScopeTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = mockTimeseriesFactory
         )
     }
 
@@ -212,6 +222,63 @@ internal class RumApplicationScopeTest {
         assertThat(childScope.sessionSampler).isSameAs(mockSessionSampler)
         assertThat(childScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(childScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
+    }
+
+    @Test
+    fun `M propagate timeseriesFactory to initial child session scope W handleEvent { startView }`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String
+    ) {
+        // When - delegating an interactive event triggers renewSession on the child session
+        testedScope.handleEvent(
+            RumRawEvent.StartView(
+                key = RumScopeKey.from(viewKey, viewName),
+                attributes = emptyMap()
+            ),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then - the child session uses the same factory we gave to the application scope
+        verify(mockTimeseriesFactory).create(eq(fakeApplicationId), any(), any())
+    }
+
+    @Test
+    fun `M propagate timeseriesFactory to a new child session W handleEvent { stop+startView }`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String
+    ) {
+        // Given - first session that already used the factory
+        testedScope.handleEvent(
+            RumRawEvent.StartView(
+                key = RumScopeKey.from(viewKey, viewName),
+                attributes = emptyMap()
+            ),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When - a brand new session is started; the application scope must reuse the factory
+        testedScope.handleEvent(
+            RumRawEvent.StartView(
+                key = RumScopeKey.from(viewKey, viewName),
+                attributes = emptyMap()
+            ),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then - factory.create is invoked once per tracked session (initial + new)
+        verify(mockTimeseriesFactory, times(2)).create(eq(fakeApplicationId), any(), any())
     }
 
     @Test
