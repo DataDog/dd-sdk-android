@@ -13,6 +13,7 @@ import com.datadog.android.core.stub.StubEvent
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
@@ -119,6 +120,7 @@ internal class ResourceTimingIntegrationTest {
 
     @AfterEach
     fun `tear down`() {
+        unregisterGlobalRumMonitor(stubSdkCore)
         Datadog.stopInstance(stubSdkCore.name)
         mockServer.shutdown()
     }

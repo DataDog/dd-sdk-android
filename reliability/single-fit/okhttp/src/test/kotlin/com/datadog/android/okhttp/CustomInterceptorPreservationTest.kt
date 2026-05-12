@@ -15,6 +15,7 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
@@ -115,6 +116,7 @@ class CustomInterceptorPreservationTest {
     @AfterEach
     fun `tear down`() {
         GlobalDatadogTracer.clear()
+        unregisterGlobalRumMonitor(stubSdkCore)
         Datadog.stopInstance(stubSdkCore.name)
         mockServer.shutdown()
     }
