@@ -63,7 +63,7 @@ data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
 data class com.datadog.android.internal.heatmaps.HeatmapIdentifier
   constructor(String)
   companion object 
-    fun create(List<String>, String, String): HeatmapIdentifier?
+    fun create(List<String>, String, String, (Throwable) -> Unit = {}): HeatmapIdentifier?
 interface com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
   fun setHeatmapIdentifiers(Map<Long, HeatmapIdentifier>, String)
   fun getHeatmapIdentifier(Long, String): HeatmapIdentifier?

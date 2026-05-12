@@ -136,7 +136,8 @@ public final class com/datadog/android/internal/heatmaps/HeatmapIdentifier {
 }
 
 public final class com/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion {
-	public final fun create (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public final fun create (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public static synthetic fun create$default (Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
 }
 
 public abstract interface class com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry {

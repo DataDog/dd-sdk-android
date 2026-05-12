@@ -7,6 +7,7 @@
 package com.datadog.android.internal.heatmaps
 
 import com.datadog.android.internal.utils.toHexString
+import java.net.URLEncoder
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 
@@ -31,14 +32,17 @@ data class HeatmapIdentifier(val rawValue: String) {
          * @param screenName the current RUM view URL, used to scope identifiers to a screen.
          * @param appPackageName the application package name (e.g. `com.example.app`),
          *   used to globally namespace identifiers across apps.
+         * @param onHashingFailure invoked with the caught exception if hashing fails.
+         *   Callers should forward this to telemetry.
          */
         fun create(
             elementPath: List<String>,
             screenName: String,
-            appPackageName: String
+            appPackageName: String,
+            onHashingFailure: (Throwable) -> Unit = {}
         ): HeatmapIdentifier? {
             val path = canonicalPath(elementPath, screenName, appPackageName)
-            return sha256Hex(path)?.let { HeatmapIdentifier(it) }
+            return sha256Hex(path, onHashingFailure)?.let { HeatmapIdentifier(it) }
         }
 
         private fun canonicalPath(
@@ -55,12 +59,10 @@ data class HeatmapIdentifier(val rawValue: String) {
             }
         }
 
-        // % must be escaped before / so the encoding is reversible.
-        @Suppress("UnsafeThirdPartyFunctionCall") // non-null arguments; cannot throw
-        private fun escape(input: String): String =
-            input.replace("%", "%25").replace(SEPARATOR, "%2F")
+        @Suppress("UnsafeThirdPartyFunctionCall") // UTF-8 is always available on Android; cannot throw
+        private fun escape(input: String): String = URLEncoder.encode(input, "UTF-8")
 
-        private fun sha256Hex(input: String): String? {
+        private fun sha256Hex(input: String, onHashingFailure: (Throwable) -> Unit): String? {
             return try {
                 val digest = MessageDigest.getInstance("SHA-256")
                 // digest(ByteArray) does not throw: the input is non-null (toByteArray always
@@ -68,7 +70,8 @@ data class HeatmapIdentifier(val rawValue: String) {
                 // offset/length overload, not this one.
                 @Suppress("UnsafeThirdPartyFunctionCall")
                 digest.digest(input.toByteArray(Charsets.UTF_8)).toHexString()
-            } catch (_: NoSuchAlgorithmException) {
+            } catch (e: NoSuchAlgorithmException) {
+                onHashingFailure(e)
                 null
             }
         }

@@ -33,8 +33,6 @@ internal class HeatmapIdentifierStore : HeatmapIdentifierRegistry {
         lock.write {
             this.snapshotScreenName = screenName
             this.identifiers.clear()
-            // putAll() throws NullPointerException only for a null map; the parameter is non-null.
-            @Suppress("UnsafeThirdPartyFunctionCall")
             this.identifiers.putAll(identifiers)
         }
     }
