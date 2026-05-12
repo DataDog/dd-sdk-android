@@ -334,6 +334,21 @@ public final class com/datadog/android/internal/profiling/ProfilerEvent$TTIDNotT
 	public static final field INSTANCE Lcom/datadog/android/internal/profiling/ProfilerEvent$TTIDNotTracked;
 }
 
+public final class com/datadog/android/internal/profiling/ProfilingAnrDetectedEvent {
+	public fun <init> (JLjava/util/List;Ljava/util/List;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (JLjava/util/List;Ljava/util/List;)Lcom/datadog/android/internal/profiling/ProfilingAnrDetectedEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilingAnrDetectedEvent;JLjava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilingAnrDetectedEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllThreads ()Ljava/util/List;
+	public final fun getAnrThreadStack ()Ljava/util/List;
+	public final fun getDetectedAtMs ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/internal/profiling/ProfilingRumContext {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -347,6 +362,23 @@ public final class com/datadog/android/internal/profiling/ProfilingRumContext {
 	public final fun getSessionId ()Ljava/lang/String;
 	public final fun getViewId ()Ljava/lang/String;
 	public final fun getViewName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/profiling/ProfilingThreadDump {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)Lcom/datadog/android/internal/profiling/ProfilingThreadDump;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilingThreadDump;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilingThreadDump;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCrashed ()Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getStack ()Ljava/lang/String;
+	public final fun getState ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
