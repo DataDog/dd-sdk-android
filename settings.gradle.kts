@@ -6,6 +6,12 @@
 
 pluginManagement {
     repositories {
+        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+        // Prepended so plugin resolution goes through Datadog's internal mirror first.
+        val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
+        if (!pluginProxy.isNullOrBlank()) maven(pluginProxy)
+        val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
+        if (!mavenProxy.isNullOrBlank()) maven(mavenProxy)
         gradlePluginPortal()
         google()
         mavenCentral()

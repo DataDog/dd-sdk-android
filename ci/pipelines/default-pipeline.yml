@@ -12,6 +12,25 @@ stages:
   - publish
   - notify
 
+# Apply the Magic Mirror Depot proxy (RUM-15510) to every job by default. The snippet
+# writes `mavenRepositoryProxy` and `gradlePluginProxy` into the Gradle properties files
+# that the various job types use:
+#   - Docker jobs pass `--gradle-user-home cache/` to ./gradlew, so they read ./cache/gradle.properties
+#   - macOS jobs rely on the default $GRADLE_USER_HOME (i.e. $HOME/.gradle), so they
+#     read $HOME/.gradle/gradle.properties
+# Writing to both keeps both runner types working without touching every script line.
+# Jobs that don't run Gradle (e.g. ci-image, create_key, slack-notifier) simply incur a
+# no-op file write.
+default:
+  before_script:
+    - mkdir -p ./cache "$HOME/.gradle"
+    - |
+      cat > ./cache/gradle.properties <<EOF
+      mavenRepositoryProxy=$MAVEN_REPOSITORY_PROXY
+      gradlePluginProxy=$GRADLE_PLUGIN_PROXY
+      EOF
+    - cp ./cache/gradle.properties "$HOME/.gradle/gradle.properties"
+
 .snippets:
   source-secrets:
     - source ./ci/scripts/vault_config.sh

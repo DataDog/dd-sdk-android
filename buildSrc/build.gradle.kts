@@ -14,11 +14,21 @@ plugins {
 
 buildscript {
     repositories {
+        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+        val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
+        if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
+        val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
+        if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
         mavenCentral()
     }
 }
 
 repositories {
+    // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+    val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
+    if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
+    val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
+    if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
     mavenCentral()
     google()
     maven { setUrl("https://plugins.gradle.org/m2/") }

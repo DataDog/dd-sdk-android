@@ -19,6 +19,14 @@ variables:
 
   CACHE_FALLBACK_KEY: "develop"
 
+  # Magic Mirror Depot proxy URLs (RUM-15510). The depot proxies both Maven Central and
+  # the Gradle Plugin Portal for the Java ecosystem from the same endpoint. Setting these
+  # routes dependency/plugin resolution through Datadog's internal mirror to avoid HTTP 429
+  # rate-limits from upstream registries.
+  # See https://datadoghq.atlassian.net/wiki/spaces/DEVX/pages/4199188393/ADMS
+  MAVEN_REPOSITORY_PROXY: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
+  GRADLE_PLUGIN_PROXY: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
+
 include:
   - local: 'ci/pipelines/default-pipeline.yml'
     rules:
