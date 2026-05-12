@@ -304,6 +304,14 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
   override fun close()
 interface com.datadog.android.rum.startup.AppStartupActivityPredicate
   fun shouldTrackStartup(android.app.Activity): Boolean
+class com.datadog.android.rum.timeseries.TimeseriesConfiguration
+  constructor(Int = DEFAULT_BUFFER_SIZE, Long = DEFAULT_INTERVAL_MS, Boolean = false)
+  val bufferSize: Int
+  val intervalMs: Long
+  companion object 
+    const val DEFAULT_BUFFER_SIZE: Int
+    const val DEFAULT_INTERVAL_MS: Long
+    const val MIN_INTERVAL_MS: Long
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?

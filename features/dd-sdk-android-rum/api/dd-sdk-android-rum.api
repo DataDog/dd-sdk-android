@@ -8637,6 +8637,24 @@ public abstract interface class com/datadog/android/rum/startup/AppStartupActivi
 	public abstract fun shouldTrackStartup (Landroid/app/Activity;)Z
 }
 
+public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
+	public static final field Companion Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion;
+	public static final field DEFAULT_BUFFER_SIZE I
+	public static final field DEFAULT_INTERVAL_MS J
+	public static final field MIN_INTERVAL_MS J
+	public fun <init> ()V
+	public fun <init> (I)V
+	public fun <init> (IJ)V
+	public fun <init> (IJZ)V
+	public synthetic fun <init> (IJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBufferSize ()I
+	public final fun getCollectInBackground ()Z
+	public final fun getIntervalMs ()J
+}
+
+public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {
+}
+
 public class com/datadog/android/rum/tracking/AcceptAllActivities : com/datadog/android/rum/tracking/ComponentPredicate {
 	public fun <init> ()V
 	public fun accept (Landroid/app/Activity;)Z
