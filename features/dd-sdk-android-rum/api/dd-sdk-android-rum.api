@@ -105,11 +105,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun build ()Lcom/datadog/android/rum/RumConfiguration;
 	public final fun collectAccessibility (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun disableTimeseries ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun disableUserInteractionTracking ()Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun enableTimeseries ()Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun enableTimeseries (Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public static synthetic fun enableTimeseries$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;ILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setAppStartupActivityPredicate (Lcom/datadog/android/rum/startup/AppStartupActivityPredicate;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -8631,24 +8627,6 @@ public final class com/datadog/android/rum/resource/RumResourceInputStream : jav
 
 public abstract interface class com/datadog/android/rum/startup/AppStartupActivityPredicate {
 	public abstract fun shouldTrackStartup (Landroid/app/Activity;)Z
-}
-
-public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
-	public static final field Companion Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion;
-	public static final field DEFAULT_BUFFER_SIZE I
-	public static final field DEFAULT_INTERVAL_MS J
-	public static final field MIN_INTERVAL_MS J
-	public fun <init> ()V
-	public fun <init> (I)V
-	public fun <init> (IJ)V
-	public fun <init> (IJZ)V
-	public synthetic fun <init> (IJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getBufferSize ()I
-	public final fun getCollectInBackground ()Z
-	public final fun getIntervalMs ()J
-}
-
-public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {
 }
 
 public class com/datadog/android/rum/tracking/AcceptAllActivities : com/datadog/android/rum/tracking/ComponentPredicate {
