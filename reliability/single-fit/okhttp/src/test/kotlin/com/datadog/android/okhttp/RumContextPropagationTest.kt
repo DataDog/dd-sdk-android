@@ -18,6 +18,7 @@ import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_THRESHOLD
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
+import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
@@ -75,6 +76,7 @@ class RumContextPropagationTest {
 
     @AfterEach
     fun `tear down`() {
+        unregisterGlobalRumMonitor(stubSdkCore)
         Datadog.stopInstance(stubSdkCore.name)
         mockServer.shutdown()
     }
