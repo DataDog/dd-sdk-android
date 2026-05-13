@@ -409,6 +409,7 @@ public final class com/datadog/android/internal/sampling/SessionSamplingIdProvid
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
+	public abstract fun isAtLeastBaklava ()Z
 	public abstract fun isAtLeastN ()Z
 	public abstract fun isAtLeastO ()Z
 	public abstract fun isAtLeastP ()Z

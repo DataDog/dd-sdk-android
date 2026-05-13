@@ -20,6 +20,7 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
@@ -75,7 +76,7 @@ internal class ProfilingFeature(
         this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
-            registerProfilingCallback(sdkCore.name, this@ProfilingFeature)
+            registerProfilingCallback(appContext, sdkCore.name, this@ProfilingFeature)
         }
         setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -114,7 +115,7 @@ internal class ProfilingFeature(
         continuousProfilingScheduler?.stop()
         profiler.apply {
             stop(sdkCore.name)
-            unregisterProfilingCallback(sdkCore.name)
+            unregisterProfilingCallback(appContext, sdkCore.name)
         }
         sdkCore.removeEventReceiver(name)
         pendingRumEvents.clear()
@@ -171,6 +172,14 @@ internal class ProfilingFeature(
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
         }
+    }
+
+    override fun onAnrDetected(
+        detectedAtMs: Long,
+        anrThreadStack: List<StackTraceElement>,
+        allThreads: List<ProfilingThreadDump>
+    ) {
+        // TODO RUM-15498: forward ProfilingAnrDetectedEvent to RUM via sdkCore.
     }
 
     private fun onTtidEvent(event: ProfilerEvent) {

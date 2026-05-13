@@ -4,16 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal
+package com.datadog.android.profiling.internal.anr
 
 import com.datadog.android.internal.profiling.ProfilingThreadDump
-import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
-internal interface ProfilerCallback {
-    fun onSuccess(result: PerfettoResult)
-
-    fun onFailure(tag: String)
-
+internal fun interface AnrListener {
     fun onAnrDetected(
         detectedAtMs: Long,
         anrThreadStack: List<StackTraceElement>,
