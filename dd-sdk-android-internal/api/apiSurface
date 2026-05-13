@@ -169,8 +169,12 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumLongTaskEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
+data class com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+  constructor(Long, List<StackTraceElement>, List<ProfilingThreadDump>)
 data class com.datadog.android.internal.profiling.ProfilingRumContext
   constructor(String, String, String?, String?)
+data class com.datadog.android.internal.profiling.ProfilingThreadDump
+  constructor(String, String, String, Boolean)
 data class com.datadog.android.internal.rum.RumSessionRenewedEvent
   constructor(String, Boolean)
 object com.datadog.android.internal.sampling.DeterministicSampling
