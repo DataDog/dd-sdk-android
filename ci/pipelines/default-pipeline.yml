@@ -203,8 +203,12 @@ test:tools:
   timeout: 1h
   script:
     - rm -rf ~/.gradle/daemon/
+    # RUM-15510 DIAGNOSTIC (TEMPORARY): force cold cache + verbose Gradle logging to
+    # verify which repositories Gradle queries (depot vs. google vs. jitpack). Remove
+    # the next two lines and the --info flag below after we have the data.
+    - rm -rf cache/caches/ "$HOME/.gradle/caches/modules-2/"
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --info --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:kover:
   tags: [ "arch:amd64" ]
