@@ -1724,13 +1724,13 @@ data class com.datadog.android.rum.model.ResourceEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): OperationType
-data class com.datadog.android.rum.model.RumTimeseriesCpuEvent
+data class com.datadog.android.rum.model.TimeseriesCpuEvent
   constructor(Dd, Application, Session, Source, kotlin.Long, kotlin.String? = null, kotlin.String? = null, Timeseries)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): RumTimeseriesCpuEvent
-    fun fromJsonObject(com.google.gson.JsonObject): RumTimeseriesCpuEvent
+    fun fromJson(kotlin.String): TimeseriesCpuEvent
+    fun fromJsonObject(com.google.gson.JsonObject): TimeseriesCpuEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
@@ -1798,13 +1798,13 @@ data class com.datadog.android.rum.model.RumTimeseriesCpuEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Schema
-data class com.datadog.android.rum.model.RumTimeseriesMemoryEvent
+data class com.datadog.android.rum.model.TimeseriesMemoryEvent
   constructor(Dd, Application, Session, Source, kotlin.Long, kotlin.String? = null, kotlin.String? = null, Timeseries)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): RumTimeseriesMemoryEvent
-    fun fromJsonObject(com.google.gson.JsonObject): RumTimeseriesMemoryEvent
+    fun fromJson(kotlin.String): TimeseriesMemoryEvent
+    fun fromJsonObject(com.google.gson.JsonObject): TimeseriesMemoryEvent
   class Dd
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement

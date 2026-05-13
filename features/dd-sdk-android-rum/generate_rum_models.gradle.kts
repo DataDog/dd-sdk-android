@@ -29,7 +29,7 @@ createJsonModelsGenerationTask("generateRumModelsFromJson") {
         "long_task-schema.json" to "LongTaskEvent",
         "vital-app-launch-schema.json" to "VitalAppLaunchEvent",
         "vital-operation-step-schema.json" to "VitalOperationStepEvent",
-        "timeseries-memory-schema.json" to "RumTimeseriesMemoryEvent",
-        "timeseries-cpu-schema.json" to "RumTimeseriesCpuEvent"
+        "timeseries-memory-schema.json" to "TimeseriesMemoryEvent",
+        "timeseries-cpu-schema.json" to "TimeseriesCpuEvent"
     )
 }
