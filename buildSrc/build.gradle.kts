@@ -26,17 +26,16 @@ buildscript {
 }
 
 repositories {
-    // google() and jitpack FIRST so artifacts hosted on those repos resolve directly
-    // (depot mirrors only Maven Central and returns non-404 for paths it doesn't host,
-    // which would cause Gradle to pin module attribution to depot and skip fallbacks).
-    google()
-    maven { setUrl("https://maven.google.com") }
-    maven { setUrl("https://jitpack.io") }
-    // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+    // RUM-15510 TEST: Magic Mirror Depot FIRST (only set in CI via `.gitlab-ci.yml`).
+    // Testing whether Gradle falls through cleanly when depot returns 404 for paths
+    // it doesn't host, so we can rely on depot as the primary repository.
     val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
     if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
     val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
     if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
+    google()
+    maven { setUrl("https://maven.google.com") }
+    maven { setUrl("https://jitpack.io") }
     mavenCentral()
     maven { setUrl("https://plugins.gradle.org/m2/") }
 }

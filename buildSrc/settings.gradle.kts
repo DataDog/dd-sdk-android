@@ -6,16 +6,14 @@
 
 pluginManagement {
     repositories {
-        // google() FIRST so AndroidX / AGP plugin artifacts resolve directly from
-        // dl.google.com (depot does not mirror Google Maven).
-        google()
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        // Prepended before the public Gradle Plugin Portal / Maven Central so plugin
-        // resolution for those goes through Datadog's internal mirror first.
+        // RUM-15510 TEST: Magic Mirror Depot proxy FIRST (only set in CI via
+        // `.gitlab-ci.yml`). Testing whether Gradle falls through cleanly when depot
+        // returns 404, so we can rely on depot as the primary plugin source.
         val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
         if (!pluginProxy.isNullOrBlank()) maven(pluginProxy)
         val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
         if (!mavenProxy.isNullOrBlank()) maven(mavenProxy)
+        google()
         gradlePluginPortal()
         mavenCentral()
     }

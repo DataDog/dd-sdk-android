@@ -82,11 +82,11 @@ android {
 }
 
 repositories {
-    // google() FIRST so AndroidX artifacts resolve directly from dl.google.com
-    // (depot does not mirror Google Maven).
+    // RUM-15510 TEST: Magic Mirror Depot FIRST. Testing whether Gradle falls through
+    // cleanly when depot returns 404 for AndroidX paths it doesn't host.
+    depotProxy(providers)
     google()
     mavenLocal()
-    depotProxy(providers)
     mavenCentral()
 }
 

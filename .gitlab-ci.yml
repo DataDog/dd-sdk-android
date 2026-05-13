@@ -17,10 +17,10 @@ variables:
   ANDROID_API: "36"
   ANDROID_SDK_VERSION: "commandlinetools-mac-13114758_latest"
 
-  # Bumped to invalidate cached Gradle dependency-attribution metadata from before the
-  # Magic Mirror Depot rollout (RUM-15510). Stale cache pointed AndroidX modules at depot,
-  # which doesn't mirror Google Maven, causing 404s with no fallback to google().
-  CACHE_FALLBACK_KEY: "develop-magicmirror-v1"
+  # Bumped again (RUM-15510 depot-first test) to force a fresh cache so existing
+  # google()-attribution metadata from the previous (google-first) configuration does not
+  # mask the new depot-first ordering behavior.
+  CACHE_FALLBACK_KEY: "develop-magicmirror-v2"
 
   # Magic Mirror Depot proxy URLs (RUM-15510). The depot proxies both Maven Central and
   # the Gradle Plugin Portal for the Java ecosystem from the same endpoint. Setting these

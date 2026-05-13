@@ -38,15 +38,14 @@ version = AndroidConfig.VERSION.name
 
 buildscript {
     repositories {
-        // google() FIRST so AndroidX / AGP artifacts resolve directly from dl.google.com
-        // (depot does not mirror Google Maven).
-        google()
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        // Inlined here because `buildscript {}` runs before buildSrc classes are on the classpath.
+        // RUM-15510 TEST: Magic Mirror Depot proxy FIRST (only set in CI via
+        // `.gitlab-ci.yml`). Inlined here because `buildscript {}` runs before
+        // buildSrc classes are on the classpath.
         val pluginProxy = providers.gradleProperty("gradlePluginProxy").orNull
         if (!pluginProxy.isNullOrBlank()) maven { setUrl(pluginProxy) }
         val mavenProxy = providers.gradleProperty("mavenRepositoryProxy").orNull
         if (!mavenProxy.isNullOrBlank()) maven { setUrl(mavenProxy) }
+        google()
         mavenCentral()
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Gradle) }
     }
@@ -58,14 +57,13 @@ buildscript {
 
 allprojects {
     repositories {
-        // google() and jitpack BEFORE depot so artifacts hosted on those repos resolve
-        // directly (depot mirrors only Maven Central, and returns a non-404 response for
-        // paths it doesn't host, which causes Gradle to pin module attribution to depot
-        // and skip fallback to other repos). The depot is then inserted before
-        // mavenCentral() so that 429-prone Maven Central resolution is mirrored.
+        // RUM-15510 TEST: Magic Mirror Depot FIRST. Testing whether Gradle falls
+        // through cleanly when depot returns 404 for paths it doesn't host (AndroidX,
+        // Compose, Jitpack), so we can rely on depot as the primary repository for
+        // the entire dependency tree.
+        depotProxy(providers)
         google()
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
-        depotProxy(providers)
         mavenCentral()
     }
 }
