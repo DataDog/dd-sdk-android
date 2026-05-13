@@ -130,7 +130,8 @@
                 "ndk+il2cpp",
                 "windows",
                 "macos",
-                "linux"
+                "linux",
+                "maui"
               ],
               "readOnly": true
             },

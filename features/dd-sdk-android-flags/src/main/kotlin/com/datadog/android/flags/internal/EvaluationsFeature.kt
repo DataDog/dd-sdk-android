@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Flags Evaluations sub-feature class, registered by FlagsFeature.
  *
  * This feature handles aggregation and storage of flag evaluation events,
- * separate from exposure logging. Events are uploaded to /api/v2/flagevaluations.
+ * separate from exposure logging. Events are uploaded to /api/v2/flagevaluation.
  */
 internal class EvaluationsFeature(
     private val sdkCore: FeatureSdkCore,

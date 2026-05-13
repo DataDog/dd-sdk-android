@@ -68,13 +68,13 @@ internal class ThrowableExtTest {
         }
 
         val offset = topStack.size + 1
-        assertThat(lines.get(offset))
+        assertThat(lines[offset])
             .contains("Caused by")
             .contains(fakeThrowable.message)
         stack.forEachIndexed { i, frame ->
             // When the "Caused by …" stacktrace has common frames with the previous one,
             // those are not displayed and replaced with "… n more"
-            // In this test, there are at least 8 non common frames between the fakeThrowable
+            // In this test, there are at least 8 non-common frames between the fakeThrowable
             // and topThrowable
             if (i < 8) {
                 assertThat(lines[i + offset + 1])

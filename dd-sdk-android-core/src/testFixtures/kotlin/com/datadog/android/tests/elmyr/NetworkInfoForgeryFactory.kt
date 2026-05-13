@@ -24,7 +24,7 @@ class NetworkInfoForgeryFactory : ForgeryFactory<NetworkInfo> {
             carrierId = forge.aNullable { forge.aLong(0, 10000) },
             upKbps = forge.aNullable { forge.aLong(1, Long.MAX_VALUE) },
             downKbps = forge.aNullable { forge.aLong(1, Long.MAX_VALUE) },
-            strength = forge.aNullable { forge.aLong(-100, -30) }, // dBm for wifi signal
+            strength = forge.aNullable { forge.aLong(-100, -30) }, // dBm for Wi-Fi signal
             cellularTechnology = forge.aNullable { anAlphabeticalString() }
         )
     }

@@ -148,7 +148,7 @@ interface com.datadog.android.internal.profiler.BenchmarkSpan
   fun stop()
 interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
   fun startSpan(): BenchmarkSpan
-fun <T: Any?> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
+fun <T> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
 interface com.datadog.android.internal.profiler.BenchmarkTracer
   fun spanBuilder(String, Map<String, String> = emptyMap()): BenchmarkSpanBuilder
 interface com.datadog.android.internal.profiler.ExecutionTimer
@@ -212,6 +212,11 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
         - OKHTTP
         - LEGACY_OKHTTP
   object InterceptorInstantiated : InternalTelemetryEvent
+  class ResourceHeadersTrackingConfigured : InternalTelemetryEvent
+    constructor(Mode)
+    enum Mode
+      - DEFAULT_HEADERS
+      - CUSTOM
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
   - B3

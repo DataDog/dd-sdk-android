@@ -647,6 +647,14 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun notifyResourceHeadersTrackingConfigured(
+        mode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
+    ) {
+        handleEvent(
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ResourceHeadersTrackingConfigured(mode))
+        )
+    }
+
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
@@ -881,6 +889,8 @@ internal class DatadogRumMonitor(
                         val future = executorService.submitSafe(
                             "Rum event handling",
                             sdkCore.internalLogger,
+                            // TODO RUM-16125 Callable will get wrapped in another class, so we won't get it
+                            //  as-is when trying to make queue dump
                             NamedCallable("${event::class.simpleName}") {
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)

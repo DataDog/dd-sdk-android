@@ -112,6 +112,7 @@ internal fun ViewEvent.ViewEventSource.toViewUpdate() = when (this) {
     ViewEvent.ViewEventSource.KOTLIN_MULTIPLATFORM -> ViewUpdateEvent.ViewUpdateEventSource.KOTLIN_MULTIPLATFORM
     ViewEvent.ViewEventSource.ELECTRON -> ViewUpdateEvent.ViewUpdateEventSource.ELECTRON
     ViewEvent.ViewEventSource.RUM_CPP -> ViewUpdateEvent.ViewUpdateEventSource.RUM_CPP
+    ViewEvent.ViewEventSource.MAUI -> ViewUpdateEvent.ViewUpdateEventSource.MAUI
 }
 
 internal fun ViewEvent.ViewEventSessionType.toViewUpdate() = when (this) {
