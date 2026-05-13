@@ -18,7 +18,8 @@ import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfileEvent
-import com.datadog.android.profiling.model.RumMobileEvents
+import com.datadog.android.profiling.model.RumMetadataEvent
+import com.google.gson.JsonArray
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -235,23 +236,28 @@ internal class ProfilingDataWriter(
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
         anrEvents: List<ProfilerEvent.RumAnrEvent>
     ): ByteArray {
-        val rumMobileEvents = RumMobileEvents(
-            errors = anrEvents.takeIf { it.isNotEmpty() }?.map { event ->
-                RumMobileEvents.Error(
-                    id = event.id,
-                    startNs = TimeUnit.MILLISECONDS.toNanos(event.startMs),
-                    durationNs = event.durationNs
-                )
-            },
-            longTasks = longTasks.takeIf { it.isNotEmpty() }?.map { event ->
-                RumMobileEvents.LongTask(
-                    id = event.id,
-                    startNs = TimeUnit.MILLISECONDS.toNanos(event.startMs),
-                    durationNs = event.durationNs
-                )
+        val rumMobileEvents = mutableListOf<RumMetadataEvent>()
+        anrEvents.forEach {
+            rumMobileEvents += RumMetadataEvent(
+                id = it.id,
+                type = RumMetadataEvent.Type.ERROR,
+                startNs = TimeUnit.MILLISECONDS.toNanos(it.startMs),
+                durationNs = it.durationNs
+            )
+        }
+        longTasks.forEach {
+            rumMobileEvents += RumMetadataEvent(
+                id = it.id,
+                type = RumMetadataEvent.Type.LONG_TASK,
+                startNs = TimeUnit.MILLISECONDS.toNanos(it.startMs),
+                durationNs = it.durationNs
+            )
+        }
+        return JsonArray(rumMobileEvents.size).apply {
+            rumMobileEvents.forEach {
+                add(it.toJson())
             }
-        )
-        return rumMobileEvents.toJson().toString().toByteArray(Charsets.UTF_8)
+        }.toString().toByteArray(Charsets.UTF_8)
     }
 
     private fun buildTags(context: DatadogContext, operation: String): String = buildString {
