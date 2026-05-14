@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.startup
 
 import android.app.Application
+import androidx.annotation.UiThread
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
@@ -22,6 +23,7 @@ internal interface RumAppStartupDetector {
         fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean)
     }
 
+    @UiThread
     fun destroy()
 
     companion object {

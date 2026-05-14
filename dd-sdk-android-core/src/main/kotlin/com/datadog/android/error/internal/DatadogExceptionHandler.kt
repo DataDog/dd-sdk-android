@@ -140,16 +140,11 @@ internal class DatadogExceptionHandler(
     // endregion
 
     companion object {
-        // If you change these you will have to propagate the changes
-        // also into the datadog-ndk.cpp file inside the dd-sdk-android-ndk module.
-        internal const val LOGGER_NAME = CrashReportsFeature.CRASH_FEATURE_NAME
         internal const val MESSAGE = "Application crash detected"
         internal const val MAX_WAIT_FOR_IDLE_TIME_IN_MS = 100L
         internal const val EXECUTOR_NOT_IDLED_WARNING_MESSAGE =
             "Datadog SDK is in an unexpected state due to an ongoing crash. " +
                 "Some events could be lost."
-        internal const val MISSING_LOGS_FEATURE_INFO =
-            "Logs feature is not registered, won't report crash as log."
         internal const val MISSING_RUM_FEATURE_INFO =
             "RUM feature is not registered, won't report crash as RUM event."
     }

@@ -73,7 +73,7 @@ internal class CronetUrlRequestTest {
         whenever(mockDelegateBuilder.addHeader(any(), any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.addRequestAnnotation(any())) doReturn mockDelegateBuilder
         whenever(mockDelegateBuilder.build()) doReturn mockBuiltRequest
-        whenever(mockRequestTracingState.tracedRequestInfoBuilder) doReturn mockRequestInfoBuilder
+        whenever(mockRequestTracingState.requestInfoBuilder) doReturn mockRequestInfoBuilder
         whenever(mockCallback.onRequestStarted(any())) doReturn mockRequestTracingState
 
         val requestContext = CronetRequestContext(

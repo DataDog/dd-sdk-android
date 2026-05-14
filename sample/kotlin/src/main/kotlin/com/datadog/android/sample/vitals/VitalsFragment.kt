@@ -15,7 +15,7 @@ import android.widget.CompoundButton
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import com.datadog.android.rum.featureoperations.FailureReason
+import com.datadog.android.rum.operations.FailureReason
 import com.datadog.android.sample.R
 import com.google.android.material.textfield.TextInputEditText
 
@@ -45,15 +45,15 @@ internal class VitalsFragment :
         rootView.findViewById<CheckBox>(R.id.vital_slow_frame_rate).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_memory).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_stress_test).setOnCheckedChangeListener(this)
-        rootView.findViewById<Button>(R.id.fo_start).setOnClickListener(this)
-        rootView.findViewById<Button>(R.id.fo_stop_successfully).setOnClickListener(this)
-        rootView.findViewById<Button>(R.id.fo_stop_unsuccessfully).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.operation_start).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.operation_stop_successfully).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.operation_stop_unsuccessfully).setOnClickListener(this)
 
         badView = rootView.findViewById(R.id.vital_slow_view)
         progressView = rootView.findViewById(R.id.progress)
 
-        operationName = rootView.findViewById(R.id.fo_name_edit_text)
-        operationKey = rootView.findViewById(R.id.fo_operation_key_edit_text)
+        operationName = rootView.findViewById(R.id.operation_name_edit_text)
+        operationKey = rootView.findViewById(R.id.operation_key_edit_text)
         return rootView
     }
 
@@ -81,17 +81,17 @@ internal class VitalsFragment :
         when (v.id) {
             R.id.vital_long_task -> viewModel.runLongTask()
             R.id.vital_frozen_frame -> viewModel.runFrozenFrame()
-            R.id.fo_start -> viewModel.startFeatureOperation(
+            R.id.operation_start -> viewModel.startOperation(
                 operationName.text.toString(),
                 operationKey
             )
 
-            R.id.fo_stop_successfully -> viewModel.stopFeatureOperation(
+            R.id.operation_stop_successfully -> viewModel.stopOperation(
                 operationName.text.toString(),
                 operationKey
             )
 
-            R.id.fo_stop_unsuccessfully -> viewModel.stopFeatureOperation(
+            R.id.operation_stop_unsuccessfully -> viewModel.stopOperation(
                 operationName.text.toString(),
                 operationKey,
                 FailureReason.ERROR

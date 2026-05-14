@@ -8,6 +8,7 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
@@ -101,6 +102,9 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
+            InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
+        )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyNoInteractions(mockRumAttributesProvider)
     }
@@ -117,6 +121,9 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
+            InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
+        )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyNoInteractions(mockRumAttributesProvider)
     }
@@ -136,6 +143,9 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
         // Then
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
+            InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
+        )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyNoInteractions(mockRumAttributesProvider)
     }

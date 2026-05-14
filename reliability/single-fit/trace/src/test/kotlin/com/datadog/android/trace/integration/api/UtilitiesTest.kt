@@ -17,7 +17,7 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.withinSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.google.gson.JsonObject
@@ -60,7 +60,7 @@ class UtilitiesTest {
 
     @AfterEach
     fun `tear down`() {
-        DatadogTracingToolkit.clear()
+        _TraceInternalProxy.clear()
         GlobalDatadogTracer.clear()
     }
 
@@ -146,7 +146,7 @@ class UtilitiesTest {
         assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(
             event0.getString("spans[0].span_id")
-        ).isEqualTo(DatadogTracingToolkit.spanIdConverter.toHexStringPadded(spanId))
+        ).isEqualTo(_TraceInternalProxy.spanIdConverter.toHexStringPadded(spanId))
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
         assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
@@ -251,7 +251,7 @@ class UtilitiesTest {
         assertThat(
             event0.getString("spans[0].span_id")
         ).isEqualTo(
-            DatadogTracingToolkit.spanIdConverter.toHexStringPadded(spanId)
+            _TraceInternalProxy.spanIdConverter.toHexStringPadded(spanId)
         )
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)

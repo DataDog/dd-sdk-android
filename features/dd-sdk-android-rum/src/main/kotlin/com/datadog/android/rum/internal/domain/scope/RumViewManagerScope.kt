@@ -433,8 +433,8 @@ internal class RumViewManagerScope(
             RumRawEvent.AddError::class.java,
             RumRawEvent.StartAction::class.java,
             RumRawEvent.StartResource::class.java,
-            RumRawEvent.StartFeatureOperation::class.java,
-            RumRawEvent.StopFeatureOperation::class.java
+            RumRawEvent.StartOperation::class.java,
+            RumRawEvent.StopOperation::class.java
         )
 
         internal val silentOrphanEventTypes = arrayOf<Class<*>>(

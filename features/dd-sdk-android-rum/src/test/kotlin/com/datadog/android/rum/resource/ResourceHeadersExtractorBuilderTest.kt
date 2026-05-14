@@ -21,10 +21,10 @@ internal class ResourceHeadersExtractorBuilderTest {
         val extractor = ResourceHeadersExtractor.Builder().build()
 
         // Then
-        assertThat(extractor.requestHeaders).containsExactlyElementsOf(
+        assertThat(extractor.allowedRequestHeaders).containsExactlyElementsOf(
             DEFAULT_REQUEST_HEADERS
         )
-        assertThat(extractor.responseHeaders).containsExactlyElementsOf(
+        assertThat(extractor.allowedResponseHeaders).containsExactlyElementsOf(
             DEFAULT_RESPONSE_HEADERS
         )
     }
@@ -35,8 +35,8 @@ internal class ResourceHeadersExtractorBuilderTest {
         val extractor = ResourceHeadersExtractor.Builder(includeDefaults = false).build()
 
         // Then
-        assertThat(extractor.requestHeaders).isEmpty()
-        assertThat(extractor.responseHeaders).isEmpty()
+        assertThat(extractor.allowedRequestHeaders).isEmpty()
+        assertThat(extractor.allowedResponseHeaders).isEmpty()
     }
 
     @Test
@@ -50,8 +50,8 @@ internal class ResourceHeadersExtractorBuilderTest {
             .build()
 
         // Then
-        assertThat(extractor.requestHeaders).containsExactlyElementsOf(customHeaders.toList())
-        assertThat(extractor.responseHeaders).containsExactlyElementsOf(customHeaders.toList())
+        assertThat(extractor.allowedRequestHeaders).containsExactlyElementsOf(customHeaders.toList())
+        assertThat(extractor.allowedResponseHeaders).containsExactlyElementsOf(customHeaders.toList())
     }
 
     // endregion
@@ -85,8 +85,8 @@ internal class ResourceHeadersExtractorBuilderTest {
             .build()
 
         // Then
-        assertThat(extractor.requestHeaders).isEmpty()
-        assertThat(extractor.responseHeaders).isEmpty()
+        assertThat(extractor.allowedRequestHeaders).isEmpty()
+        assertThat(extractor.allowedResponseHeaders).isEmpty()
     }
 
     // endregion
@@ -104,8 +104,8 @@ internal class ResourceHeadersExtractorBuilderTest {
             .build()
 
         // Then
-        assertThat(extractor.requestHeaders).containsExactly("x-request-id", "x-correlation-id")
-        assertThat(extractor.responseHeaders).containsExactly("x-request-id", "x-correlation-id")
+        assertThat(extractor.allowedRequestHeaders).containsExactly("x-request-id", "x-correlation-id")
+        assertThat(extractor.allowedResponseHeaders).containsExactly("x-request-id", "x-correlation-id")
     }
 
     @Test
@@ -119,8 +119,8 @@ internal class ResourceHeadersExtractorBuilderTest {
             .build()
 
         // Then
-        assertThat(extractor.requestHeaders).containsExactly("x-request-id")
-        assertThat(extractor.responseHeaders).containsExactly("x-request-id")
+        assertThat(extractor.allowedRequestHeaders).containsExactly("x-request-id")
+        assertThat(extractor.allowedResponseHeaders).containsExactly("x-request-id")
     }
 
     @Test
@@ -135,9 +135,9 @@ internal class ResourceHeadersExtractorBuilderTest {
 
         // Then
         // content-type is a default, so it shouldn't appear twice
-        val contentTypeCount = extractor.requestHeaders.count { it == "content-type" }
+        val contentTypeCount = extractor.allowedRequestHeaders.count { it == "content-type" }
         assertThat(contentTypeCount).isEqualTo(1)
-        assertThat(extractor.requestHeaders).contains("x-request-id")
+        assertThat(extractor.allowedRequestHeaders).contains("x-request-id")
     }
 
     // endregion

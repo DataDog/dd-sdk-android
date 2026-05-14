@@ -81,7 +81,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         fakeThrowable = forge.aNullable { forge.aThrowable() }
         testedProvider = RumResourceAttributesProviderCompatibilityAdapter(mockDelegate, mockSdkReference)
         requestInfo = OkHttpRequestInfo(mockOkHttpRequest)
-        responseInfo = OkHttpHttpResponseInfo(mockOkHttpResponse, mockInternalLogger)
+        responseInfo = OkHttpResponseInfo(mockOkHttpResponse, mockInternalLogger)
     }
 
     @Test
@@ -108,7 +108,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         whenever(
             mockDelegate.onProvideAttributes(
                 any<OkHttpRequestInfo>(),
-                anyOrNull<OkHttpHttpResponseInfo>(),
+                anyOrNull<OkHttpResponseInfo>(),
                 anyOrNull<Throwable>()
             )
         ).thenReturn(fakeAttributes)
@@ -121,7 +121,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verify(mockDelegate).onProvideAttributes(
             any<OkHttpRequestInfo>(),
-            anyOrNull<OkHttpHttpResponseInfo>(),
+            anyOrNull<OkHttpResponseInfo>(),
             anyOrNull<Throwable>()
         )
         verifyNoMoreInteractions(mockDelegate)
@@ -136,7 +136,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         whenever(
             mockDelegate.onProvideAttributes(
                 any<OkHttpRequestInfo>(),
-                anyOrNull<OkHttpHttpResponseInfo>(),
+                anyOrNull<OkHttpResponseInfo>(),
                 anyOrNull<Throwable>()
             )
         ).thenReturn(emptyMap())
@@ -149,7 +149,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         verify(mockDelegate).onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable)
         verify(mockDelegate).onProvideAttributes(
             any<OkHttpRequestInfo>(),
-            anyOrNull<OkHttpHttpResponseInfo>(),
+            anyOrNull<OkHttpResponseInfo>(),
             anyOrNull<Throwable>()
         )
         verifyNoMoreInteractions(mockDelegate)
@@ -229,7 +229,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
             .thenReturn(emptyMap())
 
-        argumentCaptor<OkHttpHttpResponseInfo> {
+        argumentCaptor<OkHttpResponseInfo> {
             // When
             testedProvider.onProvideAttributes(
                 mockOkHttpRequest,
@@ -255,7 +255,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         whenever(mockDelegate.onProvideAttributes(mockOkHttpRequest, mockOkHttpResponse, fakeThrowable))
             .thenReturn(emptyMap())
 
-        argumentCaptor<OkHttpHttpResponseInfo> {
+        argumentCaptor<OkHttpResponseInfo> {
             // When
             testedProvider.onProvideAttributes(
                 mockOkHttpRequest,

@@ -11,6 +11,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.toBase64
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -64,6 +65,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -145,6 +147,52 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
         // Then
         verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+    }
+
+    @Test
+    fun `M report LEGACY_OKHTTP library type W onSdkInstanceReady()`() {
+        // Then
+        verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
+            InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
+        )
+    }
+
+    @Test
+    fun `M call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { extractor uses defaults }`() {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // When
+        (testedInterceptor as DatadogInterceptor).onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        verify(rumMonitor.mockInstance).notifyResourceHeadersTrackingConfigured(
+            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
+        )
+    }
+
+    @Test
+    fun `M call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { extractor uses custom }`() {
+        // Given
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
+            .captureHeaders("x-request-id")
+            .build()
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // When
+        (testedInterceptor as DatadogInterceptor).onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        verify(rumMonitor.mockInstance).notifyResourceHeadersTrackingConfigured(
+            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+        )
+    }
+
+    @Test
+    fun `M not call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { no extractor }`() {
+        // Then
+        verify(rumMonitor.mockInstance, never()).notifyResourceHeadersTrackingConfigured(any())
     }
 
     @Test
@@ -303,7 +351,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val mimeType = forge.anElementFrom(DatadogInterceptor.STREAM_CONTENT_TYPES)
+        val mimeType = forge.anElementFrom(
+            HttpSpec.ContentType.values().filter(HttpSpec.ContentType::isStream)
+        )
         fakeMediaType = mimeType.toMediaType()
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()

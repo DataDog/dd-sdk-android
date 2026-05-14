@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
@@ -25,8 +26,8 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.DatadogTracingToolkit.propagationHelper
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
+import com.datadog.android.trace.internal._TraceInternalProxy.propagationHelper
 import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.trace.internal.net.TracerProvider
 import com.datadog.android.trace.internal.net.applyPriority
@@ -60,7 +61,7 @@ import java.util.Locale
 @InternalApi
 class ApmNetworkInstrumentation internal constructor(
     internal val canSendSpan: Boolean,
-    internal val sdkInstanceName: String?,
+    val sdkInstanceName: String?,
     val traceOrigin: String?,
     internal val tracerProvider: TracerProvider,
     internal val redacted404ResourceName: Boolean,
@@ -74,6 +75,10 @@ class ApmNetworkInstrumentation internal constructor(
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
+
+    /** The SDK core instance, if available. */
+    val sdkCore: SdkCore?
+        get() = sdkCoreReference.get()
 
     /** Reference to the SDK core instance. */
     val sdkCoreReference: SdkReference = SdkReference(sdkInstanceName) {
@@ -144,7 +149,7 @@ class ApmNetworkInstrumentation internal constructor(
             span = span,
             isSampled = isSampled,
             sampleRate = traceSampler.getSampleRate(),
-            tracedRequestInfoBuilder = tracedRequestInfoBuilder
+            requestInfoBuilder = tracedRequestInfoBuilder
         )
     }
 
@@ -222,7 +227,7 @@ class ApmNetworkInstrumentation internal constructor(
         throwable: Throwable?
     ) {
         if (span == null) return
-        val request = tracedRequestInfoBuilder.build()
+        val request = createRequestInfo()
         try {
             tracedRequestListener.onRequestIntercepted(request, span, response, throwable)
         } catch (e: StackOverflowError) {

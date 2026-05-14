@@ -19,7 +19,7 @@ internal class CronetUrlRequest(
     override fun start() {
         val requestTracingState = requestCallback.onRequestStarted(initialRequestInfo)
         val requestInfoBuilder =
-            (requestTracingState.tracedRequestInfoBuilder as? CronetHttpRequestInfoBuilder)
+            (requestTracingState.requestInfoBuilder as? CronetHttpRequestInfoBuilder)
                 ?: initialRequestInfo.newBuilder()
 
         requestInfoBuilder

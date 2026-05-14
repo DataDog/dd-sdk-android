@@ -15,7 +15,10 @@ import java.util.function.BiPredicate
  *
  * See [withGsonIntEqualsForFields].
  */
-private val lazilyParsedIntPredicate = BiPredicate { v1: LazilyParsedNumber, v2: Int -> v1.toInt() == v2 }
+private val lazilyParsedIntPredicate = BiPredicate {
+        v1: LazilyParsedNumber?, v2: Int? ->
+    v1?.toInt() == v2
+}
 
 /**
  * Adds support for comparing Gson's LazilyParsedNumber with Integer fields

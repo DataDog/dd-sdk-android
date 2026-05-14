@@ -318,6 +318,93 @@ internal class WebViewLogEventConsumerTest {
         }
     }
 
+    @Test
+    fun `M add anonymous id and preserve web usr fields W consume { event already has usr }`(
+        forge: Forge
+    ) {
+        // Given
+        val webUsrId = forge.anAlphabeticalString()
+        val webUsrName = forge.anAlphabeticalString()
+        val webUsrEmail = forge.aStringMatching("[a-z]+@[a-z]+\\.[a-z]+")
+        val existingUsr = JsonObject().apply {
+            addProperty(USR_ID_KEY, webUsrId)
+            addProperty(USR_NAME_KEY, webUsrName)
+            addProperty(USR_EMAIL_KEY, webUsrEmail)
+        }
+        fakeWebLogEvent.add(WebViewLogEventConsumer.USR_KEY_NAME, existingUsr)
+
+        // When
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val usr = firstValue.getAsJsonObject(WebViewLogEventConsumer.USR_KEY_NAME)
+            // Web fields preserved
+            assertThat(usr).hasField(USR_ID_KEY, webUsrId)
+            assertThat(usr).hasField(USR_NAME_KEY, webUsrName)
+            assertThat(usr).hasField(USR_EMAIL_KEY, webUsrEmail)
+            // Native anonymous_id added
+            fakeDatadogContext.userInfo.anonymousId?.let {
+                assertThat(usr).hasField(
+                    WebViewLogEventConsumer.ANONYMOUS_ID_KEY_NAME,
+                    it
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `M overwrite anonymous id W consume { browser already set anonymous_id }`(
+        forge: Forge
+    ) {
+        // Given
+        val browserAnonymousId = forge.anAlphabeticalString()
+        val existingUsr = JsonObject().apply {
+            addProperty(WebViewLogEventConsumer.ANONYMOUS_ID_KEY_NAME, browserAnonymousId)
+        }
+        fakeWebLogEvent.add(WebViewLogEventConsumer.USR_KEY_NAME, existingUsr)
+
+        // When
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val usr = firstValue.getAsJsonObject(WebViewLogEventConsumer.USR_KEY_NAME)
+            fakeDatadogContext.userInfo.anonymousId?.let {
+                assertThat(usr).hasField(WebViewLogEventConsumer.ANONYMOUS_ID_KEY_NAME, it)
+            }
+        }
+    }
+
+    @Test
+    fun `M add anonymous id in new usr object W consume { no usr set }`() {
+        // Given
+        fakeWebLogEvent.remove(WebViewLogEventConsumer.USR_KEY_NAME)
+
+        // When
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val usr = firstValue.getAsJsonObject(WebViewLogEventConsumer.USR_KEY_NAME)
+            fakeDatadogContext.userInfo.anonymousId?.let {
+                val expectedUsr = JsonObject().apply {
+                    addProperty(WebViewLogEventConsumer.ANONYMOUS_ID_KEY_NAME, it)
+                }
+                assertThat(usr).usingRecursiveComparison().isEqualTo(expectedUsr)
+            }
+        }
+    }
+
     // endregion
 
     // region Internal
@@ -356,6 +443,10 @@ internal class WebViewLogEventConsumerTest {
     // endregion
 
     companion object {
+
+        private const val USR_ID_KEY = "id"
+        private const val USR_NAME_KEY = "name"
+        private const val USR_EMAIL_KEY = "email"
 
         @Suppress("unused")
         @JvmStatic

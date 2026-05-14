@@ -127,8 +127,8 @@ internal class CronetRequestCallbackTest {
             on { build() } doReturn mockRedirectRequestInfo
         }
         mockTraceState = mock {
-            on { tracedRequestInfoBuilder } doReturn mockRequestBuilder
-            on { createModifiedRequestInfo() } doReturn mockMutableRequestInfo
+            on { requestInfoBuilder } doReturn mockRequestBuilder
+            on { createRequestInfo() } doReturn mockMutableRequestInfo
         }
         mockApmNetworkInstrumentation = mock {
             on { networkTracingScope } doReturn ApmNetworkTracingScope.ALL
@@ -355,7 +355,7 @@ internal class CronetRequestCallbackTest {
     fun `M not create redirect span W onRedirectReceived() {ALL, non-MutableHttpRequestInfo}`() {
         // Given
         whenever(mockApmNetworkInstrumentation.onRequest(fakeRequestInfo)) doReturn mockTraceState
-        whenever(mockTraceState.createModifiedRequestInfo()) doReturn mock<HttpRequestInfo>()
+        whenever(mockTraceState.createRequestInfo()) doReturn mock<HttpRequestInfo>()
         whenever(mockDelegate.onRedirectReceived(any(), any(), any())).thenAnswer { invocation ->
             val request = invocation.getArgument<UrlRequest>(0)
             request.followRedirect()
@@ -698,7 +698,7 @@ internal class CronetRequestCallbackTest {
         val mockModifiedRequestInfo: HttpRequestInfo = mock()
         val mockDistributedTracingState: RequestTracingState = mock()
         whenever(mockDistributedTracingInstrumentation.onRequest(fakeRequestInfo)) doReturn mockDistributedTracingState
-        whenever(mockDistributedTracingState.createModifiedRequestInfo()) doReturn mockModifiedRequestInfo
+        whenever(mockDistributedTracingState.createRequestInfo()) doReturn mockModifiedRequestInfo
 
         // When
         testedCallback.onRequestStarted(fakeRequestInfo)
@@ -737,7 +737,7 @@ internal class CronetRequestCallbackTest {
             mockDistributedTracingInstrumentation
         )
         whenever(mockDistributedTracingInstrumentation.onRequest(fakeRequestInfo)) doReturn mockDistributedTracingState
-        whenever(mockDistributedTracingState.createModifiedRequestInfo()) doReturn mockModifiedRequestInfo
+        whenever(mockDistributedTracingState.createRequestInfo()) doReturn mockModifiedRequestInfo
 
         // When
         testedCallback.onRequestStarted(fakeRequestInfo)

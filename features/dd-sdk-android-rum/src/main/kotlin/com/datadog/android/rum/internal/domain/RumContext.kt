@@ -50,6 +50,7 @@ internal data class RumContext(
 
     companion object {
         val NULL_UUID = UUID(0, 0).toString()
+        const val SAMPLE_ALL_RATE: Float = 100f
 
         // be careful when changing values below, they may be indirectly referenced (as string
         // literal) from other modules

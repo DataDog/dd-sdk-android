@@ -9,6 +9,7 @@ package com.datadog.trace.core
 import com.datadog.tools.unit.createInstance
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.api.Config
+import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.config.provider.ConfigProvider
@@ -180,6 +181,16 @@ internal class CoreTracerTest : DDCoreSpecification() {
 
         // Tear down
         tracer.close()
+    }
+
+    @Test
+    fun `M use secure random generation strategy W build()`() {
+        // When
+        val tracer = tracerBuilder().build()
+
+        // Then
+        val strategy: IdGenerationStrategy = tracer.getFieldValue("idGenerationStrategy")
+        assertThat(strategy.javaClass.simpleName).isEqualTo("SRandom")
     }
 
     companion object {

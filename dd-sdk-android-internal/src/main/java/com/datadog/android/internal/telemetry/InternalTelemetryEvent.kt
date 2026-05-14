@@ -78,10 +78,18 @@ sealed class InternalTelemetryEvent {
         ) : ApiUsage(additionalProperties) {
             enum class LibraryType {
                 CRONET,
-                OKHTTP
+                OKHTTP,
+                LEGACY_OKHTTP
             }
         }
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()
+
+    class ResourceHeadersTrackingConfigured(val mode: Mode) : InternalTelemetryEvent() {
+        enum class Mode {
+            DEFAULT_HEADERS,
+            CUSTOM
+        }
+    }
 }

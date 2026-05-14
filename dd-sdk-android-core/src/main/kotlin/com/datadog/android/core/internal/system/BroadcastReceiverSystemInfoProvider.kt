@@ -14,18 +14,28 @@ import android.os.BatteryManager
 import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
+import com.datadog.android.core.internal.utils.executeSafe
+import java.util.concurrent.ExecutorService
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val executorService: ExecutorService
 ) :
     ThreadSafeReceiver(), SystemInfoProvider {
 
+    @Volatile
     private var systemInfo: SystemInfo = SystemInfo()
 
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
+        executorService.executeSafe(HANDLE_INTENT_OPERATION_NAME, internalLogger) {
+            handleIntent(context, intent)
+        }
+    }
+
+    private fun handleIntent(context: Context, intent: Intent?) {
         try {
             when (val action = intent?.action) {
                 Intent.ACTION_BATTERY_CHANGED -> {
@@ -82,7 +92,7 @@ internal class BroadcastReceiverSystemInfoProvider(
     private fun registerIntentFilter(context: Context, action: String) {
         val filter = IntentFilter()
         filter.addAction(action)
-        registerReceiver(context, filter)?.let { onReceive(context, it) }
+        registerReceiver(context, filter)?.let { handleIntent(context, it) }
     }
 
     private fun handleBatteryIntent(intent: Intent) {
@@ -119,6 +129,7 @@ internal class BroadcastReceiverSystemInfoProvider(
 
     companion object {
 
+        private const val HANDLE_INTENT_OPERATION_NAME = "BroadcastReceiverSystemInfoProvider.handleIntent"
         private const val DEFAULT_BATTERY_SCALE = 100
         private const val BATTERY_UNPLUGGED = -1
         private const val BATTERY_LEVEL_UNKNOWN = -1

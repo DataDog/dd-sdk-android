@@ -460,8 +460,8 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(readResult).hasSize(2)
-        assertThat(readResult).satisfies { it.all { it.data.isNotEmpty() } }
-        assertThat(readResult).satisfies { it.all { it.metadata.isEmpty() } }
+        assertThat(readResult).allMatch { it.data.isNotEmpty() }
+        assertThat(readResult).allMatch { it.metadata.isNotEmpty() }
     }
 
     // endregion

@@ -920,7 +920,7 @@ internal class BatchFileOrchestratorTest {
         val new = currentTime - (RECENT_DELAY_MS / 2)
         val expectedFiles = mutableListOf<File>()
         for (i in 1..count) {
-            // create both non readable and non writable files
+            // create both non-readable and non-writable files
             expectedFiles.add(
                 File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
             )
@@ -967,7 +967,7 @@ internal class BatchFileOrchestratorTest {
         val new = currentTime - (RECENT_DELAY_MS / 2)
         val expectedFiles = mutableListOf<File>()
         for (i in 1..count) {
-            // create both non readable and non writable files
+            // create both non-readable and non-writable files
             expectedFiles.add(
                 File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
             )

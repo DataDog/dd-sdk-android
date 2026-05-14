@@ -5,7 +5,7 @@
  */
 package com.datadog.android.cronet.internal
 
-import com.datadog.android.api.instrumentation.network.HttpRequestInfo
+import androidx.annotation.WorkerThread
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
@@ -22,8 +22,9 @@ internal class CronetRequestFinishedInfoListener(
     internal val rumNetworkInstrumentation: RumNetworkInstrumentation
 ) : RequestFinishedInfo.Listener(executor) {
 
+    @WorkerThread
     override fun onRequestFinished(finishedInfo: RequestFinishedInfo) {
-        val requestInfo = finishedInfo.annotations?.filterIsInstance<HttpRequestInfo>()?.firstOrNull()
+        val requestInfo = finishedInfo.annotations?.filterIsInstance<CronetHttpRequestInfo>()?.firstOrNull()
         val distributingTracingState = finishedInfo.annotations?.filterIsInstance<RequestTracingState>()?.firstOrNull()
         if (requestInfo == null) {
             rumNetworkInstrumentation.reportInstrumentationError {
@@ -51,7 +52,7 @@ internal class CronetRequestFinishedInfoListener(
             }
 
             RequestFinishedInfo.SUCCEEDED -> {
-                val responseInfo = finishedInfo.responseInfo?.let { CronetHttpResponseInfo(it) }
+                val responseInfo = finishedInfo.responseInfo?.let { CronetHttpResponseInfo(it, requestInfo) }
 
                 if (responseInfo == null) {
                     rumNetworkInstrumentation.stopResourceWithError(

@@ -18,6 +18,7 @@ import com.datadog.android.cronet.configureDatadogInstrumentation
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.sample.R
+import com.datadog.android.sample.SampleApplication
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ExperimentalTraceApi
 import org.chromium.net.CronetEngine
@@ -68,7 +69,8 @@ internal class CronetImageFragment : Fragment() {
             .enableQuic(true)
             .enableHttp2(true)
             .configureDatadogInstrumentation(
-                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration(),
+                rumInstrumentationConfiguration = RumNetworkInstrumentationConfiguration()
+                    .trackResourceHeaders(SampleApplication.resourceHeadersExtractor),
                 apmInstrumentationConfiguration = ApmNetworkInstrumentationConfiguration(tracedHosts)
                     .setHeaderPropagationOnly()
             )

@@ -10,9 +10,9 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.operations.FailureReason
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -79,16 +79,16 @@ internal fun Forge.stopResourceEvent(): RumRawEvent.StopResource {
     )
 }
 
-internal fun Forge.startFeatureOperationEvent(): RumRawEvent.StartFeatureOperation {
-    return RumRawEvent.StartFeatureOperation(
+internal fun Forge.startOperationEvent(): RumRawEvent.StartOperation {
+    return RumRawEvent.StartOperation(
         name = anAlphabeticalString(),
         operationKey = aNullable { anAlphabeticalString() },
         attributes = exhaustiveAttributes()
     )
 }
 
-internal fun Forge.stopFeatureOperationEvent(): RumRawEvent.StopFeatureOperation {
-    return RumRawEvent.StopFeatureOperation(
+internal fun Forge.stopOperationEvent(): RumRawEvent.StopOperation {
+    return RumRawEvent.StopOperation(
         name = anAlphabeticalString(),
         operationKey = aNullable { anAlphabeticalString() },
         failureReason = aNullable { aValueFrom(FailureReason::class.java) },
@@ -200,8 +200,8 @@ internal fun Forge.validBackgroundEvent(): RumRawEvent {
             { startActionEvent() },
             { addErrorEvent() },
             { startResourceEvent() },
-            { startFeatureOperationEvent() },
-            { stopFeatureOperationEvent() }
+            { startOperationEvent() },
+            { stopOperationEvent() }
         )
     ).invoke()
 }

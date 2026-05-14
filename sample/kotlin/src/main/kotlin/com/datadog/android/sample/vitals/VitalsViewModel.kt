@@ -13,7 +13,7 @@ import androidx.lifecycle.ViewModel
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.featureoperations.FailureReason
+import com.datadog.android.rum.operations.FailureReason
 import timber.log.Timber
 import java.security.SecureRandom
 
@@ -141,16 +141,16 @@ internal class VitalsViewModel : ViewModel() {
     }
 
     @OptIn(ExperimentalRumApi::class)
-    fun startFeatureOperation(name: String, operationKey: String?) {
-        GlobalRumMonitor.get().startFeatureOperation(name, operationKey)
+    fun startOperation(name: String, operationKey: String?) {
+        GlobalRumMonitor.get().startOperation(name, operationKey)
     }
 
     @OptIn(ExperimentalRumApi::class)
-    fun stopFeatureOperation(name: String, operationKey: String?, reason: FailureReason? = null) {
+    fun stopOperation(name: String, operationKey: String?, reason: FailureReason? = null) {
         if (reason != null) {
-            GlobalRumMonitor.get().failFeatureOperation(name, operationKey, reason)
+            GlobalRumMonitor.get().failOperation(name, operationKey, reason)
         } else {
-            GlobalRumMonitor.get().succeedFeatureOperation(name, operationKey)
+            GlobalRumMonitor.get().succeedOperation(name, operationKey)
         }
     }
 }

@@ -52,7 +52,7 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
     }
 
     /** @inheritdoc */
-    override fun <T : Any?> validateAttributes(
+    override fun <T> validateAttributes(
         attributes: Map<String, T>,
         keyPrefix: String?,
         attributesGroupName: String?,

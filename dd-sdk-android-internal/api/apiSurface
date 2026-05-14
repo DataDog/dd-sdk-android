@@ -148,7 +148,7 @@ interface com.datadog.android.internal.profiler.BenchmarkSpan
   fun stop()
 interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
   fun startSpan(): BenchmarkSpan
-fun <T: Any?> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
+fun <T> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
 interface com.datadog.android.internal.profiler.BenchmarkTracer
   fun spanBuilder(String, Map<String, String> = emptyMap()): BenchmarkSpanBuilder
 interface com.datadog.android.internal.profiler.ExecutionTimer
@@ -164,6 +164,10 @@ sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
     constructor(TTIDRumContext? = null)
 data class com.datadog.android.internal.profiling.TTIDRumContext
   constructor(String, String, String, String?, String?, String?)
+object com.datadog.android.internal.sampling.DeterministicSampling
+  fun combinedSampleRate(Float, Float): Float
+object com.datadog.android.internal.sampling.SessionSamplingIdProvider
+  fun provideId(String): ULong
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean
@@ -206,7 +210,13 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
       enum LibraryType
         - CRONET
         - OKHTTP
+        - LEGACY_OKHTTP
   object InterceptorInstantiated : InternalTelemetryEvent
+  class ResourceHeadersTrackingConfigured : InternalTelemetryEvent
+    constructor(Mode)
+    enum Mode
+      - DEFAULT_HEADERS
+      - CUSTOM
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
   - B3
@@ -220,6 +230,7 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
+fun isMainThread(): Boolean
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long

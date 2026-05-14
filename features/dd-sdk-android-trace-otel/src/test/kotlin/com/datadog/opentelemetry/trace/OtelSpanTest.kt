@@ -10,7 +10,7 @@ import com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPA
 import com.datadog.android.trace.api.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -213,12 +213,12 @@ internal class OtelSpanTest {
     fun `M delegate to AgentSpan W recordException`(@Forgery fakeThrowable: Throwable) {
         // Given
         val mockAttributes: Attributes = mock()
-        Mockito.mockStatic(DatadogTracingToolkit::class.java).use { mockedStatic ->
+        Mockito.mockStatic(_TraceInternalProxy::class.java).use { mockedStatic ->
             // When
             testedSpan.recordException(fakeThrowable, mockAttributes)
             // Then
             mockedStatic.verify {
-                DatadogTracingToolkit.addThrowable(
+                _TraceInternalProxy.addThrowable(
                     mockAgentSpan,
                     fakeThrowable,
                     ErrorPriorities.UNSET
@@ -233,7 +233,7 @@ internal class OtelSpanTest {
         // Given
         testedSpan.end()
         val mockAttributes: Attributes = mock()
-        Mockito.mockStatic(DatadogTracingToolkit::class.java).use { mockedStatic ->
+        Mockito.mockStatic(_TraceInternalProxy::class.java).use { mockedStatic ->
             // When
             testedSpan.recordException(fakeThrowable, mockAttributes)
 
@@ -248,12 +248,12 @@ internal class OtelSpanTest {
 
     @Test
     fun `M delegate to AgentSpan W activate`() {
-        Mockito.mockStatic(DatadogTracingToolkit::class.java).use { mockedStatic ->
+        Mockito.mockStatic(_TraceInternalProxy::class.java).use { mockedStatic ->
             // When
             testedSpan.activate()
             // Then
             mockedStatic.verify {
-                DatadogTracingToolkit.activateSpan(
+                _TraceInternalProxy.activateSpan(
                     mockAgentTracer,
                     mockAgentSpan,
                     DEFAULT_ASYNC_PROPAGATING

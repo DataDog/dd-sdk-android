@@ -59,13 +59,13 @@ internal class RequestTracingStateTest {
     lateinit var fakeRulePsrKey: String
 
     @Test
-    fun `M return request info W createModifiedRequestInfo()`() {
+    fun `M return request info W createRequestInfo()`() {
         // Given
         whenever(mockRequestBuilder.build()) doReturn mockRequestInfo
-        val state = RequestTracingState(tracedRequestInfoBuilder = mockRequestBuilder)
+        val state = RequestTracingState(requestInfoBuilder = mockRequestBuilder)
 
         // When / Then
-        assertThat(state.createModifiedRequestInfo()).isSameAs(mockRequestInfo)
+        assertThat(state.createRequestInfo()).isSameAs(mockRequestInfo)
     }
 
     @Test
@@ -84,7 +84,7 @@ internal class RequestTracingStateTest {
     fun `M return empty map W toAttributesMap() { span is null }`() {
         // Given
         val state = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = null
         )
@@ -100,7 +100,7 @@ internal class RequestTracingStateTest {
     fun `M return empty map W toAttributesMap() { not sampled }`() {
         // Given
         val state = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = false,
             span = mockSpan
         )
@@ -126,7 +126,7 @@ internal class RequestTracingStateTest {
         whenever(mockSpanContext.spanId) doReturn fakeSpanId
 
         val state = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = fakeSampleRate
@@ -154,7 +154,7 @@ internal class RequestTracingStateTest {
         whenever(mockSpanContext.spanId) doReturn fakeSpanId
 
         val state = RequestTracingState(
-            tracedRequestInfoBuilder = mockRequestBuilder,
+            requestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
             sampleRate = null

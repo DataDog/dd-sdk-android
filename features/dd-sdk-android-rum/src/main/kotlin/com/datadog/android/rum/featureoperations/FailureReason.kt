@@ -8,6 +8,13 @@ package com.datadog.android.rum.featureoperations
 /**
  * Represents the possible reasons for a failed feature operation.
  */
+@Deprecated(
+    "Use com.datadog.android.rum.operations.FailureReason instead",
+    replaceWith = ReplaceWith(
+        expression = "FailureReason",
+        imports = ["com.datadog.android.rum.operations.FailureReason"]
+    )
+)
 enum class FailureReason {
     /**
      * Represents a failure caused by an error during execution.

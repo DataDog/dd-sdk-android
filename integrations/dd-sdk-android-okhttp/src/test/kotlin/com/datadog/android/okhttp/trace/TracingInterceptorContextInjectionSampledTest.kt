@@ -10,6 +10,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
@@ -27,7 +28,7 @@ import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.DatadogPropagationHelper
-import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.fromHex
 import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.utils.verifyLog
@@ -487,7 +488,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
     ) {
         // Given
         val fakeExpectedTraceId = DatadogTraceId.fromHex(fakeTraceContext.traceId)
-        val fakeExpectedSpanId = DatadogTracingToolkit.spanIdConverter.fromHex(fakeTraceContext.spanId)
+        val fakeExpectedSpanId = _TraceInternalProxy.spanIdConverter.fromHex(fakeTraceContext.spanId)
         val fakeExtractedContext = forge.newSpanContextMock<DatadogSpanContext>(
             fakeExpectedTraceId,
             fakeExpectedSpanId
@@ -499,7 +500,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
         whenever(mockPropagationHelper.createExtractedContext(any(), any(), any())).thenReturn(fakeExtractedContext)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val response = testedInterceptor.intercept(mockChain)
 
@@ -596,7 +597,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
-        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
             val response = testedInterceptor.intercept(mockChain)
 
@@ -1337,14 +1338,14 @@ internal class TracingInterceptorContextInjectionSampledTest {
     private fun forgeRequest(url: String = fakeUrl, configure: (Request.Builder) -> Unit = {}): Request {
         val builder = Request.Builder().url(url)
         if (forge.aBool()) {
-            fakeMethod = forge.anElementFrom("POST", "PUT", "PATCH")
+            fakeMethod = forge.anElementFrom(HttpSpec.Method.POST, HttpSpec.Method.PUT, HttpSpec.Method.PATCH)
             fakeBody = forge.anAlphabeticalString()
             with(builder) {
                 val body = fakeBody!!.toByteArray().toRequestBody(null)
                 when (fakeMethod) {
-                    "POST" -> post(body)
-                    "PUT" -> put(body)
-                    "PATCH" -> patch(body)
+                    HttpSpec.Method.POST -> post(body)
+                    HttpSpec.Method.PUT -> put(body)
+                    HttpSpec.Method.PATCH -> patch(body)
                     else -> {
                         throw IllegalArgumentException("Unknown method value: $fakeMethod")
                     }

@@ -6,16 +6,16 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.domain.scope.toSchemaFailureReason
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.operations.FailureReason
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class VitalFeatureOperationPropertiesAssert(actual: VitalOperationStepEvent.Vital) :
-    AbstractObjectAssert<VitalFeatureOperationPropertiesAssert, VitalOperationStepEvent.Vital>(
+internal class VitalOperationPropertiesAssert(actual: VitalOperationStepEvent.Vital) :
+    AbstractObjectAssert<VitalOperationPropertiesAssert, VitalOperationStepEvent.Vital>(
         actual,
-        VitalFeatureOperationPropertiesAssert::class.java
+        VitalOperationPropertiesAssert::class.java
     ) {
 
     fun hasVitalName(expected: String) = apply {
@@ -61,7 +61,6 @@ internal class VitalFeatureOperationPropertiesAssert(actual: VitalOperationStepE
     companion object {
         internal fun assertThat(
             actual: VitalOperationStepEvent.Vital
-        ): VitalFeatureOperationPropertiesAssert =
-            VitalFeatureOperationPropertiesAssert(actual)
+        ): VitalOperationPropertiesAssert = VitalOperationPropertiesAssert(actual)
     }
 }

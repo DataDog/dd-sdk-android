@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.sampling
+package com.datadog.android.internal.sampling
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

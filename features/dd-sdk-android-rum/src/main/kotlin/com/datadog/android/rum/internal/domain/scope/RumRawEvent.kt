@@ -13,13 +13,13 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.operations.FailureReason
 
 internal sealed class RumRawEvent {
 
@@ -255,14 +255,14 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal data class StartFeatureOperation(
+    internal data class StartOperation(
         val name: String,
         val operationKey: String?,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal data class StopFeatureOperation(
+    internal data class StopOperation(
         val name: String,
         val operationKey: String?,
         val attributes: Map<String, Any?>,

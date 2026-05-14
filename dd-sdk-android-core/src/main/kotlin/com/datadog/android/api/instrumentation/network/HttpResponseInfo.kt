@@ -5,6 +5,8 @@
  */
 package com.datadog.android.api.instrumentation.network
 
+import androidx.annotation.WorkerThread
+
 /**
  * Represents information about an HTTP response.
  */
@@ -34,5 +36,11 @@ interface HttpResponseInfo {
      *
      * @return the content length as a Long if available, or null if it cannot be determined.
      */
+    @get:WorkerThread
     val contentLength: Long?
+
+    /**
+     * Represents the HTTP request associated with the response, or null when not available.
+     */
+    val request: HttpRequestInfo?
 }

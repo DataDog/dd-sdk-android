@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence
+@file:Suppress("PackageNaming")
 
-import androidx.annotation.WorkerThread
+package java.nio.file
 
-internal interface BatchConfirmation {
-    @WorkerThread
-    fun markAsRead(deleteBatch: Boolean)
-}
+/**
+ * A fake placeholder class to let AssertJ work in instrumented tests for API<24.
+ */
+class DirectoryStream

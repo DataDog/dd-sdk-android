@@ -59,7 +59,7 @@ internal class CallbackNetworkInfoProviderTest {
 
     @BeforeEach
     fun `set up`() {
-        // setup the network capabilities to return the unspecified values by default
+        // set up the network capabilities to return the unspecified values by default
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn 0
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn 0
         whenever(mockCapabilities.signalStrength) doReturn

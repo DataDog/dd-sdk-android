@@ -7,6 +7,7 @@
 package com.datadog.android.rum.resource
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
 import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.SECURITY_PATTERN
 import java.util.Locale
@@ -20,8 +21,8 @@ import java.util.Locale
  *  @see Builder
  */
 class ResourceHeadersExtractor private constructor(
-    internal val requestHeaders: List<String>,
-    internal val responseHeaders: List<String>
+    internal val allowedRequestHeaders: List<String>,
+    internal val allowedResponseHeaders: List<String>
 ) {
 
     /**
@@ -53,7 +54,7 @@ class ResourceHeadersExtractor private constructor(
          * @return a new [ResourceHeadersExtractor] instance.
          */
         fun build(): ResourceHeadersExtractor {
-            val (sensitiveRequested, filteredCustom) = customHeaders.partition(SECURITY_PATTERN::containsMatchIn)
+            val (sensitiveRequested, safeCustomHeaders) = customHeaders.partition(SECURITY_PATTERN::containsMatchIn)
 
             if (sensitiveRequested.isNotEmpty()) {
                 logger.log(
@@ -65,19 +66,19 @@ class ResourceHeadersExtractor private constructor(
                 )
             }
 
-            val requestHeaders = if (includeDefaults) {
-                (DEFAULT_REQUEST_HEADERS + filteredCustom).distinct()
+            val allowedRequestHeaders = if (includeDefaults) {
+                (DEFAULT_REQUEST_HEADERS + safeCustomHeaders).distinct()
             } else {
-                filteredCustom.distinct()
+                safeCustomHeaders.distinct()
             }
 
-            val responseHeaders = if (includeDefaults) {
-                (DEFAULT_RESPONSE_HEADERS + filteredCustom).distinct()
+            val allowedResponseHeaders = if (includeDefaults) {
+                (DEFAULT_RESPONSE_HEADERS + safeCustomHeaders).distinct()
             } else {
-                filteredCustom.distinct()
+                safeCustomHeaders.distinct()
             }
 
-            if (requestHeaders.isEmpty() && responseHeaders.isEmpty()) {
+            if (allowedRequestHeaders.isEmpty() && allowedResponseHeaders.isEmpty()) {
                 logger.log(
                     level = InternalLogger.Level.WARN,
                     target = InternalLogger.Target.USER,
@@ -86,44 +87,40 @@ class ResourceHeadersExtractor private constructor(
             }
 
             return ResourceHeadersExtractor(
-                requestHeaders = requestHeaders,
-                responseHeaders = responseHeaders
+                allowedRequestHeaders = allowedRequestHeaders,
+                allowedResponseHeaders = allowedResponseHeaders
             )
         }
     }
 
     /**
-     * Extracts the allowed request headers from the given [headers] map.
-     * @param headers the raw request headers (key to list of values).
+     * Extracts allowed request and response headers and returns them as RUM resource attributes.
+     * @param rawRequestHeaders the raw request headers (key to list of values).
+     * @param rawResponseHeaders the raw response headers (key to list of values).
      * @param internalLogger logger for debug messages.
-     * @return a map of allowed header names to their joined values.
+     * @return a map containing [RumAttributes.REQUEST_HEADERS] and [RumAttributes.RESPONSE_HEADERS]
+     *   entries, or empty if no headers matched.
      */
-    internal fun extractRequestHeaders(
-        headers: Map<String, List<String>>,
+    internal fun toResourceAttributes(
+        rawRequestHeaders: Map<String, List<String>>,
+        rawResponseHeaders: Map<String, List<String>>,
         internalLogger: InternalLogger
-    ): Map<String, String> {
-        return extractHeaders(headers, requestHeaders, internalLogger)
-    }
-
-    /**
-     * Extracts the allowed response headers from the given [headers] map.
-     * @param headers the raw response headers (key to list of values).
-     * @param internalLogger logger for debug messages.
-     * @return a map of allowed header names to their joined values.
-     */
-    internal fun extractResponseHeaders(
-        headers: Map<String, List<String>>,
-        internalLogger: InternalLogger
-    ): Map<String, String> {
-        return extractHeaders(headers, responseHeaders, internalLogger)
+    ): Map<String, Any> {
+        val extractedRequestHeaders = extractHeaders(rawRequestHeaders, allowedRequestHeaders, internalLogger)
+        val extractedResponseHeaders = extractHeaders(rawResponseHeaders, allowedResponseHeaders, internalLogger)
+        return buildMap {
+            if (extractedRequestHeaders.isNotEmpty()) put(RumAttributes.REQUEST_HEADERS, extractedRequestHeaders)
+            if (extractedResponseHeaders.isNotEmpty()) put(RumAttributes.RESPONSE_HEADERS, extractedResponseHeaders)
+        }
     }
 
     private fun extractHeaders(
-        headers: Map<String, List<String>>,
+        rawHeaders: Map<String, List<String>>,
         allowedHeaders: List<String>,
         internalLogger: InternalLogger
     ): Map<String, String> {
-        val normalizedHeaders = headers.mapKeys { it.key.lowercase(Locale.US) }
+        if (rawHeaders.isEmpty() || allowedHeaders.isEmpty()) return emptyMap()
+        val normalizedHeaders = rawHeaders.mapKeys { it.key.lowercase(Locale.US) }
         val result = mutableMapOf<String, String>()
         var currentSize = 0
 
