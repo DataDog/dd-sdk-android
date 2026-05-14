@@ -11,6 +11,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
@@ -20,19 +21,24 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 internal class CallbackNetworkInfoProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val internalLogger: InternalLogger
-) :
-    ConnectivityManager.NetworkCallback(),
+) : ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
 
     @Volatile
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
 
+    @Volatile
+    private var carrierInfoResolver: CarrierInfoResolver? = null
+
     // region NetworkCallback
 
     override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
         super.onCapabilitiesChanged(network, networkCapabilities)
+        val isCellular = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
         lastNetworkInfo = NetworkInfo(
             connectivity = getNetworkType(networkCapabilities),
+            carrierName = if (isCellular) carrierInfoResolver?.carrierName else null,
+            carrierId = if (isCellular) carrierInfoResolver?.carrierId else null,
             upKbps = resolveUpBandwidth(networkCapabilities),
             downKbps = resolveDownBandwidth(networkCapabilities),
             strength = resolveStrength(networkCapabilities)
@@ -50,6 +56,8 @@ internal class CallbackNetworkInfoProvider(
 
     @Suppress("TooGenericExceptionCaught")
     override fun register(context: Context) {
+        carrierInfoResolver = (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)
+            ?.let { CarrierInfoResolver(it, internalLogger, buildSdkVersionProvider) }
         val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
         val connMgr = systemService as? ConnectivityManager
 
@@ -95,6 +103,7 @@ internal class CallbackNetworkInfoProvider(
 
     @Suppress("TooGenericExceptionCaught")
     override fun unregister(context: Context) {
+        carrierInfoResolver = null
         val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
         val connMgr = systemService as? ConnectivityManager
 
@@ -130,42 +139,37 @@ internal class CallbackNetworkInfoProvider(
         }
     }
 
-    override fun getLatestNetworkInfo(): NetworkInfo {
-        return lastNetworkInfo
-    }
+    override fun getLatestNetworkInfo(): NetworkInfo = lastNetworkInfo
 
     // endregion
 
     // region Internal
 
-    private fun resolveUpBandwidth(networkCapabilities: NetworkCapabilities): Long? {
-        return if (networkCapabilities.linkUpstreamBandwidthKbps > 0) {
+    private fun resolveUpBandwidth(networkCapabilities: NetworkCapabilities): Long? =
+        if (networkCapabilities.linkUpstreamBandwidthKbps > 0) {
             networkCapabilities.linkUpstreamBandwidthKbps.toLong()
         } else {
             null
         }
-    }
 
-    private fun resolveDownBandwidth(networkCapabilities: NetworkCapabilities): Long? {
-        return if (networkCapabilities.linkDownstreamBandwidthKbps > 0) {
+    private fun resolveDownBandwidth(networkCapabilities: NetworkCapabilities): Long? =
+        if (networkCapabilities.linkDownstreamBandwidthKbps > 0) {
             networkCapabilities.linkDownstreamBandwidthKbps.toLong()
         } else {
             null
         }
-    }
 
-    private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
-        return if (buildSdkVersionProvider.isAtLeastQ &&
+    private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? =
+        if (buildSdkVersionProvider.isAtLeastQ &&
             networkCapabilities.signalStrength != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         ) {
             networkCapabilities.signalStrength.toLong()
         } else {
             null
         }
-    }
 
-    private fun getNetworkType(networkCapabilities: NetworkCapabilities): NetworkInfo.Connectivity {
-        return if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+    private fun getNetworkType(networkCapabilities: NetworkCapabilities): NetworkInfo.Connectivity =
+        if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
             NetworkInfo.Connectivity.NETWORK_WIFI
         } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET
@@ -176,7 +180,6 @@ internal class CallbackNetworkInfoProvider(
         } else {
             NetworkInfo.Connectivity.NETWORK_OTHER
         }
-    }
 
     // endregion
 

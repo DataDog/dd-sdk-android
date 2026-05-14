@@ -28,8 +28,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
     private val internalLogger: InternalLogger,
     private val executorService: ExecutorService,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
-) :
-    ThreadSafeReceiver(),
+) : ThreadSafeReceiver(),
     NetworkInfoProvider {
 
     @Volatile
@@ -65,19 +64,14 @@ internal class BroadcastReceiverNetworkInfoProvider(
         unregisterReceiver(context)
     }
 
-    override fun getLatestNetworkInfo(): NetworkInfo {
-        return networkInfo
-    }
+    override fun getLatestNetworkInfo(): NetworkInfo = networkInfo
 
     // endregion
 
     // region Internal
 
-    private fun buildNetworkInfo(
-        context: Context,
-        activeNetworkInfo: AndroidNetworkInfo?
-    ): NetworkInfo {
-        return if (activeNetworkInfo == null || !activeNetworkInfo.isConnected) {
+    private fun buildNetworkInfo(context: Context, activeNetworkInfo: AndroidNetworkInfo?): NetworkInfo =
+        if (activeNetworkInfo == null || !activeNetworkInfo.isConnected) {
             NetworkInfo(
                 NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
             )
@@ -90,15 +84,18 @@ internal class BroadcastReceiverNetworkInfoProvider(
                 NetworkInfo.Connectivity.NETWORK_ETHERNET
             )
         } else if (activeNetworkInfo.type in knownMobileTypes) {
-            buildMobileNetworkInfo(context, activeNetworkInfo.subtype)
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            val carrierInfoResolver = telephonyManager?.let {
+                CarrierInfoResolver(it, internalLogger, buildSdkVersionProvider)
+            }
+            buildMobileNetworkInfo(carrierInfoResolver, activeNetworkInfo.subtype)
         } else {
             NetworkInfo(
                 NetworkInfo.Connectivity.NETWORK_OTHER
             )
         }
-    }
 
-    private fun buildMobileNetworkInfo(context: Context, subtype: Int): NetworkInfo {
+    private fun buildMobileNetworkInfo(carrierInfoResolver: CarrierInfoResolver?, subtype: Int): NetworkInfo {
         val connectivity = when (subtype) {
             in known2GSubtypes -> NetworkInfo.Connectivity.NETWORK_2G
             in known3GSubtypes -> NetworkInfo.Connectivity.NETWORK_3G
@@ -108,46 +105,36 @@ internal class BroadcastReceiverNetworkInfoProvider(
         }
         val cellularTechnology = getCellularTechnology(subtype)
 
-        return if (buildSdkVersionProvider.isAtLeastP) {
-            val telephonyMgr =
-                context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-            val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
-            val carrierId = telephonyMgr?.simCarrierId?.toLong()
-            NetworkInfo(
-                connectivity,
-                carrierName.toString(),
-                carrierId,
-                cellularTechnology = cellularTechnology
-            )
-        } else {
-            NetworkInfo(connectivity, cellularTechnology = cellularTechnology)
-        }
+        return NetworkInfo(
+            connectivity,
+            carrierName = carrierInfoResolver?.carrierName,
+            carrierId = carrierInfoResolver?.carrierId,
+            cellularTechnology = cellularTechnology
+        )
     }
 
-    private fun getCellularTechnology(subtype: Int): String? {
-        return when (subtype) {
-            TelephonyManager.NETWORK_TYPE_GPRS -> "GPRS"
-            TelephonyManager.NETWORK_TYPE_EDGE -> "Edge"
-            TelephonyManager.NETWORK_TYPE_CDMA -> "CDMA"
-            TelephonyManager.NETWORK_TYPE_1xRTT -> "CDMA1x"
-            TelephonyManager.NETWORK_TYPE_IDEN -> "iDen"
-            TelephonyManager.NETWORK_TYPE_GSM -> "GSM"
-            TelephonyManager.NETWORK_TYPE_UMTS -> "UMTS"
-            TelephonyManager.NETWORK_TYPE_EVDO_0 -> "CDMAEVDORev0"
-            TelephonyManager.NETWORK_TYPE_EVDO_A -> "CDMAEVDORevA"
-            TelephonyManager.NETWORK_TYPE_EVDO_B -> "CDMAEVDORevB"
-            TelephonyManager.NETWORK_TYPE_HSDPA -> "HSDPA"
-            TelephonyManager.NETWORK_TYPE_HSUPA -> "HSUPA"
-            TelephonyManager.NETWORK_TYPE_HSPA -> "HSPA"
-            TelephonyManager.NETWORK_TYPE_EHRPD -> "eHRPD"
-            TelephonyManager.NETWORK_TYPE_HSPAP -> "HSPA+"
-            TelephonyManager.NETWORK_TYPE_TD_SCDMA -> "TD_SCDMA"
-            TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
-            TelephonyManager.NETWORK_TYPE_IWLAN -> "IWLAN"
-            NETWORK_TYPE_LTE_CA -> "LTE_CA"
-            TelephonyManager.NETWORK_TYPE_NR -> "New Radio"
-            else -> null
-        }
+    private fun getCellularTechnology(subtype: Int): String? = when (subtype) {
+        TelephonyManager.NETWORK_TYPE_GPRS -> "GPRS"
+        TelephonyManager.NETWORK_TYPE_EDGE -> "Edge"
+        TelephonyManager.NETWORK_TYPE_CDMA -> "CDMA"
+        TelephonyManager.NETWORK_TYPE_1xRTT -> "CDMA1x"
+        TelephonyManager.NETWORK_TYPE_IDEN -> "iDen"
+        TelephonyManager.NETWORK_TYPE_GSM -> "GSM"
+        TelephonyManager.NETWORK_TYPE_UMTS -> "UMTS"
+        TelephonyManager.NETWORK_TYPE_EVDO_0 -> "CDMAEVDORev0"
+        TelephonyManager.NETWORK_TYPE_EVDO_A -> "CDMAEVDORevA"
+        TelephonyManager.NETWORK_TYPE_EVDO_B -> "CDMAEVDORevB"
+        TelephonyManager.NETWORK_TYPE_HSDPA -> "HSDPA"
+        TelephonyManager.NETWORK_TYPE_HSUPA -> "HSUPA"
+        TelephonyManager.NETWORK_TYPE_HSPA -> "HSPA"
+        TelephonyManager.NETWORK_TYPE_EHRPD -> "eHRPD"
+        TelephonyManager.NETWORK_TYPE_HSPAP -> "HSPA+"
+        TelephonyManager.NETWORK_TYPE_TD_SCDMA -> "TD_SCDMA"
+        TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
+        TelephonyManager.NETWORK_TYPE_IWLAN -> "IWLAN"
+        NETWORK_TYPE_LTE_CA -> "LTE_CA"
+        TelephonyManager.NETWORK_TYPE_NR -> "New Radio"
+        else -> null
     }
 
     // endregion
@@ -197,7 +184,5 @@ internal class BroadcastReceiverNetworkInfoProvider(
         private val known5GSubtypes = setOf(
             TelephonyManager.NETWORK_TYPE_NR
         )
-
-        private const val UNKNOWN_CARRIER_NAME = "Unknown Carrier Name"
     }
 }

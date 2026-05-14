@@ -144,9 +144,7 @@ internal class CoreFeature(
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
-        override fun newCall(request: Request): Call {
-            return okhttpClient.newCall(request)
-        }
+        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
     }
 
     internal val initialized = AtomicBoolean(false)
@@ -247,12 +245,7 @@ internal class CoreFeature(
             }
         }
 
-    fun initialize(
-        appContext: Context,
-        sdkInstanceId: String,
-        configuration: Configuration,
-        consent: TrackingConsent
-    ) {
+    fun initialize(appContext: Context, sdkInstanceId: String, configuration: Configuration, consent: TrackingConsent) {
         if (initialized.get()) {
             return
         }
@@ -322,31 +315,23 @@ internal class CoreFeature(
         }
     }
 
-    fun buildFilePersistenceConfig(): FilePersistenceConfig {
-        return FilePersistenceConfig(
-            recentDelayMs = batchSize.windowDurationMs
-        )
-    }
+    fun buildFilePersistenceConfig(): FilePersistenceConfig = FilePersistenceConfig(
+        recentDelayMs = batchSize.windowDurationMs
+    )
 
-    fun createExecutorService(executorContext: String): ExecutorService {
-        return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy, timeProvider)
-    }
+    fun createExecutorService(executorContext: String): ExecutorService =
+        executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy, timeProvider)
 
-    fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
-        return scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
-    }
+    fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService =
+        scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
 
-    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
-        return object : Call.Factory {
-            // Create a new client that shares pools with the base client
-            private val client = lazySharedOkHttpClient.newBuilder()
-                .apply(block)
-                .build()
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory = object : Call.Factory {
+        // Create a new client that shares pools with the base client
+        private val client = lazySharedOkHttpClient.newBuilder()
+            .apply(block)
+            .build()
 
-            override fun newCall(request: Request): Call {
-                return client.newCall(request)
-            }
-        }
+        override fun newCall(request: Request): Call = client.newCall(request)
     }
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
@@ -529,49 +514,45 @@ internal class CoreFeature(
         contextRef = WeakReference(appContext)
     }
 
-    private fun getPackageInfo(appContext: Context): PackageInfo? {
-        return try {
-            val packageName = appContext.packageName
-            with(appContext.packageManager) {
-                if (buildSdkVersionProvider.isAtLeastTiramisu) {
-                    getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-                } else {
-                    getPackageInfo(packageName, 0)
-                }
+    private fun getPackageInfo(appContext: Context): PackageInfo? = try {
+        val packageName = appContext.packageName
+        with(appContext.packageManager) {
+            if (buildSdkVersionProvider.isAtLeastTiramisu) {
+                getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                getPackageInfo(packageName, 0)
             }
-        } catch (e: PackageManager.NameNotFoundException) {
+        }
+    } catch (e: PackageManager.NameNotFoundException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { "Unable to read your application's version name" },
+            e
+        )
+        null
+    }
+
+    private fun readBuildId(context: Context): String? = with(context.assets) {
+        try {
+            open(BUILD_ID_FILE_NAME).bufferedReader().use {
+                it.readText().trim()
+            }
+        } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { BUILD_ID_IS_MISSING_INFO_MESSAGE }
+            )
+            null
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Unable to read your application's version name" },
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { BUILD_ID_READ_ERROR },
                 e
             )
             null
-        }
-    }
-
-    private fun readBuildId(context: Context): String? {
-        return with(context.assets) {
-            try {
-                open(BUILD_ID_FILE_NAME).bufferedReader().use {
-                    it.readText().trim()
-                }
-            } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
-                internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    InternalLogger.Target.USER,
-                    { BUILD_ID_IS_MISSING_INFO_MESSAGE }
-                )
-                null
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    { BUILD_ID_READ_ERROR },
-                    e
-                )
-                null
-            }
         }
     }
 
@@ -585,10 +566,7 @@ internal class CoreFeature(
         customUploadSchedulerStrategy = configuration.uploadSchedulerStrategy
     }
 
-    private fun setupInfoProviders(
-        appContext: Context,
-        consent: TrackingConsent
-    ) {
+    private fun setupInfoProviders(appContext: Context, consent: TrackingConsent) {
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
 
@@ -611,11 +589,15 @@ internal class CoreFeature(
 
     private fun setupNetworkInfoProviders(appContext: Context) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
-            CallbackNetworkInfoProvider(internalLogger = internalLogger)
+            CallbackNetworkInfoProvider(
+                internalLogger = internalLogger,
+                buildSdkVersionProvider = buildSdkVersionProvider
+            )
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                executorService = contextExecutorService
+                executorService = contextExecutorService,
+                buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
         networkInfoProvider.register(appContext)
