@@ -15,8 +15,7 @@ import java.util.function.BiPredicate
  *
  * See [withGsonIntEqualsForFields].
  */
-private val lazilyParsedIntPredicate = BiPredicate {
-        v1: LazilyParsedNumber?, v2: Int? ->
+private val lazilyParsedIntPredicate = BiPredicate { v1: LazilyParsedNumber?, v2: Int? ->
     v1?.toInt() == v2
 }
 
@@ -28,7 +27,7 @@ private val lazilyParsedIntPredicate = BiPredicate {
  * comparison, AssertJ may attempt reflective field comparison (e.g. Integer.value),
  * which fails because the field is private. This forces value-based comparison instead.
  */
-fun<T : RecursiveComparisonAssert<T>> RecursiveComparisonAssert<T>.withGsonIntEqualsForFields(
+fun <T : RecursiveComparisonAssert<T>> RecursiveComparisonAssert<T>.withGsonIntEqualsForFields(
     vararg fieldNames: String
 ): RecursiveComparisonAssert<T> {
     return this.withEqualsForFields(lazilyParsedIntPredicate, *fieldNames)

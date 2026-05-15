@@ -31,7 +31,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *  @param viewBoundsResolver the [ViewBoundsResolver] to get a view boundaries in density independent units
  *  @param drawableToColorMapper the [DrawableToColorMapper] to convert a background drawable into a solid color
  */
-abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
+abstract class BaseAsyncBackgroundWireframeMapper<in T : View>(
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,

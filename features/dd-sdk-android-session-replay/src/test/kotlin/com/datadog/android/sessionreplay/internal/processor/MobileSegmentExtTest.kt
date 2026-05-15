@@ -73,7 +73,7 @@ internal class MobileSegmentExtTest {
         MobileSegment.Source.tryFromSource(fakeInvalidSource, mockInternalLogger)
 
         // Then
-        argumentCaptor<() -> String>() {
+        argumentCaptor<() -> String> {
             verify(mockInternalLogger).log(
                 level = eq(InternalLogger.Level.ERROR),
                 target = eq(InternalLogger.Target.MAINTAINER),
