@@ -15,14 +15,14 @@ import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.utils.getSystemServiceAs
 import java.util.concurrent.ExecutorService
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
     private val internalLogger: InternalLogger,
     private val executorService: ExecutorService
-) :
-    ThreadSafeReceiver(), SystemInfoProvider {
+) : ThreadSafeReceiver(), SystemInfoProvider {
 
     @Volatile
     private var systemInfo: SystemInfo = SystemInfo()
@@ -118,7 +118,7 @@ internal class BroadcastReceiverSystemInfoProvider(
     }
 
     private fun handlePowerSaveIntent(context: Context) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val powerManager = context.getSystemServiceAs<PowerManager>(Context.POWER_SERVICE)
         val powerSaveMode = powerManager?.isPowerSaveMode ?: false
         systemInfo = systemInfo.copy(
             powerSaveMode = powerSaveMode

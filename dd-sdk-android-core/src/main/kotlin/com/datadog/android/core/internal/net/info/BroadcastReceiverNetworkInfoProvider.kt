@@ -19,6 +19,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 import java.util.concurrent.ExecutorService
 import android.net.NetworkInfo as AndroidNetworkInfo
 
@@ -43,8 +44,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
     }
 
     private fun handleIntent(context: Context) {
-        val connectivityMgr =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val connectivityMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
         val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
 
         networkInfo = buildNetworkInfo(context, activeNetworkInfo)
@@ -89,7 +89,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
                 NetworkInfo.Connectivity.NETWORK_ETHERNET
             )
         } else if (activeNetworkInfo.type in knownMobileTypes) {
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            val telephonyManager = context.getSystemServiceAs<TelephonyManager>(Context.TELEPHONY_SERVICE)
             val carrierInfoResolver = telephonyManager?.let {
                 CarrierInfoResolver(it, internalLogger, buildSdkVersionProvider)
             }
