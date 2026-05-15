@@ -139,37 +139,42 @@ internal class CallbackNetworkInfoProvider(
         }
     }
 
-    override fun getLatestNetworkInfo(): NetworkInfo = lastNetworkInfo
+    override fun getLatestNetworkInfo(): NetworkInfo {
+        return lastNetworkInfo
+    }
 
     // endregion
 
     // region Internal
 
-    private fun resolveUpBandwidth(networkCapabilities: NetworkCapabilities): Long? =
-        if (networkCapabilities.linkUpstreamBandwidthKbps > 0) {
+    private fun resolveUpBandwidth(networkCapabilities: NetworkCapabilities): Long? {
+        return if (networkCapabilities.linkUpstreamBandwidthKbps > 0) {
             networkCapabilities.linkUpstreamBandwidthKbps.toLong()
         } else {
             null
         }
+    }
 
-    private fun resolveDownBandwidth(networkCapabilities: NetworkCapabilities): Long? =
-        if (networkCapabilities.linkDownstreamBandwidthKbps > 0) {
+    private fun resolveDownBandwidth(networkCapabilities: NetworkCapabilities): Long? {
+        return if (networkCapabilities.linkDownstreamBandwidthKbps > 0) {
             networkCapabilities.linkDownstreamBandwidthKbps.toLong()
         } else {
             null
         }
+    }
 
-    private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? =
-        if (buildSdkVersionProvider.isAtLeastQ &&
+    private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
+        return if (buildSdkVersionProvider.isAtLeastQ &&
             networkCapabilities.signalStrength != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         ) {
             networkCapabilities.signalStrength.toLong()
         } else {
             null
         }
+    }
 
-    private fun getNetworkType(networkCapabilities: NetworkCapabilities): NetworkInfo.Connectivity =
-        if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+    private fun getNetworkType(networkCapabilities: NetworkCapabilities): NetworkInfo.Connectivity {
+        return if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
             NetworkInfo.Connectivity.NETWORK_WIFI
         } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET
@@ -180,6 +185,7 @@ internal class CallbackNetworkInfoProvider(
         } else {
             NetworkInfo.Connectivity.NETWORK_OTHER
         }
+    }
 
     // endregion
 

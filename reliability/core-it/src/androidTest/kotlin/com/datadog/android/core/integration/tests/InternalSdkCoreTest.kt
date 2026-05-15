@@ -581,13 +581,11 @@ class InternalSdkCoreTest : MockServerTest() {
 
     // region internal
 
-    private fun getAppVersion(): String? {
-        return getPackageInfo(ApplicationProvider.getApplicationContext())?.let {
-            // we need to use the deprecated method because getLongVersionCode method is only
-            // available from API 28 and above
-            @Suppress("DEPRECATION")
-            it.versionName ?: it.versionCode.toString()
-        }
+    private fun getAppVersion(): String? = getPackageInfo(ApplicationProvider.getApplicationContext())?.let {
+        // we need to use the deprecated method because getLongVersionCode method is only
+        // available from API 28 and above
+        @Suppress("DEPRECATION")
+        it.versionName ?: it.versionCode.toString()
     }
 
     private fun getVersionCode(): Int? {
@@ -595,23 +593,20 @@ class InternalSdkCoreTest : MockServerTest() {
         return getPackageInfo(ApplicationProvider.getApplicationContext())?.versionCode
     }
 
-    private fun getPackageInfo(appContext: Context): PackageInfo? {
-        return try {
-            with(appContext.packageManager) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    getPackageInfo(appContext.packageName, PackageManager.PackageInfoFlags.of(0))
-                } else {
-                    getPackageInfo(appContext.packageName, 0)
-                }
+    private fun getPackageInfo(appContext: Context): PackageInfo? = try {
+        with(appContext.packageManager) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getPackageInfo(appContext.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                getPackageInfo(appContext.packageName, 0)
             }
-        } catch (e: PackageManager.NameNotFoundException) {
-            null
         }
+    } catch (e: PackageManager.NameNotFoundException) {
+        null
     }
 
-    private fun isAppDebuggable(context: Context): Boolean {
-        return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    }
+    private fun isAppDebuggable(context: Context): Boolean =
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     // endregion
 
