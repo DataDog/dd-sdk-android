@@ -56,7 +56,7 @@ internal class CarrierInfoResolver(
     }
 
     internal companion object {
-        internal const val ERROR_CARRIER_ID = "Failed to resolve carrier id information from TelephonyManager."
+        internal const val ERROR_CARRIER_ID = "Failed to resolve carrier ID information from TelephonyManager."
         internal const val ERROR_CARRIER_NAME = "Failed to resolve carrier name information from TelephonyManager."
     }
 }

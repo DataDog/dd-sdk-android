@@ -16,6 +16,7 @@ import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 
 @RequiresApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
@@ -56,10 +57,9 @@ internal class CallbackNetworkInfoProvider(
 
     @Suppress("TooGenericExceptionCaught")
     override fun register(context: Context) {
-        carrierInfoResolver = (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)
+        carrierInfoResolver = context.getSystemServiceAs<TelephonyManager>(Context.TELEPHONY_SERVICE)
             ?.let { CarrierInfoResolver(it, internalLogger, buildSdkVersionProvider) }
-        val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
-        val connMgr = systemService as? ConnectivityManager
+        val connMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
 
         if (connMgr == null) {
             internalLogger.log(
@@ -104,8 +104,7 @@ internal class CallbackNetworkInfoProvider(
     @Suppress("TooGenericExceptionCaught")
     override fun unregister(context: Context) {
         carrierInfoResolver = null
-        val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
-        val connMgr = systemService as? ConnectivityManager
+        val connMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
 
         if (connMgr == null) {
             internalLogger.log(
