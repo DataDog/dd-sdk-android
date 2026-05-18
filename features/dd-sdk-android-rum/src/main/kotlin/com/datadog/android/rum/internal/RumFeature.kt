@@ -34,6 +34,8 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.isMainThread
@@ -140,7 +142,7 @@ internal class RumFeature(
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : StorageBackedFeature, FeatureEventReceiver {
+) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
@@ -178,6 +180,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry by lazy { HeatmapIdentifierRegistry.create() }
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -238,7 +241,8 @@ internal class RumFeature(
                 configuration.interactionPredicate,
                 composeActionTrackingStrategy = configuration.composeActionTrackingStrategy,
                 buildSdkVersionProvider,
-                sdkCore.internalLogger
+                sdkCore.internalLogger,
+                heatmapIdentifierRegistry
             )
         } else {
             NoOpUserActionTrackingStrategy()
@@ -863,14 +867,16 @@ internal class RumFeature(
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
             buildSdkVersionProvider: BuildSdkVersionProvider,
-            internalLogger: InternalLogger
+            internalLogger: InternalLogger,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry
         ): UserActionTrackingStrategy {
             val gesturesTracker =
                 provideGestureTracker(
                     customProviders = touchTargetExtraAttributesProviders,
                     interactionPredicate = interactionPredicate,
                     composeActionTrackingStrategy = composeActionTrackingStrategy,
-                    internalLogger = internalLogger
+                    internalLogger = internalLogger,
+                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
                 )
             return if (buildSdkVersionProvider.isAtLeastQ) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
@@ -883,7 +889,8 @@ internal class RumFeature(
             customProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
-            internalLogger: InternalLogger
+            internalLogger: InternalLogger,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
@@ -891,7 +898,8 @@ internal class RumFeature(
                 providers,
                 interactionPredicate,
                 composeActionsTrackingStrategy = composeActionTrackingStrategy,
-                internalLogger
+                internalLogger = internalLogger,
+                heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
         }
 

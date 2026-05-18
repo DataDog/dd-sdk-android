@@ -17,6 +17,7 @@ import androidx.core.view.ScrollingView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.Node
@@ -36,9 +37,12 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -108,7 +112,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -179,7 +184,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -249,7 +255,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -332,7 +339,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -405,7 +413,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -416,8 +425,18 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .addAction(RumActionType.TAP, "", expectedStartAttributes)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
+            eq(RumActionType.TAP),
+            eq(""),
+            argThat { attributes ->
+                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
+                    expectedStartAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
+                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
+                    expectedStartAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
+                classMatches && resourceMatches
+            },
+            anyOrNull()
+        )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
@@ -452,7 +471,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -505,7 +525,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -568,7 +589,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -642,7 +664,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -720,7 +743,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -780,7 +804,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -843,7 +868,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -906,7 +932,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -983,7 +1010,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -1043,7 +1071,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)
@@ -1088,7 +1117,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             contextRef = WeakReference(mockAppContext),
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
             composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
 
         // When
@@ -1165,7 +1195,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
         )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         whenever(
@@ -1203,6 +1234,66 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             )
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M send scroll actions W onScroll() { registry returns null }`(
+        forge: Forge
+    ) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val expectedDirection = GesturesListener.SCROLL_DIRECTION_DOWN
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val scrollingTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onUp(endUpEvent)
+
+        // Then — scroll uses the public startAction API, not addActionWithHeatmap.
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            any()
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            any()
+        )
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor, never()).addActionWithHeatmap(
+            any(),
+            any(),
+            any(),
+            anyOrNull()
+        )
     }
 
     // endregion

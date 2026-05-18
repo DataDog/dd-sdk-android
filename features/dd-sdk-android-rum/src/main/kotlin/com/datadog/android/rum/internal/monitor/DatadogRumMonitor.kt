@@ -54,6 +54,7 @@ import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
@@ -200,14 +201,45 @@ internal class DatadogRumMonitor(
     override fun addAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, false, attributes.toMap(), eventTime)
+            RumRawEvent.StartAction(
+                type = type,
+                name = name,
+                waitForStop = false,
+                attributes = attributes.toMap(),
+                eventTime = eventTime
+            )
+        )
+    }
+
+    override fun addActionWithHeatmap(
+        type: RumActionType,
+        name: String,
+        attributes: Map<String, Any?>,
+        heatmapData: HeatmapActionData?
+    ) {
+        val eventTime = getEventTime(attributes)
+        handleEvent(
+            RumRawEvent.StartAction(
+                type = type,
+                name = name,
+                waitForStop = false,
+                attributes = attributes.toMap(),
+                eventTime = eventTime,
+                heatmapData = heatmapData
+            )
         )
     }
 
     override fun startAction(type: RumActionType, name: String, attributes: Map<String, Any?>) {
         val eventTime = getEventTime(attributes)
         handleEvent(
-            RumRawEvent.StartAction(type, name, true, attributes.toMap(), eventTime)
+            RumRawEvent.StartAction(
+                type = type,
+                name = name,
+                waitForStop = true,
+                attributes = attributes.toMap(),
+                eventTime = eventTime
+            )
         )
     }
 

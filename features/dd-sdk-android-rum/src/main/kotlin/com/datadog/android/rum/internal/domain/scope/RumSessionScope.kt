@@ -97,7 +97,7 @@ internal class RumSessionScope(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        insightsCollector
+        insightsCollector = insightsCollector
     )
 
     internal val activeView: RumViewScope?

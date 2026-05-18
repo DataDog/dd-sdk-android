@@ -28,7 +28,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RumActionScope(
     override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
@@ -44,7 +44,8 @@ internal class RumActionScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val heatmapData: HeatmapActionData? = null
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -71,7 +72,7 @@ internal class RumActionScope(
     private var sent = false
     internal var stopped = false
 
-    // endregion
+    // region RumScope
 
     @WorkerThread
     override fun handleEvent(
@@ -276,6 +277,7 @@ internal class RumActionScope(
                 datadogContext,
                 rumContext.viewId.orEmpty()
             )
+            val ddAction = buildDdAction(heatmapData)
 
             insightsCollector.onAction()
             ActionEvent(
@@ -354,7 +356,8 @@ internal class RumActionScope(
                     session = ActionEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
-                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
+                    action = ddAction
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
@@ -377,6 +380,18 @@ internal class RumActionScope(
             .submit()
 
         sent = true
+    }
+
+    private fun buildDdAction(heatmapData: HeatmapActionData?): ActionEvent.DdAction? {
+        heatmapData ?: return null
+        return ActionEvent.DdAction(
+            position = ActionEvent.Position(x = heatmapData.positionX, y = heatmapData.positionY),
+            target = ActionEvent.DdActionTarget(
+                permanentId = heatmapData.targetIdentity,
+                width = heatmapData.targetWidth,
+                height = heatmapData.targetHeight
+            )
+        )
     }
 
     // endregion
@@ -410,7 +425,8 @@ internal class RumActionScope(
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                heatmapData = event.heatmapData
             )
         }
     }

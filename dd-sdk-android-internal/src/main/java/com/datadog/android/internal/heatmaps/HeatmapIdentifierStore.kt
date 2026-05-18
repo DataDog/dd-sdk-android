@@ -37,9 +37,9 @@ internal class HeatmapIdentifierStore : HeatmapIdentifierRegistry {
         }
     }
 
-    override fun getHeatmapIdentifier(viewId: Long, currentScreenName: String): HeatmapIdentifier? {
+    override fun getHeatmapIdentifier(viewIdentityHash: Long, currentScreenName: String): HeatmapIdentifier? {
         return lock.read {
-            if (snapshotScreenName == currentScreenName) identifiers[viewId] else null
+            if (snapshotScreenName == currentScreenName) identifiers[viewIdentityHash] else null
         }
     }
 }

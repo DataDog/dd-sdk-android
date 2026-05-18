@@ -3045,7 +3045,7 @@ internal class RumActionScopeTest {
             name,
             false,
             emptyMap(),
-            timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
+            eventTime = timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3158,6 +3158,96 @@ internal class RumActionScopeTest {
                 fakeParentContext.viewId.orEmpty(),
                 StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
             )
+    }
+
+    @Test
+    fun `M populate heatmap fields W sendAction() {viewIdentity present}`(
+        @StringForgery fakeViewIdentity: String,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapData = HeatmapActionData(
+                targetIdentity = fakeViewIdentity,
+                positionX = fakePosX,
+                positionY = fakePosY,
+                targetWidth = fakeWidth,
+                targetHeight = fakeHeight
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(fakeViewIdentity)
+                .hasTargetWidth(fakeWidth)
+                .hasTargetHeight(fakeHeight)
+                .hasPositionX(fakePosX)
+                .hasPositionY(fakePosY)
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {no heatmap attributes}`() {
+        // Given
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
     }
 
     // region Internal

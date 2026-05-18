@@ -42,7 +42,8 @@ internal sealed class RumRawEvent {
         val name: String,
         val waitForStop: Boolean,
         val attributes: Map<String, Any?>,
-        override val eventTime: Time = Time()
+        override val eventTime: Time = Time(),
+        val heatmapData: HeatmapActionData? = null
     ) : RumRawEvent()
 
     internal data class StopAction(
