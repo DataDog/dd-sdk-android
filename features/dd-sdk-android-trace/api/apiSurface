@@ -84,10 +84,18 @@ object com.datadog.android.trace.internal._TraceInternalProxy
   fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun mergeBaggage(String?, String): String
   fun createApmNetworkInstrumentation(String, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
+fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float?
 data class com.datadog.android.trace.internal.net.RequestTracingState
   constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null)
   fun createRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
 fun RequestTracingState?.toAttributesMap(String, String, String): Map<String, Any?>
+class com.datadog.android.trace.internal.net.SessionRebasedSampler : com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>, SpanAwareSampler
+  constructor(com.datadog.android.trace.DeterministicTraceSampler)
+  override fun sample(com.datadog.android.trace.api.span.DatadogSpan): Boolean
+  override fun getSampleRate(): Float
+  override fun getSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float
+interface com.datadog.android.trace.internal.net.SpanAwareSampler
+  fun getSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float?
 data class com.datadog.android.trace.internal.net.TraceContext
   constructor(String, String, Int)
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T

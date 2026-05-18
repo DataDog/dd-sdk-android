@@ -156,6 +156,10 @@ public final class com/datadog/android/trace/internal/_TraceInternalProxy {
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
+public final class com/datadog/android/trace/internal/net/ApmNetworkInstrumentationExtKt {
+	public static final fun effectiveSampleRate (Lcom/datadog/android/core/sampling/Sampler;Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
+}
+
 public final class com/datadog/android/trace/internal/net/RequestTracingState {
 	public fun <init> (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;)V
 	public synthetic fun <init> (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -177,6 +181,18 @@ public final class com/datadog/android/trace/internal/net/RequestTracingState {
 
 public final class com/datadog/android/trace/internal/net/RequestTracingStateKt {
 	public static final fun toAttributesMap (Lcom/datadog/android/trace/internal/net/RequestTracingState;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;
+}
+
+public final class com/datadog/android/trace/internal/net/SessionRebasedSampler : com/datadog/android/core/sampling/Sampler, com/datadog/android/trace/internal/net/SpanAwareSampler {
+	public fun <init> (Lcom/datadog/android/trace/DeterministicTraceSampler;)V
+	public fun getSampleRate ()Ljava/lang/Float;
+	public fun getSampleRate (Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
+	public fun sample (Lcom/datadog/android/trace/api/span/DatadogSpan;)Z
+	public synthetic fun sample (Ljava/lang/Object;)Z
+}
+
+public abstract interface class com/datadog/android/trace/internal/net/SpanAwareSampler {
+	public abstract fun getSampleRate (Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
 }
 
 public final class com/datadog/android/trace/internal/net/TraceContext {

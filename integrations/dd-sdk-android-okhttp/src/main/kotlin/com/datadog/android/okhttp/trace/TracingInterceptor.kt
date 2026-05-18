@@ -38,6 +38,7 @@ import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.TraceContext
+import com.datadog.android.trace.internal.net.effectiveSampleRate
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -260,7 +261,7 @@ internal constructor(
             if (spanContext.setSamplingPriority(samplingPriority)) {
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
-                    (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+                    (traceSampler.effectiveSampleRate(span) ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
                 )
             }
         }
@@ -804,6 +805,11 @@ internal constructor(
          * Set the trace sample rate controlling the sampling of APM traces created for
          * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
          * sampling decision will be used instead.
+         *
+         * When used with [com.datadog.android.okhttp.DatadogInterceptor], the effective trace sample rate is
+         * automatically combined with the active RUM session sample rate, ensuring the backend receives correct
+         * sampling metadata (`_dd.agent_psr` / `_dd.rule_psr`) for RUM-to-APM correlation.
+         *
          * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 100f).
          */
         fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): R {
@@ -815,6 +821,10 @@ internal constructor(
          * Set the trace sampler controlling the sampling of APM traces created for
          * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
          * sampling decision will be used instead.
+         *
+         * Note: custom samplers passed here do not participate in cross-product rebasing with the RUM session
+         * sample rate. Use [setTraceSampleRate] if you need correlated sampling between RUM sessions and APM traces.
+         *
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
          * By default it is a sampler accepting 100% of the traces.
          */
