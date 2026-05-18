@@ -16,8 +16,10 @@ import android.os.BatteryManager
 import android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY
 import android.os.Build
 import android.os.PowerManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -34,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -61,6 +64,9 @@ internal class DefaultBatteryInfoProviderTest {
 
     @Mock
     lateinit var mockBatteryManager: BatteryManager
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @LongForgery(min = 0L)
     private var fakeStartTimeMs: Long = 0L
@@ -221,6 +227,28 @@ internal class DefaultBatteryInfoProviderTest {
         assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
     }
 
+    @Test
+    fun `M return null battery level W getBatteryLevel() { system throws on query }`() {
+        // Given
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        val fakeException = RuntimeException()
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doThrow fakeException
+        initializeBatteryManager()
+
+        // When
+        val batteryInfo = testedProvider.getState()
+
+        // Then
+        assertThat(batteryInfo.batteryLevel).isNull()
+        assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            message = "Problem retrieving battery level value",
+            throwableClass = RuntimeException::class.java
+        )
+    }
+
     // endregion
 
     private fun initializeBatteryManager(
@@ -230,6 +258,7 @@ internal class DefaultBatteryInfoProviderTest {
         testedProvider = DefaultBatteryInfoProvider(
             applicationContext = mockApplicationContext,
             timeProvider = mockTimeProvider,
+            internalLogger = mockInternalLogger,
             batteryLevelPollInterval = shortPollingInterval,
             powerManager = powerManager,
             batteryManager = batteryManager
