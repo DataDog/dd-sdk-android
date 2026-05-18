@@ -345,13 +345,19 @@ internal constructor(
 
     private fun buildSpan(tracer: DatadogTracer, request: Request): DatadogSpan {
         val parentContext = extractParentContext(tracer, request)
-        val shouldIgnoreParent = !canSendSpan() && isParentDropped(tracer, parentContext)
+        // Only consult the local active span. Explicit parents (request tags or propagated
+        // headers) represent developer intent and must be honored regardless of priority.
+        val activeSpanContext = if (parentContext == null) tracer.activeSpan()?.context() else null
+        // Force resolution of the active span's sampling priority — a manual span backed
+        // by a PendingTrace can read UNSET until the sampler commits at inject time.
+        activeSpanContext?.let { _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(it) }
+        val shouldIgnoreLocalDroppedParent = !canSendSpan() && activeSpanContext.isDropped()
         val url = request.url.toString()
 
         val builder = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
 
-        if (shouldIgnoreParent) {
+        if (shouldIgnoreLocalDroppedParent) {
             builder.ignoreActiveSpan()
         } else {
             builder.withParentContext(parentContext)
@@ -367,14 +373,8 @@ internal constructor(
         return span
     }
 
-    private fun isParentDropped(tracer: DatadogTracer, explicitParent: DatadogSpanContext?): Boolean {
-        // Only consult the local active span. Explicit parents (request tags or propagated
-        // headers) represent developer intent and must be honored regardless of priority.
-        val activeContext = if (explicitParent != null) null else tracer.activeSpan()?.context()
-        // Force resolution of the active span's sampling priority — a manual span backed
-        // by a PendingTrace can read UNSET until the sampler commits at inject time.
-        activeContext?.let { _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(it) }
-        val priority = activeContext?.samplingPriority
+    private fun DatadogSpanContext?.isDropped(): Boolean {
+        val priority = this?.samplingPriority
         return priority == PrioritySampling.SAMPLER_DROP || priority == PrioritySampling.USER_DROP
     }
 
