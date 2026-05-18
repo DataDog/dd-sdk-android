@@ -17,5 +17,5 @@ interface ExecutionTimer {
      * @param T The type of the result.
      * @param action The action to measure.
      */
-    fun <T>measure(action: () -> T): T
+    fun <T> measure(action: () -> T): T
 }

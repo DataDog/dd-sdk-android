@@ -185,7 +185,6 @@ internal class DeterministicSamplerTest {
 
         // Those hardcoded values ensures we are consistent with the decisions of our
         // Backend implementation of the knuth sampling method
-        @Suppress("unused")
         @JvmStatic
         fun hardcodedFixtures(): Stream<Arguments> {
             return listOf(

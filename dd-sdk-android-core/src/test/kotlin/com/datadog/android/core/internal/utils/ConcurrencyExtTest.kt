@@ -7,6 +7,8 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.thread.BackPressureExecutorService
+import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -59,6 +62,44 @@ internal class ConcurrencyExtTest {
         // Given
         val service: ExecutorService = mock()
         val runnable: Runnable = mock()
+        doNothing().whenever(service).execute(runnable)
+
+        // When
+        service.executeSafe(name, mockInternalLogger, runnable)
+
+        // Then
+        verify(service).execute(runnable)
+    }
+
+    @Test
+    fun `M wrap task into named unit W executeSafe() { observable executor }`(
+        @StringForgery name: String
+    ) {
+        // Given
+        val service: BackPressureExecutorService = mock()
+        val runnable: Runnable = mock()
+        doNothing().whenever(service).execute(runnable)
+
+        // When
+        service.executeSafe(name, mockInternalLogger, runnable)
+
+        // Then
+        argumentCaptor<Runnable> {
+            verify(service).execute(capture())
+            assertThat(allValues).hasSize(1)
+            check(firstValue is NamedRunnable)
+            firstValue.run()
+            verify(runnable).run()
+        }
+    }
+
+    @Test
+    fun `M not wrap task into named unit W executeSafe() { observable executor, already named task }`(
+        @StringForgery name: String
+    ) {
+        // Given
+        val service: BackPressureExecutorService = mock()
+        val runnable: NamedRunnable = mock()
         doNothing().whenever(service).execute(runnable)
 
         // When
@@ -140,7 +181,7 @@ internal class ConcurrencyExtTest {
     }
 
     @Test
-    fun `M submit task W submitSafe() {runnable} `(
+    fun `M submit task W submitSafe() {runnable}`(
         @StringForgery name: String
     ) {
         // Given
@@ -183,7 +224,7 @@ internal class ConcurrencyExtTest {
     }
 
     @Test
-    fun `M submit task W submitSafe() {callable} `(
+    fun `M submit task W submitSafe() {callable}`(
         @StringForgery name: String
     ) {
         // Given

@@ -17,6 +17,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.internal.DatadogSpanLogger.Companion.DEFAULT_EVENT_MESSAGE
 import com.datadog.android.trace.internal.DatadogSpanLogger.Companion.TRACE_LOGGER_NAME
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -44,7 +45,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class DatadogSpanLoggerTest {
+internal class DatadogSpanLoggerTest {
 
     private lateinit var mockSdkCore: FeatureSdkCore
 
@@ -157,6 +158,65 @@ class DatadogSpanLoggerTest {
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
             assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(fakeSpan.context().traceId.toHexString())
             assertThat(attributes).containsAllEntriesOf(fakeAttributes)
+        }
+    }
+
+    @Test
+    fun `M use provided timestamp W log(Map) { TIMESTAMP_MS reserved key in attributes }`(
+        forge: Forge,
+        @LongForgery(min = 1L) fakeCustomTimestamp: Long
+    ) {
+        // Given
+        @Suppress("UNCHECKED_CAST")
+        val fakeAttributes: Map<String, Any> = (
+            forge.exhaustiveAttributes().filterValues { it != null } +
+                (DatadogTracingConstants.LogAttributes.TIMESTAMP_MS to fakeCustomTimestamp)
+            ) as Map<String, Any>
+
+        // When
+        testedLogger.log(fakeAttributes, fakeSpan)
+
+        // Then
+        argumentCaptor<Map<Any, Any>> {
+            verify(mockLogFeatureScope).sendEvent(capture())
+            assertThat(firstValue["timestamp"]).isEqualTo(fakeCustomTimestamp)
+            @Suppress("UNCHECKED_CAST")
+            val emittedAttributes = firstValue["attributes"] as Map<String, Any>
+            assertThat(emittedAttributes).doesNotContainKey(DatadogTracingConstants.LogAttributes.TIMESTAMP_MS)
+        }
+    }
+
+    @Test
+    fun `M use timeProvider W log(Map) { no TIMESTAMP_MS reserved key }`(forge: Forge) {
+        // Given
+        val fakeAttributes = forge.aMap { aString() to aString() }
+
+        // When
+        testedLogger.log(fakeAttributes, fakeSpan)
+
+        // Then
+        argumentCaptor<Map<Any, Any>> {
+            verify(mockLogFeatureScope).sendEvent(capture())
+            assertThat(firstValue["timestamp"]).isEqualTo(fakeTimestamp)
+        }
+    }
+
+    @Test
+    fun `M fall back to timeProvider W log(Map) { TIMESTAMP_MS is not a Long }`(
+        @StringForgery fakeNonLongTimestamp: String
+    ) {
+        // Given
+        val fakeAttributes: Map<String, Any> = mapOf(
+            DatadogTracingConstants.LogAttributes.TIMESTAMP_MS to fakeNonLongTimestamp
+        )
+
+        // When
+        testedLogger.log(fakeAttributes, fakeSpan)
+
+        // Then
+        argumentCaptor<Map<Any, Any>> {
+            verify(mockLogFeatureScope).sendEvent(capture())
+            assertThat(firstValue["timestamp"]).isEqualTo(fakeTimestamp)
         }
     }
 }

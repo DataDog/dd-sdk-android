@@ -82,24 +82,24 @@ internal open class SeekBarWireframeMapper(
         screenDensity: Float,
         thumbColor: Int
     ): MobileSegment.Wireframe? {
-        val thumbId = viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)
-            ?: return null
+        val thumb = view.thumb ?: return null
         val backgroundColor = colorStringFormatter.formatColorAndAlphaAsHexString(thumbColor, OPAQUE_ALPHA_VALUE)
-
-        val thumbWidth = view.thumb.bounds.width().densityNormalized(screenDensity).toLong()
-        val thumbHeight = view.thumb.bounds.height().densityNormalized(screenDensity).toLong()
-        return MobileSegment.Wireframe.ShapeWireframe(
-            id = thumbId,
-            x = (trackBounds.x + (trackBounds.width * normalizedProgress).toLong() - (thumbWidth / 2)),
-            y = trackBounds.y + (trackHeight / 2) - (thumbHeight / 2),
-            width = thumbWidth,
-            height = thumbHeight,
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = backgroundColor,
-                opacity = view.alpha,
-                cornerRadius = max(thumbWidth / 2, thumbHeight / 2)
+        val thumbWidth = thumb.bounds.width().densityNormalized(screenDensity).toLong()
+        val thumbHeight = thumb.bounds.height().densityNormalized(screenDensity).toLong()
+        return viewIdentifierResolver.resolveChildUniqueIdentifier(view, THUMB_KEY_NAME)?.let { thumbId ->
+            MobileSegment.Wireframe.ShapeWireframe(
+                id = thumbId,
+                x = (trackBounds.x + (trackBounds.width * normalizedProgress).toLong() - (thumbWidth / 2)),
+                y = trackBounds.y + (trackHeight / 2) - (thumbHeight / 2),
+                width = thumbWidth,
+                height = thumbHeight,
+                shapeStyle = MobileSegment.ShapeStyle(
+                    backgroundColor = backgroundColor,
+                    opacity = view.alpha,
+                    cornerRadius = max(thumbWidth / 2, thumbHeight / 2)
+                )
             )
-        )
+        }
     }
 
     companion object {

@@ -19,7 +19,7 @@ import java.util.UUID
  * Factory for creating requests to the EVP intake endpoint for evaluation logging.
  *
  * Request format:
- * - Endpoint: /api/v2/flagevaluations
+ * - Endpoint: /api/v2/flagevaluation
  * - Content-Type: text/plain
  * - Payload: NDJSON (newline-delimited JSON) of FlagEvaluation events
  *
@@ -72,7 +72,7 @@ internal class EvaluationsRequestFactory(
     )
 
     private companion object {
-        private const val EVALUATION_ENDPOINT = "/api/v2/flagevaluations"
+        private const val EVALUATION_ENDPOINT = "/api/v2/flagevaluation"
         private val PAYLOAD_SEPARATOR = "\n".toByteArray(Charsets.UTF_8)
     }
 }

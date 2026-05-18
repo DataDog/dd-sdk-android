@@ -18,6 +18,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android._InternalProxy
 import com.datadog.android.api.context.DeviceType
+import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.InternalSdkCore
@@ -150,7 +151,11 @@ class InternalSdkCoreTest : MockServerTest() {
         assertThat(context.source).isEqualTo(ANDROID_SOURCE)
         assertThat(context.processInfo.isMainProcess).isTrue()
         assertThat(context.networkInfo.connectivity).isNotNull()
-        assertThat(context.networkInfo.carrierName).isNull()
+        if (context.networkInfo.connectivity in cellularConnectivities) {
+            assertThat(context.networkInfo.carrierName).isNotNull()
+        } else {
+            assertThat(context.networkInfo.carrierName).isNull()
+        }
         assertThat(context.deviceInfo.deviceName).isNotEmpty()
         assertThat(context.deviceInfo.deviceBrand).isNotEmpty()
         assertThat(context.deviceInfo.deviceType).isEqualTo(DeviceType.MOBILE)
@@ -576,13 +581,11 @@ class InternalSdkCoreTest : MockServerTest() {
 
     // region internal
 
-    private fun getAppVersion(): String? {
-        return getPackageInfo(ApplicationProvider.getApplicationContext())?.let {
-            // we need to use the deprecated method because getLongVersionCode method is only
-            // available from API 28 and above
-            @Suppress("DEPRECATION")
-            it.versionName ?: it.versionCode.toString()
-        }
+    private fun getAppVersion(): String? = getPackageInfo(ApplicationProvider.getApplicationContext())?.let {
+        // we need to use the deprecated method because getLongVersionCode method is only
+        // available from API 28 and above
+        @Suppress("DEPRECATION")
+        it.versionName ?: it.versionCode.toString()
     }
 
     private fun getVersionCode(): Int? {
@@ -590,23 +593,20 @@ class InternalSdkCoreTest : MockServerTest() {
         return getPackageInfo(ApplicationProvider.getApplicationContext())?.versionCode
     }
 
-    private fun getPackageInfo(appContext: Context): PackageInfo? {
-        return try {
-            with(appContext.packageManager) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    getPackageInfo(appContext.packageName, PackageManager.PackageInfoFlags.of(0))
-                } else {
-                    getPackageInfo(appContext.packageName, 0)
-                }
+    private fun getPackageInfo(appContext: Context): PackageInfo? = try {
+        with(appContext.packageManager) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getPackageInfo(appContext.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                getPackageInfo(appContext.packageName, 0)
             }
-        } catch (e: PackageManager.NameNotFoundException) {
-            null
         }
+    } catch (e: PackageManager.NameNotFoundException) {
+        null
     }
 
-    private fun isAppDebuggable(context: Context): Boolean {
-        return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    }
+    private fun isAppDebuggable(context: Context): Boolean =
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     // endregion
 
@@ -617,5 +617,14 @@ class InternalSdkCoreTest : MockServerTest() {
         private const val BUILD_ID = "core_it_build_id"
         private const val PACKAGE_NAME = "com.datadog.android.core.integration"
         internal const val DATADOG_STORAGE_DIR_NAME_FORMAT = "datadog-(.*)"
+
+        private val cellularConnectivities = setOf(
+            NetworkInfo.Connectivity.NETWORK_2G,
+            NetworkInfo.Connectivity.NETWORK_3G,
+            NetworkInfo.Connectivity.NETWORK_4G,
+            NetworkInfo.Connectivity.NETWORK_5G,
+            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+            NetworkInfo.Connectivity.NETWORK_CELLULAR
+        )
     }
 }

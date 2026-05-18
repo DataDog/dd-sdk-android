@@ -94,7 +94,7 @@ internal class DatadogCore(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
     internal val featureContextUpdateReceivers: MutableSet<FeatureContextUpdateReceiver> =
-        Collections.newSetFromMap(ConcurrentHashMap<FeatureContextUpdateReceiver, Boolean>())
+        Collections.newSetFromMap(ConcurrentHashMap())
 
     // region SdkCore
 
@@ -252,7 +252,7 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
-        val callable = Callable<Map<String, Any?>> {
+        val callable = Callable {
             val feature = features[featureName] ?: return@Callable emptyMap()
             return@Callable feature.featureContextLock.readLock().safeWithLock {
                 // Creating copy here is VERY important - this will make
@@ -264,7 +264,7 @@ internal class DatadogCore(
             }.orEmpty()
         }
         return if (useContextThread) {
-            return coreFeature.contextExecutorService
+            coreFeature.contextExecutorService
                 .submitSafe(
                     "DatadogCore.getFeatureContext-$featureName",
                     internalLogger,
@@ -362,7 +362,7 @@ internal class DatadogCore(
             return coreFeature.contextExecutorService.submitSafe(
                 "getTrackingConsent",
                 internalLogger,
-                Callable<TrackingConsent> {
+                Callable {
                     coreFeature.trackingConsentProvider.getConsent()
                 }
             ).getSafe("getTrackingConsent", internalLogger) ?: TrackingConsent.NOT_GRANTED
@@ -735,8 +735,6 @@ internal class DatadogCore(
 
         internal const val MISSING_FEATURE_FOR_EVENT_RECEIVER =
             "Cannot add event receiver for feature \"%s\", it is not registered."
-        internal const val MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER =
-            "Cannot add event listener for feature \"%s\", it is not registered."
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
 

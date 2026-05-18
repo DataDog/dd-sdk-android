@@ -139,6 +139,7 @@ import(test),com.google.re2j,"Go License","Copyright (c) 2009 The Go Authors. Al
 import(test),com.jakewharton.android.repackaged,Apache-2.0,"Copyright (C) 2007 The Android Open Source Project"
 import(test),com.parse.bolts,"BSD License","Copyright (c) Facebook, Inc. and its affiliates."
 import(test),com.squareup,Apache-2.0,"Copyright 2015 Square, Inc."
+import(test),dev.drewhamilton.poko,Apache-2.0,Copyright 2020-Present Drew Hamilton
 import(test),greatest,ICT,"Copyright (c) 2011-2018 Scott Vokes <vokes.s@gmail.com>"
 import(test),io.github.davidburstrom.contester,Apache-2.0,"Copyright 2022-2024 David Burström"
 import(test),io.github.detekt.sarif4k,Apache-2.0,"Copyright 2021 Artur Bosch & Contributors"

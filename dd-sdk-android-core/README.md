@@ -14,7 +14,7 @@ dependencies {
 
 ### Initial Setup
 
-Before you can use the SDK, you need to setup the library with your application
+Before you can use the SDK, you need to set up the library with your application
 context and your API token. You can create a token from the Integrations > API
 in Datadog. **Make sure you create a key of type `Client Token`.**
 

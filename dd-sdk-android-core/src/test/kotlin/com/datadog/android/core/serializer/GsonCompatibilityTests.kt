@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.Extensions
 
 /**
  * This class is used to test the compatibility of the Gson serializer with our current `.`
- * keys in the JSON payloads. This should make sure that Json properties are added into the
+ * keys in the JSON payloads. This should make sure that JSON properties are added into the
  * `toString` representation in the order they were added in the JSON object.
  */
 
