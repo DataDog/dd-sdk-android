@@ -11,6 +11,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
@@ -20,19 +21,24 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 internal class CallbackNetworkInfoProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val internalLogger: InternalLogger
-) :
-    ConnectivityManager.NetworkCallback(),
+) : ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
 
     @Volatile
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
 
+    @Volatile
+    private var carrierInfoResolver: CarrierInfoResolver? = null
+
     // region NetworkCallback
 
     override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
         super.onCapabilitiesChanged(network, networkCapabilities)
+        val isCellular = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
         lastNetworkInfo = NetworkInfo(
             connectivity = getNetworkType(networkCapabilities),
+            carrierName = if (isCellular) carrierInfoResolver?.carrierName else null,
+            carrierId = if (isCellular) carrierInfoResolver?.carrierId else null,
             upKbps = resolveUpBandwidth(networkCapabilities),
             downKbps = resolveDownBandwidth(networkCapabilities),
             strength = resolveStrength(networkCapabilities)
@@ -50,6 +56,8 @@ internal class CallbackNetworkInfoProvider(
 
     @Suppress("TooGenericExceptionCaught")
     override fun register(context: Context) {
+        carrierInfoResolver = (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)
+            ?.let { CarrierInfoResolver(it, internalLogger, buildSdkVersionProvider) }
         val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
         val connMgr = systemService as? ConnectivityManager
 
@@ -95,6 +103,7 @@ internal class CallbackNetworkInfoProvider(
 
     @Suppress("TooGenericExceptionCaught")
     override fun unregister(context: Context) {
+        carrierInfoResolver = null
         val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
         val connMgr = systemService as? ConnectivityManager
 

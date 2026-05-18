@@ -144,9 +144,7 @@ internal class CoreFeature(
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
-        override fun newCall(request: Request): Call {
-            return okhttpClient.newCall(request)
-        }
+        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
     }
 
     internal val initialized = AtomicBoolean(false)
@@ -611,11 +609,15 @@ internal class CoreFeature(
 
     private fun setupNetworkInfoProviders(appContext: Context) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
-            CallbackNetworkInfoProvider(internalLogger = internalLogger)
+            CallbackNetworkInfoProvider(
+                internalLogger = internalLogger,
+                buildSdkVersionProvider = buildSdkVersionProvider
+            )
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                executorService = contextExecutorService
+                executorService = contextExecutorService,
+                buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
         networkInfoProvider.register(appContext)

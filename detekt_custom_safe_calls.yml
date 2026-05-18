@@ -1150,6 +1150,7 @@ datadog:
       - "kotlin.Int.coerceAtLeast(kotlin.Int)"
       - "kotlin.Int.coerceAtMost(kotlin.Int)"
       - "kotlin.Int.inv()"
+      - "kotlin.Int.takeIf(kotlin.Function1)"
       - "kotlin.Int.toChar()"
       - "kotlin.Int.toDouble()"
       - "kotlin.Int.toFloat()"
