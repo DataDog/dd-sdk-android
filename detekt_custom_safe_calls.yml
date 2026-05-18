@@ -56,7 +56,6 @@ datadog:
       - "android.net.ConnectivityManager.NetworkCallback.onLost(android.net.Network)"
       - "android.net.ConnectivityManager.getNetworkCapabilities(android.net.Network?)"
       - "android.net.NetworkCapabilities.hasTransport(kotlin.Int)"
-      - "android.os.BatteryManager.getIntProperty(kotlin.Int)"
       - "android.os.Bundle.get(kotlin.String?)"
       - "android.os.Bundle.getString(kotlin.String?)"
       - "android.os.Bundle.keySet()"

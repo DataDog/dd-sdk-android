@@ -224,7 +224,8 @@ internal class RumFeature(
         trackFrustrations = configuration.trackFrustrations
         batteryInfoProvider = DefaultBatteryInfoProvider(
             applicationContext = appContext,
-            timeProvider = sdkCore.timeProvider
+            timeProvider = sdkCore.timeProvider,
+            internalLogger = sdkCore.internalLogger
         )
         displayInfoProvider = DefaultDisplayInfoProvider(
             applicationContext = appContext,
