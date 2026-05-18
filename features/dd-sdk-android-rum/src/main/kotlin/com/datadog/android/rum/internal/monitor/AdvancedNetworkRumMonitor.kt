@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ResourceHeadersTrackingConfigured
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -34,6 +35,9 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
 
     @InternalApi
     fun reportNetworkingLibraryType(type: LibraryType)
+
+    @InternalApi
+    fun notifyResourceHeadersTrackingConfigured(mode: ResourceHeadersTrackingConfigured.Mode)
 
     /**
      * Notify that a new Resource is being loaded, linked with the [key] instance.
@@ -111,7 +115,7 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
      * @param source the source of the error
      * @param stackTrace the error stacktrace
      * @param errorType the type of the error. Usually it should be the canonical name of the
-     * of the Exception class.
+     * Exception class.
      * @param attributes additional custom attributes to attach to the error. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
      * that want to supply a custom fingerprint for this error can add a value under the key

@@ -30,7 +30,7 @@ object LogAttributes {
     const val APPLICATION_PACKAGE: String = "application.package"
 
     /**
-     * The human readable version of the application. (String)
+     * The human-readable version of the application. (String)
      * This value is extracted from your application's manifest and
      * filled automatically by the [Logger].
      */
@@ -66,7 +66,7 @@ object LogAttributes {
 
     /**
      * A database statement for the given database type. (String)
-     * E.g., for mySQL: "SELECT * FROM wuser_table";
+     * E.g., for mySQL: "SELECT * FROM user_table";
      */
     const val DB_STATEMENT: String = "db.statement"
 
@@ -280,6 +280,13 @@ object LogAttributes {
     const val RUM_ACTION_ID: String = "user_action.id"
 
     /**
+     * The sample rate applied to the active RUM session. (Number)
+     * Used to propagate the session sample rate to other features (e.g. Tracing)
+     * for cross-product sampling correlation.
+     */
+    const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
+
+    /**
      * The name of the application or service generating the log events. (String)
      * This value is filled automatically by the [Logger].
      * @see [Configuration.Builder.service]
@@ -323,7 +330,7 @@ object LogAttributes {
     const val USR_ID: String = "$USR_ATTRIBUTES_GROUP.id"
 
     /**
-     * The user friendly name. (String)
+     * The user-friendly name. (String)
      * This value is filled automatically by the [Logger].
      * @see [SdkCore.setUserInfo]
      */
@@ -358,7 +365,7 @@ object LogAttributes {
     const val VARIANT: String = "variant"
 
     /**
-     * The source type of an error. Used by cross platform tools to indicate the language
+     * The source type of error. Used by cross-platform tools to indicate the language
      * or platform that the error originates from, such as Flutter or React Native (String).
      */
     const val SOURCE_TYPE: String = "_dd.error.source_type"

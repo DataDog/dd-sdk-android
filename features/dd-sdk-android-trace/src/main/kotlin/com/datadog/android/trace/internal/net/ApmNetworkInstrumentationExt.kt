@@ -9,6 +9,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -24,6 +25,19 @@ import java.util.Locale
 internal val FeatureSdkCore?.isRumEnabled: Boolean
     get() = this?.getFeature(Feature.RUM_FEATURE_NAME) != null
 
+/**
+ * Returns the effective sample rate for the given [span].
+ * If the sampler implements [SpanAwareSampler], the per-span rate is returned.
+ * Otherwise, the sampler's static rate is returned.
+ */
+@InternalApi
+fun Sampler<DatadogSpan>.effectiveSampleRate(span: DatadogSpan): Float? {
+    return when (this) {
+        is SpanAwareSampler -> getSampleRate(span)
+        else -> getSampleRate()
+    }
+}
+
 internal fun DatadogSpan.applyPriority(isSampled: Boolean, traceSampler: Sampler<DatadogSpan>) {
     val samplingPriority = if (isSampled) {
         PrioritySampling.SAMPLER_KEEP
@@ -35,7 +49,7 @@ internal fun DatadogSpan.applyPriority(isSampled: Boolean, traceSampler: Sampler
     if (spanContext.setSamplingPriority(samplingPriority)) {
         spanContext.setMetric(
             AGENT_PSR_ATTRIBUTE,
-            (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+            (traceSampler.effectiveSampleRate(this) ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
         )
     }
 }

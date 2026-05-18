@@ -431,7 +431,8 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onAddLongTask(longTaskDuration)
 
         // Then
-        assertDoesNotThrow { // No ArithmeticException
+        assertDoesNotThrow {
+            // No ArithmeticException
             val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
             assertThat(report.freezeFramesRate(minViewLifetimeThresholdNs - 1)).isZero()
         }

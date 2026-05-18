@@ -439,6 +439,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     - FLUTTER
     - REACT_NATIVE
     - KOTLIN_MULTIPLATFORM
+    - MAUI
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source

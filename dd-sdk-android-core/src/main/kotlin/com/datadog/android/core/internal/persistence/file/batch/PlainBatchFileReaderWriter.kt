@@ -183,7 +183,7 @@ internal class PlainBatchFileReaderWriter(
                         " was expecting $expectedBlockType(${expectedBlockType.identifier})"
                 }
             )
-            // in theory we could continue reading, because we still know data size,
+            // in theory, we could continue reading, because we still know data size,
             // but unexpected type says that at least relationship between blocks is broken,
             // so to not establish the wrong one, it is better to stop reading
             return BlockReadResult(null, headerReadBytes)
@@ -232,7 +232,7 @@ internal class PlainBatchFileReaderWriter(
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall")
-    // all calls here are safe: buffer is writable and it has a proper size calculated before
+    // all calls here are safe: buffer is writable, and it has a proper size calculated before
     // Encoding specification is as following:
     // +-  2 bytes -+-   4 bytes   -+- n bytes -|
     // | block type | data size (n) |    data   |

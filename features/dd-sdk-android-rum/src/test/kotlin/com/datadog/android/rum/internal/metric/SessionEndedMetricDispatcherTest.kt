@@ -300,8 +300,7 @@ internal class SessionEndedMetricDispatcherTest {
     @Test
     fun `M has correct 'has_background_events_tracking_enabled' W start metric`(
         @StringForgery fakeSessionId: String,
-        @BoolForgery backgroundEventTracking:
-        Boolean
+        @BoolForgery backgroundEventTracking: Boolean
     ) {
         // Given
         val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)

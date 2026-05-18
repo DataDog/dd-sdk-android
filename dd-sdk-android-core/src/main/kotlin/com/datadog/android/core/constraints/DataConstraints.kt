@@ -21,7 +21,7 @@ interface DataConstraints {
      * @param reservedKeys Collection of reserved key. If attribute name is in the reserved key,
      * this attribute will be rejected.
      */
-    fun <T : Any?> validateAttributes(
+    fun <T> validateAttributes(
         attributes: Map<String, T>,
         keyPrefix: String? = null,
         attributesGroupName: String? = null,

@@ -210,6 +210,18 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasTrackResourceHeaders(
+        expected: TelemetryConfigurationEvent.TrackResourceHeaders?
+    ): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.trackResourceHeaders)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.trackResourceHeaders $expected " +
+                    "but was ${actual.telemetry.configuration.trackResourceHeaders}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTrackLongTasks(expected: Boolean?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.trackNativeLongTasks)
             .overridingErrorMessage(

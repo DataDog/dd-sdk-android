@@ -76,6 +76,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
@@ -144,9 +145,7 @@ internal class CoreFeature(
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
-        override fun newCall(request: Request): Call {
-            return okhttpClient.newCall(request)
-        }
+        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
     }
 
     internal val initialized = AtomicBoolean(false)
@@ -502,7 +501,7 @@ internal class CoreFeature(
         // When the host app uses the `directBootAware` flag on a  file encrypted device,
         // the app can wake up during the boot sequence before the device is unlocked
         // This mean any file I/O or access to shared preferences will throw an exception
-        // This safe context creates a device-protected storage which can be used for non sensitive
+        // This safe context creates a device-protected storage which can be used for non-sensitive
         // data. It should not be used to store the data captured by the SDK.
         return appContext.createDeviceProtectedStorageContext() ?: appContext
     }
@@ -593,7 +592,10 @@ internal class CoreFeature(
         trackingConsentProvider = TrackingConsentProvider(consent)
 
         // System Info Provider
-        systemInfoProvider = BroadcastReceiverSystemInfoProvider(internalLogger = internalLogger)
+        systemInfoProvider = BroadcastReceiverSystemInfoProvider(
+            internalLogger = internalLogger,
+            executorService = contextExecutorService
+        )
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
@@ -608,9 +610,16 @@ internal class CoreFeature(
 
     private fun setupNetworkInfoProviders(appContext: Context) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
-            CallbackNetworkInfoProvider(internalLogger = internalLogger)
+            CallbackNetworkInfoProvider(
+                internalLogger = internalLogger,
+                buildSdkVersionProvider = buildSdkVersionProvider
+            )
         } else {
-            BroadcastReceiverNetworkInfoProvider()
+            BroadcastReceiverNetworkInfoProvider(
+                internalLogger = internalLogger,
+                executorService = contextExecutorService,
+                buildSdkVersionProvider = buildSdkVersionProvider
+            )
         }
         networkInfoProvider.register(appContext)
     }
@@ -662,7 +671,7 @@ internal class CoreFeature(
             internalLogger,
             executorContext = "context",
             capacity = Int.MAX_VALUE,
-            notifyThreshold = 1024,
+            notifyThreshold = 2048,
             // just notify when reached
             onItemDropped = {},
             onThresholdReached = {},
@@ -685,7 +694,7 @@ internal class CoreFeature(
 
     private fun resolveProcessInfo(appContext: Context) {
         val currentProcessId = Process.myPid()
-        val manager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val manager = appContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
         val currentProcess = manager?.runningAppProcesses?.firstOrNull {
             it.pid == currentProcessId
         }

@@ -133,12 +133,12 @@ data class NetworkInfo(
         NETWORK_NOT_CONNECTED("network_not_connected"),
 
         /**
-         * The network is connected using a Ethernet connection.
+         * The network is connected using an Ethernet connection.
          */
         NETWORK_ETHERNET("network_ethernet"),
 
         /**
-         * The network is connected using a WiFi connection.
+         * The network is connected using a Wi-Fi connection.
          */
         NETWORK_WIFI("network_wifi"),
 
@@ -173,7 +173,7 @@ data class NetworkInfo(
         NETWORK_5G("network_5G"),
 
         /**
-         * The network is connected using a cellular connection with a unknown technology.
+         * The network is connected using a cellular connection with an unknown technology.
          */
         NETWORK_MOBILE_OTHER("network_mobile_other"),
 
@@ -183,7 +183,7 @@ data class NetworkInfo(
         NETWORK_CELLULAR("network_cellular"),
 
         /**
-         * The network is connected using an other connection type.
+         * The network is connected using another connection type.
          */
         NETWORK_OTHER("network_other")
         ;
