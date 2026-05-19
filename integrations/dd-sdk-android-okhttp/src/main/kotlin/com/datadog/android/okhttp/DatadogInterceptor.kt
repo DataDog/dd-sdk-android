@@ -397,8 +397,10 @@ open class DatadogInterceptor internal constructor(
          */
         override fun build(): DatadogInterceptor {
             val currentTraceSampler = traceSampler
-            val effectiveTraceSampler = if (currentTraceSampler is DeterministicTraceSampler) {
-                SessionRebasedSampler(currentTraceSampler)
+            // Use exact-class match so subclasses of DeterministicTraceSampler are treated as
+            // custom samplers and bypass rebasing, matching the setTraceSampler contract.
+            val effectiveTraceSampler = if (currentTraceSampler::class == DeterministicTraceSampler::class) {
+                SessionRebasedSampler(currentTraceSampler as DeterministicTraceSampler)
             } else {
                 currentTraceSampler
             }

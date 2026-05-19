@@ -269,4 +269,21 @@ internal class ApmInstrumentationConfigurationTest {
         assertThat(result.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(result.traceSampler.getSampleRate()).isEqualTo(fakeSampleRate)
     }
+
+    @Test
+    fun `M not wrap sampler W createInstrumentation() { headerPropagationOnly + DeterministicTraceSampler subclass }`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // Given
+        val customSampler = object : DeterministicTraceSampler(fakeSampleRate) {}
+
+        // When
+        val result = testedBuilder
+            .setTraceSampler(customSampler)
+            .setHeaderPropagationOnly()
+            .createInstrumentation(fakeNetworkLibraryName)
+
+        // Then
+        assertThat(result.traceSampler).isSameAs(customSampler)
+    }
 }
