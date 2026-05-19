@@ -54,7 +54,7 @@ internal class ProfilingFeature(
     private lateinit var appContext: Context
 
     @Volatile
-    private var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
+    internal var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
 
@@ -179,8 +179,7 @@ internal class ProfilingFeature(
 
         ttidEvent = event
 
-        if (continuousProfilingScheduler?.isScheduling != true) {
-            // Non-continuous: stop profiler immediately at TTID.
+        if (continuousProfilingScheduler?.currentSessionSampled != true) {
             profiler.stop(sdkCore.name)
             tryWriteProfilingEvent()
             sdkCore.internalLogger.log(
@@ -192,7 +191,10 @@ internal class ProfilingFeature(
     }
 
     private fun onRumSessionRenewed(event: RumSessionRenewedEvent) {
-        continuousProfilingScheduler?.onRumSessionRenewed(event.sessionSampled)
+        continuousProfilingScheduler?.onRumSessionRenewed(
+            sessionId = event.sessionId,
+            rumSessionSampleRate = event.sessionSampleRate
+        )
     }
 
     private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {

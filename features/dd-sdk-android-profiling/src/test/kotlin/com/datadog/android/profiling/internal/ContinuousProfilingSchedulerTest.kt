@@ -9,8 +9,11 @@ package com.datadog.android.profiling.internal
 import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +36,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -72,6 +76,8 @@ internal class ContinuousProfilingSchedulerTest {
 
     private val fakeInstanceName = "test-sdk-instance"
 
+    private lateinit var fakeSessionId: String
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -100,6 +106,7 @@ internal class ContinuousProfilingSchedulerTest {
         }.whenever(mockSchedulerExecutor).execute(any<Runnable>())
 
         activeWindowStartedCount = 0
+        fakeSessionId = UUID.randomUUID().toString()
         testedScheduler = ContinuousProfilingScheduler(
             profiler = mockProfiler,
             appContext = mockApplication,
@@ -132,7 +139,7 @@ internal class ContinuousProfilingSchedulerTest {
     fun `M start active window W initial cooldown fires after start()`() {
         // Given
         val runnableCaptor = argumentCaptor<Runnable>()
-        testedScheduler.onRumSessionRenewed(sessionSampled = true)
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
         testedScheduler.start(launchProfilingActive = false)
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
 
@@ -164,12 +171,12 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     @Test
-    fun `M set extendLaunchSession true W start() {launch profiling active}`() {
+    fun `M defer extendLaunchSession W start() {continuousSampleRate positive, no session yet}`() {
         // When
         testedScheduler.start(launchProfilingActive = true)
 
         // Then
-        verify(mockProfiler).setExtendLaunchSession(true)
+        verify(mockProfiler, never()).setExtendLaunchSession(true)
         assertThat(testedScheduler.isScheduling).isTrue()
     }
 
@@ -235,7 +242,7 @@ internal class ContinuousProfilingSchedulerTest {
     @Test
     fun `M NOT start profiling immediately W onAppLaunchProfilingComplete()`() {
         // Given
-        testedScheduler.onRumSessionRenewed(sessionSampled = true)
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
         testedScheduler.start(launchProfilingActive = true)
 
         // When
@@ -248,7 +255,7 @@ internal class ContinuousProfilingSchedulerTest {
     @Test
     fun `M start profiling cycle after cooldown fires W onAppLaunchProfilingComplete()`() {
         // Given
-        testedScheduler.onRumSessionRenewed(sessionSampled = true)
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
         testedScheduler.start(launchProfilingActive = true)
         val runnableCaptor = argumentCaptor<Runnable>()
         testedScheduler.onAppLaunchProfilingComplete()
@@ -322,7 +329,7 @@ internal class ContinuousProfilingSchedulerTest {
     @Test
     fun `M not start profiler W scheduleNextCycle {rum session not sampled}`() {
         // Given
-        testedScheduler.onRumSessionRenewed(sessionSampled = false)
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
         val runnableCaptor = argumentCaptor<Runnable>()
         testedScheduler.start(launchProfilingActive = false)
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
@@ -335,18 +342,174 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     @Test
-    fun `M not stop running profiler W onRumSessionRenewed {sessionSampled=false}`() {
+    fun `M not stop running profiler W onRumSessionRenewed {sessionSampleRate=0}`() {
         // Given
         testedScheduler.start(launchProfilingActive = false)
 
         // When
-        testedScheduler.onRumSessionRenewed(sessionSampled = false)
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
 
         // Then
         verify(mockProfiler, never()).stop(any())
     }
 
+    @Test
+    fun `M not stop active window W onRumSessionRenewed {mid-active-window, rate=0}`() {
+        // Given — open the active window without going through onRumSessionRenewed, then the
+        // renewal that follows samples the new session out with rate=0.
+        openActiveWindow()
+
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
+
+        // Then
+        verify(mockProfiler, never()).stop(any())
+        assertThat(testedScheduler.currentSessionSampled).isFalse()
+    }
+
+    @Test
+    fun `M sample current session in W onRumSessionRenewed {100 percent rates}`() {
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+
+        // Then
+        assertThat(testedScheduler.currentSessionSampled).isTrue()
+        assertThat(testedScheduler.currentSessionId).isEqualTo(fakeSessionId)
+    }
+
+    @Test
+    fun `M not sample current session in W onRumSessionRenewed {sessionSampleRate=0}`() {
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
+
+        // Then
+        assertThat(testedScheduler.currentSessionSampled).isFalse()
+        assertThat(testedScheduler.currentSessionId).isEqualTo(fakeSessionId)
+    }
+
+    @Test
+    fun `M not sample current session in W onRumSessionRenewed {continuousSampleRate=0}`() {
+        // Given
+        testedScheduler = ContinuousProfilingScheduler(
+            profiler = mockProfiler,
+            appContext = mockApplication,
+            sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
+            sampleRate = 0f
+        )
+
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+
+        // Then
+        assertThat(testedScheduler.currentSessionSampled).isFalse()
+    }
+
+    @Test
+    fun `M make deterministic decision W onRumSessionRenewed {same sessionId, same rates}`() {
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 50f)
+        val firstDecision = testedScheduler.currentSessionSampled
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 50f)
+        val secondDecision = testedScheduler.currentSessionSampled
+
+        // Then
+        assertThat(secondDecision).isEqualTo(firstDecision)
+    }
+
+    @Test
+    fun `M apply multiplicative combined rate W onRumSessionRenewed`(forge: Forge) {
+        // Given
+        val fakeSessionRate = forge.aFloat(min = 0.1f, max = 100f)
+        val fakeContinuousRate = forge.aFloat(min = 0.1f, max = 100f)
+        val expectedEffectiveRate =
+            (fakeSessionRate * fakeContinuousRate / 100f).coerceIn(0f, 100f)
+        val expectedDecision = DeterministicSampler<String>(
+            SessionSamplingIdProvider::provideId,
+            expectedEffectiveRate
+        ).sample(fakeSessionId)
+        testedScheduler = ContinuousProfilingScheduler(
+            profiler = mockProfiler,
+            appContext = mockApplication,
+            sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
+            sampleRate = fakeContinuousRate
+        )
+
+        // When
+        testedScheduler.onRumSessionRenewed(
+            sessionId = fakeSessionId,
+            rumSessionSampleRate = fakeSessionRate
+        )
+
+        // Then
+        assertThat(testedScheduler.currentSessionSampled).isEqualTo(expectedDecision)
+    }
+
+    @Test
+    fun `M extend launch session W onRumSessionRenewed {first session sampled}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+
+        // Then
+        verify(mockProfiler).setExtendLaunchSession(true)
+    }
+
+    @Test
+    fun `M not extend launch session W onRumSessionRenewed {session not sampled}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+
+        // When
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
+
+        // Then
+        verify(mockProfiler, never()).setExtendLaunchSession(true)
+    }
+
+    @Test
+    fun `M extend launch session only once W onRumSessionRenewed {multiple sampled renewals}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+
+        // When
+        repeat(3) {
+            testedScheduler.onRumSessionRenewed(
+                sessionId = fakeSessionId,
+                rumSessionSampleRate = 100f
+            )
+        }
+
+        // Then
+        verify(mockProfiler, times(1)).setExtendLaunchSession(true)
+    }
+
     // endregion
+
+    // region kill-switch behavior
+
+    @Test
+    fun `M log kill-switch message W start() {continuousSampleRate=0}`() {
+        // Given
+        testedScheduler = ContinuousProfilingScheduler(
+            profiler = mockProfiler,
+            appContext = mockApplication,
+            sdkCore = mockSdkCore,
+            timeProvider = mockTimeProvider,
+            sampleRate = 0f
+        )
+
+        // When
+        testedScheduler.start(launchProfilingActive = false)
+
+        // Then
+        assertThat(testedScheduler.isScheduling).isFalse()
+        verify(mockProfiler).setExtendLaunchSession(false)
+        verifyNoInteractions(mockSchedulerExecutor)
+    }
 
     // region jitter
 
@@ -356,7 +519,7 @@ internal class ContinuousProfilingSchedulerTest {
         val windowBase = ContinuousProfilingScheduler.CONTINUOUS_WINDOW_DURATION_MS
         val durationCaptor = argumentCaptor<Int>()
 
-        testedScheduler.onRumSessionRenewed(sessionSampled = true)
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
         testedScheduler.start(launchProfilingActive = true)
         val runnableCaptor = argumentCaptor<Runnable>()
         testedScheduler.onAppLaunchProfilingComplete()
@@ -614,7 +777,7 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     private fun openActiveWindow() {
-        testedScheduler.rumSessionSampled = true
+        testedScheduler.currentSessionSampled = true
         testedScheduler.start(launchProfilingActive = true)
         val runnableCaptor = argumentCaptor<Runnable>()
         testedScheduler.onAppLaunchProfilingComplete()

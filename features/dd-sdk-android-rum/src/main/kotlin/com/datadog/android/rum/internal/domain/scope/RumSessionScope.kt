@@ -293,7 +293,7 @@ internal class RumSessionScope(
         }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
         // Notifies `ProfilingFeature` that the RUM session has been renewed.
-        updateContinuousProfilingForSession(sessionState, sessionId)
+        updateContinuousProfilingForSession(sessionId)
     }
 
     private fun updateSessionStateForSessionReplay(sessionId: String) {
@@ -310,12 +310,11 @@ internal class RumSessionScope(
         )
     }
 
-    private fun updateContinuousProfilingForSession(state: State, sessionId: String) {
-        val sessionSampled = (state == State.TRACKED)
+    private fun updateContinuousProfilingForSession(sessionId: String) {
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
             RumSessionRenewedEvent(
                 sessionId = sessionId,
-                sessionSampled = sessionSampled
+                sessionSampleRate = sessionSampleRate
             )
         )
     }
