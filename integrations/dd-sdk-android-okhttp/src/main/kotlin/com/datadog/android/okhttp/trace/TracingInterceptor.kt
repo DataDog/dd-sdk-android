@@ -823,7 +823,10 @@ internal constructor(
          * sampling decision will be used instead.
          *
          * Note: custom samplers passed here do not participate in cross-product rebasing with the RUM session
-         * sample rate. Use [setTraceSampleRate] if you need correlated sampling between RUM sessions and APM traces.
+         * sample rate. Subclasses of [DeterministicTraceSampler] are also treated as custom samplers and bypass
+         * rebasing — only an exact [DeterministicTraceSampler] instance (equivalent to calling
+         * [setTraceSampleRate]) participates in rebasing. Use [setTraceSampleRate] if you need correlated
+         * sampling between RUM sessions and APM traces.
          *
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
          * By default it is a sampler accepting 100% of the traces.

@@ -13,6 +13,7 @@ import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -242,6 +243,22 @@ internal class DatadogInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isSameAs(mockSampler)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
+    }
+
+    @Test
+    fun `M not wrap traceSampler W build { setTraceSampler with DeterministicTraceSampler subclass }`(
+        @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
+    ) {
+        // Given
+        val customSampler = object : DeterministicTraceSampler(fakeSampleRate) {}
+
+        // When
+        val interceptor = DatadogInterceptor.Builder(fakeTracedHostsWithHeaderType)
+            .setTraceSampler(customSampler)
+            .build()
+
+        // Then
+        assertThat(interceptor.traceSampler).isSameAs(customSampler)
     }
 
     @Test
