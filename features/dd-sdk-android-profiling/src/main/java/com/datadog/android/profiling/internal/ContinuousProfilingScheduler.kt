@@ -225,7 +225,6 @@ internal class ContinuousProfilingScheduler(
         if (currentSessionSampled) {
             onActiveWindowStarted()
             isActive = true
-            activeWindowEndMs = timeProvider.getDeviceTimestampMillis() + activeMs
             state = State.ACTIVE
             logToUser { LOG_ACTIVE_WINDOW_STARTED.format(Locale.US, activeMs) }
             profiler.start(
@@ -242,13 +241,14 @@ internal class ContinuousProfilingScheduler(
             logToUser { LOG_ACTIVE_WINDOW_SKIPPED }
             // Skipped windows behave like cooldown for lifecycle purposes.
             state = State.COOLDOWN
+            cooldownWindowEndMs = timeProvider.getDeviceTimestampMillis() + activeMs
         }
 
         scheduleActiveWindowEnd(activeMs)
     }
 
     private fun scheduleActiveWindowEnd(delayMs: Long) {
-        cooldownWindowEndMs = timeProvider.getDeviceTimestampMillis() + delayMs
+        activeWindowEndMs = timeProvider.getDeviceTimestampMillis() + delayMs
         pendingFuture = schedulerExecutor.scheduleSafe(
             operationName = OPERATION_ACTIVE_WINDOW_END,
             delay = delayMs,

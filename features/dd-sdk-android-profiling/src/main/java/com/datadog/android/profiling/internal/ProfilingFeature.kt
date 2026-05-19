@@ -115,7 +115,6 @@ internal class ProfilingFeature(
         profiler.apply {
             stop(sdkCore.name)
             unregisterProfilingCallback(sdkCore.name)
-            scheduledExecutorService.shutdown()
         }
         sdkCore.removeEventReceiver(name)
         pendingRumEvents.clear()
