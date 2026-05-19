@@ -14,8 +14,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.sampling.DeterministicSampling
+import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.time.TimeProvider
 import java.util.Locale
 import java.util.concurrent.ScheduledExecutorService
@@ -38,9 +40,14 @@ internal class ContinuousProfilingScheduler(
     @Volatile
     internal var isScheduling = false
 
-    // TODO RUM-15315: Read RUM session tracked state instead of using default value.
     @Volatile
-    internal var rumSessionSampled = false
+    internal var currentSessionId: String? = null
+
+    @Volatile
+    internal var currentSessionSampled = false
+
+    @Volatile
+    private var launchSessionExtended = false
 
     @Volatile
     private var pendingFuture: ScheduledFuture<*>? = null
@@ -63,10 +70,10 @@ internal class ContinuousProfilingScheduler(
     private val schedulerExecutor: ScheduledExecutorService = profiler.scheduledExecutorService
 
     fun start(launchProfilingActive: Boolean) {
-        isScheduling = RateBasedSampler<Unit>(sampleRate).sample(Unit)
-        profiler.setExtendLaunchSession(isScheduling)
+        isScheduling = sampleRate > 0f
         if (!isScheduling) {
-            logToUser { LOG_DISABLED.format(Locale.US, sampleRate) }
+            profiler.setExtendLaunchSession(false)
+            logToUser { LOG_DISABLED }
             return
         }
         if (launchProfilingActive) {
@@ -99,8 +106,25 @@ internal class ContinuousProfilingScheduler(
         scheduleCooldown(jitter(CONTINUOUS_COOLDOWN_DURATION_MS))
     }
 
-    fun onRumSessionRenewed(sessionSampled: Boolean) {
-        rumSessionSampled = sessionSampled
+    fun onRumSessionRenewed(sessionId: String, rumSessionSampleRate: Float) {
+        val sampler = createSessionSampler(rumSessionSampleRate)
+        currentSessionId = sessionId
+        currentSessionSampled = sampler.sample(sessionId)
+        // Upgrade the launch session to extended only once, on the first sampled-in renewal.
+        // If the renewal arrives after the 10s safety-net has fired, the launch profile has
+        // already been cancelled and this call is a no-op.
+        if (currentSessionSampled && !launchSessionExtended) {
+            profiler.setExtendLaunchSession(true)
+            launchSessionExtended = true
+        }
+    }
+
+    private fun createSessionSampler(rumSessionSampleRate: Float): DeterministicSampler<String> {
+        val effectiveRate = DeterministicSampling.combinedSampleRate(
+            rumSessionSampleRate = rumSessionSampleRate,
+            featureSampleRate = sampleRate
+        )
+        return DeterministicSampler(SessionSamplingIdProvider::provideId, effectiveRate)
     }
 
     /**
@@ -198,7 +222,7 @@ internal class ContinuousProfilingScheduler(
 
     private fun scheduleNextCycle() {
         val activeMs = jitter(CONTINUOUS_WINDOW_DURATION_MS)
-        if (rumSessionSampled) {
+        if (currentSessionSampled) {
             onActiveWindowStarted()
             isActive = true
             activeWindowEndMs = timeProvider.getDeviceTimestampMillis() + activeMs
@@ -306,6 +330,7 @@ internal class ContinuousProfilingScheduler(
     }
 
     companion object {
+
         // Base active window duration: 1 minute (±20% jitter applied per cycle).
         internal const val CONTINUOUS_WINDOW_DURATION_MS = 60_000L
 
@@ -325,7 +350,7 @@ internal class ContinuousProfilingScheduler(
         private const val OPERATION_ON_FOREGROUND = "continuous_profiling_on_foreground"
 
         internal const val LOG_DISABLED =
-            "Continuous profiling disabled (not sampled in at rate=%s)."
+            "Continuous profiling disabled (continuousSampleRate=0)."
         internal const val LOG_WAITING_FOR_LAUNCH =
             "Continuous profiling enabled; waiting for app launch profiling to complete."
         internal const val LOG_INITIAL_COOLDOWN =

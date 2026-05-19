@@ -1775,7 +1775,7 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockProfilingFeatureScope).sendEvent(
-            RumSessionRenewedEvent(sessionId = sessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = sessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
     }
 
@@ -1793,7 +1793,7 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockProfilingFeatureScope).sendEvent(
-            RumSessionRenewedEvent(sessionId = sessionId, sessionSampled = false)
+            RumSessionRenewedEvent(sessionId = sessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
     }
 
@@ -1815,10 +1815,10 @@ internal class RumSessionScopeTest {
         val captor = argumentCaptor<Any>()
         verify(mockProfilingFeatureScope, times(2)).sendEvent(captor.capture())
         assertThat(captor.firstValue).isEqualTo(
-            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
         assertThat(captor.secondValue).isEqualTo(
-            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
     }
 
@@ -1840,10 +1840,10 @@ internal class RumSessionScopeTest {
         val captor = argumentCaptor<Any>()
         verify(mockProfilingFeatureScope, times(2)).sendEvent(captor.capture())
         assertThat(captor.firstValue).isEqualTo(
-            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
         assertThat(captor.secondValue).isEqualTo(
-            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
     }
 
@@ -1864,10 +1864,10 @@ internal class RumSessionScopeTest {
         val captor = argumentCaptor<Any>()
         verify(mockProfilingFeatureScope, times(2)).sendEvent(captor.capture())
         assertThat(captor.firstValue).isEqualTo(
-            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = firstSessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
         assertThat(captor.secondValue).isEqualTo(
-            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampled = true)
+            RumSessionRenewedEvent(sessionId = secondSessionId, sessionSampleRate = testedScope.sessionSampleRate)
         )
     }
 
