@@ -226,7 +226,7 @@ class ApmNetworkInstrumentation internal constructor(
 
     private fun DatadogSpan.isSampled(request: HttpRequestInfo): Boolean =
         extractRumContext(rumContextPropagator, block = true)
-            .sample(request, traceSampler)
+            .sample(request, traceSampler, ignoreLocalDroppedParent = !canSendSpan)
 
     private fun RequestTracingState.onRequestIntercepted(
         response: HttpResponseInfo?,

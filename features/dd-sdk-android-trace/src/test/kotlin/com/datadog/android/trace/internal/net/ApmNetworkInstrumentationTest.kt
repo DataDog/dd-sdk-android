@@ -32,6 +32,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
+import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -194,7 +195,7 @@ internal class ApmNetworkInstrumentationTest {
         }
 
         // Set up mock propagation helper to return null for sampling decision (falls through to sampler)
-        whenever(mockPropagationHelper.extractSamplingDecision(any())) doReturn null
+        whenever(mockPropagationHelper.extractSamplingDecision(any(), any())) doReturn null
 
         testedInstrumentation = createInstrumentation()
     }
@@ -280,13 +281,14 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M use parent context W onRequest() {canSendSpan=false, parent sampling UNSET}`() {
+    fun `M use parent context W onRequest() {canSendSpan=false, header parent sampling UNSET}`() {
         // Given
         testedInstrumentation = createInstrumentation(canSendSpan = false)
         val parentSpanContext: DatadogSpanContext = mock {
             on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.UNSET
         }
-        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromHeaders(parentSpanContext)
 
         _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
@@ -299,10 +301,10 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M honor explicit parent W onRequest() {canSendSpan=false, active span DROP, extracted parent KEEP}`() {
-        // Given - an explicit extracted parent (KEEP) takes precedence over a dropped
-        // local active span. The active span's drop status must not leak into the
-        // sampling decision for a request that has its own parent context.
+    fun `M honor explicit parent W onRequest() {canSendSpan=false, active span DROP, header parent KEEP}`() {
+        // Given - an explicit header-propagated parent (KEEP) takes precedence over a dropped
+        // local active span. The active span's drop status must not leak into the sampling
+        // decision for a request that has its own parent context.
         testedInstrumentation = createInstrumentation(canSendSpan = false)
         val droppedActiveSpan: DatadogSpan = mock {
             on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
@@ -311,7 +313,8 @@ internal class ApmNetworkInstrumentationTest {
         val parentSpanContext: DatadogSpanContext = mock {
             on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
         }
-        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromHeaders(parentSpanContext)
 
         _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
@@ -324,14 +327,16 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M honor parent W onRequest() {canSendSpan=false, extracted parent DROP}`() {
-        // Given - extracted parent context with DROP priority. Explicit parents (header- or
-        // tag-propagated) represent developer/upstream intent and must be honored as-is.
+    fun `M honor parent W onRequest() {canSendSpan=false, header parent DROP}`() {
+        // Given - header-propagated parent with DROP priority. Header parents represent
+        // upstream service intent and must be honored regardless of priority to preserve
+        // head-based sampling of distributed traces.
         testedInstrumentation = createInstrumentation(canSendSpan = false)
         val parentSpanContext: DatadogSpanContext = mock {
             on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
         }
-        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromHeaders(parentSpanContext)
 
         _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
@@ -344,14 +349,15 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M use parent W onRequest() {canSendSpan=false, parent context resolves to KEEP}`() {
-        // Given - parent context returns SAMPLER_KEEP, simulating the post-resolution state
-        // after setTracingSamplingPriorityIfNecessary forces the lazy sampling decision.
+    fun `M use parent W onRequest() {canSendSpan=false, header parent context resolves to KEEP}`() {
+        // Given - header-propagated parent returns SAMPLER_KEEP, simulating the post-resolution
+        // state after setTracingSamplingPriorityIfNecessary forces the lazy sampling decision.
         testedInstrumentation = createInstrumentation(canSendSpan = false)
         val parentSpanContext: DatadogSpanContext = mock {
             on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
         }
-        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn parentSpanContext
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromHeaders(parentSpanContext)
 
         _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
             // When
@@ -360,6 +366,145 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             verify(mockSpanBuilder).withParentContext(parentSpanContext)
             verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        }
+    }
+
+    @Test
+    fun `M ignore parent W onRequest() {canSendSpan=false, tag parent DROP}`() {
+        // Given - a developer-attached parent (via Request.Builder.parentSpan or
+        // addRequestAnnotation) with DROP priority. On the RUM path, this should be ignored
+        // so RUM can make its own sampling decision.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val droppedTagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromTag(droppedTagContext)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).ignoreActiveSpan()
+            verify(mockSpanBuilder, never()).withParentContext(any())
+        }
+    }
+
+    @Test
+    fun `M honor parent W onRequest() {canSendSpan=false, tag parent KEEP}`() {
+        // Given - tag-attached parent with KEEP priority is honored on the RUM path.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val tagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromTag(tagContext)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).withParentContext(tagContext)
+            verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        }
+    }
+
+    @Test
+    fun `M honor parent W onRequest() {canSendSpan=true, tag parent DROP}`() {
+        // Given - on the pure-APM path (canSendSpan=true), tag parents are honored even when
+        // dropped. This preserves head-based sampling for the APM-only path.
+        testedInstrumentation = createInstrumentation(canSendSpan = true)
+        val droppedTagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromTag(droppedTagContext)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpanBuilder).withParentContext(droppedTagContext)
+            verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        }
+    }
+
+    @Test
+    fun `M extract sampling decision with ignoreLocalDroppedParent=true W onRequest() {canSendSpan=false}`() {
+        // Given - on the RUM path, the dropped-local-parent policy must be threaded to the
+        // sampling-decision layer so it stays consistent with buildSpan().
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockPropagationHelper).extractSamplingDecision(mockRequestInfo, true)
+        }
+    }
+
+    @Test
+    fun `M extract sampling decision with ignoreLocalDroppedParent=false W onRequest() {canSendSpan=true}`() {
+        // Given - APM-only path keeps the legacy behavior; dropped local parents lock sampling.
+        testedInstrumentation = createInstrumentation(canSendSpan = true)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockPropagationHelper).extractSamplingDecision(mockRequestInfo, false)
+        }
+    }
+
+    @Test
+    fun `M defer to sampler W onRequest() {canSendSpan=false, tag parent DROP, helper returns null}`() {
+        // Given - on the RUM path with a dropped tag parent, the sampling-decision layer is
+        // expected to return null (defer to sampler). The trace sampler then decides
+        // independently and the result is reflected in RequestTracingState.isSampled.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val droppedTagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromTag(droppedTagContext)
+        whenever(mockPropagationHelper.extractSamplingDecision(mockRequestInfo, true)) doReturn null
+        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
+
+            // Then
+            verify(mockTraceSampler).sample(mockSpan)
+            assertThat(result.isSampled).isTrue()
+        }
+    }
+
+    @Test
+    fun `M honor header W onRequest() {canSendSpan=false, header DROP, tag DROP}`() {
+        // Given - header sampling priority remains authoritative on the RUM path. Even when
+        // the local tag parent would have been ignored, an inbound DROP header still locks
+        // the request to dropped to preserve head-based sampling of distributed traces.
+        testedInstrumentation = createInstrumentation(canSendSpan = false)
+        val droppedTagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        whenever(mockPropagationHelper.extractParentContext(mockTracer, mockRequestInfo)) doReturn
+            ParentContextSource.FromTag(droppedTagContext)
+        whenever(mockPropagationHelper.extractSamplingDecision(mockRequestInfo, true)) doReturn false
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            val result = checkNotNull(testedInstrumentation.onRequest(mockRequestInfo))
+
+            // Then
+            verify(mockTraceSampler, never()).sample(mockSpan)
+            assertThat(result.isSampled).isFalse()
         }
     }
 

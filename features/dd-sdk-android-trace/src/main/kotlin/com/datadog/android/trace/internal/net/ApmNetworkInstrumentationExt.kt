@@ -20,6 +20,7 @@ import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.AL
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.SPAN_NAME
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.URL_QUERY_PARAMS_BLOCK_SEPARATOR
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.ZERO_SAMPLE_RATE
+import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal._TraceInternalProxy.propagationHelper
 import java.util.Locale
@@ -56,12 +57,17 @@ internal fun DatadogSpan.applyPriority(isSampled: Boolean, traceSampler: Sampler
     }
 }
 
-internal fun DatadogSpan.sample(request: HttpRequestInfo, traceSampler: Sampler<DatadogSpan>): Boolean {
+internal fun DatadogSpan.sample(
+    request: HttpRequestInfo,
+    traceSampler: Sampler<DatadogSpan>,
+    ignoreLocalDroppedParent: Boolean
+): Boolean {
     val samplingPriority = samplingPriority
     return if (samplingPriority != null) {
         samplingPriority > 0
     } else {
-        propagationHelper.extractSamplingDecision(request) ?: traceSampler.sample(this)
+        propagationHelper.extractSamplingDecision(request, ignoreLocalDroppedParent)
+            ?: traceSampler.sample(this)
     }
 }
 
@@ -79,14 +85,20 @@ internal fun DatadogTracer.buildSpan(
     traceOrigin: String?,
     ignoreLocalDroppedParent: Boolean
 ): DatadogSpan {
-    val parentContext = propagationHelper.extractParentContext(this, request)
-    // Only consult the local active span. Explicit parents (request tags or propagated
-    // headers) represent developer intent and must be honored regardless of priority.
-    val activeSpanContext = if (parentContext == null) activeSpan()?.context() else null
-    // Force resolution of the active span's sampling priority — a manual span backed
-    // by a PendingTrace can read UNSET until the sampler commits at inject time.
-    activeSpanContext?.let { _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(it) }
-    val shouldIgnoreLocalDroppedParent = ignoreLocalDroppedParent && activeSpanContext.isDropped()
+    val extractedParent = propagationHelper.extractParentContext(this, request)
+    val parentContext = extractedParent?.context
+    // Local sources we can ignore when dropped: tag-attached parent (developer intent) and
+    // active span on this thread. Header-propagated parents are always honored to preserve
+    // head-based sampling of upstream propagation.
+    val localParentContext = when (extractedParent) {
+        is ParentContextSource.FromTag -> extractedParent.context
+        is ParentContextSource.FromHeaders -> null
+        null -> activeSpan()?.context()
+    }
+    // Force resolution of the local parent's sampling priority — a manual span backed by a
+    // PendingTrace can read UNSET until the sampler commits at inject time.
+    localParentContext?.let { _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(it) }
+    val shouldIgnoreLocalDroppedParent = ignoreLocalDroppedParent && localParentContext.isDropped()
 
     val builder = buildSpan(SPAN_NAME.format(Locale.US, networkInstrumentationName))
         .withOrigin(traceOrigin)
@@ -107,7 +119,10 @@ internal fun DatadogTracer.buildSpan(
     return span
 }
 
-private fun DatadogSpanContext?.isDropped(): Boolean {
+internal fun DatadogSpanContext?.isDropped(): Boolean {
     val priority = this?.samplingPriority
-    return priority == PrioritySampling.SAMPLER_DROP || priority == PrioritySampling.USER_DROP
+    return priority.isDroppedPriority()
 }
+
+internal fun Int?.isDroppedPriority(): Boolean =
+    this == PrioritySampling.SAMPLER_DROP || this == PrioritySampling.USER_DROP

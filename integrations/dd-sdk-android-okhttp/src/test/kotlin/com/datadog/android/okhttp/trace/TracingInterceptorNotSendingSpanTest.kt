@@ -1486,6 +1486,103 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpanBuilder).withParentContext(null as DatadogSpanContext?)
     }
 
+    @Test
+    fun `M ignore parent W intercept() { Request DatadogSpan tag DROP, RUM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given - a developer-attached parent (via Request.Builder.parentSpan) with DROP
+        // priority. On the RUM path (canSendSpan() == false in this suite), this should be
+        // ignored so RUM can make its own sampling decision.
+        val droppedTagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        val droppedSpan: DatadogSpan = forge.newSpanMock(droppedTagContext)
+        fakeRequest = forgeRequest { it.tag(DatadogSpan::class.java, droppedSpan) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanBuilder).ignoreActiveSpan()
+        verify(mockSpanBuilder, never()).withParentContext(any())
+    }
+
+    @Test
+    fun `M honor parent W intercept() { Request DatadogSpan tag KEEP, RUM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given - tag-attached parent with KEEP priority is honored on the RUM path.
+        val tagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+        }
+        val keptSpan: DatadogSpan = forge.newSpanMock(tagContext)
+        fakeRequest = forgeRequest { it.tag(DatadogSpan::class.java, keptSpan) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanBuilder).withParentContext(tagContext)
+        verify(mockSpanBuilder, never()).ignoreActiveSpan()
+    }
+
+    @Test
+    fun `M defer to sampler W intercept() { Request DatadogSpan tag DROP, RUM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given - on the RUM path, a dropped tag parent must not lock the request to dropped
+        // via extractSamplingDecision; the trace sampler must be consulted instead so RUM can
+        // make its own sampling decision.
+        val droppedTagContext: DatadogSpanContext = mock {
+            on { samplingPriority } doReturn DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        }
+        val droppedSpan: DatadogSpan = forge.newSpanMock(droppedTagContext)
+        fakeRequest = forgeRequest { it.tag(DatadogSpan::class.java, droppedSpan) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockTraceSampler).sample(mockSpan)
+    }
+
+    @Test
+    fun `M defer to sampler W intercept() { Request TraceContext tag DROP, RUM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery(regex = "[a-f0-9]{32}") fakeTraceId: String,
+        @StringForgery(regex = "[a-f0-9]{16}") fakeSpanId: String
+    ) {
+        // Given - TraceContext tag (OTel interop) DROP is also treated as local developer
+        // intent on the RUM path; the sampler must be consulted.
+        val traceContext = com.datadog.android.trace.internal.net.TraceContext(
+            fakeTraceId,
+            fakeSpanId,
+            DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+        )
+        fakeRequest = forgeRequest {
+            it.tag(
+                com.datadog.android.trace.internal.net.TraceContext::class.java,
+                traceContext
+            )
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockTraceSampler).sample(mockSpan)
+    }
+
     // endregion
 
     // region Internal
