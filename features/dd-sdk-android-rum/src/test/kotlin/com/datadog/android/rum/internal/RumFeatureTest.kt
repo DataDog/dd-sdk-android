@@ -23,14 +23,18 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
@@ -1090,6 +1094,37 @@ internal class RumFeatureTest {
         )
 
         verifyNoInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M call addError with ANRException using supplied stack W onReceive(ProfilingAnrDetectedEvent)`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+    ) {
+        // When
+        testedFeature.onReceive(fakeEvent)
+
+        // Then
+        val throwableCaptor = argumentCaptor<Throwable>()
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockRumMonitor).addError(
+            eq(ANRDetectorRunnable.ANR_MESSAGE),
+            eq(RumErrorSource.SOURCE),
+            throwableCaptor.capture(),
+            attributesCaptor.capture()
+        )
+        val throwable = throwableCaptor.firstValue
+        assertThat(throwable).isInstanceOf(ANRException::class.java)
+        assertThat(throwable.stackTrace.toList()).isEqualTo(fakeEvent.anrThreadStack)
+
+        @Suppress("UNCHECKED_CAST")
+        val attached = attributesCaptor.firstValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+        assertThat(attached).hasSize(fakeEvent.allThreads.size)
+        attached.zip(fakeEvent.allThreads).forEach { (mapped, original) ->
+            assertThat(mapped.name).isEqualTo(original.name)
+            assertThat(mapped.state).isEqualTo(original.state)
+            assertThat(mapped.stack).isEqualTo(original.stack)
+            assertThat(mapped.crashed).isEqualTo(original.crashed)
+        }
     }
 
     // endregion

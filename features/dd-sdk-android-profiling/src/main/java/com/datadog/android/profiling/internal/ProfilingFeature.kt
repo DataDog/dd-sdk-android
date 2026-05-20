@@ -20,6 +20,7 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.internal.time.DefaultTimeProvider
@@ -179,7 +180,15 @@ internal class ProfilingFeature(
         anrThreadStack: List<StackTraceElement>,
         allThreads: List<ProfilingThreadDump>
     ) {
-        // TODO RUM-15498: forward ProfilingAnrDetectedEvent to RUM via sdkCore.
+        // The ANR event should be forwarded to RUM only when profiling is actually running.
+        if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
+            val event = ProfilingAnrDetectedEvent(
+                detectedAtMs = detectedAtMs,
+                anrThreadStack = anrThreadStack,
+                allThreads = allThreads
+            )
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
+        }
     }
 
     private fun onTtidEvent(event: ProfilerEvent) {
