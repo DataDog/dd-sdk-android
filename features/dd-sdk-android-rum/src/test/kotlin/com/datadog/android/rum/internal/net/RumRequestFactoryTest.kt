@@ -162,7 +162,7 @@ internal class RumRequestFactoryTest {
 
         if (fakeExecutionContext.previousResponseCode != null) {
             queryTags.add("${RumRequestFactory.RETRY_COUNT_KEY}:${fakeExecutionContext.attemptNumber}")
-            queryTags.add("${RumRequestFactory.LAST_FAILURE_STATUS_KEY}:${fakeExecutionContext.previousResponseCode}")
+            queryTags.add("${RumRequestFactory.RETRY_AFTER_KEY}:${fakeExecutionContext.previousResponseCode}")
         }
 
         return buildString {
