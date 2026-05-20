@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
+import java.io.PrintWriter
 import java.lang.RuntimeException
 
 @Extensions(
@@ -82,5 +83,42 @@ internal class ThrowableExtTest {
                     .contains(frame.methodName)
             }
         }
+    }
+
+    @Test
+    fun `M return raw stack frames W loggableStackTrace() {printStackTrace throws before writing}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        val throwable = object : Throwable("boom") {
+            override fun printStackTrace(s: PrintWriter) {
+                error(message)
+            }
+        }
+
+        // When
+        val result = throwable.loggableStackTrace()
+
+        // Then
+        assertThat(result).isEqualTo(throwable.stackTrace.loggableStackTrace())
+    }
+
+    @Test
+    fun `M return partial output W loggableStackTrace() {printStackTrace throws after writing}`(
+        @StringForgery fakePartial: String
+    ) {
+        // Given
+        val throwable = object : Throwable("boom") {
+            override fun printStackTrace(s: PrintWriter) {
+                s.print(fakePartial)
+                error("forced failure")
+            }
+        }
+
+        // When
+        val result = throwable.loggableStackTrace()
+
+        // Then
+        assertThat(result).isEqualTo(fakePartial)
     }
 }
