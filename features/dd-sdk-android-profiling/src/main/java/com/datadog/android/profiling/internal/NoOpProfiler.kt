@@ -32,10 +32,14 @@ internal class NoOpProfiler : Profiler {
 
     override fun isRunning(sdkInstanceName: String): Boolean = false
 
-    override fun registerProfilingCallback(sdkInstanceName: String, callback: ProfilerCallback) {
+    override fun registerProfilingCallback(
+        appContext: Context,
+        sdkInstanceName: String,
+        callback: ProfilerCallback
+    ) {
     }
 
-    override fun unregisterProfilingCallback(sdkInstanceName: String) {
+    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) {
     }
 
     override fun setExtendLaunchSession(extend: Boolean) {

@@ -18,10 +18,14 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.anr.AnrListener
+import com.datadog.android.profiling.internal.anr.AnrProfilingTriggerRegistrar
+import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -38,11 +42,18 @@ import kotlin.random.Random
  *
  * @param timeProvider The time provider to use to get the current time.
  * @param scheduledExecutorService the executor service to run the profiling task on.
+ * @param anrTriggerRegistrar registrar that owns the system ANR profiling-trigger lifecycle.
+ * The profiler passes its internal fan-out listener to it at register time; the listener
+ * captures the profiler's `callbackMap` so all SDK instances receive the detection.
+ * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
     private val timeProvider: TimeProvider,
-    override val scheduledExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    override val scheduledExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
+    internal val anrTriggerRegistrar: AnrTriggerRegistrar =
+        AnrProfilingTriggerRegistrar(timeProvider, scheduledExecutorService),
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : Profiler {
 
     internal var stopSignal: CancellationSignal? = null
@@ -69,10 +80,17 @@ internal class PerfettoProfiler(
     override var internalLogger: InternalLogger? = null
         set(value) {
             field = value
+            anrTriggerRegistrar.internalLogger = value
             if (value != null) {
                 consumePendingTelemetry(value)
             }
         }
+
+    internal val anrListener = AnrListener { detectedAtMs, anrThreadStack, allThreads ->
+        callbackMap.values.forEach { callback ->
+            callback.onAnrDetected(detectedAtMs, anrThreadStack, allThreads)
+        }
+    }
 
     @Volatile
     private var extendLaunchSession = false
@@ -198,14 +216,26 @@ internal class PerfettoProfiler(
     }
 
     override fun registerProfilingCallback(
+        appContext: Context,
         sdkInstanceName: String,
         callback: ProfilerCallback
     ) {
-        callbackMap[sdkInstanceName] = callback
+        synchronized(callbackMap) {
+            callbackMap[sdkInstanceName] = callback
+            if (buildSdkVersionProvider.isAtLeastBaklava) {
+                anrTriggerRegistrar.register(appContext, anrListener)
+            }
+        }
     }
 
-    override fun unregisterProfilingCallback(sdkInstanceName: String) {
-        callbackMap.remove(sdkInstanceName)
+    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) {
+        synchronized(callbackMap) {
+            callbackMap.remove(sdkInstanceName)
+            // Unregister the ANR triggers only when all the SDK instances have unregistered.
+            if (callbackMap.isEmpty() && buildSdkVersionProvider.isAtLeastBaklava) {
+                anrTriggerRegistrar.unregister(appContext)
+            }
+        }
     }
 
     override fun setExtendLaunchSession(extend: Boolean) {

@@ -360,6 +360,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -403,6 +404,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -437,6 +439,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -466,6 +469,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -491,6 +495,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -533,6 +538,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -572,6 +578,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -634,6 +641,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -696,6 +704,7 @@ internal class ProfilingFeatureTest {
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -732,6 +741,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -763,6 +773,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -827,6 +838,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -855,6 +867,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
@@ -888,6 +901,18 @@ internal class ProfilingFeatureTest {
         assertThat(argumentCaptor.firstValue.invoke())
             .isEqualTo("Profiling feature received an event of unsupported type=${String::class.java.canonicalName}.")
         verify(mockProfiler, never()).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M unregister profiling callback with appContext W onStop()`() {
+        // Given
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockProfiler).unregisterProfilingCallback(mockContext, fakeInstanceName)
     }
 
     companion object {

@@ -13,7 +13,11 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.internal.profiling.ProfilingThreadDump
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.forge.Configurator
+import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE
@@ -22,6 +26,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -41,6 +46,8 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -55,6 +62,7 @@ import java.util.function.Consumer
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 class PerfettoProfilerTest {
 
     @Mock
@@ -78,6 +86,12 @@ class PerfettoProfilerTest {
     @Mock
     private lateinit var mockOtherProfilerCallback: ProfilerCallback
 
+    @Mock
+    private lateinit var mockAnrRegistrar: AnrTriggerRegistrar
+
+    @Mock
+    private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @StringForgery
     private lateinit var fakeInstanceName: String
 
@@ -96,13 +110,17 @@ class PerfettoProfilerTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
+        // ANR registration is only delegated on BAKLAVA+; opt-in for tests.
+        whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn true
         testedProfiler = PerfettoProfiler(
             timeProvider = stubTimeProvider,
-            scheduledExecutorService = mockExecutorService
+            scheduledExecutorService = mockExecutorService,
+            anrTriggerRegistrar = mockAnrRegistrar,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         testedProfiler.internalLogger = mockInternalLogger
-        testedProfiler.registerProfilingCallback(fakeInstanceName, mockProfilerCallback)
-        testedProfiler.registerProfilingCallback(otherInstanceName, mockOtherProfilerCallback)
+        testedProfiler.registerProfilingCallback(mockContext, fakeInstanceName, mockProfilerCallback)
+        testedProfiler.registerProfilingCallback(mockContext, otherInstanceName, mockOtherProfilerCallback)
     }
 
     @Test
@@ -624,7 +642,7 @@ class PerfettoProfilerTest {
 
         // When
         testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), setOf(fakeInstanceName))
-        testedProfiler.unregisterProfilingCallback(fakeInstanceName)
+        testedProfiler.unregisterProfilingCallback(mockContext, fakeInstanceName)
 
         // Then
         verify(mockService)
@@ -927,7 +945,7 @@ class PerfettoProfilerTest {
         )
 
         val callbackCaptor2 = argumentCaptor<Consumer<ProfilingResult>>()
-        verify(mockService, org.mockito.kotlin.times(2))
+        verify(mockService, times(2))
             .requestProfiling(
                 eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
                 any<Bundle>(),
@@ -1050,6 +1068,103 @@ class PerfettoProfilerTest {
         // Then
         verify(mockStopSignal, never()).cancel()
     }
+
+    // region ANR trigger registration
+
+    @Test
+    fun `M delegate to registrar W registerProfilingCallback`() {
+        // Set-up performs 2 registerProfilingCallback calls. Each delegates to the registrar,
+        // passing the profiler's fan-out listener; the registrar handles its own idempotency.
+        verify(mockAnrRegistrar, times(2)).register(mockContext, testedProfiler.anrListener)
+    }
+
+    @Test
+    fun `M call registrar unregister W last callback removed`() {
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext, fakeInstanceName)
+
+        // Then
+        verify(mockAnrRegistrar, never()).unregister(any())
+
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext, otherInstanceName)
+
+        // Then
+        verify(mockAnrRegistrar).unregister(mockContext)
+    }
+
+    @Test
+    fun `M fan out to all callbacks W AnrListener fires`(
+        @LongForgery(min = 1L) fakeNow: Long,
+        forge: Forge
+    ) {
+        // Given
+        val anrStack = forge.aList { getForgery<StackTraceElement>() }
+        val allThreads = forge.aList { getForgery<ProfilingThreadDump>() }
+
+        // When
+        testedProfiler.anrListener.onAnrDetected(fakeNow, anrStack, allThreads)
+
+        // Then
+        verify(mockProfilerCallback).onAnrDetected(fakeNow, anrStack, allThreads)
+        verify(mockOtherProfilerCallback).onAnrDetected(fakeNow, anrStack, allThreads)
+    }
+
+    @Test
+    fun `M propagate logger to anrTriggerRegistrar W internalLogger setter`() {
+        // Given
+        val anotherLogger = mock<InternalLogger>()
+
+        // When
+        testedProfiler.internalLogger = anotherLogger
+
+        // Then
+        verify(mockAnrRegistrar).internalLogger = anotherLogger
+    }
+
+    @Test
+    fun `M not call registrar unregister W unregisterProfilingCallback {unknown sdkInstanceName}`(
+        @StringForgery fakeUnknownInstance: String
+    ) {
+        // Given
+
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext, fakeUnknownInstance)
+
+        // Then
+        verify(mockAnrRegistrar, never()).unregister(any())
+    }
+
+    @Test
+    fun `M not delegate to registrar W registerProfilingCallback {SDK below BAKLAVA}`(
+        @StringForgery anotherInstanceName: String
+    ) {
+        // Given
+        // Drop interactions recorded by the BAKLAVA-stubbed set-up calls.
+        reset(mockAnrRegistrar)
+        whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false
+
+        // When
+        testedProfiler.registerProfilingCallback(mockContext, anotherInstanceName, mockProfilerCallback)
+
+        // Then
+        verify(mockAnrRegistrar, never()).register(any(), any())
+    }
+
+    @Test
+    fun `M not delegate to registrar W unregisterProfilingCallback {SDK below BAKLAVA}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false
+
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext, fakeInstanceName)
+        testedProfiler.unregisterProfilingCallback(mockContext, otherInstanceName)
+
+        // Then
+        verify(mockAnrRegistrar, never()).unregister(any())
+    }
+
+    // endregion
 
     private class StubTimeProvider : TimeProvider {
         var startTime: Long = 0L

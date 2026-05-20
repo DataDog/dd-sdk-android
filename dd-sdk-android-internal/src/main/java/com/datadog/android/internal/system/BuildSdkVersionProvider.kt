@@ -44,6 +44,9 @@ interface BuildSdkVersionProvider {
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     val isAtLeastVanillaIceCream: Boolean
 
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.BAKLAVA)
+    val isAtLeastBaklava: Boolean
+
     companion object {
 
         /**
@@ -78,6 +81,10 @@ interface BuildSdkVersionProvider {
             @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
             override val isAtLeastVanillaIceCream: Boolean =
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+
+            @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.BAKLAVA)
+            override val isAtLeastBaklava: Boolean =
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
         }
     }
 }
