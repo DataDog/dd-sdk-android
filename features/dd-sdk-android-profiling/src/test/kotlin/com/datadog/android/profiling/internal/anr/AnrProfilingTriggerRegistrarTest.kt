@@ -38,6 +38,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.function.Consumer
@@ -136,30 +139,16 @@ internal class AnrProfilingTriggerRegistrarTest {
     }
 
     @Test
-    fun `M dispatch to listener W trigger callback fires {ANR trigger type}`(
-        @LongForgery(min = 1L) fakeNow: Long
+    fun `M deliver empty allThreads W getAllStackTraces throws`(
+        @TempDir tempDir: File
     ) {
         // Given
-        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
-        testedRegistrar.register(mockContext, mockAnrListener)
-        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
-        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
-        val anrResult = mock<ProfilingResult> {
-            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
-        }
-
-        // When
-        triggerCallbackCaptor.firstValue.accept(anrResult)
-
-        // Then
-        val detectedAtCaptor = argumentCaptor<Long>()
-        verify(mockAnrListener).onAnrDetected(detectedAtCaptor.capture(), any(), any())
-        assertThat(detectedAtCaptor.firstValue).isEqualTo(fakeNow)
-    }
-
-    @Test
-    fun `M deliver empty allThreads W getAllStackTraces throws`() {
-        // Given
+        val tmpFile = File(tempDir, "result.trace").apply { writeText("placeholder") }
+        val creationTimeMs = Files.readAttributes(
+            Paths.get(tmpFile.absolutePath),
+            BasicFileAttributes::class.java
+        ).creationTime().toMillis()
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(creationTimeMs)
         testedRegistrar.threadDumper = ThreadDumper(
             mainThreadProvider = { Thread.currentThread() },
             allStackTracesProvider = { throw RuntimeException("boom") }
@@ -169,6 +158,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
             on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { resultFilePath } doReturn tmpFile.absolutePath
         }
 
         // When
@@ -288,7 +278,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     }
 
     @Test
-    fun `M log warning and still notify listener W trigger callback fires {result file missing}`() {
+    fun `M drop ANR event and log warning W trigger callback fires {result file missing}`() {
         // Given
         testedRegistrar.register(mockContext, mockAnrListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
@@ -302,15 +292,15 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
+        verify(mockAnrListener, never()).onAnrDetected(any(), any(), any())
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             any<() -> String>(),
-            isNull(),
+            any<Throwable>(),
             eq(false),
             isNull()
         )
-        verify(mockAnrListener).onAnrDetected(any(), any(), any())
     }
 
     @Test
@@ -323,5 +313,71 @@ internal class AnrProfilingTriggerRegistrarTest {
 
         // Then
         assertThat(testedRegistrar.threadDumper.internalLogger).isSameAs(anotherLogger)
+    }
+
+    @Test
+    fun `M dispatch to listener W trigger callback fires {delay below threshold}`(
+        @TempDir tempDir: File,
+        @LongForgery(min = 0L, max = 1_000L) fakeDelayMs: Long
+    ) {
+        // Given
+        val tmpFile = File(tempDir, "result.trace").apply { writeText("placeholder") }
+        val creationTimeMs = Files.readAttributes(
+            Paths.get(tmpFile.absolutePath),
+            BasicFileAttributes::class.java
+        ).creationTime().toMillis()
+        val fakeNow = creationTimeMs + fakeDelayMs
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
+        testedRegistrar.register(mockContext, mockAnrListener)
+        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
+        val anrResult = mock<ProfilingResult> {
+            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { resultFilePath } doReturn tmpFile.absolutePath
+        }
+
+        // When
+        triggerCallbackCaptor.firstValue.accept(anrResult)
+
+        // Then
+        verify(mockAnrListener).onAnrDetected(eq(fakeNow), any(), any())
+    }
+
+    @Test
+    fun `M drop ANR event W trigger callback fires {delay above threshold}`(
+        @TempDir tempDir: File,
+        @LongForgery(min = 1_001L, max = 60_000L) fakeDelayMs: Long
+    ) {
+        // Given
+        val tmpFile = File(tempDir, "result.trace").apply { writeText("placeholder") }
+        val creationTimeMs = Files.readAttributes(
+            Paths.get(tmpFile.absolutePath),
+            BasicFileAttributes::class.java
+        ).creationTime().toMillis()
+        val fakeNow = creationTimeMs + fakeDelayMs
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
+        testedRegistrar.register(mockContext, mockAnrListener)
+        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
+        val anrResult = mock<ProfilingResult> {
+            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { resultFilePath } doReturn tmpFile.absolutePath
+        }
+
+        // When
+        triggerCallbackCaptor.firstValue.accept(anrResult)
+
+        // Then
+        verify(mockAnrListener, never()).onAnrDetected(any(), any(), any())
+        val propsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.TELEMETRY),
+            any<() -> String>(),
+            isNull(),
+            eq(false),
+            propsCaptor.capture()
+        )
+        assertThat(propsCaptor.firstValue).containsEntry("delay_ms", fakeDelayMs)
     }
 }
