@@ -92,7 +92,7 @@ internal class RumRequestFactory(
         if (executionContext.previousResponseCode != null) {
             // we had a previous failure
             append("${RETRY_COUNT_KEY}:${executionContext.attemptNumber}")
-            append(",").append("${LAST_FAILURE_STATUS_KEY}:${executionContext.previousResponseCode}")
+            append(",").append("${RETRY_AFTER_KEY}:${executionContext.previousResponseCode}")
         }
     }
 
@@ -137,7 +137,7 @@ internal class RumRequestFactory(
     companion object {
         private val PAYLOAD_SEPARATOR = "\n".toByteArray(Charsets.UTF_8)
         internal const val RETRY_COUNT_KEY = "retry_count"
-        internal const val LAST_FAILURE_STATUS_KEY = "last_failure_status"
+        internal const val RETRY_AFTER_KEY = "retry_after"
         private const val SHA1_GENERATION_ERROR_MESSAGE = "Cannot generate SHA-1 hash for rum request idempotency key."
         private const val SHA1_NO_SUCH_ALGORITHM_EXCEPTION = "SHA-1 algorithm could not be found in MessageDigest."
     }
