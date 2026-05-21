@@ -40,7 +40,9 @@ import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.isMainThread
+import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.getSystemServiceAs
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -448,17 +450,26 @@ internal class RumFeature(
 
     private fun handleProfilingAnrDetectedEvent(event: ProfilingAnrDetectedEvent) {
         val anrException = ANRException(event.anrThreadStack.toTypedArray())
-        val allThreads: List<ThreadDump> = event.allThreads.map { it.toThreadDump() }
+        val mainThreadDump = ThreadDump(
+            name = event.anrThreadName,
+            state = event.anrThreadState.asString(),
+            stack = anrException.loggableStackTrace(),
+            crashed = false
+        )
+        val allThreads = listOf(mainThreadDump) + event.allThreads.map { it.toThreadDump() }
         GlobalRumMonitor.get(sdkCore).addError(
             ANRDetectorRunnable.ANR_MESSAGE,
             RumErrorSource.SOURCE,
             anrException,
-            mapOf(RumAttributes.INTERNAL_ALL_THREADS to allThreads)
+            mapOf(
+                RumAttributes.INTERNAL_TIMESTAMP to event.detectedAtMs,
+                RumAttributes.INTERNAL_ALL_THREADS to allThreads
+            )
         )
     }
 
     private fun ProfilingThreadDump.toThreadDump(): ThreadDump =
-        ThreadDump(name = name, state = state, stack = stack, crashed = crashed)
+        ThreadDump(name = name, state = state.asString(), stack = stack, crashed = false)
 
     private fun handleMapLikeEvent(event: Map<*, *>) {
         when (event["type"]) {

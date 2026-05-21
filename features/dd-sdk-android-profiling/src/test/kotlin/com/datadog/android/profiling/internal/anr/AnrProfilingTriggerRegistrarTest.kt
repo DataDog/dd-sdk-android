@@ -11,7 +11,7 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import android.os.ProfilingTrigger
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.profiling.ProfilingThreadDump
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.utils.ThreadDumper
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -135,7 +135,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(nonAnrResult)
 
         // Then
-        verify(mockAnrListener, never()).onAnrDetected(any(), any(), any())
+        verify(mockAnrListener, never()).onAnrDetected(any())
     }
 
     @Test
@@ -165,9 +165,9 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        val captor = argumentCaptor<List<ProfilingThreadDump>>()
-        verify(mockAnrListener).onAnrDetected(any(), any(), captor.capture())
-        assertThat(captor.firstValue).isEmpty()
+        val captor = argumentCaptor<ProfilingAnrDetectedEvent>()
+        verify(mockAnrListener).onAnrDetected(captor.capture())
+        assertThat(captor.firstValue.allThreads).isEmpty()
     }
 
     @Test
@@ -292,7 +292,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockAnrListener, never()).onAnrDetected(any(), any(), any())
+        verify(mockAnrListener, never()).onAnrDetected(any())
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
@@ -340,7 +340,9 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockAnrListener).onAnrDetected(eq(fakeNow), any(), any())
+        val captor = argumentCaptor<ProfilingAnrDetectedEvent>()
+        verify(mockAnrListener).onAnrDetected(captor.capture())
+        assertThat(captor.firstValue.detectedAtMs).isEqualTo(fakeNow)
     }
 
     @Test
@@ -368,7 +370,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockAnrListener, never()).onAnrDetected(any(), any(), any())
+        verify(mockAnrListener, never()).onAnrDetected(any())
         val propsCaptor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),

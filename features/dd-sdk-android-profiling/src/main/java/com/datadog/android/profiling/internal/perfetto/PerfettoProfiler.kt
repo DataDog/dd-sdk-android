@@ -86,9 +86,9 @@ internal class PerfettoProfiler(
             }
         }
 
-    internal val anrListener = AnrListener { detectedAtMs, anrThreadStack, allThreads ->
+    internal val anrListener = AnrListener { event ->
         callbackMap.values.forEach { callback ->
-            callback.onAnrDetected(detectedAtMs, anrThreadStack, allThreads)
+            callback.onAnrDetected(event)
         }
     }
 

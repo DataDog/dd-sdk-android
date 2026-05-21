@@ -6,12 +6,8 @@
 
 package com.datadog.android.profiling.internal.anr
 
-import com.datadog.android.internal.profiling.ProfilingThreadDump
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 
 internal fun interface AnrListener {
-    fun onAnrDetected(
-        detectedAtMs: Long,
-        anrThreadStack: List<StackTraceElement>,
-        allThreads: List<ProfilingThreadDump>
-    )
+    fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 }

@@ -13,7 +13,7 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.internal.profiling.ProfilingThreadDump
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
@@ -23,6 +23,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -1095,19 +1096,14 @@ class PerfettoProfilerTest {
 
     @Test
     fun `M fan out to all callbacks W AnrListener fires`(
-        @LongForgery(min = 1L) fakeNow: Long,
-        forge: Forge
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent
     ) {
-        // Given
-        val anrStack = forge.aList { getForgery<StackTraceElement>() }
-        val allThreads = forge.aList { getForgery<ProfilingThreadDump>() }
-
         // When
-        testedProfiler.anrListener.onAnrDetected(fakeNow, anrStack, allThreads)
+        testedProfiler.anrListener.onAnrDetected(fakeEvent)
 
         // Then
-        verify(mockProfilerCallback).onAnrDetected(fakeNow, anrStack, allThreads)
-        verify(mockOtherProfilerCallback).onAnrDetected(fakeNow, anrStack, allThreads)
+        verify(mockProfilerCallback).onAnrDetected(fakeEvent)
+        verify(mockOtherProfilerCallback).onAnrDetected(fakeEvent)
     }
 
     @Test

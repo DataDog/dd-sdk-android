@@ -23,6 +23,8 @@ class ProfilingAnrDetectedEventForgeryFactory : ForgeryFactory<ProfilingAnrDetec
                     forge.anInt(min = -2)
                 )
             },
+            anrThreadName = forge.anAlphabeticalString(),
+            anrThreadState = forge.aValueFrom(Thread.State::class.java),
             allThreads = forge.aList { getForgery<ProfilingThreadDump>() }
         )
     }

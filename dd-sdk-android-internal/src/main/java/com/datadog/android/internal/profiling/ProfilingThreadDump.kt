@@ -13,13 +13,11 @@ package com.datadog.android.internal.profiling
  * in this module without creating a circular dependency on `dd-sdk-android-core`.
  *
  * @param name Thread name.
- * @param state Thread state string (e.g. `Thread.State.name.lowercase()`).
+ * @param state JVM thread state captured at dump time.
  * @param stack Serialized stack trace (lines joined with newline).
- * @param crashed Whether this thread was the one that triggered the ANR.
  */
 data class ProfilingThreadDump(
     val name: String,
-    val state: String,
-    val stack: String,
-    val crashed: Boolean
+    val state: Thread.State,
+    val stack: String
 )

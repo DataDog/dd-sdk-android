@@ -898,11 +898,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onAnrDetected(
-            fakeEvent.detectedAtMs,
-            fakeEvent.anrThreadStack,
-            fakeEvent.allThreads
-        )
+        testedFeature.onAnrDetected(fakeEvent)
 
         // Then
         verify(mockRumFeatureScope).sendEvent(fakeEvent)
@@ -918,11 +914,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onAnrDetected(
-            fakeEvent.detectedAtMs,
-            fakeEvent.anrThreadStack,
-            fakeEvent.allThreads
-        )
+        testedFeature.onAnrDetected(fakeEvent)
 
         // Then
         verify(mockRumFeatureScope, never()).sendEvent(any())

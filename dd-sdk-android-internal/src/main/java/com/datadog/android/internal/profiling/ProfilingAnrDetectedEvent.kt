@@ -15,10 +15,14 @@ package com.datadog.android.internal.profiling
  * @param anrThreadStack Stack trace of the thread that triggered the ANR
  *   (in practice the main looper thread) at capture time. Used as the
  *   synthesized `ANRException` stack trace on the RUM side.
+ * @param anrThreadName Name of the thread that triggered the ANR.
+ * @param anrThreadState JVM thread state of the ANR thread at capture time.
  * @param allThreads Per-thread dump for every other live thread (ANR thread excluded).
  */
 data class ProfilingAnrDetectedEvent(
     val detectedAtMs: Long,
     val anrThreadStack: List<StackTraceElement>,
+    val anrThreadName: String,
+    val anrThreadState: Thread.State,
     val allThreads: List<ProfilingThreadDump>
 )

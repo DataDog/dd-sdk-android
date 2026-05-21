@@ -122,12 +122,7 @@ internal class AnrProfilingTriggerRegistrar(
                         additionalProperties = mapOf(LOG_KEY_DELAY_MS to delayMs)
                     )
                 } else {
-                    val dump = threadDumper.dump()
-                    currentListener.onAnrDetected(
-                        detectedAtMs,
-                        dump.anrThreadStack,
-                        dump.allThreads
-                    )
+                    currentListener.onAnrDetected(threadDumper.dump(detectedAtMs))
                 }
             }
             // We currently don't use the result profile, just delete it.
