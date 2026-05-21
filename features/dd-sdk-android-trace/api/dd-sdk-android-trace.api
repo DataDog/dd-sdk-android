@@ -173,6 +173,8 @@ public final class com/datadog/android/trace/internal/_TraceInternalProxy {
 
 public final class com/datadog/android/trace/internal/net/ApmNetworkInstrumentationExtKt {
 	public static final fun effectiveSampleRate (Lcom/datadog/android/core/sampling/Sampler;Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
+	public static final fun isDropped (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+	public static final fun isDroppedPriority (Ljava/lang/Integer;)Z
 }
 
 public final class com/datadog/android/trace/internal/net/RequestTracingState {

@@ -40,6 +40,8 @@ import com.datadog.android.trace.internal.RumContextPropagator.Companion.extract
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.trace.internal.net.effectiveSampleRate
+import com.datadog.android.trace.internal.net.isDropped
+import com.datadog.android.trace.internal.net.isDroppedPriority
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -380,14 +382,6 @@ internal constructor(
 
         return span
     }
-
-    private fun DatadogSpanContext?.isDropped(): Boolean {
-        val priority = this?.samplingPriority
-        return priority.isDroppedPriority()
-    }
-
-    private fun Int?.isDroppedPriority(): Boolean =
-        this == PrioritySampling.SAMPLER_DROP || this == PrioritySampling.USER_DROP
 
     private fun extractSamplingDecision(
         request: Request,

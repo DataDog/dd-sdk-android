@@ -119,10 +119,20 @@ internal fun DatadogTracer.buildSpan(
     return span
 }
 
-internal fun DatadogSpanContext?.isDropped(): Boolean {
+/**
+ * Returns true if this context's sampling priority is a dropped trace (SAMPLER_DROP or USER_DROP).
+ * `@InternalApi` so `DatadogInterceptor` can share this; revert to `internal` once `DatadogInterceptor` is removed.
+ */
+@InternalApi
+fun DatadogSpanContext?.isDropped(): Boolean {
     val priority = this?.samplingPriority
     return priority.isDroppedPriority()
 }
 
-internal fun Int?.isDroppedPriority(): Boolean =
+/**
+ * Returns true if this sampling priority value is a dropped trace (SAMPLER_DROP or USER_DROP).
+ * `@InternalApi` so `DatadogInterceptor` can share this; revert to `internal` once `DatadogInterceptor` is removed.
+ */
+@InternalApi
+fun Int?.isDroppedPriority(): Boolean =
     this == PrioritySampling.SAMPLER_DROP || this == PrioritySampling.USER_DROP

@@ -28,6 +28,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.withMockPropagationHelper
 import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal._TraceInternalProxy
+import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -1561,14 +1562,14 @@ internal open class TracingInterceptorNotSendingSpanTest {
     ) {
         // Given - TraceContext tag (OTel interop) DROP is also treated as local developer
         // intent on the RUM path; the sampler must be consulted.
-        val traceContext = com.datadog.android.trace.internal.net.TraceContext(
+        val traceContext = TraceContext(
             fakeTraceId,
             fakeSpanId,
             DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
         )
         fakeRequest = forgeRequest {
             it.tag(
-                com.datadog.android.trace.internal.net.TraceContext::class.java,
+                TraceContext::class.java,
                 traceContext
             )
         }
