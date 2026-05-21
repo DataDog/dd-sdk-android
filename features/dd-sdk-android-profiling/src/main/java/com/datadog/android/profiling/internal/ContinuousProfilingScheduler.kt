@@ -117,6 +117,13 @@ internal class ContinuousProfilingScheduler(
             profiler.setExtendLaunchSession(true)
             launchSessionExtended = true
         }
+        logToUser {
+            LOG_RUM_SESSION_DECISION.format(
+                Locale.US,
+                rumSessionSampleRate,
+                currentSessionSampled
+            )
+        }
     }
 
     private fun createSessionSampler(rumSessionSampleRate: Float): DeterministicSampler<String> {
@@ -377,5 +384,7 @@ internal class ContinuousProfilingScheduler(
             "App foregrounded after grace period expired; starting cooldown."
         internal const val LOG_GRACE_PERIOD_EXPIRED =
             "Grace period expired; profiler stopped."
+        internal const val LOG_RUM_SESSION_DECISION =
+            "RUM session decision: rumSessionSampleRate=%s, currentSessionSampled=%s."
     }
 }

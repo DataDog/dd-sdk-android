@@ -14,7 +14,10 @@ import android.os.ProfilingTrigger
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
+import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.internal.utils.getFileCreationTimeMs
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -28,7 +31,8 @@ import java.util.function.Consumer
  */
 internal class AnrProfilingTriggerRegistrar(
     private val timeProvider: TimeProvider,
-    private val executorService: ExecutorService
+    private val executorService: ExecutorService,
+    private val profilingTelemetry: ProfilingTelemetry
 ) : AnrTriggerRegistrar {
 
     @Volatile
@@ -110,34 +114,33 @@ internal class AnrProfilingTriggerRegistrar(
         val detectedAtMs = timeProvider.getDeviceTimestampMillis()
 
         val resultPath = result.resultFilePath
+        var callbackDelayMs: Long? = null
+        var droppedAsStale = false
+        var fileSize = 0L
         if (result.errorCode == ProfilingResult.ERROR_NONE && !resultPath.isNullOrEmpty()) {
+            fileSize = fileSizeSafe(resultPath, internalLogger)
             val creationTimeMs = getFileCreationTimeMs(resultPath, internalLogger)
             if (creationTimeMs != null) {
                 val delayMs = detectedAtMs - creationTimeMs
+                callbackDelayMs = delayMs
                 if (delayMs > MAX_CALLBACK_DELAY_MS) {
-                    internalLogger?.log(
-                        level = InternalLogger.Level.WARN,
-                        target = InternalLogger.Target.TELEMETRY,
-                        messageBuilder = { LOG_STALE_CALLBACK },
-                        additionalProperties = mapOf(LOG_KEY_DELAY_MS to delayMs)
-                    )
+                    droppedAsStale = true
                 } else {
                     currentListener.onAnrDetected(threadDumper.dump(detectedAtMs))
                 }
             }
             // We currently don't use the result profile, just delete it.
             safeDelete(resultPath)
-        } else {
-            internalLogger?.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.TELEMETRY,
-                messageBuilder = { LOG_FAILURE_RESULT },
-                additionalProperties = mapOf(
-                    LOG_KEY_ERROR_CODE to result.errorCode,
-                    LOG_KEY_RESULT_PATH to resultPath
-                )
-            )
         }
+        profilingTelemetry.report(
+            ProfilingTelemetryEvent.AnrTriggerResult(
+                errorCode = result.errorCode,
+                errorMessage = result.errorMessage,
+                fileSize = fileSize,
+                callbackDelayMs = callbackDelayMs,
+                droppedAsStale = droppedAsStale
+            )
+        )
     }
 
     private fun safeDelete(path: String) {
@@ -166,11 +169,5 @@ internal class AnrProfilingTriggerRegistrar(
         const val LOG_NO_MANAGER =
             "Cannot register ANR profiling trigger: ProfilingManager system service is unavailable."
         const val LOG_FILE_DELETE_FAILED = "Failed to delete ANR trigger trace file."
-        const val LOG_FAILURE_RESULT = "Received an error result from ANR trigger Profiling."
-        const val LOG_STALE_CALLBACK =
-            "Dropping ANR trigger result: callback fired too long after result file creation."
-        const val LOG_KEY_ERROR_CODE = "error_code"
-        const val LOG_KEY_RESULT_PATH = "result_path"
-        const val LOG_KEY_DELAY_MS = "delay_ms"
     }
 }

@@ -909,6 +909,7 @@ datadog:
       - "kotlin.collections.MutableList.add(com.datadog.android.api.InternalLogger.Target)"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.Batch)"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.tlvformat.TLVBlock)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent)"
       - "kotlin.collections.MutableList.add(com.datadog.android.internal.profiling.ProfilerEvent.RumAnrEvent)"
       - "kotlin.collections.MutableList.add(com.datadog.android.internal.profiling.ProfilerEvent.RumLongTaskEvent)"
       - "kotlin.collections.MutableList.add(com.datadog.android.internal.profiling.ProfilerEvent.RumVitalEvent)"
