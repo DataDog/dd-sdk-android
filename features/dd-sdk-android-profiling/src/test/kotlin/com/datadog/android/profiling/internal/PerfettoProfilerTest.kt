@@ -216,6 +216,7 @@ class PerfettoProfilerTest {
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_NONE
             on { errorMessage } doReturn fakeErrorMessage
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
         }
 
         callbackCaptor.firstValue.accept(mockResult)
@@ -277,6 +278,7 @@ class PerfettoProfilerTest {
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn fakeErrorCode
             on { errorMessage } doReturn fakeErrorMessage
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
         }
 
         callbackCaptor.firstValue.accept(mockResult)
@@ -338,6 +340,7 @@ class PerfettoProfilerTest {
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS
             on { errorMessage } doReturn fakeErrorMessage
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
         }
 
         callbackCaptor.firstValue.accept(mockResult)
@@ -463,7 +466,7 @@ class PerfettoProfilerTest {
         callbackCaptor.firstValue.accept(mockResult)
 
         // Then
-        verify(mockProfilerCallback).onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+        verify(mockProfilerCallback).onFailure(ProfilingStartReason.APPLICATION_LAUNCH)
         verifyNoMoreInteractions(mockProfilerCallback)
     }
 
@@ -483,7 +486,7 @@ class PerfettoProfilerTest {
         callbackCaptor.firstValue.accept(mockResult)
 
         // Then
-        verify(mockProfilerCallback).onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+        verify(mockProfilerCallback).onFailure(ProfilingStartReason.APPLICATION_LAUNCH)
         verifyNoMoreInteractions(mockProfilerCallback)
     }
 
@@ -743,6 +746,7 @@ class PerfettoProfilerTest {
 
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
         }
         callbackCaptor.firstValue.accept(mockResult)
 
@@ -801,6 +805,7 @@ class PerfettoProfilerTest {
 
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { tag } doReturn startReason.value
         }
         callbackCaptor.firstValue.accept(mockResult)
 
@@ -866,6 +871,7 @@ class PerfettoProfilerTest {
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_NONE
             on { errorMessage } doReturn fakeErrorMessage
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
         }
         callbackCaptor.firstValue.accept(mockResult)
 
@@ -927,8 +933,10 @@ class PerfettoProfilerTest {
                 callbackCaptor.capture()
             )
 
-        val firstResult =
-            mock<ProfilingResult> { on { errorCode } doReturn ProfilingResult.ERROR_NONE }
+        val firstResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { tag } doReturn ProfilingStartReason.APPLICATION_LAUNCH.value
+        }
         callbackCaptor.firstValue.accept(firstResult)
 
         // Given
@@ -955,8 +963,10 @@ class PerfettoProfilerTest {
                 callbackCaptor2.capture()
             )
 
-        val secondResult =
-            mock<ProfilingResult> { on { errorCode } doReturn ProfilingResult.ERROR_NONE }
+        val secondResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { tag } doReturn ProfilingStartReason.CONTINUOUS.value
+        }
         callbackCaptor2.lastValue.accept(secondResult)
 
         // Then

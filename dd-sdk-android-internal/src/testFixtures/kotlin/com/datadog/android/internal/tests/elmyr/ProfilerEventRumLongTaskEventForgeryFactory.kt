@@ -9,13 +9,15 @@ package com.datadog.android.internal.tests.elmyr
 import com.datadog.android.internal.profiling.ProfilerEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.util.UUID
 
 class ProfilerEventRumLongTaskEventForgeryFactory : ForgeryFactory<ProfilerEvent.RumLongTaskEvent> {
     override fun getForgery(forge: Forge): ProfilerEvent.RumLongTaskEvent {
         return ProfilerEvent.RumLongTaskEvent(
-            id = forge.anHexadecimalString(),
-            startMs = forge.aLong(min = 0L),
-            durationNs = forge.aLong(min = 1L),
+            id = forge.getForgery<UUID>().toString(),
+            // int instead of long to avoid overflow in call sites if startMs + duration is used
+            startMs = forge.aPositiveInt().toLong(),
+            durationNs = forge.aPositiveInt().toLong(),
             rumContext = forge.getForgery()
         )
     }

@@ -7,43 +7,57 @@
 package com.datadog.android.profiling.internal
 
 import com.datadog.android.internal.profiling.ProfilerEvent
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal class PendingRumEventsBuffer {
 
-    private val lock = Any()
+    private val lock = ReentrantReadWriteLock()
     private val longTasks = mutableListOf<ProfilerEvent.RumLongTaskEvent>()
     private val anrEvents = mutableListOf<ProfilerEvent.RumAnrEvent>()
+    private val vitalEvents = mutableListOf<ProfilerEvent.RumVitalEvent>()
 
     val pendingLongTasks: List<ProfilerEvent.RumLongTaskEvent>
-        get() = synchronized(lock) { longTasks.toList() }
+        get() = lock.read { longTasks.toList() }
 
     val pendingAnrEvents: List<ProfilerEvent.RumAnrEvent>
-        get() = synchronized(lock) { anrEvents.toList() }
+        get() = lock.read { anrEvents.toList() }
+
+    val pendingVitalEvents: List<ProfilerEvent.RumVitalEvent>
+        get() = lock.read { vitalEvents.toList() }
 
     fun add(event: ProfilerEvent.RumLongTaskEvent) {
-        synchronized(lock) { longTasks.add(event) }
+        lock.write { longTasks.add(event) }
     }
 
     fun add(event: ProfilerEvent.RumAnrEvent) {
-        synchronized(lock) { anrEvents.add(event) }
+        lock.write { anrEvents.add(event) }
     }
 
-    fun drain(): Snapshot = synchronized(lock) {
-        val snapshot = Snapshot(longTasks.toList(), anrEvents.toList())
+    fun add(event: ProfilerEvent.RumVitalEvent) {
+        lock.write { vitalEvents.add(event) }
+    }
+
+    fun drain(): Snapshot = lock.write {
+        val snapshot = Snapshot(longTasks.toList(), anrEvents.toList(), vitalEvents.toList())
         longTasks.clear()
         anrEvents.clear()
+        vitalEvents.clear()
         snapshot
     }
 
     fun clear() {
-        synchronized(lock) {
+        lock.write {
             longTasks.clear()
             anrEvents.clear()
+            vitalEvents.clear()
         }
     }
 
     data class Snapshot(
         val longTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        val anrEvents: List<ProfilerEvent.RumAnrEvent>
+        val anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        val vitalEvents: List<ProfilerEvent.RumVitalEvent>
     )
 }

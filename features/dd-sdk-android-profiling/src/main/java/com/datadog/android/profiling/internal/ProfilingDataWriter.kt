@@ -28,29 +28,18 @@ internal class ProfilingDataWriter(
 ) : ProfilingWriter {
     override fun write(
         profilingResult: PerfettoResult,
-        ttidEvent: ProfilerEvent.TTID?,
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ) {
         writeWithContext { context ->
-            if (ttidEvent != null) {
-                buildRawBatchEventTtid(
-                    context = context,
-                    profilingResult = profilingResult,
-                    rumContext = ttidEvent.rumContext,
-                    vitalId = ttidEvent.vitalId,
-                    vitalName = ttidEvent.vitalName,
-                    longTasks = longTasks,
-                    anrEvents = anrEvents
-                )
-            } else {
-                buildRawBatchEventContinuous(
-                    context = context,
-                    profilingResult = profilingResult,
-                    longTaskEvents = longTasks,
-                    anrEvents = anrEvents
-                )
-            }
+            buildRawBatchEvent(
+                context = context,
+                profilingResult = profilingResult,
+                longTaskEvents = longTasks,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
+            )
         }
     }
 
@@ -71,55 +60,32 @@ internal class ProfilingDataWriter(
             }
     }
 
-    private fun buildRawBatchEventTtid(
-        context: DatadogContext,
-        profilingResult: PerfettoResult,
-        rumContext: ProfilingRumContext,
-        vitalId: String,
-        vitalName: String?,
-        longTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>
-    ): RawBatchEvent? {
-        val byteData = readProfilingData(profilingResult.resultFilePath)
-        if (byteData == null || byteData.isEmpty()) {
-            return null
-        }
-        val profileEvent = createProfileEvent(
-            context,
-            profilingResult,
-            rumContext,
-            vitalId,
-            vitalName,
-            longTasks,
-            anrEvents
-        )
-        val serializedEvent =
-            profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-        return RawBatchEvent(data = serializedEvent, metadata = byteData)
-    }
-
-    private fun buildRawBatchEventContinuous(
+    private fun buildRawBatchEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
-        if (longTaskEvents.isEmpty() && anrEvents.isEmpty()) return null
+        if (longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) return null
         val perfettoBytes = readProfilingData(profilingResult.resultFilePath)
         val firstRumContext =
-            longTaskEvents.firstOrNull()?.rumContext ?: anrEvents.firstOrNull()?.rumContext
+            longTaskEvents.firstOrNull()?.rumContext
+                ?: anrEvents.firstOrNull()?.rumContext
+                ?: vitalEvents.firstOrNull()?.rumContext
         return if (perfettoBytes == null || perfettoBytes.isEmpty() || firstRumContext == null) {
             null
         } else {
-            val profileEvent = createContinuousProfileEvent(
+            val profileEvent = createProfileEvent(
                 context = context,
                 rumContext = firstRumContext,
                 profilingResult = profilingResult,
                 longTaskEvents = longTaskEvents,
-                anrEvents = anrEvents
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
             )
             val serializedEvent = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-            val rumMobileEventsJson = buildRumMobileEventsJson(longTaskEvents, anrEvents)
+            val rumMobileEventsJson = buildRumMobileEventsJson(longTaskEvents, anrEvents, vitalEvents)
             val metadata = ProfilingBatchMetadata(perfettoBytes, rumMobileEventsJson).toBytes()
             RawBatchEvent(data = serializedEvent, metadata = metadata)
         }
@@ -127,78 +93,18 @@ internal class ProfilingDataWriter(
 
     private fun createProfileEvent(
         context: DatadogContext,
-        profilingResult: PerfettoResult,
-        rumContext: ProfilingRumContext,
-        vitalId: String,
-        vitalName: String?,
-        longTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>
-    ): ProfileEvent {
-        // needed to benefit from smart-cast below, reading property only once
-        val rumViewId = rumContext.viewId
-        val rumViewName = rumContext.viewName
-        val viewIds = linkedSetOf<String>()
-        val viewNames = linkedSetOf<String>()
-        // Only include TTID view context when both id and name are present
-        if (rumViewId != null && rumViewName != null) {
-            viewIds.add(rumViewId)
-            viewNames.add(rumViewName)
-        }
-        val longTaskIds = mutableListOf<String>()
-        val anrIds = mutableListOf<String>()
-        for (event in longTasks) {
-            longTaskIds.add(event.id)
-            val viewId = event.rumContext.viewId
-            val viewName = event.rumContext.viewName
-            if (viewId != null && viewName != null) {
-                viewIds.add(viewId)
-                viewNames.add(viewName)
-            }
-        }
-        for (event in anrEvents) {
-            anrIds.add(event.id)
-            val viewId = event.rumContext.viewId
-            val viewName = event.rumContext.viewName
-            if (viewId != null && viewName != null) {
-                viewIds.add(viewId)
-                viewNames.add(viewName)
-            }
-        }
-        return ProfileEvent(
-            start = formatIsoUtc(profilingResult.start),
-            end = formatIsoUtc(profilingResult.end),
-            attachments = listOf(PERFETTO_ATTACHMENT_NAME),
-            family = ProfileEvent.Family.ANDROID,
-            runtime = ProfileEvent.Family.ANDROID,
-            version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context, OPERATION_TYPE_LAUNCH),
-            application = ProfileEvent.Application(id = rumContext.applicationId),
-            session = ProfileEvent.Session(id = rumContext.sessionId),
-            vital = ProfileEvent.Vital(
-                id = listOf(vitalId),
-                label = listOf(vitalName.orEmpty())
-            ),
-            longTask = ProfileEvent.LongTask(id = longTaskIds),
-            error = ProfileEvent.Error(id = anrIds),
-            view = if (viewIds.isNotEmpty()) {
-                ProfileEvent.View(id = viewIds.toList(), name = viewNames.toList())
-            } else {
-                null
-            }
-        )
-    }
-
-    private fun createContinuousProfileEvent(
-        context: DatadogContext,
         rumContext: ProfilingRumContext,
         profilingResult: PerfettoResult,
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): ProfileEvent {
-        val viewIds = HashSet<String>()
-        val viewNames = HashSet<String>()
-        val longTaskIds = HashSet<String>()
-        val anrIds = HashSet<String>()
+        val viewIds = mutableSetOf<String>()
+        val viewNames = mutableSetOf<String>()
+        val longTaskIds = mutableSetOf<String>()
+        val anrIds = mutableSetOf<String>()
+        val vitalIds = mutableSetOf<String>()
+        val vitalNames = mutableSetOf<String>()
         for (event in longTaskEvents) {
             longTaskIds.add(event.id)
             event.rumContext.viewId?.let { viewIds.add(it) }
@@ -209,22 +115,30 @@ internal class ProfilingDataWriter(
             event.rumContext.viewId?.let { viewIds.add(it) }
             event.rumContext.viewName?.let { viewNames.add(it) }
         }
+        for (event in vitalEvents) {
+            vitalIds.add(event.id)
+            event.name?.let {
+                vitalNames.add(it)
+            }
+            event.rumContext.viewId?.let { viewIds.add(it) }
+            event.rumContext.viewName?.let { viewNames.add(it) }
+        }
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
             attachments = listOf(
-                PERFETTO_ATTACHMENT_NAME
-                // TODO RUM-15408: Wait for profiling-backend to support RUM events labelling
-                // RUM_MOBILE_EVENTS_ATTACHMENT_NAME
+                PERFETTO_ATTACHMENT_NAME,
+                RUM_MOBILE_EVENTS_ATTACHMENT_NAME
             ),
             family = ProfileEvent.Family.ANDROID,
             runtime = ProfileEvent.Family.ANDROID,
             version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context, OPERATION_TYPE_CONTINUOUS),
+            tagsProfiler = buildTags(context, profilingResult.startReason.value),
             application = ProfileEvent.Application(id = rumContext.applicationId),
             session = ProfileEvent.Session(id = rumContext.sessionId),
             longTask = ProfileEvent.LongTask(id = longTaskIds.toList()),
             error = ProfileEvent.Error(id = anrIds.toList()),
+            vital = ProfileEvent.Vital(id = vitalIds.toList(), label = vitalNames.toList()),
             view = ProfileEvent.View(
                 id = viewIds.toList(),
                 name = viewNames.toList()
@@ -234,7 +148,8 @@ internal class ProfilingDataWriter(
 
     private fun buildRumMobileEventsJson(
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): ByteArray {
         val rumMobileEvents = mutableListOf<RumMetadataEvent>()
         anrEvents.forEach {
@@ -249,6 +164,15 @@ internal class ProfilingDataWriter(
             rumMobileEvents += RumMetadataEvent(
                 id = it.id,
                 type = RumMetadataEvent.Type.LONG_TASK,
+                startNs = TimeUnit.MILLISECONDS.toNanos(it.startMs),
+                durationNs = it.durationNs
+            )
+        }
+        vitalEvents.forEach {
+            rumMobileEvents += RumMetadataEvent(
+                id = it.id,
+                name = it.name,
+                type = RumMetadataEvent.Type.VITAL,
                 startNs = TimeUnit.MILLISECONDS.toNanos(it.startMs),
                 durationNs = it.durationNs
             )
@@ -297,8 +221,6 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_OPERATION = "operation"
         internal const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         internal const val RUM_MOBILE_EVENTS_ATTACHMENT_NAME = "rum-mobile-events.json"
-        private const val OPERATION_TYPE_LAUNCH = "launch"
-        private const val OPERATION_TYPE_CONTINUOUS = "continuous"
 
         // Only `4` is supported by profiling Backend
         private const val VERSION_NUMBER = 4L

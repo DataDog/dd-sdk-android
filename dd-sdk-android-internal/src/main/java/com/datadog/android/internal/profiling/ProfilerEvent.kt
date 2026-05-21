@@ -11,20 +11,7 @@ package com.datadog.android.internal.profiling
  */
 sealed class ProfilerEvent {
     /**
-     * Internal event to stop profiler at Time To Initial Display (TTID) point.
-     *
-     * @param rumContext RUM context at TTID point.
-     * @param vitalId The ID of the TTID vital event.
-     * @param vitalName The name of the TTID vital event.
-     */
-    data class TTID(
-        val rumContext: ProfilingRumContext,
-        val vitalId: String,
-        val vitalName: String?
-    ) : ProfilerEvent()
-
-    /**
-     * Internal event signalling that TTID has been reached but the RUM session is not tracked
+     * Internal event signaling that TTID has been reached but the RUM session is not tracked
      * (unsampled session). No profiling data will be written.
      */
     object TTIDNotTracked : ProfilerEvent()
@@ -58,4 +45,39 @@ sealed class ProfilerEvent {
         val durationNs: Long,
         val rumContext: ProfilingRumContext
     ) : ProfilerEvent()
+
+    /**
+     * Sent by the RUM feature to the profiling feature whenever a vital is recorded.
+     * Currently, is sent only for TTID events.
+     *
+     * @param id The ID of the corresponding RUM vital event.
+     * @param name The name of the corresponding vital event.
+     * @param type Type of the vital event.
+     * @param startMs Start timestamp in milliseconds since epoch (server time-adjusted).
+     * @param durationNs Duration of the vital in nanoseconds.
+     * @param rumContext RUM context at the time of the vital.
+     */
+    data class RumVitalEvent(
+        val id: String,
+        val name: String?,
+        val type: Type,
+        val startMs: Long,
+        val durationNs: Long,
+        val rumContext: ProfilingRumContext
+    ) : ProfilerEvent() {
+        /**
+         * Type of the vital event.
+         */
+        enum class Type {
+            /**
+             * TTID (Time to initial display) type.
+             */
+            TTID,
+
+            /**
+             * Operation API type.
+             */
+            OPERATION
+        }
+    }
 }

@@ -12,7 +12,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 internal interface ProfilerCallback {
     fun onSuccess(result: PerfettoResult)
 
-    fun onFailure(tag: String)
+    fun onFailure(startReason: ProfilingStartReason)
 
     fun onAnrDetected(
         detectedAtMs: Long,

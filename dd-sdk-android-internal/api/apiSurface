@@ -162,13 +162,16 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
 sealed class com.datadog.android.internal.profiling.ProfilerEvent
-  data class TTID : ProfilerEvent
-    constructor(ProfilingRumContext, String, String?)
   object TTIDNotTracked : ProfilerEvent
   data class RumAnrEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumLongTaskEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
+  data class RumVitalEvent : ProfilerEvent
+    constructor(String, String?, Type, Long, Long, ProfilingRumContext)
+    enum Type
+      - TTID
+      - OPERATION
 data class com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
   constructor(Long, List<StackTraceElement>, List<ProfilingThreadDump>)
 data class com.datadog.android.internal.profiling.ProfilingRumContext

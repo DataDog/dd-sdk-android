@@ -45,11 +45,9 @@ internal class ProfilingFeature(
     private var isLaunchProfilingActive: Boolean = false
 
     @Volatile
-    private var ttidEvent: ProfilerEvent? = null
-
-    @Volatile
     private var perfettoResult: PerfettoResult? = null
 
+    private val isTtidVitalReceived: AtomicBoolean = AtomicBoolean(false)
     private val isTtidProfileSent: AtomicBoolean = AtomicBoolean(false)
 
     private lateinit var appContext: Context
@@ -123,20 +121,30 @@ internal class ProfilingFeature(
 
     override fun onReceive(event: Any) {
         when (event) {
-            is ProfilerEvent.TTID,
-            is ProfilerEvent.TTIDNotTracked -> onTtidEvent(event as ProfilerEvent)
+            is ProfilerEvent.TTIDNotTracked -> onTtidEvent()
+
+            is ProfilerEvent.RumVitalEvent -> {
+                if (isRecordingProfile()) {
+                    pendingRumEvents.add(event)
+                }
+
+                if (event.type == ProfilerEvent.RumVitalEvent.Type.TTID) {
+                    onTtidEvent()
+                }
+            }
 
             is ProfilerEvent.RumLongTaskEvent -> {
-                if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
+                if (isRecordingProfile()) {
                     pendingRumEvents.add(event)
                 }
             }
 
             is ProfilerEvent.RumAnrEvent -> {
-                if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
+                if (isRecordingProfile()) {
                     pendingRumEvents.add(event)
                 }
             }
+
             is RumSessionRenewedEvent -> onRumSessionRenewed(event)
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -159,14 +167,14 @@ internal class ProfilingFeature(
         }
     }
 
-    override fun onFailure(tag: String) {
-        if (tag == ProfilingStartReason.APPLICATION_LAUNCH.value) {
+    override fun onFailure(startReason: ProfilingStartReason) {
+        if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
             // Launch profiling ended with error such as rate limiting error.
             // Unblock the continuous scheduler so it doesn't wait forever.
             isLaunchProfilingActive = false
             pendingRumEvents.clear()
             continuousProfilingScheduler?.onAppLaunchProfilingComplete()
-        } else if (tag == ProfilingStartReason.CONTINUOUS.value) {
+        } else if (startReason == ProfilingStartReason.CONTINUOUS) {
             continuousProfilingScheduler?.onActiveWindowEnded()
         }
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
@@ -182,10 +190,8 @@ internal class ProfilingFeature(
         // TODO RUM-15498: forward ProfilingAnrDetectedEvent to RUM via sdkCore.
     }
 
-    private fun onTtidEvent(event: ProfilerEvent) {
-        if (ttidEvent != null) return // already handled
-
-        ttidEvent = event
+    private fun onTtidEvent() {
+        if (isTtidVitalReceived.getAndSet(true)) return
 
         if (continuousProfilingScheduler?.currentSessionSampled != true) {
             profiler.stop(sdkCore.name)
@@ -217,38 +223,36 @@ internal class ProfilingFeature(
     @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
-        when (result.tag) {
-            ProfilingStartReason.APPLICATION_LAUNCH.value -> {
+        when (result.startReason) {
+            ProfilingStartReason.APPLICATION_LAUNCH -> {
                 // Wait until the TTID event has been received before proceeding — both the
                 // profiler result and the TTID event are needed.
-                val event = ttidEvent ?: return
-                if (!isTtidProfileSent.getAndSet(true)) {
+                if (isTtidVitalReceived.get() && !isTtidProfileSent.getAndSet(true)) {
                     isLaunchProfilingActive = false
-                    val (longTasks, anrEvents) = pendingRumEvents.drain()
-                    if (event is ProfilerEvent.TTID) {
-                        dataWriter.write(
-                            profilingResult = result,
-                            ttidEvent = event,
-                            longTasks = longTasks,
-                            anrEvents = anrEvents
-                        )
-                    }
+                    val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
+                    dataWriter.write(
+                        profilingResult = result,
+                        longTasks = longTasks,
+                        anrEvents = anrEvents,
+                        vitalEvents = vitalEvents
+                    )
                     continuousProfilingScheduler?.onAppLaunchProfilingComplete()
                 }
             }
 
-            ProfilingStartReason.CONTINUOUS.value -> {
+            ProfilingStartReason.CONTINUOUS -> {
                 val scheduler = continuousProfilingScheduler ?: return
                 scheduler.onActiveWindowEnded()
-                val (longTasks, anrEvents) = pendingRumEvents.drain()
-                if (longTasks.isEmpty() && anrEvents.isEmpty()) {
+                val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
+                if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
                     logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
                     return
                 }
                 dataWriter.write(
                     profilingResult = result,
                     longTasks = longTasks,
-                    anrEvents = anrEvents
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
                 )
                 logToUser(
                     LOG_CONTINUOUS_PROFILING_WRITTEN.format(
@@ -257,6 +261,10 @@ internal class ProfilingFeature(
                         anrEvents.size
                     )
                 )
+            }
+
+            else -> {
+                // do nothing for the moment
             }
         }
     }
@@ -273,6 +281,10 @@ internal class ProfilingFeature(
 
     private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
         return ProfilingDataWriter(sdkCore)
+    }
+
+    private fun isRecordingProfile(): Boolean {
+        return isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true
     }
 
     companion object {

@@ -85,6 +85,7 @@ internal class RumSessionScopeStartupManagerImpl(
         appStartCount++
     }
 
+    @Suppress("LongMethod")
     override fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
         isSessionTracked: Boolean,
@@ -127,15 +128,20 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            ProfilerEvent.TTID(
+            // startMs is different for different scenarios. For Cold it will be process start, for Warm
+            // it will be Activity.onCreate. But we have application launch profiling working for cold starts only anyway.
+            ProfilerEvent.RumVitalEvent(
                 rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
                     sessionId = rumContext.sessionId,
                     viewId = rumContext.viewId,
                     viewName = rumContext.viewName
                 ),
-                vitalId = ttidEvent.vital.id,
-                vitalName = ttidEvent.vital.name
+                id = ttidEvent.vital.id,
+                name = ttidEvent.vital.name,
+                type = ProfilerEvent.RumVitalEvent.Type.TTID,
+                startMs = ttidEvent.date,
+                durationNs = event.info.durationNs
             )
         )
 
