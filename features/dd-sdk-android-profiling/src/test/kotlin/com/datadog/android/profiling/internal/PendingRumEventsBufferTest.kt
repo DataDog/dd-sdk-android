@@ -38,6 +38,7 @@ internal class PendingRumEventsBufferTest {
         // Then
         assertThat(testedBuffer.pendingLongTasks).isEmpty()
         assertThat(testedBuffer.pendingAnrEvents).isEmpty()
+        assertThat(testedBuffer.pendingVitalEvents).isEmpty()
     }
 
     // endregion
@@ -92,6 +93,53 @@ internal class PendingRumEventsBufferTest {
         assertThat(testedBuffer.pendingLongTasks).isEmpty()
     }
 
+    @Test
+    fun `M accumulate vital events W add(RumVitalEvent) {called multiple times}`(
+        @Forgery fakeEvent1: ProfilerEvent.RumVitalEvent,
+        @Forgery fakeEvent2: ProfilerEvent.RumVitalEvent
+    ) {
+        // When
+        testedBuffer.add(fakeEvent1)
+        testedBuffer.add(fakeEvent2)
+
+        // Then
+        assertThat(testedBuffer.pendingVitalEvents).containsExactly(fakeEvent1, fakeEvent2)
+    }
+
+    @Test
+    fun `M not affect long task or ANR events W add(RumVitalEvent)`(
+        @Forgery fakeVital: ProfilerEvent.RumVitalEvent
+    ) {
+        // When
+        testedBuffer.add(fakeVital)
+
+        // Then
+        assertThat(testedBuffer.pendingLongTasks).isEmpty()
+        assertThat(testedBuffer.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M not affect vital events W add(RumLongTaskEvent)`(
+        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
+    ) {
+        // When
+        testedBuffer.add(fakeLongTask)
+
+        // Then
+        assertThat(testedBuffer.pendingVitalEvents).isEmpty()
+    }
+
+    @Test
+    fun `M not affect vital events W add(RumAnrEvent)`(
+        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent
+    ) {
+        // When
+        testedBuffer.add(fakeAnr)
+
+        // Then
+        assertThat(testedBuffer.pendingVitalEvents).isEmpty()
+    }
+
     // endregion
 
     // region drain
@@ -99,11 +147,13 @@ internal class PendingRumEventsBufferTest {
     @Test
     fun `M snapshot all buffered events W drain()`(
         @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent,
-        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent
+        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent,
+        @Forgery fakeVital: ProfilerEvent.RumVitalEvent
     ) {
         // Given
         testedBuffer.add(fakeLongTask)
         testedBuffer.add(fakeAnr)
+        testedBuffer.add(fakeVital)
 
         // When
         val snapshot = testedBuffer.drain()
@@ -111,16 +161,19 @@ internal class PendingRumEventsBufferTest {
         // Then
         assertThat(snapshot.longTasks).containsExactly(fakeLongTask)
         assertThat(snapshot.anrEvents).containsExactly(fakeAnr)
+        assertThat(snapshot.vitalEvents).containsExactly(fakeVital)
     }
 
     @Test
     fun `M empty the buffer W drain()`(
         @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent,
-        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent
+        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent,
+        @Forgery fakeVital: ProfilerEvent.RumVitalEvent
     ) {
         // Given
         testedBuffer.add(fakeLongTask)
         testedBuffer.add(fakeAnr)
+        testedBuffer.add(fakeVital)
 
         // When
         testedBuffer.drain()
@@ -128,6 +181,7 @@ internal class PendingRumEventsBufferTest {
         // Then
         assertThat(testedBuffer.pendingLongTasks).isEmpty()
         assertThat(testedBuffer.pendingAnrEvents).isEmpty()
+        assertThat(testedBuffer.pendingVitalEvents).isEmpty()
     }
 
     @Test
@@ -138,6 +192,7 @@ internal class PendingRumEventsBufferTest {
         // Then
         assertThat(snapshot.longTasks).isEmpty()
         assertThat(snapshot.anrEvents).isEmpty()
+        assertThat(snapshot.vitalEvents).isEmpty()
     }
 
     @Test
@@ -162,13 +217,15 @@ internal class PendingRumEventsBufferTest {
     // region clear
 
     @Test
-    fun `M empty both lists W clear()`(
+    fun `M empty all lists W clear()`(
         @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent,
-        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent
+        @Forgery fakeAnr: ProfilerEvent.RumAnrEvent,
+        @Forgery fakeVital: ProfilerEvent.RumVitalEvent
     ) {
         // Given
         testedBuffer.add(fakeLongTask)
         testedBuffer.add(fakeAnr)
+        testedBuffer.add(fakeVital)
 
         // When
         testedBuffer.clear()
@@ -176,6 +233,7 @@ internal class PendingRumEventsBufferTest {
         // Then
         assertThat(testedBuffer.pendingLongTasks).isEmpty()
         assertThat(testedBuffer.pendingAnrEvents).isEmpty()
+        assertThat(testedBuffer.pendingVitalEvents).isEmpty()
     }
 
     @Test

@@ -8,7 +8,7 @@ package com.datadog.android.profiling.forge
 
 import com.datadog.android.internal.tests.elmyr.ProfilerEventRumAnrEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilerEventRumLongTaskEventForgeryFactory
-import com.datadog.android.internal.tests.elmyr.ProfilerEventTTIDFactory
+import com.datadog.android.internal.tests.elmyr.ProfilerEventRumVitalEventFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingAnrDetectedEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingRumContextFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingThreadDumpForgeryFactory
@@ -25,7 +25,7 @@ class Configurator : BaseConfigurator() {
         forge.useCoreFactories()
         forge.addFactory(ProfilingConfigurationForgeryFactory())
         forge.addFactory(PerfettoResultFactory())
-        forge.addFactory(ProfilerEventTTIDFactory())
+        forge.addFactory(ProfilerEventRumVitalEventFactory())
         forge.addFactory(ProfilerEventRumLongTaskEventForgeryFactory())
         forge.addFactory(ProfilerEventRumAnrEventForgeryFactory())
         forge.addFactory(ProfilingRumContextFactory())

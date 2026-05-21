@@ -15,8 +15,8 @@ internal interface ProfilingWriter {
 
     fun write(
         profilingResult: PerfettoResult,
-        ttidEvent: ProfilerEvent.TTID? = null,
-        longTasks: List<ProfilerEvent.RumLongTaskEvent> = emptyList(),
-        anrEvents: List<ProfilerEvent.RumAnrEvent> = emptyList()
+        longTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
     )
 }

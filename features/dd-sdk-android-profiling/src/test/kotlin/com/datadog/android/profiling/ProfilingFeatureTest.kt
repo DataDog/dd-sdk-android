@@ -115,7 +115,7 @@ internal class ProfilingFeatureTest {
     private lateinit var fakeSessionId: String
 
     @Forgery
-    private lateinit var fakeTTID: ProfilerEvent.TTID
+    private lateinit var fakeTTID: ProfilerEvent.RumVitalEvent
 
     @Forgery
     private lateinit var fakeRumLongTaskEvent: ProfilerEvent.RumLongTaskEvent
@@ -148,6 +148,7 @@ internal class ProfilingFeatureTest {
         whenever(mockEditor.putFloat(any(), any())) doReturn mockEditor
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
+        fakeTTID = fakeTTID.copy(type = ProfilerEvent.RumVitalEvent.Type.TTID)
     }
 
     @AfterEach
@@ -377,8 +378,8 @@ internal class ProfilingFeatureTest {
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1000L,
-                tag = ProfilingStartReason.APPLICATION_LAUNCH.value,
                 resultFilePath = "/fake/path"
             )
         )
@@ -416,7 +417,7 @@ internal class ProfilingFeatureTest {
         val runnableCaptor = argumentCaptor<Runnable>()
 
         // When
-        callbackCaptor.firstValue.onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+        callbackCaptor.firstValue.onFailure(ProfilingStartReason.APPLICATION_LAUNCH)
 
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
         runnableCaptor.firstValue.run()
@@ -445,7 +446,7 @@ internal class ProfilingFeatureTest {
         )
 
         // When
-        callbackCaptor.firstValue.onFailure(ProfilingStartReason.CONTINUOUS.value)
+        callbackCaptor.firstValue.onFailure(ProfilingStartReason.CONTINUOUS)
 
         // Then
         verify(mockProfiler, never()).start(
@@ -477,7 +478,7 @@ internal class ProfilingFeatureTest {
 
         // When
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS)
         )
 
         // Then
@@ -505,7 +506,7 @@ internal class ProfilingFeatureTest {
         )
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
         // Run the cooldown runnable to open the active window (sets isActive = true)
         val cooldownRunnableCaptor = argumentCaptor<Runnable>()
@@ -515,15 +516,15 @@ internal class ProfilingFeatureTest {
 
         // When
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS)
         )
 
         // Then
         verify(mockDataWriter).write(
-            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)),
-            ttidEvent = isNull(),
-            longTasks = eq(listOf(fakeRumLongTaskEvent)),
-            anrEvents = eq(emptyList())
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
+            longTasks = listOf(fakeRumLongTaskEvent),
+            anrEvents = emptyList(),
+            vitalEvents = emptyList()
         )
     }
 
@@ -548,7 +549,7 @@ internal class ProfilingFeatureTest {
         )
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
         // Run the cooldown runnable to open the active window (sets isActive = true)
         val cooldownRunnableCaptor = argumentCaptor<Runnable>()
@@ -558,15 +559,15 @@ internal class ProfilingFeatureTest {
 
         // When
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS)
         )
 
         // Then
         verify(mockDataWriter).write(
-            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)),
-            ttidEvent = isNull(),
-            longTasks = eq(emptyList()),
-            anrEvents = eq(listOf(fakeRumAnrEvent))
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
+            longTasks = emptyList(),
+            anrEvents = listOf(fakeRumAnrEvent),
+            vitalEvents = emptyList()
         )
     }
 
@@ -587,8 +588,8 @@ internal class ProfilingFeatureTest {
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
-                tag = ProfilingStartReason.APPLICATION_LAUNCH.value,
                 resultFilePath = "/fake"
             )
         )
@@ -634,6 +635,136 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M accumulate vital event W onReceive {launch profiling active}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeTTID)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingVitalEvents).containsExactly(fakeTTID)
+    }
+
+    @Test
+    fun `M accumulate vital event W onReceive {continuous active window open}`(
+        @Forgery fakeContinuousVital: ProfilerEvent.RumVitalEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        // Close launch window
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            PerfettoResult(
+                start = 0L,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH,
+                end = 1L,
+                resultFilePath = "/fake"
+            )
+        )
+        // Open continuous active window
+        testedFeature.onReceive(
+            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
+        )
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+        runnableCaptor.firstValue.run()
+
+        // When
+        testedFeature.onReceive(fakeContinuousVital)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingVitalEvents).containsExactly(fakeContinuousVital)
+    }
+
+    @Test
+    fun `M not accumulate vital event W onReceive {no profiling window is active}`() {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 0f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeTTID)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingVitalEvents).isEmpty()
+    }
+
+    @Test
+    fun `M not stop Profiling W receive OPERATION vital event {continuous disabled}`(
+        @Forgery fakeOperationVital: ProfilerEvent.RumVitalEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 0f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(
+            fakeOperationVital.copy(type = ProfilerEvent.RumVitalEvent.Type.OPERATION)
+        )
+
+        // Then
+        verify(mockProfiler, never()).stop(fakeInstanceName)
+    }
+
+    @Test
+    fun `M not write launch event W app-launch profiling result received {only OPERATION vital, no TTID}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeOperationVital: ProfilerEvent.RumVitalEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(
+            fakeOperationVital.copy(type = ProfilerEvent.RumVitalEvent.Type.OPERATION)
+        )
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @Test
     fun `M clear RUM events W new continuous active window starts`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -650,8 +781,8 @@ internal class ProfilingFeatureTest {
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
-                tag = ProfilingStartReason.APPLICATION_LAUNCH.value,
                 resultFilePath = "/fake"
             )
         )
@@ -673,8 +804,8 @@ internal class ProfilingFeatureTest {
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
+                startReason = ProfilingStartReason.CONTINUOUS,
                 end = 1L,
-                tag = ProfilingStartReason.CONTINUOUS.value,
                 resultFilePath = "/fake"
             )
         )
@@ -713,7 +844,7 @@ internal class ProfilingFeatureTest {
         )
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
@@ -723,7 +854,7 @@ internal class ProfilingFeatureTest {
 
         // When
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.CONTINUOUS.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS)
         )
 
         // Then
@@ -750,15 +881,15 @@ internal class ProfilingFeatureTest {
 
         // When
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
 
         // Then
         verify(mockDataWriter).write(
-            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)),
-            ttidEvent = eq(fakeTTID),
-            longTasks = eq(listOf(fakeRumLongTaskEvent)),
-            anrEvents = eq(emptyList())
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
+            longTasks = listOf(fakeRumLongTaskEvent),
+            anrEvents = emptyList(),
+            vitalEvents = listOf(fakeTTID)
         )
     }
 
@@ -782,15 +913,15 @@ internal class ProfilingFeatureTest {
 
         // When
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
 
         // Then
         verify(mockDataWriter).write(
-            profilingResult = eq(fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)),
-            ttidEvent = eq(fakeTTID),
-            longTasks = eq(emptyList()),
-            anrEvents = eq(listOf(fakeRumAnrEvent))
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
+            longTasks = emptyList(),
+            anrEvents = listOf(fakeRumAnrEvent),
+            vitalEvents = listOf(fakeTTID)
         )
     }
 
@@ -820,7 +951,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeRumAnrEvent)
 
         // When
-        testedFeature.onFailure(ProfilingStartReason.APPLICATION_LAUNCH.value)
+        testedFeature.onFailure(ProfilingStartReason.APPLICATION_LAUNCH)
 
         // Then
         assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
@@ -844,7 +975,7 @@ internal class ProfilingFeatureTest {
         )
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
 
         // When
@@ -875,7 +1006,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeRumAnrEvent)
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
-            fakePerfettoResult.copy(tag = ProfilingStartReason.APPLICATION_LAUNCH.value)
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
 
         // Then

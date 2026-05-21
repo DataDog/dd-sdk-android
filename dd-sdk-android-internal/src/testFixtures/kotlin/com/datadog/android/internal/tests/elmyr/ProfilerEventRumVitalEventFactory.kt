@@ -11,14 +11,16 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID
 
-class ProfilerEventRumAnrEventForgeryFactory : ForgeryFactory<ProfilerEvent.RumAnrEvent> {
-    override fun getForgery(forge: Forge): ProfilerEvent.RumAnrEvent {
-        return ProfilerEvent.RumAnrEvent(
+class ProfilerEventRumVitalEventFactory : ForgeryFactory<ProfilerEvent.RumVitalEvent> {
+    override fun getForgery(forge: Forge): ProfilerEvent.RumVitalEvent {
+        return ProfilerEvent.RumVitalEvent(
+            rumContext = forge.getForgery(),
             id = forge.getForgery<UUID>().toString(),
+            name = forge.aNullable { anAlphabeticalString() },
+            type = forge.getForgery(),
             // int instead of long to avoid overflow in call sites if startMs + duration is used
             startMs = forge.aPositiveInt().toLong(),
-            durationNs = forge.aPositiveInt().toLong(),
-            rumContext = forge.getForgery()
+            durationNs = forge.aPositiveInt().toLong()
         )
     }
 }

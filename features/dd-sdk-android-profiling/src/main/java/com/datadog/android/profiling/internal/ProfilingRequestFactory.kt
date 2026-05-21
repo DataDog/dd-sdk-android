@@ -90,12 +90,11 @@ internal class ProfilingRequestFactory(
                 PERFETTO_FILE_NAME,
                 eventMetadata.perfettoBytes.toRequestBody(CONTENT_TYPE_BINARY_TYPE)
             )
-            // TODO RUM-15408: Wait for profiling-backend to support RUM events labelling
-            /*multipartBodyBuilder.addFormDataPart(
+            multipartBodyBuilder.addFormDataPart(
                 RUM_MOBILE_EVENTS_FILE_NAME,
                 RUM_MOBILE_EVENTS_FILE_NAME,
-                batchMetadata.rumMobileEventsBytes.toRequestBody(CONTENT_TYPE_JSON_TYPE)
-            )*/
+                eventMetadata.rumMobileEventsBytes.toRequestBody(CONTENT_TYPE_JSON_TYPE)
+            )
         } else {
             multipartBodyBuilder.addFormDataPart(
                 PERFETTO_FILE_NAME,
@@ -116,6 +115,7 @@ internal class ProfilingRequestFactory(
     companion object {
         private const val PROFILING_REQUEST_DESCRIPTION = "Profiling Request"
         private const val PERFETTO_FILE_NAME = "perfetto.proto"
+        private const val RUM_MOBILE_EVENTS_FILE_NAME = "rum-mobile-events.json"
         private const val EVENT_NAME_FORM_KEY = "event"
         private const val EVENT_FILE_NAME = "event.json"
         private val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -73,8 +74,6 @@ internal class ProfilingDataWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
-    lateinit var fakeByteArray: ByteArray
-
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
@@ -85,7 +84,7 @@ internal class ProfilingDataWriterTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         testedDataWriterTest = ProfilingDataWriter(mockSdkCore)
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
@@ -100,22 +99,49 @@ internal class ProfilingDataWriterTest {
             .thenReturn(mockProfilingFeature)
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        fakeByteArray = forge.aString().toByteArray()
     }
 
     @Test
     fun `M write the result in a batch W write`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTID: ProfilerEvent.TTID
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>,
+        forge: Forge
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
+        val fakePerfettoBytes = forge.aString().toByteArray()
+        file.writeBytes(fakePerfettoBytes)
+        val rumContext = fakeVitals.first().rumContext
 
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidEvent = fakeTTID
+            vitalEvents = fakeVitals.map {
+                it.copy(
+                    rumContext = it.rumContext.copy(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId
+                    )
+                )
+            },
+            anrEvents = fakeAnrs.map {
+                it.copy(
+                    rumContext = it.rumContext.copy(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId
+                    )
+                )
+            },
+            longTasks = fakeLongTasks.map {
+                it.copy(
+                    rumContext = it.rumContext.copy(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId
+                    )
+                )
+            }
         )
 
         // Then
@@ -133,7 +159,7 @@ internal class ProfilingDataWriterTest {
             "sdk_version:${fakeDatadogContext.sdkVersion}",
             "profiler_version:${fakeDatadogContext.sdkVersion}",
             "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
-            "operation:launch"
+            "operation:${fakeResult.startReason.value}"
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
@@ -142,34 +168,79 @@ internal class ProfilingDataWriterTest {
         assertThat(actualEvent)
             .hasStart(formatIsoUtc(fakeResult.start))
             .hasEnd(formatIsoUtc(fakeResult.end))
-            .hasAttachments(listOf("perfetto.proto"))
+            .hasAttachments(listOf("perfetto.proto", "rum-mobile-events.json"))
             .hasFamily(ProfileEvent.Family.ANDROID)
             .hasRuntime(ProfileEvent.Family.ANDROID)
             .hasVersion(4)
             .hasTags(expectedTagList)
-            .hasApplicationId(fakeTTID.rumContext.applicationId)
-            .hasSessionId(fakeTTID.rumContext.sessionId)
-            .hasVitalIds(listOf(fakeTTID.vitalId))
-            .hasVitalNames(listOf(fakeTTID.vitalName.orEmpty()))
-            .apply {
-                if (fakeTTID.rumContext.viewId != null && fakeTTID.rumContext.viewName != null) {
-                    hasViewIds(listOf(fakeTTID.rumContext.viewId.orEmpty()))
-                    hasViewNames(listOf(fakeTTID.rumContext.viewName.orEmpty()))
-                } else {
-                    hasViewIds(null)
-                    hasViewNames(null)
-                }
+            .hasApplicationId(rumContext.applicationId)
+            .hasSessionId(rumContext.sessionId)
+            .hasViewIds(
+                (
+                    fakeVitals.mapNotNull { it.rumContext.viewId } +
+                        fakeAnrs.mapNotNull { it.rumContext.viewId } +
+                        fakeLongTasks.mapNotNull { it.rumContext.viewId }
+                    ).toSet()
+            )
+            .hasViewNames(
+                (
+                    fakeVitals.mapNotNull { it.rumContext.viewName } +
+                        fakeAnrs.mapNotNull { it.rumContext.viewName } +
+                        fakeLongTasks.mapNotNull { it.rumContext.viewName }
+                    ).toSet()
+            )
+            .hasVitalIds(fakeVitals.map { it.id })
+            .hasVitalNames(fakeVitals.mapNotNull { it.name })
+            .hasErrorIds(fakeAnrs.map { it.id })
+            .hasLongTaskIds(fakeLongTasks.map { it.id })
+
+        val actualMetadata = ProfilingBatchMetadata
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+        checkNotNull(actualMetadata)
+        assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
+
+        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
+            .asJsonArray
+            .map {
+                RumMetadataEvent.fromJsonObject(it.asJsonObject)
             }
-        assertThat(argumentCaptor.firstValue.metadata).isEqualTo(
-            fakeByteArray
-        )
+        assertThat(actualMetadataEvents).isNotEmpty
+
+        val anrsMetadata = actualMetadataEvents.filter { it.type == RumMetadataEvent.Type.ERROR }
+        assertThat(anrsMetadata).hasSize(fakeAnrs.size)
+        anrsMetadata.forEach { anr ->
+            val fakeAnr = fakeAnrs.first { it.id == anr.id }
+            assertThat(anr).hasName(null)
+            assertThat(anr).hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeAnr.startMs))
+            assertThat(anr).hasDurationNs(fakeAnr.durationNs)
+        }
+
+        val longTasksMetadata = actualMetadataEvents.filter { it.type == RumMetadataEvent.Type.LONG_TASK }
+        assertThat(longTasksMetadata).hasSize(fakeLongTasks.size)
+        longTasksMetadata.forEach { longTask ->
+            val fakeLongTask = fakeLongTasks.first { it.id == longTask.id }
+            assertThat(longTask).hasName(null)
+            assertThat(longTask).hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs))
+            assertThat(longTask).hasDurationNs(fakeLongTask.durationNs)
+        }
+
+        val vitalsMetadata = actualMetadataEvents.filter { it.type == RumMetadataEvent.Type.VITAL }
+        assertThat(vitalsMetadata).hasSize(fakeVitals.size)
+        vitalsMetadata.forEach { vital ->
+            val fakeVital = fakeVitals.first { it.id == vital.id }
+            assertThat(vital).hasName(fakeVital.name)
+            assertThat(vital).hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeVital.startMs))
+            assertThat(vital).hasDurationNs(fakeVital.durationNs)
+        }
         verifyNoMoreInteractions(mockEventBatchWriter)
     }
 
     @Test
     fun `M skip writing W write {can't read perfetto File}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTID: ProfilerEvent.TTID
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
     ) {
         // Given
         // Don't create the tmp file so it can't be found
@@ -177,7 +248,9 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult,
-            ttidEvent = fakeTTID
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
         )
 
         // Then
@@ -187,7 +260,9 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M skip writing W file is empty`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTID: ProfilerEvent.TTID
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
@@ -196,7 +271,9 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidEvent = fakeTTID
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
         )
 
         // Then
@@ -204,275 +281,87 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M write launch profile with long task events W write {RUM long task events present}`(
+    fun `M skip writing W write {no rum events}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTID: ProfilerEvent.TTID,
-        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
+        forge: Forge
     ) {
-        // Given
+        // Given — perfetto file is readable but there's nothing to attach
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
+        file.writeBytes(forge.aString().toByteArray())
 
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidEvent = fakeTTID,
-            longTasks = listOf(fakeLongTask),
-            anrEvents = emptyList()
+            vitalEvents = emptyList(),
+            anrEvents = emptyList(),
+            longTasks = emptyList()
         )
 
         // Then
-        val captor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = captor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-        val profileEvent = ProfileEvent.fromJson(String(captor.firstValue.data))
-        assertThat(profileEvent)
-            .hasLongTaskIds(listOf(fakeLongTask.id))
-            .hasErrorIds(emptyList())
-        // metadata is still raw perfetto bytes for launch profiles
-        assertThat(captor.firstValue.metadata).isEqualTo(fakeByteArray)
+        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
     @Test
-    fun `M write launch profile with ANR events W write {RUM ANR events present}`(
+    fun `M write the result in a batch W write {only vital events present}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeTTID: ProfilerEvent.TTID,
-        @Forgery fakeAnrEvent: ProfilerEvent.RumAnrEvent
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
     ) {
-        // Given
+        // Given — RUM context must come from vitals (elvis fallback after long tasks + anrs are empty)
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
-
-        // When
-        testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            ttidEvent = fakeTTID,
-            longTasks = emptyList(),
-            anrEvents = listOf(fakeAnrEvent)
-        )
-
-        // Then
-        val captor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = captor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-        val profileEvent = ProfileEvent.fromJson(String(captor.firstValue.data))
-        assertThat(profileEvent)
-            .hasLongTaskIds(emptyList())
-            .hasErrorIds(listOf(fakeAnrEvent.id))
-        assertThat(captor.firstValue.metadata).isEqualTo(fakeByteArray)
-    }
-
-    @Test
-    fun `M write continuous profile with rum events W writeContinuous`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent,
-        @Forgery fakeAnrEvent: ProfilerEvent.RumAnrEvent
-    ) {
-        // Given
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
-
-        // When
-        testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            longTasks = listOf(fakeLongTask),
-            anrEvents = listOf(fakeAnrEvent)
-        )
-
-        // Then
-        val captor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = captor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-        val rawEvent = captor.firstValue
-        val profileEvent = ProfileEvent.fromJson(String(rawEvent.data))
-        val expectedTagList = arrayListOf(
-            "service:${fakeDatadogContext.service}",
-            "env:${fakeDatadogContext.env}",
-            "version:${fakeDatadogContext.version}",
-            "sdk_version:${fakeDatadogContext.sdkVersion}",
-            "profiler_version:${fakeDatadogContext.sdkVersion}",
-            "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
-            "operation:continuous"
-        )
-        fakeDatadogContext.appBuildId?.let {
-            expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
+        val fakePerfettoBytes = forge.aString().toByteArray()
+        file.writeBytes(fakePerfettoBytes)
+        val rumContext = fakeVitals.first().rumContext
+        val alignedVitals = fakeVitals.map {
+            it.copy(
+                rumContext = it.rumContext.copy(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId
+                )
+            )
         }
 
-        assertThat(profileEvent)
-            .hasStart(formatIsoUtc(fakeResult.start))
-            .hasEnd(formatIsoUtc(fakeResult.end))
-            .hasAttachments(
-                listOf(ProfilingDataWriter.PERFETTO_ATTACHMENT_NAME)
-            )
-            .hasFamily(ProfileEvent.Family.ANDROID)
-            .hasRuntime(ProfileEvent.Family.ANDROID)
-            .hasVersion(4)
-            .hasTags(expectedTagList)
-            .hasApplicationId(fakeLongTask.rumContext.applicationId)
-            .hasSessionId(fakeLongTask.rumContext.sessionId)
-            .hasLongTaskIds(listOf(fakeLongTask.id))
-            .hasErrorIds(listOf(fakeAnrEvent.id))
-
-        // Then
-        val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
-        assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
-        val rumMobileEvents = JsonParser.parseString(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
-            .asJsonArray
-            .map {
-                RumMetadataEvent.fromJsonObject(it.asJsonObject)
-            }
-        assertThat(rumMobileEvents).hasSize(2)
-        val actualAnr = rumMobileEvents.first { it.type == RumMetadataEvent.Type.ERROR }
-        val actualLongTask = rumMobileEvents.first { it.type == RumMetadataEvent.Type.LONG_TASK }
-        assertThat(actualAnr)
-            .hasId(fakeAnrEvent.id)
-            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs))
-            .hasDurationNs(fakeAnrEvent.durationNs)
-            .hasName(null)
-        assertThat(actualLongTask)
-            .hasId(fakeLongTask.id)
-            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs))
-            .hasDurationNs(fakeLongTask.durationNs)
-            .hasName(null)
-    }
-
-    @Test
-    fun `M skip writing W writeContinuous {no rum events}`(
-        @Forgery fakeResult: PerfettoResult
-    ) {
-        // Given
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
-
         // When
         testedDataWriterTest.write(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            longTasks = emptyList(),
-            anrEvents = emptyList()
+            vitalEvents = alignedVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
         )
 
         // Then
-        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
-    }
-
-    @Test
-    fun `M write W writeContinuous {only anrEvents non-empty}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeAnrEvent: ProfilerEvent.RumAnrEvent
-    ) {
-        // Given
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
-
-        // When
-        testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            longTasks = emptyList(),
-            anrEvents = listOf(fakeAnrEvent)
-        )
-
-        // Then
-        val captor = argumentCaptor<RawBatchEvent>()
+        val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
-            event = captor.capture(),
+            event = argumentCaptor.capture(),
             batchMetadata = isNull(),
             eventType = eq(EventType.DEFAULT)
         )
-        val rawEvent = captor.firstValue
-        val profileEvent = ProfileEvent.fromJson(String(rawEvent.data))
-        assertThat(profileEvent)
-            .hasAttachments(
-                listOf(ProfilingDataWriter.PERFETTO_ATTACHMENT_NAME)
-            )
+        val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
+        assertThat(actualEvent)
+            .hasAttachments(listOf("perfetto.proto", "rum-mobile-events.json"))
+            .hasApplicationId(rumContext.applicationId)
+            .hasSessionId(rumContext.sessionId)
+            .hasVitalIds(alignedVitals.map { it.id })
+            .hasVitalNames(alignedVitals.mapNotNull { it.name })
             .hasLongTaskIds(emptyList())
-            .hasErrorIds(listOf(fakeAnrEvent.id))
-        val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
-        assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
-        val rumMobileEvents = JsonParser.parseString(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
-            .asJsonArray
-            .map {
-                RumMetadataEvent.fromJsonObject(it.asJsonObject)
-            }
-        assertThat(rumMobileEvents).hasSize(1)
-        val actualAnr = rumMobileEvents.first()
-        assertThat(actualAnr)
-            .hasId(fakeAnrEvent.id)
-            .hasType(RumMetadataEvent.Type.ERROR)
-            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeAnrEvent.startMs))
-            .hasDurationNs(fakeAnrEvent.durationNs)
-            .hasName(null)
-    }
-
-    @Test
-    fun `M write W writeContinuous {only longTasks non-empty}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
-    ) {
-        // Given
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(fakeByteArray)
-
-        // When
-        testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            longTasks = listOf(fakeLongTask),
-            anrEvents = emptyList()
-        )
-
-        // Then
-        val captor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter).write(
-            event = captor.capture(),
-            batchMetadata = isNull(),
-            eventType = eq(EventType.DEFAULT)
-        )
-        val rawEvent = captor.firstValue
-        val profileEvent = ProfileEvent.fromJson(String(rawEvent.data))
-        assertThat(profileEvent)
-            .hasAttachments(
-                listOf(ProfilingDataWriter.PERFETTO_ATTACHMENT_NAME)
-            )
-            .hasLongTaskIds(listOf(fakeLongTask.id))
             .hasErrorIds(emptyList())
-        val batchMetadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(rawEvent.metadata, mockInternalLogger))
-        assertThat(batchMetadata.perfettoBytes).isEqualTo(fakeByteArray)
-        val rumMobileEvents = JsonParser.parseString(String(batchMetadata.rumMobileEventsBytes, Charsets.UTF_8))
+
+        val actualMetadata = ProfilingBatchMetadata
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+        checkNotNull(actualMetadata)
+        assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
+        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
             .asJsonArray
-            .map {
-                RumMetadataEvent.fromJsonObject(it.asJsonObject)
-            }
-        assertThat(rumMobileEvents).hasSize(1)
-        val actualLongTask = rumMobileEvents.first()
-        assertThat(actualLongTask)
-            .hasId(fakeLongTask.id)
-            .hasType(RumMetadataEvent.Type.LONG_TASK)
-            .hasStartNs(TimeUnit.MILLISECONDS.toNanos(fakeLongTask.startMs))
-            .hasDurationNs(fakeLongTask.durationNs)
-            .hasName(null)
-    }
-
-    @Test
-    fun `M skip writing W writeContinuous {can't read perfetto file}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeLongTask: ProfilerEvent.RumLongTaskEvent
-    ) {
-        // When
-        testedDataWriterTest.write(
-            profilingResult = fakeResult,
-            longTasks = listOf(fakeLongTask),
-            anrEvents = emptyList()
-        )
-
-        // Then
-        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
+            .map { RumMetadataEvent.fromJsonObject(it.asJsonObject) }
+        val vitalsMetadata = actualMetadataEvents.filter { it.type == RumMetadataEvent.Type.VITAL }
+        assertThat(vitalsMetadata).hasSize(alignedVitals.size)
+        vitalsMetadata.forEach { vital ->
+            val fakeVital = alignedVitals.first { it.id == vital.id }
+            assertThat(vital.startNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeVital.startMs))
+            assertThat(vital.durationNs).isEqualTo(fakeVital.durationNs)
+        }
+        assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.ERROR }).isTrue()
+        assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.LONG_TASK }).isTrue()
+        verifyNoMoreInteractions(mockEventBatchWriter)
     }
 }

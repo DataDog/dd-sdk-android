@@ -127,26 +127,7 @@ class ProfilingRequestFactoryTest {
     }
 
     @Test
-    fun `M use raw metadata bytes W buildRequestBody {launch profile event}`(
-        @Forgery executionContext: RequestExecutionContext,
-        forge: Forge
-    ) {
-        // Given — a launch profile: metadata is raw perfetto bytes (no DDCP magic prefix)
-        val fakePerfettoBytes = forge.aString().toByteArray()
-        val safeMetadata = byteArrayOf(0x00) + fakePerfettoBytes
-        val fakeEventData = forge.aString().toByteArray()
-        val batchData = listOf(RawBatchEvent(data = fakeEventData, metadata = safeMetadata))
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, null)
-
-        // Then
-        assertThat(request.body.containsSubsequence(safeMetadata)).isTrue()
-        assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()
-    }
-
-    @Test
-    fun `M use perfetto bytes from metadata W buildRequestBody {continuous profile event}`(
+    fun `M use perfetto bytes from metadata W buildRequestBody`(
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
@@ -162,12 +143,15 @@ class ProfilingRequestFactoryTest {
 
         // Then
         assertThat(request.body.containsSubsequence(fakePerfettoBytes)).isTrue()
+        assertThat(request.body.containsSubsequence(fakeRumEventsBytes)).isTrue()
+        assertThat(request.body.containsSubsequence("perfetto.proto".toByteArray())).isTrue()
+        assertThat(request.body.containsSubsequence("rum-mobile-events.json".toByteArray())).isTrue()
         assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()
         assertThat(request.body.containsSubsequence(metadata)).isFalse()
     }
 
     @Test
-    fun `M fallback to raw metadata bytes W buildRequestBody {continuous profile event with corrupt metadata}`(
+    fun `M fallback to raw metadata bytes W buildRequestBody {corrupt metadata}`(
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
@@ -187,9 +171,11 @@ class ProfilingRequestFactoryTest {
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, null)
 
-        // Then — falls back to sending raw metadata bytes (same as launch profile path)
+        // Then
         assertThat(request.body.containsSubsequence(corruptMetadata)).isTrue()
         assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()
+        assertThat(request.body.containsSubsequence("perfetto.proto".toByteArray())).isTrue()
+        assertThat(request.body.containsSubsequence("rum-mobile-events.json".toByteArray())).isFalse()
     }
 
     @Test

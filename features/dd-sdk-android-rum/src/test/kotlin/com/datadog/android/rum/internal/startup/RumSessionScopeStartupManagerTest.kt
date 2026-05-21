@@ -289,15 +289,18 @@ internal class RumSessionScopeStartupManagerTest {
         argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             verify(mockProfilingFeatureScope).sendEvent(
-                ProfilerEvent.TTID(
+                ProfilerEvent.RumVitalEvent(
                     rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
                     ),
-                    vitalId = lastValue.vital.id,
-                    vitalName = lastValue.vital.name
+                    id = lastValue.vital.id,
+                    name = lastValue.vital.name,
+                    type = ProfilerEvent.RumVitalEvent.Type.TTID,
+                    startMs = lastValue.date,
+                    durationNs = info.durationNs
                 )
             )
         }
