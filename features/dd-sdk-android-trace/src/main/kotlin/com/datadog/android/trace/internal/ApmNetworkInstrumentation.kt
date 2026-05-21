@@ -128,7 +128,12 @@ class ApmNetworkInstrumentation internal constructor(
             return RequestTracingState(requestInfoBuilder)
         }
 
-        val span = tracer.buildSpan(request, networkingLibraryName, traceOrigin)
+        val span = tracer.buildSpan(
+            request,
+            networkingLibraryName,
+            traceOrigin,
+            ignoreLocalDroppedParent = !canSendSpan
+        )
         val isSampled = span.isSampled(request)
         if (span.isRootSpan) {
             span.applyPriority(isSampled, traceSampler)
@@ -221,7 +226,7 @@ class ApmNetworkInstrumentation internal constructor(
 
     private fun DatadogSpan.isSampled(request: HttpRequestInfo): Boolean =
         extractRumContext(rumContextPropagator, block = true)
-            .sample(request, traceSampler)
+            .sample(request, traceSampler, ignoreLocalDroppedParent = !canSendSpan)
 
     private fun RequestTracingState.onRequestIntercepted(
         response: HttpResponseInfo?,

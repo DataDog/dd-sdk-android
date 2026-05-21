@@ -694,6 +694,54 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M honor parent W intercept() { Request DatadogSpan tag DROP, APM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given - on the pure-APM path (canSendSpan() == true), tag-attached parents are
+        // honored even when dropped. This preserves head-based sampling for the
+        // APM-only path. The dropped-parent ignore logic only applies to the RUM-to-APM path
+        // (DatadogInterceptor), not the standalone TracingInterceptor.
+        val droppedTagContext: DatadogSpanContext = forge.newSpanContextMock<DatadogSpanContext>(
+            samplingPriority = PrioritySampling.SAMPLER_DROP
+        )
+        val droppedSpan: DatadogSpan = forge.newSpanMock(droppedTagContext)
+        whenever(mockSpanBuilder.withParentContext(droppedTagContext)) doReturn mockSpanBuilder
+        fakeRequest = forgeRequest { it.tag(DatadogSpan::class.java, droppedSpan) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanBuilder).withParentContext(droppedTagContext)
+        verify(mockSpanBuilder, never()).ignoreActiveSpan()
+    }
+
+    @Test
+    fun `M not consult sampler W intercept() { Request DatadogSpan tag DROP, APM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given - regression guard: on the APM path, a dropped tag parent still locks the
+        // request to dropped via extractSamplingDecision; the trace sampler must NOT be
+        // consulted. This preserves head-based sampling for the APM-only path.
+        val droppedTagContext: DatadogSpanContext = forge.newSpanContextMock<DatadogSpanContext>(
+            samplingPriority = PrioritySampling.SAMPLER_DROP
+        )
+        val droppedSpan: DatadogSpan = forge.newSpanMock(droppedTagContext)
+        whenever(mockSpanBuilder.withParentContext(droppedTagContext)) doReturn mockSpanBuilder
+        fakeRequest = forgeRequest { it.tag(DatadogSpan::class.java, droppedSpan) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockTraceSampler, never()).sample(mockSpan)
+    }
+
+    @Test
     fun `M inject tracing header W intercept() for request with parent TraceContext`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
@@ -1652,6 +1700,30 @@ internal open class TracingInterceptorTest {
             mode = org.mockito.kotlin.atLeast(1)
         )
     }
+
+    // region HBS with dropped parent (APM path)
+
+    @Test
+    fun `M use parent context W intercept() { active span dropped, APM path }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val droppedActiveSpan = forge.newSpanMock(
+            samplingPriority = PrioritySampling.SAMPLER_DROP
+        )
+        whenever(mockTracer.activeSpan()) doReturn droppedActiveSpan
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpanBuilder, never()).ignoreActiveSpan()
+        verify(mockSpanBuilder).withParentContext(null as DatadogSpanContext?)
+    }
+
+    // endregion
 
     // region Internal
 

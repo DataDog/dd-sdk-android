@@ -204,7 +204,8 @@ internal class DatadogPropagationHelperTest {
         val result = testedHelper.extractParentContext(mockTracer, mockRequest)
 
         // Then
-        assertThat(result).isSameAs(mockSpanContext)
+        assertThat(result).isInstanceOf(ParentContextSource.FromTag::class.java)
+        assertThat(result?.context).isSameAs(mockSpanContext)
     }
 
     @Test
@@ -232,7 +233,8 @@ internal class DatadogPropagationHelperTest {
         val result = testedHelper.extractParentContext(mockTracer, mockRequest)
 
         // Then
-        assertThat(result).isSameAs(extractedSpanContext)
+        assertThat(result).isInstanceOf(ParentContextSource.FromHeaders::class.java)
+        assertThat(result?.context).isSameAs(extractedSpanContext)
     }
 
     @Test
@@ -253,7 +255,8 @@ internal class DatadogPropagationHelperTest {
         val result = testedHelper.extractParentContext(mockTracer, mockRequest)
 
         // Then
-        assertThat(result).isSameAs(mockSpanContext)
+        assertThat(result).isInstanceOf(ParentContextSource.FromTag::class.java)
+        assertThat(result?.context).isSameAs(mockSpanContext)
     }
 
     @Test
@@ -275,9 +278,10 @@ internal class DatadogPropagationHelperTest {
         val result = testedHelper.extractParentContext(mockTracer, mockRequest)
 
         // Then
-        assertThat(result).isNotNull
-        assertThat(result!!.traceId.toHexString()).isEqualTo(fakeTraceId)
-        assertThat(result.samplingPriority).isEqualTo(fakeSamplingPriority)
+        assertThat(result).isInstanceOf(ParentContextSource.FromTag::class.java)
+        assertThat(result?.context).isNotNull
+        assertThat(result!!.context.traceId.toHexString()).isEqualTo(fakeTraceId)
+        assertThat(result.context.samplingPriority).isEqualTo(fakeSamplingPriority)
     }
 
     @Test
@@ -601,6 +605,105 @@ internal class DatadogPropagationHelperTest {
         // Then
         assertThat(result).isFalse()
     }
+
+    // region ignoreLocalDroppedParent
+
+    @Test
+    fun `M return null W extractSamplingDecision() {ignoreLocalDroppedParent, DatadogSpan tag SAMPLER_DROP}`() {
+        // Given - on the RUM path, a dropped local tag parent must not lock the request to dropped.
+        // Returning null defers the decision to the caller's sampler so RUM can sample independently.
+        whenever(mockSpanContext.samplingPriority) doReturn PrioritySampling.SAMPLER_DROP
+        val mockRequest = createMockRequestWithTags(datadogSpan = mockSpan)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W extractSamplingDecision() {ignoreLocalDroppedParent, DatadogSpan tag USER_DROP}`() {
+        // Given
+        whenever(mockSpanContext.samplingPriority) doReturn PrioritySampling.USER_DROP
+        val mockRequest = createMockRequestWithTags(datadogSpan = mockSpan)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return true W extractSamplingDecision() {ignoreLocalDroppedParent, DatadogSpan tag KEEP}`() {
+        // Given - the ignore flag must not change behavior for KEEP parents; they are still honored.
+        whenever(mockSpanContext.samplingPriority) doReturn PrioritySampling.SAMPLER_KEEP
+        val mockRequest = createMockRequestWithTags(datadogSpan = mockSpan)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return null W extractSamplingDecision() {ignoreLocalDroppedParent, TraceContext tag SAMPLER_DROP}`() {
+        // Given - TraceContext tag (OTel interop) is also local developer intent; same policy applies.
+        val traceContext = TraceContext("traceId", "spanId", PrioritySampling.SAMPLER_DROP)
+        val mockRequest = createMockRequestWithTags(traceContext = traceContext)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W extractSamplingDecision() {ignoreLocalDroppedParent, TraceContext tag USER_DROP}`() {
+        // Given
+        val traceContext = TraceContext("traceId", "spanId", PrioritySampling.USER_DROP)
+        val mockRequest = createMockRequestWithTags(traceContext = traceContext)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return true W extractSamplingDecision() {ignoreLocalDroppedParent, TraceContext tag KEEP}`() {
+        // Given
+        val traceContext = TraceContext("traceId", "spanId", PrioritySampling.USER_KEEP)
+        val mockRequest = createMockRequestWithTags(traceContext = traceContext)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M honor header W extractSamplingDecision() {ignoreLocalDroppedParent, header DROP, tag DROP}`() {
+        // Given - header sampling priority is always authoritative; the ignore flag must not affect it.
+        val headers = mapOf(
+            DatadogHttpCodec.SAMPLING_PRIORITY_KEY to listOf(PrioritySampling.SAMPLER_DROP.toString())
+        )
+        whenever(mockSpanContext.samplingPriority) doReturn PrioritySampling.SAMPLER_DROP
+        val mockRequest = createMockRequestWithTags(headers = headers, datadogSpan = mockSpan)
+
+        // When
+        val result = testedHelper.extractSamplingDecision(mockRequest, ignoreLocalDroppedParent = true)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    // endregion
 
     @Test
     fun `M call tracer inject W propagateSampledHeaders()`() {
