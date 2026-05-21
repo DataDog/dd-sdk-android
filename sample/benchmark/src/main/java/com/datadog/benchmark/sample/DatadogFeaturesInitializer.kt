@@ -7,10 +7,14 @@
 package com.datadog.benchmark.sample
 
 import android.content.Intent
+import android.os.Build
 import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
+import com.datadog.android.profiling.ExperimentalProfilingApi
+import com.datadog.android.profiling.Profiling
+import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
@@ -72,7 +76,29 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         if (needToEnableTracing(config)) {
             enableTracing()
         }
+
+        if (needToEnableProfiling(config)) {
+            enableProfiling()
+        }
     }
+
+    private fun needToEnableProfiling(config: BenchmarkConfig): Boolean {
+        return isInstrumentedRun(config) && isProfilingScenario(config)
+    }
+
+    @OptIn(ExperimentalProfilingApi::class)
+    private fun enableProfiling() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            val profilingConfig = ProfilingConfiguration.Builder()
+                .setContinuousSampleRate(SAMPLE_IN_ALL_SESSIONS)
+                .setApplicationLaunchSampleRate(0f)
+                .build()
+            Profiling.enable(profilingConfig, sdkCore.get())
+        }
+    }
+
+    private fun isProfilingScenario(config: BenchmarkConfig) =
+        config.scenario == SyntheticsScenario.Profiling
 
     private fun needToEnableSessionReplay(config: BenchmarkConfig): Boolean {
         return isInstrumentedRun(config) && isSessionReplayScenario(config)
@@ -181,12 +207,15 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.LogsCustom,
         SyntheticsScenario.LogsHeavyTraffic,
         SyntheticsScenario.RumAuto,
+        SyntheticsScenario.Profiling,
         null -> false
     }
 
     private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
         SyntheticsScenario.RumAuto,
-        SyntheticsScenario.RumManual -> true
+        SyntheticsScenario.RumManual,
+        SyntheticsScenario.Profiling -> true
+
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
         SyntheticsScenario.Trace,
@@ -205,6 +234,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.Trace,
         SyntheticsScenario.Upload,
         SyntheticsScenario.RumAuto,
+        SyntheticsScenario.Profiling,
         null -> false
     }
 
