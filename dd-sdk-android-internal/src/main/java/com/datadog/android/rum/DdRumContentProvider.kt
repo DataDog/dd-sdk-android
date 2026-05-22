@@ -14,6 +14,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Process
 import android.util.Log
+import com.datadog.android.internal.utils.getSystemServiceAs
 
 /**
  * A Content provider used to monitor the Application startup time efficiently.
@@ -22,7 +23,7 @@ class DdRumContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
         if (processImportance == 0) {
-            val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            val manager = context?.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
             val currentProcessId = Process.myPid()
             val currentProcess = manager?.runningAppProcesses?.firstOrNull {
                 it.pid == currentProcessId

@@ -19,6 +19,7 @@ import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
@@ -152,6 +153,7 @@ class ApolloIntegrationTest {
     @AfterEach
     fun `tear down`() {
         GlobalDatadogTracer.clear()
+        unregisterGlobalRumMonitor(stubSdkCore)
         Datadog.stopInstance(stubSdkCore.name)
         mockServer.shutdown()
     }

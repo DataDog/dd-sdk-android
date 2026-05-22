@@ -18,7 +18,7 @@ internal class ProxyForgeFactory : ForgeryFactory<Proxy> {
         forge.anElementFrom(Proxy.HTTP, Proxy.HTTPS),
         forge.aString(),
         forge.anInt(min = 1, max = 65535),
-        mock<Executor>() {
+        mock<Executor> {
             on { execute(any()) } doAnswer {
                 it.getArgument<() -> Unit>(0).invoke()
             }

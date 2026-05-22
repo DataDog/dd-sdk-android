@@ -218,7 +218,8 @@ internal class RumSessionScope(
             sessionId = sessionId,
             sessionState = sessionState,
             sessionStartReason = startReason,
-            isSessionActive = isActive
+            isSessionActive = isActive,
+            sessionSampleRate = sessionSampleRate
         )
     }
 
