@@ -27,7 +27,11 @@ internal class NoOpFactoryProviderTest {
             "EnumInterface.kt:NoOpEnumInterface.kt",
             "OverloadedInterface.kt:NoOpOverloadedInterface.kt",
             "PublicImplementation.kt:NoOpPublicImplementation.kt",
-            "ExperimentalInterface.kt:NoOpExperimentalInterface.kt"
+            "ExperimentalInterface.kt:NoOpExperimentalInterface.kt",
+            "Outer.kt:NoOpOuterInner.kt",
+            "NestedReturnTypeInterface.kt:NoOpNestedReturnTypeInterface.kt",
+            "Outer2.kt:NoOpOuter2Inner2.kt",
+            "Outer2.kt:NoOpOuter2.kt"
         ]
     )
     fun `implement a NoOp class from interface`(srcFileName: String, genFileName: String) {
