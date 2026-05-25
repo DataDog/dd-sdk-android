@@ -24,7 +24,9 @@ internal data class BatchData(
         if (metadata != null) {
             if (other.metadata == null) return false
             if (!metadata.contentEquals(other.metadata)) return false
-        } else if (other.metadata != null) return false
+        } else if (other.metadata != null) {
+            return false
+        }
 
         return true
     }

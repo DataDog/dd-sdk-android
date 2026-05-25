@@ -34,10 +34,13 @@ import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.internal.net.reportNetworkInstrumentationConfigured
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.net.SessionRebasedSampler
+import com.datadog.android.trace.internal.net.effectiveSampleRate
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -225,7 +228,10 @@ open class DatadogInterceptor internal constructor(
             buildMap {
                 put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
-                put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
+                put(
+                    RumAttributes.RULE_PSR,
+                    (traceSampler.effectiveSampleRate(span) ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+                )
                 putAll(graphQLAttributes)
                 putAll(graphQLErrorAttributes)
             }
@@ -390,12 +396,20 @@ open class DatadogInterceptor internal constructor(
          * Builds the [DatadogInterceptor].
          */
         override fun build(): DatadogInterceptor {
+            val currentTraceSampler = traceSampler
+            // Use exact-class match so subclasses of DeterministicTraceSampler are treated as
+            // custom samplers and bypass rebasing, matching the setTraceSampler contract.
+            val effectiveTraceSampler = if (currentTraceSampler::class == DeterministicTraceSampler::class) {
+                SessionRebasedSampler(currentTraceSampler as DeterministicTraceSampler)
+            } else {
+                currentTraceSampler
+            }
             return DatadogInterceptor(
                 sdkInstanceName,
                 tracedHostsWithHeaderType,
                 tracedRequestListener,
                 rumResourceAttributesProvider,
-                traceSampler,
+                effectiveTraceSampler,
                 traceContextInjection,
                 redacted404ResourceName,
                 localTracerFactory,

@@ -32,6 +32,7 @@ import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.trace.internal.net.TracerProvider
 import com.datadog.android.trace.internal.net.applyPriority
 import com.datadog.android.trace.internal.net.buildSpan
+import com.datadog.android.trace.internal.net.effectiveSampleRate
 import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
@@ -127,7 +128,12 @@ class ApmNetworkInstrumentation internal constructor(
             return RequestTracingState(requestInfoBuilder)
         }
 
-        val span = tracer.buildSpan(request, networkingLibraryName, traceOrigin)
+        val span = tracer.buildSpan(
+            request,
+            networkingLibraryName,
+            traceOrigin,
+            ignoreLocalDroppedParent = !canSendSpan
+        )
         val isSampled = span.isSampled(request)
         if (span.isRootSpan) {
             span.applyPriority(isSampled, traceSampler)
@@ -148,7 +154,7 @@ class ApmNetworkInstrumentation internal constructor(
         return RequestTracingState(
             span = span,
             isSampled = isSampled,
-            sampleRate = traceSampler.getSampleRate(),
+            sampleRate = traceSampler.effectiveSampleRate(span),
             requestInfoBuilder = tracedRequestInfoBuilder
         )
     }
@@ -220,7 +226,7 @@ class ApmNetworkInstrumentation internal constructor(
 
     private fun DatadogSpan.isSampled(request: HttpRequestInfo): Boolean =
         extractRumContext(rumContextPropagator, block = true)
-            .sample(request, traceSampler)
+            .sample(request, traceSampler, ignoreLocalDroppedParent = !canSendSpan)
 
     private fun RequestTracingState.onRequestIntercepted(
         response: HttpResponseInfo?,
