@@ -4,6 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+pluginManagement {
+    repositories {
+        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+        listOf("gradlePluginProxy", "mavenRepositoryProxy")
+            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
+            .forEach { url -> maven(url) }
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {

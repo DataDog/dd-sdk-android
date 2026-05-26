@@ -18,6 +18,7 @@ import androidx.annotation.RequiresApi
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider.Companion.DEFAULT
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
@@ -66,7 +67,7 @@ class DdProfilingContentProvider(
      */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private fun getAppStartInfo(context: Context): String? {
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val manager = context.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
         val startReason = manager?.getHistoricalProcessStartReasons(1)
             ?.firstOrNull()?.reason
         return when (startReason) {

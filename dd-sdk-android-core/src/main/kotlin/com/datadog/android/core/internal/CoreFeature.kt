@@ -76,6 +76,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
@@ -144,9 +145,7 @@ internal class CoreFeature(
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
-        override fun newCall(request: Request): Call {
-            return okhttpClient.newCall(request)
-        }
+        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
     }
 
     internal val initialized = AtomicBoolean(false)
@@ -611,11 +610,15 @@ internal class CoreFeature(
 
     private fun setupNetworkInfoProviders(appContext: Context) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
-            CallbackNetworkInfoProvider(internalLogger = internalLogger)
+            CallbackNetworkInfoProvider(
+                internalLogger = internalLogger,
+                buildSdkVersionProvider = buildSdkVersionProvider
+            )
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                executorService = contextExecutorService
+                executorService = contextExecutorService,
+                buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
         networkInfoProvider.register(appContext)
@@ -691,7 +694,7 @@ internal class CoreFeature(
 
     private fun resolveProcessInfo(appContext: Context) {
         val currentProcessId = Process.myPid()
-        val manager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val manager = appContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
         val currentProcess = manager?.runningAppProcesses?.firstOrNull {
             it.pid == currentProcessId
         }

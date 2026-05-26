@@ -37,6 +37,7 @@ import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.isMainThread
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -224,7 +225,8 @@ internal class RumFeature(
         trackFrustrations = configuration.trackFrustrations
         batteryInfoProvider = DefaultBatteryInfoProvider(
             applicationContext = appContext,
-            timeProvider = sdkCore.timeProvider
+            timeProvider = sdkCore.timeProvider,
+            internalLogger = sdkCore.internalLogger
         )
         displayInfoProvider = DefaultDisplayInfoProvider(
             applicationContext = appContext,
@@ -277,17 +279,12 @@ internal class RumFeature(
         initialized.set(true)
     }
 
-    private fun initializeFrameStatesAggregator(
-        application: Application?,
-        listeners: List<FrameStateListener>
-    ) {
+    private fun initializeFrameStatesAggregator(application: Application?, listeners: List<FrameStateListener>) {
         frameStatesAggregator = FrameStatesAggregator(listeners, sdkCore.internalLogger)
         application?.registerActivityLifecycleCallbacks(frameStatesAggregator)
     }
 
-    private fun initializeSlowFrameListener(
-        slowFramesConfiguration: SlowFramesConfiguration?
-    ): FrameStateListener? {
+    private fun initializeSlowFrameListener(slowFramesConfiguration: SlowFramesConfiguration?): FrameStateListener? {
         slowFramesListener = if (slowFramesConfiguration != null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
@@ -506,13 +503,12 @@ internal class RumFeature(
 
     @RequiresApi(Build.VERSION_CODES.R)
     internal fun consumeLastFatalAnr(rumEventsExecutorService: ExecutorService) {
-        val activityManager =
-            appContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val activityManager = appContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
         val lastKnownAnr = try {
-            activityManager.getHistoricalProcessExitReasons(null, 0, 0)
+            activityManager?.getHistoricalProcessExitReasons(null, 0, 0)
                 // from docs: Returns: a list of ApplicationExitInfo records matching the criteria,
                 // sorted in the order from most recent to least recent.
-                .firstOrNull { it.reason == ApplicationExitInfo.REASON_ANR }
+                ?.firstOrNull { it.reason == ApplicationExitInfo.REASON_ANR }
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,

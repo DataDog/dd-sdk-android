@@ -14,7 +14,6 @@ import android.net.ConnectivityManager
 import android.telephony.TelephonyManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -70,9 +69,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     lateinit var mockIntent: Intent
 
     @Mock
-    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
@@ -85,15 +81,13 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
         whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
 
         testedProvider = BroadcastReceiverNetworkInfoProvider(
             internalLogger = mockInternalLogger,
-            executorService = mockExecutorService,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider
+            executorService = mockExecutorService
         )
     }
 
@@ -227,40 +221,13 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @MethodSource("2gSubtypeToMobileTypes")
     fun `connected to mobile 2G`(subtype: NetworkType, mobileType: MobileType, forge: Forge) {
         val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
+        val carrierId = forge.anInt(min = 10_000, max = 999_999).toString()
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        assertThat(networkInfo)
-            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
-            .hasCarrierName(null)
-            .hasCarrierId(null)
-            .hasCellularTechnology(mobileSubtypeNames[subtype.id])
-    }
-
-    @ParameterizedTest
-    @MethodSource("2gSubtypeToMobileTypes")
-    fun `connected to mobile 2G API 28+`(
-        subtype: NetworkType,
-        mobileType: MobileType,
-        forge: Forge
-    ) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
-
-        val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
-        stubNetworkInfo(mobileType.id, subtype.id)
-        stubTelephonyManager(carrierName, carrierId)
-        testedProvider.onReceive(mockContext, mockIntent)
-
-        // WHEN
-        val networkInfo = testedProvider.getLatestNetworkInfo()
-
-        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
             .hasCarrierName(carrierName)
@@ -272,40 +239,13 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @MethodSource("3gSubtypeToMobileTypes")
     fun `connected to mobile 3G`(subtype: NetworkType, mobileType: MobileType, forge: Forge) {
         val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
+        val carrierId = forge.anInt(min = 10_000, max = 999_999).toString()
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        assertThat(networkInfo)
-            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
-            .hasCarrierName(null)
-            .hasCarrierId(null)
-            .hasCellularTechnology(mobileSubtypeNames[subtype.id])
-    }
-
-    @ParameterizedTest
-    @MethodSource("3gSubtypeToMobileTypes")
-    fun `connected to mobile 3G API 28+`(
-        subtype: NetworkType,
-        mobileType: MobileType,
-        forge: Forge
-    ) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
-
-        val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
-        stubNetworkInfo(mobileType.id, subtype.id)
-        stubTelephonyManager(carrierName, carrierId)
-        testedProvider.onReceive(mockContext, mockIntent)
-
-        // WHEN
-        val networkInfo = testedProvider.getLatestNetworkInfo()
-
-        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
             .hasCarrierName(carrierName)
@@ -317,40 +257,13 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @MethodSource("4gSubtypeToMobileTypes")
     fun `connected to mobile 4G`(subtype: NetworkType, mobileType: MobileType, forge: Forge) {
         val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
+        val carrierId = forge.anInt(min = 10_000, max = 999_999).toString()
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        assertThat(networkInfo)
-            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
-            .hasCarrierName(null)
-            .hasCarrierId(null)
-            .hasCellularTechnology(mobileSubtypeNames[subtype.id])
-    }
-
-    @ParameterizedTest
-    @MethodSource("4gSubtypeToMobileTypes")
-    fun `connected to mobile 4G API 28+`(
-        subtype: NetworkType,
-        mobileType: MobileType,
-        forge: Forge
-    ) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
-
-        val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
-        stubNetworkInfo(mobileType.id, subtype.id)
-        stubTelephonyManager(carrierName, carrierId)
-        testedProvider.onReceive(mockContext, mockIntent)
-
-        // WHEN
-        val networkInfo = testedProvider.getLatestNetworkInfo()
-
-        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
             .hasCarrierName(carrierName)
@@ -362,40 +275,13 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @MethodSource("5gSubtypeToMobileTypes")
     fun `connected to mobile 5G`(subtype: NetworkType, mobileType: MobileType, forge: Forge) {
         val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
+        val carrierId = forge.anInt(min = 10_000, max = 999_999).toString()
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        assertThat(networkInfo)
-            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
-            .hasCarrierName(null)
-            .hasCarrierId(null)
-            .hasCellularTechnology(mobileSubtypeNames[subtype.id])
-    }
-
-    @ParameterizedTest
-    @MethodSource("5gSubtypeToMobileTypes")
-    fun `connected to mobile 5G API 28+`(
-        subtype: NetworkType,
-        mobileType: MobileType,
-        forge: Forge
-    ) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
-
-        val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
-        stubNetworkInfo(mobileType.id, subtype.id)
-        stubTelephonyManager(carrierName, carrierId)
-        testedProvider.onReceive(mockContext, mockIntent)
-
-        // WHEN
-        val networkInfo = testedProvider.getLatestNetworkInfo()
-
-        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
             .hasCarrierName(carrierName)
@@ -405,40 +291,16 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("getKnownMobileTypes")
-    fun `connected to mobile unknown`(mobileType: MobileType, forge: Forge) {
+    fun `connected to mobile unknown subtype`(mobileType: MobileType, forge: Forge) {
         val subtype = forge.anInt(min = 32)
         val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
+        val carrierId = forge.anInt(min = 10_000, max = 999_999).toString()
         stubNetworkInfo(mobileType.id, subtype)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        assertThat(networkInfo)
-            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
-            .hasCarrierName(null)
-            .hasCarrierId(null)
-            .hasCellularTechnology(null)
-    }
-
-    @ParameterizedTest
-    @MethodSource("getKnownMobileTypes")
-    fun `connected to mobile unknown API 28+`(mobileType: MobileType, forge: Forge) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
-
-        val subtype = forge.anInt(min = 32)
-        val carrierName = forge.anAlphabeticalString()
-        val carrierId = forge.aPositiveInt(strict = true)
-        stubNetworkInfo(mobileType.id, subtype)
-        stubTelephonyManager(carrierName, carrierId)
-        testedProvider.onReceive(mockContext, mockIntent)
-
-        // WHEN
-        val networkInfo = testedProvider.getLatestNetworkInfo()
-
-        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName(carrierName)
@@ -448,25 +310,41 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("getKnownMobileTypes")
-    fun `connected to mobile unknown carrier`(mobileType: MobileType) {
-        // GIVEN
-        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+    fun `M leave carrier null W TelephonyManager returns empty operator`(mobileType: MobileType) {
+        // Given
+        stubNetworkInfo(mobileType.id, TelephonyManager.NETWORK_TYPE_UNKNOWN)
+        stubTelephonyManager(operatorName = "", operatorCode = "")
 
-        stubNetworkInfo(
-            mobileType.id,
-            TelephonyManager.NETWORK_TYPE_UNKNOWN
-        )
-        stubTelephonyManager(null, 0)
+        // When
         testedProvider.onReceive(mockContext, mockIntent)
-
-        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        // THEN
+        // Then
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
-            .hasCarrierName("Unknown Carrier Name")
-            .hasCarrierId(0)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+            .hasCellularTechnology(null)
+    }
+
+    @ParameterizedTest
+    @MethodSource("getKnownMobileTypes")
+    fun `M leave carrierId null W networkOperator is not numeric`(mobileType: MobileType, forge: Forge) {
+        // Given
+        val carrierName = forge.anAlphabeticalString()
+        val nonNumericOperator = forge.anAlphabeticalString()
+        stubNetworkInfo(mobileType.id, TelephonyManager.NETWORK_TYPE_UNKNOWN)
+        stubTelephonyManager(operatorName = carrierName, operatorCode = nonNumericOperator)
+
+        // When
+        testedProvider.onReceive(mockContext, mockIntent)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
+            .hasCarrierName(carrierName)
+            .hasCarrierId(null)
             .hasCellularTechnology(null)
     }
 
@@ -495,9 +373,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     // region Internal
 
-    private fun stubTelephonyManager(carrierName: String?, carrierId: Int) {
-        whenever(mockTelephonyManager.simCarrierIdName) doReturn carrierName
-        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId
+    private fun stubTelephonyManager(operatorName: String?, operatorCode: String?) {
+        whenever(mockTelephonyManager.networkOperatorName) doReturn operatorName
+        whenever(mockTelephonyManager.networkOperator) doReturn operatorCode
     }
 
     private fun stubNetworkInfo(networkType: Int, networkSubtype: Int) {
@@ -586,46 +464,38 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             known5GSubtypes.map { NetworkType(mobileSubtypeNames[it], it) }
 
         @JvmStatic
-        fun `2gSubtypeToMobileTypes`(): Stream<Arguments> {
-            return allCombinations(known2GSubtypesWithNames, knownMobileTypesWithNames)
+        fun `2gSubtypeToMobileTypes`(): Stream<Arguments> =
+            allCombinations(known2GSubtypesWithNames, knownMobileTypesWithNames)
                 .map { Arguments.of(it.first, it.second) }
                 .stream()
-        }
 
         @JvmStatic
-        fun `3gSubtypeToMobileTypes`(): Stream<Arguments> {
-            return allCombinations(known3GSubtypesWithNames, knownMobileTypesWithNames)
+        fun `3gSubtypeToMobileTypes`(): Stream<Arguments> =
+            allCombinations(known3GSubtypesWithNames, knownMobileTypesWithNames)
                 .map { Arguments.of(it.first, it.second) }
                 .stream()
-        }
 
         @JvmStatic
-        fun `4gSubtypeToMobileTypes`(): Stream<Arguments> {
-            return allCombinations(known4GSubtypesWithNames, knownMobileTypesWithNames)
+        fun `4gSubtypeToMobileTypes`(): Stream<Arguments> =
+            allCombinations(known4GSubtypesWithNames, knownMobileTypesWithNames)
                 .map { Arguments.of(it.first, it.second) }
                 .stream()
-        }
 
         @JvmStatic
-        fun `5gSubtypeToMobileTypes`(): Stream<Arguments> {
-            return allCombinations(known5GSubtypesWithNames, knownMobileTypesWithNames)
+        fun `5gSubtypeToMobileTypes`(): Stream<Arguments> =
+            allCombinations(known5GSubtypesWithNames, knownMobileTypesWithNames)
                 .map { Arguments.of(it.first, it.second) }
                 .stream()
-        }
 
         @JvmStatic
-        fun getKnownMobileTypes(): List<MobileType> {
-            return knownMobileTypesWithNames
-        }
+        fun getKnownMobileTypes(): List<MobileType> = knownMobileTypesWithNames
 
         private fun allCombinations(
             networkTypes: Iterable<NetworkType>,
             mobileTypes: Iterable<MobileType>
-        ): Iterable<Pair<NetworkType, MobileType>> {
-            return networkTypes
-                .flatMap { item ->
-                    mobileTypes.map { item to it }
-                }
-        }
+        ): Iterable<Pair<NetworkType, MobileType>> = networkTypes
+            .flatMap { item ->
+                mobileTypes.map { item to it }
+            }
     }
 }

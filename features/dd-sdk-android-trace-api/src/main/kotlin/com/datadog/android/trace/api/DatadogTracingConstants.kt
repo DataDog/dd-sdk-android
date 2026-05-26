@@ -219,6 +219,15 @@ object DatadogTracingConstants {
          * Represents the key for a log attribute used to specify the status of a log entry.
          */
         const val STATUS: String = "status"
+
+        /**
+         * Reserved key for overriding the log event timestamp, in milliseconds since the Unix epoch.
+         * The value must be a [Long]; non-Long values are ignored and the SDK falls back to its time provider.
+         *
+         * Span-log timestamps are serialized at millisecond precision (`SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")`),
+         * so sub-millisecond precision cannot be preserved.
+         */
+        const val TIMESTAMP_MS: String = "_dd.timestamp_ms"
     }
 
     /**
