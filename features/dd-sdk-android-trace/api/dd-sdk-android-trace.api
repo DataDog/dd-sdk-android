@@ -112,8 +112,9 @@ public final class com/datadog/android/trace/internal/ApmNetworkInstrumentation 
 public final class com/datadog/android/trace/internal/DatadogPropagationHelper {
 	public static final field Companion Lcom/datadog/android/trace/internal/DatadogPropagationHelper$Companion;
 	public final fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
-	public final fun extractParentContext (Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
-	public final fun extractSamplingDecision (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Ljava/lang/Boolean;
+	public final fun extractParentContext (Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;)Lcom/datadog/android/trace/internal/ParentContextSource;
+	public final fun extractSamplingDecision (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Z)Ljava/lang/Boolean;
+	public static synthetic fun extractSamplingDecision$default (Lcom/datadog/android/trace/internal/DatadogPropagationHelper;Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;ZILjava/lang/Object;)Ljava/lang/Boolean;
 	public final fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 	public final fun propagateNotSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Set;Lcom/datadog/android/trace/TraceContextInjection;Ljava/lang/String;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
 	public final fun propagateSampledHeaders (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Set;)Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
@@ -131,6 +132,20 @@ public final class com/datadog/android/trace/internal/DatadogSpanIdConverter {
 
 public final class com/datadog/android/trace/internal/DatadogTraceExtKt {
 	public static final fun fromHex (Lcom/datadog/android/trace/api/trace/DatadogTraceId$Companion;Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+}
+
+public abstract class com/datadog/android/trace/internal/ParentContextSource {
+	public abstract fun getContext ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+}
+
+public final class com/datadog/android/trace/internal/ParentContextSource$FromHeaders : com/datadog/android/trace/internal/ParentContextSource {
+	public fun <init> (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
+	public fun getContext ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+}
+
+public final class com/datadog/android/trace/internal/ParentContextSource$FromTag : com/datadog/android/trace/internal/ParentContextSource {
+	public fun <init> (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
+	public fun getContext ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 }
 
 public final class com/datadog/android/trace/internal/RumContextPropagator {
@@ -156,6 +171,12 @@ public final class com/datadog/android/trace/internal/_TraceInternalProxy {
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
+public final class com/datadog/android/trace/internal/net/ApmNetworkInstrumentationExtKt {
+	public static final fun effectiveSampleRate (Lcom/datadog/android/core/sampling/Sampler;Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
+	public static final fun isDropped (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+	public static final fun isDroppedPriority (Ljava/lang/Integer;)Z
+}
+
 public final class com/datadog/android/trace/internal/net/RequestTracingState {
 	public fun <init> (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;)V
 	public synthetic fun <init> (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;ZLcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -177,6 +198,18 @@ public final class com/datadog/android/trace/internal/net/RequestTracingState {
 
 public final class com/datadog/android/trace/internal/net/RequestTracingStateKt {
 	public static final fun toAttributesMap (Lcom/datadog/android/trace/internal/net/RequestTracingState;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;
+}
+
+public final class com/datadog/android/trace/internal/net/SessionRebasedSampler : com/datadog/android/core/sampling/Sampler, com/datadog/android/trace/internal/net/SpanAwareSampler {
+	public fun <init> (Lcom/datadog/android/trace/DeterministicTraceSampler;)V
+	public fun getSampleRate ()Ljava/lang/Float;
+	public fun getSampleRate (Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
+	public fun sample (Lcom/datadog/android/trace/api/span/DatadogSpan;)Z
+	public synthetic fun sample (Ljava/lang/Object;)Z
+}
+
+public abstract interface class com/datadog/android/trace/internal/net/SpanAwareSampler {
+	public abstract fun getSampleRate (Lcom/datadog/android/trace/api/span/DatadogSpan;)Ljava/lang/Float;
 }
 
 public final class com/datadog/android/trace/internal/net/TraceContext {

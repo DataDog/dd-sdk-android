@@ -9,4 +9,20 @@ object GradlePropertiesKeys {
 
     // you can set this property from your gradle.properties as: forceEnableLogcat = true | false
     const val FORCE_ENABLE_LOGCAT = "forceEnableLogcat"
+
+    /**
+     * Maven repository proxy URL (Magic Mirror Depot). When set, prepended to dependency
+     * repositories so artifact resolution goes through Datadog's internal mirror instead of
+     * hitting public registries (e.g. Maven Central) directly. Used in CI to avoid 429s.
+     * Set via -PmavenRepositoryProxy=... or in gradle.properties.
+     */
+    const val MAVEN_REPOSITORY_PROXY = "mavenRepositoryProxy"
+
+    /**
+     * Gradle plugin portal proxy URL (Magic Mirror Depot). When set, prepended to plugin
+     * resolution repositories so plugin resolution goes through Datadog's internal mirror
+     * instead of hitting plugins.gradle.org directly. Used in CI to avoid 429s.
+     * Set via -PgradlePluginProxy=... or in gradle.properties.
+     */
+    const val GRADLE_PLUGIN_PROXY = "gradlePluginProxy"
 }

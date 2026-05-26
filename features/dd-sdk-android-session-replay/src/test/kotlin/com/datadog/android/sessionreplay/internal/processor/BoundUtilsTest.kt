@@ -25,7 +25,7 @@ internal class BoundUtilsTest {
 
     @ParameterizedTest
     @MethodSource("testWireframes")
-    fun`M return the correct bounds W resolveBounds() { with clipping }`(
+    fun `M return the correct bounds W resolveBounds() { with clipping }`(
         fakeWireframe: MobileSegment.Wireframe,
         forge: Forge
     ) {
@@ -59,7 +59,7 @@ internal class BoundUtilsTest {
 
     @ParameterizedTest
     @MethodSource("testWireframes")
-    fun`M return the correct bounds W resolveBounds() { without clipping }`(
+    fun `M return the correct bounds W resolveBounds() { without clipping }`(
         fakeWireframe: MobileSegment.Wireframe
     ) {
         // Given

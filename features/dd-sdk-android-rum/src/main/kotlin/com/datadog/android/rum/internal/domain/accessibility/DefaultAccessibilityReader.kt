@@ -22,6 +22,7 @@ import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
@@ -32,9 +33,9 @@ internal class DefaultAccessibilityReader(
     private val timeProvider: TimeProvider,
     private val resources: Resources = applicationContext.resources,
     private val activityManager: ActivityManager? =
-        applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager,
+        applicationContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE),
     private val accessibilityManager: AccessibilityManager? =
-        applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager,
+        applicationContext.getSystemServiceAs<AccessibilityManager>(Context.ACCESSIBILITY_SERVICE),
     private val secureWrapper: SecureWrapper = SecureWrapper(),
     private val globalWrapper: GlobalWrapper = GlobalWrapper(),
     private val handler: Handler = Handler(Looper.getMainLooper())
