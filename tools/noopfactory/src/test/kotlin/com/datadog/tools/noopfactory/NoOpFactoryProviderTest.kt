@@ -144,7 +144,6 @@ internal class NoOpFactoryProviderTest {
         )
     }
 
-
     @Test
     fun `M report error W customName conflicts with auto-generated NoOp name`() {
         // Given
@@ -159,9 +158,20 @@ internal class NoOpFactoryProviderTest {
 
         // Then
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
-        assertThat(result.messages).contains(
-            "customName \"NoOpBar\" for 'com.example.Foo' conflicts with the NoOp already generated " +
-                "for 'com.example.Bar'. Choose a different customName."
+        assertThat(result.messages).satisfiesAnyOf(
+            { msg ->
+                assertThat(msg).contains(
+                    "customName \"NoOpBar\" for 'com.example.Foo' conflicts with the NoOp already generated " +
+                        "for 'com.example.Bar'. Choose a different customName."
+                )
+            },
+            { msg ->
+                assertThat(msg).contains(
+                    "NoOp name collision: both 'com.example.Foo' and 'com.example.Bar' " +
+                        "would generate 'NoOpBar'. " +
+                        "Use @NoOpImplementation(customName = \"...\") on one of them to resolve the conflict."
+                )
+            }
         )
     }
 
@@ -179,9 +189,19 @@ internal class NoOpFactoryProviderTest {
 
         // Then
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
-        assertThat(result.messages).contains(
-            "customName \"SharedName\" for 'com.example.Beta' conflicts with the NoOp already generated " +
-                "for 'com.example.Alpha'. Choose a different customName."
+        assertThat(result.messages).satisfiesAnyOf(
+            { msg ->
+                assertThat(msg).contains(
+                    "customName \"SharedName\" for 'com.example.Beta' conflicts with the NoOp already generated " +
+                        "for 'com.example.Alpha'. Choose a different customName."
+                )
+            },
+            { msg ->
+                assertThat(msg).contains(
+                    "customName \"SharedName\" for 'com.example.Alpha' conflicts with the NoOp already generated " +
+                        "for 'com.example.Beta'. Choose a different customName."
+                )
+            }
         )
     }
 

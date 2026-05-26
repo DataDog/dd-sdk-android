@@ -248,11 +248,9 @@ class NoOpFactorySymbolProcessor(
     private fun generateTypeSpec(
         declaration: KSClassDeclaration,
         publicNoOpImplementation: Boolean,
-        customName: String = ""
+        className: String
     ): TypeSpec {
-        val defaultNoOpName = customName.ifEmpty { declaration.defaultNoOpName() }
-
-        val typeSpecBuilder = TypeSpec.classBuilder(defaultNoOpName)
+        val typeSpecBuilder = TypeSpec.classBuilder(className)
             .addModifiers(if (publicNoOpImplementation) KModifier.PUBLIC else KModifier.INTERNAL)
 
         generateSuperTypeDeclaration(typeSpecBuilder, declaration)
