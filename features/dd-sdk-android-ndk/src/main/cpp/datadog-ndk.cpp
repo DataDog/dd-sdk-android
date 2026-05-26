@@ -96,7 +96,7 @@ void write_crash_report(int signum,
     }
 
     // serialize the log
-    const string file_path = main_context.storage_dir.append("/").append(crash_log_filename);
+    const string file_path = main_context.storage_dir + "/" + crash_log_filename;
     const uint64_t timestamp = time_since_epoch();
     const std::string serialized_log = serialize_crash_report(signum, timestamp, signal_name, error_message, error_stacktrace);
 

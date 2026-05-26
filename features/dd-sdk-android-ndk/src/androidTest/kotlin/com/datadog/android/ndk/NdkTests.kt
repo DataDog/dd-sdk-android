@@ -20,6 +20,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
 import java.nio.charset.Charset
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -122,10 +123,12 @@ class NdkTests {
         updateAppStartTime(System.currentTimeMillis() - 1000)
 
         val stop = AtomicBoolean(false)
+        val readerStarted = CountDownLatch(1)
         val tornObservations = AtomicInteger(0)
         val totalReads = AtomicInteger(0)
 
         val reader = thread(name = "crash-log-reader", isDaemon = true) {
+            readerStarted.countDown()
             while (!stop.get()) {
                 try {
                     val bytes = crashLog.readBytes()
@@ -140,18 +143,23 @@ class NdkTests {
             }
         }
 
-        // Let the reader warm up before triggering the write.
-        Thread.sleep(20)
+        // Block until the reader thread has actually entered its loop.
+        Assertions.assertThat(readerStarted.await(2, TimeUnit.SECONDS)).isTrue
 
+        val fakeSignalName = forge.anAlphabeticalString()
         simulateSignalInterception(
             forge.aPositiveInt(true),
-            "sig",
+            fakeSignalName,
             "msg",
             "stack"
         )
 
-        // Let the write settle so the reader observes the post-rename state too.
-        Thread.sleep(100)
+        // Wait until the new payload is visible on disk before stopping the reader,
+        // so the reader has a chance to observe both pre- and post-rename states.
+        ConditionWatcher {
+            crashLog.readText(Charsets.UTF_8).contains("\"signal_name\":\"$fakeSignalName\"")
+        }.doWait(timeoutMs = 5000)
+
         stop.set(true)
         reader.join(2000)
 
