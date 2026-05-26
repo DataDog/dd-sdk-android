@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Application
 import android.content.res.Resources
+import android.graphics.Rect
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -112,6 +113,23 @@ internal abstract class AbstractGesturesListenerTest {
             locationOnScreenArray[0] = (forEvent.x).toInt() - forge.anInt(min = 1, max = 10)
             locationOnScreenArray[1] = (forEvent.y).toInt() - forge.anInt(min = 1, max = 10)
         }
+
+        val viewLeft = locationOnScreenArray[0]
+        val viewTop = locationOnScreenArray[1]
+
+        val diffPosX = abs(forEvent.x - viewLeft).toInt()
+        val diffPosY = abs(forEvent.y - viewTop).toInt()
+
+        val viewWidth: Int
+        val viewHeight: Int
+        if (!hitTest && failHitTestBecauseOfWidthHeight) {
+            viewWidth = diffPosX - forge.anInt(min = 1, max = 10)
+            viewHeight = diffPosY - forge.anInt(min = 1, max = 10)
+        } else {
+            viewWidth = diffPosX + forge.anInt(min = 1, max = 10)
+            viewHeight = diffPosY + forge.anInt(min = 1, max = 10)
+        }
+
         val mockView: T = mock {
             whenever(it.id).thenReturn(id)
             whenever(it.isClickable).thenReturn(clickable)
@@ -124,14 +142,24 @@ internal abstract class AbstractGesturesListenerTest {
                 null
             }
 
-            val diffPosX = abs(forEvent.x - locationOnScreenArray[0]).toInt()
-            val diffPosY = abs(forEvent.y - locationOnScreenArray[1]).toInt()
-            if (!hitTest && failHitTestBecauseOfWidthHeight) {
-                whenever(it.width).thenReturn(diffPosX - forge.anInt(min = 1, max = 10))
-                whenever(it.height).thenReturn(diffPosY - forge.anInt(min = 1, max = 10))
-            } else {
-                whenever(it.width).thenReturn(diffPosX + forge.anInt(min = 1, max = 10))
-                whenever(it.height).thenReturn(diffPosY + forge.anInt(min = 1, max = 10))
+            whenever(it.width).thenReturn(viewWidth)
+            whenever(it.height).thenReturn(viewHeight)
+
+            // Mock getGlobalVisibleRect to match the hitTest/visible outcome.
+            // When visible=false, getGlobalVisibleRect returns false (view not shown).
+            // Otherwise the Rect fields are assigned directly (Rect.set() is a no-op
+            // in Android unit test stubs with returnDefaultValues=true).
+            whenever(it.getGlobalVisibleRect(any())).doAnswer { invocation ->
+                if (!visible) {
+                    false
+                } else {
+                    val rect = invocation.arguments[0] as Rect
+                    rect.left = viewLeft
+                    rect.top = viewTop
+                    rect.right = viewLeft + viewWidth
+                    rect.bottom = viewTop + viewHeight
+                    true
+                }
             }
 
             applyOthers(this.mock)
