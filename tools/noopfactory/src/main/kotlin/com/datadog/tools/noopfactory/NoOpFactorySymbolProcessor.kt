@@ -25,6 +25,7 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
+import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -79,13 +80,10 @@ class NoOpFactorySymbolProcessor(
             .filterIsInstance<KSClassDeclaration>()
             .forEach {
                 when {
-                    it.classKind != ClassKind.INTERFACE -> logger.warn(
-                        "Unable to generate a NoOpImplementation for ${it.simpleName.asString()}, " +
-                            "it is not an interface."
-                    )
-                    it.isLocal() -> logger.warn(
-                        "Unable to generate a NoOpImplementation for ${it.simpleName.asString()}, " +
-                            "local interfaces are not supported."
+                    it.classKind != ClassKind.INTERFACE -> it.warnCannotGenerate("it is not an interface.")
+                    it.isLocal() -> it.warnCannotGenerate("local interfaces are not supported.")
+                    it.hasRestrictedVisibility() -> it.warnCannotGenerate(
+                        "it or one of its enclosing classes has private or protected visibility."
                     )
                     else -> {
                         generateNoOpImplementation(it)
@@ -317,7 +315,7 @@ class NoOpFactorySymbolProcessor(
     }
 
     /**
-     * Updates the executable element map with the newly found enclosed executable elements
+     * Updates the property element map with the newly found enclosed properties
      * in this interface avoiding the duplicates.
      */
     private fun fetchInterfaceProperties(
@@ -653,6 +651,12 @@ class NoOpFactorySymbolProcessor(
      * to avoid collisions between same-named interfaces in different outer classes
      * (e.g. `Outer.Inner` → `NoOpOuterInner`, `OuterOuter.Outer.Inner` → `NoOpOuterOuterOuterInner`).
      */
+    private fun KSClassDeclaration.warnCannotGenerate(reason: String) {
+        logger.warn(
+            "Unable to generate a NoOpImplementation for ${simpleName.asString()}, $reason"
+        )
+    }
+
     private fun KSClassDeclaration.noOpName(): String {
         val names = mutableListOf(simpleName.asString())
         var enclosing = parentDeclaration as? KSClassDeclaration
@@ -661,6 +665,17 @@ class NoOpFactorySymbolProcessor(
             enclosing = enclosing.parentDeclaration as? KSClassDeclaration
         }
         return "NoOp${names.joinToString("")}"
+    }
+
+    private fun KSClassDeclaration.hasRestrictedVisibility(): Boolean {
+        var current: KSClassDeclaration? = this
+        while (current != null) {
+            if (Modifier.PRIVATE in current.modifiers || Modifier.PROTECTED in current.modifiers) {
+                return true
+            }
+            current = current.parentDeclaration as? KSClassDeclaration
+        }
+        return false
     }
 
     // endregion
