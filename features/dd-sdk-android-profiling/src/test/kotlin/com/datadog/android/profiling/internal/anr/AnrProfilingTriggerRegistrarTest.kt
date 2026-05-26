@@ -13,8 +13,12 @@ import android.os.ProfilingTrigger
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -70,6 +74,9 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Mock
     private lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    private lateinit var mockProfilingTelemetry: ProfilingTelemetry
+
     private lateinit var testedRegistrar: AnrProfilingTriggerRegistrar
 
     @BeforeEach
@@ -77,7 +84,8 @@ internal class AnrProfilingTriggerRegistrarTest {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
         testedRegistrar = AnrProfilingTriggerRegistrar(
             timeProvider = mockTimeProvider,
-            executorService = mockExecutorService
+            executorService = mockExecutorService,
+            profilingTelemetry = mockProfilingTelemetry
         )
         val mockTrigger = mock<ProfilingTrigger> {
             on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
@@ -136,6 +144,69 @@ internal class AnrProfilingTriggerRegistrarTest {
 
         // Then
         verify(mockAnrListener, never()).onAnrDetected(any())
+    }
+
+    @Test
+    fun `M report telemetry W trigger callback fires {ANR success - file unreadable}`(
+        @StringForgery fakePath: String
+    ) {
+        // Given a path that doesn't exist on disk: getFileCreationTimeMs returns null, so the
+        // registrar can't compute callbackDelayMs and treats droppedAsStale as false.
+        testedRegistrar.register(mockContext, mockAnrListener)
+        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
+        val anrResult = mock<ProfilingResult> {
+            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { errorMessage } doReturn null
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        triggerCallbackCaptor.firstValue.accept(anrResult)
+
+        // Then
+        verify(mockProfilingTelemetry).report(
+            ProfilingTelemetryEvent.AnrTriggerResult(
+                errorCode = ProfilingResult.ERROR_NONE,
+                errorMessage = null,
+                fileSize = 0L,
+                callbackDelayMs = null,
+                droppedAsStale = false
+            )
+        )
+    }
+
+    @Test
+    fun `M report telemetry W trigger callback fires {ANR error}`(
+        @IntForgery(min = 1, max = 8) fakeErrorCode: Int,
+        @StringForgery fakeErrorMessage: String,
+        @StringForgery fakePath: String
+    ) {
+        // Given
+        testedRegistrar.register(mockContext, mockAnrListener)
+        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
+        val anrResult = mock<ProfilingResult> {
+            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { errorCode } doReturn fakeErrorCode
+            on { errorMessage } doReturn fakeErrorMessage
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        triggerCallbackCaptor.firstValue.accept(anrResult)
+
+        // Then
+        verify(mockProfilingTelemetry).report(
+            ProfilingTelemetryEvent.AnrTriggerResult(
+                errorCode = fakeErrorCode,
+                errorMessage = fakeErrorMessage,
+                fileSize = 0L,
+                callbackDelayMs = null,
+                droppedAsStale = false
+            )
+        )
     }
 
     @Test
@@ -316,7 +387,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     }
 
     @Test
-    fun `M dispatch to listener W trigger callback fires {delay below threshold}`(
+    fun `M dispatch to listener and report telemetry W trigger callback fires {delay below threshold}`(
         @TempDir tempDir: File,
         @LongForgery(min = 0L, max = 1_000L) fakeDelayMs: Long
     ) {
@@ -333,20 +404,30 @@ internal class AnrProfilingTriggerRegistrarTest {
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
             on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { errorMessage } doReturn null
             on { resultFilePath } doReturn tmpFile.absolutePath
         }
+        val expectedFileSize = tmpFile.length()
 
         // When
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        val captor = argumentCaptor<ProfilingAnrDetectedEvent>()
-        verify(mockAnrListener).onAnrDetected(captor.capture())
-        assertThat(captor.firstValue.detectedAtMs).isEqualTo(fakeNow)
+        verify(mockAnrListener).onAnrDetected(any())
+        verify(mockProfilingTelemetry).report(
+            ProfilingTelemetryEvent.AnrTriggerResult(
+                errorCode = ProfilingResult.ERROR_NONE,
+                errorMessage = null,
+                fileSize = expectedFileSize,
+                callbackDelayMs = fakeDelayMs,
+                droppedAsStale = false
+            )
+        )
     }
 
     @Test
-    fun `M drop ANR event W trigger callback fires {delay above threshold}`(
+    fun `M drop ANR event and report stale telemetry W trigger callback fires {delay above threshold}`(
         @TempDir tempDir: File,
         @LongForgery(min = 1_001L, max = 60_000L) fakeDelayMs: Long
     ) {
@@ -363,23 +444,25 @@ internal class AnrProfilingTriggerRegistrarTest {
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
             on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { errorMessage } doReturn null
             on { resultFilePath } doReturn tmpFile.absolutePath
         }
+        val expectedFileSize = tmpFile.length()
 
         // When
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
         verify(mockAnrListener, never()).onAnrDetected(any())
-        val propsCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.TELEMETRY),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
-            propsCaptor.capture()
+        verify(mockProfilingTelemetry).report(
+            ProfilingTelemetryEvent.AnrTriggerResult(
+                errorCode = ProfilingResult.ERROR_NONE,
+                errorMessage = null,
+                fileSize = expectedFileSize,
+                callbackDelayMs = fakeDelayMs,
+                droppedAsStale = true
+            )
         )
-        assertThat(propsCaptor.firstValue).containsEntry("delay_ms", fakeDelayMs)
     }
 }
