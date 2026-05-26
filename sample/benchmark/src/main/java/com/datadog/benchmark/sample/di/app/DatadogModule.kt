@@ -41,7 +41,11 @@ internal interface DatadogModule {
             context: Context,
             config: BenchmarkConfig
         ): SdkCore {
-            if (config.run == SyntheticsRun.Baseline) {
+            // Session Replay (Compose) Baseline needs RUM
+            if (config.run == SyntheticsRun.Baseline &&
+                config.scenario != SyntheticsScenario.SessionReplay &&
+                config.scenario != SyntheticsScenario.SessionReplayCompose
+            ) {
                 return Datadog.getInstance() // returns NoOpInternalSdkCore under the hood
             }
 
