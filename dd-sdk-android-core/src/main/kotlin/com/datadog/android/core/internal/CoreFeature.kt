@@ -28,6 +28,7 @@ import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.account.DatadogAccountInfoProvider
 import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.account.NoOpMutableAccountInfoProvider
+import android.util.Log
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
@@ -639,6 +640,19 @@ internal class CoreFeature(
             if (BuildConfig.DEBUG) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 builder.addNetworkInterceptor(CurlInterceptor())
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                builder.addNetworkInterceptor { chain ->
+                    val connection = chain.connection()
+                    val socket = connection?.socket()
+                    Log.i(
+                        "ConnReuse",
+                        "request to ${chain.request().url}, " +
+                            "connection=${connection?.hashCode()}, " +
+                            "socket=${socket?.hashCode()}, " +
+                            "localPort=${socket?.localPort}"
+                    )
+                    chain.proceed(chain.request())
+                }
             } else {
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 builder.addInterceptor(GzipRequestInterceptor(internalLogger))
