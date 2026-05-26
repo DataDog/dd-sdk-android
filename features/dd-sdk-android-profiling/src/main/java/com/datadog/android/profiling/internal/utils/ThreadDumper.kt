@@ -8,8 +8,8 @@ package com.datadog.android.profiling.internal.utils
 
 import android.os.Looper
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
-import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
 
 internal class ThreadDumper(
@@ -24,22 +24,26 @@ internal class ThreadDumper(
     @Volatile
     internal var internalLogger: InternalLogger? = null
 
-    fun dump(): Snapshot {
+    fun dump(detectedAtMs: Long): ProfilingAnrDetectedEvent {
         val mainThread = mainThreadProvider()
         val anrThreadStack = mainThread.stackTrace.toList()
-        // TODO RUM-16390: Replace Thread.getAllStackTraces() with per-thread iteration in ThreadDumper
         val allThreads = safeGetAllStackTraces()
             .filterKeys { it != mainThread }
             .filterValues { it.isNotEmpty() }
             .map { (thread, stack) ->
                 ProfilingThreadDump(
                     name = thread.name,
-                    state = thread.state.asString(),
-                    stack = stack.loggableStackTrace(),
-                    crashed = false
+                    state = thread.state,
+                    stack = stack.loggableStackTrace()
                 )
             }
-        return Snapshot(anrThreadStack = anrThreadStack, allThreads = allThreads)
+        return ProfilingAnrDetectedEvent(
+            detectedAtMs = detectedAtMs,
+            anrThreadStack = anrThreadStack,
+            anrThreadName = mainThread.name,
+            anrThreadState = mainThread.state,
+            allThreads = allThreads
+        )
     }
 
     private fun safeGetAllStackTraces(): Map<Thread, Array<StackTraceElement>> {
@@ -55,11 +59,6 @@ internal class ThreadDumper(
             emptyMap()
         }
     }
-
-    data class Snapshot(
-        val anrThreadStack: List<StackTraceElement>,
-        val allThreads: List<ProfilingThreadDump>
-    )
 
     private companion object {
         const val LOG_STACKS_FAILED = "Failed to capture all stack traces for thread dump."

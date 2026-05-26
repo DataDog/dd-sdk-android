@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.utils.ThreadDumper
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -36,7 +37,10 @@ internal class ThreadDumperTest {
     private lateinit var mockInternalLogger: InternalLogger
 
     @Test
-    fun `M return ANR thread stack and other threads W dump()`(forge: Forge) {
+    fun `M return ANR thread stack and other threads W dump()`(
+        forge: Forge,
+        @LongForgery fakeDetectedAtMs: Long
+    ) {
         // Given
         val anrThread = Thread.currentThread()
         val otherThread = Thread("worker")
@@ -53,16 +57,21 @@ internal class ThreadDumperTest {
         ).apply { internalLogger = mockInternalLogger }
 
         // When
-        val dump = testedDumper.dump()
+        val dump = testedDumper.dump(fakeDetectedAtMs)
 
         // Then
+        assertThat(dump.detectedAtMs).isEqualTo(fakeDetectedAtMs)
         assertThat(dump.anrThreadStack).isNotEmpty()
+        assertThat(dump.anrThreadName).isEqualTo(anrThread.name)
+        assertThat(dump.anrThreadState).isEqualTo(anrThread.state)
         assertThat(dump.allThreads).hasSize(1)
         assertThat(dump.allThreads.first().name).isEqualTo("worker")
     }
 
     @Test
-    fun `M skip threads with empty stack W dump()`() {
+    fun `M skip threads with empty stack W dump()`(
+        @LongForgery fakeDetectedAtMs: Long
+    ) {
         // Given
         val mainThread = Thread.currentThread()
         val idleThread = Thread("idle")
@@ -77,14 +86,19 @@ internal class ThreadDumperTest {
         ).apply { internalLogger = mockInternalLogger }
 
         // When
-        val dump = testedDumper.dump()
+        val dump = testedDumper.dump(fakeDetectedAtMs)
 
         // Then
+        assertThat(dump.detectedAtMs).isEqualTo(fakeDetectedAtMs)
+        assertThat(dump.anrThreadName).isEqualTo(mainThread.name)
+        assertThat(dump.anrThreadState).isEqualTo(mainThread.state)
         assertThat(dump.allThreads).isEmpty()
     }
 
     @Test
-    fun `M return empty allThreads and log W getAllStackTraces throws`() {
+    fun `M return empty allThreads and log W getAllStackTraces throws`(
+        @LongForgery fakeDetectedAtMs: Long
+    ) {
         // Given
         val fakeBoom = RuntimeException("boom")
         val testedDumper = ThreadDumper(
@@ -93,7 +107,7 @@ internal class ThreadDumperTest {
         ).apply { internalLogger = mockInternalLogger }
 
         // When
-        val dump = testedDumper.dump()
+        val dump = testedDumper.dump(fakeDetectedAtMs)
 
         // Then
         assertThat(dump.allThreads).isEmpty()

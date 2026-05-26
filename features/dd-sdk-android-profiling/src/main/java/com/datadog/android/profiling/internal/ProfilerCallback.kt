@@ -6,7 +6,7 @@
 
 package com.datadog.android.profiling.internal
 
-import com.datadog.android.internal.profiling.ProfilingThreadDump
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
 internal interface ProfilerCallback {
@@ -14,9 +14,5 @@ internal interface ProfilerCallback {
 
     fun onFailure(startReason: ProfilingStartReason)
 
-    fun onAnrDetected(
-        detectedAtMs: Long,
-        anrThreadStack: List<StackTraceElement>,
-        allThreads: List<ProfilingThreadDump>
-    )
+    fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 }

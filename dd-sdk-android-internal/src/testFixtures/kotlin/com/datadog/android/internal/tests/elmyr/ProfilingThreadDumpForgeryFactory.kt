@@ -14,8 +14,7 @@ class ProfilingThreadDumpForgeryFactory : ForgeryFactory<ProfilingThreadDump> {
     override fun getForgery(forge: Forge): ProfilingThreadDump {
         return ProfilingThreadDump(
             name = forge.anAlphaNumericalString(),
-            state = forge.aValueFrom(Thread.State::class.java).name.lowercase(),
-            crashed = forge.aBool(),
+            state = forge.aValueFrom(Thread.State::class.java),
             stack = forge.aList {
                 StackTraceElement(
                     forge.anAlphabeticalString(),

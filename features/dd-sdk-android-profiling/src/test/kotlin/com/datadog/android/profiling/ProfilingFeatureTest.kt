@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.profiling.forge.Configurator
@@ -97,6 +98,9 @@ internal class ProfilingFeatureTest {
     private lateinit var mockProfilingFeatureScope: FeatureScope
 
     @Mock
+    private lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
     private lateinit var mockDataWriter: ProfilingWriter
 
     @Mock
@@ -146,6 +150,7 @@ internal class ProfilingFeatureTest {
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
         whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
         whenever(mockEditor.putFloat(any(), any())) doReturn mockEditor
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
         fakeTTID = fakeTTID.copy(type = ProfilerEvent.RumVitalEvent.Type.TTID)
@@ -1012,6 +1017,38 @@ internal class ProfilingFeatureTest {
         // Then
         assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
         assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M forward ProfilingAnrDetectedEvent to RUM W onAnrDetected() {launch profiling active}`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onAnrDetected(fakeEvent)
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(fakeEvent)
+    }
+
+    @Test
+    fun `M drop ProfilingAnrDetectedEvent W onAnrDetected() {profiling inactive}`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onAnrDetected(fakeEvent)
+
+        // Then
+        verify(mockRumFeatureScope, never()).sendEvent(any())
     }
 
     @Test
