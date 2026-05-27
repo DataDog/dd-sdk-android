@@ -14,10 +14,11 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
-import com.datadog.android.internal.rum.RumSessionRenewedEvent
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
@@ -33,6 +34,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -268,12 +270,7 @@ internal class ProfilingFeatureTest {
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
         testedFeature.onInitialize(mockContext)
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(
-                sessionId = UUID.randomUUID().toString(),
-                sessionSampleRate = 100f
-            )
-        )
+        testedFeature.dispatchRumSession(UUID.randomUUID().toString(), 100f)
 
         // When
         testedFeature.onReceive(fakeTTID)
@@ -303,12 +300,7 @@ internal class ProfilingFeatureTest {
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
         testedFeature.onInitialize(mockContext)
 
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(
-                sessionId = UUID.randomUUID().toString(),
-                sessionSampleRate = 0f
-            )
-        )
+        testedFeature.dispatchRumSession(UUID.randomUUID().toString(), 0f)
 
         // When
         testedFeature.onReceive(fakeTTID)
@@ -318,7 +310,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M forward sessionId to scheduler W onReceive {RumSessionRenewedEvent}`(
+    fun `M forward sessionId to scheduler W onContextUpdate {RUM session in feature context}`(
         forge: Forge
     ) {
         // Given — forge both rates; pre-compute the expected decision via a reference
@@ -345,17 +337,124 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(
-                sessionId = realSessionId,
-                sessionSampleRate = fakeSessionRate
-            )
-        )
+        testedFeature.dispatchRumSession(realSessionId, fakeSessionRate)
 
         // Then
         val scheduler = checkNotNull(testedFeature.continuousProfilingScheduler)
         assertThat(scheduler.currentSessionId).isEqualTo(realSessionId)
         assertThat(scheduler.currentSessionSampled).isEqualTo(expectedDecision)
+        assertThat(testedFeature.lastSeenRumSessionId).isEqualTo(realSessionId)
+    }
+
+    @Test
+    fun `M register as context update receiver W onInitialize()`() {
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockSdkCore).setContextUpdateReceiver(testedFeature)
+    }
+
+    @Test
+    fun `M ignore context update W onContextUpdate {non-RUM feature}`(
+        @StringForgery fakeOtherFeatureName: String,
+        @FloatForgery(min = 0f, max = 100f) fakeSessionRate: Float
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onContextUpdate(
+            fakeOtherFeatureName,
+            mapOf(
+                FeatureContextKeys.RUM_SESSION_ID to UUID.randomUUID().toString(),
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to fakeSessionRate
+            )
+        )
+
+        // Then
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
+    }
+
+    @Test
+    fun `M ignore context update W onContextUpdate {session id is NULL_UUID sentinel}`(
+        @FloatForgery(min = 0f, max = 100f) fakeSessionRate: Float
+    ) {
+        // Given — RUM has been initialised but no session has been created yet
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_SESSION_ID to RumSessionConstants.EMPTY_RUM_SESSION_ID,
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to fakeSessionRate
+            )
+        )
+
+        // Then
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
+    }
+
+    @Test
+    fun `M sample session out W onContextUpdate {session_sample_rate missing from context}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = UUID.randomUUID().toString()
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_SESSION_ID to sessionId)
+        )
+
+        // Then
+        val scheduler = checkNotNull(testedFeature.continuousProfilingScheduler)
+        assertThat(testedFeature.lastSeenRumSessionId).isEqualTo(sessionId)
+        assertThat(scheduler.currentSessionId).isEqualTo(sessionId)
+        assertThat(scheduler.currentSessionSampled).isFalse()
+    }
+
+    @Test
+    fun `M only forward once W onContextUpdate {same session id repeated}`(
+        forge: Forge
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = UUID.randomUUID().toString()
+        val firstSampleRate = forge.aFloat(min = 0.1f, max = 100f)
+        val secondSampleRate = forge.aFloat(min = 0.1f, max = 100f)
+        testedFeature.dispatchRumSession(sessionId, firstSampleRate)
+        val scheduler = checkNotNull(testedFeature.continuousProfilingScheduler)
+        val sampledAfterFirst = scheduler.currentSessionSampled
+
+        // When — same session id arrives again with a different sample rate (e.g. spurious
+        // RUM context update emitted by an unrelated view change). The receiver should
+        // ignore it without recomputing sampling.
+        testedFeature.dispatchRumSession(sessionId, secondSampleRate)
+
+        // Then
+        assertThat(scheduler.currentSessionSampled).isEqualTo(sampledAfterFirst)
+    }
+
+    @Test
+    fun `M unregister context receiver and clear last session W onStop()`(
+        @FloatForgery(min = 0.1f, max = 100f) fakeSessionRate: Float
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(UUID.randomUUID().toString(), fakeSessionRate)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockSdkCore).removeContextUpdateReceiver(testedFeature)
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
     }
 
     @Test
@@ -371,9 +470,7 @@ internal class ProfilingFeatureTest {
             callbackCaptor.capture()
         )
 
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = "session-id", sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession("session-id", 100f)
 
         testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
@@ -414,9 +511,7 @@ internal class ProfilingFeatureTest {
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
         val runnableCaptor = argumentCaptor<Runnable>()
@@ -506,9 +601,7 @@ internal class ProfilingFeatureTest {
             callbackCaptor.capture()
         )
         // Open the continuous accumulation window
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
@@ -549,9 +642,7 @@ internal class ProfilingFeatureTest {
             callbackCaptor.capture()
         )
         // Open the continuous accumulation window
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
@@ -599,9 +690,7 @@ internal class ProfilingFeatureTest {
             )
         )
         // Open continuous active window
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
         runnableCaptor.firstValue.run()
@@ -678,9 +767,7 @@ internal class ProfilingFeatureTest {
             )
         )
         // Open continuous active window
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
         runnableCaptor.firstValue.run()
@@ -792,9 +879,7 @@ internal class ProfilingFeatureTest {
             )
         )
         // Open window 1
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor, atLeastOnce()).schedule(
             runnableCaptor.capture(),
@@ -844,9 +929,7 @@ internal class ProfilingFeatureTest {
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
-        testedFeature.onReceive(
-            RumSessionRenewedEvent(sessionId = fakeSessionId, sessionSampleRate = 100f)
-        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
@@ -1081,6 +1164,16 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockProfiler).unregisterProfilingCallback(mockContext, fakeInstanceName)
+    }
+
+    private fun ProfilingFeature.dispatchRumSession(sessionId: String, sampleRate: Float) {
+        onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_SESSION_ID to sessionId,
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to sampleRate
+            )
+        )
     }
 
     companion object {

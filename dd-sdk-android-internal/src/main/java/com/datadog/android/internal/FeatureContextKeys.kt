@@ -7,7 +7,7 @@
 package com.datadog.android.internal
 
 /**
- * Keys used to communicate profiling state via the features context.
+ * Keys used to share state across features via the features context.
  */
 object FeatureContextKeys {
     /**
@@ -15,4 +15,18 @@ object FeatureContextKeys {
      * Written by the profiling feature and read by RUM and debug widget consumers.
      */
     const val PROFILER_IS_RUNNING: String = "profiler_is_running"
+
+    /**
+     * Current RUM session identifier. Written by the RUM feature into its own feature
+     * context on every session renewal; read by other features (e.g. profiling) that
+     * subscribe via [com.datadog.android.api.feature.FeatureContextUpdateReceiver].
+     */
+    const val RUM_SESSION_ID: String = "session_id"
+
+    /**
+     * Sample rate (0..100) of the current RUM session. Written by the RUM feature into
+     * its own feature context; read by other features that need to combine it with their
+     * own sampling.
+     */
+    const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
 }

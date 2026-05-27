@@ -15,7 +15,6 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.internal.rum.RumSessionRenewedEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -292,8 +291,6 @@ internal class RumSessionScope(
             )
         }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
-        // Notifies `ProfilingFeature` that the RUM session has been renewed.
-        updateContinuousProfilingForSession(sessionId)
     }
 
     private fun updateSessionStateForSessionReplay(sessionId: String) {
@@ -306,15 +303,6 @@ internal class RumSessionScope(
                 // don't yet consume sessionSampleRate.
                 // RUM-15962: Remove with SDK v4 release (RUM-13454).
                 RUM_KEEP_SESSION_BUS_MESSAGE_KEY to (sessionState == State.TRACKED)
-            )
-        )
-    }
-
-    private fun updateContinuousProfilingForSession(sessionId: String) {
-        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            RumSessionRenewedEvent(
-                sessionId = sessionId,
-                sessionSampleRate = sessionSampleRate
             )
         )
     }
