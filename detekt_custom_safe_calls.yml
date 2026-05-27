@@ -1211,6 +1211,7 @@ datadog:
       - "kotlin.ULong.toDouble()"
       - "kotlin.UShort.toShort()"
       - "kotlin.math.abs(kotlin.Float)"
+      - "kotlin.math.abs(kotlin.Long)"
       - "kotlin.math.max(kotlin.Double, kotlin.Double)"
       - "kotlin.math.max(kotlin.Float, kotlin.Float)"
       - "kotlin.math.max(kotlin.Int, kotlin.Int)"

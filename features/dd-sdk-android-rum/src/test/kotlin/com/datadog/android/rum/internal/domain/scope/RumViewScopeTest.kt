@@ -132,6 +132,7 @@ import org.mockito.quality.Strictness
 import java.util.Arrays
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -3896,6 +3897,100 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M persist lastFatalAnrSent W handleEvent(AddError) {throwable is ANRException, write succeeds}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+        val persistenceExecutor = sameThreadExecutorService()
+        whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
+            .doReturn(persistenceExecutor)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(rumMonitorConfiguration.mockSdkCore).writeLastFatalAnrSent(fakeEvent.eventTime.timestamp)
+    }
+
+    @Test
+    fun `M not persist lastFatalAnrSent W handleEvent(AddError) {throwable is not ANRException}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+        val persistenceExecutor = sameThreadExecutorService()
+        whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
+            .doReturn(persistenceExecutor)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(rumMonitorConfiguration.mockSdkCore, never()).writeLastFatalAnrSent(any())
+    }
+
+    @Test
+    fun `M not persist lastFatalAnrSent W handleEvent(AddError) {throwable is ANRException, write fails}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+        val persistenceExecutor = sameThreadExecutorService()
+        whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
+            .doReturn(persistenceExecutor)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(rumMonitorConfiguration.mockSdkCore, never()).writeLastFatalAnrSent(any())
     }
 
     @Test
@@ -9681,6 +9776,11 @@ internal class RumViewScopeTest {
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
         return timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs
     }
+
+    private fun sameThreadExecutorService(): ExecutorService =
+        mock<ExecutorService>().apply {
+            whenever(execute(any())) doAnswer { it.getArgument<Runnable>(0).run() }
+        }
 
     private fun mockSessionReplayContext(testedScope: RumViewScope) {
         whenever(
