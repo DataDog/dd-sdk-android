@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
@@ -40,6 +41,10 @@ plugins {
 
 android {
     namespace = "com.datadog.android.profiling"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -68,6 +73,11 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
+    testFixturesImplementation(libs.androidXAnnotation)
 }
 
 unMock {
