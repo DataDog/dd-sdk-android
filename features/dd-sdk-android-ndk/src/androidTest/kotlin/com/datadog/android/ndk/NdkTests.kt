@@ -17,8 +17,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
+import java.io.File
+import java.io.IOException
 import java.nio.charset.Charset
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 
 @RunWith(AndroidJUnit4::class)
 class NdkTests {
@@ -73,10 +79,12 @@ class NdkTests {
         // we need to give time to native part to write the file
         // otherwise we will get into race condition issues
         ConditionWatcher {
-            // assert the log file
-            val listFiles = temporaryFolder.root.listFiles()
-            val inputStream = listFiles?.first()?.inputStream()
-            inputStream?.use {
+            // The atomic write+rename in the native writer must leave exactly one file
+            // named "crash_log" — no stray "crash_log.tmp" should linger.
+            val listFiles = temporaryFolder.root.listFiles().orEmpty()
+            Assertions.assertThat(listFiles).hasSize(1)
+            Assertions.assertThat(listFiles[0].name).isEqualTo("crash_log")
+            listFiles[0].inputStream().use {
                 val jsonString = String(it.readBytes(), Charset.forName("utf-8"))
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 assertThat(jsonObject).hasField("signal", fakeSignal)
@@ -96,6 +104,72 @@ class NdkTests {
             }
             true
         }.doWait(timeoutMs = 5000)
+    }
+
+    @Test
+    fun crashLogFile_isNeverObservablyTorn_whileBeingWritten() {
+        // Seed the destination with a known-good JSON so the reader always has a valid baseline.
+        // With the atomic rename in the native writer, crash_log content must always be either
+        // this seed or a fully-formed JSON — never empty and never starting with a non-'{' byte.
+        val storage = temporaryFolder.root
+        val crashLog = File(storage, "crash_log")
+        crashLog.writeText(
+            """{"signal":0,"timestamp":0,"signal_name":"seed","message":"seed",""" +
+                """"stacktrace":"seed","time_since_app_start_ms":0}"""
+        )
+
+        initNdkErrorHandler(storage.absolutePath)
+        updateTrackingConsent(1)
+        updateAppStartTime(System.currentTimeMillis() - 1000)
+
+        val stop = AtomicBoolean(false)
+        val readerStarted = CountDownLatch(1)
+        val tornObservations = AtomicInteger(0)
+        val totalReads = AtomicInteger(0)
+
+        val reader = thread(name = "crash-log-reader", isDaemon = true) {
+            readerStarted.countDown()
+            while (!stop.get()) {
+                try {
+                    val bytes = crashLog.readBytes()
+                    totalReads.incrementAndGet()
+                    if (bytes.isEmpty() || bytes[0] != '{'.code.toByte()) {
+                        tornObservations.incrementAndGet()
+                    }
+                } catch (@Suppress("SwallowedException") e: IOException) {
+                    // A missing or unreadable file mid-write counts as a torn observation.
+                    tornObservations.incrementAndGet()
+                }
+            }
+        }
+
+        // Block until the reader thread has actually entered its loop.
+        Assertions.assertThat(readerStarted.await(2, TimeUnit.SECONDS)).isTrue
+
+        val fakeSignalName = forge.anAlphabeticalString()
+        simulateSignalInterception(
+            forge.aPositiveInt(true),
+            fakeSignalName,
+            "msg",
+            "stack"
+        )
+
+        // Wait until the new payload is visible on disk before stopping the reader,
+        // so the reader has a chance to observe both pre- and post-rename states.
+        ConditionWatcher {
+            crashLog.readText(Charsets.UTF_8).contains("\"signal_name\":\"$fakeSignalName\"")
+        }.doWait(timeoutMs = 5000)
+
+        stop.set(true)
+        reader.join(2000)
+
+        Assertions.assertThat(tornObservations.get())
+            .withFailMessage(
+                "Reader observed %d torn states of crash_log out of %d reads",
+                tornObservations.get(),
+                totalReads.get()
+            )
+            .isZero()
     }
 
     @Test

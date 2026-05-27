@@ -56,15 +56,21 @@ class com.datadog.android.trace.internal.ApmNetworkInstrumentation
   fun onResponseFailed(com.datadog.android.trace.internal.net.RequestTracingState, Throwable)
   fun removeTracingHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
   fun reportInstrumentationError(() -> String)
+sealed class com.datadog.android.trace.internal.ParentContextSource
+  abstract val context: com.datadog.android.trace.api.span.DatadogSpanContext
+  class FromHeaders : ParentContextSource
+    constructor(com.datadog.android.trace.api.span.DatadogSpanContext)
+  class FromTag : ParentContextSource
+    constructor(com.datadog.android.trace.api.span.DatadogSpanContext)
 class com.datadog.android.trace.internal.DatadogPropagationHelper
   fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
   fun setTraceContext(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, String, String, Int)
-  fun extractParentContext(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.api.instrumentation.network.HttpRequestInfo): com.datadog.android.trace.api.span.DatadogSpanContext?
+  fun extractParentContext(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.api.instrumentation.network.HttpRequestInfo): ParentContextSource?
   fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
   fun propagateSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Set<com.datadog.android.trace.TracingHeaderType>)
   fun propagateNotSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Set<com.datadog.android.trace.TracingHeaderType>, com.datadog.android.trace.TraceContextInjection, String?)
   fun removeAllTracingHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
-  fun extractSamplingDecision(com.datadog.android.api.instrumentation.network.HttpRequestInfo): Boolean?
+  fun extractSamplingDecision(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Boolean = false): Boolean?
   companion object 
 class com.datadog.android.trace.internal.DatadogSpanIdConverter
   fun fromHex(String): Long
@@ -85,6 +91,8 @@ object com.datadog.android.trace.internal._TraceInternalProxy
   fun mergeBaggage(String?, String): String
   fun createApmNetworkInstrumentation(String, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
 fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float?
+fun com.datadog.android.trace.api.span.DatadogSpanContext?.isDropped(): Boolean
+fun Int?.isDroppedPriority(): Boolean
 data class com.datadog.android.trace.internal.net.RequestTracingState
   constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null)
   fun createRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo

@@ -27,7 +27,14 @@ internal class NoOpFactoryProviderTest {
             "EnumInterface.kt:NoOpEnumInterface.kt",
             "OverloadedInterface.kt:NoOpOverloadedInterface.kt",
             "PublicImplementation.kt:NoOpPublicImplementation.kt",
-            "ExperimentalInterface.kt:NoOpExperimentalInterface.kt"
+            "ExperimentalInterface.kt:NoOpExperimentalInterface.kt",
+            "Outer.kt:NoOpOuterInner.kt",
+            "NestedReturnTypeInterface.kt:NoOpNestedReturnTypeInterface.kt",
+            "Outer2.kt:NoOpOuter2Inner2.kt",
+            "Outer2.kt:NoOpOuter2.kt",
+            "PublicOuterInternalInner.kt:NoOpPublicOuterInternalInner.kt",
+            "InternalOuterPublicInner.kt:NoOpInternalOuterPublicInner.kt",
+            "InternalOuterInternalInner.kt:NoOpInternalOuterInternalInner.kt"
         ]
     )
     fun `implement a NoOp class from interface`(srcFileName: String, genFileName: String) {
@@ -66,6 +73,34 @@ internal class NoOpFactoryProviderTest {
 
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
         result.assertNothingGenerated("NoOp$srcFileName")
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        delimiter = ':',
+        value = [
+            "PublicOuterPrivateInner.kt:NoOpPublicOuterPrivateInner.kt",
+            "PublicOuterProtectedInner.kt:NoOpPublicOuterProtectedInner.kt",
+            "InternalOuterPrivateInner.kt:NoOpInternalOuterPrivateInner.kt",
+            "InternalOuterProtectedInner.kt:NoOpInternalOuterProtectedInner.kt",
+            "PrivateOuterPublicInner.kt:NoOpPrivateOuterPublicInner.kt",
+            "PrivateOuterInternalInner.kt:NoOpPrivateOuterInternalInner.kt",
+            "PrivateOuterPrivateInner.kt:NoOpPrivateOuterPrivateInner.kt",
+            "PrivateOuterProtectedInner.kt:NoOpPrivateOuterProtectedInner.kt"
+        ]
+    )
+    fun `ignores interfaces with restricted visibility`(srcFileName: String, noOpFileName: String) {
+        val srcFile = File(javaClass.getResource("/src/$srcFileName")!!.file)
+        val kotlinSource = SourceFile.fromPath(srcFile)
+
+        val result = KotlinCompilation().apply {
+            inheritClassPath = true
+            sources = listOf(kotlinSource)
+            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        result.assertNothingGenerated(noOpFileName)
     }
 
     // region Internal
