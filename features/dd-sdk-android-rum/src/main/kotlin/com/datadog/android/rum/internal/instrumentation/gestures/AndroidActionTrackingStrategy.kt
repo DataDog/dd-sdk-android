@@ -70,10 +70,8 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
         @Suppress("UnsafeThirdPartyFunctionCall") // outRect is never null
         val isVisible = view.getGlobalVisibleRect(outRect)
         if (!isVisible) return false
-        val ix = x.toInt()
-        val iy = y.toInt()
-        return ix >= outRect.left && ix <= outRect.right &&
-            iy >= outRect.top && iy <= outRect.bottom
+        return x >= outRect.left && x <= outRect.right &&
+            y >= outRect.top && y <= outRect.bottom
     }
 
     private fun isValidScrollableTarget(view: View): Boolean {

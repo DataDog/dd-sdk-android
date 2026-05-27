@@ -105,17 +105,15 @@ internal abstract class AbstractGesturesListenerTest {
     ): T {
         val failHitTestBecauseOfXY = forge.aBool()
         val failHitTestBecauseOfWidthHeight = !failHitTestBecauseOfXY
-        val locationOnScreenArray = IntArray(2)
+        val viewLeft: Int
+        val viewTop: Int
         if (!hitTest && failHitTestBecauseOfXY) {
-            locationOnScreenArray[0] = (forEvent.x).toInt() + forge.anInt(min = 1, max = 10)
-            locationOnScreenArray[1] = (forEvent.y).toInt() + forge.anInt(min = 1, max = 10)
+            viewLeft = (forEvent.x).toInt() + forge.anInt(min = 1, max = 10)
+            viewTop = (forEvent.y).toInt() + forge.anInt(min = 1, max = 10)
         } else {
-            locationOnScreenArray[0] = (forEvent.x).toInt() - forge.anInt(min = 1, max = 10)
-            locationOnScreenArray[1] = (forEvent.y).toInt() - forge.anInt(min = 1, max = 10)
+            viewLeft = (forEvent.x).toInt() - forge.anInt(min = 1, max = 10)
+            viewTop = (forEvent.y).toInt() - forge.anInt(min = 1, max = 10)
         }
-
-        val viewLeft = locationOnScreenArray[0]
-        val viewTop = locationOnScreenArray[1]
 
         val diffPosX = abs(forEvent.x - viewLeft).toInt()
         val diffPosY = abs(forEvent.y - viewTop).toInt()
@@ -135,20 +133,9 @@ internal abstract class AbstractGesturesListenerTest {
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
 
-            whenever(it.getLocationInWindow(any())).doAnswer {
-                val array = it.arguments[0] as IntArray
-                array[0] = locationOnScreenArray[0]
-                array[1] = locationOnScreenArray[1]
-                null
-            }
-
             whenever(it.width).thenReturn(viewWidth)
             whenever(it.height).thenReturn(viewHeight)
 
-            // Mock getGlobalVisibleRect to match the hitTest/visible outcome.
-            // When visible=false, getGlobalVisibleRect returns false (view not shown).
-            // Otherwise the Rect fields are assigned directly (Rect.set() is a no-op
-            // in Android unit test stubs with returnDefaultValues=true).
             whenever(it.getGlobalVisibleRect(any())).doAnswer { invocation ->
                 if (!visible) {
                     false
