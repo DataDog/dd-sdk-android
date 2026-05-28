@@ -29,9 +29,12 @@ android {
 
 dependencies {
     implementation(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-profiling"))
     implementation(libs.kotlin)
 
+    // Testing
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -41,6 +44,8 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-profiling")))
     testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
