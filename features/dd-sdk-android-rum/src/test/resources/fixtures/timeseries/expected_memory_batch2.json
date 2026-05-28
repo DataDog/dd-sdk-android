@@ -11,6 +11,7 @@
     "schema": "object",
     "start": 1700000006000000000,
     "end": 1700000010000000000,
+    "count": 5,
     "data": [
       {"timestamp": 1700000006000000000, "data_point": {"memory_max": 31420200, "memory_percent": 3.14202}},
       {"timestamp": 1700000007000000000, "data_point": {"memory_max": 31510400, "memory_percent": 3.15104}},
