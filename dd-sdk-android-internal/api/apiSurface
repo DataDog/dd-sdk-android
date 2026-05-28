@@ -1,5 +1,7 @@
 object com.datadog.android.internal.FeatureContextKeys
   const val PROFILER_IS_RUNNING: String
+  const val RUM_SESSION_ID: String
+  const val RUM_SESSION_SAMPLE_RATE: String
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
     constructor(String)
@@ -178,8 +180,8 @@ data class com.datadog.android.internal.profiling.ProfilingRumContext
   constructor(String, String, String?, String?)
 data class com.datadog.android.internal.profiling.ProfilingThreadDump
   constructor(String, Thread.State, String)
-data class com.datadog.android.internal.rum.RumSessionRenewedEvent
-  constructor(String, Float)
+object com.datadog.android.internal.rum.RumSessionConstants
+  const val EMPTY_RUM_SESSION_ID: String
 object com.datadog.android.internal.sampling.DeterministicSampling
   fun combinedSampleRate(Float, Float): Float
 object com.datadog.android.internal.sampling.SessionSamplingIdProvider

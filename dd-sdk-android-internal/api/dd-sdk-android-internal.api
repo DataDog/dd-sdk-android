@@ -1,6 +1,8 @@
 public final class com/datadog/android/internal/FeatureContextKeys {
 	public static final field INSTANCE Lcom/datadog/android/internal/FeatureContextKeys;
 	public static final field PROFILER_IS_RUNNING Ljava/lang/String;
+	public static final field RUM_SESSION_ID Ljava/lang/String;
+	public static final field RUM_SESSION_SAMPLE_RATE Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/internal/attributes/LocalAttribute {
@@ -398,17 +400,9 @@ public final class com/datadog/android/internal/profiling/ProfilingThreadDump {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/rum/RumSessionRenewedEvent {
-	public fun <init> (Ljava/lang/String;F)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()F
-	public final fun copy (Ljava/lang/String;F)Lcom/datadog/android/internal/rum/RumSessionRenewedEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/rum/RumSessionRenewedEvent;Ljava/lang/String;FILjava/lang/Object;)Lcom/datadog/android/internal/rum/RumSessionRenewedEvent;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getSessionId ()Ljava/lang/String;
-	public final fun getSessionSampleRate ()F
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+public final class com/datadog/android/internal/rum/RumSessionConstants {
+	public static final field EMPTY_RUM_SESSION_ID Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/internal/rum/RumSessionConstants;
 }
 
 public final class com/datadog/android/internal/sampling/DeterministicSampling {

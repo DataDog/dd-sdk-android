@@ -12,6 +12,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -21,7 +22,7 @@ import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
-import com.datadog.android.internal.rum.RumSessionRenewedEvent
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
@@ -35,7 +36,10 @@ internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
-) : StorageBackedFeature, FeatureEventReceiver, ProfilerCallback {
+) : StorageBackedFeature, FeatureEventReceiver, FeatureContextUpdateReceiver, ProfilerCallback {
+
+    @Volatile
+    internal var lastSeenRumSessionId: String? = null
 
     internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
@@ -98,6 +102,8 @@ internal class ProfilingFeature(
         }
         continuousProfilingScheduler = scheduler
 
+        sdkCore.setContextUpdateReceiver(this)
+
         if (appContext is Application) {
             processLifecycleMonitor = ProcessLifecycleMonitor(ProfilingLifecycleCallback(scheduler)).apply {
                 appContext.registerActivityLifecycleCallbacks(this)
@@ -116,6 +122,8 @@ internal class ProfilingFeature(
             unregisterProfilingCallback(appContext, sdkCore.name)
         }
         sdkCore.removeEventReceiver(name)
+        sdkCore.removeContextUpdateReceiver(this)
+        lastSeenRumSessionId = null
         pendingRumEvents.clear()
     }
 
@@ -145,7 +153,6 @@ internal class ProfilingFeature(
                 }
             }
 
-            is RumSessionRenewedEvent -> onRumSessionRenewed(event)
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -203,10 +210,21 @@ internal class ProfilingFeature(
         }
     }
 
-    private fun onRumSessionRenewed(event: RumSessionRenewedEvent) {
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName != Feature.RUM_FEATURE_NAME) return
+        val sessionId = context[FeatureContextKeys.RUM_SESSION_ID] as? String
+        if (sessionId == null ||
+            sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID ||
+            sessionId == lastSeenRumSessionId
+        ) {
+            return
+        }
+        val sampleRate = (context[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
+            ?: DEFAULT_RUM_SESSION_SAMPLE_RATE
+        lastSeenRumSessionId = sessionId
         continuousProfilingScheduler?.onRumSessionRenewed(
-            sessionId = event.sessionId,
-            rumSessionSampleRate = event.sessionSampleRate
+            sessionId = sessionId,
+            rumSessionSampleRate = sampleRate
         )
     }
 
@@ -287,6 +305,8 @@ internal class ProfilingFeature(
     }
 
     companion object {
+
+        private const val DEFAULT_RUM_SESSION_SAMPLE_RATE = 0f
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature received an event of unsupported type=%s."
         private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =

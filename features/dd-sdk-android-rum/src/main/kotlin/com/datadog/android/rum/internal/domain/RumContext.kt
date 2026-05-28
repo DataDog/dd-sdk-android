@@ -6,9 +6,10 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewType
-import java.util.UUID
 
 internal data class RumContext(
     val applicationId: String = NULL_UUID,
@@ -51,13 +52,13 @@ internal data class RumContext(
     }
 
     companion object {
-        val NULL_UUID = UUID(0, 0).toString()
+        const val NULL_UUID: String = RumSessionConstants.EMPTY_RUM_SESSION_ID
         const val SAMPLE_ALL_RATE: Float = 100f
 
         // be careful when changing values below, they may be indirectly referenced (as string
         // literal) from other modules
         const val APPLICATION_ID = "application_id"
-        const val SESSION_ID = "session_id"
+        const val SESSION_ID = FeatureContextKeys.RUM_SESSION_ID
         const val SESSION_ACTIVE = "session_active"
         const val SESSION_STATE = "session_state"
         const val SESSION_START_REASON = "session_start_reason"
@@ -71,7 +72,7 @@ internal data class RumContext(
         const val HAS_REPLAY = "view_has_replay"
         const val VIEW_TIMESTAMP = "view_timestamp"
         const val VIEW_TIMESTAMP_OFFSET = "view_timestamp_offset"
-        const val SESSION_SAMPLE_RATE = "session_sample_rate"
+        const val SESSION_SAMPLE_RATE = FeatureContextKeys.RUM_SESSION_SAMPLE_RATE
 
         fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
             val applicationId = featureContext[APPLICATION_ID] as? String
