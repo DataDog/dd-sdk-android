@@ -39,6 +39,9 @@ import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.startup.testRumStartupScenarios
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -66,9 +69,11 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -196,12 +201,19 @@ internal class RumSessionScopeTest {
     @Mock
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
 
+    @Mock
+    private lateinit var mockTimeseriesFactory: TimeseriesFactory
+
+    @Mock
+    private lateinit var mockTimeseries: Timeseries
+
     private lateinit var stubTimeProvider: StubTimeProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubTimeProvider = StubTimeProvider(elapsedTimeNs = TEST_INACTIVITY_NS + 1)
         fakeInitialViewEvent = forge.startViewEvent()
+        fakeParentContext = fakeParentContext.copy(viewType = RumViewType.NONE)
 
         whenever(mockParentScope.getRumContext()).doAnswer { fakeParentContext }
         whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope
@@ -1744,6 +1756,196 @@ internal class RumSessionScopeTest {
 
     // endregion
 
+    // region Timeseries
+
+    @Test
+    fun `M start timeseries via factory W renewSession { keepSession = true }`(forge: Forge) {
+        // Given
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+
+        // When
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verify(mockTimeseriesFactory).create(
+            testedScope.sessionId,
+            fakeParentContext.applicationId,
+            fakeRumSessionType ?: RumSessionType.USER
+        )
+        verify(mockTimeseries).onSessionStart()
+    }
+
+    @Test
+    fun `M not start timeseries W renewSession { keepSession = false }`(forge: Forge) {
+        // Given
+        whenever(mockSessionSampler.sample(any())).thenReturn(false)
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+
+        // When
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verify(mockTimeseriesFactory, never()).create(any(), any(), any())
+        verify(mockTimeseries, never()).onSessionStart()
+    }
+
+    @Test
+    fun `M stop previous timeseries W renewSession { another tracked session }`(forge: Forge) {
+        // Given
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When — second session via inactivity expiration
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verify(mockTimeseries).onSessionStop()
+        verify(mockTimeseriesFactory, times(2)).create(any(), any(), any())
+        verify(mockTimeseries, times(2)).onSessionStart()
+    }
+
+    @Test
+    fun `M stop timeseries W handleEvent { StopSession }`(forge: Forge) {
+        // Given
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verify(mockTimeseries).onSessionStop()
+    }
+
+    @Test
+    fun `M not interact with timeseries W renewSession { default NoOp factory }`(forge: Forge) {
+        // When
+        val result = testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        verifyNoInteractions(mockTimeseries, mockTimeseriesFactory)
+    }
+
+    @Test
+    fun `M notify timeseries of view type W handleEvent`(forge: Forge) {
+        // Given
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(
+            forge.addErrorEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then — called once per handleEvent invocation
+        verify(mockTimeseries, times(2)).onViewTypeUpdate(any())
+    }
+
+    @Test
+    fun `M pass NONE W onViewTypeUpdate { no active view }`(forge: Forge) {
+        // Given — activeView is null by default (mockChildScope.activeView not stubbed)
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        testedScope.handleEvent(forge.addErrorEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockTimeseries, times(2)).onViewTypeUpdate(RumViewType.NONE)
+    }
+
+    @Test
+    fun `M pass active view type W onViewTypeUpdate { foreground view active }`(forge: Forge) {
+        // Given
+        val mockViewScope = mock<RumViewScope>()
+        val fakeRumContext = forge.getForgery<RumContext>().copy(viewType = RumViewType.FOREGROUND)
+        whenever(mockChildScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn fakeRumContext
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        testedScope.handleEvent(forge.addErrorEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — at least the last call carries FOREGROUND
+        verify(mockTimeseries, atLeastOnce()).onViewTypeUpdate(RumViewType.FOREGROUND)
+    }
+
+    @Test
+    fun `M pass view type to fresh timeseries W renewSession { session renewed }`(forge: Forge) {
+        // Given — active foreground view throughout
+        val mockViewScope = mock<RumViewScope>()
+        val fakeRumContext = forge.getForgery<RumContext>().copy(viewType = RumViewType.FOREGROUND)
+        whenever(mockChildScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn fakeRumContext
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When — expire session and start a new one
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — second timeseries (same factory mock) also receives FOREGROUND right after start()
+        val inOrder = inOrder(mockTimeseries)
+        inOrder.verify(mockTimeseries, times(2)).onSessionStart()
+        inOrder.verify(mockTimeseries).onViewTypeUpdate(RumViewType.FOREGROUND)
+    }
+
+    // endregion
+
     // region Internal
 
     private fun advanceTimeByMs(ms: Long) {
@@ -1760,7 +1962,8 @@ internal class RumSessionScopeTest {
     private fun initializeTestedScope(
         sessionSampler: Sampler<String> = mockSessionSampler,
         withMockChildScope: Boolean = true,
-        backgroundTrackingEnabled: Boolean? = null
+        backgroundTrackingEnabled: Boolean? = null,
+        timeseriesFactory: TimeseriesFactory = NoOpTimeseriesFactory()
     ) {
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
@@ -1786,7 +1989,8 @@ internal class RumSessionScopeTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager },
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            timeseriesFactory = timeseriesFactory
         )
 
         if (withMockChildScope) {

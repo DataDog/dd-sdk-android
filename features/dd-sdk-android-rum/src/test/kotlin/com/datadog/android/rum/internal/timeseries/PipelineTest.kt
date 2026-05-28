@@ -1,0 +1,212 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.rum.internal.timeseries
+
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
+import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
+import com.datadog.android.rum.utils.forge.Configurator
+import com.google.gson.JsonObject
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
+
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
+internal class PipelineTest {
+
+    @Mock
+    lateinit var mockReader: DataPointsReader<Double>
+
+    @Mock
+    lateinit var mockSerializer: JsonSerializer<Double>
+
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockDataWriter: DataWriter<Any>
+
+    @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @IntForgery(min = 2, max = 10)
+    var fakeBufferSize: Int = 0
+
+    private lateinit var buffer: Buffer<Double>
+    private lateinit var testedPipeline: Pipeline<Double>
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+                .invoke(mock(), mockEventWriteScope)
+        }
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            it.getArgument<(EventBatchWriter) -> Unit>(0).invoke(mockEventBatchWriter)
+        }
+
+        buffer = Buffer(fakeBufferSize)
+        testedPipeline = Pipeline(mockSdkCore, mockReader, buffer, mockSerializer, mockDataWriter)
+    }
+
+    @Test
+    fun `M expose reader intervalMs W intervalMs`(@LongForgery(min = 1L) fakeIntervalMs: Long) {
+        // Given
+        whenever(mockReader.intervalMs) doReturn fakeIntervalMs
+
+        // When / Then
+        assertThat(testedPipeline.intervalMs).isEqualTo(fakeIntervalMs)
+    }
+
+    // region execute()
+
+    @Test
+    fun `M append sample to buffer W execute()`(forge: Forge) {
+        // Given
+        val fakePoint = forge.getForgery<DataPoint<Double>>()
+        whenever(mockReader.read()) doReturn fakePoint
+
+        // When
+        testedPipeline.execute()
+
+        // Then
+        assertThat(buffer.drain()).containsExactly(fakePoint)
+    }
+
+    @Test
+    fun `M not add to buffer W execute() { reader returns null }`() {
+        // Given
+        whenever(mockReader.read()) doReturn null
+
+        // When
+        testedPipeline.execute()
+
+        // Then
+        assertThat(buffer.drain()).isEmpty()
+    }
+
+    // endregion
+
+    // region flush()
+
+    @Test
+    fun `M flush W execute() { buffer fills to capacity }`(forge: Forge) {
+        // Given
+        val fakePoint = forge.getForgery<DataPoint<Double>>()
+        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        whenever(mockReader.read()) doReturn fakePoint
+        whenever(mockSerializer.serialize(any())) doReturn fakeJson
+        repeat(fakeBufferSize - 1) { testedPipeline.execute() }
+
+        // When
+        testedPipeline.execute()
+
+        // Then
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+        assertThat(buffer.drain()).isEmpty()
+    }
+
+    @Test
+    fun `M not flush W execute() { buffer not full }`(forge: Forge) {
+        // Given
+        whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
+
+        // When
+        repeat(fakeBufferSize - 1) { testedPipeline.execute() }
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @Test
+    fun `M not flush W execute() { serializer returns null }`(forge: Forge) {
+        // Given
+        whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        whenever(mockSerializer.serialize(any())) doReturn null
+        repeat(fakeBufferSize - 1) { testedPipeline.execute() }
+
+        // When
+        testedPipeline.execute()
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    // endregion
+
+    // region flush()
+
+    @Test
+    fun `M write partial buffer W flush() { buffer has data }`(forge: Forge) {
+        // Given
+        val fakePoint = forge.getForgery<DataPoint<Double>>()
+        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        whenever(mockReader.read()) doReturn fakePoint
+        whenever(mockSerializer.serialize(any())) doReturn fakeJson
+        val sampleCount = fakeBufferSize - 1
+        repeat(sampleCount) { testedPipeline.execute() }
+
+        // When
+        testedPipeline.flush()
+
+        // Then
+        val captor = argumentCaptor<List<DataPoint<Double>>>()
+        verify(mockSerializer).serialize(captor.capture())
+        assertThat(captor.firstValue).hasSize(sampleCount).allMatch { it == fakePoint }
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+        assertThat(buffer.drain()).isEmpty()
+    }
+
+    @Test
+    fun `M not write W flush() { buffer empty }`() {
+        // When
+        testedPipeline.flush()
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    // endregion
+}
