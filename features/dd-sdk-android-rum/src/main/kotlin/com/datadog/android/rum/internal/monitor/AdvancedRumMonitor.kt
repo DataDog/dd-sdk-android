@@ -33,8 +33,8 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
     fun addActionWithHeatmap(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?>,
-        heatmapData: HeatmapActionData?
+        heatmapData: HeatmapActionData?,
+        attributes: Map<String, Any?>
     )
 
     fun sendWebViewEvent()

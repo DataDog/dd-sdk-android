@@ -13,11 +13,11 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.core.view.isVisible
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.heatmaps.NoOpHeatmapIdentifierRegistry
+import com.datadog.android.internal.heatmaps.heatmapViewKey
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -34,10 +34,11 @@ import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 import kotlin.math.abs
+import kotlin.math.roundToLong
 
 @Suppress("TooManyFunctions")
 internal class GesturesListener(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
@@ -53,6 +54,8 @@ internal class GesturesListener(
     private var scrollTargetReference: ViewTarget? = null
     private var onTouchDownXPos = 0f
     private var onTouchDownYPos = 0f
+
+    private val tapLocationBuffer = IntArray(2)
 
     // region GesturesListener
 
@@ -278,16 +281,18 @@ internal class GesturesListener(
 
             if (view.isAttachedToWindow) {
                 resolveHeatmapIdentifier(view)?.let { identity ->
-                    val locationInWindow = IntArray(2)
-                    @Suppress("UnsafeThirdPartyFunctionCall") // locationInWindow is non-null with exactly 2 elements
-                    view.getLocationInWindow(locationInWindow)
+                    @Suppress("UnsafeThirdPartyFunctionCall") // tapLocationBuffer is non-null with exactly 2 elements
+                    view.getLocationInWindow(tapLocationBuffer)
+                    // Read density fresh per tap: it can change at runtime on foldables or when
+                    // the user adjusts display size, so caching it as a field would be incorrect.
+                    val density = view.resources.displayMetrics.density
 
                     heatmapData = HeatmapActionData(
                         targetIdentity = identity,
-                        positionX = (touchX - locationInWindow[0]).toLong(),
-                        positionY = (touchY - locationInWindow[1]).toLong(),
-                        targetWidth = view.width.toLong(),
-                        targetHeight = view.height.toLong()
+                        positionX = ((touchX - tapLocationBuffer[0]) / density).roundToLong(),
+                        positionY = ((touchY - tapLocationBuffer[1]) / density).roundToLong(),
+                        targetWidth = (view.width / density).roundToLong(),
+                        targetHeight = (view.height / density).roundToLong()
                     )
                 }
             }
@@ -300,8 +305,8 @@ internal class GesturesListener(
         (rumMonitor as? AdvancedRumMonitor)?.addActionWithHeatmap(
             RumActionType.TAP,
             targetName,
-            attributes,
-            heatmapData
+            heatmapData,
+            attributes
         ) ?: rumMonitor.addAction(RumActionType.TAP, targetName, attributes)
     }
 
@@ -336,14 +341,12 @@ internal class GesturesListener(
         val screenName = currentScreenName() ?: return null
 
         return heatmapIdentifierRegistry
-            .getHeatmapIdentifier(System.identityHashCode(view).toLong(), screenName)
+            .getHeatmapIdentifier(heatmapViewKey(view), screenName)
             ?.rawValue
     }
 
     private fun currentScreenName(): String? {
-        val featureSdkCore = sdkCore as? FeatureSdkCore ?: return null
-        return featureSdkCore
-            .getFeatureContext(Feature.RUM_FEATURE_NAME)[RumContext.VIEW_URL] as? String
+        return sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)[RumContext.VIEW_URL] as? String
     }
 
     private fun resolveGestureDirection(endEvent: MotionEvent): String {

@@ -154,10 +154,18 @@ public abstract interface class com/datadog/android/internal/heatmaps/HeatmapIde
 	public abstract fun getHeatmapIdentifierRegistry ()Lcom/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry;
 }
 
+public final class com/datadog/android/internal/heatmaps/HeatmapViewKeyKt {
+	public static final fun heatmapViewKey (Landroid/view/View;)J
+}
+
 public final class com/datadog/android/internal/heatmaps/NoOpHeatmapIdentifierRegistry : com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry {
 	public fun <init> ()V
 	public fun getHeatmapIdentifier (JLjava/lang/String;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
 	public fun setHeatmapIdentifiers (Ljava/util/Map;Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/heatmaps/TapTargetUtilsKt {
+	public static final fun isValidTapTarget (Landroid/view/View;)Z
 }
 
 public final class com/datadog/android/internal/lifecycle/ProcessLifecycleMonitor : android/app/Application$ActivityLifecycleCallbacks {

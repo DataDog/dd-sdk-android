@@ -214,8 +214,8 @@ internal class DatadogRumMonitor(
     override fun addActionWithHeatmap(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?>,
-        heatmapData: HeatmapActionData?
+        heatmapData: HeatmapActionData?,
+        attributes: Map<String, Any?>
     ) {
         val eventTime = getEventTime(attributes)
         handleEvent(
@@ -223,9 +223,9 @@ internal class DatadogRumMonitor(
                 type = type,
                 name = name,
                 waitForStop = false,
-                attributes = attributes.toMap(),
+                heatmapData = heatmapData,
                 eventTime = eventTime,
-                heatmapData = heatmapData
+                attributes = attributes.toMap()
             )
         )
     }

@@ -3041,10 +3041,10 @@ internal class RumActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         fakeEvent = RumRawEvent.StartAction(
-            RumActionType.TAP,
-            name,
-            false,
-            emptyMap(),
+            type = RumActionType.TAP,
+            name = name,
+            waitForStop = false,
+            attributes = emptyMap(),
             eventTime = timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)

@@ -27,6 +27,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -38,11 +39,10 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -425,18 +425,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
         verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
             eq(RumActionType.TAP),
             eq(""),
-            argThat { attributes ->
-                val classMatches = attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] ==
-                    expectedStartAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME]
-                val resourceMatches = attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] ==
-                    expectedStartAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID]
-                classMatches && resourceMatches
-            },
-            anyOrNull()
+            anyOrNull(),
+            attributesCaptor.capture()
         )
+        assertThat(attributesCaptor.firstValue[RumAttributes.ACTION_TARGET_CLASS_NAME])
+            .isEqualTo(expectedStartAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME])
+        assertThat(attributesCaptor.firstValue[RumAttributes.ACTION_TARGET_RESOURCE_ID])
+            .isEqualTo(expectedStartAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID])
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
@@ -1288,12 +1287,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             any(),
             any()
         )
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor, never()).addActionWithHeatmap(
-            any(),
-            any(),
-            any(),
-            anyOrNull()
-        )
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     // endregion

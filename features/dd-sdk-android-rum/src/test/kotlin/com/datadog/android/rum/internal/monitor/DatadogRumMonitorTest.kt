@@ -522,7 +522,12 @@ internal class DatadogRumMonitorTest {
         @Forgery fakeHeatmapData: HeatmapActionData
     ) {
         // When
-        testedMonitor.addActionWithHeatmap(type, name, fakeAttributes, fakeHeatmapData)
+        testedMonitor.addActionWithHeatmap(
+            type = type,
+            name = name,
+            heatmapData = fakeHeatmapData,
+            attributes = fakeAttributes
+        )
 
         // Then
         argumentCaptor<RumRawEvent> {

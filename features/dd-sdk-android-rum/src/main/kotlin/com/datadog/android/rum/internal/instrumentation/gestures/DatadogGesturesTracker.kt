@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -105,7 +106,7 @@ internal class DatadogGesturesTracker(
         return GesturesDetectorWrapper(
             context,
             GesturesListener(
-                sdkCore = sdkCore,
+                sdkCore = sdkCore as FeatureSdkCore,
                 windowReference = WeakReference(window),
                 attributesProviders = targetAttributesProviders,
                 interactionPredicate = interactionPredicate,

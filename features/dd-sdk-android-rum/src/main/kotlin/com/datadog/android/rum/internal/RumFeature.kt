@@ -180,7 +180,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
-    override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry by lazy { HeatmapIdentifierRegistry.create() }
+    override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null

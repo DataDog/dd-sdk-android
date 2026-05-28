@@ -277,8 +277,6 @@ internal class RumActionScope(
                 datadogContext,
                 rumContext.viewId.orEmpty()
             )
-            val ddAction = buildDdAction(heatmapData)
-
             insightsCollector.onAction()
             ActionEvent(
                 date = eventTimestamp,
@@ -357,7 +355,16 @@ internal class RumActionScope(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
-                    action = ddAction
+                    action = heatmapData?.let {
+                        ActionEvent.DdAction(
+                            position = ActionEvent.Position(x = it.positionX, y = it.positionY),
+                            target = ActionEvent.DdActionTarget(
+                                permanentId = it.targetIdentity,
+                                width = it.targetWidth,
+                                height = it.targetHeight
+                            )
+                        )
+                    }
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
@@ -380,18 +387,6 @@ internal class RumActionScope(
             .submit()
 
         sent = true
-    }
-
-    private fun buildDdAction(heatmapData: HeatmapActionData?): ActionEvent.DdAction? {
-        heatmapData ?: return null
-        return ActionEvent.DdAction(
-            position = ActionEvent.Position(x = heatmapData.positionX, y = heatmapData.positionY),
-            target = ActionEvent.DdActionTarget(
-                permanentId = heatmapData.targetIdentity,
-                width = heatmapData.targetWidth,
-                height = heatmapData.targetHeight
-            )
-        )
     }
 
     // endregion
