@@ -41,7 +41,6 @@ import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.startup.testRumStartupScenarios
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.timeseries.Timeseries
-import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -202,7 +201,7 @@ internal class RumSessionScopeTest {
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
 
     @Mock
-    private lateinit var mockTimeseriesFactory: TimeseriesFactory
+    private lateinit var mockTimeseriesFactory: Timeseries.Factory
 
     @Mock
     private lateinit var mockTimeseries: Timeseries
@@ -1775,8 +1774,8 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockTimeseriesFactory).create(
-            testedScope.sessionId,
             fakeParentContext.applicationId,
+            testedScope.sessionId,
             fakeRumSessionType ?: RumSessionType.USER
         )
         verify(mockTimeseries).onSessionStart()
@@ -2013,7 +2012,7 @@ internal class RumSessionScopeTest {
         sessionSampler: Sampler<String> = mockSessionSampler,
         withMockChildScope: Boolean = true,
         backgroundTrackingEnabled: Boolean? = null,
-        timeseriesFactory: TimeseriesFactory = NoOpTimeseriesFactory()
+        timeseriesFactory: Timeseries.Factory = NoOpTimeseriesFactory()
     ) {
         testedScope = RumSessionScope(
             parentScope = mockParentScope,

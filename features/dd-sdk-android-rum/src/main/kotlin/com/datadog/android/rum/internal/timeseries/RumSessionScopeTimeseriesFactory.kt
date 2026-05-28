@@ -15,17 +15,17 @@ internal class RumSessionScopeTimeseriesFactory(
     private val collectInBackground: Boolean,
     private val scheduledExecutorService: ScheduledExecutorService,
     private val pipelinesProvider: (
-        sessionId: String,
         applicationId: String,
+        sessionId: String,
         sessionType: RumSessionType
     ) -> List<Pipeline<*>>
-) : TimeseriesFactory {
+) : Timeseries.Factory {
 
-    override fun create(sessionId: String, applicationId: String, sessionType: RumSessionType) =
+    override fun create(applicationId: String, sessionId: String, sessionType: RumSessionType) =
         RumSessionScopeTimeseries(
             internalLogger = internalLogger,
             collectInBackground = collectInBackground,
             scheduledExecutorService = scheduledExecutorService,
-            pipelines = pipelinesProvider(sessionId, applicationId, sessionType)
+            pipelines = pipelinesProvider(applicationId, sessionId, sessionType)
         )
 }

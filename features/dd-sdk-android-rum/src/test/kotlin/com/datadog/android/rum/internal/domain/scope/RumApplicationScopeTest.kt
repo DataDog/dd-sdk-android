@@ -31,7 +31,6 @@ import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.timeseries.Timeseries
-import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -143,7 +142,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockSessionSampler: Sampler<String>
 
     @Mock
-    lateinit var mockTimeseriesFactory: TimeseriesFactory
+    lateinit var mockTimeseriesFactory: Timeseries.Factory
 
     @Mock
     lateinit var mockTimeseries: Timeseries
@@ -242,7 +241,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - the child session uses the same factory we gave to the application scope
-        verify(mockTimeseriesFactory).create(any(), eq(fakeApplicationId), any())
+        verify(mockTimeseriesFactory).create(eq(fakeApplicationId), any(), any())
     }
 
     @Test
@@ -279,7 +278,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - factory.create is invoked once per tracked session (initial + new)
-        verify(mockTimeseriesFactory, times(2)).create(any(), eq(fakeApplicationId), any())
+        verify(mockTimeseriesFactory, times(2)).create(eq(fakeApplicationId), any(), any())
     }
 
     @Test

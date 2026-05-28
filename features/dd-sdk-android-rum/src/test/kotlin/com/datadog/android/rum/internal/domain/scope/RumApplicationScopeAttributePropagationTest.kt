@@ -28,7 +28,6 @@ import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.timeseries.Timeseries
-import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -139,7 +138,7 @@ internal class RumApplicationScopeAttributePropagationTest {
     lateinit var mockSessionSampler: Sampler<String>
 
     @Mock
-    lateinit var mockTimeseriesFactory: TimeseriesFactory
+    lateinit var mockTimeseriesFactory: Timeseries.Factory
 
     @Mock
     lateinit var mockTimeseries: Timeseries

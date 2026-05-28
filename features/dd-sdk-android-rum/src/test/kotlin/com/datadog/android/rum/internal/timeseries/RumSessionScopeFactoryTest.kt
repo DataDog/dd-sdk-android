@@ -35,7 +35,7 @@ import java.util.concurrent.ScheduledExecutorService
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumSessionScopeTimeseriesFactoryTest {
+internal class RumSessionScopeFactoryTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore

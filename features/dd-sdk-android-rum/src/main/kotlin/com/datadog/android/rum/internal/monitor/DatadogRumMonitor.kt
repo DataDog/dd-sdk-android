@@ -64,7 +64,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
-import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -107,9 +107,8 @@ internal class DatadogRumMonitor(
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    timeseriesFactory: TimeseriesFactory
-) : RumMonitor,
-    AdvancedRumMonitor {
+    timeseriesFactory: Timeseries.Factory
+) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
         applicationId = applicationId,

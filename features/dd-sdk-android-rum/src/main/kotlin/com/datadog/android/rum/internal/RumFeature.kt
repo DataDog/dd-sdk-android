@@ -86,7 +86,7 @@ import com.datadog.android.rum.internal.timeseries.Buffer
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.timeseries.Pipeline
 import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseriesFactory
-import com.datadog.android.rum.internal.timeseries.TimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
 import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
 import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
@@ -190,7 +190,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
-    internal var timeseriesFactory: TimeseriesFactory = NoOpTimeseriesFactory()
+    internal var timeseriesFactory: Timeseries.Factory = NoOpTimeseriesFactory()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -425,12 +425,12 @@ internal class RumFeature(
             sdkCore = sdkCore
         )
 
-    private fun createTimeseriesCollectingFactory(configuration: TimeseriesConfiguration): TimeseriesFactory {
+    private fun createTimeseriesCollectingFactory(configuration: TimeseriesConfiguration): Timeseries.Factory {
         return RumSessionScopeTimeseriesFactory(
             internalLogger = sdkCore.internalLogger,
             collectInBackground = configuration.collectInBackground,
             scheduledExecutorService = configuration.executorFactory(),
-            pipelinesProvider = { sessionId, applicationId, sessionType ->
+            pipelinesProvider = { applicationId, sessionId, sessionType ->
                 listOf(
                     Pipeline(
                         sdkCore = sdkCore,
