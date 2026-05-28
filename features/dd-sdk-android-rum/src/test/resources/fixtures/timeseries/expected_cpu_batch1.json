@@ -11,6 +11,7 @@
     "schema": "object",
     "start": 1700000001000000000,
     "end": 1700000005000000000,
+    "count": 5,
     "data": [
       {"timestamp": 1700000001000000000, "data_point": {"cpu_usage": 12.5}},
       {"timestamp": 1700000002000000000, "data_point": {"cpu_usage": 14.2}},
