@@ -374,6 +374,7 @@ internal class ProfilingDataWriterTest {
         }
         assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.ERROR }).isTrue()
         assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.LONG_TASK }).isTrue()
+        assertThat(file.exists()).isFalse()
         verifyNoMoreInteractions(mockEventBatchWriter)
     }
 
@@ -432,25 +433,4 @@ internal class ProfilingDataWriterTest {
         verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
     }
 
-    @Test
-    fun `M delete result file W write {no rum events}`(
-        @Forgery fakeResult: PerfettoResult,
-        forge: Forge
-    ) {
-        // Given — file exists but there are no events, so buildRawBatchEvent returns null
-        val file = File(tmp, "fake_profile.perfetto-stack-sample")
-        file.writeBytes(forge.aString().toByteArray())
-
-        // When
-        testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            vitalEvents = emptyList(),
-            anrEvents = emptyList(),
-            longTasks = emptyList()
-        )
-
-        // Then
-        assertThat(file.exists()).isFalse()
-        verifyNoInteractions(mockEventBatchWriter)
-    }
 }
