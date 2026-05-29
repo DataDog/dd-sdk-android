@@ -308,6 +308,7 @@ class com.datadog.android.rum.timeseries.TimeseriesConfiguration
   constructor(Int = DEFAULT_BUFFER_SIZE, Long = DEFAULT_INTERVAL_MS, Boolean = false)
   val bufferSize: Int
   val intervalMs: Long
+  val collectInBackground: Boolean
   companion object 
     const val DEFAULT_BUFFER_SIZE: Int
     const val DEFAULT_INTERVAL_MS: Long

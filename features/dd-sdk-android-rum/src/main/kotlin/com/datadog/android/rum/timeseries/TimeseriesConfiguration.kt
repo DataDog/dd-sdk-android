@@ -5,12 +5,11 @@
  */
 package com.datadog.android.rum.timeseries
 
+import androidx.annotation.IntRange
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.DEFAULT_BUFFER_SIZE
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.DEFAULT_INTERVAL_MS
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.MIN_INTERVAL_MS
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 
 /**
  * Configuration for memory and CPU timeseries collection.
@@ -28,19 +27,13 @@ import java.util.concurrent.ScheduledExecutorService
 class TimeseriesConfiguration
 @JvmOverloads @ExperimentalRumApi
 constructor(
-    bufferSize: Int = DEFAULT_BUFFER_SIZE,
-    intervalMs: Long = DEFAULT_INTERVAL_MS,
-    val collectInBackground: Boolean = false
+    @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) bufferSize: Int = DEFAULT_BUFFER_SIZE,
+    @IntRange(from = MIN_INTERVAL_MS, to = Long.MAX_VALUE) intervalMs: Long = DEFAULT_INTERVAL_MS,
+    collectInBackground: Boolean = false
 ) {
     val bufferSize: Int = if (bufferSize > 0) bufferSize else DEFAULT_BUFFER_SIZE
     val intervalMs: Long = if (intervalMs >= MIN_INTERVAL_MS) intervalMs else DEFAULT_INTERVAL_MS
-
-    internal val executorFactory: () -> ScheduledExecutorService = {
-        Executors.newSingleThreadScheduledExecutor { runnable ->
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            Thread(runnable, "datadog-timeseries").apply { isDaemon = true }
-        }
-    }
+    val collectInBackground: Boolean = collectInBackground
 
     companion object {
         /** Default number of samples to accumulate before emitting a timeseries event. */

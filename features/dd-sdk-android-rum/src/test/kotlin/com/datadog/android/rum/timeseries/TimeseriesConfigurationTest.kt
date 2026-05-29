@@ -9,51 +9,9 @@ package com.datadog.android.rum.timeseries
 import com.datadog.android.rum.ExperimentalRumApi
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalRumApi::class)
 internal class TimeseriesConfigurationTest {
-
-    @Test
-    fun `M create thread named datadog-timeseries W executorFactory()`() {
-        // Given
-        val config = TimeseriesConfiguration()
-        val executor = config.executorFactory()
-        val capturedName = arrayOfNulls<String>(1)
-        val latch = CountDownLatch(1)
-
-        // When
-        executor.submit {
-            capturedName[0] = Thread.currentThread().name
-            latch.countDown()
-        }
-        latch.await(5, TimeUnit.SECONDS)
-        executor.shutdownNow()
-
-        // Then
-        assertThat(capturedName[0]).isEqualTo("datadog-timeseries")
-    }
-
-    @Test
-    fun `M create daemon thread W executorFactory()`() {
-        // Given
-        val config = TimeseriesConfiguration()
-        val executor = config.executorFactory()
-        val capturedDaemon = booleanArrayOf(false)
-        val latch = CountDownLatch(1)
-
-        // When
-        executor.submit {
-            capturedDaemon[0] = Thread.currentThread().isDaemon
-            latch.countDown()
-        }
-        latch.await(5, TimeUnit.SECONDS)
-        executor.shutdownNow()
-
-        // Then
-        assertThat(capturedDaemon[0]).isTrue()
-    }
 
     @Test
     fun `M use defaults W constructed with no args`() {

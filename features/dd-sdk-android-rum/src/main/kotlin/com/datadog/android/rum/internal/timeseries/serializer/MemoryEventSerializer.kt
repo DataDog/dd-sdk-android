@@ -61,11 +61,13 @@ internal class MemoryEventSerializer(
                 end = end,
                 data = data
             )
-        ).toJson() as JsonObject
+        ).toJson() as? JsonObject
+
         if (deltaEncoded != null) {
-            val timeseriesJson = json.getAsJsonObject("timeseries")
-            timeseriesJson.remove("data")
-            timeseriesJson.add("data", deltaEncoded)
+            json?.getAsJsonObject("timeseries")?.apply {
+                remove("data")
+                add("data", deltaEncoded)
+            }
         }
         return json
     }
