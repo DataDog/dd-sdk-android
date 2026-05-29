@@ -97,9 +97,6 @@ internal class ProfilingFeatureTest {
     private lateinit var mockProfiler: Profiler
 
     @Mock
-    private lateinit var mockProfilingFeatureScope: FeatureScope
-
-    @Mock
     private lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock

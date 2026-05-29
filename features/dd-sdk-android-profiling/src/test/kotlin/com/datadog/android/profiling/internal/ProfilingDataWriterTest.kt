@@ -432,5 +432,4 @@ internal class ProfilingDataWriterTest {
         assertThat(file.exists()).isFalse()
         verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
     }
-
 }
