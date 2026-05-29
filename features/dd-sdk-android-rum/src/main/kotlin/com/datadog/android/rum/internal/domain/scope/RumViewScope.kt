@@ -853,7 +853,17 @@ internal open class RumViewScope(
                 if (!isFatal) {
                     // if fatal, then we don't have time for the notification, app is crashing
                     onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
-                    onSuccess { it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
+                    onSuccess {
+                        it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error())
+                        if (event.throwable is ANRException) {
+                            // Intentionally writing through `writeLastFatalAnrSent` even though this is a
+                            // non-fatal ANR: both pipelines share the same persisted timestamp so that the
+                            // fatal-ANR replay path (DatadogLateCrashReporter, via ApplicationExitInfo on
+                            // the next launch) can dedupe against an ANR the in-process watchdog/profiling
+                            // trigger already reported. The storage key keeps the legacy "fatal" name.
+                            sdkCore.writeLastFatalAnrSent(event.eventTime.timestamp)
+                        }
+                    }
                 }
             }
             .submit()
