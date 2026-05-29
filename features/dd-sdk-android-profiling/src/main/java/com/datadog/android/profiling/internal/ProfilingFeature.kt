@@ -237,7 +237,6 @@ internal class ProfilingFeature(
         }
     }
 
-    @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
         when (result.startReason) {
@@ -261,23 +260,23 @@ internal class ProfilingFeature(
                 val scheduler = continuousProfilingScheduler ?: return
                 scheduler.onActiveWindowEnded()
                 val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
-                    logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
-                    return
-                }
                 dataWriter.write(
                     profilingResult = result,
                     longTasks = longTasks,
                     anrEvents = anrEvents,
                     vitalEvents = vitalEvents
                 )
-                logToUser(
-                    LOG_CONTINUOUS_PROFILING_WRITTEN.format(
-                        Locale.US,
-                        longTasks.size,
-                        anrEvents.size
+                if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
+                    logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
+                } else {
+                    logToUser(
+                        LOG_CONTINUOUS_PROFILING_WRITTEN.format(
+                            Locale.US,
+                            longTasks.size,
+                            anrEvents.size
+                        )
                     )
-                )
+                }
             }
 
             else -> {
