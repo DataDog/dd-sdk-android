@@ -153,7 +153,8 @@ internal class WebViewRumEventConsumerTest {
         }
         whenever(
             mockWebViewRumFeatureScope.withWriteContext(
-                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)), any()
+                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any()
             )
         ) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)

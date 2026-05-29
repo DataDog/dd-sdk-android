@@ -7,6 +7,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForTvApp
 import com.datadog.gradle.config.dependencyUpdateConfig
+import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -62,7 +63,7 @@ android {
     }
 }
 
-repositories {
+repositories.depotProxied(providers) {
     maven { setUrl("https://jitpack.io") }
 }
 

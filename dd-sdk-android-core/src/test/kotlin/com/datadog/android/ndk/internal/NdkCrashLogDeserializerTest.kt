@@ -61,4 +61,22 @@ internal class NdkCrashLogDeserializerTest {
         // THEN
         assertThat(deserializedEvent).isNull()
     }
+
+    @Test
+    fun `M return null W deserialize { numeric field has non-numeric value }`(
+        @Forgery fakeNdkCrashLog: NdkCrashLog
+    ) {
+        // GIVEN
+        val corruptedJson = fakeNdkCrashLog.toJson()
+            .replace(
+                "\"${NdkCrashLog.TIMESTAMP_KEY_NAME}\":${fakeNdkCrashLog.timestamp}",
+                "\"${NdkCrashLog.TIMESTAMP_KEY_NAME}\":\"\""
+            )
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(corruptedJson)
+
+        // THEN
+        assertThat(deserializedEvent).isNull()
+    }
 }

@@ -12,7 +12,7 @@ import org.jetbrains.dokka.gradle.DokkaExtension
 import java.nio.file.Paths
 
 fun Project.javadocConfig() {
-    extensions.configure<DokkaExtension>() {
+    extensions.configure<DokkaExtension> {
         dokkaPublications.named("javadoc") {
             val toOutputDirectory = layout.buildDirectory
                 .dir(Paths.get("reports", "javadoc").toString())

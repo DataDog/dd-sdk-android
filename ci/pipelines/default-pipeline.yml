@@ -131,7 +131,7 @@ static-analysis:
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v34714656-060be019/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v112054347-9fbe0af8/static-analysis.yml"
     strategy: depend
 
 analysis:detekt-custom:
@@ -147,7 +147,7 @@ analysis:detekt-custom:
     - ./gradlew unzipAarForDetekt --stacktrace
     - ./gradlew :tools:detekt:jar --stacktrace
     - ./gradlew printDetektClasspath --stacktrace
-    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
+    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
     - ./gradlew customDetektRules
 
 
@@ -410,9 +410,9 @@ test-pyramid:detekt-api-coverage:
     - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesDebug --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
     - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
-    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
+    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
     # Explicit includes to avoid OOM. Keep it in sync with includes for rules.
-    - java -jar detekt-cli-1.23.4-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
+    - java -jar detekt-cli-1.23.8-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
     # For now we just print the uncovered apis, eventually we will fail if it's not empty
     - grep -v -f apiUsage.log apiSurface.log
 

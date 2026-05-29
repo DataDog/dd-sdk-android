@@ -6,10 +6,13 @@
 
 #include "datadog-ndk.h"
 
-#include <fstream>
+#include <cerrno>
+#include <cstdio>
+#include <fcntl.h>
 #include <jni.h>
 #include <pthread.h>
 #include <string>
+#include <unistd.h>
 
 #include "android/log.h"
 #include "datetime-utils.h"
@@ -93,17 +96,38 @@ void write_crash_report(int signum,
     }
 
     // serialize the log
-    const string file_path = main_context.storage_dir.append("/").append(crash_log_filename);
+    const string file_path = main_context.storage_dir + "/" + crash_log_filename;
     const uint64_t timestamp = time_since_epoch();
     const std::string serialized_log = serialize_crash_report(signum, timestamp, signal_name, error_message, error_stacktrace);
 
-    // write the log in the crash log file
-    ofstream logs_file_output_stream(file_path.c_str(),
-                                     ofstream::out | ofstream::trunc);
-    if (logs_file_output_stream.is_open()) {
-        logs_file_output_stream << serialized_log.c_str();
+    // Atomic write+fsync via temp file: avoids torn/zero-filled crash logs when the
+    // process dies between buffer flush and disk flush.
+    const std::string tmp_path = file_path + ".tmp";
+    const int fd = ::open(tmp_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd >= 0) {
+        const char *data = serialized_log.data();
+        size_t remaining = serialized_log.size();
+        bool write_ok = true;
+        while (remaining > 0) {
+            const ssize_t written = ::write(fd, data, remaining);
+            if (written < 0) {
+                if (errno == EINTR) continue;
+                write_ok = false;
+                break;
+            }
+            data += written;
+            remaining -= static_cast<size_t>(written);
+        }
+        if (write_ok) {
+            ::fsync(fd);
+        }
+        ::close(fd);
+        if (write_ok) {
+            ::rename(tmp_path.c_str(), file_path.c_str());
+        } else {
+            ::unlink(tmp_path.c_str());
+        }
     }
-    logs_file_output_stream.close();
     pthread_mutex_unlock(&handler_mutex);
 }
 

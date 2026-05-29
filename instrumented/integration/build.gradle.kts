@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
@@ -80,7 +81,7 @@ android {
     }
 }
 
-repositories {
+repositories.depotProxied(providers) {
     google()
     mavenLocal()
     mavenCentral()

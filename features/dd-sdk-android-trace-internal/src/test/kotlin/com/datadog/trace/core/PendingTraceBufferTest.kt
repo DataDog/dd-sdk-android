@@ -110,7 +110,7 @@ internal class PendingTraceBufferTest : DDSpecification() {
 
         // Then
         assertThat(trace.pendingReferenceCount).isEqualTo(0)
-        argumentCaptor<List<DDSpan>>() {
+        argumentCaptor<List<DDSpan>> {
             verify(tracer, times(1)).write(capture())
             assertThat(firstValue).containsExactly(span)
         }

@@ -51,7 +51,23 @@ class DatadogFeaturesInitializerTest {
     }
 
     @Test
-    fun `M enable nothing W run is baseline and scenario is sr`() {
+    fun `M enable session replay and rum W run is instrumented and scenario is srCompose`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Instrumented,
+            scenario = SyntheticsScenario.SessionReplayCompose
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifySessionReplayEnabled()
+            rum.verifyRumEnabled()
+            logs.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M enable rum only W run is baseline and scenario is sr`() {
         // Given
         val config = BenchmarkConfig(
             run = SyntheticsRun.Baseline,
@@ -61,7 +77,39 @@ class DatadogFeaturesInitializerTest {
         mockAllAndCheck(config) {
             // Then
             sessionReplay.verifyNoInteractions()
-            rum.verifyNoInteractions()
+            rum.verifyRumEnabled()
+            logs.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M enable rum only W run is baseline and scenario is srCompose`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Baseline,
+            scenario = SyntheticsScenario.SessionReplayCompose
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifyNoInteractions()
+            rum.verifyRumEnabled()
+            logs.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M enable rum only W run is baseline and scenario is upload`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Baseline,
+            scenario = SyntheticsScenario.Upload
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifyNoInteractions()
+            rum.verifyRumEnabled()
             logs.verifyNoInteractions()
         }
     }

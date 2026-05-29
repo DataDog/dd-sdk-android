@@ -13,6 +13,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -24,12 +25,24 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.channels.FileLock
 import java.util.Locale
 
 @Extensions(
@@ -208,6 +221,46 @@ internal class PlainBatchFileReaderWriterTest {
             PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
             FileNotFoundException::class.java
         )
+    }
+
+    @Test
+    fun `M roll back partial write W writeData() {channel write throws IOException}`(
+        @StringForgery fileName: String,
+        @Forgery event: RawBatchEvent,
+        @BoolForgery append: Boolean,
+        @LongForgery(min = 0L, max = 1024L) fakeFileLength: Long,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val expectedRollbackLength = if (append) fakeFileLength else 0L
+        val mockChannel = mock<FileChannel>()
+        val mockLock = mock<FileLock>()
+        whenever(mockChannel.size()) doReturn fakeFileLength
+        whenever(mockChannel.lock()) doReturn mockLock
+        whenever(mockChannel.write(any<ByteBuffer>())) doThrow IOException(errorMessage)
+
+        Mockito.mockConstruction(RandomAccessFile::class.java) { mock, _ ->
+            whenever(mock.channel) doReturn mockChannel
+        }.use {
+            // When
+            val result = testedReaderWriter.writeData(
+                file,
+                event,
+                append = append
+            )
+
+            // Then
+            assertThat(result).isFalse()
+            // initial alignment truncate + rollback truncate after IOException
+            verify(mockChannel, times(2)).truncate(expectedRollbackLength)
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER),
+                PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+                IOException::class.java
+            )
+        }
     }
 
     // endregion

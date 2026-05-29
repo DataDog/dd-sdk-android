@@ -34,10 +34,14 @@ import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.TraceContext
+import com.datadog.android.trace.internal.net.effectiveSampleRate
+import com.datadog.android.trace.internal.net.isDropped
+import com.datadog.android.trace.internal.net.isDroppedPriority
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -247,7 +251,8 @@ internal constructor(
         tracer: DatadogTracer
     ): Response {
         val span = buildSpan(tracer, request)
-        val isSampled = span.extractRumContext(rumContextPropagator, block = true).sample(request)
+        val isSampled = span.extractRumContext(rumContextPropagator, block = true)
+            .sample(request, ignoreLocalDroppedParent = !canSendSpan())
 
         if (span.isRootSpan) {
             val samplingPriority = if (isSampled) {
@@ -260,7 +265,7 @@ internal constructor(
             if (spanContext.setSamplingPriority(samplingPriority)) {
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
-                    (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+                    (traceSampler.effectiveSampleRate(span) ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
                 )
             }
         }
@@ -343,13 +348,32 @@ internal constructor(
     }
 
     private fun buildSpan(tracer: DatadogTracer, request: Request): DatadogSpan {
-        val parentContext = extractParentContext(tracer, request)
+        val extractedParent = extractParentContext(tracer, request)
+        val parentContext = extractedParent?.context
+        // Local sources we can ignore when dropped: tag-attached parent (developer intent) and
+        // active span on this thread. Header-propagated parents are always honored to preserve
+        // head-based sampling of upstream propagation.
+        val localParentContext = when (extractedParent) {
+            is ParentContextSource.FromTag -> extractedParent.context
+            is ParentContextSource.FromHeaders -> null
+            null -> tracer.activeSpan()?.context()
+        }
+        // Force resolution of the local parent's sampling priority — a manual span backed by a
+        // PendingTrace can read UNSET until the sampler commits at inject time.
+        localParentContext?.let { _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(it) }
+        val shouldIgnoreLocalDroppedParent = !canSendSpan() && localParentContext.isDropped()
         val url = request.url.toString()
 
-        val span = tracer.buildSpan(SPAN_NAME)
+        val builder = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
-            .withParentContext(parentContext)
-            .start()
+
+        if (shouldIgnoreLocalDroppedParent) {
+            builder.ignoreActiveSpan()
+        } else {
+            builder.withParentContext(parentContext)
+        }
+
+        val span = builder.start()
 
         span.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
         span.setTag(Tags.KEY_HTTP_URL, url)
@@ -359,7 +383,10 @@ internal constructor(
         return span
     }
 
-    private fun extractSamplingDecision(request: Request): Boolean? {
+    private fun extractSamplingDecision(
+        request: Request,
+        ignoreLocalDroppedParent: Boolean
+    ): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         val datadogSpan = request.tag(DatadogSpan::class.java)
         val openTelemetrySpanSamplingPriority = request.getTraceContextTag()?.samplingPriority
@@ -368,10 +395,22 @@ internal constructor(
             headerSamplingPriority != null -> headerSamplingPriority
             datadogSpan != null -> {
                 _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
-                datadogSpan.context().samplingPriority > 0
+                val priority = datadogSpan.context().samplingPriority
+                if (ignoreLocalDroppedParent && priority.isDroppedPriority()) {
+                    null
+                } else {
+                    priority > 0
+                }
             }
             openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
-            else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
+            openTelemetrySpanSamplingPriority != null -> {
+                if (ignoreLocalDroppedParent && openTelemetrySpanSamplingPriority.isDroppedPriority()) {
+                    null
+                } else {
+                    openTelemetrySpanSamplingPriority > 0
+                }
+            }
+            else -> null
         }
     }
 
@@ -429,7 +468,7 @@ internal constructor(
         return null
     }
 
-    private fun extractParentContext(tracer: DatadogTracer, request: Request): DatadogSpanContext? {
+    private fun extractParentContext(tracer: DatadogTracer, request: Request): ParentContextSource? {
         val tagContext = request.tag(DatadogSpan::class.java)?.context() ?: extractTraceContext(request)
 
         val headerContext: DatadogSpanContext? = tracer.propagate().extract(request) { carrier, classifier ->
@@ -441,10 +480,12 @@ internal constructor(
             for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext != null && _TraceInternalProxy.propagationHelper.isExtractedContext(headerContext)) {
-            headerContext
-        } else {
-            tagContext
+        return when {
+            headerContext != null && _TraceInternalProxy.propagationHelper.isExtractedContext(headerContext) ->
+                ParentContextSource.FromHeaders(headerContext)
+            tagContext != null ->
+                ParentContextSource.FromTag(tagContext)
+            else -> null
         }
     }
 
@@ -702,12 +743,12 @@ internal constructor(
         }
     }
 
-    private fun DatadogSpan.sample(request: Request): Boolean {
+    private fun DatadogSpan.sample(request: Request, ignoreLocalDroppedParent: Boolean): Boolean {
         val samplingPriority = samplingPriority
         return if (samplingPriority != null) {
             samplingPriority > 0
         } else {
-            extractSamplingDecision(request) ?: traceSampler.sample(this)
+            extractSamplingDecision(request, ignoreLocalDroppedParent) ?: traceSampler.sample(this)
         }
     }
 
@@ -804,6 +845,11 @@ internal constructor(
          * Set the trace sample rate controlling the sampling of APM traces created for
          * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
          * sampling decision will be used instead.
+         *
+         * When used with [com.datadog.android.okhttp.DatadogInterceptor], the effective trace sample rate is
+         * automatically combined with the active RUM session sample rate, ensuring the backend receives correct
+         * sampling metadata (`_dd.agent_psr` / `_dd.rule_psr`) for RUM-to-APM correlation.
+         *
          * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 100f).
          */
         fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): R {
@@ -815,6 +861,13 @@ internal constructor(
          * Set the trace sampler controlling the sampling of APM traces created for
          * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
          * sampling decision will be used instead.
+         *
+         * Note: custom samplers passed here do not participate in cross-product rebasing with the RUM session
+         * sample rate. Subclasses of [DeterministicTraceSampler] are also treated as custom samplers and bypass
+         * rebasing — only an exact [DeterministicTraceSampler] instance (equivalent to calling
+         * [setTraceSampleRate]) participates in rebasing. Use [setTraceSampleRate] if you need correlated
+         * sampling between RUM sessions and APM traces.
+         *
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
          * By default it is a sampler accepting 100% of the traces.
          */
