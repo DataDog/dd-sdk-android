@@ -1,6 +1,7 @@
 public final class com/datadog/android/internal/FeatureContextKeys {
 	public static final field INSTANCE Lcom/datadog/android/internal/FeatureContextKeys;
 	public static final field PROFILER_IS_RUNNING Ljava/lang/String;
+	public static final field PROFILING_QUOTA_REASON Ljava/lang/String;
 	public static final field RUM_SESSION_ID Ljava/lang/String;
 	public static final field RUM_SESSION_SAMPLE_RATE Ljava/lang/String;
 }
