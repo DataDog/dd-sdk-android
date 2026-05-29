@@ -16,9 +16,12 @@ import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.assertj.core.api.Assertions.assertThat as assertjThat
 
 @ExtendWith(ForgeExtension::class)
+@Suppress("LargeClass")
 internal class UnsafeThirdPartyFunctionCallTest {
 
     lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
@@ -76,6 +79,19 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // Then
         assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M throw exception W init {safe call declares checked exception}`() {
+        // Given
+        val config = TestConfig(
+            "knownSafeThirdPartyCalls" to listOf("java.io.BufferedWriter.write(kotlin.String)")
+        )
+
+        // When / Then
+        assertThrows<IllegalStateException> {
+            UnsafeThirdPartyFunctionCall(config)
+        }
     }
 
     @Test
@@ -172,7 +188,6 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `detekt unsafe call on unknown third party function { explicit it receiver }`() {
         // Given
-        @Suppress("SimpleRedundantLet")
         val code =
             """
                 import java.io.File
@@ -247,6 +262,38 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // Then
         assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M report only uncaught exceptions W known throwing call catches one configured exception`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "java.io.File.inputStream():java.io.FileNotFoundException,java.io.IOException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                import java.io.File
+                import java.io.FileNotFoundException
+                
+                fun test(f: File): Any? {
+                    try {
+                        return f.inputStream()
+                    } catch (e: FileNotFoundException) {
+                        return null
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+        assertjThat(findings.first().message)
+            .contains("java.io.IOException")
+            .doesNotContain("java.io.FileNotFoundException")
     }
 
     @Test
@@ -640,5 +687,279 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // Then
         assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `M report finding W knownThrowingCalls wildcard matches call {first concrete type for wildcard param}`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "kotlin.collections.MutableList.add(kotlin.Int, *):java.lang.UnsupportedOperationException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                fun test(list: MutableList<String>) {
+                    list.add(0, "hello")
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M report finding W knownThrowingCalls wildcard matches call {different concrete type for wildcard param}`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "kotlin.collections.MutableList.add(kotlin.Int, *):java.lang.UnsupportedOperationException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                import java.io.File
+                fun test(list: MutableList<File>, file: File) {
+                    list.add(0, file)
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M not report finding W knownThrowingCalls wildcard pattern arity differs from call`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "kotlin.collections.MutableList.add(kotlin.Int, *):java.lang.UnsupportedOperationException"
+        )
+        val config = TestConfig(
+            "knownThrowingCalls" to knownThrowingCalls,
+            "treatUnknownFunctionAsThrowing" to false
+        )
+        val code =
+            """
+                fun test(list: MutableList<String>) {
+                    list.add("hello")
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `M report finding W knownThrowingCalls has multiple wildcard params matching call`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "kotlin.collections.MutableMap.put(*, ?):java.lang.UnsupportedOperationException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                fun test(map: MutableMap<String, Int?>, value: Int?) {
+                    map.put("key", value)
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M report finding W knownThrowingCalls wildcard targets Any parameter`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "ThirdParty.call(?):java.lang.RuntimeException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                class ThirdParty {
+                    fun call(value: Any?) {
+                    }
+                }
+
+                fun test(thirdParty: ThirdParty, value: Any?) {
+                    thirdParty.call(value)
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M not report finding W knownSafeCalls wildcard matches call`() {
+        // Given
+        val knownSafeCalls = listOf(
+            "kotlin.collections.MutableList.add(kotlin.Int, *)"
+        )
+        val config = TestConfig("knownSafeThirdPartyCalls" to knownSafeCalls)
+        val code =
+            """
+                fun test(list: MutableList<String>) {
+                    list.add(0, "hello")
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `M not report finding W knownSafeCalls nullable concrete pattern matches non-nullable call`() {
+        // Given
+        val knownSafeCalls = listOf(
+            "java.io.File.listFiles(java.io.FileFilter?)"
+        )
+        val config = TestConfig("knownSafeThirdPartyCalls" to knownSafeCalls)
+        val code =
+            """
+                import java.io.File
+                import java.io.FileFilter
+
+                fun test(file: File, filter: FileFilter) {
+                    file.listFiles(filter)
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `M report finding W knownSafeCalls non-nullable concrete pattern misses nullable call`() {
+        // Given
+        val knownSafeCalls = listOf(
+            "java.io.File.listFiles(java.io.FileFilter)"
+        )
+        val config = TestConfig(
+            "knownSafeThirdPartyCalls" to knownSafeCalls
+        )
+        val code =
+            """
+                import java.io.File
+                import java.io.FileFilter
+
+                fun test(file: File, filter: FileFilter?) {
+                    file.listFiles(filter)
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+        assertjThat(findings.first().message)
+            .contains("Config wildcard rules")
+            .contains("'?' matches both nullable and non-nullable")
+            .contains("'?' covers '*', but '*' does not cover nullable types.")
+    }
+
+    @Test
+    fun `M not report finding W throwing nullable concrete pattern exists for safe non-nullable call`() {
+        // Given
+        val config = TestConfig(
+            "knownSafeThirdPartyCalls" to listOf(
+                "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String)"
+            ),
+            "knownThrowingCalls" to listOf(
+                "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String?):java.lang.NullPointerException"
+            ),
+            "treatUnknownFunctionAsThrowing" to false
+        )
+        val code =
+            """
+                import java.util.concurrent.ConcurrentHashMap
+
+                fun test(map: ConcurrentHashMap<String, String>, key: String) {
+                    map.remove(key)
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `M report finding W knownSafeCalls wildcard pattern arity differs from call`() {
+        // Given
+        val knownSafeCalls = listOf(
+            "kotlin.collections.MutableList.add(kotlin.Int, *)"
+        )
+        val config = TestConfig("knownSafeThirdPartyCalls" to knownSafeCalls)
+        val code =
+            """
+                fun test(list: MutableList<String>) {
+                    list.add("hello")
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `M throw exception W wildcard used for non-generic parameter`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "kotlin.collections.MutableList.add(*, *):java.lang.UnsupportedOperationException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                fun test(list: MutableList<String>) {
+                    list.add(0, "hello")
+                }
+            """.trimIndent()
+
+        // When
+        val error = assertThrows<IllegalStateException> {
+            UnsafeThirdPartyFunctionCall(config)
+                .compileAndLintWithContext(kotlinEnv.env, code)
+        }
+
+        // Then
+        assertjThat(error).hasMessageContaining(
+            "Wildcards are only valid for generic, Any, or java.lang.Object parameters."
+        )
     }
 }

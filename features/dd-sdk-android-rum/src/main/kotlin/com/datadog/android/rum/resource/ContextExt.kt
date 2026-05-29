@@ -27,6 +27,8 @@ import java.io.InputStream
  *
  * @return [InputStream] access to the asset data
  *
+ * @throws java.io.IOException if the asset cannot be opened (e.g. it does not exist).
+ *
  * @see [AssetManager.ACCESS_UNKNOWN]
  * @see [AssetManager.ACCESS_STREAMING]
  * @see [AssetManager.ACCESS_RANDOM]
@@ -37,6 +39,8 @@ fun Context.getAssetAsRumResource(
     accessMode: Int = AssetManager.ACCESS_STREAMING,
     sdkCore: SdkCore = Datadog.getInstance()
 ): InputStream {
+    // Suppress this warning here to keep the public API backward compatible with the previous version.
+    @Suppress("UnsafeThirdPartyFunctionCall")
     return RumResourceInputStream(
         assets.open(fileName, accessMode),
         "assets://$fileName",
