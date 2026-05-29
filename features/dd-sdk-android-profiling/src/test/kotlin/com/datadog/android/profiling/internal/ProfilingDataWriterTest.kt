@@ -238,7 +238,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing W write {can't read perfetto File}`(
+    fun `M skip writing and log warn on delete W write {perfetto file not found}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
