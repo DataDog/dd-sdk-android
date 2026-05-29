@@ -267,7 +267,7 @@ internal class ProfilingFeature(
                     vitalEvents = vitalEvents
                 )
                 if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
-                    logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
+                    logToUser(LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS)
                 } else {
                     logToUser(
                         LOG_CONTINUOUS_PROFILING_WRITTEN.format(
@@ -310,7 +310,7 @@ internal class ProfilingFeature(
             "Profiling feature received an event of unsupported type=%s."
         private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =
             "Launch profiling stopped at TTID."
-        private const val LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS =
+        private const val LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS =
             "Continuous profiling result not uploaded: no pending RUM events."
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
